@@ -368,7 +368,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
                                  draw_list);*/
 
         begin_frame();
-        finished = scene_manager.Serve(1, false);
+        finished = scene_manager.Serve(1);
         // renderer.ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
         end_frame();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

@@ -155,7 +155,7 @@ class SceneManager {
     void StopTextureLoader();
     void ForceTextureReload();
 
-    bool Serve(int texture_budget = 1, bool animate_texture_lod = true);
+    bool Serve(int texture_budget = 1);
 
     using ConvertAssetFunc = std::function<bool(assets_context_t &ctx, const char *in_file, const char *out_file,
                                                 Ren::SmallVectorImpl<std::string> &out_dependencies,
@@ -194,7 +194,7 @@ class SceneManager {
     Ren::Vec4f LoadDecalTexture(std::string_view name);
 
     void EstimateTextureMemory(int portion_size);
-    bool ProcessPendingTextures(int portion_size, bool animate_lod);
+    bool ProcessPendingTextures(int portion_size);
 
     void RebuildMaterialTextureGraph();
 

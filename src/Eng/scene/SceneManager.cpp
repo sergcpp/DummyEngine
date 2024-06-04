@@ -1559,7 +1559,7 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
                       float(res[0]) / DECALS_ATLAS_RESX, float(res[1]) / DECALS_ATLAS_RESY};
 }
 
-bool Eng::SceneManager::Serve(const int texture_budget, const bool animate_texture_lod) {
+bool Eng::SceneManager::Serve(const int texture_budget) {
     using namespace SceneManagerConstants;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_serve_str);
@@ -1567,7 +1567,7 @@ bool Eng::SceneManager::Serve(const int texture_budget, const bool animate_textu
     scene_data_.decals_atlas.Finalize(ren_ctx_.current_cmd_buf());
 
     EstimateTextureMemory(texture_budget);
-    bool finished = ProcessPendingTextures(texture_budget, animate_texture_lod);
+    bool finished = ProcessPendingTextures(texture_budget);
 
     finished &= UpdateMaterialsBuffer();
     finished &= UpdateInstanceBuffer();

@@ -303,7 +303,7 @@ void Eng::SceneManager::EstimateTextureMemory(const int portion_size) {
     }
 }
 
-bool Eng::SceneManager::ProcessPendingTextures(const int portion_size, const bool animate_lod) {
+bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
     using namespace SceneManagerConstants;
 
     OPTICK_GPU_EVENT("ProcessPendingTextures");
@@ -463,11 +463,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size, const boo
         OPTICK_EVENT("lod transition");
         for (auto it = std::begin(lod_transit_textures_); it != std::end(lod_transit_textures_);) {
             Ren::SamplingParams cur_sampling = (*it)->params.sampling;
-            if (animate_lod) {
-                cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
-            } else {
-                cur_sampling.min_lod.set_value(0);
-            }
+            cur_sampling.min_lod.set_value(0);
             (*it)->SetSampling(cur_sampling);
 
             SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, *it);

@@ -665,7 +665,6 @@ void GSBaseState::Draw() {
 
     OPTICK_GPU_EVENT("Draw");
 
-    const bool animate_texture_lod = viewer_->app_params.ref_name.empty();
     if (streaming_finished_ && !viewer_->app_params.ref_name.empty() && !capture_started_) {
         if (viewer_->app_params.pt) {
             InitRenderer_PT();
@@ -777,7 +776,7 @@ void GSBaseState::Draw() {
                 thr_done_.wait(lock);
             }
 
-            streaming_finished_ = scene_manager_->Serve(4, animate_texture_lod);
+            streaming_finished_ = scene_manager_->Serve(4);
             renderer_->InitBackendInfo();
 
             if (use_pt_) {
@@ -816,7 +815,7 @@ void GSBaseState::Draw() {
             notified_ = true;
             thr_notify_.notify_one();
         } else {
-            streaming_finished_ = scene_manager_->Serve(4, animate_texture_lod);
+            streaming_finished_ = scene_manager_->Serve(4);
             renderer_->InitBackendInfo();
 
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
