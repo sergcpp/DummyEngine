@@ -357,7 +357,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     { // RenderPass for main drawing (compatible one)
         Ren::RenderTargetInfo color_rts[] = {
-            {Ren::eTexFormat::RawRG11F_B10F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+            {Ren::eTexFormat::RawRGBA16F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
 #if USE_OCT_PACKED_NORMALS == 1
             {Ren::eTexFormat::RawRGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
@@ -369,9 +369,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store}
         };
-        if (settings.hdr_quality == eHDRQuality::High) {
-            color_rts[0].format = Ren::eTexFormat::RawRGBA16F;
-        }
 
         color_rts[2].flags = Ren::eTexFlagBits::SRGB;
 
@@ -892,11 +889,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // Main HDR color
         frame_textures.color_params.w = view_state_.scr_res[0];
         frame_textures.color_params.h = view_state_.scr_res[1];
-        if (settings.hdr_quality == eHDRQuality::High) {
-            frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
-        } else {
-            frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
-        }
+        frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
 

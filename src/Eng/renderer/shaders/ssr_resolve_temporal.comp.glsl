@@ -15,7 +15,6 @@
 #include "taa_common.glsl"
 #include "ssr_resolve_temporal_interface.h"
 
-#pragma multi_compile _ HQ_HDR
 #pragma multi_compile _ NO_SUBGROUP
 
 #if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_arithmetic))
@@ -47,11 +46,7 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
 };
 
-#ifdef HQ_HDR
-    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_refl_img;
-#else
-    layout(binding = OUT_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_refl_img;
-#endif
+layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_refl_img;
 layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
 
 bool IsGlossyReflection(float roughness) {

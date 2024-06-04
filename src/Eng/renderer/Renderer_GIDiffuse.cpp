@@ -93,7 +93,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.img_size = Ren::Vec2u{view_state_.act_res};
 
-            Ren::DispatchCompute(pi_probe_sample_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            Ren::DispatchCompute(pi_probe_sample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     } else {

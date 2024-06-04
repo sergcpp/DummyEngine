@@ -10,8 +10,6 @@
 #include "_principled.glsl"
 #include "gbuffer_shade_interface.h"
 
-#pragma multi_compile _ HQ_HDR
-
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
@@ -37,11 +35,7 @@ layout(binding = SUN_SHADOW_TEX_SLOT) uniform sampler2D g_sun_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
-#ifdef HQ_HDR
 layout(binding = OUT_COLOR_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
-#else
-layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
-#endif
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 

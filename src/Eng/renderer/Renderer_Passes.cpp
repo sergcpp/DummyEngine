@@ -44,14 +44,15 @@ bool Eng::Renderer::InitPipelines() {
 
     success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
     success &= init_pipeline(pi_gbuf_shade_, "internal/gbuffer_shade.comp.glsl");
-    success &= init_pipeline(pi_gbuf_shade_hq_, "internal/gbuffer_shade.comp.glsl@HQ_HDR");
-    success &= init_pipeline(pi_ssr_classify_tiles_[0], "internal/ssr_classify_tiles.comp.glsl");
-    success &= init_pipeline(pi_ssr_classify_tiles_[1], "internal/ssr_classify_tiles.comp.glsl@HQ_HDR");
+    success &= init_pipeline(pi_ssr_classify_tiles_, "internal/ssr_classify_tiles.comp.glsl");
     success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
     success &= init_pipeline(pi_ssr_trace_hq_, "internal/ssr_trace_hq.comp.glsl");
     success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
-    success &= init_pipeline(pi_ssr_reproject_[0], "internal/ssr_reproject.comp.glsl");
-    success &= init_pipeline(pi_ssr_reproject_[1], "internal/ssr_reproject.comp.glsl@HQ_HDR");
+
+    // Reflections denoising
+    success &= init_pipeline(pi_ssr_reproject_, "internal/ssr_reproject.comp.glsl");
+    success &= init_pipeline(pi_ssr_prefilter_, "internal/ssr_prefilter.comp.glsl");
+    success &= init_pipeline(pi_ssr_resolve_temporal_, "internal/ssr_resolve_temporal.comp.glsl");
 
     // GI Cache
     success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend.comp.glsl@RADIANCE");
@@ -60,16 +61,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate.comp.glsl@RESET");
     success &= init_pipeline(pi_probe_classify_[0], "internal/probe_classify.comp.glsl");
     success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify.comp.glsl@RESET");
-    success &= init_pipeline(pi_probe_sample_[0], "internal/probe_sample.comp.glsl");
-    success &= init_pipeline(pi_probe_sample_[1], "internal/probe_sample.comp.glsl@HQ_HDR");
-
-    // Reflections prefilter
-    success &= init_pipeline(pi_ssr_prefilter_[0], "internal/ssr_prefilter.comp.glsl");
-    success &= init_pipeline(pi_ssr_prefilter_[1], "internal/ssr_prefilter.comp.glsl@HQ_HDR");
-
-    // Reflections accumulation
-    success &= init_pipeline(pi_ssr_resolve_temporal_[0], "internal/ssr_resolve_temporal.comp.glsl");
-    success &= init_pipeline(pi_ssr_resolve_temporal_[1], "internal/ssr_resolve_temporal.comp.glsl@HQ_HDR");
+    success &= init_pipeline(pi_probe_sample_, "internal/probe_sample.comp.glsl");
 
     // Flat normals reconstruction
     success &= init_pipeline(pi_reconstruct_normals_, "internal/reconstruct_normals.comp.glsl");
@@ -1063,8 +1055,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
-        const Ren::Pipeline &pi = (settings.hdr_quality == eHDRQuality::High) ? pi_gbuf_shade_hq_ : pi_gbuf_shade_;
-        Ren::DispatchCompute(pi, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+        Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                              builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 }
@@ -1469,11 +1460,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            if (settings.hdr_quality == eHDRQuality::High) {
-                params.format = Ren::eTexFormat::RawRGBA16F;
-            } else {
-                params.format = Ren::eTexFormat::RawRG11F_B10F;
-            }
+            params.format = Ren::eTexFormat::RawRGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 

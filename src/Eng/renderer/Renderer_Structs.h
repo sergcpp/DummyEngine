@@ -233,8 +233,6 @@ enum class eTonemapMode : uint8_t { Off, Standard, LUT };
 
 enum class eTAAMode : uint8_t { Off, Dynamic, Static };
 
-enum class eHDRQuality : uint8_t { Medium, High };
-
 enum class eGIQuality : uint8_t { Off, Medium, High, Ultra };
 
 enum class eSkyQuality : uint8_t { Low, High };
@@ -287,7 +285,6 @@ struct render_settings_t {
     eShadowsQuality shadows_quality = eShadowsQuality::High;
     eTonemapMode tonemap_mode = eTonemapMode::Standard;
     eTAAMode taa_mode = eTAAMode::Dynamic;
-    eHDRQuality hdr_quality = eHDRQuality::High;
     eGIQuality gi_quality = eGIQuality::High;
     eSkyQuality sky_quality = eSkyQuality::High;
 
@@ -297,8 +294,8 @@ struct render_settings_t {
     bool operator==(const render_settings_t &rhs) {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
-               hdr_quality == rhs.hdr_quality && gi_quality == rhs.gi_quality && sky_quality == rhs.sky_quality &&
-               debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise;
+               gi_quality == rhs.gi_quality && sky_quality == rhs.sky_quality && debug_rt == rhs.debug_rt &&
+               debug_denoise == rhs.debug_denoise;
     }
     bool operator!=(const render_settings_t &rhs) { return !operator==(rhs); }
 
@@ -312,7 +309,6 @@ struct render_settings_t {
         shadows_quality = eShadowsQuality(std::min(uint8_t(shadows_quality), uint8_t(rhs.shadows_quality)));
         tonemap_mode = eTonemapMode(std::min(uint8_t(tonemap_mode), uint8_t(rhs.tonemap_mode)));
         taa_mode = eTAAMode(std::min(uint8_t(taa_mode), uint8_t(rhs.taa_mode)));
-        hdr_quality = eHDRQuality(std::min(uint8_t(hdr_quality), uint8_t(rhs.hdr_quality)));
         gi_quality = eGIQuality(std::min(uint8_t(gi_quality), uint8_t(rhs.gi_quality)));
 
         return (*this);

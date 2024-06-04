@@ -214,14 +214,14 @@ class Renderer {
     PrimDraw prim_draw_;
     uint32_t frame_index_ = 0, accumulated_frames_ = 0;
 
-    Ren::Pipeline pi_skinning_, pi_gbuf_shade_, pi_gbuf_shade_hq_;
+    Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
     // HQ SSR
-    Ren::Pipeline pi_ssr_classify_tiles_[2], pi_ssr_write_indirect_, pi_ssr_trace_hq_;
+    Ren::Pipeline pi_ssr_classify_tiles_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::Pipeline pi_ssr_reproject_[2], pi_ssr_prefilter_[2], pi_ssr_resolve_temporal_[2];
+    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_resolve_temporal_;
     // GI Cache
-    Ren::Pipeline pi_probe_blend_[2], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_[2];
+    Ren::Pipeline pi_probe_blend_[2], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_;
     // GI
     Ren::Pipeline pi_gi_classify_tiles_, pi_gi_write_indirect_, pi_gi_trace_ss_;
     Ren::Pipeline pi_gi_rt_write_indirect_;
