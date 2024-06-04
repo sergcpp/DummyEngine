@@ -5,10 +5,10 @@
 #include "shaders/blit_ssr_compose_new_interface.h"
 #include "shaders/blit_ssr_dilate_interface.h"
 #include "shaders/blit_ssr_interface.h"
-#include "shaders/ssr_classify_tiles_interface.h"
+#include "shaders/ssr_classify_interface.h"
 #include "shaders/ssr_prefilter_interface.h"
 #include "shaders/ssr_reproject_interface.h"
-#include "shaders/ssr_resolve_temporal_interface.h"
+#include "shaders/ssr_temporal_interface.h"
 #include "shaders/ssr_trace_hq_interface.h"
 #include "shaders/ssr_write_indir_rt_dispatch_interface.h"
 #include "shaders/ssr_write_indirect_args_interface.h"
@@ -188,7 +188,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
 
-            Ren::DispatchCompute(pi_ssr_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            Ren::DispatchCompute(pi_ssr_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -712,7 +712,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
 
-            Ren::DispatchComputeIndirect(pi_ssr_resolve_temporal_, *indir_args_buf.ref, data->indir_args_offset,
+            Ren::DispatchComputeIndirect(pi_ssr_temporal_, *indir_args_buf.ref, data->indir_args_offset,
                                          bindings, &uniform_params, sizeof(uniform_params),
                                          builder.ctx().default_descr_alloc(), builder.ctx().log());
         });

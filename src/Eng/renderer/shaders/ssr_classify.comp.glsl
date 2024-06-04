@@ -12,8 +12,8 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "gi_common.glsl"
-#include "gi_classify_tiles_interface.h"
+#include "ssr_common.glsl"
+#include "ssr_classify_interface.h"
 
 #pragma multi_compile _ NO_SUBGROUP
 
@@ -26,8 +26,8 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
-//layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_hist_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
+layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_hist_tex;
 
 layout(std430, binding = RAY_COUNTER_SLOT) coherent buffer RayCounter {
     uint g_ray_counter[];
@@ -42,20 +42,20 @@ layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer g_sobol_seq_tex;
 layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambling_tile_tex;
 layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
 
-layout(binding = GI_IMG_SLOT, rgba16f) uniform writeonly image2D g_gi_img;
+layout(binding = REFL_IMG_SLOT, rgba16f) uniform writeonly image2D g_refl_img;
 layout(binding = NOISE_IMG_SLOT, rgba8) uniform writeonly image2D g_noise_img;
 
-bool IsDiffuseSurface(ivec2 px_coords) {
-    const float depth = texelFetch(g_depth_tex, px_coords, 0).r;
-    if (depth < 1.0) {
-        /*const uint packed_mat_params = texelFetch(g_specular_tex, px_coords, 0).r;
-        vec4 mat_params0, mat_params1;
-        UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
-        const float metallic = mat_params1.x;
-        return metallic < 1.0;*/
-        return true;
-    }
-    return false;
+bool IsReflectiveSurface(ivec2 px_coords) {
+    float depth = texelFetch(g_depth_tex, px_coords, 0).r;
+    return depth < 1.0;
+}
+
+bool IsGlossyReflection(float roughness) {
+    return roughness <= g_params.thresholds.x;
+}
+
+bool IsMirrorReflection(float roughness) {
+    return roughness <= g_params.thresholds.y; //0.0001;
 }
 
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
@@ -102,7 +102,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ********************************************************************/
-void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, uint samples_per_quad,
+void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughness, uvec2 screen_size, uint samples_per_quad,
                    bool enable_temporal_variance_guided_tracing) {
     g_tile_count = 0;
 
@@ -112,21 +112,22 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
 
     bool needs_ray = (dispatch_thread_id.x < screen_size.x && dispatch_thread_id.y < screen_size.y); // disable offscreen pixels
 
-    // Dont shoot a ray on metal surfaces
-    bool is_diffuse_surface = IsDiffuseSurface(ivec2(dispatch_thread_id));
-    needs_ray = needs_ray && is_diffuse_surface;
+    // Dont shoot a ray on very rough surfaces.
+    bool is_reflective_surface = IsReflectiveSurface(ivec2(dispatch_thread_id));
+    bool is_glossy_reflection = IsGlossyReflection(roughness);
+    needs_ray = needs_ray && is_glossy_reflection && is_reflective_surface;
 
-    //
-    bool needs_denoiser = needs_ray;
+    // Also we dont need to run the denoiser on mirror reflections.
+    bool needs_denoiser = needs_ray && !IsMirrorReflection(roughness);
 
     // Decide which ray to keep
     bool is_base_ray = IsBaseRay(dispatch_thread_id, samples_per_quad);
-    needs_ray = needs_ray && (!needs_denoiser || is_base_ray);
+    needs_ray = needs_ray && (!needs_denoiser || is_base_ray); // Make sure to not deactivate mirror reflection rays.
 
     if (enable_temporal_variance_guided_tracing && needs_denoiser && !needs_ray) {
-        //const float TemporalVarianceThreshold = 0.001;
-        //bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold;
-        //needs_ray = needs_ray || has_temporal_variance;
+        const float TemporalVarianceThreshold = 0.001;
+        bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold;
+        needs_ray = needs_ray || has_temporal_variance;
     }
 
     groupMemoryBarrier(); // Wait until g_tile_count is cleared - allow some computations before and after
@@ -134,7 +135,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
 
     // Now we know for each thread if it needs to shoot a ray and wether or not a denoiser pass has to run on this pixel.
 
-    if (is_diffuse_surface) {
+    if (is_glossy_reflection && is_reflective_surface) {
         atomicAdd(g_tile_count, 1u);
     }
 
@@ -173,8 +174,11 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
     }
 #endif
 
-    // TODO: remove this
-    imageStore(g_gi_img, ivec2(dispatch_thread_id), vec4(0.0));
+    vec4 refl_output = vec4(0.0);
+    if (is_reflective_surface && !is_glossy_reflection) {
+        // TODO: Fall back to diffuse probes
+    }
+    imageStore(g_refl_img, ivec2(dispatch_thread_id), refl_output);
 
     groupMemoryBarrier(); // Wait until all waves write into g_tile_count
     barrier();
@@ -190,13 +194,13 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
 //
 float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
     // wrap arguments
-    const uint pixel_i = pixel.x & 127u;
-    const uint pixel_j = pixel.y & 127u;
+    uint pixel_i = pixel.x & 127u;
+    uint pixel_j = pixel.y & 127u;
     sample_index = sample_index & 255u;
     sample_dimension = sample_dimension & 255u;
 
     // xor index based on optimized ranking
-    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
 
     // fetch value in sequence
     uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
@@ -209,13 +213,10 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
 }
 
 vec4 SampleRandomVector2D(uvec2 pixel) {
-    //return vec4(fract(SampleRandomNumber(pixel, 0, 4u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-    //            fract(SampleRandomNumber(pixel, 0, 5u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-    //            fract(SampleRandomNumber(pixel, 0, 6u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-    //            fract(SampleRandomNumber(pixel, 0, 7u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
-
-    return vec4(SampleRandomNumber(pixel, g_params.frame_index, 4u), SampleRandomNumber(pixel, g_params.frame_index, 5u),
-                SampleRandomNumber(pixel, g_params.frame_index, 6u), SampleRandomNumber(pixel, g_params.frame_index, 7u));
+    return vec4(fract(SampleRandomNumber(pixel, 0, 0u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 1u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 2u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 3u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
@@ -228,10 +229,11 @@ void main() {
     const uint group_index = gl_LocalInvocationIndex;
     const uvec2 group_thread_id = RemapLane8x8(group_index);
     const uvec2 dispatch_thread_id = group_id * 8u + group_thread_id;
-    if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
-        return;
-    }
+    //if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
+    //    return;
+    //}
 
-    ClassifyTiles(dispatch_thread_id, group_thread_id, g_params.img_size,
+    const float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).w;
+    ClassifyTiles(dispatch_thread_id, group_thread_id, roughness, g_params.img_size,
                   g_params.samples_and_guided.x, g_params.samples_and_guided.y != 0u);
 }

@@ -440,11 +440,11 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    uint packed_coords = g_tile_list[gl_WorkGroupID.x];
-    ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
-    ivec2  dispatch_group_id = dispatch_thread_id / 8;
-    uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
-    uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
+    const uint packed_coords = g_tile_list[gl_WorkGroupID.x];
+    const ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
+    const ivec2  dispatch_group_id = dispatch_thread_id / 8;
+    const uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
+    const uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
     const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
 

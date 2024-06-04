@@ -216,18 +216,18 @@ class Renderer {
 
     Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
     // HQ SSR
-    Ren::Pipeline pi_ssr_classify_tiles_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
+    Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_resolve_temporal_;
+    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_;
     // GI Cache
     Ren::Pipeline pi_probe_blend_[2], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_;
     // GI
-    Ren::Pipeline pi_gi_classify_tiles_, pi_gi_write_indirect_, pi_gi_trace_ss_;
+    Ren::Pipeline pi_gi_classify_, pi_gi_write_indirect_, pi_gi_trace_ss_;
     Ren::Pipeline pi_gi_rt_write_indirect_;
     Ren::Pipeline pi_reconstruct_normals_;
     // GI Denoiser stuff
-    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_resolve_temporal_, pi_gi_blur_, pi_gi_post_blur_;
+    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_temporal_, pi_gi_blur_, pi_gi_post_blur_;
     // Sun shadows
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;

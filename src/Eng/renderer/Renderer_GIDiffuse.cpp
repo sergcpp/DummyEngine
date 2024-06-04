@@ -5,10 +5,10 @@
 #include "Renderer_Names.h"
 
 #include "shaders/gi_blur_interface.h"
-#include "shaders/gi_classify_tiles_interface.h"
+#include "shaders/gi_classify_interface.h"
 #include "shaders/gi_prefilter_interface.h"
 #include "shaders/gi_reproject_interface.h"
-#include "shaders/gi_resolve_temporal_interface.h"
+#include "shaders/gi_temporal_interface.h"
 #include "shaders/gi_trace_ss_interface.h"
 #include "shaders/gi_write_indir_rt_dispatch_interface.h"
 #include "shaders/gi_write_indirect_args_interface.h"
@@ -301,7 +301,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
 
-            Ren::DispatchCompute(pi_gi_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            Ren::DispatchCompute(pi_gi_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -819,7 +819,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GIResolveTemporal::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchComputeIndirect(pi_gi_resolve_temporal_, *indir_args_buf.ref, data->indir_args_offset,
+            Ren::DispatchComputeIndirect(pi_gi_temporal_, *indir_args_buf.ref, data->indir_args_offset,
                                          bindings, &uniform_params, sizeof(uniform_params),
                                          builder.ctx().default_descr_alloc(), builder.ctx().log());
         });

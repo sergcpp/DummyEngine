@@ -44,7 +44,7 @@ bool Eng::Renderer::InitPipelines() {
 
     success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
     success &= init_pipeline(pi_gbuf_shade_, "internal/gbuffer_shade.comp.glsl");
-    success &= init_pipeline(pi_ssr_classify_tiles_, "internal/ssr_classify_tiles.comp.glsl");
+    success &= init_pipeline(pi_ssr_classify_, "internal/ssr_classify.comp.glsl");
     success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
     success &= init_pipeline(pi_ssr_trace_hq_, "internal/ssr_trace_hq.comp.glsl");
     success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
@@ -52,7 +52,7 @@ bool Eng::Renderer::InitPipelines() {
     // Reflections denoising
     success &= init_pipeline(pi_ssr_reproject_, "internal/ssr_reproject.comp.glsl");
     success &= init_pipeline(pi_ssr_prefilter_, "internal/ssr_prefilter.comp.glsl");
-    success &= init_pipeline(pi_ssr_resolve_temporal_, "internal/ssr_resolve_temporal.comp.glsl");
+    success &= init_pipeline(pi_ssr_temporal_, "internal/ssr_temporal.comp.glsl");
 
     // GI Cache
     success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend.comp.glsl@RADIANCE");
@@ -67,13 +67,13 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_reconstruct_normals_, "internal/reconstruct_normals.comp.glsl");
 
     // GI
-    success &= init_pipeline(pi_gi_classify_tiles_, "internal/gi_classify_tiles.comp.glsl");
+    success &= init_pipeline(pi_gi_classify_, "internal/gi_classify.comp.glsl");
     success &= init_pipeline(pi_gi_write_indirect_, "internal/gi_write_indirect_args.comp.glsl");
     success &= init_pipeline(pi_gi_trace_ss_, "internal/gi_trace_ss.comp.glsl");
     success &= init_pipeline(pi_gi_rt_write_indirect_, "internal/gi_write_indir_rt_dispatch.comp.glsl");
     success &= init_pipeline(pi_gi_reproject_, "internal/gi_reproject.comp.glsl");
     success &= init_pipeline(pi_gi_prefilter_, "internal/gi_prefilter.comp.glsl");
-    success &= init_pipeline(pi_gi_resolve_temporal_, "internal/gi_resolve_temporal.comp.glsl");
+    success &= init_pipeline(pi_gi_temporal_, "internal/gi_temporal.comp.glsl");
     success &= init_pipeline(pi_gi_blur_, "internal/gi_blur.comp.glsl");
     success &= init_pipeline(pi_gi_post_blur_, "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
 
