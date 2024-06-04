@@ -134,7 +134,7 @@ THE SOFTWARE.
 #define PREFILTER_VARIANCE_BIAS 0.1
 #define PREFILTER_VARIANCE_WEIGHT 4.4
 
-#define PREFILTER_NORMAL_SIGMA 4.0 // 512.0
+#define PREFILTER_NORMAL_SIGMA 32.0 // 512.0
 #define PREFILTER_DEPTH_SIGMA 4.0
 
 /* mediump */ float GetEdgeStoppingNormalWeight(/* mediump */ vec3 normal_p, /* mediump */ vec3 normal_q) {
@@ -187,7 +187,7 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, sample_t ce
         sample_t neighbor = LoadFromSharedMemory(new_idx);
 
         /* mediump */ float weight = 1.0;
-        //weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
+        weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
         weight *= GetEdgeStoppingDepthWeight(center.depth, neighbor.depth);
         weight *= GetRadianceWeight(avg_radiance, neighbor.radiance.rgb, center.variance);
         weight *= variance_weight;

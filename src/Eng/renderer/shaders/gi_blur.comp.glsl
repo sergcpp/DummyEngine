@@ -50,7 +50,7 @@ layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, lo
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
 
-#define NRD_USE_QUADRATIC_DISTRIBUTION 1
+#define NRD_USE_QUADRATIC_DISTRIBUTION 0
 
 // http://marc-b-reynolds.github.io/quaternions/2016/07/06/Orthonormal.html
 mat3 GetBasis(vec3 N) {
