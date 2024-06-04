@@ -277,8 +277,6 @@ class SceneManager {
 
     TextureRequestPending io_pending_tex_[MaxSimultaneousRequests];
 
-    Ren::RingBuffer<Ren::Tex2DRef> lod_transit_textures_;
-
     void TextureLoaderProc();
 
     static uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,

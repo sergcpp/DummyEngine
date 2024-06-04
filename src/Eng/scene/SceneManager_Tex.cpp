@@ -341,16 +341,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                         req->state = eRequestState::Idle;
                         tex_loader_cnd_.notify_one();
                     } else if (res != Ren::WaitResult::Timeout) {
-                        if (req->ref->params.sampling.min_lod.value() > 0) {
-                            const auto it =
-                                std::lower_bound(std::begin(lod_transit_textures_), std::end(lod_transit_textures_),
-                                                 req->ref, [](const Ren::Tex2DRef &lhs, const Ren::Tex2DRef &rhs) {
-                                                     return lhs.index() < rhs.index();
-                                                 });
-                            if (it == std::end(lod_transit_textures_) || it->index() != req->ref.index()) {
-                                lod_transit_textures_.insert(it, {req->ref});
-                            }
-                        }
+                        SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req->ref);
 
                         if (req->ref->params.w != req->orig_w || req->ref->params.h != req->orig_h) {
                             // process texture further (for next mip levels)
@@ -428,13 +419,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
 
                 stage_buf->fence = ren_ctx_.EndSingleTimeCommands(stage_buf->cmd_buf);
 
-                { // offset min lod to account for newly allocated mip levels
-                    Ren::SamplingParams cur_sampling = req->ref->params.sampling;
-                    cur_sampling.min_lod.set_value(cur_sampling.min_lod.value() +
-                                                   cur_sampling.min_lod.One * req->mip_count_to_init);
-                    req->ref->SetSampling(cur_sampling);
-                    SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req->ref);
-                }
+                SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req->ref);
 
                 const uint64_t t2_us = Sys::GetTimeUs();
 
@@ -458,26 +443,6 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
             }
         }
     }
-
-    { // Animate lod transition to avoid sudden popping
-        OPTICK_EVENT("lod transition");
-        for (auto it = std::begin(lod_transit_textures_); it != std::end(lod_transit_textures_);) {
-            Ren::SamplingParams cur_sampling = (*it)->params.sampling;
-            cur_sampling.min_lod.set_value(0);
-            (*it)->SetSampling(cur_sampling);
-
-            SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, *it);
-
-            if (cur_sampling.min_lod.value() == 0) {
-                // transition is done, remove texture from list
-                it = lod_transit_textures_.erase(it);
-            } else {
-                ++it;
-            }
-        }
-    }
-
-    finished &= lod_transit_textures_.empty();
 
     { // Process GC'ed textures
         std::lock_guard<std::mutex> lock(gc_textures_mtx_);
@@ -693,7 +658,6 @@ void Eng::SceneManager::StopTextureLoader() {
         io_pending_tex_[i].ref = {};
     }
     requested_textures_.clear();
-    lod_transit_textures_.clear();
     {
         std::unique_lock<std::mutex> lock(gc_textures_mtx_);
         finished_textures_.clear();
