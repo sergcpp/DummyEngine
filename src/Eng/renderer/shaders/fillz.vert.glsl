@@ -10,7 +10,6 @@
 
 #pragma multi_compile _ MOVING
 #pragma multi_compile _ TRANSPARENT
-#pragma multi_compile _ HASHED_TRANSPARENCY
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef TRANSPARENT
@@ -37,9 +36,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
 #endif // MOVING
 #ifdef TRANSPARENT
     layout(location = 2) out vec2 g_vtx_uvs0;
-    #ifdef HASHED_TRANSPARENCY
-        layout(location = 3) out vec3 g_vtx_pos_ls;
-    #endif // HASHED_TRANSPARENCY
+    layout(location = 3) out vec3 g_vtx_pos_ls;
     #if defined(BINDLESS_TEXTURES)
         layout(location = 4) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
@@ -62,9 +59,7 @@ void main() {
 #if defined(BINDLESS_TEXTURES)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
-#ifdef HASHED_TRANSPARENCY
     g_vtx_pos_ls = g_in_vtx_pos;
-#endif // HASHED_TRANSPARENCY
 #endif // TRANSPARENT
 
     vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos, 1.0)).xyz;

@@ -56,24 +56,21 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             ctx, "internal/fillz_vege.vert.glsl@MOVING;OUTPUT_VELOCITY", "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
         assert(fillz_vege_solid_vel_mov_prog->ready());
         Ren::ProgramRef fillz_transp_prog =
-            sh.LoadProgram(ctx, "internal/fillz.vert.glsl@TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@TRANSPARENT;HASHED_TRANSPARENCY");
+            sh.LoadProgram(ctx, "internal/fillz.vert.glsl@TRANSPARENT", "internal/fillz.frag.glsl@TRANSPARENT");
         assert(fillz_transp_prog->ready());
-        Ren::ProgramRef fillz_transp_mov_prog =
-            sh.LoadProgram(ctx, "internal/fillz.vert.glsl@MOVING;TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY");
+        Ren::ProgramRef fillz_transp_mov_prog = sh.LoadProgram(ctx, "internal/fillz.vert.glsl@MOVING;TRANSPARENT",
+                                                               "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT");
         assert(fillz_transp_mov_prog->ready());
         Ren::ProgramRef fillz_vege_transp_prog =
-            sh.LoadProgram(ctx, "internal/fillz_vege.vert.glsl@TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@TRANSPARENT;HASHED_TRANSPARENCY");
+            sh.LoadProgram(ctx, "internal/fillz_vege.vert.glsl@TRANSPARENT", "internal/fillz.frag.glsl@TRANSPARENT");
         assert(fillz_vege_transp_prog->ready());
         Ren::ProgramRef fillz_vege_transp_vel_prog =
-            sh.LoadProgram(ctx, "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY");
+            sh.LoadProgram(ctx, "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT");
         assert(fillz_vege_transp_vel_prog->ready());
         Ren::ProgramRef fillz_vege_transp_vel_mov_prog =
-            sh.LoadProgram(ctx, "internal/fillz_vege.vert.glsl@MOVING;OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY");
+            sh.LoadProgram(ctx, "internal/fillz_vege.vert.glsl@MOVING;OUTPUT_VELOCITY;TRANSPARENT",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT");
         assert(fillz_vege_transp_vel_mov_prog->ready());
         Ren::ProgramRef fillz_skin_solid_prog =
             sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl", "internal/fillz.frag.glsl");
@@ -85,16 +82,15 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             ctx, "internal/fillz_skin.vert.glsl@MOVING;OUTPUT_VELOCITY", "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
         assert(fillz_skin_solid_vel_mov_prog->ready());
         Ren::ProgramRef fillz_skin_transp_prog =
-            sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl@TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@TRANSPARENT;HASHED_TRANSPARENCY");
+            sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl@TRANSPARENT", "internal/fillz.frag.glsl@TRANSPARENT");
         assert(fillz_skin_transp_prog->ready());
         Ren::ProgramRef fillz_skin_transp_vel_prog =
-            sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY");
+            sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT");
         assert(fillz_skin_transp_vel_prog->ready());
         Ren::ProgramRef fillz_skin_transp_vel_mov_prog =
-            sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl@MOVING;OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT;HASHED_TRANSPARENCY");
+            sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl@MOVING;OUTPUT_VELOCITY;TRANSPARENT",
+                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT");
         assert(fillz_skin_transp_vel_mov_prog->ready());
 
         if (!rp_depth_only_[0].Setup(ctx.api_ctx(), {}, depth_clear_target, ctx.log())) {

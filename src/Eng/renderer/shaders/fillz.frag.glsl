@@ -13,7 +13,6 @@
 
 #pragma multi_compile _ OUTPUT_VELOCITY
 #pragma multi_compile _ TRANSPARENT
-#pragma multi_compile _ HASHED_TRANSPARENCY
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
@@ -31,9 +30,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 #endif // OUTPUT_VELOCITY
 #ifdef TRANSPARENT
     layout(location = 2) in highp vec2 g_vtx_uvs0;
-    #ifdef HASHED_TRANSPARENCY
-        layout(location = 3) in highp vec3 g_vtx_pos_ls;
-    #endif // HASHED_TRANSPARENCY
+    layout(location = 3) in highp vec3 g_vtx_pos_ls;
     #if defined(BINDLESS_TEXTURES)
         layout(location = 4) in flat highp TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
@@ -46,9 +43,6 @@ layout(location = 0) out vec2 g_out_velocity;
 void main() {
 #ifdef TRANSPARENT
     float tx_alpha = texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
-#ifndef HASHED_TRANSPARENCY
-    if (tx_alpha < 0.9) discard;
-#else // HASHED_TRANSPARENCY
     float max_deriv = max(length(dFdx(g_vtx_pos_ls)), length(dFdy(g_vtx_pos_ls)));
     const float HashScale = 0.1;
     float pix_scale = 1.0 / (HashScale * max_deriv);
@@ -72,7 +66,6 @@ void main() {
     comp_a = clamp(comp_a, 1.0e-6, 1.0);
 
     if (tx_alpha < comp_a) discard;
-#endif // HASHED_TRANSPARENCY
 #endif // TRANSPARENT
 
 #ifdef OUTPUT_VELOCITY
