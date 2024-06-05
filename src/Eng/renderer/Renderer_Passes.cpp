@@ -76,6 +76,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_gi_temporal_, "internal/gi_temporal.comp.glsl");
     success &= init_pipeline(pi_gi_blur_, "internal/gi_blur.comp.glsl");
     success &= init_pipeline(pi_gi_post_blur_, "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
+    success &= init_pipeline(pi_gi_stabilization_, "internal/gi_stabilization.comp.glsl");
 
     // RT Sun Shadow
     success &= init_pipeline(pi_shadow_classify_, "internal/rt_shadow_classify.comp.glsl", 32);

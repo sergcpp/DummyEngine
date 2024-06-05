@@ -227,7 +227,7 @@ class Renderer {
     Ren::Pipeline pi_gi_rt_write_indirect_;
     Ren::Pipeline pi_reconstruct_normals_;
     // GI Denoiser stuff
-    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_temporal_, pi_gi_blur_, pi_gi_post_blur_;
+    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_temporal_, pi_gi_blur_, pi_gi_post_blur_, pi_gi_stabilization_;
     // Sun shadows
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;

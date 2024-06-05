@@ -1,6 +1,4 @@
 #version 320 es
-//#extension GL_KHR_shader_subgroup_basic : require
-//#extension GL_KHR_shader_subgroup_ballot : require
 #extension GL_ARB_shading_language_packing : require
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
@@ -44,7 +42,7 @@ layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, lo
 //    return roughness < g_params.thresholds.y; //0.0001;
 //}
 
-#define PREFILTER_NORMAL_SIGMA 65.0
+#define PREFILTER_NORMAL_SIGMA 512.0
 
 /* mediump */ float GetEdgeStoppingNormalWeight(/* mediump */ vec3 normal_p, /* mediump */ vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
@@ -211,22 +209,18 @@ float GetBlurRadius(float radius, float hit_dist, float view_z, float non_linear
     return r;
 }
 
-void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
+void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
 #if defined(VULKAN)
     pix_uv.y = 1.0 - pix_uv.y;
 #endif // VULKAN
-    float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
-    float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info);
+    const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
+    const float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info);
 
-    vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_normal_tex, dispatch_thread_id, 0).x).xyz;
-    vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
+    const vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_normal_tex, dispatch_thread_id, 0).x).xyz;
+    const vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
 
-    //vec3 center_normal_vs;
-    //center_normal_vs.xy = texelFetch(g_flat_normal_tex, dispatch_thread_id, 0).xy;
-    //center_normal_vs.z = sqrt(1.0 - dot(center_normal_vs.xy, center_normal_vs.xy));
-
-    vec3 center_point_vs = ReconstructViewPosition(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
+    const vec3 center_point_vs = ReconstructViewPosition(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
     const float PlaneDistSensitivity = 32.0;
     vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, 1.0 /* scale */);
@@ -255,15 +249,11 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     vec4 kernel_rotator = GetBlurKernelRotation(uvec2(dispatch_thread_id), g_params.rotator, g_params.frame_index.x);
 
     for (int i = 0; i < 8; ++i) {
-        vec3 offset = g_Special8[i];
-        vec2 uv = GetKernelSampleCoordinates(g_shrd_data.clip_from_view, offset, center_point_vs, TvBv[0], TvBv[1], kernel_rotator);
+        const vec3 offset = g_Special8[i];
+        const vec2 uv = GetKernelSampleCoordinates(g_shrd_data.clip_from_view, offset, center_point_vs, TvBv[0], TvBv[1], kernel_rotator);
 
-        float neighbor_depth = LinearizeDepth(textureLod(g_depth_tex, uv, 0.0).x, g_shrd_data.clip_info);
-        vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
-
-        //vec3 neighbor_normal_vs;
-        //neighbor_normal_vs.xy = textureLod(g_flat_normal_tex, uv, 0.0).xy;
-        //neighbor_normal_vs.z = sqrt(1.0 - dot(neighbor_normal_vs.xy, neighbor_normal_vs.xy));
+        const float neighbor_depth = LinearizeDepth(textureLod(g_depth_tex, uv, 0.0).x, g_shrd_data.clip_info);
+        const vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
 
         vec2 reconstruct_uv = uv;
 #if defined(VULKAN)
@@ -293,5 +283,5 @@ void main() {
     const uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
     const uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
-    Blur2(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size.xy);
+    Blur(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size.xy);
 }
