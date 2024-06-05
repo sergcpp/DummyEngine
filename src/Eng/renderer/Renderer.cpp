@@ -37,40 +37,31 @@ float filter_blackman_harris(float v, float width) {
     return 0.35875f - 0.48829f * cosf(v) + 0.14128f * cosf(2.0f * v) - 0.01168f * cosf(3.0f * v);
 }
 
-const Ren::Vec2f HaltonSeq23[64] = {Ren::Vec2f{0.0000000000f, 0.0000000000f}, Ren::Vec2f{0.5000000000f, 0.3333333430f},
-                                    Ren::Vec2f{0.2500000000f, 0.6666666870f}, Ren::Vec2f{0.7500000000f, 0.1111111190f},
-                                    Ren::Vec2f{0.1250000000f, 0.4444444780f}, Ren::Vec2f{0.6250000000f, 0.7777778510f},
-                                    Ren::Vec2f{0.3750000000f, 0.2222222390f}, Ren::Vec2f{0.8750000000f, 0.5555555820f},
-                                    Ren::Vec2f{0.0625000000f, 0.8888889550f}, Ren::Vec2f{0.5625000000f, 0.0370370410f},
-                                    Ren::Vec2f{0.3125000000f, 0.3703704180f}, Ren::Vec2f{0.8125000000f, 0.7037037610f},
-                                    Ren::Vec2f{0.1875000000f, 0.1481481640f}, Ren::Vec2f{0.6875000000f, 0.4814815220f},
-                                    Ren::Vec2f{0.4375000000f, 0.8148149250f}, Ren::Vec2f{0.9375000000f, 0.2592592840f},
-                                    Ren::Vec2f{0.0312500000f, 0.5925926570f}, Ren::Vec2f{0.5312500000f, 0.9259260300f},
-                                    Ren::Vec2f{0.2812500000f, 0.0740740821f}, Ren::Vec2f{0.7812500000f, 0.4074074630f},
-                                    Ren::Vec2f{0.1562500000f, 0.7407408360f}, Ren::Vec2f{0.6562500000f, 0.1851852090f},
-                                    Ren::Vec2f{0.4062500000f, 0.5185185670f}, Ren::Vec2f{0.9062500000f, 0.8518519400f},
-                                    Ren::Vec2f{0.0937500000f, 0.2962963280f}, Ren::Vec2f{0.5937500000f, 0.6296296720f},
-                                    Ren::Vec2f{0.3437500000f, 0.9629630450f}, Ren::Vec2f{0.8437500000f, 0.0123456810f},
-                                    Ren::Vec2f{0.2187500000f, 0.3456790750f}, Ren::Vec2f{0.7187500000f, 0.6790124770f},
-                                    Ren::Vec2f{0.4687500000f, 0.1234568060f}, Ren::Vec2f{0.9687500000f, 0.4567902090f},
-                                    Ren::Vec2f{0.0156250000f, 0.7901235820f}, Ren::Vec2f{0.5156250000f, 0.2345679400f},
-                                    Ren::Vec2f{0.2656250000f, 0.5679013130f}, Ren::Vec2f{0.7656250000f, 0.9012346860f},
-                                    Ren::Vec2f{0.1406250000f, 0.0493827239f}, Ren::Vec2f{0.6406250000f, 0.3827161190f},
-                                    Ren::Vec2f{0.3906250000f, 0.7160494920f}, Ren::Vec2f{0.8906250000f, 0.1604938510f},
-                                    Ren::Vec2f{0.0781250000f, 0.4938272240f}, Ren::Vec2f{0.5781250000f, 0.8271605970f},
-                                    Ren::Vec2f{0.3281250000f, 0.2716049850f}, Ren::Vec2f{0.8281250000f, 0.6049383880f},
-                                    Ren::Vec2f{0.2031250000f, 0.9382717610f}, Ren::Vec2f{0.7031250000f, 0.0864197686f},
-                                    Ren::Vec2f{0.4531250000f, 0.4197531640f}, Ren::Vec2f{0.9531250000f, 0.7530865670f},
-                                    Ren::Vec2f{0.0468750000f, 0.1975308950f}, Ren::Vec2f{0.5468750000f, 0.5308642980f},
-                                    Ren::Vec2f{0.2968750000f, 0.8641976710f}, Ren::Vec2f{0.7968750000f, 0.3086420300f},
-                                    Ren::Vec2f{0.1718750000f, 0.6419754030f}, Ren::Vec2f{0.6718750000f, 0.9753087760f},
-                                    Ren::Vec2f{0.4218750000f, 0.0246913619f}, Ren::Vec2f{0.9218750000f, 0.3580247460f},
-                                    Ren::Vec2f{0.1093750000f, 0.6913581490f}, Ren::Vec2f{0.6093750000f, 0.1358024920f},
-                                    Ren::Vec2f{0.3593750000f, 0.4691358800f}, Ren::Vec2f{0.8593750000f, 0.8024692540f},
-                                    Ren::Vec2f{0.2343750000f, 0.2469136120f}, Ren::Vec2f{0.7343750000f, 0.5802469850f},
-                                    Ren::Vec2f{0.4843750000f, 0.9135804180f}, Ren::Vec2f{0.9843750000f, 0.0617284030f}};
+const Ren::Vec2f PMJSamples64[64] = {
+    Ren::Vec2f{0.958420f, 0.616889f}, Ren::Vec2f{0.103091f, 0.467694f}, Ren::Vec2f{0.615132f, 0.080424f},
+    Ren::Vec2f{0.304792f, 0.849100f}, Ren::Vec2f{0.743586f, 0.931359f}, Ren::Vec2f{0.499603f, 0.185085f},
+    Ren::Vec2f{0.796234f, 0.362629f}, Ren::Vec2f{0.188610f, 0.646428f}, Ren::Vec2f{0.824160f, 0.782852f},
+    Ren::Vec2f{0.162675f, 0.017184f}, Ren::Vec2f{0.644037f, 0.412660f}, Ren::Vec2f{0.389489f, 0.505277f},
+    Ren::Vec2f{0.525000f, 0.734366f}, Ren::Vec2f{0.337707f, 0.266659f}, Ren::Vec2f{0.898768f, 0.221771f},
+    Ren::Vec2f{0.016718f, 0.940399f}, Ren::Vec2f{0.770391f, 0.658983f}, Ren::Vec2f{0.241033f, 0.313640f},
+    Ren::Vec2f{0.703191f, 0.128602f}, Ren::Vec2f{0.462169f, 0.877456f}, Ren::Vec2f{0.572541f, 0.816341f},
+    Ren::Vec2f{0.274165f, 0.108939f}, Ren::Vec2f{0.991257f, 0.499376f}, Ren::Vec2f{0.071017f, 0.568060f},
+    Ren::Vec2f{0.907936f, 0.978040f}, Ren::Vec2f{0.037836f, 0.216070f}, Ren::Vec2f{0.560729f, 0.302652f},
+    Ren::Vec2f{0.364138f, 0.701545f}, Ren::Vec2f{0.685960f, 0.559922f}, Ren::Vec2f{0.415520f, 0.391381f},
+    Ren::Vec2f{0.868236f, 0.035305f}, Ren::Vec2f{0.127385f, 0.774920f}, Ren::Vec2f{0.859127f, 0.519883f},
+    Ren::Vec2f{0.153271f, 0.426705f}, Ren::Vec2f{0.671710f, 0.004346f}, Ren::Vec2f{0.432280f, 0.811949f},
+    Ren::Vec2f{0.539022f, 0.955953f}, Ren::Vec2f{0.348504f, 0.244827f}, Ren::Vec2f{0.933120f, 0.260737f},
+    Ren::Vec2f{0.056740f, 0.739383f}, Ren::Vec2f{0.983675f, 0.868506f}, Ren::Vec2f{0.091411f, 0.076221f},
+    Ren::Vec2f{0.589910f, 0.437795f}, Ren::Vec2f{0.260761f, 0.609224f}, Ren::Vec2f{0.698111f, 0.636027f},
+    Ren::Vec2f{0.438718f, 0.357869f}, Ren::Vec2f{0.761806f, 0.168467f}, Ren::Vec2f{0.229773f, 0.917371f},
+    Ren::Vec2f{0.886230f, 0.717436f}, Ren::Vec2f{0.013440f, 0.284208f}, Ren::Vec2f{0.500464f, 0.198053f},
+    Ren::Vec2f{0.318128f, 0.990740f}, Ren::Vec2f{0.627941f, 0.754441f}, Ren::Vec2f{0.403971f, 0.050069f},
+    Ren::Vec2f{0.839805f, 0.389970f}, Ren::Vec2f{0.186524f, 0.546504f}, Ren::Vec2f{0.806219f, 0.903521f},
+    Ren::Vec2f{0.211735f, 0.148988f}, Ren::Vec2f{0.720969f, 0.337133f}, Ren::Vec2f{0.476894f, 0.676505f},
+    Ren::Vec2f{0.603472f, 0.588461f}, Ren::Vec2f{0.288023f, 0.473484f}, Ren::Vec2f{0.940450f, 0.121696f},
+    Ren::Vec2f{0.113382f, 0.834329f}};
 
-extern const int TaaSampleCountNormal = 8;
+extern const int TaaSampleCountNormal = 16;
 extern const int TaaSampleCountStatic = 64;
 
 #include "precomputed/__blue_noise.inl"
@@ -136,7 +127,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
 
         Ren::eTexLoadStatus status;
-        rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", {(const uint8_t *)&HaltonSeq23[0][0], sizeof(HaltonSeq23)}, p,
+        rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", {(const uint8_t *)&PMJSamples64[0][0], sizeof(PMJSamples64)}, p,
                                          ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
@@ -593,7 +584,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         const int halton_sample =
             ((list.render_settings.taa_mode == eTAAMode::Static) ? accumulated_frames_ : list.frame_index) %
             samples_to_use;
-        Ren::Vec2f jitter = HaltonSeq23[halton_sample];
+        Ren::Vec2f jitter = PMJSamples64[halton_sample];
 
         auto lookup_filter_table = [this](float x) {
             x *= (PxFilterTableSize - 1);

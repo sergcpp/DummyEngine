@@ -665,7 +665,7 @@ void GSBaseState::Draw() {
 
     OPTICK_GPU_EVENT("Draw");
 
-    if (streaming_finished_ && !viewer_->app_params.ref_name.empty() && !capture_started_) {
+    if (streaming_finished_ && !viewer_->app_params.ref_name.empty() && capture_state_ == eCaptureState::None) {
         if (viewer_->app_params.pt) {
             InitRenderer_PT();
             InitScene_PT();
@@ -687,12 +687,12 @@ void GSBaseState::Draw() {
             main_view_lists_[0].render_settings = renderer_->settings;
             renderer_->reset_accumulation();
         }
-        capture_started_ = true;
+        capture_state_ = eCaptureState::Warmup;
         log_->Info("Starting capture!");
     }
 
     Ren::Tex2DRef render_target;
-    if (capture_started_) {
+    if (capture_state_ != eCaptureState::None) {
         if (use_pt_) {
             const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0][0].iteration;
             if (iteration < viewer_->app_params.pt_max_samples) {
@@ -705,14 +705,25 @@ void GSBaseState::Draw() {
                 return;
             }
         } else {
-            if (renderer_->accumulated_frames() < RendererInternal::TaaSampleCountStatic) {
-                render_target = capture_result_;
-                log_->Info("Capturing iteration #%i", renderer_->accumulated_frames());
-            } else {
-                log_->Info("Capture finished! (%i samples)", renderer_->accumulated_frames());
-                viewer_->exit_status = WriteAndValidateCaptureResult();
-                viewer_->Quit();
-                return;
+            render_target = capture_result_;
+            if (capture_state_ == eCaptureState::Warmup) {
+                log_->Info("Warmup iteration #%i", renderer_->accumulated_frames());
+                if (renderer_->accumulated_frames() >= 32) {
+                    capture_state_ = eCaptureState::Started;
+                    main_view_lists_[0].frame_index = 0;
+                    main_view_lists_[1].frame_index = 0;
+                    random_->Reset(0);
+                    renderer_->reset_accumulation();
+                }
+            } else if (capture_state_ == eCaptureState::Started) {
+                if (renderer_->accumulated_frames() < RendererInternal::TaaSampleCountStatic) {
+                    log_->Info("Capturing iteration #%i", renderer_->accumulated_frames());
+                } else {
+                    log_->Info("Capture finished! (%i samples)", renderer_->accumulated_frames());
+                    viewer_->exit_status = WriteAndValidateCaptureResult();
+                    viewer_->Quit();
+                    return;
+                }
             }
         }
     }
