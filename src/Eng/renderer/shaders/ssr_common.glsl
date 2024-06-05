@@ -4,6 +4,8 @@
 const float RoughnessSigmaMin = 0.001;
 const float RoughnessSigmaMax = 0.01;
 
+const float SpecularLobeTrim = 0.95;
+
 float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
 }
@@ -112,7 +114,7 @@ vec3 SampleReflectionVector(const vec3 view_direction, const vec3 normal, const 
     const mat3 tbn_transform = CreateTBN(normal);
     const vec3 view_direction_tbn = tbn_transform * (-view_direction);
 
-    vec3 sampled_normal_tbn = Sample_GGX_VNDF_Hemisphere(view_direction_tbn, roughness, u.x, u.y);
+    vec3 sampled_normal_tbn = Sample_GGX_VNDF_Hemisphere(view_direction_tbn, roughness, u.x, u.y * SpecularLobeTrim);
 #ifdef PERFECT_REFLECTIONS
     sampled_normal_tbn = vec3(0.0, 0.0, 1.0); // Overwrite normal sample to produce perfect reflection.
 #endif
@@ -131,6 +133,14 @@ vec3 SampleReflectionVector(const vec3 view_direction, const vec3 normal, const 
     /* mediump */ float luminance = Luminance(radiance);
     /* mediump */ float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
     return diff * diff;
+}
+
+bool IsMirrorReflection(float roughness) {
+    return roughness <= 0.0001;
+}
+
+bool IsGlossyReflection(float roughness) {
+    return true;
 }
 
 #endif // SSR_COMMON_GLSL

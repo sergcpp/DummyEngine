@@ -15,7 +15,10 @@
 #include "_fs_common.glsl"
 #include "_texturing.glsl"
 
-#define LIGHT_ATTEN_CUTOFF 0.004
+#define FORCE_FLAT_NORMALS 0
+//#define FORCE_ROUGHNESS 0.1
+#define FORCE_GREY_ALBEDO 0
+//#define FORCE_METALLIC 1.0
 
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = BIND_MAT_TEX0) uniform sampler2D g_base_tex;
@@ -128,6 +131,9 @@ void main(void) {
     normal.xy = norm_color * 2.0 - 1.0;
     normal.z = sqrt(saturate(1.0 - normal.x * normal.x - normal.y * normal.y));
     normal = normalize(mat3(cross(g_vtx_tangent, g_vtx_normal), g_vtx_tangent, g_vtx_normal) * normal);
+#if FORCE_FLAT_NORMALS
+    normal = g_vtx_normal;
+#endif
     if (!gl_FrontFacing) {
         normal = -normal;
     }
@@ -138,8 +144,22 @@ void main(void) {
         dither = fract(dither + float(floatBitsToUint(g_shrd_data.taa_info.z) & 0xFFu) * GOLDEN_RATIO) - 0.5;
     }
 
+#ifndef FORCE_ROUGHNESS
+    const float final_roughness = roug_color * g_base_color.w;
+#else
+    const float final_roughness = FORCE_ROUGHNESS;
+#endif
+
     // TODO: try to get rid of explicit srgb conversion
+#if !FORCE_GREY_ALBEDO
     g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, 1.0);
-    g_out_normal = PackNormalAndRoughnessNew(normal, roug_color * g_base_color.w, dither);
+#else
+    g_out_albedo = vec4(0.5, 0.5, 0.5, 1.0);
+#endif
+    g_out_normal = PackNormalAndRoughnessNew(normal, final_roughness, dither);
+#ifndef FORCE_METALLIC
     g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1 * vec4(metl_color, 1.0, 1.0, 1.0));
+#else
+    g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1 * vec4(FORCE_METALLIC, 1.0, 1.0, 1.0));
+#endif
 }

@@ -93,13 +93,13 @@ class Renderer {
     Random &rand_;
     Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
-    Ren::ProgramRef blit_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_,
-        blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
+    Ren::ProgramRef blit_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_,
+        blit_prefilter_prog_, blit_project_sh_prog_;
 
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
         noise_tex_;
     Ren::Tex3DRef tonemap_lut_;
-    Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
+    Ren::BufferRef sobol_seq_buf_, scrambling_tile_buf_, ranking_tile_buf_;
     Ren::Tex2DRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_;
     Ren::Tex3DRef sky_noise3d_tex_;
 
@@ -219,7 +219,7 @@ class Renderer {
     Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_;
+    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2];
     // GI Cache
     Ren::Pipeline pi_probe_blend_[2], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_;
     // GI
@@ -227,7 +227,7 @@ class Renderer {
     Ren::Pipeline pi_gi_rt_write_indirect_;
     Ren::Pipeline pi_reconstruct_normals_;
     // GI Denoiser stuff
-    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_temporal_, pi_gi_blur_, pi_gi_post_blur_, pi_gi_stabilization_;
+    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_temporal_, pi_gi_blur_[2], pi_gi_stabilization_;
     // Sun shadows
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;

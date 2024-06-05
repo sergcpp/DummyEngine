@@ -50,14 +50,6 @@ bool IsReflectiveSurface(ivec2 px_coords) {
     return depth < 1.0;
 }
 
-bool IsGlossyReflection(float roughness) {
-    return roughness <= g_params.thresholds.x;
-}
-
-bool IsMirrorReflection(float roughness) {
-    return roughness <= g_params.thresholds.y; //0.0001;
-}
-
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
     switch (samples_per_quad) {
     case 1:
@@ -192,7 +184,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 //
 // https://eheitzresearch.wordpress.com/762-2/
 //
-float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
+float SampleRandomNumber(const uvec2 pixel, uint sample_index, uint sample_dimension) {
     // wrap arguments
     const uint pixel_i = pixel.x & 127u;
     const uint pixel_j = pixel.y & 127u;

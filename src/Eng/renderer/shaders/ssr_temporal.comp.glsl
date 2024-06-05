@@ -49,14 +49,6 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
 layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_refl_img;
 layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
 
-bool IsGlossyReflection(float roughness) {
-    return roughness < g_params.thresholds.x;
-}
-
-bool IsMirrorReflection(float roughness) {
-    return roughness < g_params.thresholds.y; //0.0001;
-}
-
 #define LOCAL_NEIGHBORHOOD_RADIUS 4
 
 #define GAUSSIAN_K 3.0
@@ -64,32 +56,54 @@ bool IsMirrorReflection(float roughness) {
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
 
+vec3 Tonemap(vec3 c, const float exposure) {
+    c *= exposure;
+    //c = c / (c + vec3(1.0));
+    return c;
+}
+
+vec4 Tonemap(vec4 c, const float exposure) {
+    c.rgb = Tonemap(c.rgb, exposure);
+    return c;
+}
+
+vec3 TonemapInvert(vec3 c, const float exposure) {
+    //c = c / (vec3(1.0) - c);
+    c /= exposure;
+    return c;
+}
+
+vec4 TonemapInvert(vec4 c, const float exposure) {
+    c.rgb = TonemapInvert(c.rgb, exposure);
+    return c;
+}
+
 void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size, float exposure) {
     // Load 16x16 region into shared memory using 4 8x8 blocks
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
     // Intermediate storage
-    /* mediump */ vec3 refl[4];
+    /* mediump */ vec4 refl[4];
 
     // Start from the upper left corner of 16x16 region
     dispatch_thread_id -= ivec2(4);
 
     // Load into registers
     for (int i = 0; i < 4; ++i) {
-        refl[i] = texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0).xyz * exposure;
+        refl[i] = Tonemap(texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0), exposure);
     }
 
     // Move to shared memory
     for (int i = 0; i < 4; ++i) {
         ivec2 index = group_thread_id + offset[i];
         g_shared_storage_0[index.y][index.x] = packHalf2x16(refl[i].xy);
-        g_shared_storage_1[index.y][index.x] = packHalf2x16(refl[i].zz);
+        g_shared_storage_1[index.y][index.x] = packHalf2x16(refl[i].zw);
     }
 }
 
-/* mediump */ vec3 LoadFromGroupSharedMemory(ivec2 idx) {
-    return vec3(unpackHalf2x16(g_shared_storage_0[idx.y][idx.x]),
-                unpackHalf2x16(g_shared_storage_1[idx.y][idx.x]).x);
+/* mediump */ vec4 LoadFromGroupSharedMemory(ivec2 idx) {
+    return vec4(unpackHalf2x16(g_shared_storage_0[idx.y][idx.x]),
+                unpackHalf2x16(g_shared_storage_1[idx.y][idx.x]));
 }
 
 /* mediump */ float LocalNeighborhoodKernelWeight(/* mediump */ float i) {
@@ -98,20 +112,20 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
 }
 
 struct moments_t {
-    /* mediump */ vec3 mean;
-    /* mediump */ vec3 variance;
+    /* mediump */ vec4 mean;
+    /* mediump */ vec4 variance;
 };
 
-moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
+moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
     moments_t ret;
-    ret.mean = vec3(0.0);
-    ret.variance = vec3(0.0);
+    ret.mean = vec4(0.0);
+    ret.variance = vec4(0.0);
 
     /* mediump */ float accumulated_weight = 0;
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
         for (int i = -LOCAL_NEIGHBORHOOD_RADIUS; i <= LOCAL_NEIGHBORHOOD_RADIUS; ++i) {
-            ivec2 index = group_thread_id + ivec2(i, j);
-            /* mediump */ vec3 radiance = LoadFromGroupSharedMemory(index);
+            const ivec2 index = group_thread_id + ivec2(i, j);
+            /* mediump */ vec4 radiance = LoadFromGroupSharedMemory(index);
             /* mediump */ float weight = LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
             accumulated_weight += weight;
 
@@ -177,27 +191,6 @@ SOFTWARE.
 }
 
 // From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
-/**********************************************************************
-Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-********************************************************************/
 void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, vec2 inv_screen_size, float history_clip_weight, float exposure) {
     LoadIntoSharedMemory(dispatch_thread_id, group_thread_id, ivec2(screen_size), exposure);
 
@@ -206,44 +199,45 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
 
     group_thread_id += 4; // Center threads in shared memory
 
-    /* mediump */ vec3 center_radiance = LoadFromGroupSharedMemory(group_thread_id);
-    /* mediump */ vec3 new_signal = center_radiance;
+    /* mediump */ vec4 center_radiance = LoadFromGroupSharedMemory(group_thread_id);
+    /* mediump */ vec4 new_signal = center_radiance;
     /* mediump */ float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).w;
     /* mediump */ float new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
     if (IsGlossyReflection(roughness)) {
         /* mediump */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
-        vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* mediump */ vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb * exposure;
+        const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
+        /* mediump */ vec3 avg_radiance = Tonemap(textureLod(g_avg_refl_tex, uv8, 0.0).rgb, exposure);
 
-        /* mediump */ vec3 old_signal = texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0).rgb * exposure;
+        /* mediump */ vec4 old_signal = Tonemap(texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0), exposure);
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
-        /* mediump */ vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean - avg_radiance)) * history_clip_weight * 1.4;
-        local_neighborhood.mean.xyz = mix(local_neighborhood.mean, avg_radiance, 0.2);
-        /* mediump */ vec3 radiance_min = local_neighborhood.mean - color_std;
-        /* mediump */ vec3 radiance_max = local_neighborhood.mean + color_std;
-        /* mediump */ vec3 clipped_old_signal = ClipAABB(radiance_min, radiance_max, old_signal);
+        /* mediump */ vec3 color_std = (sqrt(local_neighborhood.variance.xyz) + length(local_neighborhood.mean.xyz - avg_radiance)) * history_clip_weight;
+        local_neighborhood.mean.xyz = mix(local_neighborhood.mean.xyz, avg_radiance, 0.2);
+        /* mediump */ vec3 radiance_min = local_neighborhood.mean.xyz - color_std * 1.0;
+        /* mediump */ vec3 radiance_max = local_neighborhood.mean.xyz + color_std * 1.0;
+        /* mediump */ vec3 clipped_old_signal = ClipAABB(radiance_min, radiance_max, old_signal.rgb);
         /* mediump */ float accumulation_speed = 1.0 / max(sample_count, 1.0);
         /* mediump */ float weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
-        new_signal = mix(new_signal, avg_radiance, 1.0 / max(sample_count + 1.0, 1.0));
+        new_signal.rgb = mix(new_signal.rgb, avg_radiance, 1.0 / max(sample_count + 1.0, 1.0));
         // Clip outliers
         {
-            /* mediump */ vec3 radiance_min = avg_radiance - color_std * 1.0;
-            /* mediump */ vec3 radiance_max = avg_radiance + color_std * 1.0;
-            new_signal = ClipAABB(radiance_min, radiance_max, new_signal);
+            /* mediump */ vec3 radiance_min = avg_radiance - color_std * 0.75;
+            /* mediump */ vec3 radiance_max = avg_radiance + color_std * 0.75;
+            new_signal.rgb = ClipAABB(radiance_min, radiance_max, new_signal.rgb);
         }
         // Blend with history
-        new_signal = mix(new_signal, clipped_old_signal, weight);
-        new_variance = mix(ComputeTemporalVariance(new_signal, clipped_old_signal), new_variance, weight);
+        new_signal.rgb = mix(new_signal.rgb, clipped_old_signal.rgb, weight);
+        new_signal.w = mix(new_signal.w, old_signal.w, weight);
+        new_variance = mix(ComputeTemporalVariance(new_signal.xyz, clipped_old_signal), new_variance, weight);
         if (any(isinf(new_signal)) || any(isnan(new_signal)) || isinf(new_variance) || isnan(new_variance)) {
-            new_signal = vec3(0.0);
+            new_signal = vec4(0.0);
             new_variance = 0.0;
         }
     }
 
-    imageStore(g_out_refl_img, dispatch_thread_id, vec4(new_signal / exposure, 0.0));
+    imageStore(g_out_refl_img, dispatch_thread_id, TonemapInvert(new_signal, exposure));
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(new_variance));
 }
 
@@ -260,5 +254,5 @@ void main() {
 
     const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
 
-    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 0.7 /* history_clip_weight */, exposure);
+    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 1.0 /* history_clip_weight */, exposure);
 }

@@ -211,8 +211,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->spec_tex = gi_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
         // data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
         data->sobol = gi_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
-        data->scrambling_tile = gi_classify.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Stg::ComputeShader);
-        data->ranking_tile = gi_classify.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Stg::ComputeShader);
+        data->scrambling_tile = gi_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
+        data->ranking_tile = gi_classify.AddStorageReadonlyInput(ranking_tile_buf_, Stg::ComputeShader);
         ray_counter = data->ray_counter = gi_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
@@ -891,7 +891,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-            Ren::DispatchComputeIndirect(pi_gi_blur_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+            Ren::DispatchComputeIndirect(pi_gi_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
                                          &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                          builder.ctx().log());
         });
@@ -961,7 +961,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-            Ren::DispatchComputeIndirect(pi_gi_post_blur_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+            Ren::DispatchComputeIndirect(pi_gi_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
                                          &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                          builder.ctx().log());
         });

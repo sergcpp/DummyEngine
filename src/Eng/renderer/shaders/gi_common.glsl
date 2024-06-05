@@ -5,13 +5,12 @@ float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
 }
 
-vec2 GetGeometryWeightParams(float plane_dist_sensitivity, vec3 Xv, vec3 Nv, float scale) {
-    const float MeterToUnitsMultiplier = 1.0;
+vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float nonLinearAccumSpeed) {
+    float relaxation = mix( 1.0, 0.25, nonLinearAccumSpeed );
+    float a = relaxation / planeDistSensitivity;
+    float b = -dot( Nv, Xv ) * a;
 
-    float a = scale * plane_dist_sensitivity / (Xv.z + MeterToUnitsMultiplier);
-    float b = -dot(Nv, Xv) * a;
-
-    return vec2(a, b);
+    return vec2( a, b );
 }
 
 // SmoothStep

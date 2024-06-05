@@ -291,10 +291,10 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::CopyBufferToBuffer(sobol_seq_buf_stage, 0, *sobol_seq_buf_, 0, 256 * 256 * sizeof(int), cmd_buf);
 
         // Scrambling tile
-        scrambling_tile_1spp_buf_ =
+        scrambling_tile_buf_ =
             ctx_.LoadBuffer("ScramblingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        Ren::Buffer scrambling_tile_buf_stage("ScramblingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                              scrambling_tile_1spp_buf_->size());
+        Ren::Buffer scrambling_tile_buf_stage("ScramblingTileBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
+                                              scrambling_tile_buf_->size());
 
         { // init stage buf
             uint8_t *mapped_ptr = scrambling_tile_buf_stage.Map();
@@ -302,14 +302,14 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             scrambling_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_1spp_buf_, 0,
+        Ren::CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_buf_, 0,
                                 128 * 128 * 8 * sizeof(int), cmd_buf);
 
         // Ranking tile
-        ranking_tile_1spp_buf_ =
+        ranking_tile_buf_ =
             ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        Ren::Buffer ranking_tile_buf_stage("RankingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                           ranking_tile_1spp_buf_->size());
+        Ren::Buffer ranking_tile_buf_stage("RankingTileBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
+                                           ranking_tile_buf_->size());
 
         { // init stage buf
             uint8_t *mapped_ptr = ranking_tile_buf_stage.Map();
@@ -317,7 +317,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             ranking_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_1spp_buf_, 0, 128 * 128 * 8 * sizeof(int),
+        Ren::CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_buf_, 0, 128 * 128 * 8 * sizeof(int),
                                 cmd_buf);
 
         ctx_.EndTempSingleTimeCommands(cmd_buf);

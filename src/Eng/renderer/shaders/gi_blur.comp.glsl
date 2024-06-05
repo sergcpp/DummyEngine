@@ -34,21 +34,11 @@ layout(binding = OUT_DENOISED_IMG_SLOT, rgba16f) uniform image2D g_out_denoised_
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
-//bool IsGlossyReflection(float roughness) {
-//    return roughness < g_params.thresholds.x;
-//}
-
-//bool IsMirrorReflection(float roughness) {
-//    return roughness < g_params.thresholds.y; //0.0001;
-//}
-
 #define PREFILTER_NORMAL_SIGMA 512.0
 
 /* mediump */ float GetEdgeStoppingNormalWeight(/* mediump */ vec3 normal_p, /* mediump */ vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
-
-#define NRD_USE_QUADRATIC_DISTRIBUTION 0
 
 // http://marc-b-reynolds.github.io/quaternions/2016/07/06/Orthonormal.html
 mat3 GetBasis(vec3 N) {
@@ -68,29 +58,9 @@ mat3 GetBasis(vec3 N) {
 
 // Ray Tracing Gems II, Listing 49-9
 mat2x3 GetKernelBasis(vec3 X, vec3 N, float radius_ws, float roughness) {
-    mat3 basis = GetBasis(N);
+    const mat3 basis = GetBasis(N);
     vec3 T = basis[0];
     vec3 B = basis[1];
-
-    //vec3 V = -normalize(X);
-    //vec4 D = STL::ImportanceSampling::GetSpecularDominantDirection( N, V, roughness, REBLUR_SPEC_DOMINANT_DIRECTION );
-    //float NoD = abs(dot(N, D.xyz));
-
-    /*if(NoD < 0.999 && roughness < REBLUR_SPEC_BASIS_ROUGHNESS_THRESHOLD) {
-        float3 R = reflect( -D.xyz, N );
-        T = normalize( cross( N, R ) );
-        B = cross( R, T );
-
-        #if( REBLUR_USE_ANISOTROPIC_KERNEL == 1 )
-            float NoV = abs( dot( N, V ) );
-            float acos01sq = saturate( 1.0 - NoV ); // see AcosApprox()
-
-            float skewFactor = lerp( 1.0, roughness, D.w );
-            skewFactor = lerp( 1.0, skewFactor, STL::Math::Sqrt01( acos01sq ) );
-
-            T *= lerp( skewFactor, 1.0, anisoFade );
-        #endif
-    }*/
 
     T *= radius_ws;
     B *= radius_ws;
@@ -99,10 +69,6 @@ mat2x3 GetKernelBasis(vec3 X, vec3 N, float radius_ws, float roughness) {
 }
 
 vec2 GetKernelSampleCoordinates(mat4 xform, vec3 offset, vec3 Xv, vec3 Tv, vec3 Bv, vec4 rotator) {
-    #if( NRD_USE_QUADRATIC_DISTRIBUTION == 1 )
-        offset.xy *= offset.z;
-    #endif
-
     // We can't rotate T and B instead, because T is skewed
     offset.xy = RotateVector(rotator, offset.xy);
 
@@ -222,12 +188,12 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     const vec3 center_point_vs = ReconstructViewPosition(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
-    const float PlaneDistSensitivity = 32.0;
-    vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, 1.0 /* scale */);
-
     float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
     float variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
     float accumulation_speed = 1.0 / max(sample_count, 1.0);
+
+    const float PlaneDistSensitivity = 0.005;
+    const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, accumulation_speed);
 
     const float RadiusBias = 0.0;
 #ifdef PER_PIXEL_KERNEL_ROTATION

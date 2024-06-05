@@ -26,13 +26,13 @@ runs:
         cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --psnr 21.32
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --psnr 21.14
         cp sponza.png sponza_diff.png $WORK_DIR/${{ inputs.out-dir }}
         #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --pt --psnr 27.58
         #mv sponza.png sponza_pt.png
         #mv sponza_diff.png sponza_diff_pt.png
         #cp sponza_pt.png sponza_diff_pt.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --psnr 21.73
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --psnr 21.80
         cp ai043_06.png ai043_06_diff.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --pt --psnr 23.37
         mv ai043_06.png ai043_06_pt.png

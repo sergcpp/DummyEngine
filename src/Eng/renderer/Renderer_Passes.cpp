@@ -53,6 +53,8 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_ssr_reproject_, "internal/ssr_reproject.comp.glsl");
     success &= init_pipeline(pi_ssr_prefilter_, "internal/ssr_prefilter.comp.glsl");
     success &= init_pipeline(pi_ssr_temporal_, "internal/ssr_temporal.comp.glsl");
+    success &= init_pipeline(pi_ssr_blur_[0], "internal/ssr_blur.comp.glsl");
+    success &= init_pipeline(pi_ssr_blur_[1], "internal/ssr_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
 
     // GI Cache
     success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend.comp.glsl@RADIANCE");
@@ -74,8 +76,8 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_gi_reproject_, "internal/gi_reproject.comp.glsl");
     success &= init_pipeline(pi_gi_prefilter_, "internal/gi_prefilter.comp.glsl");
     success &= init_pipeline(pi_gi_temporal_, "internal/gi_temporal.comp.glsl");
-    success &= init_pipeline(pi_gi_blur_, "internal/gi_blur.comp.glsl");
-    success &= init_pipeline(pi_gi_post_blur_, "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
+    success &= init_pipeline(pi_gi_blur_[0], "internal/gi_blur.comp.glsl");
+    success &= init_pipeline(pi_gi_blur_[1], "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
     success &= init_pipeline(pi_gi_stabilization_, "internal/gi_stabilization.comp.glsl");
 
     // RT Sun Shadow

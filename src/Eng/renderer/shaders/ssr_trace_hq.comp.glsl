@@ -49,24 +49,6 @@ void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_v
     g_out_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
 }
 
-vec3 SampleReflectionVector(vec3 view_direction, vec3 normal, float roughness, ivec2 dispatch_thread_id) {
-    mat3 tbn_transform = CreateTBN(normal);
-    vec3 view_direction_tbn = tbn_transform * (-view_direction);
-
-    vec2 u = texelFetch(g_noise_tex, ivec2(dispatch_thread_id) % 128, 0).rg;
-
-    vec3 sampled_normal_tbn = Sample_GGX_VNDF_Hemisphere(view_direction_tbn, roughness, u.x, u.y);
-#ifdef PERFECT_REFLECTIONS
-    sampled_normal_tbn = vec3(0.0, 0.0, 1.0); // Overwrite normal sample to produce perfect reflection.
-#endif
-
-    vec3 reflected_direction_tbn = reflect(-view_direction_tbn, sampled_normal_tbn);
-
-    // Transform reflected_direction back to the initial space.
-    mat3 inv_tbn_transform = transpose(tbn_transform);
-    return (inv_tbn_transform * reflected_direction_tbn);
-}
-
 layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
@@ -102,7 +84,8 @@ void main() {
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, pix_uvs);
+    vec2 u = texelFetch(g_noise_tex, pix_uvs % 128, 0).rg;
+    vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
 
     vec3 hit_point_cs, hit_point_vs;
     vec3 out_color = vec3(0.0);

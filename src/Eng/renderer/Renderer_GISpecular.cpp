@@ -5,6 +5,7 @@
 #include "shaders/blit_ssr_compose_new_interface.h"
 #include "shaders/blit_ssr_dilate_interface.h"
 #include "shaders/blit_ssr_interface.h"
+#include "shaders/ssr_blur_interface.h"
 #include "shaders/ssr_classify_interface.h"
 #include "shaders/ssr_prefilter_interface.h"
 #include "shaders/ssr_reproject_interface.h"
@@ -25,10 +26,9 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
     using Trg = Ren::eBindTarget;
 
     // Reflection settings
-    static const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
-    static const float MirrorThreshold = 0.0001f;
-    static const int SamplesPerQuad = 1;
-    static const bool VarianceGuided = true;
+    static const int SamplesPerQuad = 4;
+    static const bool VarianceGuided = false;
+    static const bool EnableBlur = true;
 
     RpResRef ray_counter;
 
@@ -80,8 +80,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
         data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->variance_history = ssr_classify.AddHistoryTextureInput("Variance", Stg::ComputeShader);
         data->sobol = ssr_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
-        data->scrambling_tile = ssr_classify.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Stg::ComputeShader);
-        data->ranking_tile = ssr_classify.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Stg::ComputeShader);
+        data->scrambling_tile = ssr_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
+        data->ranking_tile = ssr_classify.AddStorageReadonlyInput(ranking_tile_buf_, Stg::ComputeShader);
         ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
@@ -170,7 +170,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
 
             SSRClassifyTiles::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
 
@@ -414,7 +413,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
         data->velocity_tex = ssr_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
         data->depth_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular", Stg::ComputeShader);
+        if (EnableBlur) {
+            data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular 3", Stg::ComputeShader);
+        } else {
+            data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular", Stg::ComputeShader);
+        }
         data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput("Variance", Stg::ComputeShader);
         data->refl_tex = ssr_reproject.AddTextureInput(refl_tex, Stg::ComputeShader);
         data->exposure_tex = ssr_reproject.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
@@ -510,7 +513,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
 
             SSRReproject::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, 0.0f};
 
             Ren::DispatchComputeIndirect(pi_ssr_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
                                          &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
@@ -601,7 +603,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
 
             SSRPrefilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
 
             Ren::DispatchComputeIndirect(pi_ssr_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
                                          &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
@@ -609,7 +610,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
         });
     }
 
-    RpResRef gi_specular_tex;
+    RpResRef gi_specular_tex, ssr_variance_tex;
 
     { // Denoiser accumulation
         auto &ssr_temporal = rp_builder_.AddPass("SSR TEMPORAL");
@@ -656,7 +657,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            data->out_variance_tex = ssr_temporal.AddStorageImageOutput("Variance", params, Stg::ComputeShader);
+            ssr_variance_tex = data->out_variance_tex =
+                ssr_temporal.AddStorageImageOutput("Variance", params, Stg::ComputeShader);
         }
 
         ssr_temporal.set_execute_cb([this, data](RpBuilder &builder) {
@@ -689,11 +691,150 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
 
             SSRResolveTemporal::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
 
-            Ren::DispatchComputeIndirect(pi_ssr_temporal_, *indir_args_buf.ref, data->indir_args_offset,
-                                         bindings, &uniform_params, sizeof(uniform_params),
-                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
+            Ren::DispatchComputeIndirect(pi_ssr_temporal_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                         builder.ctx().log());
+        });
+    }
+
+    RpResRef gi_specular2_tex;
+
+    { // Denoiser blur
+        auto &ssr_blur = rp_builder_.AddPass("SSR BLUR");
+
+        struct PassData {
+            RpResRef shared_data;
+            RpResRef depth_tex, norm_tex, gi_tex;
+            RpResRef sample_count_tex, variance_tex, tile_list;
+            RpResRef indir_args;
+            uint32_t indir_args_offset = 0;
+            RpResRef out_gi_tex;
+        };
+
+        auto *data = ssr_blur.AllocPassData<PassData>();
+        data->shared_data = ssr_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->depth_tex = ssr_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->norm_tex = ssr_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->gi_tex = ssr_blur.AddTextureInput(gi_specular_tex, Stg::ComputeShader);
+        data->sample_count_tex = ssr_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+        data->variance_tex = ssr_blur.AddTextureInput(ssr_variance_tex, Stg::ComputeShader);
+        data->tile_list = ssr_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
+        data->indir_args = ssr_blur.AddIndirectBufferInput(indir_disp_buf);
+        data->indir_args_offset = 3 * sizeof(uint32_t);
+
+        { // Final reflection
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gi_specular2_tex = data->out_gi_tex =
+                ssr_blur.AddStorageImageOutput("GI Specular 2", params, Stg::ComputeShader);
+        }
+
+        ssr_blur.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+
+            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRBlur::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, SSRBlur::REFL_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
+                {Trg::Tex2DSampled, SSRBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::Tex2DSampled, SSRBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::SBufRO, SSRBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::Image2D, SSRBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+
+            SSRBlur::Params uniform_params;
+            uniform_params.rotator = view_state_.rand_rotators[0];
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+
+            Ren::DispatchComputeIndirect(pi_ssr_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                         builder.ctx().log());
+        });
+    }
+
+    RpResRef gi_specular3_tex;
+
+    { // Denoiser blur 2
+        auto &ssr_post_blur = rp_builder_.AddPass("SSR POST BLUR");
+
+        struct PassData {
+            RpResRef shared_data;
+            RpResRef depth_tex, norm_tex, gi_tex, raylen_tex;
+            RpResRef sample_count_tex, variance_tex, tile_list;
+            RpResRef indir_args;
+            uint32_t indir_args_offset = 0;
+            RpResRef out_gi_tex;
+        };
+
+        auto *data = ssr_post_blur.AllocPassData<PassData>();
+        data->shared_data = ssr_post_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->depth_tex = ssr_post_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->norm_tex = ssr_post_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->gi_tex = ssr_post_blur.AddTextureInput(gi_specular2_tex, Stg::ComputeShader);
+        data->sample_count_tex = ssr_post_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+        data->variance_tex = ssr_post_blur.AddTextureInput(ssr_variance_tex, Stg::ComputeShader);
+        data->tile_list = ssr_post_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
+        data->indir_args = ssr_post_blur.AddIndirectBufferInput(indir_disp_buf);
+        data->indir_args_offset = 3 * sizeof(uint32_t);
+
+        { // Final gi
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gi_specular3_tex = data->out_gi_tex =
+                ssr_post_blur.AddStorageImageOutput("GI Specular 3", params, Stg::ComputeShader);
+        }
+
+        ssr_post_blur.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+
+            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRBlur::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, SSRBlur::REFL_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
+                {Trg::Tex2DSampled, SSRBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::Tex2DSampled, SSRBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::SBufRO, SSRBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::Image2D, SSRBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+
+            SSRBlur::Params uniform_params;
+            uniform_params.rotator = view_state_.rand_rotators[1];
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+
+            Ren::DispatchComputeIndirect(pi_ssr_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                         builder.ctx().log());
         });
     }
 
@@ -745,7 +886,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
         if (debug_denoise) {
             data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Stg::FragmentShader);
         } else {
-            data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Stg::FragmentShader);
+            if (EnableBlur) {
+                data->refl_tex = ssr_compose.AddTextureInput(gi_specular3_tex, Stg::FragmentShader);
+            } else {
+                data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Stg::FragmentShader);
+            }
         }
         data->ltc_luts = ssr_compose.AddTextureInput(ltc_luts_, Stg::FragmentShader);
         frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);

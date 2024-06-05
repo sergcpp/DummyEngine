@@ -33,10 +33,11 @@ shared uint g_shared_0[16][16];
 shared uint g_shared_1[16][16];
 shared uint g_shared_2[16][16];
 shared uint g_shared_3[16][16];
+shared uint g_shared_4[16][16];
 shared float g_shared_depth[16][16];
 
 struct neighborhood_sample_t {
-    /* mediump */ vec3 radiance;
+    /* mediump */ vec4 radiance;
     /* mediump */ float variance;
     /* mediump */ vec4 normal;
     float depth;
@@ -45,42 +46,42 @@ struct neighborhood_sample_t {
 neighborhood_sample_t LoadFromSharedMemory(ivec2 idx) {
     neighborhood_sample_t ret;
     ret.radiance.xy = unpackHalf2x16(g_shared_0[idx.y][idx.x]);
-    /* mediump */ vec2 temp = unpackHalf2x16(g_shared_1[idx.y][idx.x]);
-    ret.radiance.z = temp.x;
-    ret.variance = temp.y;
-    ret.normal.xy = unpackHalf2x16(g_shared_2[idx.y][idx.x]);
-    ret.normal.zw = unpackHalf2x16(g_shared_3[idx.y][idx.x]);
+    ret.radiance.zw = unpackHalf2x16(g_shared_1[idx.y][idx.x]);
+    ret.variance = unpackHalf2x16(g_shared_2[idx.y][idx.x]).x;
+    ret.normal.xy = unpackHalf2x16(g_shared_3[idx.y][idx.x]);
+    ret.normal.zw = unpackHalf2x16(g_shared_4[idx.y][idx.x]);
     ret.depth = g_shared_depth[idx.y][idx.x];
     return ret;
 }
 
-void StoreInSharedMemory(ivec2 idx, vec3 radiance, float variance, vec4 normal, float depth) {
+void StoreInSharedMemory(const ivec2 idx, const vec4 radiance, const float variance, const vec4 normal, const float depth) {
     g_shared_0[idx.y][idx.x] = packHalf2x16(radiance.xy);
-    g_shared_1[idx.y][idx.x] = packHalf2x16(vec2(radiance.z, variance));
-    g_shared_2[idx.y][idx.x] = packHalf2x16(normal.xy);
-    g_shared_3[idx.y][idx.x] = packHalf2x16(normal.zw);
+    g_shared_1[idx.y][idx.x] = packHalf2x16(radiance.zw);
+    g_shared_2[idx.y][idx.x] = packHalf2x16(vec2(variance, 0.0));
+    g_shared_3[idx.y][idx.x] = packHalf2x16(normal.xy);
+    g_shared_4[idx.y][idx.x] = packHalf2x16(normal.zw);
     g_shared_depth[idx.y][idx.x] = depth;
 }
 
 void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 _offset,
-                    out vec3 radiance, out float variance, out vec4 normal, out float depth) {
+                    out vec4 radiance, out float variance, out vec4 normal, out float depth) {
     dispatch_thread_id += _offset;
-    radiance = texelFetch(g_refl_tex, dispatch_thread_id, 0).rgb;
+    radiance = texelFetch(g_refl_tex, dispatch_thread_id, 0);
     variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
     normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x);
     depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
 }
 
-void StoreWithOffset(ivec2 group_thread_id, ivec2 _offset, vec3 radiance, float variance, vec4 normal, float depth) {
+void StoreWithOffset(ivec2 group_thread_id, const ivec2 _offset, const vec4 radiance, const float variance, const vec4 normal, const float depth) {
     group_thread_id += _offset;
     StoreInSharedMemory(group_thread_id, radiance, variance, normal, depth);
 }
 
-void InitSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, float exposure) {
+void InitSharedMemory(ivec2 dispatch_thread_id, const ivec2 group_thread_id, const float exposure) {
     // Load 16x16 region into shared memory.
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
-    /* mediump */ vec3 radiance[4];
+    /* mediump */ vec4 radiance[4];
     /* mediump */ float variance[4];
     /* mediump */ vec4 normal[4];
     float depth[4];
@@ -92,20 +93,12 @@ void InitSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, float exp
 
     for (int i = 0; i < 4; ++i) {
         LoadWithOffset(dispatch_thread_id, offset[i], radiance[i], variance[i], normal[i], depth[i]);
-        radiance[i] *= exposure;
+        radiance[i].rgb *= exposure;
     }
 
     for (int i = 0; i < 4; ++i) {
         StoreWithOffset(group_thread_id, offset[i], radiance[i], variance[i], normal[i], depth[i]);
     }
-}
-
-bool IsGlossyReflection(float roughness) {
-    return roughness < g_params.thresholds.x;
-}
-
-bool IsMirrorReflection(float roughness) {
-    return roughness < g_params.thresholds.y; //0.0001;
 }
 
 float Gaussian(float x, float m, float sigma) {
@@ -158,11 +151,11 @@ THE SOFTWARE.
 }
 
 void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, neighborhood_sample_t center,
-             out /* mediump */ vec3 resolved_radiance, out /* mediump */ float resolved_variance) {
+             out /* mediump */ vec4 resolved_radiance, out /* mediump */ float resolved_variance) {
     // Initial weight is important to remove fireflies.
     // That removes quite a bit of energy but makes everything much more stable.
-    /* mediump */ float accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance, center.variance);
-    /* mediump */ vec3 accumulated_radiance = center.radiance * accumulated_weight;
+    /* mediump */ float accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance.xyz, center.variance);
+    /* mediump */ vec4 accumulated_radiance = center.radiance * accumulated_weight;
     /* mediump */ float accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
     /* mediump */ float variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
 
@@ -215,7 +208,7 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
 
     neighborhood_sample_t center = LoadFromSharedMemory(group_thread_id);
 
-    /* mediump */ vec3 resolved_radiance = center.radiance;
+    /* mediump */ vec4 resolved_radiance = center.radiance;
     /* mediump */ float resolved_variance = center.variance;
 
     const bool needs_denoiser = center.variance > 0.0 && IsGlossyReflection(center.normal.w) && !IsMirrorReflection(center.normal.w);
@@ -225,7 +218,7 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 
-    imageStore(g_out_refl_img, dispatch_thread_id, vec4(resolved_radiance / exposure, 1.0));
+    imageStore(g_out_refl_img, dispatch_thread_id, vec4(resolved_radiance.xyz / exposure, resolved_radiance.w));
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(resolved_variance));
 }
 

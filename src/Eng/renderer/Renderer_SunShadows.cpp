@@ -70,8 +70,8 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         indir_args = data->tile_counter = rt_shadows.AddStorageOutput(indir_args, Ren::eStageBits::ComputeShader);
         data->sobol = rt_shadows.AddStorageReadonlyInput(sobol_seq_buf_, Ren::eStageBits::ComputeShader);
         data->scrambling_tile =
-            rt_shadows.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
-        data->ranking_tile = rt_shadows.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
+            rt_shadows.AddStorageReadonlyInput(scrambling_tile_buf_, Ren::eStageBits::ComputeShader);
+        data->ranking_tile = rt_shadows.AddStorageReadonlyInput(ranking_tile_buf_, Ren::eStageBits::ComputeShader);
 
         { // tile list
             RpBufDesc desc;

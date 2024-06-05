@@ -38,10 +38,6 @@ layout(binding = OUT_AVG_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_avg_refl_
 layout(binding = OUT_VERIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
 layout(binding = OUT_SAMPLE_COUNT_IMG_SLOT, r16f) uniform image2D g_out_sample_count_img;
 
-bool IsGlossyReflection(float roughness) {
-    return roughness <= g_params.thresholds.x;
-}
-
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
 
@@ -50,21 +46,22 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
     // Intermediate storage
-    /* mediump */ vec3 refl[4];
+    /* mediump */ vec4 refl[4];
 
     // Start from the upper left corner of 16x16 region
     dispatch_thread_id -= ivec2(4);
 
     // Load into registers
     for (int i = 0; i < 4; ++i) {
-        refl[i] = texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0).xyz * exposure;
+        refl[i] = texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0);
+        refl[i].rgb *= exposure;
     }
 
     // Move to shared memory
     for (int i = 0; i < 4; ++i) {
         ivec2 index = group_thread_id + offset[i];
         g_shared_storage_0[index.y][index.x] = packHalf2x16(refl[i].xy);
-        g_shared_storage_1[index.y][index.x] = packHalf2x16(refl[i].zz);
+        g_shared_storage_1[index.y][index.x] = packHalf2x16(refl[i].zw);
     }
 }
 
@@ -119,20 +116,20 @@ THE SOFTWARE.
 }
 
 struct moments_t {
-    /* mediump */ vec3 mean;
-    /* mediump */ vec3 variance;
+    /* mediump */ vec4 mean;
+    /* mediump */ vec4 variance;
 };
 
-moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
+moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
     moments_t ret;
-    ret.mean = vec3(0.0);
-    ret.variance = vec3(0.0);
+    ret.mean = vec4(0.0);
+    ret.variance = vec4(0.0);
 
     /* mediump */ float accumulated_weight = 0;
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
         for (int i = -LOCAL_NEIGHBORHOOD_RADIUS; i <= LOCAL_NEIGHBORHOOD_RADIUS; ++i) {
             ivec2 index = group_thread_id + ivec2(i, j);
-            /* mediump */ vec3 radiance = LoadFromGroupSharedMemoryRaw(index).rgb;
+            /* mediump */ vec4 radiance = LoadFromGroupSharedMemoryRaw(index);
             /* mediump */ float weight = LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
             accumulated_weight += weight;
 
@@ -247,7 +244,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             reprojection = hit_history;
         } else {
             // Reject surface reprojection based on simple distance
-            if (length2(surf_history.rgb - local_neighborhood.mean) <
+            if (length2(surf_history.rgb - local_neighborhood.mean.rgb) <
                 REPROJECT_SURFACE_DISCARD_VARIANCE_WEIGHT * length(local_neighborhood.variance)) {
                 // Surface reflection
                 history_normal = surf_normal;
@@ -344,7 +341,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     }
 }
 
-void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, float temporal_stability_factor, int max_samples, float exposure) {
+void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, int max_samples, float exposure) {
     LoadIntoSharedMemory(ivec2(dispatch_thread_id), ivec2(group_thread_id), ivec2(screen_size), exposure);
 
     groupMemoryBarrier();
@@ -353,12 +350,9 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     group_thread_id += 4; // center threads in shared memory
 
     /* mediump */ float variance = 1.0;
-    /* mediump */ float sample_count = 0.0;
-    /* mediump */ float roughness;
-    vec3 normal;
     const vec4 normal_fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x);
-    normal = normal_fetch.xyz;
-    roughness = normal_fetch.w;
+    const vec3 normal = normal_fetch.xyz;
+    const float roughness = normal_fetch.w;
     /* mediump */ vec4 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
     refl.xyz *= exposure;
 
@@ -371,7 +365,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
             /* mediump */ float prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
-            sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
+            float sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
             /* mediump */ float s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
             sample_count = min(s_max_samples, sample_count + 1);
             /* mediump */ float new_variance = ComputeTemporalVariance(refl.rgb, reprojection.rgb);
@@ -450,5 +444,5 @@ void main() {
 
     const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
 
-    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 0.7 /* temporal_stability */, 8, exposure);
+    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 32, exposure);
 }
