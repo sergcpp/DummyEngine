@@ -135,7 +135,7 @@ THE SOFTWARE.
 #define PREFILTER_VARIANCE_WEIGHT 4.4
 
 #define PREFILTER_NORMAL_SIGMA 32.0 // 512.0
-#define PREFILTER_DEPTH_SIGMA 4.0
+#define PREFILTER_DEPTH_SIGMA 1024.0
 
 /* mediump */ float GetEdgeStoppingNormalWeight(/* mediump */ vec3 normal_p, /* mediump */ vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
@@ -162,27 +162,23 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, sample_t ce
     /* mediump */ vec4 accumulated_radiance = center.radiance * accumulated_weight;
     /* mediump */ float accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
     /* mediump */ float variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
-    // First 15 numbers of Halton(2, 3) streteched to [-3, 3]
-    const uint sample_count = 15;
+
     const ivec2 sample_offsets[] = {
-        ivec2(0, 1),
-        ivec2(-2, 1),
-        ivec2(2, -3),
-        ivec2(-3, 0),
-        ivec2(1, 2),
-        ivec2(-1, -2),
-        ivec2(3, 0),
-        ivec2(-3, 3),
-        ivec2(0, -3),
-        ivec2(-1, -1),
-        ivec2(2, 1),
+        ivec2(-1,  0),
+        ivec2( 1,  0),
+        ivec2( 0, -1),
+        ivec2( 0,  1),
+        ivec2(-2,  2),
+        ivec2( 2,  2),
         ivec2(-2, -2),
-        ivec2(1, 0),
-        ivec2(0, 2),
-        ivec2(3, -1)
+        ivec2( 2, -2),
+        ivec2(-3,  0),
+        ivec2( 3,  0),
+        ivec2( 0, -3),
+        ivec2( 0,  3)
     };
 
-    for (int i = 0; i < sample_count; ++i) {
+    for (int i = 0; i < 12; ++i) {
         ivec2 new_idx = group_thread_id + sample_offsets[i];
         sample_t neighbor = LoadFromSharedMemory(new_idx);
 

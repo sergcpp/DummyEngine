@@ -164,28 +164,24 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, neighborhoo
     /* mediump */ float accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance, center.variance);
     /* mediump */ vec3 accumulated_radiance = center.radiance * accumulated_weight;
     /* mediump */ float accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
-    // First 15 numbers of Halton(2, 3) streteched to [-3, 3]
-    const uint sample_count = 15;
-    const ivec2 sample_offsets[] = {
-        ivec2(0, 1),
-        ivec2(-2, 1),
-        ivec2(2, -3),
-        ivec2(-3, 0),
-        ivec2(1, 2),
-        ivec2(-1, -2),
-        ivec2(3, 0),
-        ivec2(-3, 3),
-        ivec2(0, -3),
-        ivec2(-1, -1),
-        ivec2(2, 1),
-        ivec2(-2, -2),
-        ivec2(1, 0),
-        ivec2(0, 2),
-        ivec2(3, -1)
-    };
     /* mediump */ float variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
 
-    for (int i = 0; i < sample_count; ++i) {
+    const ivec2 sample_offsets[] = {
+        ivec2(-1,  0),
+        ivec2( 1,  0),
+        ivec2( 0, -1),
+        ivec2( 0,  1),
+        ivec2(-2,  2),
+        ivec2( 2,  2),
+        ivec2(-2, -2),
+        ivec2( 2, -2),
+        ivec2(-3,  0),
+        ivec2( 3,  0),
+        ivec2( 0, -3),
+        ivec2( 0,  3)
+    };
+
+    for (int i = 0; i < 12; ++i) {
         ivec2 new_idx = group_thread_id + sample_offsets[i];
         neighborhood_sample_t neighbor = LoadFromSharedMemory(new_idx);
 

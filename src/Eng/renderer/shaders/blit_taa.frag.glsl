@@ -77,37 +77,6 @@ float Luma(vec3 col) {
 #endif
 }
 
-vec3 find_closest_fragment_3x3(sampler2D dtex, vec2 uv, vec2 texel_size) {
-    vec2 du = vec2(texel_size.x, 0.0);
-    vec2 dv = vec2(0.0, texel_size.y);
-
-    vec3 dtl = vec3(-1, -1, textureLod(dtex, uv - dv - du, 0.0).x);
-    vec3 dtc = vec3( 0, -1, textureLod(dtex, uv - dv, 0.0).x);
-    vec3 dtr = vec3( 1, -1, textureLod(dtex, uv - dv + du, 0.0).x);
-
-    vec3 dml = vec3(-1, 0, textureLod(dtex, uv - du, 0.0).x);
-    vec3 dmc = vec3( 0, 0, textureLod(dtex, uv, 0.0).x);
-    vec3 dmr = vec3( 1, 0, textureLod(dtex, uv + du, 0.0).x);
-
-    vec3 dbl = vec3(-1, 1, textureLod(dtex, uv + dv - du, 0.0).x);
-    vec3 dbc = vec3( 0, 1, textureLod(dtex, uv + dv, 0.0).x);
-    vec3 dbr = vec3( 1, 1, textureLod(dtex, uv + dv + du, 0.0).x);
-
-    vec3 dmin = dtl;
-    if (dmin.z > dtc.z) dmin = dtc;
-    if (dmin.z > dtr.z) dmin = dtr;
-
-    if (dmin.z > dml.z) dmin = dml;
-    if (dmin.z > dmc.z) dmin = dmc;
-    if (dmin.z > dmr.z) dmin = dmr;
-
-    if (dmin.z > dbl.z) dmin = dbl;
-    if (dmin.z > dbc.z) dmin = dbc;
-    if (dmin.z > dbr.z) dmin = dbr;
-
-    return vec3(uv + texel_size * dmin.xy, dmin.z);
-}
-
 void main() {
     ivec2 uvs_px = ivec2(g_vtx_uvs);
     vec2 texel_size = vec2(1.0) / g_params.tex_size;
@@ -191,7 +160,7 @@ void main() {
         col_avg.yz = chroma_center;
     #endif
 
-    vec3 closest_frag = find_closest_fragment_3x3(g_depth, norm_uvs, texel_size);
+    vec3 closest_frag = FindClosestFragment_3x3(g_depth, norm_uvs, texel_size);
     vec2 closest_vel = textureLod(g_velocity, closest_frag.xy, 0.0).rg;
 #endif
 
@@ -202,7 +171,7 @@ void main() {
     }
 
 #if defined(CLIPPING)
-    col_hist = clip_aabb(col_min, col_max, col_hist);
+    col_hist = ClipAABB(col_min, col_max, col_hist);
 #else
     col_hist = clamp(col_hist, col_min, col_max);
 #endif

@@ -117,54 +117,6 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
     return ret;
 }
 
-// From "Temporal Reprojection Anti-Aliasing"
-// https://github.com/playdeadgames/temporal
-/**********************************************************************
-Copyright (c) [2015] [Playdead]
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-********************************************************************/
-/* mediump */ vec3 ClipAABB(/* mediump */ vec3 aabb_min, /* mediump */ vec3 aabb_max, /* mediump */ vec3 prev_sample) {
-    // Main idea behind clipping - it prevents clustering when neighbor color space
-    // is distant from history sample
-
-    // Here we find intersection between color vector and aabb color box
-
-    // Note: only clips towards aabb center
-    vec3 aabb_center = 0.5 * (aabb_max + aabb_min);
-    vec3 extent_clip = 0.5 * (aabb_max - aabb_min) + 0.001;
-
-    // Find color vector
-    vec3 color_vector = prev_sample - aabb_center;
-    // Transform into clip space
-    vec3 color_vector_clip = color_vector / extent_clip;
-    // Find max absolute component
-    color_vector_clip       = abs(color_vector_clip);
-    /* mediump */ float max_abs_unit = max(max(color_vector_clip.x, color_vector_clip.y), color_vector_clip.z);
-
-    if (max_abs_unit > 1.0) {
-        return aabb_center + color_vector / max_abs_unit; // clip towards color vector
-    } else {
-        return prev_sample; // point is inside aabb
-    }
-}
-
 // From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
 /**********************************************************************
 Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.

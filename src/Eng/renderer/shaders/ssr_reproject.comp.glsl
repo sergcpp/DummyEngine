@@ -205,10 +205,10 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     return factor;
 }
 
-void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size,
+void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, float exposure,
                       /* mediump */ float roughness, /* mediump */ float ray_len,
                       /* mediump */ out float disocclusion_factor, out vec2 reprojection_uv,
-                      /* mediump */ out vec3 reprojection) {
+                      /* mediump */ out vec4 reprojection) {
     moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
 
     vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
@@ -221,8 +221,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         vec2 surf_repr_uv = uv - motion_vector;
         vec2 hit_repr_uv = GetHitPositionReprojection(ivec2(dispatch_thread_id), uv, ray_len);
 
-        /* mediump */ vec3 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0).xyz;
-        /* mediump */ vec3 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0).xyz;
+        /* mediump */ vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
+        surf_history.rgb *= exposure;
+        /* mediump */ vec4 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0);
+        hit_history.rgb *= exposure;
 
         /* mediump */ vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
         /* mediump */ vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
@@ -245,7 +247,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             reprojection = hit_history;
         } else {
             // Reject surface reprojection based on simple distance
-            if (length2(surf_history - local_neighborhood.mean) <
+            if (length2(surf_history.rgb - local_neighborhood.mean) <
                 REPROJECT_SURFACE_DISCARD_VARIANCE_WEIGHT * length(local_neighborhood.variance)) {
                 // Surface reflection
                 history_normal = surf_normal;
@@ -288,7 +290,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                     }
                 }
             }
-            reprojection = textureLod(g_refl_hist_tex, reprojection_uv, 0.0).rgb;
+            reprojection = textureLod(g_refl_hist_tex, reprojection_uv, 0.0);
+            reprojection.rgb *= exposure;
         }
 
         // Try to get rid of potential leaks at bilinear interpolation level
@@ -299,10 +302,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
             ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
 
-            /* mediump */ vec3 reprojection00 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).rgb;
-            /* mediump */ vec3 reprojection10 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).rgb;
-            /* mediump */ vec3 reprojection01 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).rgb;
-            /* mediump */ vec3 reprojection11 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).rgb;
+            /* mediump */ vec4 reprojection00 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
+            /* mediump */ vec4 reprojection10 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
+            /* mediump */ vec4 reprojection01 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
+            /* mediump */ vec4 reprojection11 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
 
             /* mediump */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
             /* mediump */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
@@ -332,6 +335,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             /* mediump */ vec3 history_normal;
             float history_linear_depth;
             reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
+            reprojection.rgb *= exposure;
             history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
             history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
             disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
@@ -355,31 +359,29 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     const vec4 normal_fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x);
     normal = normal_fetch.xyz;
     roughness = normal_fetch.w;
-    const vec4 fetch = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
-    /* mediump */ vec3 refl = fetch.xyz * exposure;
-    /* mediump */ float ray_len = fetch.w;
+    /* mediump */ vec4 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
+    refl.xyz *= exposure;
 
     if (IsGlossyReflection(roughness)) {
         /* mediump */ float disocclusion_factor;
         vec2 reprojection_uv;
-        /* mediump */ vec3 reprojection;
-        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size, roughness, ray_len,
+        /* mediump */ vec4 reprojection;
+        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size, exposure, roughness, refl.w,
                          disocclusion_factor, reprojection_uv, reprojection);
-        reprojection *= exposure;
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
             /* mediump */ float prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
             sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
             /* mediump */ float s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
             sample_count = min(s_max_samples, sample_count + 1);
-            /* mediump */ float new_variance = ComputeTemporalVariance(refl, reprojection);
+            /* mediump */ float new_variance = ComputeTemporalVariance(refl.rgb, reprojection.rgb);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
-                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, 0.0));
+                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
             } else {
                 /* mediump */ float variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
-                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(reprojection / exposure, 0.0));
+                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(reprojection.rgb / exposure, reprojection.w));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(variance_mix));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count));
                 // Mix in reprojection for radiance mip computation
@@ -394,10 +396,10 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     // Downsample 8x8 -> 1 radiance using shared memory
     // Initialize shared array for downsampling
-    /* mediump */ float weight = GetLuminanceWeight(refl);
+    /* mediump */ float weight = GetLuminanceWeight(refl.rgb);
     refl *= weight;
     if (any(greaterThanEqual(dispatch_thread_id, screen_size)) || any(isinf(refl)) || any(isnan(refl)) || weight > 1.0e3) {
-        refl = vec3(0.0);
+        refl = vec4(0.0);
         weight = 0.0;
     }
 

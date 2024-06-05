@@ -8,6 +8,7 @@
 
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
+#include "taa_common.glsl"
 #include "gi_reproject_interface.h"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -160,8 +161,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     /* mediump */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
     /* mediump */ vec3 history_normal;
 
-    vec2 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xy;
-    vec2 surf_repr_uv = uv - motion_vector;
+    const vec2 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xy;
+    const vec2 surf_repr_uv = uv - motion_vector;
 
     /* mediump */ vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
     surf_history.rgb *= exposure;
@@ -251,6 +252,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         /* mediump */ vec3 history_normal;
         float history_linear_depth;
         reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
+        reprojection.rgb *= exposure;
         history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
         history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
         disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);

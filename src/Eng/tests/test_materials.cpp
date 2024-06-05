@@ -502,14 +502,14 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 18.52, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 21.6, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 22.72, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 20.02, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 20.00, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 21.41, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_hdri_light", 19.14, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 27.45, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 24.45, NoDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 19.79, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.53, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.27, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 19.72, MedDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.41, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.15, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 24.25, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 23.44, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 25.62, NoDiffGI));
