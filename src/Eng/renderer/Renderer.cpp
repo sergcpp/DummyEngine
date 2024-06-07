@@ -302,12 +302,11 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             scrambling_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_buf_, 0,
-                                128 * 128 * 8 * sizeof(int), cmd_buf);
+        Ren::CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_buf_, 0, 128 * 128 * 8 * sizeof(int),
+                                cmd_buf);
 
         // Ranking tile
-        ranking_tile_buf_ =
-            ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
+        ranking_tile_buf_ = ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
         Ren::Buffer ranking_tile_buf_stage("RankingTileBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                            ranking_tile_buf_->size());
 
@@ -317,8 +316,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             ranking_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_buf_, 0, 128 * 128 * 8 * sizeof(int),
-                                cmd_buf);
+        Ren::CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_buf_, 0, 128 * 128 * 8 * sizeof(int), cmd_buf);
 
         ctx_.EndTempSingleTimeCommands(cmd_buf);
 
@@ -1019,12 +1017,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.ssao = rp_builder_.MakeTextureResource(dummy_white_);
         }
 
-        const bool fill_velocity =
-            list.render_settings.taa_mode != eTAAMode::Off || list.render_settings.gi_quality != eGIQuality::Off ||
-            int(list.render_settings.reflections_quality) >=
-                int(eReflectionsQuality::High); // Temporal reprojection is used for gi, reflections and TAA
-        if (fill_velocity && !list.render_settings.debug_wireframe &&
-            list.render_settings.taa_mode != eTAAMode::Static) {
+        if (!list.render_settings.debug_wireframe && list.render_settings.taa_mode != eTAAMode::Static) {
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
 

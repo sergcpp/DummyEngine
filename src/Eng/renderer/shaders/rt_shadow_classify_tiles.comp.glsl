@@ -171,21 +171,21 @@ bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
         clip_space /= clip_space.w; // perspective divide
 
         // How aligned with the view vector? (the more Z aligned, the higher the depth errors)
-        vec4 homogeneous = g_shrd_data.view_from_clip * vec4(ndc, depth, 1.0);
+        vec4 homogeneous = g_shrd_data.world_from_clip * vec4(ndc, depth, 1.0);
         vec3 world_position = homogeneous.xyz / homogeneous.w;  // perspective divide
         vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - world_position);
         float z_alignment = 1.0 - dot(view_direction, normal);
         z_alignment = pow(z_alignment, 8);
 
         // Calculate the depth difference
-        float linear_depth = LinearizeDepth(clip_space.z, g_shrd_data.clip_info);   // get linear depth
+        float linear_depth = -LinearizeDepth(depth, g_shrd_data.clip_info);   // get linear depth
 
         ivec2 idx = ivec2(previous_uv * dims);
-        float previous_depth = LinearizeDepth(texelFetch(g_prev_depth_tex, idx, 0).r, g_shrd_data.clip_info);
+        float previous_depth = -LinearizeDepth(texelFetch(g_prev_depth_tex, idx, 0).r, g_shrd_data.clip_info);
         float depth_difference = abs(previous_depth - linear_depth) / linear_depth;
 
         // Resolve into the disocclusion mask
-        float depth_tolerance = mix(1e-2, 1e-1, z_alignment);
+        const float depth_tolerance = mix(1e-2, 1e-1, z_alignment);
         is_disoccluded = depth_difference >= depth_tolerance;
     }
 
@@ -194,6 +194,7 @@ bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
 
 vec2 GetClosestVelocity(uvec2 did, float depth) {
     vec2 closest_velocity = texelFetch(g_velocity_tex, ivec2(did), 0).rg;
+    //return closest_velocity;
     float closest_depth = depth;
 
 #ifndef NO_SUBGROUP
@@ -401,8 +402,8 @@ void TileClassification(uint group_index, uvec2 gid) {
         bool hit_light = (shadow_tile & GetBitMaskFromPixelPosition(did)) != 0u;
         float shadow_current = hit_light ? 1.0 : 0.0;
 
+        bool is_disoccluded = IsDisoccluded(did, depth, velocity);
         { // Perform moments and variance calculations
-            bool is_disoccluded = IsDisoccluded(did, depth, velocity);
             vec3 previous_moments = is_disoccluded ? vec3(0.0, 0.0, 0.0) // Can't trust previous moments on disocclusion
                                                    //: texelFetch(g_prev_moments_tex, history_pos, 0).xyz;
                                                    : textureLod(g_prev_moments_tex, history_uv, 0.0).xyz;
@@ -425,13 +426,12 @@ void TileClassification(uint group_index, uvec2 gid) {
 
             // Compute the clamping bounding box
             const float std_deviation = sqrt(spatial_variance);
-            const float nmin = mean - 0.5 * std_deviation;
+            const float nmin = mean - 1.0 * std_deviation;
             const float nmax = mean + 0.5 * std_deviation;
 
             // Clamp reprojected sample to local neighborhood
             float shadow_previous = shadow_current;
-            if (/*FFX_DNSR_Shadows_IsFirstFrame() == 0*/ true) {
-                //shadow_previous = FFX_DNSR_Shadows_ReadHistory(history_uv);
+            if (/*FFX_DNSR_Shadows_IsFirstFrame() == 0*/ !is_disoccluded) {
                 shadow_previous = textureLod(g_hist_tex, history_uv, 0.0).r;
             }
 

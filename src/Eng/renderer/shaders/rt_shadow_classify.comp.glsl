@@ -55,9 +55,9 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
     bool is_active_lane = is_in_viewport && (depth < 1.0);
 
     if (use_normal && is_active_lane) {
-        vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(px_coord), 0).x).xyz;
+        const vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(px_coord), 0).x).xyz;
 
-        bool is_facing_sun = dot(normal, g_shrd_data.sun_dir.xyz) > 0.0;
+        const bool is_facing_sun = dot(normal, g_shrd_data.sun_dir.xyz) > 0.0;
         is_active_lane = is_active_lane && is_facing_sun;
     }
 
@@ -89,7 +89,7 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
 //
 // https://eheitzresearch.wordpress.com/762-2/
 //
-float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
+float SampleRandomNumber(uvec2 pixel, uint sample_index, uint sample_dimension) {
     // wrap arguments
     const uint pixel_i = pixel.x & 127u;
     const uint pixel_j = pixel.y & 127u;
@@ -110,9 +110,9 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
 }
 
 vec2 SampleRandomVector2D(uvec2 pixel) {
-    const vec2 u = vec2(fract(SampleRandomNumber(pixel, 0, 6u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                        fract(SampleRandomNumber(pixel, 0, 7u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
-    return u;
+    // TODO: Fix correlation with GI
+    return vec2(SampleRandomNumber(pixel, g_params.frame_index, 6u),
+                SampleRandomNumber(pixel, g_params.frame_index, 7u));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

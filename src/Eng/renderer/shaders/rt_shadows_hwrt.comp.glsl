@@ -72,11 +72,9 @@ void main() {
 
     ivec2 icoord = ivec2(tile_coord * uvec2(TILE_SIZE_X, TILE_SIZE_Y) + group_thread_id);
 
-    bool is_in_shadow = false;
-
-    uint bit_index = LaneIdToBitShift(group_thread_id);
-    bool is_active = ((1u << bit_index) & mask) != 0u;
-    if (is_active) {
+    const uint bit_index = LaneIdToBitShift(group_thread_id);
+    bool is_in_shadow = ((1u << bit_index) & mask) == 0u;
+    if (!is_in_shadow) {
         float depth = texelFetch(g_depth_tex, icoord, 0).r;
         vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x).xyz;
         vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);

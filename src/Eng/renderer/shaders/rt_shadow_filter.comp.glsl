@@ -159,15 +159,15 @@ float GetShadowSimilarity(float x1, float x2, float sigma) {
     return exp(-abs(x1 - x2) / sigma);
 }
 
-float GetDepthSimilarity(float x1, float x2, float sigma) {
-    return exp(-abs(x1 - x2) / sigma);
+float GetDepthSimilarity(float center_depth, float neighbor_depth, float sigma) {
+    return exp(-abs(center_depth - neighbor_depth) * center_depth * sigma);
 }
 
 float GetNormalSimilarity(vec3 x1, vec3 x2) {
     return pow(clamp(dot(x1, x2), 0.0, 1.0), 32.0);
 }
 
-const float DepthSimilaritySigma = 1.0;
+const float DepthSimilaritySigma = 1024.0;
 
 void DenoiseFromSharedMemory(uvec2 did, uvec2 gtid, inout float weight_sum, inout vec2 shadow_sum, float depth, uint stepsize) {
     // Load our center sample

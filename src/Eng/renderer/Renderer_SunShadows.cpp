@@ -15,6 +15,8 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                                           const BindlessTextureData &bindless, RpResRef rt_geo_instances_res,
                                           RpResRef rt_obj_instances_res, FrameTextures &frame_textures,
                                           const bool debug_denoise) {
+    const bool EnableFilter = true;
+
     RpResRef indir_args;
 
     { // Prepare atomic counter
@@ -317,7 +319,11 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->depth = rt_classify_tiles.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
         data->velocity = rt_classify_tiles.AddTextureInput(frame_textures.velocity, Ren::eStageBits::ComputeShader);
         data->normal = rt_classify_tiles.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->hist = rt_classify_tiles.AddHistoryTextureInput("SH Filter 0 Tex", Ren::eStageBits::ComputeShader);
+        if (EnableFilter) {
+            data->hist = rt_classify_tiles.AddHistoryTextureInput("SH Filter 0 Tex", Ren::eStageBits::ComputeShader);
+        } else {
+            data->hist = rt_classify_tiles.AddHistoryTextureInput("SH Reproj Tex", Ren::eStageBits::ComputeShader);
+        }
         data->prev_depth =
             rt_classify_tiles.AddHistoryTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
         data->prev_moments = rt_classify_tiles.AddHistoryTextureInput("SH Moments Tex", Ren::eStageBits::ComputeShader);
@@ -405,7 +411,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         });
     }
 
-    RpResRef output_tex;
+    RpResRef filtered_result0;
 
     { // Filter shadow 0
         auto &rt_filter = rp_builder_.AddPass("RT SH FILTER 0");
@@ -435,7 +441,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.format = Ren::eTexFormat::RawRG16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            output_tex = data->out_history_img =
+            filtered_result0 = data->out_history_img =
                 rt_filter.AddStorageImageOutput("SH Filter 0 Tex", params, Ren::eStageBits::ComputeShader);
         }
 
@@ -472,6 +478,8 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         });
     }
 
+    RpResRef filtered_result1;
+
     { // Filter shadow 1
         auto &rt_filter = rp_builder_.AddPass("RT SH FILTER 1");
 
@@ -488,7 +496,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         auto *data = rt_filter.AllocPassData<PassData>();
         data->depth = rt_filter.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
         data->normal = rt_filter.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->input = rt_filter.AddTextureInput(output_tex, Ren::eStageBits::ComputeShader);
+        data->input = rt_filter.AddTextureInput(filtered_result0, Ren::eStageBits::ComputeShader);
         data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Ren::eStageBits::ComputeShader);
         data->shared_data =
             rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
@@ -500,7 +508,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.format = Ren::eTexFormat::RawRG16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            output_tex = data->out_history_img =
+            filtered_result1 = data->out_history_img =
                 rt_filter.AddStorageImageOutput("SH Filter 1 Tex", params, Ren::eStageBits::ComputeShader);
         }
 
@@ -537,6 +545,8 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         });
     }
 
+    RpResRef filtered_result2;
+
     { // Filter shadow 2
         auto &rt_filter = rp_builder_.AddPass("RT SH FILTER 2");
 
@@ -553,7 +563,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         auto *data = rt_filter.AllocPassData<PassData>();
         data->depth = rt_filter.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
         data->normal = rt_filter.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->input = rt_filter.AddTextureInput(output_tex, Ren::eStageBits::ComputeShader);
+        data->input = rt_filter.AddTextureInput(filtered_result1, Ren::eStageBits::ComputeShader);
         data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Ren::eStageBits::ComputeShader);
         data->shared_data =
             rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
@@ -565,7 +575,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.format = Ren::eTexFormat::RawR8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            output_tex = data->out_history_img =
+            filtered_result2 = data->out_history_img =
                 rt_filter.AddStorageImageOutput("SH Filter 2 Tex", params, Ren::eStageBits::ComputeShader);
         }
 
@@ -602,7 +612,11 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         });
     }
 
-    frame_textures.sun_shadow = output_tex;
+    if (EnableFilter) {
+        frame_textures.sun_shadow = filtered_result2;
+    } else {
+        frame_textures.sun_shadow = repro_results;
+    }
 }
 
 void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
