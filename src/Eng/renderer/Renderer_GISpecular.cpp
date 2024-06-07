@@ -9,6 +9,7 @@
 #include "shaders/ssr_classify_interface.h"
 #include "shaders/ssr_prefilter_interface.h"
 #include "shaders/ssr_reproject_interface.h"
+#include "shaders/ssr_stabilization_interface.h"
 #include "shaders/ssr_temporal_interface.h"
 #include "shaders/ssr_trace_hq_interface.h"
 #include "shaders/ssr_write_indir_rt_dispatch_interface.h"
@@ -29,6 +30,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
     static const int SamplesPerQuad = 4;
     static const bool VarianceGuided = false;
     static const bool EnableBlur = true;
+    const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
 
     RpResRef ray_counter;
 
@@ -838,6 +840,69 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
         });
     }
 
+    RpResRef gi_specular4_tex;
+
+    { // Denoiser stabilization
+        auto &ssr_stabilization = rp_builder_.AddPass("SSR STABILIZATION");
+
+        struct PassData {
+            RpResRef depth_tex, velocity_tex, ssr_tex, ssr_hist_tex;
+            RpResRef exposure_tex;
+            RpResRef out_ssr_tex;
+        };
+
+        auto *data = ssr_stabilization.AllocPassData<PassData>();
+        data->depth_tex = ssr_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->velocity_tex = ssr_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+        data->ssr_tex = ssr_stabilization.AddTextureInput(gi_specular3_tex, Stg::ComputeShader);
+        data->exposure_tex = ssr_stabilization.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+
+        { // Final gi
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gi_specular4_tex = data->out_ssr_tex =
+                ssr_stabilization.AddStorageImageOutput("GI Specular 4", params, Stg::ComputeShader);
+        }
+
+        data->ssr_hist_tex = ssr_stabilization.AddHistoryTextureInput(gi_specular4_tex, Stg::ComputeShader);
+
+        ssr_stabilization.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            RpAllocTex &gi_tex = builder.GetReadTexture(data->ssr_tex);
+            RpAllocTex &gi_hist_tex = builder.GetReadTexture(data->ssr_hist_tex);
+            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+
+            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_ssr_tex);
+
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2DSampled, SSRStabilization::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRStabilization::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                {Trg::Tex2DSampled, SSRStabilization::SSR_TEX_SLOT, *gi_tex.ref},
+                {Trg::Tex2DSampled, SSRStabilization::SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
+                {Trg::Tex2DSampled, SSRStabilization::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
+                {Trg::Image2D, SSRStabilization::OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.act_res[0] + SSRStabilization::LOCAL_GROUP_SIZE_X - 1u) /
+                               SSRStabilization::LOCAL_GROUP_SIZE_X,
+                           (view_state_.act_res[1] + SSRStabilization::LOCAL_GROUP_SIZE_Y - 1u) /
+                               SSRStabilization::LOCAL_GROUP_SIZE_Y,
+                           1u};
+
+            SSRStabilization::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+
+            Ren::DispatchCompute(pi_ssr_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+
     if (!deferred_shading) {
         auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE");
 
@@ -887,7 +952,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Stg::FragmentShader);
         } else {
             if (EnableBlur) {
-                data->refl_tex = ssr_compose.AddTextureInput(gi_specular3_tex, Stg::FragmentShader);
+                if (EnableStabilization) {
+                    data->refl_tex = ssr_compose.AddTextureInput(gi_specular4_tex, Stg::FragmentShader);
+                } else {
+                    data->refl_tex = ssr_compose.AddTextureInput(gi_specular3_tex, Stg::FragmentShader);
+                }
             } else {
                 data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Stg::FragmentShader);
             }

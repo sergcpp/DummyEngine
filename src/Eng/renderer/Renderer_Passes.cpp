@@ -55,6 +55,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_ssr_temporal_, "internal/ssr_temporal.comp.glsl");
     success &= init_pipeline(pi_ssr_blur_[0], "internal/ssr_blur.comp.glsl");
     success &= init_pipeline(pi_ssr_blur_[1], "internal/ssr_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
+    success &= init_pipeline(pi_ssr_stabilization_, "internal/ssr_stabilization.comp.glsl");
 
     // GI Cache
     success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend.comp.glsl@RADIANCE");

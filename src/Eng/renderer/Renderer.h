@@ -219,7 +219,7 @@ class Renderer {
     Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2];
+    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
     // GI Cache
     Ren::Pipeline pi_probe_blend_[2], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_;
     // GI
