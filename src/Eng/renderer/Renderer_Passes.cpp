@@ -116,7 +116,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= blit_bilateral_prog_->ready();
 
     blit_taa_prog_ = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
-                                     "internal/blit_taa.frag.glsl@CLIPPING;ROUNDED_NEIBOURHOOD;TONEMAP");
+                                     "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP");
     success &= blit_taa_prog_->ready();
 
     blit_taa_static_prog_ =

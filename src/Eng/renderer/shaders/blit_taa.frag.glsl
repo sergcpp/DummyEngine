@@ -9,7 +9,7 @@
 #include "taa_common.glsl"
 #include "blit_taa_interface.h"
 
-#pragma multi_compile _ CLIPPING
+#pragma multi_compile _ CATMULL_ROM
 #pragma multi_compile _ ROUNDED_NEIBOURHOOD
 #pragma multi_compile _ TONEMAP
 #pragma multi_compile _ YCoCg
@@ -62,7 +62,12 @@ vec3 FetchColor(sampler2D s, ivec2 icoord) {
 }
 
 vec3 SampleColor(sampler2D s, vec2 uvs) {
-    vec3 ret = Tonemap(clamp(textureLod(s, uvs, 0.0).rgb, vec3(0.0), vec3(HALF_MAX)));
+#if defined(CATMULL_ROM) && !defined(STATIC_ACCUMULATION)
+    vec3 ret = SampleTextureCatmullRom(s, uvs, g_params.tex_size).rgb;
+#else
+    vec3 ret = textureLod(s, uvs, 0.0).rgb;
+#endif
+    ret = Tonemap(clamp(ret, vec3(0.0), vec3(HALF_MAX)));
 #if defined(YCoCg)
     ret = RGB_to_YCoCg(ret);
 #endif
@@ -172,11 +177,8 @@ void main() {
         col_hist = SampleColor(g_color_hist, hist_uvs);
     }
 
-#if defined(CLIPPING)
     col_hist = ClipAABB(col_min, col_max, col_hist);
-#else
-    col_hist = clamp(col_hist, col_min, col_max);
-#endif
+    //col_hist = clamp(col_hist, col_min, col_max);
 
     const float HistoryWeightMin = 0.88;
     const float HistoryWeightMax = 0.97;
