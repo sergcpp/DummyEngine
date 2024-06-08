@@ -155,33 +155,36 @@ void SearchSpatialRegion(uvec2 gid, out bool all_in_light, out bool all_in_shado
     all_in_shadow = (combined_or_mask == 0u);
 }
 
-bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
-    ivec2 dims = ivec2(g_params.img_size);
+bool IsDisoccluded(uvec2 did, float depth, vec3 velocity) {
     vec2 texel_size = g_params.inv_img_size;
     vec2 uv = (vec2(did) + vec2(0.5)) * texel_size;
-    vec2 ndc = (2.0 * uv - 1.0) * vec2(1.0, -1.0);
-    vec2 previous_uv = uv - velocity;
+
+    vec4 point_cs = vec4(uv, depth, 1.0);
+#if defined(VULKAN)
+    point_cs.xy = 2.0 * point_cs.xy - vec2(1.0);
+    point_cs.y = -point_cs.y;
+#else // VULKAN
+    point_cs.xyz = 2.0 * point_cs.xyz - vec3(1.0);
+#endif // VULKAN
+
+    vec2 previous_uv = uv - velocity.xy;
 
     bool is_disoccluded = true;
     if (all(greaterThan(previous_uv, vec2(0.0))) && all(lessThan(previous_uv, vec2(1.0)))) {
         // Read the center values
         vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(did), 0).x).xyz;
 
-        vec4 clip_space = g_shrd_data.delta_matrix * vec4(ndc, depth, 1.0);
-        clip_space /= clip_space.w; // perspective divide
-
         // How aligned with the view vector? (the more Z aligned, the higher the depth errors)
-        vec4 homogeneous = g_shrd_data.world_from_clip * vec4(ndc, depth, 1.0);
-        vec3 world_position = homogeneous.xyz / homogeneous.w;  // perspective divide
-        vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - world_position);
+        vec4 point_ws = g_shrd_data.world_from_clip * point_cs;
+        point_ws /= point_ws.w;
+        vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - point_ws.xyz);
         float z_alignment = 1.0 - dot(view_direction, normal);
         z_alignment = pow(z_alignment, 8);
 
         // Calculate the depth difference
-        float linear_depth = -LinearizeDepth(depth, g_shrd_data.clip_info);   // get linear depth
+        float linear_depth = LinearizeDepth(depth, g_shrd_data.clip_info) - velocity.z;
 
-        ivec2 idx = ivec2(previous_uv * dims);
-        float previous_depth = -LinearizeDepth(texelFetch(g_prev_depth_tex, idx, 0).r, g_shrd_data.clip_info);
+        float previous_depth = LinearizeDepth(textureLod(g_prev_depth_tex, previous_uv, 0.0).r, g_shrd_data.clip_info);
         float depth_difference = abs(previous_depth - linear_depth) / linear_depth;
 
         // Resolve into the disocclusion mask
@@ -192,18 +195,70 @@ bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
     return is_disoccluded;
 }
 
-vec2 GetClosestVelocity(uvec2 did, float depth) {
-    vec2 closest_velocity = texelFetch(g_velocity_tex, ivec2(did), 0).rg * g_params.inv_img_size;
-    //return closest_velocity;
+bool IsDisoccluded2x2(uvec2 did, float depth, vec3 velocity) {
+    vec2 texel_size = g_params.inv_img_size;
+    vec2 uv = (vec2(did) + vec2(0.5)) * texel_size;
+
+    vec4 point_cs = vec4(uv, depth, 1.0);
+#if defined(VULKAN)
+    point_cs.xy = 2.0 * point_cs.xy - vec2(1.0);
+    point_cs.y = -point_cs.y;
+#else // VULKAN
+    point_cs.xyz = 2.0 * point_cs.xyz - vec3(1.0);
+#endif // VULKAN
+
+    vec2 previous_uv = uv - velocity.xy;
+    vec2 previous_uv_base = (floor(previous_uv * g_params.img_size - vec2(0.5)) + vec2(0.5)) * g_params.inv_img_size;
+
+    bool is_disoccluded = true;
+    if (all(greaterThan(previous_uv, vec2(0.0))) && all(lessThan(previous_uv, vec2(1.0)))) {
+        // Read the center values
+        vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(did), 0).x).xyz;
+
+        // How aligned with the view vector? (the more Z aligned, the higher the depth errors)
+        vec4 point_ws = g_shrd_data.world_from_clip * point_cs;
+        point_ws /= point_ws.w;
+        vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - point_ws.xyz);
+        float z_alignment = 1.0 - dot(view_direction, normal);
+        z_alignment = pow(z_alignment, 8);
+
+        // Calculate the depth difference
+        float linear_depth = LinearizeDepth(depth, g_shrd_data.clip_info) - velocity.z;
+
+        float previous_depth00 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+0, +0)).r, g_shrd_data.clip_info);
+        float previous_depth01 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+1, +0)).r, g_shrd_data.clip_info);
+        float previous_depth10 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+0, +1)).r, g_shrd_data.clip_info);
+        float previous_depth11 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+1, +1)).r, g_shrd_data.clip_info);
+        float depth_difference00 = abs(previous_depth00 - linear_depth) / linear_depth;
+        float depth_difference01 = abs(previous_depth01 - linear_depth) / linear_depth;
+        float depth_difference10 = abs(previous_depth10 - linear_depth) / linear_depth;
+        float depth_difference11 = abs(previous_depth11 - linear_depth) / linear_depth;
+
+        // Resolve into the disocclusion mask
+        const float depth_tolerance = mix(1e-2, 1e-2, z_alignment);
+        is_disoccluded = (depth_difference00 >= depth_tolerance) ||
+                         (depth_difference01 >= depth_tolerance) ||
+                         (depth_difference10 >= depth_tolerance) ||
+                         (depth_difference11 >= depth_tolerance);
+    }
+
+    return is_disoccluded;
+}
+
+
+
+vec3 GetClosestVelocity(uvec2 did, float depth) {
+    vec3 closest_velocity = texelFetch(g_velocity_tex, ivec2(did), 0).xyz;
+    closest_velocity.xy *= g_params.inv_img_size;
     float closest_depth = depth;
 
 #ifndef NO_SUBGROUP
     float new_depth = subgroupQuadSwapHorizontal(closest_depth);
-    vec2 new_velocity = subgroupQuadSwapHorizontal(closest_velocity);
+    vec3 new_velocity = subgroupQuadSwapHorizontal(closest_velocity);
 #else
     // TODO: ...
     float new_depth = 0.0;
-    vec2 new_velocity = vec2(0.0);
+    vec3 new_velocity = vec3(0.0);
 #endif
 
 #ifdef INVERTED_DEPTH_RANGE
@@ -380,14 +435,12 @@ void TileClassification(uint group_index, uvec2 gid) {
     WriteTileMetaData(gid, gtid, false, false);
 
     float depth = texelFetch(g_depth_tex, ivec2(did), 0).r;
-    vec2 velocity = GetClosestVelocity(did.xy, depth); // Must happen before we deactivate lanes
+    vec3 velocity = GetClosestVelocity(did.xy, depth); // Must happen before we deactivate lanes
 
     float local_neighborhood = ComputeLocalNeighborhood(ivec2(did), ivec2(gtid));
 
-    vec2 texel_size = g_params.inv_img_size;
-    vec2 uv = (vec2(did.xy) + vec2(0.5)) * texel_size;
-    vec2 history_uv = uv - velocity;
-    ivec2 history_pos = ivec2(history_uv * g_params.img_size);
+    vec2 uv = (vec2(did.xy) + vec2(0.5)) * g_params.inv_img_size;
+    vec2 history_uv = uv - velocity.xy;
 
     uvec2 tile_index = GetTileIndexFromPixelPosition(did);
     uint linear_tile_index = LinearTileIndex(tile_index, g_params.img_size.x);
@@ -402,10 +455,10 @@ void TileClassification(uint group_index, uvec2 gid) {
         bool hit_light = (shadow_tile & GetBitMaskFromPixelPosition(did)) != 0u;
         float shadow_current = hit_light ? 1.0 : 0.0;
 
-        bool is_disoccluded = IsDisoccluded(did, depth, velocity);
+        // TODO: replace this with bilinear weights
+        bool is_disoccluded = IsDisoccluded2x2(did, depth, velocity);
         { // Perform moments and variance calculations
             vec3 previous_moments = is_disoccluded ? vec3(0.0, 0.0, 0.0) // Can't trust previous moments on disocclusion
-                                                   //: texelFetch(g_prev_moments_tex, history_pos, 0).xyz;
                                                    : textureLod(g_prev_moments_tex, history_uv, 0.0).xyz;
 
             float old_m = previous_moments.x;
