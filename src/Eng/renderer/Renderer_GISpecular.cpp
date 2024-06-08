@@ -27,8 +27,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
     using Trg = Ren::eBindTarget;
 
     // Reflection settings
-    static const int SamplesPerQuad = 4;
-    static const bool VarianceGuided = false;
+    const int SamplesPerQuad = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 4 : 1;
+    static const bool VarianceGuided = true;
     static const bool EnableBlur = true;
     const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
 
@@ -120,7 +120,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
                 ssr_classify.AddStorageImageOutput("Blue Noise Tex", params, Stg::ComputeShader);
         }
 
-        ssr_classify.set_execute_cb([this, data](RpBuilder &builder) {
+        ssr_classify.set_execute_cb([this, data, SamplesPerQuad](RpBuilder &builder) {
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
             RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
             RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);

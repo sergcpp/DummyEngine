@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "-j") == 0 && (++i != argc)) {
             threads_count = atoi(argv[++i]);
         } else if (strncmp(argv[i], "-j", 2) == 0) {
-            threads_count = atoi(&argv[i][2]);
+            //threads_count = atoi(&argv[i][2]);
         } else if (strcmp(argv[i], "--validation_level") == 0 || strcmp(argv[i], "-vl") == 0) {
             validation_level = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--nohwrt") == 0) {
