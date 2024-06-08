@@ -349,16 +349,15 @@ struct ViewState {
     float pixel_spread_angle;
     int frame_index;
     Ren::Vec3f prev_cam_pos;
-    Ren::Mat4f clip_from_world_no_translation, prev_clip_from_world_no_translation, down_buf_view_from_world,
+    Ren::Mat4f clip_from_world, prev_view_from_world, prev_clip_from_world, down_buf_view_from_world,
         prev_clip_from_view;
     mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[2];
     bool is_multisampled = false;
 };
 
 struct SharedDataBlock {
-    Ren::Mat4f view_from_world, clip_from_view, clip_from_world, clip_from_world_no_translation,
-        prev_clip_from_world_no_translation;
-    Ren::Mat4f world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
+    Ren::Mat4f view_from_world, clip_from_view, clip_from_world, prev_view_from_world, prev_clip_from_world;
+    Ren::Mat4f world_from_view, view_from_clip, world_from_clip, delta_matrix;
     Ren::Mat4f rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
@@ -372,7 +371,7 @@ struct SharedDataBlock {
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
     Types::AtmosphereParams atmosphere;
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 64 + 192 + 16, "!");
+static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 

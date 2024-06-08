@@ -43,43 +43,45 @@ layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #ifdef OUTPUT_VELOCITY
     layout(location = 0) out vec3 g_vtx_pos_cs_curr;
     layout(location = 1) out vec3 g_vtx_pos_cs_prev;
+    layout(location = 2) out vec2 g_vtx_z_vs_curr;
+    layout(location = 3) out vec2 g_vtx_z_vs_prev;
 #endif // OUTPUT_VELOCITY
 #ifdef TRANSPARENT
-    layout(location = 2) out vec2 g_vtx_uvs0;
-    layout(location = 3) out vec3 g_vtx_pos_ls;
+    layout(location = 4) out vec2 g_vtx_uvs0;
+    layout(location = 5) out vec3 g_vtx_pos_ls;
     #if defined(BINDLESS_TEXTURES)
-        layout(location = 4) out flat TEX_HANDLE g_alpha_tex;
+        layout(location = 6) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT
 
 invariant gl_Position;
 
 void main() {
-    ivec2 instance = g_instance_indices[gl_InstanceIndex];
-    mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
+    const ivec2 instance = g_instance_indices[gl_InstanceIndex];
+    const mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
 
 #ifdef MOVING
-    mat4 model_matrix_prev = FetchModelMatrix(g_instances_buf, instance.x + 1);
+    const mat4 model_matrix_prev = FetchModelMatrix(g_instances_buf, instance.x + 1);
 #endif
 
     // load vegetation properties
-    vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
-    vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
+    const vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
+    const vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
 #if defined(BINDLESS_TEXTURES)
-    MaterialData mat = g_materials[instance.y];
-    TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
-    TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
+    const MaterialData mat = g_materials[instance.y];
+    const TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
+    const TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // BINDLESS_TEXTURES
-    HierarchyData hdata_curr = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
+    const HierarchyData hdata_curr = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 
-    vec3 obj_pos_ws = model_matrix_curr[3].xyz;
-    vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
-    vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
-    vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
+    const vec3 obj_pos_ws = model_matrix_curr[3].xyz;
+    const vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
+    const vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
+    const vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
 
     vec3 _unused = vec3(0.0);
-    vec3 vtx_pos_ls = TransformVegetation(g_in_vtx_pos, _unused, _unused, g_noise_tex, wind_scroll, wind_params, wind_vec_ls, hdata_curr);
+    const vec3 vtx_pos_ls_curr = TransformVegetation(g_in_vtx_pos, _unused, _unused, g_noise_tex, wind_scroll, wind_params, wind_vec_ls, hdata_curr);
 
 #ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
@@ -89,33 +91,37 @@ void main() {
 #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT
 
-    vec3 vtx_pos_ws = (model_matrix_curr * vec4(vtx_pos_ls, 1.0)).xyz;
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_exp.xyz, 1.0);
+    const vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(vtx_pos_ls_curr, 1.0)).xyz;
+    gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws_curr, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
 
 #ifdef OUTPUT_VELOCITY
-    vec4 wind_scroll_prev = g_shrd_data.wind_scroll_prev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
+    const vec4 wind_scroll_prev = g_shrd_data.wind_scroll_prev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
 #ifdef MOVING
-    HierarchyData hdata_prev = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
+    const HierarchyData hdata_prev = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 #else // MOVING
-    HierarchyData hdata_prev = hdata_curr;
+    const HierarchyData hdata_prev = hdata_curr;
 #endif // MOVING
 
-    vec3 vtx_pos_ls_prev = TransformVegetation(g_in_vtx_pos, _unused, _unused, g_noise_tex, wind_scroll_prev, wind_params, wind_vec_ls, hdata_prev);
+    const vec3 vtx_pos_ls_prev = TransformVegetation(g_in_vtx_pos, _unused, _unused, g_noise_tex, wind_scroll_prev, wind_params, wind_vec_ls, hdata_prev);
 
 #ifdef MOVING
-    vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(vtx_pos_ls_prev, 1.0)).xyz;
+    const vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(vtx_pos_ls_prev, 1.0)).xyz;
 #else // MOVING
-    vec3 vtx_pos_ws_prev = (model_matrix_curr * vec4(vtx_pos_ls_prev, 1.0)).xyz;
+    const vec3 vtx_pos_ws_prev = (model_matrix_curr * vec4(vtx_pos_ls_prev, 1.0)).xyz;
 #endif // MOVING
 
     g_vtx_pos_cs_curr = gl_Position.xyw;
-    g_vtx_pos_cs_prev = (g_shrd_data.prev_clip_from_world_no_translation * vec4(vtx_pos_ws_prev - g_shrd_data.prev_cam_pos.xyz, 1.0)).xyw;
+    g_vtx_pos_cs_prev = (g_shrd_data.prev_clip_from_world * vec4(vtx_pos_ws_prev, 1.0)).xyw;
 #if defined(VULKAN)
     g_vtx_pos_cs_prev.y = -g_vtx_pos_cs_prev.y;
 #endif // VULKAN
+    const vec4 vtx_pos_vs_curr = g_shrd_data.view_from_world * vec4(vtx_pos_ws_curr, 1.0);
+    const vec4 vtx_pos_vs_prev = g_shrd_data.prev_view_from_world * vec4(vtx_pos_ws_prev, 1.0);
+    g_vtx_z_vs_curr = vtx_pos_vs_curr.zw;
+    g_vtx_z_vs_prev = vtx_pos_vs_prev.zw;
 #endif // OUTPUT_VELOCITY
 }
 

@@ -161,8 +161,9 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     /* mediump */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
     /* mediump */ vec3 history_normal;
 
-    const vec2 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xy;
-    const vec2 surf_repr_uv = uv - motion_vector;
+    vec3 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xyz;
+    motion_vector.xy /= g_shrd_data.res_and_fres.xy;
+    const vec2 surf_repr_uv = uv - motion_vector.xy;
 
     /* mediump */ vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
     surf_history.rgb *= exposure;
@@ -177,9 +178,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     reprojection_uv = surf_repr_uv;
     reprojection = surf_history;
 
-
     float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
-    float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
+    float linear_depth = LinearizeDepth(depth, g_shrd_data.clip_info) - motion_vector.z;
     // Determine disocclusion factor based on history
     disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 

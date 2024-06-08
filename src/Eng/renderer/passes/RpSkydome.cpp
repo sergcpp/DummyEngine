@@ -107,7 +107,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
 
     Skydome::Params uniform_params = {};
     uniform_params.xform = scale_matrix;
-    uniform_params.clip_from_world = view_state_->clip_from_world_no_translation;
+    uniform_params.clip_from_world = view_state_->clip_from_world;
 
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
@@ -128,7 +128,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d);
 
-        uniform_params.clip_from_world = view_state_->clip_from_world_no_translation;
+        uniform_params.clip_from_world = view_state_->clip_from_world;
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, color_targets, depth_target, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);

@@ -123,6 +123,7 @@ void main() {
     vec3 col_max = col_avg + 1.25 * sigma;
 
     vec2 closest_vel = texelFetch(g_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(g_params.tex_size - vec2(1))), 0).rg;
+    closest_vel /= g_params.tex_size;
 #else
     vec3 col_tl = SampleColor(g_color_curr, norm_uvs + vec2(-texel_size.x, -texel_size.y));
     vec3 col_tc = SampleColor(g_color_curr, norm_uvs + vec2(0, -texel_size.y));
@@ -162,6 +163,7 @@ void main() {
 
     vec3 closest_frag = FindClosestFragment_3x3(g_depth, norm_uvs, texel_size);
     vec2 closest_vel = textureLod(g_velocity, closest_frag.xy, 0.0).rg;
+    closest_vel /= g_params.tex_size;
 #endif
 
     vec2 hist_uvs = norm_uvs - closest_vel;

@@ -33,37 +33,39 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
 #ifdef MOVING
     layout(location = 0) out vec3 g_vtx_pos_cs_curr;
     layout(location = 1) out vec3 g_vtx_pos_cs_prev;
+    layout(location = 2) out vec2 g_vtx_z_vs_curr;
+    layout(location = 3) out vec2 g_vtx_z_vs_prev;
 #endif // MOVING
 #ifdef TRANSPARENT
-    layout(location = 2) out vec2 g_vtx_uvs0;
-    layout(location = 3) out vec3 g_vtx_pos_ls;
+    layout(location = 4) out vec2 g_vtx_uvs0;
+    layout(location = 5) out vec3 g_vtx_pos_ls;
     #if defined(BINDLESS_TEXTURES)
-        layout(location = 4) out flat TEX_HANDLE g_alpha_tex;
+        layout(location = 6) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT
 
 invariant gl_Position;
 
 void main() {
-    ivec2 instance = g_instance_indices[gl_InstanceIndex];
+    const ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
-    mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
+    const mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
 #ifdef MOVING
-    mat4 model_matrix_prev = FetchPrevModelMatrix(g_instances_buf, instance.x);
+    const mat4 model_matrix_prev = FetchPrevModelMatrix(g_instances_buf, instance.x);
 #endif // MOVING
 
 #ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
-    MaterialData mat = g_materials[instance.y];
+    const MaterialData mat = g_materials[instance.y];
 #if defined(BINDLESS_TEXTURES)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
     g_vtx_pos_ls = g_in_vtx_pos;
 #endif // TRANSPARENT
 
-    vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos, 1.0)).xyz;
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws_curr - g_shrd_data.cam_pos_and_exp.xyz, 1.0);
+    const vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos, 1.0)).xyz;
+    gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws_curr, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
@@ -71,10 +73,14 @@ void main() {
 #ifdef MOVING
     g_vtx_pos_cs_curr = gl_Position.xyw;
 
-    vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(g_in_vtx_pos, 1.0)).xyz;
-    g_vtx_pos_cs_prev = (g_shrd_data.prev_clip_from_world_no_translation * vec4(vtx_pos_ws_prev - g_shrd_data.prev_cam_pos.xyz, 1.0)).xyw;
+    const vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(g_in_vtx_pos, 1.0)).xyz;
+    g_vtx_pos_cs_prev = (g_shrd_data.prev_clip_from_world * vec4(vtx_pos_ws_prev, 1.0)).xyw;
 #if defined(VULKAN)
     g_vtx_pos_cs_prev.y = -g_vtx_pos_cs_prev.y;
 #endif
+    const vec4 vtx_pos_vs_curr = g_shrd_data.view_from_world * vec4(vtx_pos_ws_curr, 1.0);
+    const vec4 vtx_pos_vs_prev = g_shrd_data.prev_view_from_world * vec4(vtx_pos_ws_prev, 1.0);
+    g_vtx_z_vs_curr = vtx_pos_vs_curr.zw;
+    g_vtx_z_vs_prev = vtx_pos_vs_prev.zw;
 #endif // MOVING
 }

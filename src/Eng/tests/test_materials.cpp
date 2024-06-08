@@ -485,7 +485,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
     { // complex materials
         std::vector<std::future<void>> futures;
 
-        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 24.17, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 24.16, Full));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 35.98, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 28.33, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 27.90, NoDiffGI));
@@ -499,18 +499,18 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", 27.98, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 35.24, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 32.24, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 30.01, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 30.00, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 27.33, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 28.77, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 28.64, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 28.76, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", 28.63, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", 33.91, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", 31.11, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", 26.76, NoDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", 20.67, MedDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", 20.66, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", 20.81, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", 25.57, Full_Ultra));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 34.57, NoShadow));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 35.89, NoGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 34.56, NoShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 35.85, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 30.52, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 25.37, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 25.65, Full));

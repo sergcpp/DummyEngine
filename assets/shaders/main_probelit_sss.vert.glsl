@@ -88,7 +88,7 @@ void main(void) {
     g_norm_detail_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
 
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_exp.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

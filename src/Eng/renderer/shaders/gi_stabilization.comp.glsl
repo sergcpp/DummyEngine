@@ -54,7 +54,7 @@ void Stabilize(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     const vec2 uvs = (vec2(dispatch_thread_id) + 0.5) * texel_size;
 
     const vec2 closest_frag = FindClosestFragment_3x3(g_depth_tex, uvs, texel_size).xy;
-    const vec2 closest_vel = textureLod(g_velocity_tex, closest_frag.xy, 0.0).rg;
+    const vec2 closest_vel = textureLod(g_velocity_tex, closest_frag.xy, 0.0).rg * texel_size;
 
     const vec4 rad_curr = Tonemap(texelFetch(g_gi_curr_tex, dispatch_thread_id, 0), exposure);
 

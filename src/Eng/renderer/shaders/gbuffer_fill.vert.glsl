@@ -105,7 +105,7 @@ void main(void) {
     g_mat_params0 = mat.params[1];
     g_mat_params1 = mat.params[2];
 
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_exp.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

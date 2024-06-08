@@ -104,8 +104,8 @@ void main() {
         return;
     }
 
-    vec2 velocity = 1000.0 * texelFetch(g_velocity_tex, ivec2(px_coords), 0).rg;
-    vec2 tile_velocity = 1000.0 * texelFetch(g_velocity_tex, ivec2(arrowTileCenterCoord(vec2(px_coords))), 0).rg;
+    vec2 velocity = texelFetch(g_velocity_tex, ivec2(px_coords), 0).rg;
+    vec2 tile_velocity = texelFetch(g_velocity_tex, ivec2(arrowTileCenterCoord(vec2(px_coords))), 0).rg;
     float arrow_res = arrow(vec2(px_coords), tile_velocity * ARROW_TILE_SIZE * 0.4);
 
     velocity = velocity * 0.5 + vec2(0.5);

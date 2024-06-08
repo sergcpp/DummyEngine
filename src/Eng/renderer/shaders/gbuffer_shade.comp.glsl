@@ -257,5 +257,6 @@ void main() {
     final_color += artificial_light;
     final_color += lobe_weights.diffuse_mul * base_color * decompress_hdr(textureLod(g_gi_tex, px_uvs, 0.0).rgb);
 
+    const float sun_visibility = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0).r;
     imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color), 0.0));
 }

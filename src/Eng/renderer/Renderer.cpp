@@ -955,9 +955,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 Ren::Tex2DParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
-                params.format = Ren::eTexFormat::RawRG16Snorm;
+                params.format = Ren::eTexFormat::RawRGBA16F;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-                params.samples = view_state_.is_multisampled ? 4 : 1;
 
                 frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, params);
             }
@@ -1396,10 +1395,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
         view_state_.prev_cam_pos = list.draw_cam.world_position();
 
-        Ren::Mat4f view_matrix_no_translation = list.draw_cam.view_matrix();
-        view_matrix_no_translation[3][0] = view_matrix_no_translation[3][1] = view_matrix_no_translation[3][2] = 0;
-
-        view_state_.prev_clip_from_world_no_translation = list.draw_cam.proj_matrix() * view_matrix_no_translation;
+        view_state_.prev_clip_from_world = list.draw_cam.proj_matrix() * list.draw_cam.view_matrix();
+        view_state_.prev_view_from_world = list.draw_cam.view_matrix();
         view_state_.prev_clip_from_view = list.draw_cam.proj_matrix_offset();
     }
 

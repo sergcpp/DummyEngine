@@ -193,7 +193,7 @@ bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
 }
 
 vec2 GetClosestVelocity(uvec2 did, float depth) {
-    vec2 closest_velocity = texelFetch(g_velocity_tex, ivec2(did), 0).rg;
+    vec2 closest_velocity = texelFetch(g_velocity_tex, ivec2(did), 0).rg * g_params.inv_img_size;
     //return closest_velocity;
     float closest_depth = depth;
 

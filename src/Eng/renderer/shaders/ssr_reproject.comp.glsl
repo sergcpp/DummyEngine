@@ -184,7 +184,7 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
 
     vec2 prev_hit_position;
     { // project to screen space of previous frame
-        vec4 projected = g_shrd_data.prev_clip_from_world_no_translation * vec4(hit_position_ws - g_shrd_data.prev_cam_pos.xyz, 1.0);
+        vec4 projected = g_shrd_data.prev_clip_from_world * vec4(hit_position_ws, 1.0);
         projected.xyz /= projected.w;
         projected.xy = 0.5 * projected.xy + 0.5;
 #if defined(VULKAN)
@@ -214,9 +214,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     float history_linear_depth;
 
     {
-        vec2 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xy;
-        vec2 surf_repr_uv = uv - motion_vector;
-        vec2 hit_repr_uv = GetHitPositionReprojection(ivec2(dispatch_thread_id), uv, ray_len);
+        vec3 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xyz;
+        motion_vector.xy /= g_shrd_data.res_and_fres.xy;
+        const vec2 surf_repr_uv = uv - motion_vector.xy;
+        const vec2 hit_repr_uv = GetHitPositionReprojection(ivec2(dispatch_thread_id), uv, ray_len);
 
         /* mediump */ vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
         surf_history.rgb *= exposure;
@@ -258,8 +259,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             }
         }
 
-        float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
-        float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
+        const float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
+        const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info) - motion_vector.z;
         // Determine disocclusion factor based on history
         disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 

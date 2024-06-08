@@ -82,7 +82,7 @@ void main(void) {
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(vtx_nor_ls, 0.0)).xyz);
     vec3 vtx_tan_ws = normalize((model_matrix * vec4(vtx_tan_ls, 0.0)).xyz);
 
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_exp.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

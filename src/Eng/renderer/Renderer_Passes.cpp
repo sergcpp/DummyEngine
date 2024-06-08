@@ -265,17 +265,16 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             shrd_data.clip_from_view[2][0] += p_list_->draw_cam.px_offset()[0];
             shrd_data.clip_from_view[2][1] += p_list_->draw_cam.px_offset()[1];
 
-            shrd_data.clip_from_world = (shrd_data.clip_from_view * shrd_data.view_from_world);
+            shrd_data.clip_from_world = view_state_.clip_from_world =
+                (shrd_data.clip_from_view * shrd_data.view_from_world);
             Ren::Mat4f view_matrix_no_translation = shrd_data.view_from_world;
             view_matrix_no_translation[3][0] = view_matrix_no_translation[3][1] = view_matrix_no_translation[3][2] = 0;
 
-            shrd_data.clip_from_world_no_translation = view_state_.clip_from_world_no_translation =
-                shrd_data.clip_from_view * view_matrix_no_translation;
-            shrd_data.prev_clip_from_world_no_translation = view_state_.prev_clip_from_world_no_translation;
+            shrd_data.prev_view_from_world = view_state_.prev_view_from_world;
+            shrd_data.prev_clip_from_world = view_state_.prev_clip_from_world;
             shrd_data.world_from_view = Inverse(shrd_data.view_from_world);
             shrd_data.view_from_clip = Inverse(shrd_data.clip_from_view);
             shrd_data.world_from_clip = Inverse(shrd_data.clip_from_world);
-            shrd_data.world_from_clip_no_translation = Inverse(shrd_data.clip_from_world_no_translation);
             // delta matrix between current and previous frame
             shrd_data.delta_matrix =
                 view_state_.prev_clip_from_view * (view_state_.down_buf_view_from_world * shrd_data.world_from_view);
