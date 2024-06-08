@@ -7,6 +7,7 @@
 #endif
 
 #include "_cs_common.glsl"
+#include "_rt_common.glsl"
 #include "gi_common.glsl"
 #include "gi_blur_interface.h"
 
@@ -207,7 +208,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     /* mediump */ vec4 sum = texelFetch(g_gi_tex, dispatch_thread_id, 0);
     /* mediump */ vec2 total_weight = vec2(1.0);
 
-    float hit_dist = sum.w;
+    float hit_dist = sum.w * GetHitDistanceNormalization(center_depth_lin, 1.0);
     float blur_radius = GetBlurRadius(InitialBlurRadius, hit_dist, center_depth_lin, accumulation_speed, RadiusBias, RadiusScale, 1.0);
     float blur_radius_ws = PixelRadiusToWorld(g_shrd_data.taa_info.w, 0.0 /* is_ortho */, blur_radius, center_depth_lin);
 
@@ -233,8 +234,10 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
 
-        sum += weight * textureLod(g_gi_tex, uv, 0.0);
-        total_weight += vec2(weight);
+        const vec4 fetch = textureLod(g_gi_tex, uv, 0.0);
+
+        sum += vec4(weight * fetch.xyz, 0.25 * weight * fetch.w);
+        total_weight += vec2(weight, 0.25 * weight);
     }
 
     sum /= total_weight.xxxy;

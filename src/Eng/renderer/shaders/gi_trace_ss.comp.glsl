@@ -9,6 +9,7 @@
 #endif
 
 #include "_cs_common.glsl"
+#include "_rt_common.glsl"
 #include "gi_common.glsl"
 #include "gi_trace_ss_interface.h"
 
@@ -109,6 +110,8 @@ void main() {
 
         out_color = vec4(textureLod(color_tex, uv, 0.0).rgb, distance(hit_point_vs, ray_origin_vs.xyz));
     }
+
+    out_color.w = GetNormHitDist(out_color.w, -ray_origin_vs.z, 1.0);
 
     { // schedule rt rays
         bool needs_ray = !hit_found;

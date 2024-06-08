@@ -27,3 +27,20 @@ vec3 offset_ray(vec3 p, vec3 n) {
                 abs(p[1]) < Origin ? (p[1] + FloatScale * n[1]) : p_i[1],
                 abs(p[2]) < Origin ? (p[2] + FloatScale * n[2]) : p_i[2]);
 }
+
+float GetHitDistanceNormalization(float viewZ, float roughness) {
+    // (units) - constant value
+    const float A = 3.0;
+    // (> 0) - viewZ based linear scale (1 m - 10 cm, 10 m - 1 m, 100 m - 10 m)
+    const float B = 0.1;
+    // (>= 1) - roughness based scale, use values > 1 to get bigger hit distance for low roughness
+    const float C = 20.0;
+    // (<= 0) - absolute value should be big enough to collapse "exp2( D * roughness ^ 2 )" to "~0" for roughness = 1
+    const float D = -25.0;
+
+    return (A + abs(viewZ) * B) * mix(1.0, C, saturate(exp2(D * roughness * roughness)));
+}
+
+float GetNormHitDist(float hitDist, float viewZ, float roughness) {
+    return saturate(hitDist / GetHitDistanceNormalization(viewZ, roughness));
+}

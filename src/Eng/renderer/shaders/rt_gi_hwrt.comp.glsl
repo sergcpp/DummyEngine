@@ -446,6 +446,7 @@ void main() {
     }
 
     final_color = compress_hdr(final_color);
+    first_ray_len = GetNormHitDist(first_ray_len, view_z, 1.0);
 #if 0
     int copy_count = 0;
     if (copy_horizontal) ++copy_count;

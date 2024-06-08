@@ -16,9 +16,11 @@
 // limit for 10- and 11-bit float value (https://www.khronos.org/opengl/wiki/Small_Float_Formats)
 #define SMALL_FLT_MAX 6.5e4
 
+
 #define saturate(x) min(max((x), 0.0), 1.0)
 #define rcp(x) (1.0 / (x))
 #define positive_rcp(x) (1.0 / max((x), FLT_MIN))
+#define sqr(x) ((x) * (x))
 
 #define min3(x, y, z) min((x), min((y), (z)))
 #define max3(x, y, z) max((x), max((y), (z)))
