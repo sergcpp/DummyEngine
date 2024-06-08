@@ -635,6 +635,21 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         assert(status == Ren::eTexLoadStatus::CreatedDefault);
     }
 
+    if (viewer_->app_params.gfx_preset == eGfxPreset::Medium) {
+        renderer_->settings.gi_quality = Eng::eGIQuality::Medium;
+        renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
+        renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
+    } else if (viewer_->app_params.gfx_preset == eGfxPreset::High) {
+        renderer_->settings.gi_quality = Eng::eGIQuality::High;
+        renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
+        renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
+    } else if (viewer_->app_params.gfx_preset == eGfxPreset::Ultra) {
+        renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
+        renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
+        renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+    }
+    main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
+
     sun_dir_ = scene_manager_->scene_data().env.sun_dir;
 }
 
@@ -682,9 +697,7 @@ void GSBaseState::Draw() {
             main_view_lists_[1].Clear();
             random_->Reset(0);
             renderer_->settings.taa_mode = Eng::eTAAMode::Static;
-            renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
-            renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
-            main_view_lists_[0].render_settings = renderer_->settings;
+            main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
             renderer_->reset_accumulation();
         }
         capture_state_ = eCaptureState::Warmup;

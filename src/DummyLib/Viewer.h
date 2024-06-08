@@ -35,6 +35,12 @@ class DebugInfoUI;
 class Dictionary;
 class FontStorage;
 
+enum class eGfxPreset {
+    Medium,
+    High,
+    Ultra
+};
+
 struct AppParams {
     std::string scene_name = "scenes/mat_test.json";
     std::string device_name;
@@ -46,6 +52,7 @@ struct AppParams {
     bool pt_nohwrt = false;
     int pt_max_samples = 128;
     std::optional<float> exposure;
+    eGfxPreset gfx_preset = eGfxPreset::High;
 #ifndef NDEBUG
     int validation_level = 1;
 #else
