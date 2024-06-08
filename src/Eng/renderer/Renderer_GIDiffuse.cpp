@@ -107,8 +107,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     }
 
     // GI settings
-    static const int SamplesPerQuad = 4;
-    static const bool VarianceGuided = false;
+    const int SamplesPerQuad = (settings.gi_quality == eGIQuality::Ultra) ? 4 : 1;
+    static const bool VarianceGuided = true;
     static const bool EnableBlur = true;
     const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
 
@@ -209,7 +209,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         auto *data = gi_classify.AllocPassData<PassData>();
         data->depth = gi_classify.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->spec_tex = gi_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
-        // data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
+        data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
         data->sobol = gi_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
         data->scrambling_tile = gi_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
         data->ranking_tile = gi_classify.AddStorageReadonlyInput(ranking_tile_buf_, Stg::ComputeShader);
@@ -248,10 +248,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_classify.AddStorageImageOutput("GI Blue Noise Tex", params, Stg::ComputeShader);
         }
 
-        gi_classify.set_execute_cb([this, data](RpBuilder &builder) {
+        gi_classify.set_execute_cb([this, data, SamplesPerQuad](RpBuilder &builder) {
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
             RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
-            // RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
+            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
             RpAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
             RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
             RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
@@ -281,7 +281,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DSampled, GIClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Trg::Tex2DSampled, GIClassifyTiles::SPEC_TEX_SLOT, *spec_tex.ref},
-                //{Trg::Tex2DSampled, GIClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::Tex2DSampled, GIClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::SBufRO, GIClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Trg::SBufRO, GIClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
                 {Trg::SBufRO, GIClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},

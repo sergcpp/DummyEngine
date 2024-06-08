@@ -446,7 +446,19 @@ void main() {
     }
 
     final_color = compress_hdr(final_color);
-
+#if 0
+    int copy_count = 0;
+    if (copy_horizontal) ++copy_count;
+    if (copy_vertical) ++copy_count;
+    if (copy_diagonal) ++copy_count;
+    if (copy_count == 3) {
+        final_color *= vec3(0.0, 1.0, 0.0);
+    } else if (copy_count == 2 || copy_count == 1) {
+        final_color *= vec3(0.0, 0.0, 1.0);
+    } else {
+        final_color *= vec3(1.0, 0.0, 0.0);
+    }
+#endif
     imageStore(g_out_color_img, icoord, vec4(final_color, first_ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
