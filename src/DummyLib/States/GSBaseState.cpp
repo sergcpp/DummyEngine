@@ -641,7 +641,7 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::High) {
         renderer_->settings.gi_quality = Eng::eGIQuality::High;
-        renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
+        renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::Ultra) {
         renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
