@@ -259,6 +259,7 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
 
     DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     if (!app_params.ref_name.empty()) {
+        style &= ~WS_THICKFRAME;
         style &= ~WS_MINIMIZEBOX;
         style &= ~WS_MAXIMIZEBOX;
     }
