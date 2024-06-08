@@ -241,7 +241,7 @@ class Context {
     Ren::Tex2DRef backbuffer_ref() const;
 
     int WriteTimestamp(const bool start);
-    uint64_t GetTimestampIntervalDuration(int query_start, int query_end) const;
+    uint64_t GetTimestampIntervalDurationUs(int query_start, int query_end) const;
 
 #if defined(USE_GL_RENDER)
     struct { // NOLINT

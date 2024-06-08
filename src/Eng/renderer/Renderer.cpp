@@ -1494,7 +1494,7 @@ void Eng::Renderer::InitBackendInfo() {
     for (auto &t : rp_builder_.pass_timings_[ctx_.backend_frame()]) {
         PassTiming &new_t = backend_info_.pass_timings.emplace_back();
         strncpy(new_t.name, t.name.c_str(), sizeof(new_t.name));
-        new_t.duration = ctx_.GetTimestampIntervalDuration(t.query_beg, t.query_end);
+        new_t.duration = ctx_.GetTimestampIntervalDurationUs(t.query_beg, t.query_end);
     }
 
     backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
@@ -1502,7 +1502,7 @@ void Eng::Renderer::InitBackendInfo() {
 
     backend_info_.gpu_total_duration = 0;
     if (backend_gpu_start_ != -1 && backend_gpu_end_ != -1) {
-        backend_info_.gpu_total_duration = ctx_.GetTimestampIntervalDuration(backend_gpu_start_, backend_gpu_end_);
+        backend_info_.gpu_total_duration = ctx_.GetTimestampIntervalDurationUs(backend_gpu_start_, backend_gpu_end_);
     }
 }
 

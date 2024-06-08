@@ -15,7 +15,6 @@ void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::
     const float k = (1.0f - alpha);
 
     auto us_to_ms = [](uint64_t v) -> float { return 0.001f * v; };
-    auto ns_to_ms = [](uint64_t v) -> float { return float(0.000001 * double(v)); };
 
     debug_items_ = debug_items;
 
@@ -36,10 +35,10 @@ void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::
     for (int i = 0; i < int(backend_info.pass_timings.size()); ++i) {
         if (back_info_smooth_.pass_names[i] == backend_info.pass_timings[i].name) {
             back_info_smooth_.pass_timings_ms[i] *= alpha;
-            back_info_smooth_.pass_timings_ms[i] += k * ns_to_ms(backend_info.pass_timings[i].duration);
+            back_info_smooth_.pass_timings_ms[i] += k * us_to_ms(backend_info.pass_timings[i].duration);
         } else {
             back_info_smooth_.pass_names[i] = backend_info.pass_timings[i].name;
-            back_info_smooth_.pass_timings_ms[i] = ns_to_ms(backend_info.pass_timings[i].duration);
+            back_info_smooth_.pass_timings_ms[i] = us_to_ms(backend_info.pass_timings[i].duration);
         }
     }
 
@@ -48,7 +47,7 @@ void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::
         k * us_to_ms(backend_info.cpu_end_timepoint_us - backend_info.cpu_start_timepoint_us);
 
     back_info_smooth_.gpu_total_ms *= alpha;
-    back_info_smooth_.gpu_total_ms += k * ns_to_ms(backend_info.gpu_total_duration);
+    back_info_smooth_.gpu_total_ms += k * us_to_ms(backend_info.gpu_total_duration);
 
     items_info_smooth_.lights_count *= alpha;
     items_info_smooth_.lights_count += k * items_info.lights_count;

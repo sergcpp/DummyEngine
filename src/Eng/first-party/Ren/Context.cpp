@@ -531,11 +531,6 @@ Ren::Tex2DRef Ren::Context::backbuffer_ref() const {
     return api_ctx_->present_image_refs[api_ctx_->active_present_image];
 }
 
-uint64_t Ren::Context::GetTimestampIntervalDuration(const int query_beg, const int query_end) const {
-    return api_ctx_->query_results[api_ctx_->backend_frame][query_end] -
-           api_ctx_->query_results[api_ctx_->backend_frame][query_beg];
-}
-
 Ren::StageBufRef::StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence, CommandBuffer _cmd_buf,
                               bool &_is_in_use)
     : ctx(_ctx), buf(_buf), fence(_fence), cmd_buf(_cmd_buf), is_in_use(_is_in_use) {

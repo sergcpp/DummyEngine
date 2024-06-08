@@ -409,6 +409,12 @@ int Ren::Context::WriteTimestamp(const bool start) {
     return int(query_index);
 }
 
+uint64_t Ren::Context::GetTimestampIntervalDurationUs(const int query_beg, const int query_end) const {
+    return uint64_t(float(api_ctx_->query_results[api_ctx_->backend_frame][query_end] -
+                          api_ctx_->query_results[api_ctx_->backend_frame][query_beg]) *
+                    api_ctx_->phys_device_limits.timestampPeriod / 1000.0f);
+}
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
