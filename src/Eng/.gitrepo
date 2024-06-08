@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = taa_filter
-	commit = 8be0b9c08bc460703a7097125f35096575a395a8
+	branch = denoising8
+	commit = dfc7e9bbea71a9e991ab496f35862285dc45366e
 	method = merge
 	cmdver = 0.4.6
-	parent = c62444032c3ce9c350dbc962e3d3b7b21156314b
+	parent = 04e07067a481aba8541380fe0074cf2f2a57eca3
