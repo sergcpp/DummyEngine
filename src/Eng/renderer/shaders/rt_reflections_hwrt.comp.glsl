@@ -125,6 +125,7 @@ void main() {
 
     vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
+    const float view_z = -ray_origin_vs.z;
 
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
@@ -455,6 +456,7 @@ void main() {
     }
 
     final_color = compress_hdr(final_color);
+    first_ray_len = GetNormHitDist(first_ray_len, view_z, roughness);
 #if 0
     int copy_count = 0;
     if (copy_horizontal) ++copy_count;

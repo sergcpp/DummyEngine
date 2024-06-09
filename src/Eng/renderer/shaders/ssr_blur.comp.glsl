@@ -7,6 +7,7 @@
 #endif
 
 #include "_cs_common.glsl"
+#include "_rt_common.glsl"
 #include "gi_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_blur_interface.h"
@@ -247,7 +248,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     /* mediump */ vec4 sum = texelFetch(g_refl_tex, dispatch_thread_id, 0);
     /* mediump */ vec2 total_weight = vec2(1.0);
 
-    float hit_dist = sum.w;
+    float hit_dist = sum.w * GetHitDistanceNormalization(center_depth_lin, center_roughness);
     float blur_radius = GetBlurRadius(InitialBlurRadius, hit_dist, center_depth_lin, accumulation_speed, RadiusBias, RadiusScale, center_roughness);
     float blur_radius_ws = PixelRadiusToWorld(g_shrd_data.taa_info.w, 0.0 /* is_ortho */, blur_radius, center_depth_lin);
 

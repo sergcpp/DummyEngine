@@ -7,6 +7,7 @@
 #endif
 
 #include "_cs_common.glsl"
+#include "_rt_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_reproject_interface.h"
 
@@ -356,6 +357,10 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     const float roughness = normal_fetch.w;
     /* mediump */ vec4 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
     refl.xyz *= exposure;
+
+    const float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
+    const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
+    refl.w *= GetHitDistanceNormalization(linear_depth, roughness);
 
     if (IsGlossyReflection(roughness)) {
         /* mediump */ float disocclusion_factor;

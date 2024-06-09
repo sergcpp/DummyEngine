@@ -120,6 +120,7 @@ void main() {
 
     vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
+    const float view_z = -ray_origin_vs.z;
 
     const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
@@ -491,6 +492,7 @@ void main() {
     }
 
     final_color = compress_hdr(final_color);
+    first_ray_len = GetNormHitDist(first_ray_len, view_z, roughness);
 #if 0
     int copy_count = 0;
     if (copy_horizontal) ++copy_count;

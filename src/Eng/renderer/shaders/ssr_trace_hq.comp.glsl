@@ -9,6 +9,7 @@
 #endif
 
 #include "_cs_common.glsl"
+#include "_rt_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_trace_hq_interface.h"
 
@@ -82,6 +83,7 @@ void main() {
 
     vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
+    const float view_z = -ray_origin_vs.z;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec2 u = texelFetch(g_noise_tex, pix_uvs % 128, 0).rg;
@@ -124,7 +126,8 @@ void main() {
 #endif
     }
 
-    const float ray_len = hit_found ? distance(hit_point_vs, ray_origin_vs.xyz) : 0.0;
+    float ray_len = hit_found ? distance(hit_point_vs, ray_origin_vs.xyz) : 0.0;
+    ray_len = GetNormHitDist(ray_len, view_z, roughness);
 
     imageStore(g_out_color_img, pix_uvs, vec4(out_color, ray_len));
 
