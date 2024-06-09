@@ -9,6 +9,7 @@
 #endif
 
 #include "_fs_common.glsl"
+#include "_rt_common.glsl"
 #include "_principled.glsl"
 #include "blit_ssr_compose_new_interface.h"
 
@@ -35,7 +36,8 @@ void main() {
     ivec2 icoord = ivec2(gl_FragCoord.xy);
     vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
 
     vec4 pos_cs = vec4(norm_uvs, depth, 1.0);
 #if defined(VULKAN)
@@ -94,11 +96,16 @@ void main() {
     const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-    const vec3 refl_color = texelFetch(g_refl_tex, icoord, 0).rgb;
+    vec4 refl = texelFetch(g_refl_tex, icoord, 0);
+    //refl.w *= GetHitDistanceNormalization(linear_depth, roughness);
+
+    // Try to use specular occlusion a bit (totally adhoc and fake)
+    refl.xyz *= mix(saturate(16.0 * refl.w), 1.0, saturate(0.5 - roughness + metallic));
+
     vec3 final_color = vec3(0.0);
 
     if (lobe_weights.specular > 0.0) {
-        final_color += refl_color * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
+        final_color += refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
     }
 
     /*if (lobe_weights.clearcoat > 0.0) {
