@@ -65,24 +65,25 @@ void Stabilize(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     }
 
     { // neighbourhood clamp
-        const vec3 rad_tl = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2(-1, -1)).rgb, exposure);
-        const vec3 rad_tc = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 0, -1)).rgb, exposure);
-        const vec3 rad_tr = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 1, -1)).rgb, exposure);
-        const vec3 rad_ml = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2(-1,  0)).rgb, exposure);
-        const vec3 rad_mc = rad_curr.rgb;
-        const vec3 rad_mr = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 1,  0)).rgb, exposure);
-        const vec3 rad_bl = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2(-1,  1)).rgb, exposure);
-        const vec3 rad_bc = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 0,  1)).rgb, exposure);
-        const vec3 rad_br = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 1,  1)).rgb, exposure);
+        const vec4 rad_tl = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2(-1, -1)), exposure);
+        const vec4 rad_tc = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 0, -1)), exposure);
+        const vec4 rad_tr = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 1, -1)), exposure);
+        const vec4 rad_ml = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2(-1,  0)), exposure);
+        const vec4 rad_mc = rad_curr;
+        const vec4 rad_mr = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 1,  0)), exposure);
+        const vec4 rad_bl = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2(-1,  1)), exposure);
+        const vec4 rad_bc = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 0,  1)), exposure);
+        const vec4 rad_br = Tonemap(textureLodOffset(g_ssr_curr_tex, uvs, 0.0, ivec2( 1,  1)), exposure);
 
-        const vec3 rad_min = min3(min3(rad_tl, rad_tc, rad_tr),
+        const vec4 rad_min = min3(min3(rad_tl, rad_tc, rad_tr),
                                   min3(rad_ml, rad_mc, rad_mr),
                                   min3(rad_bl, rad_bc, rad_br));
-        const vec3 rad_max = max3(max3(rad_tl, rad_tc, rad_tr),
+        const vec4 rad_max = max3(max3(rad_tl, rad_tc, rad_tr),
                                   max3(rad_ml, rad_mc, rad_mr),
                                   max3(rad_bl, rad_bc, rad_br));
 
-        rad_hist.rgb = ClipAABB(rad_min, rad_max, rad_hist.rgb);
+        rad_hist.rgb = ClipAABB(rad_min.rgb, rad_max.rgb, rad_hist.rgb);
+        rad_hist.a = clamp(rad_hist.a, rad_min.a, rad_max.a);
     }
 
     const float HistoryWeightMin = 0.95;
