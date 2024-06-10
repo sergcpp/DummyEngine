@@ -286,7 +286,7 @@ void main() {
             tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
             const vec3 P = ray_origin_ws.xyz + refl_ray_ws * hit_t;
-            const vec3 I = -refl_ray_ws;//normalize(g_shrd_data.cam_pos_and_exp.xyz - P);
+            const vec3 I = -refl_ray_ws;
             const float N_dot_V = saturate(dot(N, I));
 
             vec3 tint_color = vec3(0.0);

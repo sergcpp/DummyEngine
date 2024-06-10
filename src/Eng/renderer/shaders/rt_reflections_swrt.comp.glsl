@@ -124,6 +124,8 @@ void main() {
 
     const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
+    const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
+
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u.xy);
@@ -136,9 +138,6 @@ void main() {
     vec3 throughput = vec3(1.0);
     vec3 final_color = vec3(0.0);
 
-    vec3 ro = ray_origin_ws.xyz + 0.001 * refl_ray_ws;
-    vec3 inv_d = safe_invert(refl_ray_ws);
-
     for (int j = 0; j < NUM_BOUNCES; ++j) {
         const bool is_last_bounce = (j == NUM_BOUNCES - 1);
 
@@ -148,6 +147,9 @@ void main() {
         inter.geo_index = inter.geo_count = 0;
         inter.t = 1000.0;
         inter.u = inter.v = 0.0;
+
+        vec3 ro = ray_origin_ws.xyz + 0.001 * refl_ray_ws;
+        const vec3 inv_d = safe_invert(refl_ray_ws);
 
         int transp_depth = 0;
         while (transp_depth++ < 4) {
@@ -198,12 +200,9 @@ void main() {
             break;
         }
 
-        const bool ignore_portals_specular = true;
-
         if (inter.mask == 0) {
             // Check portal lights intersection (rough rays are blocked by them)
-            for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff &&
-                !ignore_portals_specular; ++i) {
+            for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
                 const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
 
                 const vec3 light_pos = litem.pos_and_radius.xyz;
@@ -224,7 +223,7 @@ void main() {
                     if (a1 >= -1.0 && a1 <= 1.0) {
                         const float a2 = dot(light_v, vi);
                         if (a2 >= -1.0 && a2 <= 1.0) {
-                            throughput *= 0.0;
+                            throughput *= (1.0 - portals_specular_ltc_weight);
                             break;
                         }
                     }
