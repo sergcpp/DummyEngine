@@ -193,7 +193,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     float variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
     float accumulation_speed = 1.0 / max(sample_count, 1.0);
 
-    const float PlaneDistSensitivity = 0.005;
+    const float PlaneDistSensitivity = 0.001;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, accumulation_speed);
 
     const float RadiusBias = 0.0;
