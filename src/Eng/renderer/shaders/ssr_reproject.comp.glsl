@@ -131,7 +131,7 @@ moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
         for (int i = -LOCAL_NEIGHBORHOOD_RADIUS; i <= LOCAL_NEIGHBORHOOD_RADIUS; ++i) {
             ivec2 index = group_thread_id + ivec2(i, j);
             /* mediump */ vec4 radiance = LoadFromGroupSharedMemoryRaw(index);
-            /* mediump */ float weight = LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
+            /* mediump */ float weight = float(radiance.w > 0.0) * LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
             accumulated_weight += weight;
 
             ret.mean += radiance * weight;
@@ -263,7 +263,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         const float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
         const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info) - motion_vector.z;
         // Determine disocclusion factor based on history
-        disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+        disocclusion_factor = float(reprojection.w > 0.0);
+        disocclusion_factor *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 
         if (disocclusion_factor > DISOCCLUSION_THRESHOLD) {
             return;
@@ -281,7 +282,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                     /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
                     float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
                     float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
-                    /* mediump */ float weight = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+                    /* mediump */ float weight = float(textureLod(g_refl_hist_tex, uv, 0.0).w > 0.0);
+                    weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
                     if (weight > disocclusion_factor) {
                         disocclusion_factor = weight;
                         closest_uv = uv;
@@ -318,10 +320,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
 
             /* mediump */ vec4 w;
             // Initialize with occlusion weights
-            w.x = GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-            w.y = GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-            w.z = GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-            w.w = GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+            w.x = (reprojection00.w > 0.0 && GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
+            w.y = (reprojection10.w > 0.0 && GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
+            w.z = (reprojection01.w > 0.0 && GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
+            w.w = (reprojection11.w > 0.0 && GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
             // And then mix in bilinear weights
             w.x = w.x * (1.0 - uvx) * (1.0 - uvy);
             w.y = w.y * (uvx) * (1.0 - uvy);
@@ -360,9 +362,10 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     const float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
     const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
+
     refl.w *= GetHitDistanceNormalization(linear_depth, roughness);
 
-    if (IsGlossyReflection(roughness)) {
+    if (refl.w > 0.0 && IsGlossyReflection(roughness)) {
         /* mediump */ float disocclusion_factor;
         vec2 reprojection_uv;
         /* mediump */ vec4 reprojection;
@@ -396,7 +399,8 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     // Downsample 8x8 -> 1 radiance using shared memory
     // Initialize shared array for downsampling
-    /* mediump */ float weight = GetLuminanceWeight(refl.rgb);
+    /* mediump */ float weight = float(refl.w > 0.0);
+    weight *= GetLuminanceWeight(refl.xyz);
     refl *= weight;
     if (any(greaterThanEqual(dispatch_thread_id, screen_size)) || any(isinf(refl)) || any(isnan(refl)) || weight > 1.0e3) {
         refl = vec4(0.0);

@@ -97,7 +97,7 @@ void Stabilize(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
     float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
-    const vec4 rad = mix(rad_curr, rad_hist, history_weight);
+    const vec4 rad = mix(rad_curr, rad_hist, history_weight * float(rad_hist.w > 0.0));
     imageStore(g_out_gi_img, dispatch_thread_id, TonemapInvert(rad, exposure));
 }
 

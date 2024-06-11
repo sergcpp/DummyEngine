@@ -224,7 +224,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             shrd_data.taa_info[1] = p_list_->draw_cam.px_offset()[1];
 #endif
             memcpy(&shrd_data.taa_info[2], &view_state_.frame_index, sizeof(float));
-            shrd_data.taa_info[3] = std::tan(0.5f * p_list_->draw_cam.angle() * Ren::Pi<float>() / 180.0f);
+            shrd_data.taa_info[3] =
+                std::tan(0.5f * p_list_->draw_cam.angle() * Ren::Pi<float>() / 180.0f) / float(view_state_.act_res[1]);
 
             { // Ray Tracing Gems II, Listing 49-1
                 const Ren::Plane &l = p_list_->draw_cam.frustum_plane_vs(Ren::eCamPlane::Left);

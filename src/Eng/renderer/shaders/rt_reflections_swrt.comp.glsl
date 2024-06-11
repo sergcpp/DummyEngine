@@ -134,7 +134,7 @@ void main() {
     vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
-    float first_ray_len = 0.0, total_ray_len = 0.0;
+    float first_ray_len = 100.0, total_ray_len = 0.0;
     vec3 throughput = vec3(1.0);
     vec3 final_color = vec3(0.0);
 

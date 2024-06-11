@@ -204,7 +204,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     /* mediump */ float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).w;
     /* mediump */ float new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
-    if (IsGlossyReflection(roughness)) {
+    if (center_radiance.w > 0.0 && IsGlossyReflection(roughness)) {
         /* mediump */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         /* mediump */ vec3 avg_radiance = Tonemap(textureLod(g_avg_refl_tex, uv8, 0.0).rgb, exposure);
@@ -214,8 +214,8 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         // Clip history based on the current local statistics
         /* mediump */ vec3 color_std = (sqrt(local_neighborhood.variance.xyz) + length(local_neighborhood.mean.xyz - avg_radiance)) * history_clip_weight;
         local_neighborhood.mean.xyz = mix(local_neighborhood.mean.xyz, avg_radiance, 0.2);
-        /* mediump */ vec3 radiance_min = local_neighborhood.mean.xyz - color_std * 1.0;
-        /* mediump */ vec3 radiance_max = local_neighborhood.mean.xyz + color_std * 1.0;
+        /* mediump */ vec3 radiance_min = local_neighborhood.mean.xyz - color_std * 1.5;
+        /* mediump */ vec3 radiance_max = local_neighborhood.mean.xyz + color_std * 1.5;
         /* mediump */ vec3 clipped_old_signal = ClipAABB(radiance_min, radiance_max, old_signal.rgb);
         /* mediump */ float accumulation_speed = 1.0 / max(sample_count, 1.0);
         /* mediump */ float weight = (1.0 - accumulation_speed);

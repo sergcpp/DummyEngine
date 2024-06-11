@@ -200,14 +200,14 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const float PlaneDistSensitivity = 0.001;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, accumulation_speed);
 
-    const float RadiusBias = 0.0;
+    const float RadiusBias = 1.0;
 #ifdef PER_PIXEL_KERNEL_ROTATION
     const float RadiusScale = 2.0;
 #else
     const float RadiusScale = 1.0;
 #endif
 
-    const float InitialBlurRadius = 0.05;
+    const float InitialBlurRadius = 45.0;
 
     /* mediump */ vec4 sum = texelFetch(g_gi_tex, dispatch_thread_id, 0);
     /* mediump */ vec2 total_weight = vec2(1.0);

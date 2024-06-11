@@ -122,6 +122,9 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
                          uint32_t subpass_index, ILog *log) {
     Destroy();
 
+    api_ctx_ = api_ctx;
+    type_ = ePipelineType::Graphics;
+
     SmallVector<VkPipelineShaderStageCreateInfo, int(eShaderType::_Count)> shader_stage_create_info;
     for (int i = 0; i < int(eShaderType::_Count); ++i) {
         const ShaderRef &sh = prog->shader(eShaderType(i));
@@ -312,8 +315,6 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         }
     }
 
-    api_ctx_ = api_ctx;
-    type_ = ePipelineType::Graphics;
     rast_state_ = rast_state;
     render_pass_ = render_pass;
     prog_ = std::move(prog);

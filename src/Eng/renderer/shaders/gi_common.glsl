@@ -22,7 +22,6 @@ bool IsDiffuseSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
     return false;
 }
 
-
 float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
 }

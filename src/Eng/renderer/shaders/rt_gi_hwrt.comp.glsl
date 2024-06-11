@@ -277,17 +277,22 @@ void main() {
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
 
             const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
-                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
             const vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x),
-                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
             const vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x),
-                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
 
             vec3 N = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
             if (backfacing) {
                 N = -N;
             }
             N = normalize((world_from_object * vec4(N, 0.0)).xyz);
+
+            if (backfacing) {
+                tri_normal = -tri_normal;
+            }
+            tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
             const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * hit_t;
             const vec3 I = -gi_ray_ws.xyz;
@@ -440,8 +445,7 @@ void main() {
             // prepare next ray
             ray_origin_ws.xyz = P;
             ray_origin_ws.xyz += 0.001 * tri_normal;
-            //ray_origin_ws.xyz = offset_ray(ray_origin_ws.xyz, tri_normal);
-            gi_ray_ws = SampleDiffuseVector(tri_normal, icoord, 1);
+            gi_ray_ws = SampleDiffuseVector(N, icoord, 1);
         }
     }
 

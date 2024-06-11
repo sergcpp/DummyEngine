@@ -159,7 +159,7 @@ void main() {
         float ray_len = t_max;
         vec3 tri_normal, albedo;
 
-        vec3 ro = ray_origin_ws.xyz;// + 0.001 * gi_ray_ws;
+        vec3 ro = ray_origin_ws.xyz + 0.001 * gi_ray_ws;
         vec3 inv_d = safe_invert(gi_ray_ws);
 
         hit_data_t inter;
@@ -210,7 +210,7 @@ void main() {
                 if (alpha < 0.5) {
                     ro += (inter.t + 0.001) * gi_ray_ws;
                     inter.mask = 0;
-                    inter.t = 1000.0;
+                    inter.t = 100.0;
                     continue;
                 }
     #endif
@@ -322,10 +322,15 @@ void main() {
             if (backfacing) {
                 N = -N;
             }
-            const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
-            N = normalize((transform * vec4(N, 0.0)).xyz);
+            const mat4x3 world_from_object = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
+                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
+                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
+            N = normalize((world_from_object * vec4(N, 0.0)).xyz);
+
+            if (backfacing) {
+                tri_normal = -tri_normal;
+            }
+            tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
             const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * inter.t;
             const vec3 I = -gi_ray_ws.xyz;
@@ -490,13 +495,12 @@ void main() {
             // prepare next ray
             ray_origin_ws.xyz = P;
             ray_origin_ws.xyz += 0.001 * tri_normal;
-            //ray_origin_ws.xyz = offset_ray(ray_origin_ws.xyz, tri_normal);
-            gi_ray_ws = SampleDiffuseVector(tri_normal, icoord, 1);
+            gi_ray_ws = SampleDiffuseVector(N, icoord, 1);
         }
     }
 
     final_color = compress_hdr(final_color);
-
+    first_ray_len = GetNormHitDist(first_ray_len, view_z, 1.0);
     imageStore(g_out_color_img, icoord, vec4(final_color, first_ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad

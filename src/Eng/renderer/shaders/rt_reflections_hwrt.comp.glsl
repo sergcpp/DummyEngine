@@ -137,13 +137,13 @@ void main() {
 
     const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.001;
-    const float t_max = 1000.0;
+    const float t_max = 100.0;
 
     float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
 
-    float first_ray_len = 0.0, total_ray_len = 0.0;
+    float first_ray_len = t_max, total_ray_len = 0.0;
     vec3 throughput = vec3(1.0);
     vec3 final_color = vec3(0.0);
 

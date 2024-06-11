@@ -26,6 +26,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_spec_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_hist_tex;
 
@@ -44,11 +45,6 @@ layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_t
 
 layout(binding = REFL_IMG_SLOT, rgba16f) uniform writeonly image2D g_refl_img;
 layout(binding = NOISE_IMG_SLOT, rgba8) uniform writeonly image2D g_noise_img;
-
-bool IsReflectiveSurface(ivec2 px_coords) {
-    float depth = texelFetch(g_depth_tex, px_coords, 0).r;
-    return depth < 1.0;
-}
 
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
     switch (samples_per_quad) {
@@ -99,18 +95,18 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     g_tile_count = 0;
 
 #ifndef NO_SUBGROUP
-    bool is_first_lane_of_wave = subgroupElect();
+    const bool is_first_lane_of_wave = subgroupElect();
 #endif
 
     bool needs_ray = (dispatch_thread_id.x < screen_size.x && dispatch_thread_id.y < screen_size.y); // disable offscreen pixels
 
     // Dont shoot a ray on very rough surfaces.
-    bool is_reflective_surface = IsReflectiveSurface(ivec2(dispatch_thread_id));
-    bool is_glossy_reflection = IsGlossyReflection(roughness);
+    const bool is_reflective_surface = IsReflectiveSurface(g_depth_tex, g_spec_tex, ivec2(dispatch_thread_id));
+    const bool is_glossy_reflection = IsGlossyReflection(roughness);
     needs_ray = needs_ray && is_glossy_reflection && is_reflective_surface;
 
     // Also we dont need to run the denoiser on mirror reflections.
-    bool needs_denoiser = needs_ray && !IsMirrorReflection(roughness);
+    const bool needs_denoiser = needs_ray && !IsMirrorReflection(roughness);
 
     // Decide which ray to keep
     bool is_base_ray = IsBaseRay(dispatch_thread_id, samples_per_quad);
@@ -122,6 +118,16 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
         needs_ray = needs_ray || has_temporal_variance;
     }
 
+#ifndef NO_SUBGROUP
+    const bool base_needs_ray = subgroupShuffle(needs_ray, gl_SubgroupInvocationID & ~3u);
+    if (!is_base_ray && needs_denoiser && !needs_ray) {
+        // If base ray will not be traced, we need to trace this one
+        needs_ray = !base_needs_ray;
+    }
+#else
+    // TODO: Fallback using shared memory
+#endif
+
     groupMemoryBarrier(); // Wait until g_tile_count is cleared - allow some computations before and after
     barrier();
 
@@ -132,17 +138,17 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     }
 
     // Next we have to figure out which pixels that ray is creating the values for. Thus, if we have to copy its value horizontal, vertical or across.
-    bool require_copy = !needs_ray && needs_denoiser; // Our pixel only requires a copy if we want to run a denoiser on it but don't want to shoot a ray for it.
+    const bool require_copy = !needs_ray && needs_denoiser; // Our pixel only requires a copy if we want to run a denoiser on it but don't want to shoot a ray for it.
 #ifndef NO_SUBGROUP
      // Subgroup reads need to be unconditional (should be first), probably a compiler bug!!!
-    bool copy_horizontal = subgroupShuffleXor(require_copy, 1u) && (samples_per_quad != 4u) && is_base_ray; // 0b01 QuadReadAcrossX
-    bool copy_vertical = subgroupShuffleXor(require_copy, 2u) && (samples_per_quad == 1u) && is_base_ray; // 0b10 QuadReadAcrossY
-    bool copy_diagonal = subgroupShuffleXor(require_copy, 3u) && (samples_per_quad == 1u) && is_base_ray; // 0b11 QuadReadAcrossDiagonal
+    const bool copy_horizontal = subgroupShuffleXor(require_copy, 1u) && (samples_per_quad != 4u) && is_base_ray; // 0b01 QuadReadAcrossX
+    const bool copy_vertical = subgroupShuffleXor(require_copy, 2u) && (samples_per_quad == 1u) && is_base_ray; // 0b10 QuadReadAcrossY
+    const bool copy_diagonal = subgroupShuffleXor(require_copy, 3u) && (samples_per_quad == 1u) && is_base_ray; // 0b11 QuadReadAcrossDiagonal
 
     // Thus, we need to compact the rays and append them all at once to the ray list.
-    uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
-    uint local_ray_index_in_wave = subgroupBallotExclusiveBitCount(needs_ray_ballot);
-    uint wave_ray_count = subgroupBallotBitCount(needs_ray_ballot);
+    const uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
+    const uint local_ray_index_in_wave = subgroupBallotExclusiveBitCount(needs_ray_ballot);
+    const uint wave_ray_count = subgroupBallotBitCount(needs_ray_ballot);
 
     uint base_ray_index = 0; // leaving this uninitialized causes problems in opengl (???)
     if (is_first_lane_of_wave) {
@@ -151,26 +157,22 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     }
     base_ray_index = subgroupBroadcastFirst(base_ray_index);
     if (needs_ray) {
-        uint ray_index = base_ray_index + local_ray_index_in_wave;
+        const uint ray_index = base_ray_index + local_ray_index_in_wave;
         StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
 #else
     // TODO: Fallback using shared memory
-    bool copy_horizontal = /*[group_thread_id.y][group_thread_id.x ^ 1u] &&*/ (samples_per_quad != 4u) && is_base_ray;
-    bool copy_vertical = /*subgroupShuffleXor(require_copy, 2u) &&*/ (samples_per_quad == 1u) && is_base_ray;
-    bool copy_diagonal = /*subgroupShuffleXor(require_copy, 3u) &&*/ (samples_per_quad == 1u) && is_base_ray;
+    const bool copy_horizontal = /*[group_thread_id.y][group_thread_id.x ^ 1u] &&*/ (samples_per_quad != 4u) && is_base_ray;
+    const bool copy_vertical = /*subgroupShuffleXor(require_copy, 2u) &&*/ (samples_per_quad == 1u) && is_base_ray;
+    const bool copy_diagonal = /*subgroupShuffleXor(require_copy, 3u) &&*/ (samples_per_quad == 1u) && is_base_ray;
 
     if (needs_ray) {
-        uint ray_index = atomicAdd(g_ray_counter[0], 1);
+        const uint ray_index = atomicAdd(g_ray_counter[0], 1);
         StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
 #endif
 
-    vec4 refl_output = vec4(0.0);
-    if (is_reflective_surface && !is_glossy_reflection) {
-        // TODO: Fall back to diffuse probes
-    }
-    imageStore(g_refl_img, ivec2(dispatch_thread_id), refl_output);
+    imageStore(g_refl_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, -1.0));
 
     groupMemoryBarrier(); // Wait until all waves write into g_tile_count
     barrier();
@@ -205,10 +207,10 @@ float SampleRandomNumber(const uvec2 pixel, uint sample_index, uint sample_dimen
 }
 
 vec4 SampleRandomVector2D(const uvec2 pixel) {
-    return vec4(SampleRandomNumber(pixel, g_params.frame_index, 0u),
-                SampleRandomNumber(pixel, g_params.frame_index, 1u),
-                SampleRandomNumber(pixel, g_params.frame_index, 2u),
-                SampleRandomNumber(pixel, g_params.frame_index, 3u));
+    return vec4(SampleRandomNumber(pixel, g_params.frame_index % 32u, 0u),
+                SampleRandomNumber(pixel, g_params.frame_index % 32u, 1u),
+                SampleRandomNumber(pixel, g_params.frame_index % 32u, 2u),
+                SampleRandomNumber(pixel, g_params.frame_index % 32u, 3u));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

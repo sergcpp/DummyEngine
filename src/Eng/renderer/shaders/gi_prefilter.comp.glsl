@@ -182,7 +182,7 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, sample_t ce
         ivec2 new_idx = group_thread_id + sample_offsets[i];
         sample_t neighbor = LoadFromSharedMemory(new_idx);
 
-        /* mediump */ float weight = neighbor.radiance.w > 0.0 ? 1.0 : 0.0;
+        /* mediump */ float weight = float(neighbor.radiance.w > 0.0);
         weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
         weight *= GetEdgeStoppingDepthWeight(center.depth, neighbor.depth);
         weight *= GetRadianceWeight(avg_radiance, neighbor.radiance.rgb, center.variance);
