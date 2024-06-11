@@ -295,8 +295,7 @@ class Renderer {
     void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
 
-    void AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, const Ren::WeakTex2DRef lm_indir_sh[4],
-                             bool deferred_shading, bool debug_denoise, const Ren::ProbeStorage *probe_storage,
+    void AddHQSpecularPasses(bool deferred_shading, bool debug_denoise, const Ren::ProbeStorage *probe_storage,
                              const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                              const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                              RpResRef depth_hierarchy, RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,

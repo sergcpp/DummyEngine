@@ -1071,10 +1071,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             !list.render_settings.debug_wireframe) {
             const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
             if (cur_hq_ssr_enabled) {
-                AddHQSpecularPasses(lm_direct_, lm_indir_sh_, deferred_shading,
-                                    list.render_settings.debug_denoise == eDebugDenoise::Reflection, list.probe_storage,
-                                    common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
-                                    rt_geo_instances_res, rt_obj_instances_res, frame_textures);
+                AddHQSpecularPasses(deferred_shading, list.render_settings.debug_denoise == eDebugDenoise::Reflection,
+                                    list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                                    depth_hierarchy_tex, rt_geo_instances_res, rt_obj_instances_res, frame_textures);
             } else {
                 AddLQSpecularPasses(list.probe_storage, common_buffers, depth_down_2x, frame_textures);
             }

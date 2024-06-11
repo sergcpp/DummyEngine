@@ -182,7 +182,7 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, sample_t ce
         ivec2 new_idx = group_thread_id + sample_offsets[i];
         sample_t neighbor = LoadFromSharedMemory(new_idx);
 
-        /* mediump */ float weight = 1.0;
+        /* mediump */ float weight = neighbor.radiance.w > 0.0 ? 1.0 : 0.0;
         weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
         weight *= GetEdgeStoppingDepthWeight(center.depth, neighbor.depth);
         weight *= GetRadianceWeight(avg_radiance, neighbor.radiance.rgb, center.variance);
@@ -214,7 +214,7 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     /* mediump */ vec4 resolved_radiance = center.radiance;
     /* mediump */ float resolved_variance = center.variance;
 
-    const bool needs_denoiser = true;//center.variance > 0.0 /*&& IsGlossyReflection(center.normal.w) && !IsMirrorReflection(center.normal.w)*/;
+    const bool needs_denoiser = (center.radiance.w > 0.0) && (center.variance > 0.0);
     if (needs_denoiser) {
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         /* mediump */ vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb * exposure;

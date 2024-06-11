@@ -128,12 +128,12 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
         for (int i = -LOCAL_NEIGHBORHOOD_RADIUS; i <= LOCAL_NEIGHBORHOOD_RADIUS; ++i) {
             ivec2 index = group_thread_id + ivec2(i, j);
-            /* mediump */ vec3 radiance = LoadFromGroupSharedMemoryRaw(index).rgb;
-            /* mediump */ float weight = LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
+            /* mediump */ vec4 radiance = LoadFromGroupSharedMemoryRaw(index);
+            /* mediump */ float weight = float(radiance.w > 0.0) * LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
             accumulated_weight += weight;
 
-            ret.mean += radiance * weight;
-            ret.variance += radiance * radiance * weight;
+            ret.mean += radiance.xyz * weight;
+            ret.variance += radiance.xyz * radiance.xyz * weight;
         }
     }
 
@@ -181,7 +181,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
     float linear_depth = LinearizeDepth(depth, g_shrd_data.clip_info) - motion_vector.z;
     // Determine disocclusion factor based on history
-    disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+    disocclusion_factor = float(surf_history.w > 0.0);
+    disocclusion_factor *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 
     if (disocclusion_factor > DISOCCLUSION_THRESHOLD) {
         return;
@@ -199,7 +200,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                 /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
                 float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
                 float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
-                /* mediump */ float weight = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+                /* mediump */ float weight = float(textureLod(g_gi_hist_tex, uv, 0.0).w > 0.0);
+                weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
                 if (weight > disocclusion_factor) {
                     disocclusion_factor = weight;
                     closest_uv = uv;
@@ -274,7 +276,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     /* mediump */ vec4 gi = texelFetch(g_gi_tex, ivec2(dispatch_thread_id), 0);
     gi.xyz *= exposure;
 
-    {
+    if (gi.w > 0.0) {
         /* mediump */ float disocclusion_factor;
         vec2 reprojection_uv;
         /* mediump */ vec4 reprojection;
@@ -308,12 +310,8 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     // Downsample 8x8 -> 1 radiance using shared memory
     // Initialize shared array for downsampling
-    /* mediump */ float weight = GetLuminanceWeight(gi.rgb);
-
-    float depth_vs = LinearizeDepth(texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).r, g_shrd_data.clip_info);
-    if (depth_vs > 100.0) {
-        //weight = 0.0;
-    }
+    /* mediump */ float weight = float(gi.w > 0.0);
+    weight *= GetLuminanceWeight(gi.rgb); // this dims down fireflies
 
     gi *= weight;
     if (any(greaterThanEqual(dispatch_thread_id, screen_size)) || any(isinf(gi)) || any(isnan(gi)) || weight > 1.0e3) {

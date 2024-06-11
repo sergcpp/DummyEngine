@@ -22,6 +22,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_spec_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_tex;
 layout(binding = SAMPLE_COUNT_TEX_SLOT) uniform sampler2D g_sample_count_tex;
@@ -178,15 +179,18 @@ float GetBlurRadius(float radius, float hit_dist, float view_z, float non_linear
 
 void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
-#if defined(VULKAN)
-    pix_uv.y = 1.0 - pix_uv.y;
-#endif // VULKAN
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
+    if (!IsDiffuseSurface(center_depth, g_spec_tex, pix_uv)) {
+        return;
+    }
     const float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info);
 
     const vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_normal_tex, dispatch_thread_id, 0).x).xyz;
     const vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
 
+#if defined(VULKAN)
+    pix_uv.y = 1.0 - pix_uv.y;
+#endif // VULKAN
     const vec3 center_point_vs = ReconstructViewPosition(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
     float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
@@ -219,7 +223,8 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         const vec3 offset = g_Special8[i];
         const vec2 uv = GetKernelSampleCoordinates(g_shrd_data.clip_from_view, offset, center_point_vs, TvBv[0], TvBv[1], kernel_rotator);
 
-        const float neighbor_depth = LinearizeDepth(textureLod(g_depth_tex, uv, 0.0).x, g_shrd_data.clip_info);
+        const float depth_fetch = textureLod(g_depth_tex, uv, 0.0).x;
+        const float neighbor_depth = LinearizeDepth(depth_fetch, g_shrd_data.clip_info);
         const vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
 
         vec2 reconstruct_uv = uv;
@@ -228,7 +233,8 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 #endif // VULKAN
         vec3 neighbor_point_vs = ReconstructViewPosition(reconstruct_uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
 
-        /* mediump */ float weight = IsInScreen(uv);
+        /* mediump */ float weight = float(IsDiffuseSurface(depth_fetch, g_spec_tex, uv));
+        weight *= IsInScreen(uv);
         weight *= GetGaussianWeight(offset.z);
         weight *= GetEdgeStoppingNormalWeight(center_normal_ws, neighbor_normal_ws);
         //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);

@@ -151,7 +151,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     /* mediump */ vec4 new_signal = center_radiance;
     /* mediump */ float new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
-    {
+    if (center_radiance.w > 0.0) {
         /* mediump */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb * exposure;

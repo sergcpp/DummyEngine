@@ -15,8 +15,7 @@
 #include "shaders/ssr_write_indir_rt_dispatch_interface.h"
 #include "shaders/ssr_write_indirect_args_interface.h"
 
-void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, const Ren::WeakTex2DRef lm_indir_sh[4],
-                                        const bool deferred_shading, const bool debug_denoise,
+void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool debug_denoise,
                                         const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                                         const PersistentGpuData &persistent_data,
                                         const AccelerationStructureData &acc_struct_data,

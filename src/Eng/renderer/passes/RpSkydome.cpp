@@ -92,6 +92,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
     rast_state.viewport[2] = view_state_->act_res[0];
     rast_state.viewport[3] = view_state_->act_res[1];
     rast_state.depth.test_enabled = true;
+    rast_state.depth.write_enabled = false;
     rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
     rast_state.blend.enabled = false;
 

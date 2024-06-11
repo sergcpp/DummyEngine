@@ -112,56 +112,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     static const bool EnableBlur = true;
     const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
 
-    RpResRef flat_normals_tex;
-
-    { // Prepare flat normals
-        auto &flat_normals = rp_builder_.AddPass("FLAT NORMALS");
-
-        struct PassData {
-            RpResRef depth_tex;
-            RpResRef out_normals_tex;
-        };
-
-        auto *data = flat_normals.AllocPassData<PassData>();
-
-        data->depth_tex = flat_normals.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        { // normals texture
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRG16Snorm;
-            params.sampling.filter = Ren::eTexFilter::NoFilter;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            flat_normals_tex = data->out_normals_tex =
-                flat_normals.AddStorageImageOutput("Flat Normals", params, Stg::ComputeShader);
-        }
-
-        flat_normals.set_execute_cb([data, this](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &out_normals_tex = builder.GetWriteTexture(data->out_normals_tex);
-
-            const Ren::Binding bindings[] = {
-                {Trg::Tex2DSampled, ReconstructNormals::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Trg::Image2D, ReconstructNormals::OUT_NORMALS_IMG_SLOT, *out_normals_tex.ref}};
-
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + ReconstructNormals::LOCAL_GROUP_SIZE_X - 1u) /
-                               ReconstructNormals::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + ReconstructNormals::LOCAL_GROUP_SIZE_Y - 1u) /
-                               ReconstructNormals::LOCAL_GROUP_SIZE_Y,
-                           1u};
-
-            ReconstructNormals::Params uniform_params;
-            uniform_params.frustum_info = view_state_.frustum_info;
-            uniform_params.clip_info = view_state_.clip_info;
-            uniform_params.img_size = Ren::Vec2u{view_state_.act_res};
-
-            Ren::DispatchCompute(pi_reconstruct_normals_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
-        });
-    }
-
     RpResRef ray_counter;
 
     { // Prepare atomic counter and ray length texture
@@ -229,14 +179,14 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             tile_list = data->tile_list = gi_classify.AddStorageOutput("GI Tile List", desc, Stg::ComputeShader);
         }
-        { // gi texture
+        { // final gi texture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RawRGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            gi_tex = data->out_gi_tex = gi_classify.AddStorageImageOutput("GI Temp 2", params, Stg::ComputeShader);
+            gi_tex = data->out_gi_tex = gi_classify.AddStorageImageOutput("GI Final", params, Stg::ComputeShader);
         }
         { // blue noise texture
             Ren::Tex2DParams params;
@@ -540,13 +490,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->velocity_tex = gi_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
         data->depth_hist_tex = gi_reproject.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_hist_tex = gi_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
-        if (EnableBlur) {
-            data->gi_hist_tex = gi_reproject.AddHistoryTextureInput("GI Diffuse 3", Stg::ComputeShader);
-        } else {
-            data->gi_hist_tex = gi_reproject.AddHistoryTextureInput("GI Diffuse", Stg::ComputeShader);
-        }
+        data->gi_hist_tex = gi_reproject.AddHistoryTextureInput(gi_tex, Stg::ComputeShader);
         data->variance_hist_tex = gi_reproject.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
-        data->gi_tex = gi_reproject.AddTextureInput(gi_tex, Stg::ComputeShader);
+        gi_tex = data->gi_tex = gi_reproject.AddTextureInput(gi_tex, Stg::ComputeShader);
 
         data->tile_list = gi_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_reproject.AddIndirectBufferInput(indir_disp_buf);
@@ -666,7 +612,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->depth_tex = gi_prefilter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = gi_prefilter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->avg_gi_tex = gi_prefilter.AddTextureInput(avg_gi_tex, Stg::ComputeShader);
-        data->gi_tex = gi_prefilter.AddTextureInput(gi_tex, Stg::ComputeShader);
+        gi_tex = data->gi_tex = gi_prefilter.AddTextureInput(gi_tex, Stg::ComputeShader);
         data->variance_tex = gi_prefilter.AddTextureInput(variance_temp_tex, Stg::ComputeShader);
         data->sample_count_tex = gi_prefilter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
         data->exposure_tex = gi_prefilter.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
@@ -765,7 +711,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->indir_args = gi_temporal.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
 
-        { // Final gi
+        if (EnableBlur) {
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
@@ -775,7 +721,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             gi_diffuse_tex = data->out_gi_tex =
                 gi_temporal.AddStorageImageOutput("GI Diffuse", params, Stg::ComputeShader);
+        } else {
+            gi_diffuse_tex = gi_tex = data->out_gi_tex = gi_temporal.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
         }
+
         { // Variance texture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
@@ -827,209 +776,209 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    RpResRef gi_diffuse2_tex;
-
-    { // Denoiser blur
-        auto &gi_blur = rp_builder_.AddPass("GI BLUR");
-
-        struct PassData {
-            RpResRef shared_data;
-            RpResRef depth_tex, norm_tex, gi_tex;
-            RpResRef sample_count_tex, variance_tex, tile_list;
-            RpResRef indir_args;
-            uint32_t indir_args_offset = 0;
-            RpResRef out_gi_tex;
-        };
-
-        auto *data = gi_blur.AllocPassData<PassData>();
-        data->shared_data = gi_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
-        data->depth_tex = gi_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        data->norm_tex = gi_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->gi_tex = gi_blur.AddTextureInput(gi_diffuse_tex, Stg::ComputeShader);
-        data->sample_count_tex = gi_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->variance_tex = gi_blur.AddTextureInput(gi_variance_tex, Stg::ComputeShader);
-        data->tile_list = gi_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
-        data->indir_args = gi_blur.AddIndirectBufferInput(indir_disp_buf);
-        data->indir_args_offset = 3 * sizeof(uint32_t);
-
-        { // Final gi
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            gi_diffuse2_tex = data->out_gi_tex =
-                gi_blur.AddStorageImageOutput("GI Diffuse 2", params, Stg::ComputeShader);
-        }
-
-        gi_blur.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
-
-            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
-                {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
-
-            GIBlur::Params uniform_params;
-            uniform_params.rotator = view_state_.rand_rotators[0];
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
-
-            Ren::DispatchComputeIndirect(pi_gi_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
-        });
-    }
-
-    RpResRef gi_diffuse3_tex;
-
-    { // Denoiser blur 2
-        auto &gi_post_blur = rp_builder_.AddPass("GI POST BLUR");
-
-        struct PassData {
-            RpResRef shared_data;
-            RpResRef depth_tex, norm_tex, gi_tex, raylen_tex;
-            RpResRef sample_count_tex, variance_tex, tile_list;
-            RpResRef indir_args;
-            uint32_t indir_args_offset = 0;
-            RpResRef out_gi_tex;
-        };
-
-        auto *data = gi_post_blur.AllocPassData<PassData>();
-        data->shared_data = gi_post_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
-        data->depth_tex = gi_post_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        data->norm_tex = gi_post_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->gi_tex = gi_post_blur.AddTextureInput(gi_diffuse2_tex, Stg::ComputeShader);
-        data->sample_count_tex = gi_post_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->variance_tex = gi_post_blur.AddTextureInput(gi_variance_tex, Stg::ComputeShader);
-        data->tile_list = gi_post_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
-        data->indir_args = gi_post_blur.AddIndirectBufferInput(indir_disp_buf);
-        data->indir_args_offset = 3 * sizeof(uint32_t);
-
-        { // Final gi
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            gi_diffuse3_tex = data->out_gi_tex =
-                gi_post_blur.AddStorageImageOutput("GI Diffuse 3", params, Stg::ComputeShader);
-        }
-
-        gi_post_blur.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
-
-            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
-                {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
-
-            GIBlur::Params uniform_params;
-            uniform_params.rotator = view_state_.rand_rotators[1];
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
-
-            Ren::DispatchComputeIndirect(pi_gi_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
-        });
-    }
-
-    RpResRef gi_diffuse4_tex;
-
-    { // Denoiser stabilization
-        auto &gi_stabilization = rp_builder_.AddPass("GI STABILIZATION");
-
-        struct PassData {
-            RpResRef depth_tex, velocity_tex, gi_tex, gi_hist_tex;
-            RpResRef exposure_tex;
-            RpResRef out_gi_tex;
-        };
-
-        auto *data = gi_stabilization.AllocPassData<PassData>();
-        data->depth_tex = gi_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        data->velocity_tex = gi_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
-        data->gi_tex = gi_stabilization.AddTextureInput(gi_diffuse3_tex, Stg::ComputeShader);
-        data->exposure_tex = gi_stabilization.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
-
-        { // Final gi
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            gi_diffuse4_tex = data->out_gi_tex =
-                gi_stabilization.AddStorageImageOutput("GI Diffuse 4", params, Stg::ComputeShader);
-        }
-
-        data->gi_hist_tex = gi_stabilization.AddHistoryTextureInput(gi_diffuse4_tex, Stg::ComputeShader);
-
-        gi_stabilization.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-            RpAllocTex &gi_hist_tex = builder.GetReadTexture(data->gi_hist_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-
-            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-
-            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GIStabilization::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                             {Trg::Tex2DSampled, GIStabilization::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                                             {Trg::Tex2DSampled, GIStabilization::GI_TEX_SLOT, *gi_tex.ref},
-                                             {Trg::Tex2DSampled, GIStabilization::GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                                             {Trg::Tex2DSampled, GIStabilization::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-                                             {Trg::Image2D, GIStabilization::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
-
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + GIStabilization::LOCAL_GROUP_SIZE_X - 1u) /
-                               GIStabilization::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + GIStabilization::LOCAL_GROUP_SIZE_Y - 1u) /
-                               GIStabilization::LOCAL_GROUP_SIZE_Y,
-                           1u};
-
-            GIStabilization::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-
-            Ren::DispatchCompute(pi_gi_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
-        });
-    }
-
     if (EnableBlur) {
+        RpResRef gi_diffuse2_tex;
+
+        { // Denoiser blur
+            auto &gi_blur = rp_builder_.AddPass("GI BLUR");
+
+            struct PassData {
+                RpResRef shared_data;
+                RpResRef depth_tex, spec_tex, norm_tex, gi_tex;
+                RpResRef sample_count_tex, variance_tex, tile_list;
+                RpResRef indir_args;
+                uint32_t indir_args_offset = 0;
+                RpResRef out_gi_tex;
+            };
+
+            auto *data = gi_blur.AllocPassData<PassData>();
+            data->shared_data = gi_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->spec_tex = gi_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
+            data->depth_tex = gi_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+            data->norm_tex = gi_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+            data->gi_tex = gi_blur.AddTextureInput(gi_diffuse_tex, Stg::ComputeShader);
+            data->sample_count_tex = gi_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+            data->variance_tex = gi_blur.AddTextureInput(gi_variance_tex, Stg::ComputeShader);
+            data->tile_list = gi_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
+            data->indir_args = gi_blur.AddIndirectBufferInput(indir_disp_buf);
+            data->indir_args_offset = 3 * sizeof(uint32_t);
+
+            { // Final gi
+                Ren::Tex2DParams params;
+                params.w = view_state_.scr_res[0];
+                params.h = view_state_.scr_res[1];
+                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                gi_diffuse2_tex = data->out_gi_tex =
+                    gi_blur.AddStorageImageOutput("GI Diffuse 2", params, Stg::ComputeShader);
+            }
+
+            gi_blur.set_execute_cb([this, data](RpBuilder &builder) {
+                RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+                RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+                RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+                RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+                RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+
+                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+
+                const Ren::Binding bindings[] = {
+                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                    {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::SPEC_TEX_SLOT, *spec_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
+                    {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                    {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                    {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+
+                GIBlur::Params uniform_params;
+                uniform_params.rotator = view_state_.rand_rotators[0];
+                uniform_params.img_size =
+                    Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+                uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+
+                Ren::DispatchComputeIndirect(pi_gi_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                             &uniform_params, sizeof(uniform_params),
+                                             builder.ctx().default_descr_alloc(), builder.ctx().log());
+            });
+        }
+
+        RpResRef gi_diffuse3_tex;
+
+        { // Denoiser blur 2
+            auto &gi_post_blur = rp_builder_.AddPass("GI POST BLUR");
+
+            struct PassData {
+                RpResRef shared_data;
+                RpResRef depth_tex, spec_tex, norm_tex, gi_tex, raylen_tex;
+                RpResRef sample_count_tex, variance_tex, tile_list;
+                RpResRef indir_args;
+                uint32_t indir_args_offset = 0;
+                RpResRef out_gi_tex;
+            };
+
+            auto *data = gi_post_blur.AllocPassData<PassData>();
+            data->shared_data = gi_post_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->depth_tex = gi_post_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+            data->spec_tex = gi_post_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
+            data->norm_tex = gi_post_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+            data->gi_tex = gi_post_blur.AddTextureInput(gi_diffuse2_tex, Stg::ComputeShader);
+            data->sample_count_tex = gi_post_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+            data->variance_tex = gi_post_blur.AddTextureInput(gi_variance_tex, Stg::ComputeShader);
+            data->tile_list = gi_post_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
+            data->indir_args = gi_post_blur.AddIndirectBufferInput(indir_disp_buf);
+            data->indir_args_offset = 3 * sizeof(uint32_t);
+
+            gi_diffuse3_tex = data->out_gi_tex = gi_post_blur.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
+
+            gi_post_blur.set_execute_cb([this, data](RpBuilder &builder) {
+                RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+                RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+                RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+                RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+                RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+
+                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+
+                const Ren::Binding bindings[] = {
+                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                    {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::SPEC_TEX_SLOT, *spec_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
+                    {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                    {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                    {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                    {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+
+                GIBlur::Params uniform_params;
+                uniform_params.rotator = view_state_.rand_rotators[1];
+                uniform_params.img_size =
+                    Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+                uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+
+                Ren::DispatchComputeIndirect(pi_gi_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                             &uniform_params, sizeof(uniform_params),
+                                             builder.ctx().default_descr_alloc(), builder.ctx().log());
+            });
+        }
+
+        RpResRef gi_diffuse4_tex;
+
+        { // Denoiser stabilization
+            auto &gi_stabilization = rp_builder_.AddPass("GI STABILIZATION");
+
+            struct PassData {
+                RpResRef depth_tex, velocity_tex, gi_tex, gi_hist_tex;
+                RpResRef exposure_tex;
+                RpResRef out_gi_tex;
+            };
+
+            auto *data = gi_stabilization.AllocPassData<PassData>();
+            data->depth_tex = gi_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+            data->velocity_tex = gi_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+            data->gi_tex = gi_stabilization.AddTextureInput(gi_diffuse3_tex, Stg::ComputeShader);
+            data->exposure_tex = gi_stabilization.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+
+            { // Final gi
+                Ren::Tex2DParams params;
+                params.w = view_state_.scr_res[0];
+                params.h = view_state_.scr_res[1];
+                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                gi_diffuse4_tex = data->out_gi_tex =
+                    gi_stabilization.AddStorageImageOutput("GI Diffuse 4", params, Stg::ComputeShader);
+            }
+
+            data->gi_hist_tex = gi_stabilization.AddHistoryTextureInput(gi_diffuse4_tex, Stg::ComputeShader);
+
+            gi_stabilization.set_execute_cb([this, data](RpBuilder &builder) {
+                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                RpAllocTex &gi_hist_tex = builder.GetReadTexture(data->gi_hist_tex);
+                RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+
+                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+
+                const Ren::Binding bindings[] = {
+                    {Trg::Tex2DSampled, GIStabilization::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Trg::Tex2DSampled, GIStabilization::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                    {Trg::Tex2DSampled, GIStabilization::GI_TEX_SLOT, *gi_tex.ref},
+                    {Trg::Tex2DSampled, GIStabilization::GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
+                    {Trg::Tex2DSampled, GIStabilization::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
+                    {Trg::Image2D, GIStabilization::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+
+                const Ren::Vec3u grp_count =
+                    Ren::Vec3u{(view_state_.act_res[0] + GIStabilization::LOCAL_GROUP_SIZE_X - 1u) /
+                                   GIStabilization::LOCAL_GROUP_SIZE_X,
+                               (view_state_.act_res[1] + GIStabilization::LOCAL_GROUP_SIZE_Y - 1u) /
+                                   GIStabilization::LOCAL_GROUP_SIZE_Y,
+                               1u};
+
+                GIStabilization::Params uniform_params;
+                uniform_params.img_size =
+                    Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+
+                Ren::DispatchCompute(pi_gi_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                     builder.ctx().default_descr_alloc(), builder.ctx().log());
+            });
+        }
+
         if (EnableStabilization) {
             frame_textures.gi = gi_diffuse4_tex;
         } else {
