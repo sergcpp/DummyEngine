@@ -22,8 +22,8 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
+    rast_state.viewport[2] = color_tex.ref->params.w;
+    rast_state.viewport[3] = color_tex.ref->params.h;
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
