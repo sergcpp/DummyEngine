@@ -235,17 +235,14 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
     if (!ret->ready()) {
         temp_param_def_.clear();
 
-        if (ctx.capabilities.spirv && !ctx.capabilities.bindless_texture) {
+#if defined(USE_VK_RENDER)
+        if (ctx.capabilities.spirv) {
             std::string spv_name = SHADERS_PATH;
             spv_name += name;
             const size_t n = spv_name.rfind(".glsl");
             assert(n != std::string::npos);
 
-#if defined(USE_VK_RENDER)
             spv_name.replace(n + 1, 4, "spv");
-#elif defined(USE_GL_RENDER)
-            spv_name.replace(n + 1, 4, "spv_ogl");
-#endif
 
             Sys::AssetFile spv_file(spv_name);
             if (spv_file) {
@@ -260,6 +257,7 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
                 }
             }
         }
+#endif
 
         const int params_cnt = ParamsStringToDef(params, temp_param_def_);
         assert(params_cnt != -1);

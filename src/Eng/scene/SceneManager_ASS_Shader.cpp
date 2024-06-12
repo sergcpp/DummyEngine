@@ -156,9 +156,9 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
         }
     }
 
-    enum class eShaderOutput { GLSL, GL_SPIRV, VK_SPIRV };
+    enum class eShaderOutput { GLSL, VK_SPIRV };
 
-    for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::GL_SPIRV, eShaderOutput::VK_SPIRV}) {
+    for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::VK_SPIRV}) {
         for (const std::string &perm : permutations) {
             const std::string prep_glsl_file = out_file + perm;
 
@@ -168,8 +168,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 assert(n != std::string::npos);
                 if (sh_output == eShaderOutput::VK_SPIRV) {
                     output_file.replace(n + 1, 4, "spv");
-                } else if (sh_output == eShaderOutput::GL_SPIRV) {
-                    output_file.replace(n + 1, 4, "spv_ogl");
                 }
             }
 
@@ -182,8 +180,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
             if (TestShaderRewrite) {
                 if (sh_output == eShaderOutput::VK_SPIRV) {
                     preamble += "#define VULKAN 1\n";
-                } else if (sh_output == eShaderOutput::GL_SPIRV) {
-                    preamble += "#define GL_SPIRV 1\n";
                 }
             }
             if (!perm.empty()) {
@@ -376,10 +372,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     } else {
                         glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_3;
                     }
-                } else if (sh_output == eShaderOutput::GL_SPIRV) {
-                    glslang_input.client = GLSLANG_CLIENT_OPENGL;
-                    glslang_input.client_version = GLSLANG_TARGET_OPENGL_450;
-                    glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_3;
                 }
 
                 glslang_shader_t *shader = glslang_shader_create(&glslang_input);
