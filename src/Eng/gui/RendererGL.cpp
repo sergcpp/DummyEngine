@@ -110,6 +110,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
     pipeline_.rast_state().viewport[3] = h;
     pipeline_.rast_state().Apply();
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     glBindVertexArray(pipeline_.vtx_input()->gl_vao());
     glUseProgram(pipeline_.prog()->id());
 

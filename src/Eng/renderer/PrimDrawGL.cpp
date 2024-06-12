@@ -28,7 +28,6 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
     applied_rast_state = new_rast_state;
 
     glBindFramebuffer(GL_FRAMEBUFFER, fb->id());
-    // glViewport(rt.viewport[0], rt.viewport[1], rt.viewport[2], rt.viewport[3]);
 
     for (const auto &b : bindings) {
         if (b.trg == Ren::eBindTarget::UBuf) {
