@@ -58,8 +58,8 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO (Shadow)", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
-                                                  rt_tlas_buf.ref->size());
+        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO (Shadow)", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F,
+                                                  0, rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
@@ -101,8 +101,7 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
 
 void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef rt_shadows_swrt_prog =
-            sh.LoadProgram(ctx, "rt_shadows_swrt", "internal/rt_shadows_swrt.comp.glsl");
+        Ren::ProgramRef rt_shadows_swrt_prog = sh.LoadProgram(ctx, "internal/rt_shadows_swrt.comp.glsl");
         assert(rt_shadows_swrt_prog->ready());
 
         if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log())) {
