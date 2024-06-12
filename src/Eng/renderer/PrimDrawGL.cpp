@@ -39,15 +39,24 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
                 glBindBufferBase(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id());
             }
         } else if (b.trg == Ren::eBindTarget::TexCubeArray) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
+            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
+                                       GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == Ren::eBindTarget::TBuf) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
+            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
+                                       GLuint(b.handle.tex_buf->id()));
         } else if (b.trg == Ren::eBindTarget::Tex3DSampled) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex3d->id()));
+            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
+                                       GLuint(b.handle.tex3d->id()));
         } else if (b.trg == Ren::eBindTarget::Tex2DArraySampled) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex2d_arr->id()));
+            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
+                                       GLuint(b.handle.tex2d_arr->id()));
         } else {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
+            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
+            if (b.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            } else {
+                ren_glBindSampler(GLuint(b.loc + b.offset), 0);
+            }
         }
     }
 
@@ -55,7 +64,8 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
 
     Ren::Buffer temp_stage_buffer, temp_unif_buffer;
     if (uniform_data) {
-        temp_stage_buffer = Ren::Buffer("Temp upload buf", ctx_->api_ctx(), Ren::eBufType::Upload, uniform_data_len, 16);
+        temp_stage_buffer =
+            Ren::Buffer("Temp upload buf", ctx_->api_ctx(), Ren::eBufType::Upload, uniform_data_len, 16);
         {
             uint8_t *stage_data = temp_stage_buffer.Map();
             memcpy(stage_data, uniform_data, uniform_data_len);

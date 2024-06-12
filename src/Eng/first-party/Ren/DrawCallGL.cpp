@@ -41,14 +41,23 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
             if (b.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            } else {
+                ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
         } else if (b.trg == eBindTarget::Tex2DArraySampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()));
             if (b.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            } else {
+                ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
         } else if (b.trg == eBindTarget::Tex3DSampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
+            if (b.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            } else {
+                ren_glBindSampler(GLuint(b.loc + b.offset), 0);
+            }
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
             if (b.offset) {
                 assert(b.size != 0);
