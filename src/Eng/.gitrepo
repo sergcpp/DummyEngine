@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = denoising10
-	commit = a45fdfc695e21f95ceaa5742addf0f49e5a85c81
+	branch = ogl_spirv
+	commit = 6940cb3ed0a084c671e24c7d6912fb7674f13c93
 	method = merge
 	cmdver = 0.4.6
-	parent = 9e9a6aa86172fad4c1e80bff173354e24e64113a
+	parent = c5c7c4ce4730dd52a872b87f30c192d82c8c7c3f
