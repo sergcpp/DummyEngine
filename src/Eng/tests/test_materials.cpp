@@ -412,7 +412,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
 
     { // Download result
         Ren::CommandBuffer cmd_buf = ren_ctx.BegTempSingleTimeCommands();
-        render_result->CopyTextureData(*stage_buf, cmd_buf, 0);
+        render_result->CopyTextureData(*stage_buf, cmd_buf, 0, 4 * ref_w * ref_h);
         ren_ctx.InsertReadbackMemoryBarrier(cmd_buf);
         ren_ctx.EndTempSingleTimeCommands(cmd_buf);
     }
