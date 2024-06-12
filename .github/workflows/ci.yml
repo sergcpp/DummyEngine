@@ -119,29 +119,29 @@ jobs:
         with:
           name: macos-x86_64-vk
           path: macos-x86_64-vk/
-  # test-windows-x86_64-gl-nv:
-  #   runs-on: [ windows, x86_64, nv ]
-  #   needs:
-  #     - build-windows-x86_64-gl-rel
-  #   steps:
-  #     - name: Checkout Workflows
-  #       uses: actions/checkout@v4
-  #       with:
-  #         sparse-checkout: .github
-  #     - name: Re-initialize repository
-  #       uses: ./.github/actions/checkout
-  #     - name: Run Tests
-  #       uses: ./.github/actions/test
-  #       with:
-  #         bin-dir: "windows-x86_64-gl"
-  #         out-dir: "windows-x86_64-gl-nv-output"
-  #         test-args: "-j2"
-  #     - name: Upload artifacts
-  #       uses: actions/upload-artifact@v3
-  #       if: always()
-  #       with:
-  #         name: windows-x86_64-gl-nv-output
-  #         path: windows-x86_64-gl-nv-output/
+  test-windows-x86_64-gl-nv:
+    runs-on: [ windows, x86_64, nv ]
+    needs:
+      - build-windows-x86_64-gl-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-gl"
+          out-dir: "windows-x86_64-gl-nv-output"
+          test-args: "-j2"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-gl-nv-output
+          path: windows-x86_64-gl-nv-output/
   test-windows-x86_64-vk-nv:
     runs-on: [ windows, x86_64, nv ]
     needs:
@@ -282,7 +282,7 @@ jobs:
           path: linux-x86_64-vk-nv-output/
   analyze-output:
     runs-on: [ linux ]
-    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
+    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
     if: always()
     steps:
       - name: Checkout Workflows
@@ -293,6 +293,10 @@ jobs:
         with:
           name: windows-x86_64-vk-nv-output
           path: windows-x86_64-vk-nv-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-gl-nv-output
+          path: windows-x86_64-gl-nv-output/
       - uses: actions/download-artifact@v3
         with:
           name: windows-x86_64-vk-amd-output

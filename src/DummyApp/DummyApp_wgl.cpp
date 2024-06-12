@@ -430,6 +430,14 @@ int DummyApp::Run(int argc, char *argv[]) {
             app_params.pt_max_samples = std::atoi(argv[++i]);
         } else if (strcmp(argv[i], "--exposure") == 0 && (++i != argc)) {
             app_params.exposure = strtof(argv[i], nullptr);
+        } else if (strcmp(argv[i], "--preset") == 0 && (++i != argc)) {
+            if (strcmp(argv[i], "medium") == 0) {
+                app_params.gfx_preset = eGfxPreset::Medium;
+            } else if (strcmp(argv[i], "high") == 0) {
+                app_params.gfx_preset = eGfxPreset::High;
+            } else if (strcmp(argv[i], "ultra") == 0) {
+                app_params.gfx_preset = eGfxPreset::Ultra;
+            }
         }
     }
 
