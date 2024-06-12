@@ -1583,7 +1583,12 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         ctx_.LoadBuffer("Image upload buf", Ren::eBufType::Upload, 4 * w * h * sizeof(float));
     uint8_t *stage_data = temp_upload_buf->Map();
     for (int y = 0; y < h; ++y) {
+#if defined(USE_GL_RENDER)
+        memcpy(&stage_data[(h - y - 1) * 4 * w * sizeof(float)], &data[y * 4 * stride * sizeof(float)],
+               4 * w * sizeof(float));
+#else
         memcpy(&stage_data[y * 4 * w * sizeof(float)], &data[y * 4 * stride * sizeof(float)], 4 * w * sizeof(float));
+#endif
     }
     temp_upload_buf->Unmap();
 
