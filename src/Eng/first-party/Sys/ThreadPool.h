@@ -343,6 +343,10 @@ template <class UnaryFunction> inline void ThreadPool::ParallelFor(const int fro
         loop_tasks.tasks_order.push_back(i - from);
     }
 
+    if (loop_tasks.tasks.empty()) {
+        return;
+    }
+
     Enqueue(loop_tasks).wait();
 }
 

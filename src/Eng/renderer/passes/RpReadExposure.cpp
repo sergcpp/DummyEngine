@@ -18,5 +18,6 @@ void Eng::RpReadExposure::Execute(RpBuilder &builder) {
         }
     }
 
-    input_tex.ref->CopyTextureData(*output_buf.ref, ctx.current_cmd_buf(), sizeof(float) * ctx.backend_frame(), sizeof(float));
+    input_tex.ref->CopyTextureData(*output_buf.ref, ctx.current_cmd_buf(), sizeof(float) * ctx.backend_frame(),
+                                   sizeof(float));
 }
