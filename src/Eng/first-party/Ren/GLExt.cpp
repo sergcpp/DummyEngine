@@ -254,6 +254,7 @@ bool Ren::InitGLExtentions(ILog *log) {
     LOAD_GL_FUN(glGetTextureImage)
     LOAD_GL_FUN(glGetTextureSubImage)
 
+    LOAD_GL_FUN(glGetCompressedTextureImage)
     LOAD_GL_FUN(glGetCompressedTextureSubImage)
 
     LOAD_GL_FUN(glDebugMessageCallback)

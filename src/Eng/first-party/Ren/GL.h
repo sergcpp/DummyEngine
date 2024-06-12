@@ -738,6 +738,7 @@ typedef void (APIENTRY *PFNGLGETTEXTUREIMAGEPROC)(GLuint texture, GLint level, G
 typedef void (APIENTRY *PFNGLGETTEXTURESUBIMAGEPROC)(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
                                                      GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLsizei bufSize, void *pixels);
 
+typedef void (APIENTRY *PFNGLGETCOMPRESSEDTEXTUREIMAGEPROC)(GLuint texture, GLint level, GLsizei bufSize, void *pixels);
 typedef void (APIENTRY *PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset,
                                                                GLsizei width, GLsizei height, GLsizei depth, GLsizei bufSize, void *pixels);
 
@@ -1024,6 +1025,7 @@ typedef void (APIENTRY* PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GL
 #define glGetTextureImage           ren_glGetTextureImage
 #define glGetTextureSubImage        ren_glGetTextureSubImage
 
+#define glGetCompressedTextureImage ren_glGetCompressedTextureImage
 #define glGetCompressedTextureSubImage ren_glGetCompressedTextureSubImage
 
 #define glDebugMessageCallback      ren_glDebugMessageCallback
@@ -1267,6 +1269,7 @@ EXTERN_FUNC PFNGLGETTEXTURELEVELPARAMETERIVPROC ren_glGetTextureLevelParameteriv
 EXTERN_FUNC PFNGLGETTEXTUREIMAGEPROC            ren_glGetTextureImage;
 EXTERN_FUNC PFNGLGETTEXTURESUBIMAGEPROC         ren_glGetTextureSubImage;
 
+EXTERN_FUNC PFNGLGETCOMPRESSEDTEXTUREIMAGEPROC  ren_glGetCompressedTextureImage;
 EXTERN_FUNC PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC ren_glGetCompressedTextureSubImage;
 
 EXTERN_FUNC PFNGLDEBUGMESSAGECALLBACKPROC       ren_glDebugMessageCallback;

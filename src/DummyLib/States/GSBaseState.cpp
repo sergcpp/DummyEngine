@@ -1203,7 +1203,7 @@ void GSBaseState::InitScene_PT() {
             const int data_len = GetMipDataLenBytes(tex.params.w, tex.params.h, tex.params.format, tex.params.block);
             Ren::Buffer temp_stage_buf("Temp staging buf", ren_ctx_->api_ctx(), Ren::eBufType::Readback, data_len);
             Ren::CommandBuffer cmd_buf = ren_ctx_->BegTempSingleTimeCommands();
-            tex.CopyTextureData(temp_stage_buf, cmd_buf, 0);
+            tex.CopyTextureData(temp_stage_buf, cmd_buf, 0, data_len);
             const Ren::TransitionInfo transitions[] = {{&tex, Ren::eResState::ShaderResource}};
             Ren::TransitionResourceStates(ren_ctx_->api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
             ren_ctx_->EndTempSingleTimeCommands(cmd_buf);
@@ -1649,7 +1649,7 @@ int GSBaseState::WriteAndValidateCaptureResult() {
 
     { // Download result
         Ren::CommandBuffer cmd_buf = ren_ctx_->BegTempSingleTimeCommands();
-        capture_result_->CopyTextureData(*stage_buf, cmd_buf, 0);
+        capture_result_->CopyTextureData(*stage_buf, cmd_buf, 0, 4 * viewer_->width * viewer_->height);
         ren_ctx_->InsertReadbackMemoryBarrier(cmd_buf);
         ren_ctx_->EndTempSingleTimeCommands(cmd_buf);
     }

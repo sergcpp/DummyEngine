@@ -1969,7 +1969,8 @@ void Ren::Texture2D::SetSampling(const SamplingParams s) {
     params.sampling = s;
 }
 
-void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off) const {
+void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off,
+                                     const int data_len) const {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> buf_barriers;
     SmallVector<VkImageMemoryBarrier, 1> img_barriers;

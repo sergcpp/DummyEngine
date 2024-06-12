@@ -154,7 +154,7 @@ class Texture2D : public RefCounter {
 
     void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, eTexFormat format, const Buffer &sbuf,
                      CommandBuffer cmd_buf, int data_off, int data_len);
-    void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off) const;
+    void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;
 };
 
 void CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,

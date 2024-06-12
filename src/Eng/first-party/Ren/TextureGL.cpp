@@ -227,8 +227,8 @@ Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
-                          Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
-                          ILog *log)
+                          Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
+                          eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, p, stage_buf, nullptr, nullptr, load_status, log);
 }
@@ -1128,18 +1128,19 @@ Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx, c
     return MakeFence();
 }
 
-void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off) const {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, GLuint(handle_.id));
-
+void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const {
     glBindBuffer(GL_PIXEL_PACK_BUFFER, GLuint(sbuf.id()));
 
-    // TODO: this will not work in OpenGLES
-    glGetTexImage(GL_TEXTURE_2D, 0, GLFormatFromTexFormat(params.format), GLTypeFromTexFormat(params.format),
-                  reinterpret_cast<GLvoid *>(uintptr_t(data_off)));
+    if (IsCompressedFormat(params.format)) {
+        glGetCompressedTextureImage(GLuint(handle_.id), 0, GLsizei(data_len),
+                                    reinterpret_cast<GLvoid *>(uintptr_t(data_off)));
+    } else {
+        glGetTextureImage(GLuint(handle_.id), 0, GLFormatFromTexFormat(params.format),
+                          GLTypeFromTexFormat(params.format), GLsizei(data_len),
+                          reinterpret_cast<GLvoid *>(uintptr_t(data_off)));
+    }
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
@@ -1282,7 +1283,8 @@ void Ren::Texture3D::Free() {
 }
 
 void Ren::Texture3D::SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
-                                 eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) {
+                                 eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off,
+                                 int data_len) {
     assert(format == params.format);
     assert(offsetx >= 0 && offsetx + sizex <= params.w);
     assert(offsety >= 0 && offsety + sizey <= params.h);

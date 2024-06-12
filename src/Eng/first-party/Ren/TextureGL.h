@@ -107,7 +107,7 @@ class Texture2D : public RefCounter {
                      const void *data, int data_len);
     SyncFence SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, Ren::eTexFormat format,
                           const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);
-    void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off) const;
+    void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;
 
     mutable eResState resource_state = eResState::Undefined;
 };
