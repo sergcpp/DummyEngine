@@ -47,6 +47,8 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
             if (b.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
             }
+        } else if (b.trg == eBindTarget::Tex3DSampled) {
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
             if (b.offset) {
                 assert(b.size != 0);
