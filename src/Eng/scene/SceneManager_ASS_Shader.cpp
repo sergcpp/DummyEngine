@@ -276,6 +276,10 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     ctx.log->Error("%s", preprocessor.error().data());
                 }
 
+                if (preprocessed.find("#pragma dont_compile") != std::string::npos) {
+                    continue;
+                }
+
                 glslx::Parser parser(preprocessed, out_file);
                 std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
                 if (!ast) {
