@@ -57,9 +57,11 @@ void main() {
 
             const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-            const vec4 ray_data = texelFetch(g_ray_data, ray_data_coords, 0);
+            vec4 ray_data = texelFetch(g_ray_data, ray_data_coords, 0);
 
 #if defined(RADIANCE)
+            ray_data.xyz = decompress_hdr(ray_data.xyz);
+
             if (ray_data.a < 0.0) {
                 ++backfaces;
                 if (backfaces > 24) {
