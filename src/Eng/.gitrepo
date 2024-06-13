@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = non_bindless_gl
-	commit = c50613ca70dba31c76519b8419ba67eb03cda17d
+	branch = subgroup_check
+	commit = 0a98aec7a11fc35b600d119f1182ca6292f187bd
 	method = merge
 	cmdver = 0.4.6
-	parent = 6aa9433eb65b625003631ca6baa8b51670c87048
+	parent = 20a017e0b8fdc30a99995908e330d7726be7dfa2
