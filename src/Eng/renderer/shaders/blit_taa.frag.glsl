@@ -15,6 +15,10 @@
 #pragma multi_compile _ YCoCg
 #pragma multi_compile _ STATIC_ACCUMULATION
 
+#if defined(STATIC_ACCUMULATION) && (defined(CATMULL_ROM) || defined(ROUNDED_NEIBOURHOOD) || defined(TONEMAP) || defined(YCoCg))
+    #pragma dont_compile
+#endif
+
 layout(binding = CURR_TEX_SLOT) uniform sampler2D g_color_curr;
 layout(binding = HIST_TEX_SLOT) uniform sampler2D g_color_hist;
 
