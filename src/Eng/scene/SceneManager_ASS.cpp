@@ -30,6 +30,8 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
+const uint32_t AssetsBuildVersion = 1;
+
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
 
@@ -401,6 +403,14 @@ void LoadDB(const char *out_folder, JsObjectP &out_js_assets_db) {
         if (in_file) {
             try {
                 if (out_js_assets_db.Read(in_file)) {
+                    if (!out_js_assets_db.Has("version")) {
+                        out_js_assets_db.elements.clear();
+                    } else {
+                        const JsStringP &js_assets_version = out_js_assets_db.at("version").as_str();
+                        if (js_assets_version.val != std::to_string(AssetsBuildVersion)) {
+                            out_js_assets_db.elements.clear();
+                        }
+                    }
                     break;
                 } else {
                     // unsuccessful read can leave junk
@@ -411,6 +421,14 @@ void LoadDB(const char *out_folder, JsObjectP &out_js_assets_db) {
                 out_js_assets_db.elements.clear();
             }
         }
+    }
+
+    if (!out_js_assets_db.Has("version")) {
+        out_js_assets_db.Insert("version",
+                                JsStringP{std::to_string(AssetsBuildVersion), out_js_assets_db.get_allocator()});
+    } else {
+        JsStringP &js_assets_version = out_js_assets_db.at("version").as_str();
+        js_assets_version.val = std::to_string(AssetsBuildVersion);
     }
 
     if (i != 0 && !out_js_assets_db.elements.empty()) {

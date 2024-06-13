@@ -15,7 +15,7 @@ runs:
           git fetch --tags
           git checkout -f ${{ env.GITHUB_SHA }}
           #git reset --hard origin/${{ env.GITHUB_SHA }}
-          git clean -fdx
+          git clean -fdx -e *assets_pc*
         else
           echo "Clone new repository"
           git clone $REPO_URL -b ${{ env.GITHUB_SHA }}
