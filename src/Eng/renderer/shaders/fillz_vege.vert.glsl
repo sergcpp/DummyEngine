@@ -1,6 +1,6 @@
 #version 320 es
 #extension GL_EXT_texture_buffer : enable
-#if !defined(VULKAN) && !defined(GL_SPIRV)
+#if !defined(VULKAN) && !defined(NO_BINDLESS)
 #extension GL_ARB_bindless_texture : enable
 #endif
 
@@ -12,6 +12,11 @@
 #pragma multi_compile _ MOVING
 #pragma multi_compile _ OUTPUT_VELOCITY
 #pragma multi_compile _ TRANSPARENT
+#pragma multi_compile _ NO_BINDLESS
+
+#if defined(NO_BINDLESS) && defined(VULKAN)
+    #pragma dont_compile
+#endif
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef TRANSPARENT
@@ -35,7 +40,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-#if !defined(BINDLESS_TEXTURES)
+#if defined(NO_BINDLESS)
 layout(binding = BIND_MAT_TEX4) uniform sampler2D g_pp_pos_tex;
 layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #endif
@@ -49,9 +54,9 @@ layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #ifdef TRANSPARENT
     layout(location = 4) out vec2 g_vtx_uvs0;
     layout(location = 5) out vec3 g_vtx_pos_ls;
-    #if defined(BINDLESS_TEXTURES)
+    #if !defined(NO_BINDLESS)
         layout(location = 6) out flat TEX_HANDLE g_alpha_tex;
-    #endif // BINDLESS_TEXTURES
+    #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 
 invariant gl_Position;
@@ -68,11 +73,11 @@ void main() {
     const vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
     const vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
-#if defined(BINDLESS_TEXTURES)
+#if !defined(NO_BINDLESS)
     const MaterialData mat = g_materials[instance.y];
     const TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     const TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
-#endif // BINDLESS_TEXTURES
+#endif // !NO_BINDLESS
     const HierarchyData hdata_curr = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 
     const vec3 obj_pos_ws = model_matrix_curr[3].xyz;
@@ -86,9 +91,9 @@ void main() {
 #ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
-#if defined(BINDLESS_TEXTURES)
+#if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[3]);
-#endif // BINDLESS_TEXTURES
+#endif // !NO_BINDLESS
 #endif // TRANSPARENT
 
     const vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(vtx_pos_ls_curr, 1.0)).xyz;

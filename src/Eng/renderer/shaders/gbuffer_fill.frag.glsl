@@ -3,11 +3,11 @@
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
-#if !defined(VULKAN) && !defined(GL_SPIRV)
+#if !defined(VULKAN) && !defined(NO_BINDLESS)
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif
@@ -15,17 +15,23 @@
 #include "_fs_common.glsl"
 #include "_texturing.glsl"
 
+#pragma multi_compile _ NO_BINDLESS
+
+#if defined(NO_BINDLESS) && defined(VULKAN)
+    #pragma dont_compile
+#endif
+
 #define FORCE_FLAT_NORMALS 0
 //#define FORCE_ROUGHNESS 0.1
 #define FORCE_GREY_ALBEDO 0
 //#define FORCE_METALLIC 1.0
 
-#if !defined(BINDLESS_TEXTURES)
+#if defined(NO_BINDLESS)
 layout(binding = BIND_MAT_TEX0) uniform sampler2D g_base_tex;
 layout(binding = BIND_MAT_TEX1) uniform sampler2D g_norm_tex;
 layout(binding = BIND_MAT_TEX2) uniform sampler2D g_roug_tex;
 layout(binding = BIND_MAT_TEX3) uniform sampler2D g_metl_tex;
-#endif // BINDLESS_TEXTURES
+#endif // !NO_BINDLESS
 layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
 layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
 layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
@@ -39,12 +45,12 @@ layout(location = 0) in highp vec3 g_vtx_pos;
 layout(location = 1) in mediump vec2 g_vtx_uvs;
 layout(location = 2) in mediump vec3 g_vtx_normal;
 layout(location = 3) in mediump vec3 g_vtx_tangent;
-#if defined(BINDLESS_TEXTURES)
+#if !defined(NO_BINDLESS)
     layout(location = 4) in flat TEX_HANDLE g_base_tex;
     layout(location = 5) in flat TEX_HANDLE g_norm_tex;
     layout(location = 6) in flat TEX_HANDLE g_roug_tex;
     layout(location = 7) in flat TEX_HANDLE g_metl_tex;
-#endif // BINDLESS_TEXTURES
+#endif // !NO_BINDLESS
 layout(location = 8) in flat vec4 g_base_color;
 layout(location = 9) in flat vec4 g_mat_params0;
 layout(location = 10) in flat vec4 g_mat_params1;

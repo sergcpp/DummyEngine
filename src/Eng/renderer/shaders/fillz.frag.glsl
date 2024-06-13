@@ -1,9 +1,9 @@
 #version 320 es
-#if !defined(VULKAN) && !defined(GL_SPIRV)
+#if !defined(VULKAN) && !defined(NO_BINDLESS) && defined(TRANSPARENT)
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif
@@ -13,15 +13,21 @@
 
 #pragma multi_compile _ OUTPUT_VELOCITY
 #pragma multi_compile _ TRANSPARENT
+#pragma multi_compile _ NO_BINDLESS
+
+#if defined(NO_BINDLESS) && defined(VULKAN)
+    #pragma dont_compile
+#endif
+#if defined(NO_BINDLESS) && !defined(TRANSPARENT)
+    #pragma dont_compile
+#endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#ifdef TRANSPARENT
-    #if !defined(BINDLESS_TEXTURES)
-        layout(binding = BIND_MAT_TEX4) uniform sampler2D g_alpha_tex;
-    #endif // BINDLESS_TEXTURES
+#if defined(TRANSPARENT) && defined(NO_BINDLESS)
+    layout(binding = BIND_MAT_TEX4) uniform sampler2D g_alpha_tex;
 #endif // TRANSPARENT
 
 #ifdef OUTPUT_VELOCITY
@@ -33,9 +39,9 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 #ifdef TRANSPARENT
     layout(location = 4) in highp vec2 g_vtx_uvs0;
     layout(location = 5) in highp vec3 g_vtx_pos_ls;
-    #if defined(BINDLESS_TEXTURES)
+    #if !defined(NO_BINDLESS)
         layout(location = 6) in flat highp TEX_HANDLE g_alpha_tex;
-    #endif // BINDLESS_TEXTURES
+    #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 
 #ifdef OUTPUT_VELOCITY

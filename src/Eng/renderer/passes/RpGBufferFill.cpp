@@ -29,11 +29,21 @@ void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-        Ren::ProgramRef gbuf_simple_prog =
-            sh.LoadProgram(ctx, "internal/gbuffer_fill.vert.glsl", "internal/gbuffer_fill.frag.glsl");
+#if defined(USE_GL_RENDER)
+        const bool bindless = ctx.capabilities.bindless_texture;
+#else
+        const bool bindless = true;
+#endif
+
+        Ren::ProgramRef gbuf_simple_prog = sh.LoadProgram(
+            ctx, bindless ? "internal/gbuffer_fill.vert.glsl" : "internal/gbuffer_fill.vert.glsl@NO_BINDLESS",
+            bindless ? "internal/gbuffer_fill.frag.glsl" : "internal/gbuffer_fill.frag.glsl@NO_BINDLESS");
         assert(gbuf_simple_prog->ready());
-        Ren::ProgramRef gbuf_vegetation_prog =
-            sh.LoadProgram(ctx, "internal/gbuffer_fill.vert.glsl@VEGETATION", "internal/gbuffer_fill.frag.glsl");
+        Ren::ProgramRef gbuf_vegetation_prog = sh.LoadProgram(
+            ctx,
+            bindless ? "internal/gbuffer_fill.vert.glsl@VEGETATION"
+                     : "internal/gbuffer_fill.vert.glsl@VEGETATION;NO_BINDLESS",
+            bindless ? "internal/gbuffer_fill.frag.glsl" : "internal/gbuffer_fill.frag.glsl@NO_BINDLESS");
         assert(gbuf_vegetation_prog->ready());
 
         const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());

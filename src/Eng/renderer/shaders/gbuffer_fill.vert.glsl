@@ -2,7 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buf : enable
 //#extension GL_EXT_control_flow_attributes : enable
-#if !defined(VULKAN) && !defined(GL_SPIRV)
+#if !defined(VULKAN) && !defined(NO_BINDLESS)
 #extension GL_ARB_bindless_texture : enable
 #endif
 
@@ -12,6 +12,11 @@
 #include "_texturing.glsl"
 
 #pragma multi_compile _ VEGETATION
+#pragma multi_compile _ NO_BINDLESS
+
+#if defined(NO_BINDLESS) && defined(VULKAN)
+    #pragma dont_compile
+#endif
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 layout(location = VTX_NOR_LOC) in vec4 g_in_vtx_normal;
@@ -36,7 +41,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-#if !defined(BINDLESS_TEXTURES)
+#if defined(NO_BINDLESS)
 layout(binding = BIND_MAT_TEX4) uniform sampler2D g_pp_pos_tex;
 layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #endif
@@ -45,12 +50,12 @@ layout(location = 0) out highp vec3 g_vtx_pos;
 layout(location = 1) out mediump vec2 g_vtx_uvs;
 layout(location = 2) out mediump vec3 g_vtx_normal;
 layout(location = 3) out mediump vec3 g_vtx_tangent;
-#if defined(BINDLESS_TEXTURES)
+#if !defined(NO_BINDLESS)
     layout(location = 4) out flat TEX_HANDLE g_base_tex;
     layout(location = 5) out flat TEX_HANDLE g_norm_tex;
     layout(location = 6) out flat TEX_HANDLE g_roug_tex;
     layout(location = 7) out flat TEX_HANDLE g_metl_tex;
-#endif // BINDLESS_TEXTURES
+#endif // !NO_BINDLESS
 layout(location = 8) out flat vec4 g_base_color;
 layout(location = 9) out flat vec4 g_mat_params0;
 layout(location = 10) out flat vec4 g_mat_params1;
@@ -71,10 +76,10 @@ void main(void) {
     vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
     vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
-#if defined(BINDLESS_TEXTURES)
+#if !defined(NO_BINDLESS)
     TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
-#endif // BINDLESS_TEXTURES
+#endif // !NO_BINDLESS
     HierarchyData hdata = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 
     vec3 obj_pos_ws = model_matrix[3].xyz;
@@ -94,12 +99,12 @@ void main(void) {
     g_vtx_tangent = vtx_tan_ws;
     g_vtx_uvs = g_in_vtx_uvs0;
 
-#if defined(BINDLESS_TEXTURES)
+#if !defined(NO_BINDLESS)
     g_base_tex = GET_HANDLE(mat.texture_indices[0]);
     g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
     g_roug_tex = GET_HANDLE(mat.texture_indices[2]);
     g_metl_tex = GET_HANDLE(mat.texture_indices[3]);
-#endif // BINDLESS_TEXTURES
+#endif // !NO_BINDLESS
 
     g_base_color = mat.params[0];
     g_mat_params0 = mat.params[1];
