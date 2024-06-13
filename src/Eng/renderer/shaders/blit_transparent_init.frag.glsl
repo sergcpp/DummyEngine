@@ -5,7 +5,7 @@
     precision mediump float;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

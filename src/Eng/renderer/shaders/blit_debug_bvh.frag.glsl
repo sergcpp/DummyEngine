@@ -1,7 +1,7 @@
 #version 320 es
 #extension GL_EXT_texture_buffer : enable
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif
@@ -23,7 +23,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = 12) uniform int g_root_index;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

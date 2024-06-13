@@ -1,14 +1,14 @@
 #version 320 es
 #extension GL_ARB_texture_multisample : enable
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
 
 layout(binding = 0) uniform mediump sampler2DMS g_tex;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

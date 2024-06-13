@@ -7,7 +7,7 @@
 
 layout (vertices = 3) out;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in highp vec3 g_vtx_pos_cs[];
 layout(location = 1) in mediump vec2 g_vtx_uvs_cs[];
 layout(location = 2) in mediump vec3 g_vtx_norm_cs[];
@@ -21,7 +21,7 @@ in mediump vec3 g_vtx_tangent_cs[];
 in highp vec3 g_vtx_sh_uvs_cs[][4];
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) out highp vec3 g_vtx_pos_es[];
 layout(location = 1) out mediump vec2 g_vtx_uvs_es[];
 layout(location = 2) out mediump vec3 g_vtx_norm_es[];

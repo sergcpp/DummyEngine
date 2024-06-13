@@ -1,7 +1,7 @@
 #version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
-#if !defined(VULKAN) && !defined(GL_SPIRV)
+#if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
 #endif
 //#extension GL_EXT_control_flow_attributes : enable
@@ -35,7 +35,7 @@ layout(binding = BIND_BINDLESS_TEX) readonly buffer TextureHandles {
 };
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) out highp vec3 g_vtx_pos_cs;
 layout(location = 1) out mediump vec2 g_vtx_uvs_cs;
 layout(location = 2) out mediump vec3 g_vtx_norm_cs;

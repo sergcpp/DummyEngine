@@ -13,7 +13,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = 0) uniform vec4 uTransform;
 #endif*/
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0)
 #endif
 out vec2 g_vtx_uvs;

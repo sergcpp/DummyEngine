@@ -1,6 +1,6 @@
 #version 320 es
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif
@@ -10,7 +10,7 @@
 
 layout(binding = SSR_TEX_SLOT) uniform highp sampler2D g_source_tex;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

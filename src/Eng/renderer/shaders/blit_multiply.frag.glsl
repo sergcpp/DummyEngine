@@ -2,7 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
@@ -23,7 +23,7 @@ layout(binding = BIND_ENV_TEX) uniform mediump samplerCubeArray g_env_tex;
 layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
 layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

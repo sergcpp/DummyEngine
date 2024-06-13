@@ -3,7 +3,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif
@@ -21,7 +21,7 @@ layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 layout(binding = REFL_TEX_SLOT) uniform highp sampler2D g_refl_tex;
 layout(binding = BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_tex;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

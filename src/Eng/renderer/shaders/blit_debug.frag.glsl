@@ -2,7 +2,7 @@
 #extension GL_EXT_texture_buffer : require
 #extension GL_ARB_texture_multisample : enable
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
@@ -25,7 +25,7 @@ layout(location = 15) uniform ivec2 g_res;
 layout(location = 16) uniform float g_mode;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

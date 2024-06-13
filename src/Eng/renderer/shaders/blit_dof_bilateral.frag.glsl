@@ -1,6 +1,6 @@
 #version 320 es
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
@@ -18,7 +18,7 @@ layout(location = 1) uniform float vertical;
 layout(location = 2) uniform float ref_depth;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

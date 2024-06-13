@@ -1,6 +1,6 @@
 #version 320 es
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
@@ -17,7 +17,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = 4) uniform float g_multiplier;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0)
 #endif
 in vec2 g_vtx_uvs;

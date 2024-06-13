@@ -2,7 +2,7 @@
 #extension GL_EXT_control_flow_attributes : require
 #extension GL_EXT_ray_query : require
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif

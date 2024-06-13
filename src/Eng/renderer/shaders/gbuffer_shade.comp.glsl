@@ -1,7 +1,7 @@
 #version 320 es
 #extension GL_EXT_control_flow_attributes : require
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif

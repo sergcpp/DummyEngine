@@ -9,7 +9,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140)
 #else
 layout (std140)

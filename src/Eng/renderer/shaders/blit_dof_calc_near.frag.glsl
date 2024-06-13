@@ -1,6 +1,6 @@
 #version 320 es
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
@@ -10,7 +10,7 @@
 layout(binding = BIND_BASE0_TEX) uniform sampler2D g_shrunk_coc;
 layout(binding = BIND_BASE1_TEX) uniform sampler2D g_blurred_coc;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

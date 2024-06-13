@@ -1,7 +1,7 @@
 #version 3420 es
 #extension GL_ARB_shading_language_packing : require
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif

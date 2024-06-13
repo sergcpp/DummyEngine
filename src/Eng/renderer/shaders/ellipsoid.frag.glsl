@@ -1,14 +1,14 @@
 #version 320 es
 #extension GL_EXT_texture_cube_map_array : enable
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec3 g_vtx_pos;
 #else
 in vec3 g_vtx_pos;

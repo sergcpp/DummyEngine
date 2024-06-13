@@ -1,7 +1,7 @@
 #version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
-#if !defined(VULKAN) && !defined(GL_SPIRV)
+#if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
 #endif
 

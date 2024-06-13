@@ -29,7 +29,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in highp vec3 g_vtx_pos;
 layout(location = 1) in mediump vec2 g_vtx_uvs;
 layout(location = 2) in mediump vec3 g_vtx_normal;

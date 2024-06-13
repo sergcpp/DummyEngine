@@ -4,7 +4,7 @@
 #include "_common.glsl"
 #include "rt_debug_interface.h"
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140)
 #else
 layout (std140)

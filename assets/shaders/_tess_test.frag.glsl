@@ -2,7 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
-#if !defined(VULKAN) && !defined(GL_SPIRV)
+#if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
 #endif
 //#extension GL_EXT_control_flow_attributes : enable
@@ -36,7 +36,7 @@ layout (binding = 0, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in highp vec3 g_vtx_pos;
 layout(location = 1) in mediump vec2 g_vtx_uvs;
 layout(location = 2) in mediump vec3 g_vtx_normal;

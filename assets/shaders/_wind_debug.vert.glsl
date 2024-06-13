@@ -22,7 +22,7 @@ layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
 
 layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) out highp vec3 g_vtx_pos;
 layout(location = 1) out mediump vec2 g_vtx_uvs;
 layout(location = 2) out mediump vec3 g_vtx_normal;

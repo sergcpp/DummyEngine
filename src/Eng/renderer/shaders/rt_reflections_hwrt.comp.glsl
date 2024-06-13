@@ -2,7 +2,7 @@
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_control_flow_attributes : require
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif
@@ -31,7 +31,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140)
 #else
 layout (std140)

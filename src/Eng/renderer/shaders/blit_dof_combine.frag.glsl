@@ -1,6 +1,6 @@
 #version 320 es
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision mediump float;
 #endif
@@ -31,7 +31,7 @@ layout(location = 3) uniform vec4 g_dof_lerp_bias;
 layout(location = 1) uniform vec3 g_dof_equation;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
 #else
 in vec2 g_vtx_uvs;

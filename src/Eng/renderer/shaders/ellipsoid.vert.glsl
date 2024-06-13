@@ -17,7 +17,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = U_M_MATRIX_LOC) uniform mat4 g_mmatrix;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
+#if defined(VULKAN)
 layout(location = 0) out vec3 g_vtx_pos;
 #else
 out vec3 g_vtx_pos;

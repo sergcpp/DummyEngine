@@ -6,7 +6,7 @@
 #extension GL_KHR_shader_subgroup_vote : enable
 #endif
 
-#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
+#if defined(GL_ES) || defined(VULKAN)
     precision highp int;
     precision highp float;
 #endif
