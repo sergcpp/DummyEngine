@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = ogl_spirv
-	commit = 6940cb3ed0a084c671e24c7d6912fb7674f13c93
+	branch = non_bindless_gl
+	commit = c50613ca70dba31c76519b8419ba67eb03cda17d
 	method = merge
 	cmdver = 0.4.6
-	parent = c5c7c4ce4730dd52a872b87f30c192d82c8c7c3f
+	parent = 6aa9433eb65b625003631ca6baa8b51670c87048
