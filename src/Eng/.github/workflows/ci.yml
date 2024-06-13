@@ -119,22 +119,6 @@ jobs:
         with:
           name: macos-x86_64-vk
           path: macos-x86_64-vk/
-  # test-windows-x86_64-gl-nv:
-  #   runs-on: [ windows, x86_64, nv ]
-  #   needs:
-  #     - build-windows-x86_64-gl-rel
-  #   steps:
-  #     - name: Checkout Workflows
-  #       uses: actions/checkout@v4
-  #       with:
-  #         sparse-checkout: .github
-  #     - name: Re-initialize repository
-  #       uses: ./.github/actions/checkout
-  #     - name: Run Tests
-  #       uses: ./.github/actions/test
-  #       with:
-  #         bin-dir: "windows-x86_64-gl-nv"
-  #         test-args: "-j2"
   test-windows-x86_64-vk-amd:
     runs-on: [ windows, x86_64, amd ]
     needs:
@@ -199,6 +183,38 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "-j2 --device Xe --validation_level 1"
+  test-windows-x86_64-gl-nv:
+    runs-on: [ windows, x86_64, nv ]
+    needs:
+      - build-windows-x86_64-gl-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-gl"
+          test-args: "-j2"
+  test-windows-x86_64-gl-arc:
+    runs-on: [ windows, x86_64, arc ]
+    needs:
+      - build-windows-x86_64-gl-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-gl"
+          test-args: "-j2 -vl 0"
   test-linux-x86_64-vk-amd:
     runs-on: [ linux, x86_64, amd ]
     needs:
