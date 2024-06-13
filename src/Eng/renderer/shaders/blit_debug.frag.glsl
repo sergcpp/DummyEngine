@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_EXT_texture_buffer : require
 #extension GL_ARB_texture_multisample : enable
 
 #include "_fs_common.glsl"

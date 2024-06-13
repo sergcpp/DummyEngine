@@ -13,10 +13,6 @@
 
 #pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP
-#endif
-
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
@@ -42,6 +38,8 @@ layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_te
 layout(binding = RAY_HITS_IMG_SLOT, r32ui) uniform writeonly uimage2D g_ray_hits_img;
 layout(binding = NOISE_IMG_SLOT, rg8) uniform writeonly image2D g_noise_img;
 
+shared uint g_shared_mask;
+
 void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool use_normal, bool use_cascades) {
     bool is_in_viewport = (px_coord.x < g_params.img_size.x && px_coord.y < g_params.img_size.y);
 
@@ -60,25 +58,40 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
         // TODO: ...
     }
 
+    const uint TileTolerance = 1;
+    uint light_mask = ~0u;
+
     const uint bit_index = LaneIdToBitShift(group_thread_id);
     uint mask = uint(is_active_lane) << bit_index;
 #ifndef NO_SUBGROUP
-    mask = subgroupOr(mask);
+    if (gl_NumSubgroups == 1) {
+        mask = subgroupOr(mask);
 
-    uint light_mask = ~0u;
-
-    const uint TileTolerance = 1;
-    bool discard_tile = subgroupBallotBitCount(uvec4(mask, 0, 0, 0)) <= TileTolerance;
-    if (gl_LocalInvocationIndex == 0) {
-        if (!discard_tile) {
-            uint tile_index = atomicAdd(g_tile_counter[0], 1);
-            g_tile_list[tile_index] = PackTile(group_id, mask, 0.0 /* min_t */, 1000.0 /* max_t */);
+        const bool discard_tile = subgroupBallotBitCount(uvec4(mask, 0, 0, 0)) <= TileTolerance;
+        if (gl_LocalInvocationIndex == 0) {
+            if (!discard_tile) {
+                const uint tile_index = atomicAdd(g_tile_counter[0], 1);
+                g_tile_list[tile_index] = PackTile(group_id, mask, 0.0 /* min_t */, 1000.0 /* max_t */);
+            }
+            imageStore(g_ray_hits_img, ivec2(group_id), uvec4(light_mask));
         }
-        imageStore(g_ray_hits_img, ivec2(group_id), uvec4(light_mask));
-    }
-#else
-    // TODO:...
+    } else
 #endif
+    {
+        groupMemoryBarrier(); barrier();
+        atomicOr(g_shared_mask, mask);
+        groupMemoryBarrier(); barrier();
+        mask = g_shared_mask;
+
+        if (gl_LocalInvocationIndex == 0) {
+            const bool discard_tile = bitCount(mask) <= TileTolerance;
+            if (!discard_tile) {
+                const uint tile_index = atomicAdd(g_tile_counter[0], 1);
+                g_tile_list[tile_index] = PackTile(group_id, mask, 0.0 /* min_t */, 1000.0 /* max_t */);
+            }
+            imageStore(g_ray_hits_img, ivec2(group_id), uvec4(light_mask));
+        }
+    }
 }
 
 //
@@ -113,6 +126,9 @@ vec2 SampleRandomVector2D(uvec2 pixel) {
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
+    if (gl_LocalInvocationIndex == 0) {
+        g_shared_mask = 0;
+    }
     if (gl_GlobalInvocationID.x < 128u && gl_GlobalInvocationID.y < 128u) {
         imageStore(g_noise_img, ivec2(gl_GlobalInvocationID.xy), vec4(SampleRandomVector2D(gl_GlobalInvocationID.xy), 0, 0));
     }

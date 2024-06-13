@@ -1,10 +1,6 @@
 #version 430 core
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : enable
-#extension GL_KHR_shader_subgroup_basic : enable
-#extension GL_KHR_shader_subgroup_ballot : enable
-#extension GL_KHR_shader_subgroup_shuffle : enable
-#extension GL_KHR_shader_subgroup_vote : enable
 #endif
 
 #include "_cs_common.glsl"
@@ -12,10 +8,6 @@
 #include "rt_shadow_common.glsl.inl"
 
 #pragma multi_compile _ NO_SUBGROUP
-
-#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP
-#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -27,6 +19,8 @@ layout(std430, binding = SHADOW_MASK_BUF_SLOT) writeonly buffer ShadowMask {
     uint g_shadow_mask[];
 };
 
+shared uint g_shared_mask;
+
 void CopyResult(uvec2 gtid, uvec2 gid) {
     uvec2 did = gid * uvec2(TILE_SIZE_X, TILE_SIZE_Y) + gtid;
     uint lin_tile_index = gid.y * ((g_params.img_size.x + TILE_SIZE_X - 1) / TILE_SIZE_X) + gid.x;
@@ -36,12 +30,21 @@ void CopyResult(uvec2 gtid, uvec2 gid) {
 
     uint lane_mask = hits_light ? GetBitMaskFromPixelPosition(did) : 0u;
 #ifndef NO_SUBGROUP
-    lane_mask = subgroupOr(lane_mask);
-#else
-    // TODO: ...
+    if (gl_NumSubgroups == 1) {
+        lane_mask = subgroupOr(lane_mask);
+    } else
 #endif
+    {
+        groupMemoryBarrier(); barrier();
+        atomicOr(g_shared_mask, lane_mask);
+        groupMemoryBarrier(); barrier();
+        lane_mask = g_shared_mask;
+    }
 
-    g_shadow_mask[lin_tile_index] = lane_mask;
+    if (gl_LocalInvocationIndex == 0) {
+        g_shared_mask = 0;
+        g_shadow_mask[lin_tile_index] = lane_mask;
+    }
 }
 
 void PrepareShadowMask(uvec2 group_thread_id, uvec2 group_id) {
@@ -60,6 +63,9 @@ void PrepareShadowMask(uvec2 group_thread_id, uvec2 group_id) {
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
+    if (gl_LocalInvocationIndex == 0) {
+        g_shared_mask = 0;
+    }
     const uvec2 group_thread_id = gl_LocalInvocationID.xy;
     const uvec2 group_id = gl_WorkGroupID.xy;
     PrepareShadowMask(group_thread_id, group_id);

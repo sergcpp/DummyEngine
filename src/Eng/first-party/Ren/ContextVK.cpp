@@ -352,12 +352,26 @@ void Ren::Context::CheckDeviceCapabilities() {
 
     capabilities.depth24_stencil8_format = (res == VK_SUCCESS);
 
-    if (capabilities.raytracing) {
-        VkPhysicalDeviceProperties2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-        prop2.pNext = &api_ctx_->rt_props;
+    VkPhysicalDeviceProperties2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+    void **pp_next = const_cast<void **>(&prop2.pNext);
 
-        api_ctx_->vkGetPhysicalDeviceProperties2KHR(api_ctx_->physical_device, &prop2);
+    VkPhysicalDeviceSubgroupProperties subgroup_props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES};
+    (*pp_next) = &subgroup_props;
+    pp_next = &subgroup_props.pNext;
+
+    if (capabilities.raytracing) {
+        (*pp_next) = &api_ctx_->rt_props;
+        pp_next = &api_ctx_->rt_props.pNext;
     }
+
+    api_ctx_->vkGetPhysicalDeviceProperties2KHR(api_ctx_->physical_device, &prop2);
+
+    capabilities.subgroup = (subgroup_props.supportedStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
+    capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT) != 0;
+    capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) != 0;
+    capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_BIT) != 0;
+    capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_VOTE_BIT) != 0;
+    capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT) != 0;
 }
 
 void Ren::Context::BegSingleTimeCommands(CommandBuffer cmd_buf) {

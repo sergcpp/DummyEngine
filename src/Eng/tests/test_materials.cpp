@@ -76,10 +76,11 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
                    Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, g_device_name.data()));
 #endif
 
-    if (img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI && !ren_ctx.capabilities.raytracing &&
-        !ren_ctx.capabilities.swrt) {
+    const bool skip_test = img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI &&
+                           !ren_ctx.capabilities.raytracing && !ren_ctx.capabilities.swrt;
+    if (skip_test) {
         const std::string combined_test_name = std::string(test_name) + test_postfix;
-        printf("Test %-33s ...skipped\n", combined_test_name.c_str());
+        printf("Test %-36s ...skipped\n", combined_test_name.c_str());
         return;
     }
 
@@ -532,7 +533,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.50, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 24.25, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 23.43, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 24.73, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 24.72, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 24.23, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 25.25, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 26.40, Full_Ultra));

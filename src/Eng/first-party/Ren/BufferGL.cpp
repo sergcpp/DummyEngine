@@ -260,6 +260,8 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
 void Ren::GLUnbindBufferUnits(const int start, const int count) {
     for (int i = start; i < start + count; i++) {
         glBindBufferBase(GL_UNIFORM_BUFFER, i, 0);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, 0);
+        if (i < 16) {
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, 0);
+        }
     }
 }

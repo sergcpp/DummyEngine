@@ -1,7 +1,5 @@
 #version 430 core
 #extension GL_ARB_texture_multisample : enable
-#extension GL_EXT_texture_buffer : enable
-#extension GL_EXT_texture_cube_map_array : enable
 
 #include "_fs_common.glsl"
 #include "blit_ssr_compose2_interface.h"

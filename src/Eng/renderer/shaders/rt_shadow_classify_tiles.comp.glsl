@@ -14,10 +14,6 @@
 
 #pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP
-#endif
-
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -48,7 +44,7 @@ shared int g_false_count;
 
 bool ThreadGroupAllTrue(bool val) {
 #ifndef NO_SUBGROUP
-    if (gl_SubgroupSize == LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y) {
+    if (gl_NumSubgroups == 1) {
         return subgroupAll(val);
     } else
 #endif

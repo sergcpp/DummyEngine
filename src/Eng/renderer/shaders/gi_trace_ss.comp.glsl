@@ -10,10 +10,6 @@
 
 #pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(GL_KHR_shader_subgroup_ballot) && !defined(NO_SUBGROUP)
-#define NO_SUBGROUP
-#endif
-
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };

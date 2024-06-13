@@ -5,11 +5,7 @@
 
 layout(binding = SSR_TEX_SLOT) uniform sampler2D g_source_tex;
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec3 g_out_color;
 

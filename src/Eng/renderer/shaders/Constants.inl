@@ -28,23 +28,21 @@ const int BIND_MAT_TEX3 = 3;
 const int BIND_MAT_TEX4 = 4;
 const int BIND_MAT_TEX5 = 5;
 const int BIND_SHAD_TEX = 6;
-const int BIND_LMAP_SH = 7;
-const int BIND_DECAL_TEX = 11;
-const int BIND_SSAO_TEX_SLOT = 12;
-const int BIND_BRDF_LUT = 13;
-const int BIND_LIGHT_BUF = 14;
-const int BIND_DECAL_BUF = 15;
-const int BIND_CELLS_BUF = 16;
-const int BIND_ITEMS_BUF = 17;
-const int BIND_INST_BUF = 18;
-const int BIND_INST_NDX_BUF = 19;
-const int BIND_ENV_TEX = 20;
-const int BIND_NOISE_TEX = 21;
-const int BIND_CONE_RT_LUT = 22;
+const int BIND_SSAO_TEX_SLOT = 7;
+const int BIND_BRDF_LUT = 8;
+const int BIND_LIGHT_BUF = 9;
+const int BIND_DECAL_BUF = 10;
+const int BIND_CELLS_BUF = 11;
+const int BIND_ITEMS_BUF = 12;
+const int BIND_INST_BUF = 13;
+const int BIND_INST_NDX_BUF = 14;
+const int BIND_MATERIALS_BUF = 15;
+const int BIND_DECAL_TEX = 16;
+const int BIND_LMAP_SH = 17;
+const int BIND_ENV_TEX = 21;
+const int BIND_NOISE_TEX = 22;
 
 const int BIND_SET_SCENETEXTURES = 1;
-
-const int BIND_MATERIALS_BUF = 25;
 const int BIND_BINDLESS_TEX = 0; // shares slot with material slot 0
 
 const int BIND_BASE0_TEX = 0;

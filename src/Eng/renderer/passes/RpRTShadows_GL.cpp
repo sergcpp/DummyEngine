@@ -101,7 +101,9 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
 
 void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef rt_shadows_swrt_prog = sh.LoadProgram(ctx, "internal/rt_shadows_swrt.comp.glsl");
+        Ren::ProgramRef rt_shadows_swrt_prog =
+            sh.LoadProgram(ctx, ctx.capabilities.subgroup ? "internal/rt_shadows_swrt.comp.glsl"
+                                                          : "internal/rt_shadows_swrt.comp.glsl@NO_SUBGROUP");
         assert(rt_shadows_swrt_prog->ready());
 
         if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log())) {

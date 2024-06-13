@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_EXT_texture_buffer : enable
 
 #include "_fs_common.glsl"
 

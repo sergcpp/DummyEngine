@@ -1,5 +1,7 @@
 #version 430 core
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : require
+#endif
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
 #endif
@@ -9,6 +11,8 @@
 #include "_texturing.glsl"
 #include "rt_shadows_interface.h"
 #include "rt_shadow_common.glsl.inl"
+
+#pragma multi_compile _ NO_SUBGROUP
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -161,9 +165,12 @@ void main() {
     }
 
     uint new_mask = uint(is_in_shadow) << bit_index;
+#ifndef NO_SUBGROUP
     if (gl_NumSubgroups == 1) {
         new_mask = subgroupOr(new_mask);
-    } else {
+    } else
+#endif
+    {
         groupMemoryBarrier(); barrier();
         atomicOr(g_shared_mask, new_mask);
         groupMemoryBarrier(); barrier();

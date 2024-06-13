@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_EXT_texture_cube_map_array : enable
 
 layout(binding = 0) uniform samplerCubeArray g_tex;
 

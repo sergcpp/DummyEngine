@@ -98,6 +98,20 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         capabilities.max_compute_work_group_size[i] = val;
     }
 
+    if (IsExtensionSupported("GL_KHR_shader_subgroup")) {
+        GLint stages = 0;
+        glGetIntegerv(GL_SUBGROUP_SUPPORTED_STAGES_KHR, &stages);
+        GLint features = 0;
+        glGetIntegerv(GL_SUBGROUP_SUPPORTED_FEATURES_KHR, &features);
+
+        capabilities.subgroup = (stages & GL_COMPUTE_SHADER_BIT) != 0;
+        capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_BASIC_BIT_KHR) != 0;
+        capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_BALLOT_BIT_KHR) != 0;
+        capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_SHUFFLE_BIT_KHR) != 0;
+        capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_VOTE_BIT_KHR) != 0;
+        capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_ARITHMETIC_BIT_KHR) != 0;
+    }
+
     log_->Info("===========================================");
 
     if (validation_level && (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||

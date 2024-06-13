@@ -1,7 +1,5 @@
 #version 430 core
 #extension GL_ARB_texture_multisample : enable
-#extension GL_EXT_texture_buffer : enable
-#extension GL_EXT_texture_cube_map_array : enable
 
 #include "_fs_common.glsl"
 #include "_rt_common.glsl"
@@ -19,11 +17,7 @@ layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

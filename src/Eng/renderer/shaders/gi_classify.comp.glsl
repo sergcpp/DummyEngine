@@ -12,10 +12,6 @@
 
 #pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP
-#endif
-
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -61,6 +57,15 @@ void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_v
 }
 
 shared uint g_tile_count;
+shared uint g_shared_bits[2];
+
+void atomic_set_shared_bit(const uvec2 group_thread_id) {
+    atomicOr(g_shared_bits[(group_thread_id.y * 8) / 32], (1u << ((group_thread_id.y * 8 + group_thread_id.x) % 32)));
+}
+
+bool get_shared_bit(const uvec2 group_thread_id) {
+    return (g_shared_bits[(group_thread_id.y * 8) / 32] & (1u << ((group_thread_id.y * 8 + group_thread_id.x) % 32))) != 0;
+}
 
 // From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
 /**********************************************************************
@@ -86,7 +91,10 @@ THE SOFTWARE.
 ********************************************************************/
 void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, uint samples_per_quad,
                    bool enable_temporal_variance_guided_tracing) {
-    g_tile_count = 0;
+    if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
+        g_tile_count = 0;
+        g_shared_bits[0] = g_shared_bits[1] = 0;
+    }
 
 #ifndef NO_SUBGROUP
     const bool is_first_lane_of_wave = subgroupElect();
@@ -110,21 +118,25 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
         needs_ray = (texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold);
     }
 
+    groupMemoryBarrier(); barrier();
+
 #ifndef NO_SUBGROUP
     const bool base_needs_ray = subgroupShuffle(needs_ray, gl_SubgroupInvocationID & ~3u);
+#else
+    // Fallback using shared memory
+    if (needs_ray) {
+        atomic_set_shared_bit(group_thread_id);
+    }
+    groupMemoryBarrier(); barrier();
+
+    const bool base_needs_ray = get_shared_bit(group_thread_id & uvec2(~1u));
+#endif
     if (!is_base_ray && needs_denoiser && !needs_ray) {
         // If base ray will not be traced, we need to trace this one
         needs_ray = !base_needs_ray;
     }
-#else
-    // TODO: Fallback using shared memory
-#endif
-
-    groupMemoryBarrier(); // Wait until g_tile_count is cleared - allow some computations before and after
-    barrier();
 
     // Now we know for each thread if it needs to shoot a ray and wether or not a denoiser pass has to run on this pixel.
-
     if (is_diffuse_surface) {
         atomicAdd(g_tile_count, 1u);
     }
@@ -153,10 +165,24 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
         StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
 #else
-    // TODO: Fallback using shared memory
-    const bool copy_horizontal = /*[group_thread_id.y][group_thread_id.x ^ 1u] &&*/ (samples_per_quad != 4u) && is_base_ray;
-    const bool copy_vertical = /*subgroupShuffleXor(require_copy, 2u) &&*/ (samples_per_quad == 1u) && is_base_ray;
-    const bool copy_diagonal = /*subgroupShuffleXor(require_copy, 3u) &&*/ (samples_per_quad == 1u) && is_base_ray;
+    // Fallback using shared memory
+    groupMemoryBarrier(); barrier();
+
+    if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
+        g_shared_bits[0] = g_shared_bits[1] = 0;
+    }
+
+    groupMemoryBarrier(); barrier();
+
+    if (require_copy) {
+        atomic_set_shared_bit(group_thread_id);
+    }
+
+    groupMemoryBarrier(); barrier();
+
+    const bool copy_horizontal = get_shared_bit(group_thread_id ^ uvec2(1u, 0u)) && (samples_per_quad != 4u) && is_base_ray;
+    const bool copy_vertical = get_shared_bit(group_thread_id ^ uvec2(0u, 1u)) && (samples_per_quad == 1u) && is_base_ray;
+    const bool copy_diagonal = get_shared_bit(group_thread_id ^ uvec2(1u, 1u)) && (samples_per_quad == 1u) && is_base_ray;
 
     if (needs_ray) {
         const uint ray_index = atomicAdd(g_ray_counter[0], 1);

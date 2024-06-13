@@ -1,6 +1,4 @@
 #version 430 core
-#extension GL_EXT_texture_buffer : enable
-#extension GL_EXT_texture_cube_map_array : enable
 
 #include "_fs_common.glsl"
 

@@ -1,6 +1,4 @@
 #version 430 core
-#extension GL_EXT_texture_buffer : enable
-#extension GL_OES_texture_buffer : enable
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
 #endif
@@ -25,7 +23,6 @@ layout(binding = BIND_LIGHT_BUF) uniform samplerBuffer g_lights_buf;
 layout(binding = BIND_DECAL_BUF) uniform samplerBuffer g_decals_buf;
 layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
 layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
-layout(binding = BIND_CONE_RT_LUT) uniform sampler2D g_cone_rt_lut;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
@@ -221,7 +218,7 @@ void main(void) {
         float sin_omega = pos_and_radius.w / sqrt(pos_and_radius.w * pos_and_radius.w + dist * dist);
         float cos_phi = dot(dir, cone_dir_ls) / dist;
 
-        cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
+        //cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
         sph_occlusion *= clamp(1.0 - (pos_and_radius.w / dist) * (pos_and_radius.w / dist), 0.0, 1.0);
 #else
         vec3 dir = pos_and_radius.xyz - cone_origin_ws;
@@ -231,7 +228,7 @@ void main(void) {
                                                   dist * dist);
         float cos_phi = dot(dir, cone_dir_ws) / dist;
 
-        cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).g;
+        //cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).g;
         sph_occlusion *= clamp(1.0 - (pos_and_radius.w / dist) * (pos_and_radius.w / dist), 0.0, 1.0);
 #endif
     }

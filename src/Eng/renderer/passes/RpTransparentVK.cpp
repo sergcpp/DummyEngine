@@ -139,7 +139,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
             descr_write.descriptorCount = 1;
             descr_write.pImageInfo = &env_info;
         }
-        { // cone rt lut
+        /*{ // cone rt lut
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
@@ -148,7 +148,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
             descr_write.pImageInfo = &cone_rt_info;
-        }
+        }*/
         /*{ // brdf lut
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -377,7 +377,7 @@ void Eng::RpTransparent::InitDescrSetLayout() {
         {BIND_SSAO_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
         {BIND_NOISE_TEX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT},
         {BIND_ENV_TEX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {BIND_CONE_RT_LUT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        //{BIND_CONE_RT_LUT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
         //{BIND_BRDF_LUT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
         // texel buffers (4)
         {BIND_LIGHT_BUF, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
