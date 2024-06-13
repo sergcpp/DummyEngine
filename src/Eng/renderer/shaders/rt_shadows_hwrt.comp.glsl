@@ -2,11 +2,6 @@
 #extension GL_KHR_shader_subgroup_arithmetic : require
 #extension GL_EXT_ray_query : require
 
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
-
 #include "_rt_common.glsl"
 #include "_texturing.glsl"
 #include "rt_shadows_interface.h"

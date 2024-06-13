@@ -1,12 +1,7 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_fs_common.glsl"
 #include "blit_ssr_compose_interface.h"
@@ -19,22 +14,22 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 #if defined(MSAA_4)
-layout(binding = BIND_REFL_SPEC_TEX) uniform mediump sampler2DMS g_spec_tex;
-layout(binding = BIND_REFL_DEPTH_TEX) uniform highp sampler2DMS g_depth_tex;
-layout(binding = BIND_REFL_NORM_TEX) uniform highp sampler2DMS g_norm_tex;
+layout(binding = BIND_REFL_SPEC_TEX) uniform sampler2DMS g_spec_tex;
+layout(binding = BIND_REFL_DEPTH_TEX) uniform sampler2DMS g_depth_tex;
+layout(binding = BIND_REFL_NORM_TEX) uniform sampler2DMS g_norm_tex;
 #else
-layout(binding = BIND_REFL_SPEC_TEX) uniform highp sampler2D g_spec_tex;
-layout(binding = BIND_REFL_DEPTH_TEX) uniform highp sampler2D g_depth_tex;
-layout(binding = BIND_REFL_NORM_TEX) uniform highp sampler2D g_norm_tex;
+layout(binding = BIND_REFL_SPEC_TEX) uniform sampler2D g_spec_tex;
+layout(binding = BIND_REFL_DEPTH_TEX) uniform sampler2D g_depth_tex;
+layout(binding = BIND_REFL_NORM_TEX) uniform sampler2D g_norm_tex;
 #endif
-layout(binding = BIND_REFL_DEPTH_LOW_TEX) uniform highp sampler2D g_depth_low_tex;
-layout(binding = BIND_REFL_SSR_TEX) uniform highp sampler2D g_ssr_tex;
+layout(binding = BIND_REFL_DEPTH_LOW_TEX) uniform sampler2D g_depth_low_tex;
+layout(binding = BIND_REFL_SSR_TEX) uniform sampler2D g_ssr_tex;
 
-layout(binding = BIND_REFL_PREV_TEX) uniform highp sampler2D g_prev_tex;
+layout(binding = BIND_REFL_PREV_TEX) uniform sampler2D g_prev_tex;
 layout(binding = BIND_REFL_BRDF_TEX) uniform sampler2D g_brdf_lut_tex;
-layout(binding = BIND_ENV_TEX) uniform mediump samplerCubeArray g_probe_textures;
-layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_ENV_TEX) uniform samplerCubeArray g_probe_textures;
+layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 
 #if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
@@ -115,20 +110,20 @@ void main() {
         vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
         ray_origin_ws /= ray_origin_ws.w;
 
-        highp float k = log2(d0 / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
+        float k = log2(d0 / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
         int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
         int ix = icoord.x, iy = icoord.y;
         int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * ITEM_GRID_RES_X + (ix * ITEM_GRID_RES_X / int(g_shrd_data.res_and_fres.x));
 
-        highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-        highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
-        highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
+        uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+        uint offset = bitfieldExtract(cell_data.x, 0, 24);
+        uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 
         float total_fade = 0.0;
 
         for (uint i = offset; i < offset + pcount; i++) {
-            highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+            uint item_data = texelFetch(g_items_buf, int(i)).x;
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
             float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);

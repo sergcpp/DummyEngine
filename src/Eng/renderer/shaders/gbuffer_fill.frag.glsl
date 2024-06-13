@@ -1,15 +1,10 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
 #if !defined(VULKAN) && !defined(NO_BINDLESS)
 #extension GL_ARB_bindless_texture : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_fs_common.glsl"
@@ -33,18 +28,18 @@ layout(binding = BIND_MAT_TEX2) uniform sampler2D g_roug_tex;
 layout(binding = BIND_MAT_TEX3) uniform sampler2D g_metl_tex;
 #endif // !NO_BINDLESS
 layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
-layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_DECAL_BUF) uniform samplerBuffer g_decals_buf;
+layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(location = 0) in highp vec3 g_vtx_pos;
-layout(location = 1) in mediump vec2 g_vtx_uvs;
-layout(location = 2) in mediump vec3 g_vtx_normal;
-layout(location = 3) in mediump vec3 g_vtx_tangent;
+layout(location = 0) in vec3 g_vtx_pos;
+layout(location = 1) in vec2 g_vtx_uvs;
+layout(location = 2) in vec3 g_vtx_normal;
+layout(location = 3) in vec3 g_vtx_tangent;
 #if !defined(NO_BINDLESS)
     layout(location = 4) in flat TEX_HANDLE g_base_tex;
     layout(location = 5) in flat TEX_HANDLE g_norm_tex;
@@ -60,18 +55,18 @@ layout(location = LOC_OUT_NORM) out uint g_out_normal;
 layout(location = LOC_OUT_SPEC) out uint g_out_specular;
 
 void main(void) {
-    const highp float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
-    const highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
+    const float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
+    const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     const int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-    const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
-                                                bitfieldExtract(cell_data.x, 24, 8));
-    const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
-                                                bitfieldExtract(cell_data.y, 8, 8));
+    const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
+                                          bitfieldExtract(cell_data.x, 24, 8));
+    const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
+                                          bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 diff_color = YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
     vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
@@ -83,7 +78,7 @@ void main(void) {
     const vec3 dp_dy = dFdy(g_vtx_pos);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
-        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+        uint item_data = texelFetch(g_items_buf, int(i)).x;
         int di = int(bitfieldExtract(item_data, 12, 12));
 
         mat4 de_proj;

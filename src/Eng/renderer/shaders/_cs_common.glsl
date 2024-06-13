@@ -81,11 +81,11 @@ vec3 EvalSHIrradiance_NonLinear(vec3 dir, vec4 sh_r, vec4 sh_g, vec4 sh_b) {
     return R0 * (a + (vec3(1.0) - a) * (p + vec3(1.0)) * pow(q, p));
 }
 
-vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {
+vec3 EvaluateSH(const vec3 normal, const  vec4 sh_coeffs[3]) {
     const float SH_A0 = 0.886226952; // PI / sqrt(4.0 * Pi)
     const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0)
 
-    vec4 vv = vec4(SH_A0, SH_A1 * normal.yzx);
+    const vec4 vv = vec4(SH_A0, SH_A1 * normal.yzx);
 
     return vec3(dot(sh_coeffs[0], vv), dot(sh_coeffs[1], vv), dot(sh_coeffs[2], vv));
 }
@@ -100,7 +100,7 @@ vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {
 //  22 23 2a 2b 32 33 3a 3b
 //  24 25 2c 2d 34 35 3c 3d
 //  26 27 2e 2f 36 37 3e 3f
-uvec2 RemapLane8x8(uint lane) {
+uvec2 RemapLane8x8(const uint lane) {
     return uvec2(bitfieldInsert(bitfieldExtract(lane, 2, 3), lane, 0, 1),
                  bitfieldInsert(bitfieldExtract(lane, 3, 3), bitfieldExtract(lane, 1, 2), 0, 2));
 }

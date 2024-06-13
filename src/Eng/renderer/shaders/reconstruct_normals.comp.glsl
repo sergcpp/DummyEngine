@@ -1,10 +1,5 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_shading_language_packing : require
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_cs_common.glsl"
 #include "reconstruct_normals_interface.h"
@@ -13,7 +8,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 
 layout(binding = OUT_NORMALS_IMG_SLOT, rg16_snorm) uniform image2D g_out_normals_img;
 

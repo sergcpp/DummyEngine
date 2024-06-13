@@ -1,11 +1,6 @@
-#version 320 es
+#version 430 core
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_quad : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_cs_common.glsl"
@@ -22,7 +17,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(std430, binding = ATOMIC_CNT_SLOT) buffer AtomicCounter {
     uint g_atomic_counter;
 };

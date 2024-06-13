@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_KHR_shader_subgroup_basic : enable
@@ -6,11 +6,6 @@
 #extension GL_KHR_shader_subgroup_shuffle : enable
 #extension GL_KHR_shader_subgroup_vote : enable
 #extension GL_KHR_shader_subgroup_quad : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_cs_common.glsl"

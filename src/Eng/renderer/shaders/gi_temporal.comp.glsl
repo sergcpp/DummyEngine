@@ -1,13 +1,8 @@
-#version 320 es
+#version 430 core
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_arithmetic : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_cs_common.glsl"
@@ -57,7 +52,7 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
     // Intermediate storage
-    /* mediump */ vec4 radiance[4];
+    /* fp16 */ vec4 radiance[4];
 
     // Start from the upper left corner of 16x16 region
     dispatch_thread_id -= ivec2(4);
@@ -76,19 +71,19 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     }
 }
 
-/* mediump */ vec4 LoadFromGroupSharedMemory(ivec2 idx) {
+/* fp16 */ vec4 LoadFromGroupSharedMemory(ivec2 idx) {
     return vec4(unpackHalf2x16(g_shared_storage_0[idx.y][idx.x]),
                 unpackHalf2x16(g_shared_storage_1[idx.y][idx.x]));
 }
 
-/* mediump */ float LocalNeighborhoodKernelWeight(/* mediump */ float i) {
-    const /* mediump */ float radius = LOCAL_NEIGHBORHOOD_RADIUS + 1.0;
+/* fp16 */ float LocalNeighborhoodKernelWeight(/* fp16 */ float i) {
+    const /* fp16 */ float radius = LOCAL_NEIGHBORHOOD_RADIUS + 1.0;
     return exp(-GAUSSIAN_K * (i * i) / (radius * radius));
 }
 
 struct moments_t {
-    /* mediump */ vec4 mean;
-    /* mediump */ vec3 variance;
+    /* fp16 */ vec4 mean;
+    /* fp16 */ vec3 variance;
 };
 
 moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
@@ -96,12 +91,12 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
     ret.mean = vec4(0.0);
     ret.variance = vec3(0.0);
 
-    /* mediump */ float accumulated_weight = 0;
+    /* fp16 */ float accumulated_weight = 0;
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
         for (int i = -LOCAL_NEIGHBORHOOD_RADIUS; i <= LOCAL_NEIGHBORHOOD_RADIUS; ++i) {
             ivec2 index = group_thread_id + ivec2(i, j);
-            /* mediump */ vec4 radiance = LoadFromGroupSharedMemory(index);
-            /* mediump */ float weight = LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
+            /* fp16 */ vec4 radiance = LoadFromGroupSharedMemory(index);
+            /* fp16 */ float weight = LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
             accumulated_weight += weight;
 
             ret.mean += radiance * weight;
@@ -147,35 +142,35 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
 
     group_thread_id += 4; // Center threads in shared memory
 
-    /* mediump */ vec4 center_radiance = LoadFromGroupSharedMemory(group_thread_id);
-    /* mediump */ vec4 new_signal = center_radiance;
-    /* mediump */ float new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
+    /* fp16 */ vec4 center_radiance = LoadFromGroupSharedMemory(group_thread_id);
+    /* fp16 */ vec4 new_signal = center_radiance;
+    /* fp16 */ float new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
     if (center_radiance.w > 0.0) {
-        /* mediump */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
+        /* fp16 */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb * exposure;
         const vec3 fallback_radiance = texelFetch(g_fallback_tex, dispatch_thread_id, 0).rgb * exposure;
 
-        /* mediump */ vec4 old_signal = texelFetch(g_reproj_gi_tex, dispatch_thread_id, 0);
+        /* fp16 */ vec4 old_signal = texelFetch(g_reproj_gi_tex, dispatch_thread_id, 0);
         old_signal.xyz *= exposure;
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
-        /* mediump */ vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.rgb - fallback_radiance)) * history_clip_weight * 1.4;
+        /* fp16 */ vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.rgb - fallback_radiance)) * history_clip_weight * 1.4;
         local_neighborhood.mean.rgb = mix(local_neighborhood.mean.rgb, avg_radiance, 0.2);
-        /* mediump */ vec3 radiance_min = local_neighborhood.mean.rgb - color_std;
-        /* mediump */ vec3 radiance_max = local_neighborhood.mean.rgb + color_std;
-        /* mediump */ vec4 clipped_old_signal;
+        /* fp16 */ vec3 radiance_min = local_neighborhood.mean.rgb - color_std;
+        /* fp16 */ vec3 radiance_max = local_neighborhood.mean.rgb + color_std;
+        /* fp16 */ vec4 clipped_old_signal;
         clipped_old_signal.rgb = ClipAABB(radiance_min, radiance_max, old_signal.rgb);
         clipped_old_signal.a = old_signal.a;
-        /* mediump */ float accumulation_speed = 1.0 / max(sample_count, 1.0);
-        /* mediump */ float weight = (1.0 - accumulation_speed);
+        /* fp16 */ float accumulation_speed = 1.0 / max(sample_count, 1.0);
+        /* fp16 */ float weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
         new_signal.rgb = mix(new_signal.rgb, fallback_radiance, 1.0 / max(sample_count + 1.0, 1.0));
         // Clip outliers
         {
-            /* mediump */ vec3 radiance_min = fallback_radiance - color_std * 1.0;
-            /* mediump */ vec3 radiance_max = fallback_radiance + color_std * 1.0;
+            /* fp16 */ vec3 radiance_min = fallback_radiance - color_std * 1.0;
+            /* fp16 */ vec3 radiance_max = fallback_radiance + color_std * 1.0;
             new_signal.rgb = ClipAABB(radiance_min, radiance_max, new_signal.rgb);
         }
         // Blend with history

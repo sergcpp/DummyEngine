@@ -1,16 +1,10 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-    precision mediump sampler2DShadow;
 #endif
 
 #include "internal/_fs_common.glsl"
@@ -27,19 +21,19 @@ layout(binding = BIND_SHAD_TEX) uniform sampler2DShadow g_shadow_tex;
 layout(binding = BIND_LMAP_SH) uniform sampler2D g_lm_indirect_sh_texture[4];
 layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
 layout(binding = BIND_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
-layout(binding = BIND_ENV_TEX) uniform mediump samplerCubeArray g_env_tex;
-layout(binding = BIND_LIGHT_BUF) uniform highp samplerBuffer g_lights_buf;
-layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
-layout(binding = BIND_CONE_RT_LUT) uniform lowp sampler2D g_cone_rt_lut;
+layout(binding = BIND_ENV_TEX) uniform samplerCubeArray g_env_tex;
+layout(binding = BIND_LIGHT_BUF) uniform samplerBuffer g_lights_buf;
+layout(binding = BIND_DECAL_BUF) uniform samplerBuffer g_decals_buf;
+layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
+layout(binding = BIND_CONE_RT_LUT) uniform sampler2D g_cone_rt_lut;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
 layout(location = 1) in vec2 g_vtx_uvs;
-layout(location = 2) in mediump vec3 g_vtx_normal;
+layout(location = 2) in vec3 g_vtx_normal;
 #if defined(BINDLESS_TEXTURES)
     layout(location = 8) in flat TEX_HANDLE g_diff_tex;
 #endif // BINDLESS_TEXTURES

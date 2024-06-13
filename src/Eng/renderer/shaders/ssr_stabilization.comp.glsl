@@ -1,11 +1,6 @@
 #version 3420 es
 #extension GL_ARB_shading_language_packing : require
 
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
-
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
 #include "taa_common.glsl"

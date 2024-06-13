@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
+#version 430 core
 
 #include "_cs_common.glsl"
 #include "ssr_vs_depth_interface.h"
@@ -16,7 +11,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = OUT_VS_DEPTH_IMG_SLOT, r32f) uniform image2D out_vs_depth_img;
 
 layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

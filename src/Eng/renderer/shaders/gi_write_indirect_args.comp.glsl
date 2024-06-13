@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
+#version 430 core
 
 #include "gi_write_indirect_args_interface.h"
 

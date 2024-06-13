@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
+#version 430 core
 
 #include "_fs_common.glsl"
 

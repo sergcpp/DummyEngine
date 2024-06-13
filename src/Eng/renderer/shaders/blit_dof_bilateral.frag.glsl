@@ -1,12 +1,7 @@
-#version 320 es
+#version 430 core
 
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
-
-layout(binding = 0) uniform mediump sampler2D g_depth_tex;
-layout(binding = 1) uniform lowp sampler2D g_source_tex;
+layout(binding = 0) uniform sampler2D g_depth_tex;
+layout(binding = 1) uniform sampler2D g_source_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {

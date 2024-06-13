@@ -1,15 +1,10 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_texture_multisample : enable
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
 
 #include "_fs_common.glsl"
 
-layout(binding = BIND_BASE0_TEX) uniform mediump sampler2D s_accum_tex;
-layout(binding = BIND_BASE1_TEX) uniform mediump sampler2D s_additional_tex;
+layout(binding = BIND_BASE0_TEX) uniform sampler2D s_accum_tex;
+layout(binding = BIND_BASE1_TEX) uniform sampler2D s_additional_tex;
 
 #if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;

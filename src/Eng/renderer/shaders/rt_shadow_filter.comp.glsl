@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
+#version 430 core
 
 #include "_cs_common.glsl"
 #include "rt_shadow_filter_interface.h"
@@ -61,7 +56,7 @@ shared float g_shared_depth[16][16];
 shared uint g_shared_normals_xy[16][16];
 shared uint g_shared_normals_zw[16][16];
 
-void LoadWithOffset(ivec2 did, ivec2 offset, out /* mediump */ vec3 normals, out /* mediump */ vec2 input_, out float depth) {
+void LoadWithOffset(ivec2 did, ivec2 offset, out /* fp16 */ vec3 normals, out /* fp16 */ vec2 input_, out float depth) {
     did += offset;
 
     ivec2 p = clamp(did, ivec2(0, 0), ivec2(g_params.img_size) - ivec2(1));
@@ -70,7 +65,7 @@ void LoadWithOffset(ivec2 did, ivec2 offset, out /* mediump */ vec3 normals, out
     depth = texelFetch(g_depth_tex, p, 0).r;
 }
 
-/* mediump */ vec2 LoadInputFromSharedMemory(ivec2 idx) {
+/* fp16 */ vec2 LoadInputFromSharedMemory(ivec2 idx) {
     return unpackHalf2x16(g_shared_input[idx.y][idx.x]);
 }
 
@@ -78,7 +73,7 @@ float LoadDepthFromSharedMemory(ivec2 idx) {
     return g_shared_depth[idx.y][idx.x];
 }
 
-/* mediump */ vec3 LoadNormalsFromSharedMemory(ivec2 idx) {
+/* fp16 */ vec3 LoadNormalsFromSharedMemory(ivec2 idx) {
     vec3 normals;
     normals.xy = unpackHalf2x16(g_shared_normals_xy[idx.y][idx.x]);
     normals.z = unpackHalf2x16(g_shared_normals_zw[idx.y][idx.x]).x;
@@ -101,14 +96,14 @@ float FetchFilteredVarianceFromSharedMemory(ivec2 pos) {
     return variance;
 }
 
-void StoreInGroupSharedMemory(ivec2 idx, /* mediump */ vec3 normals, /* mediump */ vec2 input_, float depth) {
+void StoreInGroupSharedMemory(ivec2 idx, /* fp16 */ vec3 normals, /* fp16 */ vec2 input_, float depth) {
     g_shared_input[idx.y][idx.x] = packHalf2x16(input_);
     g_shared_depth[idx.y][idx.x] = depth;
     g_shared_normals_xy[idx.y][idx.x] = packHalf2x16(normals.xy);
     g_shared_normals_zw[idx.y][idx.x] = packHalf2x16(vec2(normals.z, 0.0));
 }
 
-void StoreWithOffset(ivec2 gtid, ivec2 offset, /* mediump */ vec3 normals, /* mediump */ vec2 input_, float depth) {
+void StoreWithOffset(ivec2 gtid, ivec2 offset, /* fp16 */ vec3 normals, /* fp16 */ vec2 input_, float depth) {
     gtid += offset;
     StoreInGroupSharedMemory(gtid, normals, input_, depth);
 }
@@ -119,20 +114,20 @@ void InitializeSharedMemory(ivec2 did, ivec2 gtid) {
     const ivec2 offset_2 = ivec2(0, 8);
     const ivec2 offset_3 = ivec2(8, 8);
 
-    /* mediump */ vec3 normals_0;
-    /* mediump */ vec2 input_0;
+    /* fp16 */ vec3 normals_0;
+    /* fp16 */ vec2 input_0;
     float depth_0;
 
-    /* mediump */ vec3 normals_1;
-    /* mediump */ vec2 input_1;
+    /* fp16 */ vec3 normals_1;
+    /* fp16 */ vec2 input_1;
     float depth_1;
 
-    /* mediump */ vec3 normals_2;
-    /* mediump */ vec2 input_2;
+    /* fp16 */ vec3 normals_2;
+    /* fp16 */ vec2 input_2;
     float depth_2;
 
-    /* mediump */ vec3 normals_3;
-    /* mediump */ vec2 input_3;
+    /* fp16 */ vec3 normals_3;
+    /* fp16 */ vec2 input_3;
     float depth_3;
 
     /// XA

@@ -1,11 +1,6 @@
-#version 320 es
+#version 430 core
 #if !defined(VULKAN) && !defined(NO_BINDLESS) && defined(TRANSPARENT)
 #extension GL_ARB_bindless_texture : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_fs_common.glsl"
@@ -37,10 +32,10 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     layout(location = 3) in vec2 g_vtx_z_vs_prev;
 #endif // OUTPUT_VELOCITY
 #ifdef TRANSPARENT
-    layout(location = 4) in highp vec2 g_vtx_uvs0;
-    layout(location = 5) in highp vec3 g_vtx_pos_ls;
+    layout(location = 4) in vec2 g_vtx_uvs0;
+    layout(location = 5) in vec3 g_vtx_pos_ls;
     #if !defined(NO_BINDLESS)
-        layout(location = 6) in flat highp TEX_HANDLE g_alpha_tex;
+        layout(location = 6) in flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 

@@ -16,7 +16,7 @@
 //
 // https://github.com/GPUOpen-Effects/FidelityFX-SSSR
 //
-bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, highp sampler2D depth_tex, highp usampler2D norm_tex,
+bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampler2D depth_tex, usampler2D norm_tex,
                   out vec3 out_hit_point_cs, out vec3 out_hit_point_vs) {
     vec4 ray_offsetet_ss = g_shrd_data.clip_from_view * vec4(ray_origin_vs + ray_dir_vs, 1.0);
     ray_offsetet_ss.xyz /= ray_offsetet_ss.w;

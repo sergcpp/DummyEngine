@@ -1,9 +1,5 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_texture_multisample : enable
-
-#ifdef GL_ES
-    precision mediump float;
-#endif
 
 #if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;

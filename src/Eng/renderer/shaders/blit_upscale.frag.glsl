@@ -1,22 +1,17 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
+#version 430 core
 
 #include "_fs_common.glsl"
 #include "blit_upscale_interface.h"
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
-layout(binding = DEPTH_LOW_TEX_SLOT) uniform mediump sampler2D g_depth_low_tex;
-layout(binding = INPUT_TEX_SLOT) uniform lowp sampler2D g_input_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = DEPTH_LOW_TEX_SLOT) uniform sampler2D g_depth_low_tex;
+layout(binding = INPUT_TEX_SLOT) uniform sampler2D g_input_tex;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(location = 0) in highp vec2 g_vtx_uvs;
+layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {

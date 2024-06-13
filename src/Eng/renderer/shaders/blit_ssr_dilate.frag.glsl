@@ -1,14 +1,9 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
+#version 430 core
 
 #include "_fs_common.glsl"
 #include "blit_ssr_dilate_interface.h"
 
-layout(binding = SSR_TEX_SLOT) uniform highp sampler2D g_source_tex;
+layout(binding = SSR_TEX_SLOT) uniform sampler2D g_source_tex;
 
 #if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;

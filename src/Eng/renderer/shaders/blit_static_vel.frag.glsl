@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
+#version 430 core
 
 #include "_fs_common.glsl"
 #include "blit_static_vel_interface.h"
@@ -12,7 +7,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 
 layout(location = 0) in vec2 g_vtx_uvs;
 

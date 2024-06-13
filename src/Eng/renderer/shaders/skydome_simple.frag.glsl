@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
+#version 430 core
 
 #include "_fs_common.glsl"
 #include "skydome_interface.h"
@@ -18,7 +13,7 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
-layout(location = 0) in highp vec3 g_vtx_pos;
+layout(location = 0) in vec3 g_vtx_pos;
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 

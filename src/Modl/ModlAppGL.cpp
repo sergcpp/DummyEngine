@@ -499,12 +499,12 @@ void main(void) {
         R"(#version 430
 
 layout(location = 0) in vec3 aVertexPosition;
-layout(location = 1) in mediump vec4 aVertexNormal;
-layout(location = 2) in mediump vec2 aVertexTangent;
-layout(location = 3) in mediump vec2 aVertexUVs1;
-layout(location = 4) in highp uint aVertexColorPacked;//aVertexUVs2Packed;
-layout(location = 5) in mediump vec4 aVertexIndices;
-layout(location = 6) in mediump vec4 aVertexWeights;
+layout(location = 1) in vec4 aVertexNormal;
+layout(location = 2) in vec2 aVertexTangent;
+layout(location = 3) in vec2 aVertexUVs1;
+layout(location = 4) in uint aVertexColorPacked;//aVertexUVs2Packed;
+layout(location = 5) in vec4 aVertexIndices;
+layout(location = 6) in vec4 aVertexWeights;
 
 layout(location = 0) uniform mat4 uMVPMatrix;
 layout(location = 1) uniform mat4 uMMatrix;
@@ -543,17 +543,14 @@ void main(void) {
 )";
 
     static const char diag_fs[] =
-        R"(#version 430
+        R"(#version 430 core
 
-#ifdef GL_ES
-    precision mediump float;
-#endif
 
 layout(binding = 0) uniform sampler2D diffuse_texture;
 layout(binding = 1) uniform sampler2D normals_texture;
 
 layout(location = 2) uniform float mode;
-            
+
 in mat3 aVertexTBN_;
 in vec2 aVertexUVs1_;
 in vec4 aVertexAttrib_;
@@ -623,26 +620,26 @@ void main(void) {
             };
 
             struct InVertex {
-                highp vec4 p_and_nxy;
-                highp uvec2 nz_and_b;
-                highp uvec2 t0_and_t1;
-                highp uvec2 bone_indices;
-                highp uvec2 bone_weights;
+                vec4 p_and_nxy;
+                uvec2 nz_and_b;
+                uvec2 t0_and_t1;
+                uvec2 bone_indices;
+                uvec2 bone_weights;
             };
 
             struct InDelta {
-                highp vec2 dpxy;
-                highp vec2 dpz_dnxy;
-                highp uvec2 dnz_and_db;
+                vec2 dpxy;
+                vec2 dpz_dnxy;
+                uvec2 dnz_and_db;
             };
 
             struct OutVertexData0 {
-                highp vec4 p_and_t0;
+                vec4 p_and_t0;
             };
 
             struct OutVertexData1 {
-                highp uvec2 n_and_bx;
-                highp uvec2 byz_and_t1;
+                uvec2 n_and_bx;
+                uvec2 byz_and_t1;
             };
 
             layout(std430, binding = 0) readonly buffer Input0 {
@@ -664,52 +661,52 @@ void main(void) {
             layout(location = 0) uniform ivec4 uOffsets;
             layout(location = 1) uniform int uShapeCount;
             layout(location = 2) uniform uint uShapePalette[16];
-            
+
             layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
             void main() {
                 if (gl_GlobalInvocationID.x >= uOffsets[1]) return;
                 int i = int(uOffsets[0] + gl_GlobalInvocationID.x);
 
-                highp vec3 p = in_data0.vertices[i].p_and_nxy.xyz;
+                vec3 p = in_data0.vertices[i].p_and_nxy.xyz;
 
-                highp uint _nxy = floatBitsToUint(in_data0.vertices[i].p_and_nxy.w);
-                highp vec2 nxy = unpackSnorm2x16(_nxy);
+                uint _nxy = floatBitsToUint(in_data0.vertices[i].p_and_nxy.w);
+                vec2 nxy = unpackSnorm2x16(_nxy);
 
-                highp uint _nz_and_bx = in_data0.vertices[i].nz_and_b.x;
-                highp vec2 nz_and_bx = unpackSnorm2x16(_nz_and_bx);
+                uint _nz_and_bx = in_data0.vertices[i].nz_and_b.x;
+                vec2 nz_and_bx = unpackSnorm2x16(_nz_and_bx);
 
-                highp uint _byz = in_data0.vertices[i].nz_and_b.y;
-                highp vec2 byz = unpackSnorm2x16(_byz);
+                uint _byz = in_data0.vertices[i].nz_and_b.y;
+                vec2 byz = unpackSnorm2x16(_byz);
 
-                highp vec3 n = vec3(nxy, nz_and_bx.x),
+                vec3 n = vec3(nxy, nz_and_bx.x),
                            b = vec3(nz_and_bx.y, byz);
 
                 for (int j = 0; j < uShapeCount; j++) {
-                    highp uint shape_data = uShapePalette[j];
-                    mediump uint shape_index = bitfieldExtract(shape_data, 0, 16);
-                    mediump float shape_weight = unpackUnorm2x16(shape_data).y;
+                    uint shape_data = uShapePalette[j];
+                    uint shape_index = bitfieldExtract(shape_data, 0, 16);
+                    float shape_weight = unpackUnorm2x16(shape_data).y;
 
                     int sh_i = int(uOffsets[3] + shape_index * uOffsets[1] + gl_GlobalInvocationID.x);
                     p += shape_weight * vec3(in_data1.deltas[sh_i].dpxy,
                                                in_data1.deltas[sh_i].dpz_dnxy.x);
-                    highp uint _dnxy = floatBitsToUint(in_data1.deltas[sh_i].dpz_dnxy.y);
-                    mediump vec2 _dnz_and_dbx = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.x);
+                    uint _dnxy = floatBitsToUint(in_data1.deltas[sh_i].dpz_dnxy.y);
+                    vec2 _dnz_and_dbx = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.x);
                     n += shape_weight * vec3(unpackSnorm2x16(_dnxy), _dnz_and_dbx.x);
-                    mediump vec2 _dbyz = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.y);
+                    vec2 _dbyz = unpackSnorm2x16(in_data1.deltas[sh_i].dnz_and_db.y);
                     b += shape_weight * vec3(_dnz_and_dbx.y, _dbyz);
                 }
 
-                mediump uvec4 vtx_indices =
+                uvec4 vtx_indices =
                     uvec4(bitfieldExtract(in_data0.vertices[i].bone_indices.x, 0, 16),
                           bitfieldExtract(in_data0.vertices[i].bone_indices.x, 16, 16),
                           bitfieldExtract(in_data0.vertices[i].bone_indices.y, 0, 16),
                           bitfieldExtract(in_data0.vertices[i].bone_indices.y, 16, 16));
-                mediump vec4 vtx_weights =
+                vec4 vtx_weights =
                     vec4(unpackUnorm2x16(in_data0.vertices[i].bone_weights.x),
                          unpackUnorm2x16(in_data0.vertices[i].bone_weights.y));
 
-                highp mat3x4 mat = mat3x4(0.0);
+                mat3x4 mat = mat3x4(0.0);
 
                 for (int j = 0; j < 4; j++) {
                     if (vtx_weights[j] > 0.0) {
@@ -717,14 +714,14 @@ void main(void) {
                     }
                 }
 
-                highp mat4x3 tr_mat = transpose(mat);
+                mat4x3 tr_mat = transpose(mat);
 
-                highp vec3 tr_p = tr_mat * vec4(p, 1.0);
-                mediump vec3 tr_n = tr_mat * vec4(n, 0.0);
-                mediump vec3 tr_b = tr_mat * vec4(b, 0.0);
+                vec3 tr_p = tr_mat * vec4(p, 1.0);
+                vec3 tr_n = tr_mat * vec4(n, 0.0);
+                vec3 tr_b = tr_mat * vec4(b, 0.0);
 
                 int out_ndx = int(uOffsets[2] + gl_GlobalInvocationID.x);
-                
+
                 out_data0.vertices[out_ndx].p_and_t0.xyz = tr_p;
                 // copy texture coordinates unchanged
                 out_data0.vertices[out_ndx].p_and_t0.w = uintBitsToFloat(in_data0.vertices[i].t0_and_t1.x);

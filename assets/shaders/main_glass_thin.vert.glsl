@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #if !defined(VULKAN)
@@ -30,10 +30,10 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-layout(location = 0) out highp vec3 g_vtx_pos;
-layout(location = 1) out mediump vec2 g_vtx_uvs;
-layout(location = 2) out mediump vec3 g_vtx_normal;
-layout(location = 3) out mediump vec3 g_vtx_tangent;
+layout(location = 0) out vec3 g_vtx_pos;
+layout(location = 1) out vec2 g_vtx_uvs;
+layout(location = 2) out vec3 g_vtx_normal;
+layout(location = 3) out vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
     layout(location = 9) out flat TEX_HANDLE g_norm_tex;
     layout(location = 10) out flat TEX_HANDLE g_spec_tex;

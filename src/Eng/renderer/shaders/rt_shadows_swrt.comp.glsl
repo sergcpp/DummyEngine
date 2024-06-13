@@ -1,12 +1,7 @@
-#version 320 es
+#version 430 core
 #extension GL_KHR_shader_subgroup_arithmetic : require
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_rt_common.glsl"

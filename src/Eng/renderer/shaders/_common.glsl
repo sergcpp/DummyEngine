@@ -56,7 +56,7 @@ vec3 heatmap(float t) {
     return vec3(1.0) - r * r;
 }
 
-highp float rand(highp vec2 co) {
+float rand(vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 

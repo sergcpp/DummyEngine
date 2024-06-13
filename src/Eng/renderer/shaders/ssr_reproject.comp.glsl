@@ -1,10 +1,5 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_shading_language_packing : require
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_cs_common.glsl"
 #include "_rt_common.glsl"
@@ -47,7 +42,7 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
     // Intermediate storage
-    /* mediump */ vec4 refl[4];
+    /* fp16 */ vec4 refl[4];
 
     // Start from the upper left corner of 16x16 region
     dispatch_thread_id -= ivec2(4);
@@ -66,7 +61,7 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     }
 }
 
-/* mediump */ vec4 LoadFromGroupSharedMemoryRaw(ivec2 idx) {
+/* fp16 */ vec4 LoadFromGroupSharedMemoryRaw(ivec2 idx) {
     return vec4(unpackHalf2x16(g_shared_storage_0[idx.y][idx.x]),
                 unpackHalf2x16(g_shared_storage_1[idx.y][idx.x]));
 }
@@ -105,20 +100,20 @@ THE SOFTWARE.
 #define DISOCCLUSION_THRESHOLD 0.9
 #define SAMPLES_FOR_ROUGHNESS(r) (1.0 - exp(-r * 100.0))
 
-/* mediump */ float GetLuminanceWeight(/* mediump */ vec3 val) {
-    /* mediump */ float luma = Luminance(val.xyz);
-    /* mediump */ float weight = max(exp(-luma * AVG_RADIANCE_LUMINANCE_WEIGHT), 1.0e-2);
+/* fp16 */ float GetLuminanceWeight(/* fp16 */ vec3 val) {
+    /* fp16 */ float luma = Luminance(val.xyz);
+    /* fp16 */ float weight = max(exp(-luma * AVG_RADIANCE_LUMINANCE_WEIGHT), 1.0e-2);
     return weight;
 }
 
-/* mediump */ float LocalNeighborhoodKernelWeight(/* mediump */ float i) {
-    const /* mediump */ float radius = LOCAL_NEIGHBORHOOD_RADIUS + 1.0;
+/* fp16 */ float LocalNeighborhoodKernelWeight(/* fp16 */ float i) {
+    const /* fp16 */ float radius = LOCAL_NEIGHBORHOOD_RADIUS + 1.0;
     return exp(-GAUSSIAN_K * (i * i) / (radius * radius));
 }
 
 struct moments_t {
-    /* mediump */ vec4 mean;
-    /* mediump */ vec4 variance;
+    /* fp16 */ vec4 mean;
+    /* fp16 */ vec4 variance;
 };
 
 moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
@@ -126,12 +121,12 @@ moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
     ret.mean = vec4(0.0);
     ret.variance = vec4(0.0);
 
-    /* mediump */ float accumulated_weight = 0;
+    /* fp16 */ float accumulated_weight = 0;
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
         for (int i = -LOCAL_NEIGHBORHOOD_RADIUS; i <= LOCAL_NEIGHBORHOOD_RADIUS; ++i) {
             ivec2 index = group_thread_id + ivec2(i, j);
-            /* mediump */ vec4 radiance = LoadFromGroupSharedMemoryRaw(index);
-            /* mediump */ float weight = float(radiance.w > 0.0) * LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
+            /* fp16 */ vec4 radiance = LoadFromGroupSharedMemoryRaw(index);
+            /* fp16 */ float weight = float(radiance.w > 0.0) * LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
             accumulated_weight += weight;
 
             ret.mean += radiance * weight;
@@ -196,22 +191,22 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     return prev_hit_position;
 }
 
-/* mediump */ float GetDisocclusionFactor(/* mediump */ vec3 normal, /* mediump */ vec3 history_normal, float linear_depth, float history_linear_depth) {
-    /* mediump */ float factor = 1.0
+/* fp16 */ float GetDisocclusionFactor(/* fp16 */ vec3 normal, /* fp16 */ vec3 history_normal, float linear_depth, float history_linear_depth) {
+    /* fp16 */ float factor = 1.0
                         * exp(-abs(1.0 - max(0.0, dot(normal, history_normal))) * DISOCCLUSION_NORMAL_WEIGHT)
                         * exp(-abs(history_linear_depth - linear_depth) / linear_depth * DISOCCLUSION_DEPTH_WEIGHT);
     return factor;
 }
 
 void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, float exposure,
-                      /* mediump */ float roughness, /* mediump */ float ray_len,
-                      /* mediump */ out float disocclusion_factor, out vec2 reprojection_uv,
-                      /* mediump */ out vec4 reprojection) {
+                      /* fp16 */ float roughness, /* fp16 */ float ray_len,
+                      /* fp16 */ out float disocclusion_factor, out vec2 reprojection_uv,
+                      /* fp16 */ out vec4 reprojection) {
     moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
 
     vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
-    /* mediump */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
-    /* mediump */ vec3 history_normal;
+    /* fp16 */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
+    /* fp16 */ vec3 history_normal;
     float history_linear_depth;
 
     {
@@ -220,16 +215,16 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         const vec2 surf_repr_uv = uv - motion_vector.xy;
         const vec2 hit_repr_uv = GetHitPositionReprojection(ivec2(dispatch_thread_id), uv, ray_len);
 
-        /* mediump */ vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
+        /* fp16 */ vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
         surf_history.rgb *= exposure;
-        /* mediump */ vec4 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0);
+        /* fp16 */ vec4 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0);
         hit_history.rgb *= exposure;
 
-        /* mediump */ vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
-        /* mediump */ vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
+        /* fp16 */ vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
+        /* fp16 */ vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
 
-        /* mediump */ vec3 surf_normal = surf_fetch.xyz, hit_normal = hit_fetch.xyz;
-        /* mediump */ float surf_roughness = surf_fetch.w, hit_roughness = hit_fetch.w;
+        /* fp16 */ vec3 surf_normal = surf_fetch.xyz, hit_normal = hit_fetch.xyz;
+        /* fp16 */ float surf_roughness = surf_fetch.w, hit_roughness = hit_fetch.w;
 
         float hit_normal_similarity = dot(hit_normal, normal);
         float surf_normal_similarity = dot(surf_normal, normal);
@@ -279,10 +274,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             for (int y = -SearchRadius; y <= SearchRadius; ++y) {
                 for (int x = -SearchRadius; x <= SearchRadius; ++x) {
                     vec2 uv = reprojection_uv + vec2(x, y) * dudv;
-                    /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
+                    /* fp16 */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
                     float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
                     float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
-                    /* mediump */ float weight = float(textureLod(g_refl_hist_tex, uv, 0.0).w > 0.0);
+                    /* fp16 */ float weight = float(textureLod(g_refl_hist_tex, uv, 0.0).w > 0.0);
                     weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
                     if (weight > disocclusion_factor) {
                         disocclusion_factor = weight;
@@ -303,22 +298,22 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
             ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
 
-            /* mediump */ vec4 reprojection00 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
-            /* mediump */ vec4 reprojection10 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
-            /* mediump */ vec4 reprojection01 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
-            /* mediump */ vec4 reprojection11 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
+            /* fp16 */ vec4 reprojection00 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
+            /* fp16 */ vec4 reprojection10 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
+            /* fp16 */ vec4 reprojection01 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
+            /* fp16 */ vec4 reprojection11 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
 
-            /* mediump */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
-            /* mediump */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
-            /* mediump */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
-            /* mediump */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
+            /* fp16 */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
+            /* fp16 */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
+            /* fp16 */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
+            /* fp16 */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
 
             float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
             float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
             float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, g_shrd_data.clip_info);
             float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, g_shrd_data.clip_info);
 
-            /* mediump */ vec4 w;
+            /* fp16 */ vec4 w;
             // Initialize with occlusion weights
             w.x = (reprojection00.w > 0.0 && GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
             w.y = (reprojection10.w > 0.0 && GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
@@ -329,11 +324,11 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             w.y = w.y * (uvx) * (1.0 - uvy);
             w.z = w.z * (1.0 - uvx) * (uvy);
             w.w = w.w * (uvx) * (uvy);
-            /* mediump */ float ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
+            /* fp16 */ float ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
             // normalize
             w /= ws;
 
-            /* mediump */ vec3 history_normal;
+            /* fp16 */ vec3 history_normal;
             float history_linear_depth;
             reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
             reprojection.rgb *= exposure;
@@ -353,11 +348,11 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     group_thread_id += 4; // center threads in shared memory
 
-    /* mediump */ float variance = 1.0;
+    /* fp16 */ float variance = 1.0;
     const vec4 normal_fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x);
     const vec3 normal = normal_fetch.xyz;
     const float roughness = normal_fetch.w;
-    /* mediump */ vec4 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
+    /* fp16 */ vec4 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
     refl.xyz *= exposure;
 
     const float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
@@ -366,24 +361,24 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     refl.w *= GetHitDistanceNormalization(linear_depth, roughness);
 
     if (refl.w > 0.0 && IsGlossyReflection(roughness)) {
-        /* mediump */ float disocclusion_factor;
+        /* fp16 */ float disocclusion_factor;
         vec2 reprojection_uv;
-        /* mediump */ vec4 reprojection;
+        /* fp16 */ vec4 reprojection;
         PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size, exposure, roughness, refl.w,
                          disocclusion_factor, reprojection_uv, reprojection);
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
-            /* mediump */ float prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
+            /* fp16 */ float prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
             float sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
-            /* mediump */ float s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
+            /* fp16 */ float s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
             sample_count = min(s_max_samples, sample_count + 1);
-            /* mediump */ float new_variance = ComputeTemporalVariance(refl.rgb, reprojection.rgb);
+            /* fp16 */ float new_variance = ComputeTemporalVariance(refl.rgb, reprojection.rgb);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
             } else {
-                /* mediump */ float variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
+                /* fp16 */ float variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(reprojection.rgb / exposure, reprojection.w));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(variance_mix));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count));
@@ -399,7 +394,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     // Downsample 8x8 -> 1 radiance using shared memory
     // Initialize shared array for downsampling
-    /* mediump */ float weight = float(refl.w > 0.0);
+    /* fp16 */ float weight = float(refl.w > 0.0);
     weight *= GetLuminanceWeight(refl.xyz);
     refl *= weight;
     if (any(greaterThanEqual(dispatch_thread_id, screen_size)) || any(isinf(refl)) || any(isnan(refl)) || weight > 1.0e3) {
@@ -421,11 +416,11 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
         int ix = int(group_thread_id.x) * i + i / 2;
         int iy = int(group_thread_id.y) * i + i / 2;
         if (ix < 8 && iy < 8) {
-            /* mediump */ vec4 rad_weight00 = LoadFromGroupSharedMemoryRaw(ivec2(ox, oy));
-            /* mediump */ vec4 rad_weight10 = LoadFromGroupSharedMemoryRaw(ivec2(ox, iy));
-            /* mediump */ vec4 rad_weight01 = LoadFromGroupSharedMemoryRaw(ivec2(ix, oy));
-            /* mediump */ vec4 rad_weight11 = LoadFromGroupSharedMemoryRaw(ivec2(ix, iy));
-            /* mediump */ vec4 sum = rad_weight00 + rad_weight01 + rad_weight10 + rad_weight11;
+            /* fp16 */ vec4 rad_weight00 = LoadFromGroupSharedMemoryRaw(ivec2(ox, oy));
+            /* fp16 */ vec4 rad_weight10 = LoadFromGroupSharedMemoryRaw(ivec2(ox, iy));
+            /* fp16 */ vec4 rad_weight01 = LoadFromGroupSharedMemoryRaw(ivec2(ix, oy));
+            /* fp16 */ vec4 rad_weight11 = LoadFromGroupSharedMemoryRaw(ivec2(ix, iy));
+            /* fp16 */ vec4 sum = rad_weight00 + rad_weight01 + rad_weight10 + rad_weight11;
 
             g_shared_storage_0[group_thread_id.y][group_thread_id.x] = packHalf2x16(sum.xy);
             g_shared_storage_1[group_thread_id.y][group_thread_id.x] = packHalf2x16(sum.zw);
@@ -435,8 +430,8 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     }
 
     if (all(equal(group_thread_id, uvec2(0)))) {
-        /* mediump */ vec4 sum = LoadFromGroupSharedMemoryRaw(ivec2(0));
-        /* mediump */ float weight_acc = max(sum.w, 1.0e-3);
+        /* fp16 */ vec4 sum = LoadFromGroupSharedMemoryRaw(ivec2(0));
+        /* fp16 */ float weight_acc = max(sum.w, 1.0e-3);
         const vec3 radiance_avg = (sum.xyz / weight_acc);
 
         imageStore(g_out_avg_refl_img, ivec2(dispatch_thread_id / 8), vec4(radiance_avg / exposure, 0.0));

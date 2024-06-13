@@ -1,10 +1,5 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_shading_language_packing : require
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_cs_common.glsl"
 #include "ssr_common.glsl"
@@ -37,9 +32,9 @@ shared uint g_shared_4[16][16];
 shared float g_shared_depth[16][16];
 
 struct neighborhood_sample_t {
-    /* mediump */ vec4 radiance;
-    /* mediump */ float variance;
-    /* mediump */ vec4 normal;
+    /* fp16 */ vec4 radiance;
+    /* fp16 */ float variance;
+    /* fp16 */ vec4 normal;
     float depth;
 };
 
@@ -81,9 +76,9 @@ void InitSharedMemory(ivec2 dispatch_thread_id, const ivec2 group_thread_id, con
     // Load 16x16 region into shared memory.
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
-    /* mediump */ vec4 radiance[4];
-    /* mediump */ float variance[4];
-    /* mediump */ vec4 normal[4];
+    /* fp16 */ vec4 radiance[4];
+    /* fp16 */ float variance[4];
+    /* fp16 */ vec4 normal[4];
     float depth[4];
 
     /// XA
@@ -138,26 +133,26 @@ THE SOFTWARE.
 #define PREFILTER_NORMAL_SIGMA 65.0 // 512.0
 #define PREFILTER_DEPTH_SIGMA 4.0
 
-/* mediump */ float GetEdgeStoppingNormalWeight(/* mediump */ vec3 normal_p, /* mediump */ vec3 normal_q) {
+/* fp16 */ float GetEdgeStoppingNormalWeight(/* fp16 */ vec3 normal_p, /* fp16 */ vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
 
-/* mediump */ float GetEdgeStoppingDepthWeight(float center_depth, float neighbor_depth) {
+/* fp16 */ float GetEdgeStoppingDepthWeight(float center_depth, float neighbor_depth) {
     return exp(-abs(center_depth - neighbor_depth) * center_depth * PREFILTER_DEPTH_SIGMA);
 }
 
-/* mediump */ float GetRadianceWeight(/* mediump */ vec3 center_radiance, /* mediump */ vec3 neighbor_radiance, /* mediump */ float variance) {
+/* fp16 */ float GetRadianceWeight(/* fp16 */ vec3 center_radiance, /* fp16 */ vec3 neighbor_radiance, /* fp16 */ float variance) {
     return max(exp(-(RADIANCE_WEIGHT_BIAS + variance * RADIANCE_WEIGHT_VARIANCE_K) * length(center_radiance - neighbor_radiance)), 1.0e-2);
 }
 
-void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, neighborhood_sample_t center,
-             out /* mediump */ vec4 resolved_radiance, out /* mediump */ float resolved_variance) {
+void Resolve(ivec2 group_thread_id, /* fp16 */ vec3 avg_radiance, neighborhood_sample_t center,
+             out /* fp16 */ vec4 resolved_radiance, out /* fp16 */ float resolved_variance) {
     // Initial weight is important to remove fireflies.
     // That removes quite a bit of energy but makes everything much more stable.
-    /* mediump */ float accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance.xyz, center.variance);
-    /* mediump */ vec4 accumulated_radiance = center.radiance * accumulated_weight;
-    /* mediump */ float accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
-    /* mediump */ float variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
+    /* fp16 */ float accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance.xyz, center.variance);
+    /* fp16 */ vec4 accumulated_radiance = center.radiance * accumulated_weight;
+    /* fp16 */ float accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
+    /* fp16 */ float variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
 
     const ivec2 sample_offsets[] = {
         ivec2(-1,  0),
@@ -178,7 +173,7 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, neighborhoo
         ivec2 new_idx = group_thread_id + sample_offsets[i];
         neighborhood_sample_t neighbor = LoadFromSharedMemory(new_idx);
 
-        /* mediump */ float weight = float(neighbor.radiance.w > 0.0);
+        /* fp16 */ float weight = float(neighbor.radiance.w > 0.0);
         weight *= GetEdgeStoppingNormalWeight(center.normal.xyz, neighbor.normal.xyz);
         weight *= GetEdgeStoppingRoughnessWeight(center.normal.w, neighbor.normal.w, RoughnessSigmaMin, RoughnessSigmaMax);
         weight *= GetEdgeStoppingDepthWeight(center.depth, neighbor.depth);
@@ -208,13 +203,13 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
 
     neighborhood_sample_t center = LoadFromSharedMemory(group_thread_id);
 
-    /* mediump */ vec4 resolved_radiance = center.radiance;
-    /* mediump */ float resolved_variance = center.variance;
+    /* fp16 */ vec4 resolved_radiance = center.radiance;
+    /* fp16 */ float resolved_variance = center.variance;
 
     const bool needs_denoiser = (center.radiance.w > 0.0) && (center.variance > 0.0) && IsGlossyReflection(center.normal.w) && !IsMirrorReflection(center.normal.w);
     if (needs_denoiser) {
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* mediump */ const vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb * exposure;
+        /* fp16 */ const vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb * exposure;
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 

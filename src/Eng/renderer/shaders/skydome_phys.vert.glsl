@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 
 #include "_vs_common.glsl"
 #include "skydome_interface.h"

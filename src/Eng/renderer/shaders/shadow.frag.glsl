@@ -1,11 +1,6 @@
-#version 320 es
+#version 430 core
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
@@ -20,7 +15,7 @@
 #endif // TRANSPARENT
 
 #ifdef TRANSPARENT
-    layout(location = 0) in highp vec2 g_vtx_uvs0;
+    layout(location = 0) in vec2 g_vtx_uvs0;
     #if defined(BINDLESS_TEXTURES)
         layout(location = 1) in flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES

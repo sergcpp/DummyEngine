@@ -1,14 +1,8 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-    precision mediump sampler2DShadow;
-#endif
 
 #include "internal/_fs_common.glsl"
 
@@ -20,27 +14,27 @@ layout(binding = BIND_MAT_TEX2) uniform sampler2D g_spec_tex;
 layout(binding = BIND_SHAD_TEX) uniform sampler2DShadow g_shadow_tex;
 layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
 layout(binding = BIND_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
-layout(binding = BIND_LIGHT_BUF) uniform highp samplerBuffer g_lights_buf;
-layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_LIGHT_BUF) uniform samplerBuffer g_lights_buf;
+layout(binding = BIND_DECAL_BUF) uniform samplerBuffer g_decals_buf;
+layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
 #if defined(VULKAN)
-layout(location = 0) in highp vec3 g_vtx_pos;
-layout(location = 1) in mediump vec2 g_vtx_uvs;
-layout(location = 2) in mediump vec3 g_vtx_normal;
-layout(location = 3) in mediump vec3 g_vtx_tangent;
-layout(location = 4) in highp vec3 g_vtx_sh_uvs[4];
+layout(location = 0) in vec3 g_vtx_pos;
+layout(location = 1) in vec2 g_vtx_uvs;
+layout(location = 2) in vec3 g_vtx_normal;
+layout(location = 3) in vec3 g_vtx_tangent;
+layout(location = 4) in vec3 g_vtx_sh_uvs[4];
 #else
-in highp vec3 g_vtx_pos;
-in mediump vec2 g_vtx_uvs;
-in mediump vec3 g_vtx_normal;
-in mediump vec3 g_vtx_tangent;
-in highp vec3 g_vtx_sh_uvs[4];
+in vec3 g_vtx_pos;
+in vec2 g_vtx_uvs;
+in vec3 g_vtx_normal;
+in vec3 g_vtx_tangent;
+in vec3 g_vtx_sh_uvs[4];
 #endif
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
@@ -52,18 +46,18 @@ float median(float r, float g, float b) {
 }
 
 void main(void) {
-    highp float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
-    highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
+    float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
+    float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
-                                          bitfieldExtract(cell_data.x, 24, 8));
-    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
-                                          bitfieldExtract(cell_data.y, 8, 8));
+    uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
+                                    bitfieldExtract(cell_data.x, 24, 8));
+    uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
+                                    bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 albedo_color = texture(g_diff_tex, g_vtx_uvs).rgb;
 
@@ -78,11 +72,11 @@ void main(void) {
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+        uint item_data = texelFetch(g_items_buf, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
 
         vec4 pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
-        highp vec4 col_and_index = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
+        vec4 col_and_index = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
         vec4 dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
@@ -90,12 +84,12 @@ void main(void) {
         float d = max(dist - pos_and_radius.w, 0.0);
         L /= dist;
 
-        highp float denom = d / pos_and_radius.w + 1.0;
-        highp float atten = 1.0 / (denom * denom);
+        float denom = d / pos_and_radius.w + 1.0;
+        float atten = 1.0 / (denom * denom);
 
-        highp float brightness = max(col_and_index.x, max(col_and_index.y, col_and_index.z));
+        float brightness = max(col_and_index.x, max(col_and_index.y, col_and_index.z));
 
-        highp float factor = LIGHT_ATTEN_CUTOFF / brightness;
+        float factor = LIGHT_ATTEN_CUTOFF / brightness;
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
 
@@ -108,7 +102,7 @@ void main(void) {
             if (shadowreg_index != -1) {
                 vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
-                highp vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world *
+                vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world *
                                     vec4(g_vtx_pos, 1.0);
                 pp /= pp.w;
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
@@ -126,7 +120,7 @@ void main(void) {
     float total_fade = 0.0;
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+        uint item_data = texelFetch(g_items_buf, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
 
         float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, g_vtx_pos);

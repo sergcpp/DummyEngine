@@ -43,7 +43,7 @@ vec2 SmoothStep01(vec2 x) { return _SmoothStep01(saturate(x)); }
 vec3 SmoothStep01(vec3 x) { return _SmoothStep01(saturate(x)); }
 vec4 SmoothStep01(vec4 x) { return _SmoothStep01(saturate(x)); }
 
-/* mediump */ float GetEdgeStoppingPlanarDistanceWeight(vec2 geometry_weight_params, vec3 center_normal_vs, vec3 neighbor_point_vs) {
+/* fp16 */ float GetEdgeStoppingPlanarDistanceWeight(vec2 geometry_weight_params, vec3 center_normal_vs, vec3 neighbor_point_vs) {
     float d = dot(center_normal_vs, neighbor_point_vs);
     return SmoothStep01(1.0 - abs(d * geometry_weight_params.x + geometry_weight_params.y));
 }
@@ -94,12 +94,12 @@ mat3 CreateTBN(vec3 N) {
     return transpose(TBN);
 }
 
-/* mediump */ float Luminance(/* mediump */ vec3 color) { return HDR_FACTOR * max(lum(color), 0.001); }
+/* fp16 */ float Luminance(/* fp16 */ vec3 color) { return HDR_FACTOR * max(lum(color), 0.001); }
 
-/* mediump */ float ComputeTemporalVariance(/* mediump */ vec3 history_radiance, /* mediump */ vec3 radiance) {
-    /* mediump */ float history_luminance = Luminance(history_radiance);
-    /* mediump */ float luminance = Luminance(radiance);
-    /* mediump */ float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
+/* fp16 */ float ComputeTemporalVariance(/* fp16 */ vec3 history_radiance, /* fp16 */ vec3 radiance) {
+    /* fp16 */ float history_luminance = Luminance(history_radiance);
+    /* fp16 */ float luminance = Luminance(radiance);
+    /* fp16 */ float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
     return diff * diff;
 }
 

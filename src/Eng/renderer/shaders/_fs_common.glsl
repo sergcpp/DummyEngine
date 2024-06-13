@@ -146,15 +146,15 @@ vec2 get_shadow_offsets(const float dot_N_L) {
     return vec2(offset_scale_N, min(2.0, offset_scale_L));
 }
 
-float SampleShadowPCF5x5(sampler2DShadow shadow_tex, highp vec3 shadow_coord) {
+float SampleShadowPCF5x5(sampler2DShadow shadow_tex, vec3 shadow_coord) {
     // http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
 
-    const highp vec2 shadow_size = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
-    const highp vec2 shadow_size_inv = vec2(1.0) / shadow_size;
+    const vec2 shadow_size = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
+    const vec2 shadow_size_inv = vec2(1.0) / shadow_size;
 
     float z = shadow_coord.z;
-    highp vec2 uv = shadow_coord.xy * shadow_size;
-    highp vec2 base_uv = floor(uv + 0.5);
+    vec2 uv = shadow_coord.xy * shadow_size;
+    vec2 base_uv = floor(uv + 0.5);
     float s = (uv.x + 0.5 - base_uv.x);
     float t = (uv.y + 0.5 - base_uv.y);
     base_uv -= vec2(0.5);
@@ -204,7 +204,7 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_tex, highp vec3 shadow_coord) {
     return sum * sum;
 }
 
-float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in highp vec3 aVertexShUVs[4]) {
+float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in vec3 aVertexShUVs[4]) {
     float visibility = 0.0;
 
     if (frag_depth < SHADOWMAP_CASCADE0_DIST) {
@@ -247,7 +247,7 @@ float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in highp ve
     return visibility;
 }
 
-float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in highp mat4x3 aVertexShUVs) {
+float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in mat4x3 aVertexShUVs) {
     float visibility = 0.0;
 
     if (frag_depth < SHADOWMAP_CASCADE0_DIST) {

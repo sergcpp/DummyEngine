@@ -1,10 +1,5 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_control_flow_attributes : require
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_fs_common.glsl"
 #include "_principled.glsl"
@@ -26,10 +21,10 @@ layout(binding = SPECULAR_TEX_SLOT) uniform usampler2D g_specular_tex;
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = SHADOW_VAL_TEX_SLOT) uniform sampler2D g_shadow_val_tex;
 layout(binding = SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
-layout(binding = LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
-layout(binding = DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
+layout(binding = LIGHT_BUF_SLOT) uniform samplerBuffer g_lights_buf;
+layout(binding = DECAL_BUF_SLOT) uniform samplerBuffer g_decals_buf;
+layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
+layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
 layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_tex;
 layout(binding = SUN_SHADOW_TEX_SLOT) uniform sampler2D g_sun_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
@@ -146,7 +141,7 @@ void main() {
 
     vec3 artificial_light = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+        const uint item_data = texelFetch(g_items_buf, int(i)).x;
         const int li = int(bitfieldExtract(item_data, 0, 12));
 
         light_item_t litem;
@@ -225,7 +220,7 @@ void main() {
     float total_fade = 0.0;
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+        uint item_data = texelFetch(g_items_buf, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
 
         float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, P);

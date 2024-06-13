@@ -1,15 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
-
-/*
-UNIFORMS
-    g_tex : 3
-    vertical : 4
-*/
+#version 430 core
 
 layout(binding = 0) uniform sampler2D g_tex;
 

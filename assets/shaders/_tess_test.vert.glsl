@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #if !defined(VULKAN)
@@ -23,7 +23,7 @@ layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
     ivec2 g_instance_indices[];
 };
 
-layout(binding = BIND_INST_BUF) uniform highp samplerBuffer g_instances_buf;
+layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
@@ -36,11 +36,11 @@ layout(binding = BIND_BINDLESS_TEX) readonly buffer TextureHandles {
 #endif
 
 #if defined(VULKAN)
-layout(location = 0) out highp vec3 g_vtx_pos_cs;
-layout(location = 1) out mediump vec2 g_vtx_uvs_cs;
-layout(location = 2) out mediump vec3 g_vtx_norm_cs;
-layout(location = 3) out mediump vec3 g_vtx_tangent_cs;
-layout(location = 4) out highp vec3 g_vtx_sh_uvs_cs[4];
+layout(location = 0) out vec3 g_vtx_pos_cs;
+layout(location = 1) out vec2 g_vtx_uvs_cs;
+layout(location = 2) out vec3 g_vtx_norm_cs;
+layout(location = 3) out vec3 g_vtx_tangent_cs;
+layout(location = 4) out vec3 g_vtx_sh_uvs_cs[4];
 #if defined(GL_ARB_bindless_texture)
 layout(location = 9) out flat uvec2 g_diff_tex;
 layout(location = 10) out flat uvec2 g_norm_tex;
@@ -48,11 +48,11 @@ layout(location = 11) out flat uvec2 g_spec_tex;
 layout(location = 12) out flat uvec2 g_bump_tex;
 #endif // GL_ARB_bindless_texture
 #else
-out highp vec3 g_vtx_pos_cs;
-out mediump vec2 g_vtx_uvs_cs;
-out mediump vec3 g_vtx_norm_cs;
-out mediump vec3 g_vtx_tangent_cs;
-out highp vec3 g_vtx_sh_uvs_cs[4];
+out vec3 g_vtx_pos_cs;
+out vec2 g_vtx_uvs_cs;
+out vec3 g_vtx_norm_cs;
+out vec3 g_vtx_tangent_cs;
+out vec3 g_vtx_sh_uvs_cs[4];
 #if defined(GL_ARB_bindless_texture)
 out flat uvec2 g_diff_tex;
 out flat uvec2 g_norm_tex;

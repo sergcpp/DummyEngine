@@ -1,11 +1,6 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
-
 #include "_rt_common.glsl"
 #include "gi_common.glsl"
 #include "rt_gi_interface.h"
@@ -30,7 +25,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     uint g_ray_list[];
 };
 
-layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
+layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
 layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
 layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform writeonly restrict image2D g_out_color_img;

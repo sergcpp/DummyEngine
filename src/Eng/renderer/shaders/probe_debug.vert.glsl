@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 
 #include "_vs_common.glsl"
 #include "gi_cache_common.glsl"

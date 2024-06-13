@@ -1,10 +1,5 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_shading_language_packing : require
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_cs_common.glsl"
 #include "_rt_common.glsl"
@@ -39,7 +34,7 @@ layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, lo
 
 #define PREFILTER_NORMAL_SIGMA 512.0
 
-/* mediump */ float GetEdgeStoppingNormalWeight(/* mediump */ vec3 normal_p, /* mediump */ vec3 normal_q) {
+/* fp16 */ float GetEdgeStoppingNormalWeight(/* fp16 */ vec3 normal_p, /* fp16 */ vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
 
@@ -220,8 +215,8 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
     float variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
-    /* mediump */ vec4 sum = texelFetch(g_refl_tex, dispatch_thread_id, 0);
-    /* mediump */ vec2 total_weight = vec2(1.0);
+    /* fp16 */ vec4 sum = texelFetch(g_refl_tex, dispatch_thread_id, 0);
+    /* fp16 */ vec2 total_weight = vec2(1.0);
     float hit_dist = sum.w * GetHitDistanceNormalization(center_depth_lin, center_roughness);
 
     float smc = GetSpecMagicCurve(center_roughness, 1.0);
@@ -288,7 +283,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 #endif // VULKAN
         vec3 neighbor_point_vs = ReconstructViewPosition(reconstruct_uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
 
-        /* mediump */ float weight = float(IsReflectiveSurface(depth_fetch, g_spec_tex, uv));
+        /* fp16 */ float weight = float(IsReflectiveSurface(depth_fetch, g_spec_tex, uv));
         weight *= IsInScreen(uv);
         weight *= GetGaussianWeight(offset.z);
         weight *= GetEdgeStoppingNormalWeight(center_normal_ws, neighbor_normal_ws);

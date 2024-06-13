@@ -1,17 +1,12 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : require
 #extension GL_ARB_texture_multisample : enable
 
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
-
 #include "_fs_common.glsl"
 
-layout(binding = BIND_BASE0_TEX) uniform mediump sampler2D g_tex;
-layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_BASE0_TEX) uniform sampler2D g_tex;
+layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -43,9 +38,9 @@ void main() {
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / g_res.y) * ITEM_GRID_RES_X + (ix * ITEM_GRID_RES_X / g_res.x);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+    uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+    uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
     if (g_mode < 1.0) {
         g_out_color = vec4(heatmap(float(offset_and_lcount.y) * (1.0 / 48.0)), 0.85);

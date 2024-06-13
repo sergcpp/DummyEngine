@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
+#version 430 core
 
 #pragma multi_compile _ SCREEN
 
@@ -30,7 +25,7 @@ layout(binding = WEATHER_TEX_SLOT) uniform sampler2D g_weather_tex;
 layout(binding = CIRRUS_TEX_SLOT) uniform sampler2D g_cirrus_tex;
 layout(binding = NOISE3D_TEX_SLOT) uniform sampler3D g_noise3d_tex;
 
-layout(location = 0) in highp vec3 g_vtx_pos;
+layout(location = 0) in vec3 g_vtx_pos;
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 

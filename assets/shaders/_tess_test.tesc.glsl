@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 //#extension GL_EXT_control_flow_attributes : enable
@@ -8,31 +8,31 @@
 layout (vertices = 3) out;
 
 #if defined(VULKAN)
-layout(location = 0) in highp vec3 g_vtx_pos_cs[];
-layout(location = 1) in mediump vec2 g_vtx_uvs_cs[];
-layout(location = 2) in mediump vec3 g_vtx_norm_cs[];
-layout(location = 3) in mediump vec3 g_vtx_tangent_cs[];
-layout(location = 4) in highp vec3 g_vtx_sh_uvs_cs[][4];
+layout(location = 0) in vec3 g_vtx_pos_cs[];
+layout(location = 1) in vec2 g_vtx_uvs_cs[];
+layout(location = 2) in vec3 g_vtx_norm_cs[];
+layout(location = 3) in vec3 g_vtx_tangent_cs[];
+layout(location = 4) in vec3 g_vtx_sh_uvs_cs[][4];
 #else
-in highp vec3 g_vtx_pos_cs[];
-in mediump vec2 g_vtx_uvs_cs[];
-in mediump vec3 g_vtx_norm_cs[];
-in mediump vec3 g_vtx_tangent_cs[];
-in highp vec3 g_vtx_sh_uvs_cs[][4];
+in vec3 g_vtx_pos_cs[];
+in vec2 g_vtx_uvs_cs[];
+in vec3 g_vtx_norm_cs[];
+in vec3 g_vtx_tangent_cs[];
+in vec3 g_vtx_sh_uvs_cs[][4];
 #endif
 
 #if defined(VULKAN)
-layout(location = 0) out highp vec3 g_vtx_pos_es[];
-layout(location = 1) out mediump vec2 g_vtx_uvs_es[];
-layout(location = 2) out mediump vec3 g_vtx_norm_es[];
-layout(location = 3) out mediump vec3 g_vtx_tangent_es[];
-layout(location = 4) out highp vec3 g_vtx_sh_uvs_es[][4];
+layout(location = 0) out vec3 g_vtx_pos_es[];
+layout(location = 1) out vec2 g_vtx_uvs_es[];
+layout(location = 2) out vec3 g_vtx_norm_es[];
+layout(location = 3) out vec3 g_vtx_tangent_es[];
+layout(location = 4) out vec3 g_vtx_sh_uvs_es[][4];
 #else
-out highp vec3 g_vtx_pos_es[];
-out mediump vec2 g_vtx_uvs_es[];
-out mediump vec3 g_vtx_norm_es[];
-out mediump vec3 g_vtx_tangent_es[];
-out highp vec3 g_vtx_sh_uvs_es[][4];
+out vec3 g_vtx_pos_es[];
+out vec2 g_vtx_uvs_es[];
+out vec3 g_vtx_norm_es[];
+out vec3 g_vtx_tangent_es[];
+out vec3 g_vtx_sh_uvs_es[][4];
 #endif
 
 layout (binding = 0, std140) uniform SharedDataBlock {

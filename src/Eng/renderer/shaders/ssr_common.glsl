@@ -147,12 +147,12 @@ vec3 SampleReflectionVector(const vec3 view_direction, const vec3 normal, const 
     return (inv_tbn_transform * reflected_direction_tbn);
 }
 
-/* mediump */ float Luminance(/* mediump */ vec3 color) { return HDR_FACTOR * max(dot(color, vec3(0.299, 0.587, 0.114)), 0.001); }
+/* fp16 */ float Luminance(/* fp16 */ vec3 color) { return HDR_FACTOR * max(dot(color, vec3(0.299, 0.587, 0.114)), 0.001); }
 
-/* mediump */ float ComputeTemporalVariance(/* mediump */ vec3 history_radiance, /* mediump */ vec3 radiance) {
-    /* mediump */ float history_luminance = Luminance(history_radiance);
-    /* mediump */ float luminance = Luminance(radiance);
-    /* mediump */ float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
+/* fp16 */ float ComputeTemporalVariance(/* fp16 */ vec3 history_radiance, /* fp16 */ vec3 radiance) {
+    /* fp16 */ float history_luminance = Luminance(history_radiance);
+    /* fp16 */ float luminance = Luminance(radiance);
+    /* fp16 */ float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
     return diff * diff;
 }
 

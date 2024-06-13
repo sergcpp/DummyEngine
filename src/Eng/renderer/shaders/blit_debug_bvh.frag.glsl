@@ -1,10 +1,5 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_fs_common.glsl"
 
@@ -12,8 +7,8 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = 0) uniform mediump sampler2D g_depth_tex;
-layout(binding = 1) uniform highp samplerBuffer g_nodes_buf;
+layout(binding = 0) uniform sampler2D g_depth_tex;
+layout(binding = 1) uniform samplerBuffer g_nodes_buf;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {

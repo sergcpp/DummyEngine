@@ -1,15 +1,10 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
+#version 430 core
 
 #include "_fs_common.glsl"
 #include "blit_ssao_interface.h"
 
-layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth_tex;
-layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D g_rand_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = RAND_TEX_SLOT) uniform sampler2D g_rand_tex;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

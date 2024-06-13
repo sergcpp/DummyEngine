@@ -1,15 +1,10 @@
-#version 320 es
+#version 430 core
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_shuffle : enable
 #extension GL_KHR_shader_subgroup_vote : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_cs_common.glsl"
@@ -40,9 +35,9 @@ layout(std430, binding = TILE_LIST_SLOT) writeonly buffer TileList {
     uvec4 g_tile_list[];
 };
 
-layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer g_sobol_seq_tex;
-layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambling_tile_tex;
-layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
+layout(binding = SOBOL_BUF_SLOT) uniform usamplerBuffer g_sobol_seq_tex;
+layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform usamplerBuffer g_scrambling_tile_tex;
+layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_tex;
 
 layout(binding = RAY_HITS_IMG_SLOT, r32ui) uniform writeonly uimage2D g_ray_hits_img;
 layout(binding = NOISE_IMG_SLOT, rg8) uniform writeonly image2D g_noise_img;

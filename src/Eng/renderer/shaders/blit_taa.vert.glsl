@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 
 #include "_vs_common.glsl"
 #include "blit_taa_interface.h"

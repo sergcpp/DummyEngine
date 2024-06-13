@@ -1,11 +1,6 @@
-#version 320 es
+#version 430 core
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
 
 #include "_fs_common.glsl"
 #include "blit_ssr_interface.h"
@@ -19,8 +14,8 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
 
 layout(location = 0) in vec2 g_vtx_uvs;
 

@@ -1,23 +1,18 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_cube_map_array : enable
 
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
-
-layout(binding = 0) uniform mediump samplerCubeArray g_tex;
+layout(binding = 0) uniform samplerCubeArray g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
     layout(offset = 16) float src_layer;
                         int src_face;
-                        highp float roughness;
+                        float roughness;
 };
 #else
 layout(location = 1) uniform float src_layer;
 layout(location = 2) uniform int src_face;
-layout(location = 3) uniform highp float roughness;
+layout(location = 3) uniform float roughness;
 #endif
 
 #if defined(VULKAN)
@@ -43,14 +38,14 @@ vec3 gen_cubemap_coord(in vec2 txc, in int face) {
     return normalize(v);
 }
 
-float RadicalInverse_VdC(highp uint bits) {
+float RadicalInverse_VdC(uint bits) {
     bits = (bits << 16u) | (bits >> 16u);
     bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
     bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
     bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
     bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
 
-    highp float ret = float(bits);
+    float ret = float(bits);
     return ret * 2.3283064365386963e-10; // / 0x100000000
 }
 
@@ -120,11 +115,11 @@ vec3 PrefilterEnvMap(float roughness, vec3 r) {
             float n_dot_h = dot(n, h);
 
             float D   = DistributionGGX(n_dot_h, roughness);
-            highp float pdf = (D * n_dot_h / (4.0 * dot(h, v))) + 0.0001;
+            float pdf = (D * n_dot_h / (4.0 * dot(h, v))) + 0.0001;
 
-            const highp float resolution = 512.0; // resolution of source cubemap (per face)
-            const highp float sa_texel = 10.0 * 4.0 * M_PI / (6.0 * resolution * resolution); // multiplied by 10 to avoid precision problems
-            highp float sa_sample = 0.1 / (float(SampleCount) * pdf + 0.0001);
+            const float resolution = 512.0; // resolution of source cubemap (per face)
+            const float sa_texel = 10.0 * 4.0 * M_PI / (6.0 * resolution * resolution); // multiplied by 10 to avoid precision problems
+            float sa_sample = 0.1 / (float(SampleCount) * pdf + 0.0001);
 
             float mip_level = roughness == 0.0 ? 0.0 : 0.5 * log2(sa_sample / sa_texel);
 

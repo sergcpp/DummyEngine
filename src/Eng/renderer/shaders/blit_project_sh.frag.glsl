@@ -1,13 +1,8 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_cube_map_array : enable
 
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
-#endif
-
-layout(binding = 0) uniform mediump samplerCubeArray g_tex;
-layout(binding = 1) uniform mediump sampler2D g_rand;
+layout(binding = 0) uniform samplerCubeArray g_tex;
+layout(binding = 1) uniform sampler2D g_rand;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {

@@ -1,4 +1,4 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable

@@ -1,11 +1,6 @@
-#version 320 es
+#version 430 core
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_ballot : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_cs_common.glsl"
@@ -27,10 +22,10 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
-layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_tex;
-layout(binding = NORM_TEX_SLOT) uniform highp usampler2D g_norm_tex;
-layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = COLOR_TEX_SLOT) uniform sampler2D color_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
+layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
 layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
     uint g_in_ray_list[];

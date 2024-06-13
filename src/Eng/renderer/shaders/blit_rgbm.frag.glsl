@@ -1,8 +1,4 @@
-#version 320 es
-
-#ifdef GL_ES
-    precision mediump float;
-#endif
+#version 430 core
 
 layout(binding = 0) uniform sampler2D g_tex;
 

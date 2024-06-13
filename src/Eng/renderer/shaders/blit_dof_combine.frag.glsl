@@ -1,9 +1,4 @@
-#version 320 es
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-#endif
+#version 430 core
 
 #include "_fs_common.glsl"
 
@@ -14,18 +9,18 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 layout(binding = BIND_BASE0_TEX) uniform sampler2D g_original;
 layout(binding = BIND_BASE1_TEX) uniform sampler2D g_small_blur;
 layout(binding = BIND_BASE2_TEX) uniform sampler2D g_large_blur;
-layout(binding = 3) uniform mediump sampler2D g_depth;
+layout(binding = 3) uniform sampler2D g_depth;
 layout(binding = 4) uniform sampler2D g_coc;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
-    layout(offset = 16) highp vec4 g_ransform;
+    layout(offset = 16) vec4 g_ransform;
                         vec4 g_dof_lerp_scale;
                         vec4 g_dof_lerp_bias;
                         vec3 g_dof_equation;
 };
 #else
-layout(location = 0) uniform highp vec4 g_ransform;
+layout(location = 0) uniform vec4 g_ransform;
 layout(location = 2) uniform vec4 g_dof_lerp_scale;
 layout(location = 3) uniform vec4 g_dof_lerp_bias;
 layout(location = 1) uniform vec3 g_dof_equation;

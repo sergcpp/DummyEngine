@@ -1,14 +1,8 @@
-#version 320 es
+#version 430 core
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision mediump float;
-    precision mediump sampler2DShadow;
-#endif
 
 #include "internal/_fs_common.glsl"
 
@@ -20,10 +14,10 @@ layout(binding = BIND_MAT_TEX2) uniform sampler2D g_spec_tex;
 layout(binding = BIND_SHAD_TEX) uniform sampler2DShadow g_shadow_tex;
 layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
 layout(binding = BIND_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
-layout(binding = BIND_LIGHT_BUF) uniform highp samplerBuffer g_lights_buf;
-layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_LIGHT_BUF) uniform samplerBuffer g_lights_buf;
+layout(binding = BIND_DECAL_BUF) uniform samplerBuffer g_decals_buf;
+layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 layout(binding = BIND_INST_BUF) uniform sampler2D g_noise_tex;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -31,17 +25,17 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 #if defined(VULKAN)
-layout(location = 0) in highp vec3 g_vtx_pos;
-layout(location = 1) in mediump vec2 g_vtx_uvs;
-layout(location = 2) in mediump vec3 g_vtx_normal;
-layout(location = 3) in mediump vec3 g_vtx_tangent;
-layout(location = 4) in highp vec3 g_vtx_sh_uvs[4];
+layout(location = 0) in vec3 g_vtx_pos;
+layout(location = 1) in vec2 g_vtx_uvs;
+layout(location = 2) in vec3 g_vtx_normal;
+layout(location = 3) in vec3 g_vtx_tangent;
+layout(location = 4) in vec3 g_vtx_sh_uvs[4];
 #else
-in highp vec3 g_vtx_pos;
-in mediump vec2 g_vtx_uvs;
-in mediump vec3 g_vtx_normal;
-in mediump vec3 g_vtx_tangent;
-in highp vec3 g_vtx_sh_uvs[4];
+in vec3 g_vtx_pos;
+in vec2 g_vtx_uvs;
+in vec3 g_vtx_normal;
+in vec3 g_vtx_tangent;
+in vec3 g_vtx_sh_uvs[4];
 #endif
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;

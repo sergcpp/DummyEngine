@@ -1,15 +1,10 @@
-#version 320 es
+#version 430 core
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_shuffle : enable
 #extension GL_KHR_shader_subgroup_vote : enable
-#endif
-
-#if defined(GL_ES) || defined(VULKAN)
-    precision highp int;
-    precision highp float;
 #endif
 
 #include "_cs_common.glsl"
@@ -26,7 +21,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = HIT_MASK_TEX_SLOT) uniform highp usampler2D g_hit_mask_tex;
+layout(binding = HIT_MASK_TEX_SLOT) uniform usampler2D g_hit_mask_tex;
 
 layout(binding = OUT_RESULT_IMG_SLOT, r8) uniform writeonly image2D g_out_result_img;
 
