@@ -1,7 +1,9 @@
 name: CI
 
 on:
-  push:
+  pull_request:
+    branches:
+      - 'releases/**'
 
 jobs:
   build-windows-x86_64-gl-rel:
@@ -27,6 +29,40 @@ jobs:
         with:
           name: windows-x86_64-gl
           path: windows-x86_64-gl/
+  build-windows-x86_64-gl-dbg:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=GL"
+          config: "Debug"
+  build-windows-x86_64-gl-dev:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=GL"
+          config: "RelWithDebInfo"
   build-windows-x86_64-vk-rel:
     runs-on: [ windows, builder ]
     defaults:
@@ -50,6 +86,40 @@ jobs:
         with:
           name: windows-x86_64-vk
           path: windows-x86_64-vk/
+  build-windows-x86_64-vk-dbg:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=VK"
+          config: "Debug"
+  build-windows-x86_64-vk-dev:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=VK"
+          config: "RelWithDebInfo"
   build-linux-x86_64-gl-rel:
     runs-on: [ linux, builder ]
     defaults:
@@ -73,6 +143,40 @@ jobs:
         with:
           name: linux-x86_64-gl
           path: linux-x86_64-gl/
+  build-linux-x86_64-gl-dbg:
+    runs-on: [ linux, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=GL"
+          config: "Debug"
+  build-linux-x86_64-gl-dev:
+    runs-on: [ linux, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=GL"
+          config: "RelWithDebInfo"
   build-linux-x86_64-vk-rel:
     runs-on: [ linux, builder ]
     defaults:
@@ -96,6 +200,60 @@ jobs:
         with:
           name: linux-x86_64-vk
           path: linux-x86_64-vk/
+  build-linux-x86_64-vk-dbg:
+    runs-on: [ linux, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=VK"
+          config: "Debug"
+  build-linux-x86_64-vk-dev:
+    runs-on: [ linux, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=VK"
+          config: "RelWithDebInfo"
+  build-linux-x86_64-vk-tsan:
+    runs-on: [ linux, builder ]
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=VK"
+          config: "Tsan"
+          bin-dir: "linux-x86_64-vk-tsan"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x86_64-vk-tsan
+          path: linux-x86_64-vk-tsan/
   build-macos-x86_64-vk-rel:
     runs-on: [ macos, builder ]
     defaults:
@@ -119,6 +277,60 @@ jobs:
         with:
           name: macos-x86_64-vk
           path: macos-x86_64-vk/
+  build-macos-x86_64-vk-dbg:
+    runs-on: [ macos, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-macos
+        with:
+          cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
+          config: "Debug"
+  build-macos-x86_64-vk-dev:
+    runs-on: [ macos, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-macos
+        with:
+          cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
+          config: "RelWithDebInfo"
+  # build-windows-x86_64-vk-asan:
+  #   runs-on: [ windows, builder ]
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-windows
+  #       with:
+  #         cmake-args: "-A x64 -DRENDERER=VK"
+  #         config: "Asan"
+  #         bin-dir: "windows-x86_64-vk-asan"
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: windows-x86_64-vk-asan
+  #         path: windows-x86_64-vk-asan/
   test-windows-x86_64-vk-amd:
     runs-on: [ windows, x86_64, amd ]
     needs:
@@ -135,7 +347,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-amd-output"
-          test-args: "-j2 --device AMD"
+          test-args: "-j2 --device AMD --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -158,7 +370,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-nv-output"
-          test-args: "-j2 --device NV"
+          test-args: "-j2 --device NV --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -181,7 +393,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-arc-output"
-          test-args: "-j2 --device Arc"
+          test-args: "-j2 --device Arc --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -204,7 +416,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-xe-output"
-          test-args: "-j2 --device Xe"
+          test-args: "-j2 --device Xe  --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -227,7 +439,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-gl"
           out-dir: "windows-x86_64-gl-nv-output"
-          test-args: "-j2"
+          test-args: "-j2 --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -250,7 +462,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-gl"
           out-dir: "windows-x86_64-gl-arc-output"
-          test-args: "-j2 -vl 0"
+          test-args: "-j2 -vl 0 --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -273,7 +485,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-amd-output"
-          test-args: "-j2 --device AMD"
+          test-args: "-j2 --device AMD --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -296,13 +508,45 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-nv-output"
-          test-args: "-j2 --device NV"
+          test-args: "-j2 --device NV --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: linux-x86_64-vk-nv-output
           path: linux-x86_64-vk-nv-output/
+  # test-windows-x86_64-vk-asan:
+  #   runs-on: [ windows, x86_64 ]
+  #   needs:
+  #     - build-windows-x86_64-vk-asan
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test-asan
+  #       with:
+  #         bin-dir: "windows-x86_64-vk-asan"
+  #         test-args: "-j4"
+  # test-linux-x86_64-vk-tsan:
+  #   runs-on: [ linux, x86_64 ]
+  #   needs:
+  #     - build-linux-x86_64-vk-tsan
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test-tsan
+  #       with:
+  #         bin-dir: "linux-x86_64-vk-tsan"
+  #         test-args: "-j2"
   analyze-output:
     runs-on: [ linux ]
     needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-windows-x86_64-gl-arc, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]

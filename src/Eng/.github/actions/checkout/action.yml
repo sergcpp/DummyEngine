@@ -13,9 +13,9 @@ runs:
           git remote set-url origin $REPO_URL
           git fetch --all
           git fetch --tags
-          git checkout -f ${{ env.GITHUB_REF_NAME }}
-          git reset --hard origin/${{ env.GITHUB_REF_NAME }}
-          git clean -fdx
+          git checkout -f ${{ env.GITHUB_SHA }}
+          #git reset --hard origin/${{ env.GITHUB_REF_NAME }}
+          git clean -fdx -e *assets_pc*
         else
           echo "Clone new repository"
           git clone $REPO_URL -b ${{ env.GITHUB_REF_NAME }}
