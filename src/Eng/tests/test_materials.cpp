@@ -487,6 +487,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 24.59, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.33, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 35.95, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 28.33, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 27.88, NoDiffGI));
