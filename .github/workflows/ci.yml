@@ -305,7 +305,7 @@ jobs:
           path: linux-x86_64-vk-nv-output/
   analyze-output:
     runs-on: [ linux ]
-    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
+    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-windows-x86_64-gl-arc, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
     if: always()
     steps:
       - name: Checkout Workflows
@@ -334,6 +334,10 @@ jobs:
           path: windows-x86_64-vk-xe-output/
       - uses: actions/download-artifact@v3
         with:
+          name: windows-x86_64-gl-arc-output
+          path: windows-x86_64-gl-arc-output/
+      - uses: actions/download-artifact@v3
+        with:
           name: linux-x86_64-vk-amd-output
           path: linux-x86_64-vk-amd-output/
       - uses: actions/download-artifact@v3
@@ -342,5 +346,5 @@ jobs:
           path: linux-x86_64-vk-nv-output/
       - name: Analyze Output
         run: |
-          python src/Eng/scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt windows-x86_64-vk-xe-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-vk-amd-output/test_Eng_output.txt
+          python src/Eng/scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt windows-x86_64-vk-xe-output/test_Eng_output.txt windows-x86_64-gl-arc-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-vk-amd-output/test_Eng_output.txt
         shell: bash
