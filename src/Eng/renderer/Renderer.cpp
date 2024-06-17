@@ -1005,17 +1005,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             depth_hierarchy.set_executor(&rp_depth_hierarchy_);
         }
 
-        //
-        // Ambient occlusion
-        //
-        const bool use_ssao = (list.render_settings.enable_zfill || list.render_settings.enable_ssao) &&
-                              !list.render_settings.debug_wireframe;
-        if (use_ssao) {
-            AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
-        } else {
-            frame_textures.ssao = rp_builder_.MakeTextureResource(dummy_white_);
-        }
-
         if (!list.render_settings.debug_wireframe && list.render_settings.taa_mode != eTAAMode::Static) {
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
@@ -1026,6 +1015,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             // GBuffer filling pass
             AddGBufferFillPass(common_buffers, persistent_data, bindless_tex, frame_textures);
+
+            // SSAO
+            frame_textures.ssao = AddGTAOPasses(frame_textures.depth, frame_textures.velocity, frame_textures.normal);
 
             if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) &&
                 list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
@@ -1054,6 +1046,14 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // Additional forward pass (for custom-shaded objects)
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         } else {
+            const bool use_ssao = (list.render_settings.enable_zfill || list.render_settings.enable_ssao) &&
+                                  !list.render_settings.debug_wireframe;
+            if (use_ssao) {
+                AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
+            } else {
+                frame_textures.ssao = rp_builder_.MakeTextureResource(dummy_white_);
+            }
+
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
 

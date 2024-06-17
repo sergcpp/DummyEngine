@@ -14,6 +14,7 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
+layout(binding = SSAO_TEX_SLOT) uniform sampler2D g_ssao_tex;
 
 layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
 layout(binding = DISTANCE_TEX_SLOT) uniform sampler2DArray g_distance_tex;
@@ -51,6 +52,7 @@ void main() {
 
     vec3 final_color = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_params.grid_spacing.xyz), normal.xyz,
                                              g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
+    final_color *= texelFetch(g_ssao_tex, icoord, 0).x;
 
     imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color / M_PI), 1.0));
 }

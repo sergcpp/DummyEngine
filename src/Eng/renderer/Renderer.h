@@ -222,6 +222,8 @@ class Renderer {
     Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
     // GI Cache
     Ren::Pipeline pi_probe_blend_[2], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_;
+    // GTAO
+    Ren::Pipeline pi_gtao_main_, pi_gtao_filter_, pi_gtao_accumulate_;
     // GI
     Ren::Pipeline pi_gi_classify_, pi_gi_write_indirect_, pi_gi_trace_ss_;
     Ren::Pipeline pi_gi_rt_write_indirect_;
@@ -287,6 +289,7 @@ class Renderer {
                                    const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
     void AddSSAOPasses(RpResRef depth_down_2x, RpResRef depth_tex, RpResRef &out_ssao);
+    RpResRef AddGTAOPasses(RpResRef depth_tex, RpResRef velocity_tex, RpResRef norm_tex);
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
                                    RpResRef &inout_velocity_tex);
     void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex);

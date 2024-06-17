@@ -17,9 +17,10 @@ const int LOCAL_GROUP_SIZE_Y = 8;
 
 const int DEPTH_TEX_SLOT = 1;
 const int NORMAL_TEX_SLOT = 2;
-const int IRRADIANCE_TEX_SLOT = 3;
-const int DISTANCE_TEX_SLOT = 4;
-const int OFFSET_TEX_SLOT = 5;
+const int SSAO_TEX_SLOT = 3;
+const int IRRADIANCE_TEX_SLOT = 4;
+const int DISTANCE_TEX_SLOT = 5;
+const int OFFSET_TEX_SLOT = 6;
 
 const int OUT_IMG_SLOT = 0;
 

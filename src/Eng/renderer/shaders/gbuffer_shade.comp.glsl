@@ -43,10 +43,11 @@ void main() {
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).r;
-    const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
-    if (lin_depth > 3000.0) {
+    if (depth == 1.0) {
         return;
     }
+    const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
+
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
@@ -237,12 +238,10 @@ void main() {
 
     vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
 
-    //float lambert = clamp(dot(normal.xyz, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
-
-    vec3 final_color = vec3(0.0);//base_color * g_shrd_data.sun_col.xyz * lambert * sun_visibility;
+    vec3 final_color = vec3(0.0);
 
     if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {
-        const float sun_visibility = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0).r;
+        const float sun_visibility = texelFetch(g_sun_shadow_tex, icoord, 0).r;
         if (sun_visibility > 0.0) {
             final_color += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
@@ -257,6 +256,6 @@ void main() {
     final_color += artificial_light;
     final_color += gi_contribution;
 
-    const float sun_visibility = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0).r;
+    const float sun_visibility = texelFetch(g_sun_shadow_tex, icoord, 0).r;
     imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color), 0.0));
 }

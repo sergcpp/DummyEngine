@@ -1,4 +1,4 @@
-#version 3420 es
+#version 430 core
 #extension GL_ARB_shading_language_packing : require
 
 #include "_cs_common.glsl"

@@ -83,28 +83,16 @@ bool _bbox_test_fma(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 b
     return tmin <= tmax && tmin <= t && tmax > 0.0;
 }
 
+float _copysign(const float val, const float sign) {
+    return sign < 0.0 ? -abs(val) : abs(val);
+}
+
 vec3 safe_invert(vec3 v) {
-    vec3 inv_v = 1.0f / v;
-
-    if (v.x <= FLT_EPS && v.x >= 0) {
-        inv_v.x = FLT_MAX;
-    } else if (v.x >= -FLT_EPS && v.x < 0) {
-        inv_v.x = -FLT_MAX;
+    vec3 ret;
+    for (int i = 0; i < 3; ++i) {
+        ret[i] = (abs(v[i]) > FLT_EPS) ? (1.0 / v[i]) : _copysign(FLT_MAX, v[i]);
     }
-
-    if (v.y <= FLT_EPS && v.y >= 0) {
-        inv_v.y = FLT_MAX;
-    } else if (v.y >= -FLT_EPS && v.y < 0) {
-        inv_v.y = -FLT_MAX;
-    }
-
-    if (v.z <= FLT_EPS && v.z >= 0) {
-        inv_v.z = FLT_MAX;
-    } else if (v.z >= -FLT_EPS && v.z < 0) {
-        inv_v.z = -FLT_MAX;
-    }
-
-    return inv_v;
+    return ret;
 }
 
 const uint LEAF_NODE_BIT = (1u << 31);

@@ -37,6 +37,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpResRef shared_data;
             RpResRef depth_tex;
             RpResRef normals_tex;
+            RpResRef ssao_tex;
             RpResRef irradiance_tex;
             RpResRef distance_tex;
             RpResRef offset_tex;
@@ -48,6 +49,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->shared_data = probe_sample.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->depth_tex = probe_sample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->normals_tex = probe_sample.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->ssao_tex = probe_sample.AddTextureInput(frame_textures.ssao, Stg::ComputeShader);
         data->irradiance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache, Stg::ComputeShader);
         data->distance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_dist, Stg::ComputeShader);
         data->offset_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_data, Stg::ComputeShader);
@@ -66,6 +68,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             RpAllocTex &normals_tex = builder.GetReadTexture(data->normals_tex);
+            RpAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
             RpAllocTex &irradiance_tex = builder.GetReadTexture(data->irradiance_tex);
             RpAllocTex &distance_tex = builder.GetReadTexture(data->distance_tex);
             RpAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
@@ -75,6 +78,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
                 {Trg::Tex2DSampled, ProbeSample::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Trg::Tex2DSampled, ProbeSample::NORMAL_TEX_SLOT, *normals_tex.ref},
+                {Trg::Tex2DSampled, ProbeSample::SSAO_TEX_SLOT, *ssao_tex.ref},
                 {Trg::Tex2DArraySampled, ProbeSample::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
                 {Trg::Tex2DArraySampled, ProbeSample::DISTANCE_TEX_SLOT, *distance_tex.arr},
                 {Trg::Tex2DArraySampled, ProbeSample::OFFSET_TEX_SLOT, *offset_tex.arr},
@@ -666,10 +670,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::SBufRO, GIPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, GIPrefilter::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
                 {Trg::Image2D, GIPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
-
-            const auto grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + GIPrefilter::LOCAL_GROUP_SIZE_X - 1u) / GIPrefilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + GIPrefilter::LOCAL_GROUP_SIZE_Y - 1u) / GIPrefilter::LOCAL_GROUP_SIZE_Y, 1u};
 
             GIPrefilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};

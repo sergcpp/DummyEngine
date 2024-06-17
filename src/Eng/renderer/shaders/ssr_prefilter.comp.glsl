@@ -170,8 +170,8 @@ void Resolve(ivec2 group_thread_id, /* fp16 */ vec3 avg_radiance, neighborhood_s
     };
 
     for (int i = 0; i < 12; ++i) {
-        ivec2 new_idx = group_thread_id + sample_offsets[i];
-        neighborhood_sample_t neighbor = LoadFromSharedMemory(new_idx);
+        const ivec2 new_idx = group_thread_id + sample_offsets[i];
+        const neighborhood_sample_t neighbor = LoadFromSharedMemory(new_idx);
 
         /* fp16 */ float weight = float(neighbor.radiance.w > 0.0);
         weight *= GetEdgeStoppingNormalWeight(center.normal.xyz, neighbor.normal.xyz);
