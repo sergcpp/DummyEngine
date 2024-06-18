@@ -329,7 +329,7 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
 
 void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        if (ctx.capabilities.raytracing) {
+        if (ctx.capabilities.hwrt) {
             Ren::ProgramRef rt_gi_prog = sh.LoadProgram(ctx, "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",
                                                         "internal/rt_gi.rahit.glsl", "internal/rt_gi.rmiss.glsl", {});
             assert(rt_gi_prog->ready());
@@ -338,34 +338,32 @@ void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                 ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
             }
 
-            if (ctx.capabilities.ray_query) {
-                Ren::ProgramRef rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl");
-                assert(rt_gi_inline_prog->ready());
+            Ren::ProgramRef rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl");
+            assert(rt_gi_inline_prog->ready());
 
-                if (!pi_rt_gi_inline_[0].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
-                    ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_gi_inline_[0].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
+            }
 
-                rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl@GI_CACHE");
-                assert(rt_gi_inline_prog->ready());
+            rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl@GI_CACHE");
+            assert(rt_gi_inline_prog->ready());
 
-                if (!pi_rt_gi_inline_[1].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
-                    ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_gi_inline_[1].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
+            }
 
-                rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES");
-                assert(rt_gi_inline_prog->ready());
+            rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES");
+            assert(rt_gi_inline_prog->ready());
 
-                if (!pi_rt_gi_2bounce_inline_[0].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
-                    ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_gi_2bounce_inline_[0].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
+            }
 
-                rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES;GI_CACHE");
-                assert(rt_gi_inline_prog->ready());
+            rt_gi_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES;GI_CACHE");
+            assert(rt_gi_inline_prog->ready());
 
-                if (!pi_rt_gi_2bounce_inline_[1].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
-                    ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_gi_2bounce_inline_[1].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
             }
         }
 

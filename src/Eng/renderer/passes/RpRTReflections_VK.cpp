@@ -327,7 +327,7 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
 
 void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        if (ctx.capabilities.raytracing) {
+        if (ctx.capabilities.hwrt) {
             Ren::ProgramRef rt_reflections_prog =
                 sh.LoadProgram(ctx, "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",
                                "internal/rt_reflections.rahit.glsl", "internal/rt_reflections.rmiss.glsl", {});
@@ -337,40 +337,35 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                 ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
             }
 
-            if (ctx.capabilities.ray_query) {
-                Ren::ProgramRef rt_reflections_inline_prog =
-                    sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl");
-                assert(rt_reflections_inline_prog->ready());
+            Ren::ProgramRef rt_reflections_inline_prog = sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl");
+            assert(rt_reflections_inline_prog->ready());
 
-                if (!pi_rt_reflections_inline_[0].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
-                                                       ctx.log())) {
-                    ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_reflections_inline_[0].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
+            }
 
-                rt_reflections_inline_prog = sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl@GI_CACHE");
-                assert(rt_reflections_inline_prog->ready());
+            rt_reflections_inline_prog = sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl@GI_CACHE");
+            assert(rt_reflections_inline_prog->ready());
 
-                if (!pi_rt_reflections_inline_[1].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
-                                                       ctx.log())) {
-                    ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_reflections_inline_[1].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
+            }
 
-                rt_reflections_inline_prog = sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl@FOUR_BOUNCES");
-                assert(rt_reflections_inline_prog->ready());
+            rt_reflections_inline_prog = sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl@FOUR_BOUNCES");
+            assert(rt_reflections_inline_prog->ready());
 
-                if (!pi_rt_reflections_4bounce_inline_[0].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
-                                                               ctx.log())) {
-                    ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_reflections_4bounce_inline_[0].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
+                                                           ctx.log())) {
+                ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
+            }
 
-                rt_reflections_inline_prog =
-                    sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl@FOUR_BOUNCES;GI_CACHE");
-                assert(rt_reflections_inline_prog->ready());
+            rt_reflections_inline_prog =
+                sh.LoadProgram(ctx, "internal/rt_reflections_hwrt.comp.glsl@FOUR_BOUNCES;GI_CACHE");
+            assert(rt_reflections_inline_prog->ready());
 
-                if (!pi_rt_reflections_4bounce_inline_[1].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
-                                                               ctx.log())) {
-                    ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
-                }
+            if (!pi_rt_reflections_4bounce_inline_[1].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
+                                                           ctx.log())) {
+                ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
             }
         }
 

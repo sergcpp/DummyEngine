@@ -77,7 +77,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         pers_data.textures_descr_pool->Init(descr_sizes,
                                             Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
 
-        if (ren_ctx_.capabilities.raytracing) {
+        if (ren_ctx_.capabilities.hwrt) {
             assert(needed_descriptors_count == 1); // we have to be able to bind all textures at once
             if (!pers_data.rt_textures_descr_pool) {
                 pers_data.rt_textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
@@ -85,7 +85,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             pers_data.rt_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
         }
 
-        if (ren_ctx_.capabilities.ray_query || ren_ctx_.capabilities.swrt) {
+        if (ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) {
             if (!pers_data.rt_inline_textures_descr_pool) {
                 pers_data.rt_inline_textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
             }
@@ -116,7 +116,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             assert(res == VK_SUCCESS);
         }
 
-        if (ren_ctx_.capabilities.raytracing && !pers_data.rt_textures_descr_layout) {
+        if (ren_ctx_.capabilities.hwrt && !pers_data.rt_textures_descr_layout) {
             VkDescriptorSetLayoutBinding textures_binding = {};
             textures_binding.binding = BIND_BINDLESS_TEX;
             textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -140,8 +140,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             assert(res == VK_SUCCESS);
         }
 
-        if ((ren_ctx_.capabilities.ray_query || ren_ctx_.capabilities.swrt) &&
-            !pers_data.rt_inline_textures_descr_layout) {
+        if ((ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) && !pers_data.rt_inline_textures_descr_layout) {
             VkDescriptorSetLayoutBinding textures_binding = {};
             textures_binding.binding = BIND_BINDLESS_TEX;
             textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -171,11 +170,11 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
                     pers_data.textures_descr_pool->Alloc(pers_data.textures_descr_layout));
                 assert(pers_data.textures_descr_sets[j].back());
             }
-            if (ren_ctx_.capabilities.raytracing) {
+            if (ren_ctx_.capabilities.hwrt) {
                 pers_data.rt_textures_descr_sets[j] =
                     pers_data.rt_textures_descr_pool->Alloc(pers_data.rt_textures_descr_layout);
             }
-            if (ren_ctx_.capabilities.ray_query || ren_ctx_.capabilities.swrt) {
+            if (ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) {
                 pers_data.rt_inline_textures_descr_sets[j] =
                     pers_data.rt_inline_textures_descr_pool->Alloc(pers_data.rt_inline_textures_descr_layout);
             }
@@ -282,11 +281,11 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             // TODO: group this calls!!!
             api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
 
-            if (ren_ctx_.capabilities.raytracing) {
+            if (ren_ctx_.capabilities.hwrt) {
                 descr_write.dstSet = scene_data_.persistent_data.rt_textures_descr_sets[ren_ctx_.backend_frame()];
                 api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
             }
-            if (ren_ctx_.capabilities.ray_query || ren_ctx_.capabilities.swrt) {
+            if (ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) {
                 descr_write.dstSet =
                     scene_data_.persistent_data.rt_inline_textures_descr_sets[ren_ctx_.backend_frame()];
                 api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
@@ -461,8 +460,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
         scene_data_.persistent_data.hwrt.rt_blas_mem_alloc.Alloc(AccStructAlignment, uint32_t(compact_size));
     if (mem_alloc.offset == 0xffffffff) {
         // allocate one more buffer
-        const uint32_t buf_size =
-            std::max(next_power_of_two(uint32_t(compact_size)), Eng::RtBLASChunkSize);
+        const uint32_t buf_size = std::max(next_power_of_two(uint32_t(compact_size)), Eng::RtBLASChunkSize);
         std::string buf_name =
             "RT BLAS Buffer #" + std::to_string(scene_data_.persistent_data.hwrt.rt_blas_buffers.size());
         scene_data_.persistent_data.hwrt.rt_blas_buffers.emplace_back(

@@ -223,9 +223,8 @@ void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             ctx.log()->Error("RpRTShadows: Failed to initialize pipeline!");
         }*/
 
-        if (ctx.capabilities.ray_query) {
-            Ren::ProgramRef rt_shadows_inline_prog =
-                sh.LoadProgram(ctx, "internal/rt_shadows_hwrt.comp.glsl");
+        if (ctx.capabilities.hwrt) {
+            Ren::ProgramRef rt_shadows_inline_prog = sh.LoadProgram(ctx, "internal/rt_shadows_hwrt.comp.glsl");
             assert(rt_shadows_inline_prog->ready());
 
             if (!pi_rt_shadows_inline_.Init(ctx.api_ctx(), std::move(rt_shadows_inline_prog), ctx.log())) {
@@ -233,8 +232,7 @@ void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             }
         }
 
-        Ren::ProgramRef rt_shadows_swrt_prog =
-            sh.LoadProgram(ctx, "internal/rt_shadows_swrt.comp.glsl");
+        Ren::ProgramRef rt_shadows_swrt_prog = sh.LoadProgram(ctx, "internal/rt_shadows_swrt.comp.glsl");
         assert(rt_shadows_swrt_prog->ready());
 
         if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log(), 32)) {

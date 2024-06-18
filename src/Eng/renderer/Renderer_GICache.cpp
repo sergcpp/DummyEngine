@@ -16,14 +16,12 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
     RpResRef ray_data;
 
-    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
+    if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
         auto &rt_gi_cache = rp_builder_.AddPass("RT GI CACHE");
 
         auto *data = rt_gi_cache.AllocPassData<RpRTGICacheData>();
 
-        const auto stage = ctx_.capabilities.ray_query
-                               ? Stg::ComputeShader
-                               : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
+        const auto stage = Stg::ComputeShader;
 
         data->geo_data = rt_gi_cache.AddStorageReadonlyInput(rt_geo_instances_res, stage);
         data->materials = rt_gi_cache.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -39,7 +37,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         data->cells_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.rt_cells_res, stage);
         data->items_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.rt_items_res, stage);
 
-        if (!ctx_.capabilities.raytracing) {
+        if (!ctx_.capabilities.hwrt) {
             data->swrt.root_node = persistent_data.swrt.rt_root_node;
             data->swrt.rt_blas_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
             data->swrt.prim_ndx_buf =

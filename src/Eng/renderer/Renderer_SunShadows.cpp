@@ -164,8 +164,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
         auto *data = rt_shadows.AllocPassData<RpRTShadowsData>();
 
-        const Ren::eStageBits stage =
-            ctx_.capabilities.ray_query ? Ren::eStageBits::ComputeShader : Ren::eStageBits::RayTracingShader;
+        const Ren::eStageBits stage = Ren::eStageBits::ComputeShader;
 
         data->geo_data = rt_shadows.AddStorageReadonlyInput(rt_geo_instances_res, stage);
         data->materials = rt_shadows.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -183,7 +182,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
         ray_hits_tex = data->out_shadow_tex = rt_shadows.AddStorageImageOutput(ray_hits_tex, stage);
 
-        if (!ctx_.capabilities.raytracing) {
+        if (!ctx_.capabilities.hwrt) {
             data->swrt.root_node = persistent_data.swrt.rt_root_node;
             data->swrt.blas_buf = rt_shadows.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
             data->swrt.prim_ndx_buf =
@@ -666,8 +665,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
             {Ren::eBindTarget::Tex2DSampled, SunShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, SunShadows::SHADOW_TEX_VAL_SLOT, *shadow_tex.ref,
-             nearest_sampler_.get()},
+            {Ren::eBindTarget::Tex2DSampled, SunShadows::SHADOW_TEX_VAL_SLOT, *shadow_tex.ref, nearest_sampler_.get()},
             {Ren::eBindTarget::Image2D, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{

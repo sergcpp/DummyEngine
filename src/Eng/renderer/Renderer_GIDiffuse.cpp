@@ -360,7 +360,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
+    if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
@@ -403,9 +403,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             data->two_bounce = (settings.gi_quality == eGIQuality::Ultra);
 
-            const auto stage = ctx_.capabilities.ray_query
-                                   ? Stg::ComputeShader
-                                   : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
+            const auto stage = Stg::ComputeShader;
 
             data->geo_data = rt_gi.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_gi.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -428,7 +426,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->cells_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_cells_res, stage);
             data->items_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_items_res, stage);
 
-            if (!ctx_.capabilities.raytracing) {
+            if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
                 data->swrt.rt_blas_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx_buf =

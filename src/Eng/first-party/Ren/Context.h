@@ -250,8 +250,7 @@ class Context {
         bool spirv = false;
         bool persistent_buf_mapping = false;
         bool bindless_texture = false;
-        bool raytracing = false;
-        bool ray_query = false;
+        bool hwrt = false;
         bool swrt = false;
         int max_compute_work_group_size[3] = {};
         int tex_buf_offset_alignment = 1;
@@ -268,8 +267,7 @@ class Context {
         bool spirv = true;
         bool persistent_buf_mapping = true;
         bool bindless_texture = false;
-        bool raytracing = false;
-        bool ray_query = false;
+        bool hwrt = false;
         bool swrt = false;
         int max_compute_work_group_size[3] = {};
         int tex_buf_offset_alignment = 1;

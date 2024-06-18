@@ -695,7 +695,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         RpResRef rt_geo_instances_res, rt_obj_instances_res, rt_sh_geo_instances_res, rt_sh_obj_instances_res;
 
-        if (ctx_.capabilities.raytracing) {
+        if (ctx_.capabilities.hwrt) {
             auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
 
             { // create geo instances buffer
@@ -763,7 +763,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
 
         if (deferred_shading && list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
-            if (ctx_.capabilities.raytracing) {
+            if (ctx_.capabilities.hwrt) {
                 auto &update_rt_bufs = rp_builder_.AddPass("UPDATE SH ACC BUFS");
 
                 { // create geo instances buffer
@@ -1027,7 +1027,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // GBuffer filling pass
             AddGBufferFillPass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
-            if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) &&
+            if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) &&
                 list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
                 // RT Sun shadows
                 AddHQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex,
@@ -1116,11 +1116,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // }
 
         if (list.render_settings.debug_rt != eDebugRT::Off && list.env.env_map &&
-            (ctx_.capabilities.raytracing || ctx_.capabilities.swrt)) {
+            (ctx_.capabilities.hwrt || ctx_.capabilities.swrt)) {
             auto &debug_rt = rp_builder_.AddPass("DEBUG RT");
 
-            const Ren::eStageBits stages =
-                ctx_.capabilities.raytracing ? Ren::eStageBits::RayTracingShader : Ren::eStageBits::ComputeShader;
+            const Ren::eStageBits stages = Ren::eStageBits::ComputeShader;
 
             auto *data = debug_rt.AllocPassData<RpDebugRTData>();
             data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data_res, stages);
@@ -1135,7 +1134,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells_res, stages);
             data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items_res, stages);
 
-            if (!ctx_.capabilities.raytracing) {
+            if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
                 data->swrt.rt_blas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stages);
                 data->swrt.prim_ndx_buf =

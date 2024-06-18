@@ -76,8 +76,8 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
                    Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, g_device_name.data()));
 #endif
 
-    const bool skip_test = img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI &&
-                           !ren_ctx.capabilities.raytracing && !ren_ctx.capabilities.swrt;
+    const bool skip_test = img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI && !ren_ctx.capabilities.hwrt &&
+                           !ren_ctx.capabilities.swrt;
     if (skip_test) {
         const std::string combined_test_name = std::string(test_name) + test_postfix;
         printf("Test %-36s ...skipped\n", combined_test_name.c_str());
@@ -233,7 +233,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
                            Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
-    if (ren_ctx.capabilities.raytracing) {
+    if (ren_ctx.capabilities.hwrt) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
                                                         Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,

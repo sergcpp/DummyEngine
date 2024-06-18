@@ -6,7 +6,7 @@
 #include <Ren/Context.h>
 
 void Eng::RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
-    if (builder.ctx().capabilities.raytracing || builder.ctx().capabilities.ray_query) {
+    if (builder.ctx().capabilities.hwrt) {
 #if !defined(USE_GL_RENDER)
         Execute_HWRT(builder);
 #endif

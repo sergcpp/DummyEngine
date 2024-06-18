@@ -580,7 +580,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         instance_data_to_update_.push_back(i);
     }
 
-    if (ren_ctx_.capabilities.raytracing) {
+    if (ren_ctx_.capabilities.hwrt) {
         Alloc_HWRT_TLAS();
     } else {
         Alloc_SWRT_TLAS();
@@ -1246,7 +1246,7 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
     obj_bbox[1] = Max(obj_bbox[1], acc->mesh->bbox_max());
 
     if (!acc->mesh->blas) {
-        if (ren_ctx_.capabilities.raytracing) {
+        if (ren_ctx_.capabilities.hwrt) {
             acc->mesh->blas = Build_HWRT_BLAS(*acc);
         } else {
             acc->mesh->blas = Build_SWRT_BLAS(*acc);

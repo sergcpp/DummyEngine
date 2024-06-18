@@ -112,7 +112,7 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
                              Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
-    if (ren_ctx_->capabilities.raytracing) {
+    if (ren_ctx_->capabilities.hwrt) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
                                                           Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf =

@@ -12,7 +12,7 @@ void Eng::RpDebugRT::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
 #if !defined(USE_GL_RENDER)
-    if (builder.ctx().capabilities.raytracing) {
+    if (builder.ctx().capabilities.hwrt) {
         Execute_HWRT(builder);
     } else
 #endif
@@ -24,7 +24,7 @@ void Eng::RpDebugRT::Execute(RpBuilder &builder) {
 void Eng::RpDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
 #if defined(USE_VK_RENDER)
-        if (ctx.capabilities.raytracing) {
+        if (ctx.capabilities.hwrt) {
             Ren::ProgramRef debug_hwrt_prog =
                 sh.LoadProgram(ctx, "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl",
                                "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", {});

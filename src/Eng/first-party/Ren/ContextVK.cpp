@@ -219,8 +219,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     log_->Info("===========================================");
 
-    capabilities.raytracing = api_ctx_->raytracing_supported;
-    capabilities.ray_query = api_ctx_->ray_query_supported;
+    capabilities.hwrt = (api_ctx_->raytracing_supported && api_ctx_->ray_query_supported);
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
 
@@ -359,7 +358,7 @@ void Ren::Context::CheckDeviceCapabilities() {
     (*pp_next) = &subgroup_props;
     pp_next = &subgroup_props.pNext;
 
-    if (capabilities.raytracing) {
+    if (capabilities.hwrt) {
         (*pp_next) = &api_ctx_->rt_props;
         pp_next = &api_ctx_->rt_props.pNext;
     }

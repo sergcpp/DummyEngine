@@ -286,8 +286,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf &&
-        frame_textures.envmap && int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
+    if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && frame_textures.envmap &&
+        int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
@@ -333,9 +333,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             data->four_bounces = (settings.reflections_quality == eReflectionsQuality::Raytraced_High);
 
-            const auto stage = ctx_.capabilities.ray_query
-                                   ? Stg::ComputeShader
-                                   : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
+            const auto stage = Stg::ComputeShader;
 
             data->geo_data = rt_refl.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_refl.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -361,7 +359,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->cells_buf = rt_refl.AddStorageReadonlyInput(common_buffers.rt_cells_res, stage);
             data->items_buf = rt_refl.AddStorageReadonlyInput(common_buffers.rt_items_res, stage);
 
-            if (!ctx_.capabilities.raytracing) {
+            if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
                 data->swrt.rt_blas_buf = rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx_buf =
@@ -810,8 +808,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->indir_args = ssr_post_blur.AddIndirectBufferInput(indir_disp_buf);
             data->indir_args_offset = 3 * sizeof(uint32_t);
 
-            gi_specular3_tex = data->out_gi_tex =
-                ssr_post_blur.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
+            gi_specular3_tex = data->out_gi_tex = ssr_post_blur.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
 
             ssr_post_blur.set_execute_cb([this, data](RpBuilder &builder) {
                 RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
