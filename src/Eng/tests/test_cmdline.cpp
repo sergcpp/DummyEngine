@@ -9,12 +9,12 @@ void test_cmdline() {
 
     double result;
 
-    cmdline.RegisterCommand("add", [&result](int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        require(argc == 3);
-        require(argv[1].type == Eng::Cmdline::eArgType::ArgNumber);
-        require(argv[2].type == Eng::Cmdline::eArgType::ArgNumber);
+    cmdline.RegisterCommand("add", [&result](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        require(args.size() == 3);
+        require(args[1].type == Eng::Cmdline::eArgType::ArgNumber);
+        require(args[2].type == Eng::Cmdline::eArgType::ArgNumber);
 
-        result = argv[1].val + argv[2].val;
+        result = args[1].val + args[2].val;
 
         return true;
     });

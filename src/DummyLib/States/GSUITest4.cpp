@@ -88,8 +88,8 @@ void GSUITest4::Enter() {
 
     GSBaseState::Enter();
 
-    cmdline_->RegisterCommand("dialog", [this](int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        LoadDialog(argv[1].str.data());
+    cmdline_->RegisterCommand("dialog", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        LoadDialog(args[1].str.data());
         return true;
     });
 

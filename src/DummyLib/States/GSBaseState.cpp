@@ -166,36 +166,36 @@ void GSBaseState::Enter() {
 
     cmdline_history_.emplace_back();
 
-    cmdline_->RegisterCommand("r_wireframe", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_wireframe", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_wireframe = !renderer_->settings.debug_wireframe;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_culling", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_culling", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.enable_culling = !renderer_->settings.enable_culling;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lightmap", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_lightmap", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.enable_lightmap = !renderer_->settings.enable_lightmap;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lights", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_lights", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.enable_lights = !renderer_->settings.enable_lights;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_decals", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_decals", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.enable_decals = !renderer_->settings.enable_decals;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_shadows", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argc > 1) {
-            if (argv[1].val > 1.5) {
+    cmdline_->RegisterCommand("r_shadows", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            if (args[1].val > 1.5) {
                 renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-            } else if (argv[1].val > 0.5) {
+            } else if (args[1].val > 0.5) {
                 renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
             } else {
                 renderer_->settings.shadows_quality = Eng::eShadowsQuality::Off;
@@ -204,13 +204,13 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_reflections", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argc > 1) {
-            if (argv[1].val > 2.5) {
+    cmdline_->RegisterCommand("r_reflections", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            if (args[1].val > 2.5) {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
-            } else if (argv[1].val > 1.5) {
+            } else if (args[1].val > 1.5) {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
-            } else if (argv[1].val > 0.5) {
+            } else if (args[1].val > 0.5) {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::High;
             } else {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Off;
@@ -219,11 +219,11 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_taa", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argc > 1) {
-            if (argv[1].val > 1.5) {
+    cmdline_->RegisterCommand("r_taa", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            if (args[1].val > 1.5) {
                 renderer_->settings.taa_mode = Eng::eTAAMode::Static;
-            } else if (argv[1].val > 0.5) {
+            } else if (args[1].val > 0.5) {
                 renderer_->settings.taa_mode = Eng::eTAAMode::Dynamic;
             } else {
                 renderer_->settings.taa_mode = Eng::eTAAMode::Off;
@@ -232,23 +232,23 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_tonemap", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argc > 1) {
-            if (argv[1].val > 3.5) {
+    cmdline_->RegisterCommand("r_tonemap", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            if (args[1].val > 3.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (argv[1].val > 2.5) {
+            } else if (args[1].val > 2.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (argv[1].val > 1.5) {
+            } else if (args[1].val > 1.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
@@ -256,7 +256,7 @@ void GSBaseState::Enter() {
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (argv[1].val > 0.5) {
+            } else if (args[1].val > 0.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
             } else {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
@@ -265,7 +265,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_pt", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_pt", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         use_pt_ = !use_pt_;
         if (use_pt_) {
             InitRenderer_PT();
@@ -275,23 +275,13 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    /*cmdline_->RegisterCommand("r_lm", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        use_lm_ = !use_lm_;
-        if (use_lm_) {
-            // shrd_this->scene_manager_->InitScene_PT();
-            // shrd_this->scene_manager_->ResetLightmaps_PT();
-            invalidate_view_ = true;
-        }
-        return true;
-    });*/
-
-    cmdline_->RegisterCommand("r_zfill", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_zfill", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.enable_zfill = !renderer_->settings.enable_zfill;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_mode", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argv[1].val > 0.5) {
+    cmdline_->RegisterCommand("r_mode", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args[1].val > 0.5) {
             renderer_->settings.render_mode = Eng::eRenderMode::Forward;
         } else {
             renderer_->settings.render_mode = Eng::eRenderMode::Deferred;
@@ -299,12 +289,12 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_gi", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argv[1].val > 2.5) {
+    cmdline_->RegisterCommand("r_gi", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args[1].val > 2.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
-        } else if (argv[1].val > 1.5) {
+        } else if (args[1].val > 1.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::High;
-        } else if (argv[1].val > 0.5) {
+        } else if (args[1].val > 0.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::Medium;
         } else {
             renderer_->settings.gi_quality = Eng::eGIQuality::Off;
@@ -312,8 +302,8 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_sky", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argv[1].val > 0.5) {
+    cmdline_->RegisterCommand("r_sky", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args[1].val > 0.5) {
             renderer_->settings.sky_quality = Eng::eSkyQuality::High;
         } else {
             renderer_->settings.sky_quality = Eng::eSkyQuality::Low;
@@ -321,7 +311,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_updateProbes", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_updateProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         Eng::SceneData &scene_data = scene_manager_->scene_data();
 
         const int res = scene_data.probe_storage.res(), capacity = scene_data.probe_storage.capacity();
@@ -335,7 +325,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_cacheProbes", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_cacheProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         const Eng::SceneData &scene_data = scene_manager_->scene_data();
 
         const Eng::CompStorage *lprobes = scene_data.comp_store[Eng::CompProbe];
@@ -348,20 +338,20 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("map", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argc != 2 || argv[1].type != Eng::Cmdline::eArgType::ArgString) {
+    cmdline_->RegisterCommand("map", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() != 2 || args[1].type != Eng::Cmdline::eArgType::ArgString) {
             return false;
         }
 
         // TODO: refactor this
         char buf[1024];
-        snprintf(buf, sizeof(buf), "%s/scenes/%.*s", ASSETS_BASE_PATH, int(argv[1].str.length()), argv[1].str.data());
+        snprintf(buf, sizeof(buf), "%s/scenes/%.*s", ASSETS_BASE_PATH, int(args[1].str.length()), args[1].str.data());
         LoadScene(buf);
 
         return true;
     });
 
-    cmdline_->RegisterCommand("save", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("save", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         Sys::MultiPoolAllocator<char> alloc(32, 512);
         JsObjectP out_scene(alloc);
 
@@ -421,69 +411,69 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_reloadTextures", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_reloadTextures", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         scene_manager_->ForceTextureReload();
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showCull", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showCull", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_culling = !renderer_->settings.debug_culling;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showShadows", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showShadows", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_shadows = !renderer_->settings.debug_shadows;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showLights", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showLights", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_lights = !renderer_->settings.debug_lights;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showDecals", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showDecals", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_decals = !renderer_->settings.debug_decals;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showDeferred", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showDeferred", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_deferred = !renderer_->settings.debug_deferred;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showBlur", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showBlur", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_blur = !renderer_->settings.debug_blur;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showSSAO", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showSSAO", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_ssao = !renderer_->settings.debug_ssao;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showTimings", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showTimings", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_timings = !renderer_->settings.debug_timings;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showBVH", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showBVH", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_bvh = !renderer_->settings.debug_bvh;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showProbes", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_probes = !renderer_->settings.debug_probes;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showEllipsoids", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showEllipsoids", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_ellipsoids = !renderer_->settings.debug_ellipsoids;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showRT", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argc > 1) {
-            if (argv[1].val > 0.5) {
+    cmdline_->RegisterCommand("r_showRT", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            if (args[1].val > 0.5) {
                 renderer_->settings.debug_rt = Eng::eDebugRT::Shadow;
             } else {
                 renderer_->settings.debug_rt = Eng::eDebugRT::Main;
@@ -494,13 +484,13 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showDenoise", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argc > 1) {
-            if (argv[1].val < 0.5) {
+    cmdline_->RegisterCommand("r_showDenoise", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            if (args[1].val < 0.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::Reflection;
-            } else if (argv[1].val < 1.5) {
+            } else if (args[1].val < 1.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::GI;
-            } else if (argv[2].val < 2.5) {
+            } else if (args[2].val < 2.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::Shadow;
             }
         } else {
@@ -509,17 +499,17 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showMotion", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showMotion", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_motion = !renderer_->settings.debug_motion;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showUI", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showUI", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         ui_enabled_ = !ui_enabled_;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_freeze", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_freeze", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_freeze = !renderer_->settings.debug_freeze;
         return true;
     });

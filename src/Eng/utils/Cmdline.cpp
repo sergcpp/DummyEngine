@@ -9,13 +9,11 @@ void Eng::Cmdline::RegisterCommand(const char *cmd, const CommandHandler &handle
 }
 
 bool Eng::Cmdline::Execute(const char *str) {
-    ArgData argv[MaxArgumentCount];
-    int argc = 0;
-
-    if (Parse(str, argv, argc)) {
-        const CommandHandler *handler = cmd_handlers_.Find(argv[0].str);
+    Ren::SmallVector<ArgData, 16> args;
+    if (Parse(str, args)) {
+        const CommandHandler *handler = cmd_handlers_.Find(args[0].str);
         if (handler) {
-            return (*handler)(argc, argv);
+            return (*handler)(args);
         }
     }
 
@@ -33,7 +31,7 @@ int Eng::Cmdline::NextHint(const char *str, const int i, Ren::String &out_str) c
     return -1;
 }
 
-bool Eng::Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
+bool Eng::Cmdline::Parse(const char *str, Ren::SmallVectorImpl<ArgData> &out_args) {
     const char *s = str;
     // skip white space
     while (std::isspace(*s))
@@ -43,8 +41,6 @@ bool Eng::Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
         return false;
     }
 
-    out_argc = 0;
-
     while (*s) {
         while (std::isspace(*s))
             s++;
@@ -52,12 +48,12 @@ bool Eng::Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
         while (*s && !std::isspace(*s))
             s++;
 
-        out_argv[out_argc].str = std::string_view(tok_start, s - tok_start);
-        out_argc++;
+        ArgData &arg = out_args.emplace_back();
+        arg.str = std::string_view(tok_start, s - tok_start);
     }
 
-    for (int i = 0; i < out_argc; i++) {
-        ArgData &arg = out_argv[i];
+    for (int i = 0; i < int(out_args.size()); i++) {
+        ArgData &arg = out_args[i];
         if (arg.str.empty()) {
             continue;
         }
@@ -82,5 +78,5 @@ bool Eng::Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
         }
     }
 
-    return out_argc && out_argv[0].type == eArgType::ArgString;
+    return !out_args.empty() && out_args[0].type == eArgType::ArgString;
 }

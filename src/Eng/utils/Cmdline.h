@@ -3,6 +3,8 @@
 #include <functional>
 
 #include <Ren/HashMap32.h>
+#include <Ren/SmallVector.h>
+#include <Ren/Span.h>
 
 namespace Eng {
 class Cmdline {
@@ -16,10 +18,9 @@ class Cmdline {
         std::string_view str;
         double val;
     };
-    static const int MaxArgumentCount = 16;
     static const int MaxHistoryCount = 8;
 
-    using CommandHandler = std::function<bool(int argc, ArgData *argv)>;
+    using CommandHandler = std::function<bool(Ren::Span<const ArgData> args)>;
 
     void RegisterCommand(const char *cmd, const CommandHandler &handler);
     bool Execute(const char *str);
@@ -29,6 +30,6 @@ class Cmdline {
   private:
     Ren::HashMap32<Ren::String, CommandHandler> cmd_handlers_;
 
-    bool Parse(const char *str, ArgData *out_argv, int &out_argc);
+    bool Parse(const char *str, Ren::SmallVectorImpl<ArgData> &out_args);
 };
 } // namespace Eng

@@ -43,7 +43,7 @@ void GSDrawTest::Enter() {
 
     GSBaseState::Enter();
 
-    cmdline_->RegisterCommand("r_printCam", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_printCam", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         log_->Info("View Pos: { %f, %f, %f }", view_origin_[0], view_origin_[1], view_origin_[2]);
         log_->Info("View Dir: { %f, %f, %f }", view_dir_[0], view_dir_[1], view_dir_[2]);
         return true;
