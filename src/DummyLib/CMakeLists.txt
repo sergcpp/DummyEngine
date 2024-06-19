@@ -40,8 +40,9 @@ set(STATES_SOURCES  States/GSBaseState.h
                     States/GSUITest3.cpp
                     States/GSUITest4.h
                     States/GSUITest4.cpp
-                    States/GSVideoTest.h
-                    States/GSVideoTest.cpp)
+                    #States/GSVideoTest.h
+                    #States/GSVideoTest.cpp
+    )
 
 set(UTILS_SOURCES   Utils/DialogController.h
                     Utils/DialogController.cpp
@@ -54,11 +55,13 @@ set(UTILS_SOURCES   Utils/DialogController.h
 if(${RENDERER} STREQUAL "GL")
     set(STATES_SOURCES ${STATES_SOURCES}
                         States/GSUITest3GL.cpp
-                        States/GSVideoTestGL.cpp)
+                        #States/GSVideoTestGL.cpp
+        )
 elseif(${RENDERER} STREQUAL "VK")
     set(STATES_SOURCES ${STATES_SOURCES}
                         States/GSUITest3VK.cpp
-                        States/GSVideoTestVK.cpp)
+                        #States/GSVideoTestVK.cpp
+        )
 elseif(${RENDERER} STREQUAL "SW")
 
 endif()

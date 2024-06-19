@@ -1190,8 +1190,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
                 if (fabsf(plane_N[0]) <= fabsf(plane_N[1]) && fabsf(plane_N[0]) <= fabsf(plane_N[2])) {
                     tangent = Vec3f{1.0f, 0.0f, 0.0f};
                     w = 1;
-                } else if (fabsf(plane_N[2]) <= fabsf(plane_N[0]) &&
-                           fabsf(plane_N[2]) <= fabsf(plane_N[1])) {
+                } else if (fabsf(plane_N[2]) <= fabsf(plane_N[0]) && fabsf(plane_N[2]) <= fabsf(plane_N[1])) {
                     tangent = Vec3f{0.0f, 0.0f, 1.0f};
                     w = 0;
                 }
@@ -1779,6 +1778,7 @@ void InsetYCoCgBBox_Ref(uint8_t min_color[4], uint8_t max_color[4]) {
 }
 
 void InsetYCoCgBBox_SSE2(uint8_t min_color[4], uint8_t max_color[4]);
+void InsetYCoCgBBox_NEON(uint8_t min_color[4], uint8_t max_color[4]);
 
 void SelectYCoCgDiagonal_Ref(const uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
     const uint8_t mid0 = (int(min_color[0]) + max_color[0] + 1) / 2;
@@ -1819,6 +1819,7 @@ void SelectYCoCgDiagonal_Ref(const uint8_t block[64], uint8_t min_color[3], uint
 }
 
 void SelectYCoCgDiagonal_SSE2(const uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]);
+void SelectYCoCgDiagonal_NEON(const uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]);
 
 void ScaleYCoCg_Ref(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]) {
     int m0 = _ABS(min_color[0] - 128);
@@ -1854,6 +1855,7 @@ void ScaleYCoCg_Ref(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3
 }
 
 void ScaleYCoCg_SSE2(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]);
+void ScaleYCoCg_NEON(uint8_t block[64], uint8_t min_color[3], uint8_t max_color[3]);
 
 force_inline void push_u8(const uint8_t v, uint8_t *&out_data) { (*out_data++) = v; }
 
@@ -1942,6 +1944,8 @@ void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3], c
 }
 
 void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4], const uint8_t max_color[4],
+                           uint8_t *&out_data);
+void EmitColorIndices_NEON(const uint8_t block[64], const uint8_t min_color[4], const uint8_t max_color[4],
                            uint8_t *&out_data);
 
 void EmitAlphaIndices_Ref(const uint8_t block[64], const uint8_t min_alpha, const uint8_t max_alpha,

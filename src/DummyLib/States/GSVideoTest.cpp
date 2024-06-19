@@ -637,7 +637,7 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
             const int range_offset = frame_index * w * h;
             uint8_t *y_out = y_sbuf_[tex_index].mapped_ptr() + range_offset;
 
-#if !defined(__aarch64__)
+#if defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
             if (w % 32 == 0 && Ren::g_CpuFeatures.avx_supported) {
                 Ren::CopyYChannel_32px(y_img, stride, w, h, y_out);
             } else if (w % 16 == 0 && Ren::g_CpuFeatures.sse2_supported) {

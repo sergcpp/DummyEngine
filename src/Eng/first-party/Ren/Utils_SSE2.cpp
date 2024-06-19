@@ -1,9 +1,5 @@
+#if defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
 #include "Utils.h"
-
-#ifdef __GNUC__
-#pragma GCC push_options
-#pragma GCC target("sse2")
-#endif
 
 #include <cassert>
 #include <cstring>
@@ -783,6 +779,4 @@ void EmitAlphaOnlyIndices_SSE2(const uint8_t block[16], const uint8_t min_alpha,
 
 #undef _ABS
 
-#ifdef __GNUC__
-#pragma GCC pop_options
 #endif

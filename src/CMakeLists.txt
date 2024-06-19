@@ -42,7 +42,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
 
     link_directories(${ITT_LIBRARIES})
 
-    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
+    if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64" OR CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
         add_definitions(-DINTEL_NO_ITTNOTIFY_API)
     endif()
 else()
@@ -57,7 +57,7 @@ include_directories(libs)
 enable_testing()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Android")
-    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/Snd/OpenAL/libs/arm64-v8a)
+    link_directories(${CMAKE_CURRENT_SOURCE_DIR}/Snd/third-party/OpenAL/libs/arm64-v8a)
 endif()
 
 add_subdirectory(DummyApp)

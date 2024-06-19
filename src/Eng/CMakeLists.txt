@@ -313,8 +313,9 @@ set(UTILS_SOURCES utils/Cmdline.h
                   utils/ShaderLoader.cpp
                   utils/ShaderLoaderGLSL.cpp
                   utils/ShaderLoaderSPIRV.cpp
-                  utils/VideoPlayer.h
-                  utils/VideoPlayer.cpp)
+                  #utils/VideoPlayer.h
+                  #utils/VideoPlayer.cpp
+    )
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
@@ -352,7 +353,11 @@ target_include_directories(Eng PUBLIC third-party)
 target_include_directories(Eng PUBLIC third-party/glslang/include)
 target_include_directories(Eng PUBLIC third-party/vpx/include)
 if (WIN32)
-    target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/win)
+    if(CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
+        target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/win/arm64)
+    else(CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
+        target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/win/x64)
+    endif(CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vtune/win/x64)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/win/Release/x64)
@@ -376,7 +381,7 @@ else(WIN32)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/linux/x64)
     endif(APPLE)
 endif(WIN32)
-target_link_libraries(Eng Net Phy Ren Snd Sys astc optick glslx_lib ${GLSLANG_LIBS} ${ITT_LIB} ${VPX_LIB})
+target_link_libraries(Eng Net Phy Ren Snd Sys astc optick glslx_lib ${GLSLANG_LIBS} ${ITT_LIB})
 
 add_subdirectory(tests)
 add_subdirectory(first-party/Net)

@@ -32,12 +32,20 @@
 
 #if defined(_MSC_VER)
 #	define OPTICK_MSVC (1)
+#if defined(_M_ARM) || defined(_M_ARM64)
+#define OPTICK_PC (1)
+#define OPTICK_ARM (1)
+#if defined(_M_ARM64)
+#define OPTICK_64BIT (1)
+#endif
+#else
 #	define OPTICK_64BIT (1)
 #	if defined(_DURANGO)
 #		define OPTICK_PC (0)
 #	else
 #		define OPTICK_PC (1)
 #   endif
+#endif
 #elif defined(__clang__) || defined(__GNUC__)
 #	define OPTICK_GCC (1)
 #	if defined(__APPLE_CC__)

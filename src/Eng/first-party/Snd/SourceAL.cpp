@@ -4,7 +4,7 @@
 #include <cstring>
 
 #ifdef USE_AL_SOUND
-#include "OpenAL/include/al.h"
+#include "third-party/OpenAL/include/al.h"
 #endif
 
 #include "Buffer.h"
