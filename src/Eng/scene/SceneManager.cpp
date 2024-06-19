@@ -592,20 +592,24 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     scene_data_.persistent_data.probe_volume.spacing = Ren::Vec3f{probe_volume_spacing};
 
     // TODO: Allocate atlases on demand!
+    // ~45mb
     scene_data_.persistent_data.probe_volume.ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
         PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+    // ~12mb
     scene_data_.persistent_data.probe_volume.irradiance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES,
         PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES, PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F,
         Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+    // ~23mb
     scene_data_.persistent_data.probe_volume.distance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES * PROBE_DISTANCE_RES,
         PROBE_VOLUME_RES * PROBE_DISTANCE_RES, PROBE_VOLUME_RES, Ren::eTexFormat::RawRG16F,
         Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+    // ~200kb
     scene_data_.persistent_data.probe_volume.data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Data", PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES,
         Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
