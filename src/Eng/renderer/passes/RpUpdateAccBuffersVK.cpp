@@ -13,6 +13,7 @@ void Eng::RpUpdateAccBuffersExecutor::Execute_HWRT(RpBuilder &builder) {
 
     if (rt_geo_instances.count) {
         const uint32_t rt_geo_instances_mem_size = rt_geo_instances.count * sizeof(RTGeoInstance);
+        assert(rt_geo_instances_mem_size < RTGeoInstancesBufChunkSize);
 
         uint8_t *stage_mem = rt_geo_instances_stage_buf->MapRange(ctx.backend_frame() * RTGeoInstancesBufChunkSize,
                                                                   RTGeoInstancesBufChunkSize);
