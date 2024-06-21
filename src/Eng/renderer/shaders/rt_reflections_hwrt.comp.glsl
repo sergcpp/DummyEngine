@@ -159,32 +159,35 @@ void main() {
                               );
 
         int transp_depth = 0;
-        while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
+        while(rayQueryProceedEXT(rq)) {
             if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
-                // perform alpha test
-                const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
-                const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
-                const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
-                const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, false);
-                const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, false);
+                if (transp_depth++ < 4) {
+                    // perform alpha test
+                    const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
+                    const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
+                    const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
+                    const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, false);
+                    const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, false);
 
-                const RTGeoInstance geo = g_geometries[custom_index + geo_index];
-                const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-                const MaterialData mat = g_materials[mat_index];
+                    const RTGeoInstance geo = g_geometries[custom_index + geo_index];
+                    const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
+                    const MaterialData mat = g_materials[mat_index];
 
-                const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
-                const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
-                const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
+                    const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
+                    const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
+                    const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-                const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
-                const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
-                const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
+                    const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
+                    const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
+                    const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
-                const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                const float alpha = textureLod(SAMPLER2D(mat.texture_indices[4]), uv, 0.0).r;
-                if (alpha >= 0.5) {
-                    rayQueryConfirmIntersectionEXT(rq);
+                    const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
+                    const float alpha = textureLod(SAMPLER2D(mat.texture_indices[4]), uv, 0.0).r;
+                    if (alpha < 0.5) {
+                        continue;
+                    }
                 }
+                rayQueryConfirmIntersectionEXT(rq);
             }
         }
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
