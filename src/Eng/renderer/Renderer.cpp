@@ -1005,7 +1005,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             depth_hierarchy.set_executor(&rp_depth_hierarchy_);
         }
 
-        if (!list.render_settings.debug_wireframe && list.render_settings.taa_mode != eTAAMode::Static) {
+        if (!list.render_settings.debug_wireframe /*&& list.render_settings.taa_mode != eTAAMode::Static*/) {
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
 

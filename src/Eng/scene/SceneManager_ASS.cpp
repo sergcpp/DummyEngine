@@ -30,7 +30,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 1;
+const uint32_t AssetsBuildVersion = 2;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -628,7 +628,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["hdr"] = {"dds", HConvHDRToDDS};
         g_asset_handlers["tex"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
-        g_asset_handlers["dds"] = {"dds", HCopy};
+        //g_asset_handlers["dds"] = {"dds", HCopy};
         g_asset_handlers["rgen.glsl"] = {"rgen.glsl", HCompileShader};
         g_asset_handlers["rint.glsl"] = {"rint.glsl", HCompileShader};
         g_asset_handlers["rchit.glsl"] = {"rchit.glsl", HCompileShader};

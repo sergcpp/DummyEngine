@@ -1121,6 +1121,13 @@ void GSBaseState::InitScene_PT() {
         env_desc.env_col[1] = env_desc.back_col[1] = scene_data.env.env_col[1];
         env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
 
+        memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
+        static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::AtmosphereParams));
+
+        if (scene_data.env.sun_angle < 1.0f) {
+            env_desc.envmap_resolution *= 2;
+        }
+
         if (!scene_data.env.env_map_name.empty()) {
             if (scene_data.env.env_map_name == "physical_sky") {
                 env_desc.back_map = env_desc.env_map = Ray::PhysicalSkyTexture;

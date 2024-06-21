@@ -622,7 +622,7 @@ Eng::RpResRef Eng::RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const R
 #endif
         // Add new output
         pass.output_.push_back(ret);
-    } else if (pass.output_[slot_index]) {
+    } else if (slot_index < pass.output_.size() && pass.output_[slot_index]) {
         // Replace existing output
         RpAllocTex &prev_tex = textures_[pass.output_[slot_index].index];
         --prev_tex.write_count;

@@ -504,7 +504,7 @@ void Eng::SceneManager::RebuildMaterialTextureGraph() {
                     next_user = mat.next_texture_user[ndx];
                 } while (next_user != 0xffffffff);
 
-                { // set next user
+                if (last_user != it.index()) { // set next user
                     auto &mat = scene_data_.materials.at(last_user);
                     const size_t ndx = std::distance(mat.textures.begin(),
                                                      std::find(mat.textures.begin(), mat.textures.end(), texture));

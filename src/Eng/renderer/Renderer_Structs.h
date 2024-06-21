@@ -373,14 +373,14 @@ struct SharedDataBlock {
 };
 static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16, "!");
 
-const int MAX_MATERIAL_PARAMS = 3;
+const int MAX_MATERIAL_PARAMS = 4;
 
 struct MaterialData {
     uint32_t texture_indices[MAX_TEX_PER_MATERIAL];
     uint32_t _pad[2];
     Ren::Vec4f params[MAX_MATERIAL_PARAMS];
 };
-static_assert(sizeof(MaterialData) == 80, "!");
+static_assert(sizeof(MaterialData) == 96, "!");
 
 const uint32_t RTGeoProbeBits = 0xff;
 const uint32_t RTGeoLightmappedBit = (1u << 8u);

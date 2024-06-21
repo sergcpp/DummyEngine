@@ -46,8 +46,9 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
 #ifdef TRANSPARENT
     layout(location = 4) out vec2 g_vtx_uvs0;
     layout(location = 5) out vec3 g_vtx_pos_ls;
+    layout(location = 6) out flat float g_alpha;
     #if !defined(NO_BINDLESS)
-        layout(location = 6) out flat TEX_HANDLE g_alpha_tex;
+        layout(location = 7) out flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 
@@ -65,6 +66,7 @@ void main() {
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
     const MaterialData mat = g_materials[instance.y];
+    g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // NO_BINDLESS

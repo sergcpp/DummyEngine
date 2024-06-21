@@ -12,6 +12,9 @@
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
+extern "C" {
+#include <stb/stbi_DDS.h>
+}
 
 #include "../utils/Load.h"
 
@@ -788,6 +791,7 @@ struct tex_config_t {
     eImageType image_type = eImageType::Color;
     bool compress = true;
     bool dx_convention = false;
+    bool copy = false;
     int extract_channel = -1;
 };
 
@@ -839,6 +843,8 @@ tex_config_t ParseTextureConfig(const char *in_file) {
                             ret.extract_channel = 3;
                         } else if (flag == "dx") {
                             ret.dx_convention = true;
+                        } else if (flag == "copy") {
+                            ret.copy = true;
                         }
                     }
                 }
@@ -928,9 +934,12 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
     }
 
     int width, height, channels;
-    unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    unsigned char *image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
     if (!image_data) {
-        return false;
+        image_data = stbi__dds_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+        if (!image_data) {
+            return false;
+        }
     }
     SCOPE_EXIT({ stbi_image_free(image_data); })
 
@@ -1112,6 +1121,10 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     std::filesystem::path image_path = in_file;
     image_path.replace_filename(tex.image_name);
 
+    if (tex.copy) {
+        return std::filesystem::copy_file(image_path, out_file, std::filesystem::copy_options::overwrite_existing);
+    }
+
     out_dependencies.push_back(image_path.generic_u8string());
 
     std::ifstream src_image(image_path, std::ios::binary | std::ios::ate);
@@ -1130,12 +1143,17 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     int width, height, channels;
     unsigned char *image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
     if (!image_data) {
-        return false;
+        image_data = stbi__dds_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+        if (!image_data) {
+            return false;
+        }
     }
-    SCOPE_EXIT({ stbi_image_free(image_data); })
+    SCOPE_EXIT({ free(image_data); })
 
     bool is_1px_texture = (width > 4 && height > 4),
-         is_single_channel = (tex.image_type != eImageType::Color) && (channels > 1);
+         is_single_channel =
+             (tex.image_type != eImageType::NormalMap) && (tex.image_type != eImageType::Color) && (channels > 1),
+         is_too_many_channels = (tex.image_type == eImageType::Color) && (channels > 3);
     for (int i = 0; i < width * height && (is_1px_texture || is_single_channel); ++i) {
         for (int j = 0; j < channels; ++j) {
             is_1px_texture &= (image_data[i * channels + j] == image_data[j]);
@@ -1146,12 +1164,15 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     is_single_channel |= (tex.image_type == eImageType::Metallic);
     is_single_channel |= (tex.image_type == eImageType::Roughness);
     is_single_channel |= (tex.image_type == eImageType::Opacity);
-    if (is_single_channel || is_1px_texture) {
+    if (is_single_channel || is_1px_texture || is_too_many_channels) {
         // drop resolution to minimal block size
         const int width_new = is_1px_texture ? 4 : width;
         const int height_new = is_1px_texture ? 4 : height;
         // drop unnecessary channels
-        const int channels_new = is_single_channel ? 1 : channels;
+        int channels_new = is_single_channel ? 1 : channels;
+        if (tex.image_type == eImageType::Color && channels_new > 3) {
+            channels_new = 3;
+        }
         unsigned char *image_data_new = (unsigned char *)malloc(width_new * height_new * channels_new);
         if (!image_data_new) {
             return false;
@@ -1201,6 +1222,10 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
 
         std::swap(image_data, image_data_new);
         channels = 2;
+    } else if (tex.image_type == eImageType::NormalMap && channels == 2 && tex.dx_convention) {
+        for (int i = 0; i < width * height; ++i) {
+            image_data[2 * i + 1] = 255 - image_data[2 * i + 1];
+        }
     }
 
     const bool use_YCoCg = (tex.image_type == eImageType::Color);

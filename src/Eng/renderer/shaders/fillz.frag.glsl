@@ -34,8 +34,9 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 #ifdef TRANSPARENT
     layout(location = 4) in vec2 g_vtx_uvs0;
     layout(location = 5) in vec3 g_vtx_pos_ls;
+    layout(location = 6) in flat float g_alpha;
     #if !defined(NO_BINDLESS)
-        layout(location = 6) in flat TEX_HANDLE g_alpha_tex;
+        layout(location = 7) in flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 
@@ -45,25 +46,25 @@ layout(location = 0) out vec4 g_out_velocity;
 
 void main() {
 #ifdef TRANSPARENT
-    float tx_alpha = texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
-    float max_deriv = max(length(dFdx(g_vtx_pos_ls)), length(dFdy(g_vtx_pos_ls)));
+    const float tx_alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
+    const float max_deriv = max(length(dFdx(g_vtx_pos_ls)), length(dFdy(g_vtx_pos_ls)));
     const float HashScale = 0.1;
-    float pix_scale = 1.0 / (HashScale * max_deriv);
+    const float pix_scale = 1.0 / (HashScale * max_deriv);
 
-    vec2 pix_scales = vec2(exp2(floor(log2(pix_scale))),
-                           exp2(ceil(log2(pix_scale))));
+    const vec2 pix_scales = vec2(exp2(floor(log2(pix_scale))),
+                                 exp2(ceil(log2(pix_scale))));
 
-    vec2 alpha = vec2(hash3D(floor(pix_scales.x * g_vtx_pos_ls)),
-                      hash3D(floor(pix_scales.y * g_vtx_pos_ls)));
+    const vec2 alpha = vec2(hash3D(floor(pix_scales.x * g_vtx_pos_ls)),
+                            hash3D(floor(pix_scales.y * g_vtx_pos_ls)));
 
-    float lerp_factor = fract(log2(pix_scale));
+    const float lerp_factor = fract(log2(pix_scale));
 
-    float x = mix(alpha.x, alpha.y, lerp_factor);
-    float a = min(lerp_factor, 1.0 - lerp_factor);
+    const float x = mix(alpha.x, alpha.y, lerp_factor);
+    const float a = min(lerp_factor, 1.0 - lerp_factor);
 
-    vec3 cases = vec3(x * x / (2.0 * a * (1.0 - a)),
-                       (x - 0.5 * a) / (1.0 - a),
-                       1.0 - ((1.0 - x) * (1.0 - x) / (2.0 * a * (1.0 - a))));
+    const vec3 cases = vec3(x * x / (2.0 * a * (1.0 - a)),
+                            (x - 0.5 * a) / (1.0 - a),
+                            1.0 - ((1.0 - x) * (1.0 - x) / (2.0 * a * (1.0 - a))));
 
     float comp_a = (x < (1.0 - a)) ? ((x < a) ? cases.x : cases.y) : cases.z;
     comp_a = clamp(comp_a, 1.0e-6, 1.0);

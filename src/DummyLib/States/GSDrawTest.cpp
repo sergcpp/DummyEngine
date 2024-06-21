@@ -362,6 +362,8 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
             const JsStringP &js_filter = js_cam.at("filter").as_str();
             if (js_filter.val == "box") {
                 renderer_->settings.pixel_filter = Eng::ePixelFilter::Box;
+            } else if (js_filter.val == "gaussian") {
+                renderer_->settings.pixel_filter = Eng::ePixelFilter::Gaussian;
             } else if (js_filter.val == "blackman-harris") {
                 renderer_->settings.pixel_filter = Eng::ePixelFilter::BlackmanHarris;
                 renderer_->settings.pixel_filter_width = 1.5f;
@@ -381,7 +383,7 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (js_view_transform.val == "filmic_med_contrast") {
+            } else if (js_view_transform.val == "filmic_med_contrast" || js_view_transform.val == "filmic") {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,

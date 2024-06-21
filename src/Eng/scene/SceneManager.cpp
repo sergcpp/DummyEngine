@@ -561,6 +561,12 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             scene_data_.env.sun_shadow_bias[1] = DefaultSunShadowBias[1];
         }
 
+        if (js_env.Has("clouds_density")) {
+            scene_data_.env.atmosphere.clouds_density = float(js_env.at("clouds_density").as_num().val);
+        } else {
+            scene_data_.env.atmosphere.clouds_density = 0.5f;
+        }
+
         if (js_env.Has("probe_volume_spacing")) {
             probe_volume_spacing = float(js_env.at("probe_volume_spacing").as_num().val);
         }

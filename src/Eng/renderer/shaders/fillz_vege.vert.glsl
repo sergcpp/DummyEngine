@@ -53,8 +53,9 @@ layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #ifdef TRANSPARENT
     layout(location = 4) out vec2 g_vtx_uvs0;
     layout(location = 5) out vec3 g_vtx_pos_ls;
+    layout(location = 6) out flat float g_alpha;
     #if !defined(NO_BINDLESS)
-        layout(location = 6) out flat TEX_HANDLE g_alpha_tex;
+        layout(location = 7) out flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 
@@ -72,8 +73,8 @@ void main() {
     const vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
     const vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
-#if !defined(NO_BINDLESS)
     const MaterialData mat = g_materials[instance.y];
+#if !defined(NO_BINDLESS)
     const TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     const TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // !NO_BINDLESS
@@ -89,7 +90,7 @@ void main() {
 
 #ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
-
+    g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[3]);
 #endif // !NO_BINDLESS

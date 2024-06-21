@@ -344,7 +344,7 @@ struct SharedData {
 struct MaterialData {
     uint texture_indices[MAX_TEX_PER_MATERIAL];
     uint _pad[2];
-    vec4 params[3];
+    vec4 params[4];
 };
 
 vec3 RGBMDecode(vec4 rgbm) {
