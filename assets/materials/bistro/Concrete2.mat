@@ -1,0 +1,16 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+    - alpha_test
+textures:
+    - bistro/Concrete2_BaseColor.tex
+    - bistro/Concrete2_Normal.tex
+    - bistro/Concrete2_roughness.tex
+    - bistro/Concrete2_metallic.tex
+params:
+    - 1.0 1.0 1.0 1.0    # base color, roughness
+    - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
+    - 1.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
+    - 0.0 0.0 0.0 0.0    # tranparency, unused, unused, unused

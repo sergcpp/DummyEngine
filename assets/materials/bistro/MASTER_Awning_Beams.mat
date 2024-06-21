@@ -1,0 +1,16 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+    - alpha_test
+textures:
+    - bistro/MASTER_Awning_Beams_BaseColor.tex
+    - bistro/MASTER_Awning_Beams_Normal.tex
+    - bistro/MASTER_Awning_Beams_roughness.tex
+    - bistro/MASTER_Awning_Beams_metallic.tex
+params:
+    - 1.0 1.0 1.0 1.0    # base color, roughness
+    - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
+    - 1.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
+    - 0.0 0.0 0.0 0.0    # tranparency, unused, unused, unused
