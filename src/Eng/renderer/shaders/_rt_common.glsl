@@ -1,6 +1,10 @@
 
 #include "_cs_common.glsl"
 
+const float NormalBiasConstant = 0.00025;
+const float NormalBiasPosAddition = 0.000025;
+const float NormalBiasViewAddition = 0.000025;
+
 const uint RTGeoProbeBits = 0xff;
 const uint RTGeoLightmappedBit = (1u << 8u);
 

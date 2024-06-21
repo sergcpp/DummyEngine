@@ -98,7 +98,7 @@ void main() {
 
         // Bias to avoid self-intersection
         // TODO: use flat normal here
-        ray_origin_ws.xyz += 0.001 * normal_ws; //offset_ray(ray_origin_ws.xyz, 2 * normal_ws);
+        ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + (-ray_origin_vs.z) * NormalBiasViewAddition) * normal_ws;
 
         const uint ray_flags = 0;//gl_RayFlagsCullFrontFacingTrianglesEXT;
 

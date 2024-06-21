@@ -28,9 +28,11 @@ void Eng::RpUpdateAccBuffersExecutor::Execute_HWRT(RpBuilder &builder) {
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
 
     if (rt_obj_instances.count) {
+        const uint32_t rt_obj_instances_mem_size = rt_obj_instances.count * sizeof(VkAccelerationStructureInstanceKHR);
+        assert(rt_obj_instances_mem_size < HWRTObjInstancesBufChunkSize);
+
         uint8_t *stage_mem = rt_obj_instances_stage_buf->MapRange(ctx.backend_frame() * HWRTObjInstancesBufChunkSize,
                                                                   HWRTObjInstancesBufChunkSize);
-        const uint32_t rt_obj_instances_mem_size = rt_obj_instances.count * sizeof(VkAccelerationStructureInstanceKHR);
         if (stage_mem) {
             auto *out_instances = reinterpret_cast<VkAccelerationStructureInstanceKHR *>(stage_mem);
             for (uint32_t i = 0; i < rt_obj_instances.count; ++i) {

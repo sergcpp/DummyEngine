@@ -139,10 +139,10 @@ void main() {
 
     // Bias to avoid self-intersection
     // TODO: use flat normal here
-    ray_origin_ws.xyz += 0.001 * normal_ws;//offset_ray(ray_origin_ws.xyz, normal_ws);
+    ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + NormalBiasViewAddition * view_z) * normal_ws;//offset_ray(ray_origin_ws.xyz, normal_ws);
 
     const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
-    const float t_min = 0.0;
+    const float t_min = 0.001;
     const float t_max = 100.0;
 
     float _cone_width = g_params.pixel_spread_angle * view_z;

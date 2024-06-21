@@ -100,7 +100,8 @@ void main() {
 
         // Bias to avoid self-intersection
         // TODO: use flat normal here
-        vec3 ro = ray_origin_ws.xyz + 0.001 * normal_ws;
+        vec3 ro = ray_origin_ws.xyz + (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + (-ray_origin_vs.z) * NormalBiasViewAddition) * normal_ws;
+        ro += min_t * shadow_ray_ws.xyz;
 
         float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
@@ -110,7 +111,7 @@ void main() {
         inter.mask = 0;
         inter.obj_index = inter.prim_index = 0;
         inter.geo_index = inter.geo_count = 0;
-        inter.t = 1000.0;
+        inter.t = max_t;
         inter.u = inter.v = 0.0;
 
         int transp_depth = 0;

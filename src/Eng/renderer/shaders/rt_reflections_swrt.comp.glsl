@@ -117,6 +117,9 @@ void main() {
     ray_origin_vs /= ray_origin_vs.w;
     const float view_z = -ray_origin_vs.z;
 
+    const float t_min = 0.001;
+    const float t_max = 100.0;
+
     const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
@@ -129,6 +132,8 @@ void main() {
     vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
+    ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + view_z * NormalBiasViewAddition) * normal_ws;
+
     float first_ray_len = 100.0, total_ray_len = 0.0;
     vec3 throughput = vec3(1.0);
     vec3 final_color = vec3(0.0);
@@ -140,10 +145,10 @@ void main() {
         inter.mask = 0;
         inter.obj_index = inter.prim_index = 0;
         inter.geo_index = inter.geo_count = 0;
-        inter.t = 1000.0;
+        inter.t = t_max;
         inter.u = inter.v = 0.0;
 
-        vec3 ro = ray_origin_ws.xyz + 0.001 * refl_ray_ws;
+        vec3 ro = ray_origin_ws.xyz + t_min * refl_ray_ws;
         const vec3 inv_d = safe_invert(refl_ray_ws);
 
         int transp_depth = 0;

@@ -140,10 +140,10 @@ void main() {
 
     // Bias to avoid self-intersection
     // TODO: use flat normal here
-    ray_origin_ws.xyz += 0.001 * normal_ws;//offset_ray(ray_origin_ws.xyz, normal_ws);
+    ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition) * normal_ws;//offset_ray(ray_origin_ws.xyz, normal_ws);
     float _cone_width = g_params.pixel_spread_angle * view_z;
 
-    const float t_min = 0.0;
+    const float t_min = 0.001;
     const float t_max = 100.0;
 
     vec3 final_color = vec3(0.0);
@@ -154,7 +154,7 @@ void main() {
         float ray_len = t_max;
         vec3 tri_normal, albedo;
 
-        vec3 ro = ray_origin_ws.xyz + 0.001 * gi_ray_ws;
+        vec3 ro = ray_origin_ws.xyz + t_min * gi_ray_ws;
         vec3 inv_d = safe_invert(gi_ray_ws);
 
         hit_data_t inter;
