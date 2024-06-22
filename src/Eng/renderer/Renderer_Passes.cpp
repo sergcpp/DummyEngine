@@ -150,7 +150,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= blit_bilateral_prog_->ready();
 
     blit_taa_prog_ = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
-                                     "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP");
+                                     "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg");
     success &= blit_taa_prog_->ready();
 
     blit_taa_static_prog_ =
@@ -1689,6 +1689,8 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 TempAA::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
                 uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+                uniform_params.significant_change =
+                    Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
                 if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
                     uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
                 } else {

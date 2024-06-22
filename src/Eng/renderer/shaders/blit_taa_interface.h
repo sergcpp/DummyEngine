@@ -8,6 +8,8 @@ INTERFACE_START(TempAA)
 struct Params {
     vec4 transform;
     vec2 tex_size;
+    float significant_change;
+    float _pad0;
     float tonemap;
     float gamma;
     float fade;

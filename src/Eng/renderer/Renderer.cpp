@@ -1392,6 +1392,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     { // store matrix to use it in next frame
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
         view_state_.prev_cam_pos = list.draw_cam.world_position();
+        view_state_.prev_sun_dir = list.env.sun_dir;
 
         view_state_.prev_clip_from_world = list.draw_cam.proj_matrix() * list.draw_cam.view_matrix();
         view_state_.prev_view_from_world = list.draw_cam.view_matrix();
