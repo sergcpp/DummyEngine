@@ -21,17 +21,28 @@ void Eng::RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAll
     const Ren::RenderTarget depth_target = {shadowmap_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
     if (!initialized) {
+#if defined(USE_GL_RENDER)
+        const bool bindless = ctx.capabilities.bindless_texture;
+#else
+        const bool bindless = true;
+#endif
         Ren::ProgramRef shadow_solid_prog =
             sh.LoadProgram(ctx, "internal/shadow.vert.glsl", "internal/shadow.frag.glsl");
         assert(shadow_solid_prog->ready());
-        Ren::ProgramRef shadow_vege_solid_prog =
-            sh.LoadProgram(ctx, "internal/shadow_vege.vert.glsl", "internal/shadow.frag.glsl");
+        Ren::ProgramRef shadow_vege_solid_prog = sh.LoadProgram(
+            ctx, bindless ? "internal/shadow_vege.vert.glsl" : "internal/shadow_vege.vert.glsl@NO_BINDLESS",
+            "internal/shadow.frag.glsl");
         assert(shadow_vege_solid_prog->ready());
-        Ren::ProgramRef shadow_transp_prog =
-            sh.LoadProgram(ctx, "internal/shadow.vert.glsl@TRANSPARENT", "internal/shadow.frag.glsl@TRANSPARENT");
+        Ren::ProgramRef shadow_transp_prog = sh.LoadProgram(
+            ctx,
+            bindless ? "internal/shadow.vert.glsl@TRANSPARENT" : "internal/shadow.vert.glsl@TRANSPARENT;NO_BINDLESS",
+            bindless ? "internal/shadow.frag.glsl@TRANSPARENT" : "internal/shadow.frag.glsl@TRANSPARENT;NO_BINDLESS");
         assert(shadow_transp_prog->ready());
-        Ren::ProgramRef shadow_vege_transp_prog =
-            sh.LoadProgram(ctx, "internal/shadow_vege.vert.glsl@TRANSPARENT", "internal/shadow.frag.glsl@TRANSPARENT");
+        Ren::ProgramRef shadow_vege_transp_prog = sh.LoadProgram(
+            ctx,
+            bindless ? "internal/shadow_vege.vert.glsl@TRANSPARENT"
+                     : "internal/shadow_vege.vert.glsl@TRANSPARENT;NO_BINDLESS",
+            bindless ? "internal/shadow.frag.glsl@TRANSPARENT" : "internal/shadow.frag.glsl@TRANSPARENT;NO_BINDLESS");
         assert(shadow_vege_transp_prog->ready());
 
         if (!rp_depth_only_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {

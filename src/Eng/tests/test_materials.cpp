@@ -532,7 +532,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 23.92, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 19.74, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.14, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.37, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", 21.35, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 24.25, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 23.43, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 24.11, NoDiffGI));

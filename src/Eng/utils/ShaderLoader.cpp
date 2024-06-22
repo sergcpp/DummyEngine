@@ -266,10 +266,10 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
         if (!shader_src.empty()) {
             ret->Init(shader_src, type, &status, ctx.log());
             if (status == Ren::eShaderLoadStatus::SetToDefault) {
-                ctx.log()->Error("Error loading shader %s", name);
+                ctx.log()->Error("Error loading shader %s", name.data());
             }
         } else {
-            ctx.log()->Error("Error loading shader %s", name);
+            ctx.log()->Error("Error loading shader %s", name.data());
         }
     }
 

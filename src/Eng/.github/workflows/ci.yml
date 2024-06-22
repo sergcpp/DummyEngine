@@ -303,6 +303,29 @@ jobs:
         with:
           name: linux-x86_64-vk-nv-output
           path: linux-x86_64-vk-nv-output/
+  test-linux-x86_64-gl-nv:
+    runs-on: [ linux, x86_64, nv ]
+    needs:
+      - build-linux-x86_64-gl-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "linux-x86_64-gl"
+          out-dir: "linux-x86_64-gl-nv-output"
+          test-args: "-j2 --device NV --nocpu"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: linux-x86_64-gl-nv-output
+          path: linux-x86_64-gl-nv-output/
   analyze-output:
     runs-on: [ linux ]
     needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-windows-x86_64-gl-arc, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
@@ -344,7 +367,11 @@ jobs:
         with:
           name: linux-x86_64-vk-nv-output
           path: linux-x86_64-vk-nv-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x86_64-gl-nv-output
+          path: linux-x86_64-gl-nv-output/
       - name: Analyze Output
         run: |
-          python scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt windows-x86_64-vk-xe-output/test_Eng_output.txt windows-x86_64-gl-arc-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-vk-amd-output/test_Eng_output.txt
+          python scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt windows-x86_64-vk-xe-output/test_Eng_output.txt windows-x86_64-gl-arc-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-gl-nv-output/test_Eng_output.txt linux-x86_64-vk-amd-output/test_Eng_output.txt
         shell: bash
