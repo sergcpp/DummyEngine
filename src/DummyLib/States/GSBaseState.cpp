@@ -1308,6 +1308,9 @@ void GSBaseState::InitScene_PT() {
                             mat_desc.clearcoat = front_mat->params[2][2];
                             mat_desc.clearcoat_roughness = front_mat->params[2][3];
                         }
+                        if (front_mat->params.size() > 3) {
+                            mat_desc.alpha = 1.0f - front_mat->params[3][0];
+                        }
                         if (front_mat->textures.size() > 3) {
                             mat_desc.metallic_texture = load_texture(*front_mat->textures[3]);
                         }
