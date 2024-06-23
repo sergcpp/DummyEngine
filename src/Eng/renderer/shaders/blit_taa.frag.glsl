@@ -8,9 +8,10 @@
 #pragma multi_compile _ ROUNDED_NEIBOURHOOD
 #pragma multi_compile _ TONEMAP
 #pragma multi_compile _ YCoCg
+#pragma multi_compile _ MOTION_BLUR
 #pragma multi_compile _ STATIC_ACCUMULATION
 
-#if defined(STATIC_ACCUMULATION) && (defined(CATMULL_ROM) || defined(ROUNDED_NEIBOURHOOD) || defined(TONEMAP) || defined(YCoCg))
+#if defined(STATIC_ACCUMULATION) && (defined(CATMULL_ROM) || defined(ROUNDED_NEIBOURHOOD) || defined(TONEMAP) || defined(YCoCg) || defined(MOTION_BLUR))
     #pragma dont_compile
 #endif
 
@@ -34,6 +35,10 @@ layout(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 g_out_color;
 layout(location = 1) out vec4 g_out_history;
+
+float PDnrand( vec2 n ) {
+	return fract( sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453 );
+}
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(in vec3 c) {
@@ -72,6 +77,26 @@ vec4 SampleColor(sampler2D s, vec2 uvs) {
     ret.xyz = RGB_to_YCoCg(ret.xyz);
 #endif
     return ret;
+}
+
+vec4 SampleColorMotion(sampler2D s, vec2 uv, vec2 vel) {
+    const vec2 v = 0.5 * vel;
+    const int SampleCount = 3;
+
+    float srand = 2.0 * PDnrand(uv + vec2(g_params.frame_index)) - 1.0;
+    vec2 vtap = v / float(SampleCount);
+    vec2 pos0 = uv + vtap * (0.5 * srand);
+    vec4 accu = vec4(0.0);
+    float wsum = 0.0;
+
+    for (int i = -SampleCount; i <= SampleCount; i++) {
+        const vec2 motion_uv = pos0 + float(i) * vtap;
+        const float w = saturate(motion_uv) == motion_uv ? 1.0 : 0.0;
+        accu += w * SampleColor(s, motion_uv);
+        wsum += w;
+    }
+
+    return accu / wsum;
 }
 
 float Luma(vec3 col) {
@@ -203,15 +228,33 @@ void main() {
     float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
     float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
-    vec3 col = mix(col_curr.xyz, col_hist.xyz, history_weight);
+    vec3 col_temporal = mix(col_curr.xyz, col_hist.xyz, history_weight);
 #if defined(YCoCg)
-    col = YCoCg_to_RGB(col);
+    col_temporal = YCoCg_to_RGB(col_temporal);
+#endif
+    vec3 col_screen = col_temporal;
+
+#if defined(MOTION_BLUR)
+    const float MotionScale = 1.0;
+    closest_vel *= MotionScale;
+
+    const float vel_mag = length(closest_vel.xy);
+    const float vel_trust_full = 2.0;
+    const float vel_trust_none = 15.0;
+    const float vel_trust_span = vel_trust_none - vel_trust_full;
+    const float trust = 1.0 - clamp(vel_mag - vel_trust_full, 0.0, vel_trust_span) / vel_trust_span;
+
+    vec3 col_motion = SampleColorMotion(g_color_curr, norm_uvs, (closest_vel.xy / g_params.tex_size)).xyz;
+#if defined(YCoCg)
+    col_motion = YCoCg_to_RGB(col_motion);
+#endif
+    col_screen = mix(col_motion, col_temporal, trust);
 #endif
 
     float variance = mix(unbiased_diff * unbiased_diff, col_hist.w, history_weight);
     const float k = saturate(2.0 - length(closest_vel.xy));
 
-    g_out_color = clamp(vec4(TonemapInvert(col), variance * k), vec4(0.0), vec4(HALF_MAX));
-    g_out_history = g_out_color;
+    g_out_color = clamp(vec4(TonemapInvert(col_screen), variance * k), vec4(0.0), vec4(HALF_MAX));
+    g_out_history = clamp(vec4(TonemapInvert(col_temporal), variance * k), vec4(0.0), vec4(HALF_MAX));
 #endif // STATIC_ACCUMULATION
 }

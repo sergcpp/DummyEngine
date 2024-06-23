@@ -239,7 +239,7 @@ class Renderer {
     // Debug
     Ren::Pipeline pi_debug_velocity_;
 
-    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_,
+    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_[2],
         blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_,
         blit_down_depth_prog_, blit_ssr_compose_prog_;
 

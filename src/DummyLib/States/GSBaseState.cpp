@@ -191,6 +191,11 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_motionBlur", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        renderer_->settings.enable_motion_blur = !renderer_->settings.enable_motion_blur;
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_shadows", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         if (args.size() > 1) {
             if (args[1].val > 1.5) {

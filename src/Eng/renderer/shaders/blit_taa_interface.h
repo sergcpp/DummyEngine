@@ -9,7 +9,7 @@ struct Params {
     vec4 transform;
     vec2 tex_size;
     float significant_change;
-    float _pad0;
+    float frame_index;
     float tonemap;
     float gamma;
     float fade;

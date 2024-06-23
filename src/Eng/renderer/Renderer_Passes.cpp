@@ -149,9 +149,13 @@ bool Eng::Renderer::InitPipelines() {
         sh_.LoadProgram(ctx_, "internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
     success &= blit_bilateral_prog_->ready();
 
-    blit_taa_prog_ = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
-                                     "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg");
-    success &= blit_taa_prog_->ready();
+    blit_taa_prog_[0] = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
+                                        "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg");
+    success &= blit_taa_prog_[0]->ready();
+    blit_taa_prog_[1] =
+        sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
+                        "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR");
+    success &= blit_taa_prog_[1]->ready();
 
     blit_taa_static_prog_ =
         sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl", "internal/blit_taa.frag.glsl@STATIC_ACCUMULATION");
@@ -1691,6 +1695,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
                 uniform_params.significant_change =
                     Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
+                uniform_params.frame_index = float(view_state_.frame_index % 256);
                 if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
                     uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
                 } else {
@@ -1698,7 +1703,9 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 }
                 ++accumulated_frames_;
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, static_accumulation ? blit_taa_static_prog_ : blit_taa_prog_,
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
+                                    static_accumulation ? blit_taa_static_prog_
+                                                        : blit_taa_prog_[settings.enable_motion_blur],
                                     render_targets, {}, rast_state, builder.rast_state(), bindings, &uniform_params,
                                     sizeof(TempAA::Params), 0);
             }
