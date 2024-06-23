@@ -34,7 +34,7 @@ runs:
         mv bistro.png bistro_high.png
         mv bistro_diff.png bistro_diff_high.png
         cp bistro_high.png bistro_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -10 --preset ultra --psnr 23.56
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -10 --preset ultra --psnr 23.83
         mv bistro.png bistro_ultra.png
         mv bistro_diff.png bistro_diff_ultra.png
         cp bistro_ultra.png bistro_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
@@ -46,7 +46,7 @@ runs:
         mv sponza.png sponza_high.png
         mv sponza_diff.png sponza_diff_high.png
         cp sponza_high.png sponza_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 22.42
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 22.46
         mv sponza.png sponza_ultra.png
         mv sponza_diff.png sponza_diff_ultra.png
         cp sponza_ultra.png sponza_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}

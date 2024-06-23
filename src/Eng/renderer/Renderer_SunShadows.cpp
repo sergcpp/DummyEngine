@@ -15,7 +15,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                                           const BindlessTextureData &bindless, RpResRef rt_geo_instances_res,
                                           RpResRef rt_obj_instances_res, FrameTextures &frame_textures,
                                           const bool debug_denoise) {
-    const bool EnableFilter = true;
+    const bool EnableFilter = (settings.taa_mode != eTAAMode::Static);
 
     RpResRef indir_args;
 
