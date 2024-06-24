@@ -968,7 +968,7 @@ extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
 bool Eng::SceneManager::HConvToDDS_old(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);
@@ -1108,7 +1108,7 @@ bool Eng::SceneManager::HConvToDDS_old(assets_context_t &ctx, const char *in_fil
 
 bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
                                    Ren::SmallVectorImpl<std::string> &out_dependencies,
-                                   Ren::SmallVectorImpl<std::string> &) {
+                                   Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);
@@ -1241,7 +1241,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
 }
 
 bool Eng::SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                    Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                                    Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);
@@ -1331,7 +1331,7 @@ bool Eng::SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, 
 
 bool Eng::SceneManager::HConvHDRToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
                                       Ren::SmallVectorImpl<std::string> &out_dependencies,
-                                      Ren::SmallVectorImpl<std::string> &) {
+                                      Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);
@@ -1421,7 +1421,7 @@ bool Eng::SceneManager::HConvHDRToDDS(assets_context_t &ctx, const char *in_file
 }
 
 bool Eng::SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);
@@ -1434,7 +1434,7 @@ bool Eng::SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_fil
 }
 
 bool Eng::SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                      Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                                      Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);
@@ -1486,7 +1486,7 @@ bool Eng::SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file
 }
 
 bool Eng::SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);

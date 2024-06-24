@@ -30,7 +30,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 2;
+const uint32_t AssetsBuildVersion = 3;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -207,6 +207,29 @@ template <typename TP> std::time_t to_time_t(TP tp) {
     return system_clock::to_time_t(sctp);
 }
 
+bool SkipAssetForCurrentBuild(const Ren::Bitmask<Eng::eAssetFlags> flags) {
+#if defined(NDEBUG)
+    if (flags & Eng::eAssetFlags::DebugOnly) {
+        return true;
+    }
+#else
+    if (flags & Eng::eAssetFlags::ReleaseOnly) {
+        return true;
+    }
+#endif
+#if !defined(USE_GL_RENDER)
+    if (flags & Eng::eAssetFlags::GLOnly) {
+        return true;
+    }
+#endif
+#if !defined(USE_VK_RENDER)
+    if (flags & Eng::eAssetFlags::VKOnly) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesystem::path &out_file,
                        Eng::assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
@@ -239,6 +262,12 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
             const JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
             for (const auto &output : js_outputs.elements) {
+                const Ren::Bitmask<Eng::eAssetFlags> flags = Ren::Bitmask<Eng::eAssetFlags>{
+                    uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
+                if (SkipAssetForCurrentBuild(flags)) {
+                    continue;
+                }
+
                 time_t out_t = {};
                 if (fs::exists(output.first)) {
                     out_t = to_time_t(fs::last_write_time(output.first));
@@ -628,7 +657,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["hdr"] = {"dds", HConvHDRToDDS};
         g_asset_handlers["tex"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
-        //g_asset_handlers["dds"] = {"dds", HCopy};
+        // g_asset_handlers["dds"] = {"dds", HCopy};
         g_asset_handlers["rgen.glsl"] = {"rgen.glsl", HCompileShader};
         g_asset_handlers["rint.glsl"] = {"rint.glsl", HCompileShader};
         g_asset_handlers["rchit.glsl"] = {"rchit.glsl", HCompileShader};
@@ -694,12 +723,13 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
         // std::lock_guard<std::mutex> _(ctx.cache_mtx);
 
-        Ren::SmallVector<std::string, 32> dependencies, outputs;
+        Ren::SmallVector<std::string, 32> dependencies;
+        Ren::SmallVector<asset_output_t, 32> outputs;
         const bool res = handler->convert(ctx, in_file.generic_string().c_str(), out_file.generic_string().c_str(),
                                           dependencies, outputs);
         if (res) {
             if (outputs.empty()) {
-                outputs.push_back(out_file.generic_string());
+                outputs.push_back({out_file.generic_string()});
             }
 
             std::lock_guard<std::mutex> _(ctx.cache_mtx);
@@ -715,15 +745,23 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                 }
 
                 JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
-                for (const std::string &out_file : outputs) {
-                    const uint32_t out_hash = HashFile(out_file, ctx.log);
+                for (const asset_output_t &out_file : outputs) {
+                    const uint32_t out_hash = HashFile(out_file.name, ctx.log);
                     const std::string out_hash_str = std::to_string(out_hash);
 
-                    if (!js_outputs.Has(out_file)) {
-                        js_outputs.Insert(out_file, JsObjectP{*ctx.mp_alloc});
+                    if (!js_outputs.Has(out_file.name)) {
+                        js_outputs.Insert(out_file.name, JsObjectP{*ctx.mp_alloc});
                     }
 
-                    JsObjectP &js_output = js_outputs[out_file].as_obj();
+                    JsObjectP &js_output = js_outputs[out_file.name].as_obj();
+
+                    // store new flags
+                    if (!js_output.Has("flags")) {
+                        js_output.Insert("flags", JsStringP(std::to_string(uint32_t(out_file.flags)), *ctx.mp_alloc));
+                    } else {
+                        JsStringP &js_flags = js_output["flags"].as_str();
+                        js_flags.val = std::to_string(uint32_t(out_file.flags)).c_str();
+                    }
 
                     // store new hash value
                     if (!js_output.Has("hash")) {
@@ -733,9 +771,9 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         js_hash.val = out_hash_str.c_str();
                     }
 
-                    std::string out_t_str;
-                    if (std::filesystem::exists(out_file)) {
-                        const auto out_t = to_time_t(std::filesystem::last_write_time(out_file));
+                    std::string out_t_str = "0";
+                    if (std::filesystem::exists(out_file.name)) {
+                        const auto out_t = to_time_t(std::filesystem::last_write_time(out_file.name));
                         out_t_str = std::to_string(out_t);
                     }
 
@@ -749,8 +787,10 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                 }
                 if (js_outputs.elements.size() > outputs.size()) {
                     for (auto it = begin(js_outputs.elements); it != end(js_outputs.elements);) {
-                        auto it2 = std::find(begin(outputs), end(outputs), it->first.c_str());
-                        if (it2 == end(outputs)) {
+                        auto it2 = std::find_if(outputs.begin(), outputs.end(), [it](const asset_output_t &el) {
+                            return el.name == it->first.c_str();
+                        });
+                        if (it2 == outputs.end()) {
                             it = js_outputs.elements.erase(it);
                         } else {
                             ++it;
@@ -838,13 +878,13 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 }
 
 bool Eng::SceneManager::HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
-                              Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                              Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     ctx.log->Info("Skip %s", out_file);
     return true;
 }
 
 bool Eng::SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
-                              Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                              Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     ctx.log->Info("Copy %s", out_file);
 
     return std::filesystem::copy_file(in_file, out_file, std::filesystem::copy_options::overwrite_existing);
@@ -852,7 +892,7 @@ bool Eng::SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const 
 
 bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_file, const char *out_file,
                                         Ren::SmallVectorImpl<std::string> &out_dependencies,
-                                        Ren::SmallVectorImpl<std::string> &) {
+                                        Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Prep %s", out_file);
@@ -1181,7 +1221,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
 
 bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
                                             Ren::SmallVectorImpl<std::string> &out_dependencies,
-                                            Ren::SmallVectorImpl<std::string> &) {
+                                            Ren::SmallVectorImpl<asset_output_t> &) {
     ctx.log->Info("Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -1257,7 +1297,7 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
 }
 
 bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                        Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                                        Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Prep %s", out_file);

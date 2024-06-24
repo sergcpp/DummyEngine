@@ -13,7 +13,7 @@
 #include "../gui/Utils.h"
 
 bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
+                                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
     using namespace Ren;
 
     ctx.log->Info("Conv %s", out_file);

@@ -128,7 +128,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(prog_name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
-        //ctx.log()->Info("Loading %s", prog_name.c_str());
+        // ctx.log()->Info("Loading %s", prog_name.c_str());
         Ren::ShaderRef vs_ref = LoadShader(ctx, vs_name);
         Ren::ShaderRef fs_ref = LoadShader(ctx, fs_name);
         if (!vs_ref->ready() || !fs_ref->ready()) {
@@ -157,7 +157,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(cs_name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
-        //ctx.log()->Info("Loading %s", cs_name.data());
+        // ctx.log()->Info("Loading %s", cs_name.data());
         Ren::ShaderRef cs_ref = LoadShader(ctx, cs_name);
         ret->Init(cs_ref, &status, ctx.log());
         if (status == Ren::eProgLoadStatus::SetToDefault) {
@@ -186,7 +186,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(prog_name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
-        //ctx.log()->Info("Loading %s", prog_name.c_str());
+        // ctx.log()->Info("Loading %s", prog_name.c_str());
         Ren::ShaderRef raygen_ref = LoadShader(ctx, raygen_name);
 
         Ren::ShaderRef closesthit_ref, anyhit_ref;
@@ -242,7 +242,11 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
             const size_t n = spv_name.rfind(".glsl");
             assert(n != std::string::npos);
 
+#if defined(NDEBUG)
             spv_name.replace(n + 1, 4, "spv");
+#else
+            spv_name.replace(n + 1, 4, "spv_dbg");
+#endif
 
             Sys::AssetFile spv_file(spv_name);
             if (spv_file) {

@@ -11,6 +11,10 @@
 #include <glslang/include/spirv-tools/optimizer.hpp>
 #include <glslx/glslx.h>
 
+namespace SceneManagerInternal {
+bool SkipAssetForCurrentBuild(Ren::Bitmask<Eng::eAssetFlags> flags);
+}
+
 bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::string &output,
                                         Ren::SmallVectorImpl<std::string> &out_dependencies) {
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -58,8 +62,8 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
 
 bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_file, const char *out_file,
                                        Ren::SmallVectorImpl<std::string> &out_dependencies,
-                                       Ren::SmallVectorImpl<std::string> &out_outputs) {
-    std::remove(out_file);
+                                       Ren::SmallVectorImpl<asset_output_t> &out_outputs) {
+    using namespace SceneManagerInternal;
 
     std::vector<std::string> permutations;
     permutations.emplace_back();
@@ -156,349 +160,382 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
         }
     }
 
+#if defined(NDEBUG)
+    const bool EnableOptimization = true;
+#else
+    const bool EnableOptimization = false;
+#endif
+
     enum class eShaderOutput { GLSL, VK_SPIRV };
 
     for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::VK_SPIRV}) {
-        for (const std::string &perm : permutations) {
-            const std::string prep_glsl_file = out_file + perm;
-
-            std::string output_file = out_file + perm;
-            if (sh_output != eShaderOutput::GLSL) { // replace extension
-                const size_t n = output_file.rfind(".glsl");
-                assert(n != std::string::npos);
-                if (sh_output == eShaderOutput::VK_SPIRV) {
-                    output_file.replace(n + 1, 4, "spv");
-                }
-            }
-
-            ctx.log->Info("Prep %s", output_file.c_str());
-            std::remove(output_file.c_str());
-
-            const bool TestShaderRewrite = true;
-
-            std::string preamble;
-            if (TestShaderRewrite) {
-                if (sh_output == eShaderOutput::VK_SPIRV) {
-                    preamble += "#define VULKAN 1\n";
-                }
-            }
-            if (!perm.empty()) {
-                const char *params = perm.c_str();
-                if (!params || params[0] != '@') {
-                    continue;
-                }
-
-                int count = 0;
-
-                const char *p1 = params + 1;
-                const char *p2 = p1 + 1;
-                while (*p2) {
-                    if (*p2 == '=') {
-                        preamble += "#define ";
-                        preamble += std::string(p1, p2);
-
-                        p1 = p2 + 1;
-                        while (p2 && *p2 && *p2 != ';') {
-                            ++p2;
-                        }
-
-                        preamble += std::string(p1, p2);
-                        preamble += "\n";
-
-                        if (*p2) {
-                            p1 = ++p2;
-                        }
-                        ++count;
-                    } else if (*p2 == ';') {
-                        preamble += "#define ";
-                        preamble += std::string(p1, p2);
-                        preamble += "\n";
-
-                        p1 = ++p2;
-                        ++count;
-                    }
-
-                    if (*p2) {
-                        ++p2;
-                    }
-                }
-
-                if (p1 != p2) {
-                    preamble += "#define ";
-                    preamble += std::string(p1, p2);
-                    preamble += "\n";
-
-                    ++count;
-                }
-            }
-
-            std::string glsl_file_data = orig_glsl_file_data;
-            if (TestShaderRewrite) {
-                glsl_file_data = preamble + glsl_file_data;
-            }
-
-            glslx::eTrUnitType unit_type;
-            if (strstr(out_file, ".vert.glsl")) {
-                unit_type = glslx::eTrUnitType::Vertex;
-            } else if (strstr(out_file, ".frag.glsl")) {
-                unit_type = glslx::eTrUnitType::Fragment;
-            } else if (strstr(out_file, ".comp.glsl")) {
-                unit_type = glslx::eTrUnitType::Compute;
-            } else if (strstr(out_file, ".geom.glsl")) {
-                unit_type = glslx::eTrUnitType::Geometry;
-            } else if (strstr(out_file, ".tesc.glsl")) {
-                unit_type = glslx::eTrUnitType::TessControl;
-            } else if (strstr(out_file, ".tese.glsl")) {
-                unit_type = glslx::eTrUnitType::TessEvaluation;
-            } else if (strstr(out_file, ".rgen.glsl")) {
-                unit_type = glslx::eTrUnitType::RayGen;
-            } else if (strstr(out_file, ".rchit.glsl")) {
-                unit_type = glslx::eTrUnitType::ClosestHit;
-            } else if (strstr(out_file, ".rahit.glsl")) {
-                unit_type = glslx::eTrUnitType::AnyHit;
-            } else if (strstr(out_file, ".rmiss.glsl")) {
-                unit_type = glslx::eTrUnitType::Miss;
-            } else if (strstr(out_file, ".rint.glsl")) {
-                unit_type = glslx::eTrUnitType::Intersect;
-            } else if (strstr(out_file, ".rcall.glsl")) {
-                unit_type = glslx::eTrUnitType::Callable;
-            }
-
-            bool use_spv14 = unit_type == glslx::eTrUnitType::RayGen || unit_type == glslx::eTrUnitType::Intersect ||
-                             unit_type == glslx::eTrUnitType::AnyHit || unit_type == glslx::eTrUnitType::ClosestHit ||
-                             unit_type == glslx::eTrUnitType::Miss || unit_type == glslx::eTrUnitType::Callable;
-
-            if (TestShaderRewrite) {
-                glslx::Preprocessor preprocessor(glsl_file_data);
-                std::string preprocessed = preprocessor.Process();
-                if (!preprocessor.error().empty()) {
-                    ctx.log->Error("GLSL preprocessing failed %s", out_file);
-                    ctx.log->Error("%s", preprocessor.error().data());
-                }
-
-                if (preprocessed.find("#pragma dont_compile") != std::string::npos) {
-                    continue;
-                }
-
-                glslx::Parser parser(preprocessed, out_file);
-                std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
-                if (!ast) {
-                    ctx.log->Error("GLSL parsing failed %s", out_file);
-                    ctx.log->Error("%s", parser.error());
-#if !defined(NDEBUG) && defined(_WIN32)
-                    __debugbreak();
-#endif
-                    continue;
-                }
-
-                for (const glslx::ast_extension_directive *ext : ast->extensions) {
-                    use_spv14 |= strcmp(ext->name, "GL_EXT_ray_query") == 0;
-                    use_spv14 |= strcmp(ext->name, "GL_EXT_ray_tracing") == 0;
-                }
-
-                glslx::fixup_config_t config;
-                config.randomize_loop_counters = false;
-                if (sh_output == eShaderOutput::GLSL) {
-                    config.remove_const = true;
-                    config.remove_ctrl_flow_attributes = true;
-                }
-                glslx::Fixup(config).Apply(ast.get());
-
-                glslx::Prune_Unreachable(ast.get());
-
-                std::stringstream ss;
-                glslx::WriterGLSL().Write(ast.get(), ss);
-
-                glsl_file_data = ss.str();
-            }
-
-            if (sh_output != eShaderOutput::VK_SPIRV && use_spv14) {
+        for (const bool EnableOptimization : {false, true}) {
+            if (EnableOptimization && sh_output != eShaderOutput::VK_SPIRV) {
                 continue;
             }
+            for (const std::string &perm : permutations) {
+                const std::string prep_glsl_file = out_file + perm;
 
-            out_outputs.push_back(output_file);
-
-            if (sh_output == eShaderOutput::GLSL) {
-                // write preprocessed file
-                std::ofstream out_glsl_file(prep_glsl_file, std::ios::binary);
-                out_glsl_file.write(glsl_file_data.c_str(), glsl_file_data.length());
-            } else {
-                glslang_input_t glslang_input = {};
-                glslang_input.language = GLSLANG_SOURCE_GLSL;
-                glslang_input.target_language = GLSLANG_TARGET_SPV;
-                glslang_input.default_version = 100;
-                glslang_input.default_profile = GLSLANG_NO_PROFILE;
-                glslang_input.force_default_version_and_profile = false;
-                glslang_input.forward_compatible = false;
-                glslang_input.messages = GLSLANG_MSG_DEFAULT_BIT;
-                glslang_input.resource = glslang_default_resource();
-
-                switch (unit_type) {
-                case glslx::eTrUnitType::Vertex:
-                    glslang_input.stage = GLSLANG_STAGE_VERTEX;
-                    break;
-                case glslx::eTrUnitType::Fragment:
-                    glslang_input.stage = GLSLANG_STAGE_FRAGMENT;
-                    break;
-                case glslx::eTrUnitType::Compute:
-                    glslang_input.stage = GLSLANG_STAGE_COMPUTE;
-                    break;
-                case glslx::eTrUnitType::Geometry:
-                    glslang_input.stage = GLSLANG_STAGE_GEOMETRY;
-                    break;
-                case glslx::eTrUnitType::TessControl:
-                    glslang_input.stage = GLSLANG_STAGE_TESSCONTROL;
-                    break;
-                case glslx::eTrUnitType::TessEvaluation:
-                    glslang_input.stage = GLSLANG_STAGE_TESSEVALUATION;
-                    break;
-                case glslx::eTrUnitType::RayGen:
-                    glslang_input.stage = GLSLANG_STAGE_RAYGEN;
-                    break;
-                case glslx::eTrUnitType::ClosestHit:
-                    glslang_input.stage = GLSLANG_STAGE_CLOSESTHIT;
-                    break;
-                case glslx::eTrUnitType::AnyHit:
-                    glslang_input.stage = GLSLANG_STAGE_ANYHIT;
-                    break;
-                case glslx::eTrUnitType::Miss:
-                    glslang_input.stage = GLSLANG_STAGE_MISS;
-                    break;
+                Ren::Bitmask<eAssetFlags> flags;
+                if (sh_output == eShaderOutput::GLSL) {
+                    flags |= eAssetFlags::GLOnly;
+                } else {
+                    flags |= eAssetFlags::VKOnly;
                 }
 
-                glslang_input.code = glsl_file_data.data();
-
-                if (sh_output == eShaderOutput::VK_SPIRV) {
-                    glslang_input.client = GLSLANG_CLIENT_VULKAN;
-                    glslang_input.client_version = GLSLANG_TARGET_VULKAN_1_1;
-                    if (use_spv14) {
-                        glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_4;
-                    } else {
-                        glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_3;
+                std::string output_file = out_file + perm;
+                if (sh_output != eShaderOutput::GLSL) { // replace extension
+                    const size_t n = output_file.rfind(".glsl");
+                    assert(n != std::string::npos);
+                    if (sh_output == eShaderOutput::VK_SPIRV) {
+                        if (EnableOptimization) {
+                            output_file.replace(n + 1, 4, "spv");
+                            flags |= eAssetFlags::ReleaseOnly;
+                        } else {
+                            output_file.replace(n + 1, 4, "spv_dbg");
+                            flags |= eAssetFlags::DebugOnly;
+                        }
                     }
                 }
 
-                glslang_shader_t *shader = glslang_shader_create(&glslang_input);
-                SCOPE_EXIT(glslang_shader_delete(shader);)
+                const bool TestShaderRewrite = true;
 
-                if (!TestShaderRewrite && !preamble.empty()) {
-                    glslang_shader_set_preamble(shader, preamble.c_str());
+                std::string preamble;
+                if (TestShaderRewrite) {
+                    if (sh_output == eShaderOutput::VK_SPIRV) {
+                        preamble += "#define VULKAN 1\n";
+                    }
+                }
+                if (!perm.empty()) {
+                    const char *params = perm.c_str();
+                    if (!params || params[0] != '@') {
+                        continue;
+                    }
+
+                    int count = 0;
+
+                    const char *p1 = params + 1;
+                    const char *p2 = p1 + 1;
+                    while (*p2) {
+                        if (*p2 == '=') {
+                            preamble += "#define ";
+                            preamble += std::string(p1, p2);
+
+                            p1 = p2 + 1;
+                            while (p2 && *p2 && *p2 != ';') {
+                                ++p2;
+                            }
+
+                            preamble += std::string(p1, p2);
+                            preamble += "\n";
+
+                            if (*p2) {
+                                p1 = ++p2;
+                            }
+                            ++count;
+                        } else if (*p2 == ';') {
+                            preamble += "#define ";
+                            preamble += std::string(p1, p2);
+                            preamble += "\n";
+
+                            p1 = ++p2;
+                            ++count;
+                        }
+
+                        if (*p2) {
+                            ++p2;
+                        }
+                    }
+
+                    if (p1 != p2) {
+                        preamble += "#define ";
+                        preamble += std::string(p1, p2);
+                        preamble += "\n";
+
+                        ++count;
+                    }
                 }
 
-                if (!glslang_shader_preprocess(shader, &glslang_input)) {
-                    ctx.log->Error("GLSL preprocessing failed %s", out_file);
-
-                    ctx.log->Error("%s", glslang_shader_get_info_log(shader));
-                    ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
-                    ctx.log->Error("%s", glslang_input.code);
-
-#if !defined(NDEBUG) && defined(_WIN32)
-                    __debugbreak();
-#endif
-                    return false;
+                std::string glsl_file_data = orig_glsl_file_data;
+                if (TestShaderRewrite) {
+                    glsl_file_data = preamble + glsl_file_data;
                 }
 
-                if (!glslang_shader_parse(shader, &glslang_input)) {
-                    ctx.log->Error("GLSL parsing failed %s", out_file);
-                    ctx.log->Error("%s", glslang_shader_get_info_log(shader));
-                    ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
-                    // ctx.log->Error("%s", glslang_shader_get_preprocessed_code(shader));
+                glslx::eTrUnitType unit_type;
+                if (strstr(out_file, ".vert.glsl")) {
+                    unit_type = glslx::eTrUnitType::Vertex;
+                } else if (strstr(out_file, ".frag.glsl")) {
+                    unit_type = glslx::eTrUnitType::Fragment;
+                } else if (strstr(out_file, ".comp.glsl")) {
+                    unit_type = glslx::eTrUnitType::Compute;
+                } else if (strstr(out_file, ".geom.glsl")) {
+                    unit_type = glslx::eTrUnitType::Geometry;
+                } else if (strstr(out_file, ".tesc.glsl")) {
+                    unit_type = glslx::eTrUnitType::TessControl;
+                } else if (strstr(out_file, ".tese.glsl")) {
+                    unit_type = glslx::eTrUnitType::TessEvaluation;
+                } else if (strstr(out_file, ".rgen.glsl")) {
+                    unit_type = glslx::eTrUnitType::RayGen;
+                } else if (strstr(out_file, ".rchit.glsl")) {
+                    unit_type = glslx::eTrUnitType::ClosestHit;
+                } else if (strstr(out_file, ".rahit.glsl")) {
+                    unit_type = glslx::eTrUnitType::AnyHit;
+                } else if (strstr(out_file, ".rmiss.glsl")) {
+                    unit_type = glslx::eTrUnitType::Miss;
+                } else if (strstr(out_file, ".rint.glsl")) {
+                    unit_type = glslx::eTrUnitType::Intersect;
+                } else if (strstr(out_file, ".rcall.glsl")) {
+                    unit_type = glslx::eTrUnitType::Callable;
+                }
 
+                bool use_spv14 =
+                    unit_type == glslx::eTrUnitType::RayGen || unit_type == glslx::eTrUnitType::Intersect ||
+                    unit_type == glslx::eTrUnitType::AnyHit || unit_type == glslx::eTrUnitType::ClosestHit ||
+                    unit_type == glslx::eTrUnitType::Miss || unit_type == glslx::eTrUnitType::Callable;
+
+                if (TestShaderRewrite) {
+                    glslx::Preprocessor preprocessor(glsl_file_data);
+                    std::string preprocessed = preprocessor.Process();
+                    if (!preprocessor.error().empty()) {
+                        ctx.log->Error("GLSL preprocessing failed %s", out_file);
+                        ctx.log->Error("%s", preprocessor.error().data());
+                    }
+
+                    if (preprocessed.find("#pragma dont_compile") != std::string::npos) {
+                        continue;
+                    }
+
+                    glslx::Parser parser(preprocessed, out_file);
+                    std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
+                    if (!ast) {
+                        ctx.log->Error("GLSL parsing failed %s", out_file);
+                        ctx.log->Error("%s", parser.error());
 #if !defined(NDEBUG) && defined(_WIN32)
-                    __debugbreak();
+                        __debugbreak();
 #endif
+                        continue;
+                    }
+
+                    for (const glslx::ast_extension_directive *ext : ast->extensions) {
+                        use_spv14 |= strcmp(ext->name, "GL_EXT_ray_query") == 0;
+                        use_spv14 |= strcmp(ext->name, "GL_EXT_ray_tracing") == 0;
+                    }
+
+                    glslx::fixup_config_t config;
+                    config.randomize_loop_counters = false;
+                    if (sh_output == eShaderOutput::GLSL) {
+                        config.remove_const = true;
+                        config.remove_ctrl_flow_attributes = true;
+                    }
+                    glslx::Fixup(config).Apply(ast.get());
+
+                    glslx::Prune_Unreachable(ast.get());
+
+                    std::stringstream ss;
+                    glslx::WriterGLSL().Write(ast.get(), ss);
+
+                    glsl_file_data = ss.str();
+                }
+
+                if (sh_output != eShaderOutput::VK_SPIRV && use_spv14) {
                     continue;
                 }
 
-                glslang_program_t *program = glslang_program_create();
-                SCOPE_EXIT(glslang_program_delete(program);)
-                glslang_program_add_shader(program, shader);
+                out_outputs.push_back(asset_output_t{output_file, flags});
 
-                int msg_rules = GLSLANG_MSG_SPV_RULES_BIT;
-                if (sh_output == eShaderOutput::VK_SPIRV) {
-                    msg_rules |= GLSLANG_MSG_VULKAN_RULES_BIT;
+                if (SkipAssetForCurrentBuild(flags)) {
+                    continue;
                 }
-                if (!glslang_program_link(program, msg_rules)) {
-                    ctx.log->Error("GLSL linking failed %s\n", out_file);
-                    ctx.log->Error("%s\n", glslang_program_get_info_log(program));
-                    ctx.log->Error("%s\n", glslang_program_get_info_debug_log(program));
+
+                ctx.log->Info("Prep %s", output_file.c_str());
+                std::remove(output_file.c_str());
+
+                if (sh_output == eShaderOutput::GLSL) {
+                    // write preprocessed file
+                    std::ofstream out_glsl_file(prep_glsl_file, std::ios::binary);
+                    out_glsl_file.write(glsl_file_data.c_str(), glsl_file_data.length());
+                } else {
+                    glslang_input_t glslang_input = {};
+                    glslang_input.language = GLSLANG_SOURCE_GLSL;
+                    glslang_input.target_language = GLSLANG_TARGET_SPV;
+                    glslang_input.default_version = 100;
+                    glslang_input.default_profile = GLSLANG_NO_PROFILE;
+                    glslang_input.force_default_version_and_profile = false;
+                    glslang_input.forward_compatible = false;
+                    glslang_input.messages = GLSLANG_MSG_DEFAULT_BIT;
+                    glslang_input.resource = glslang_default_resource();
+
+                    switch (unit_type) {
+                    case glslx::eTrUnitType::Vertex:
+                        glslang_input.stage = GLSLANG_STAGE_VERTEX;
+                        break;
+                    case glslx::eTrUnitType::Fragment:
+                        glslang_input.stage = GLSLANG_STAGE_FRAGMENT;
+                        break;
+                    case glslx::eTrUnitType::Compute:
+                        glslang_input.stage = GLSLANG_STAGE_COMPUTE;
+                        break;
+                    case glslx::eTrUnitType::Geometry:
+                        glslang_input.stage = GLSLANG_STAGE_GEOMETRY;
+                        break;
+                    case glslx::eTrUnitType::TessControl:
+                        glslang_input.stage = GLSLANG_STAGE_TESSCONTROL;
+                        break;
+                    case glslx::eTrUnitType::TessEvaluation:
+                        glslang_input.stage = GLSLANG_STAGE_TESSEVALUATION;
+                        break;
+                    case glslx::eTrUnitType::RayGen:
+                        glslang_input.stage = GLSLANG_STAGE_RAYGEN;
+                        break;
+                    case glslx::eTrUnitType::ClosestHit:
+                        glslang_input.stage = GLSLANG_STAGE_CLOSESTHIT;
+                        break;
+                    case glslx::eTrUnitType::AnyHit:
+                        glslang_input.stage = GLSLANG_STAGE_ANYHIT;
+                        break;
+                    case glslx::eTrUnitType::Miss:
+                        glslang_input.stage = GLSLANG_STAGE_MISS;
+                        break;
+                    }
+
+                    glslang_input.code = glsl_file_data.data();
+
+                    if (sh_output == eShaderOutput::VK_SPIRV) {
+                        glslang_input.client = GLSLANG_CLIENT_VULKAN;
+                        glslang_input.client_version = GLSLANG_TARGET_VULKAN_1_1;
+                        if (use_spv14) {
+                            glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_4;
+                        } else {
+                            glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_3;
+                        }
+                    }
+
+                    glslang_shader_t *shader = glslang_shader_create(&glslang_input);
+                    SCOPE_EXIT(glslang_shader_delete(shader);)
+
+                    if (!TestShaderRewrite && !preamble.empty()) {
+                        glslang_shader_set_preamble(shader, preamble.c_str());
+                    }
+
+                    if (!glslang_shader_preprocess(shader, &glslang_input)) {
+                        ctx.log->Error("GLSL preprocessing failed %s", out_file);
+
+                        ctx.log->Error("%s", glslang_shader_get_info_log(shader));
+                        ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
+                        ctx.log->Error("%s", glslang_input.code);
 
 #if !defined(NDEBUG) && defined(_WIN32)
-                    __debugbreak();
+                        __debugbreak();
 #endif
-                    return false;
-                }
+                        return false;
+                    }
 
-                glslang_program_SPIRV_generate(program, glslang_input.stage);
+                    if (!glslang_shader_parse(shader, &glslang_input)) {
+                        ctx.log->Error("GLSL parsing failed %s", out_file);
+                        ctx.log->Error("%s", glslang_shader_get_info_log(shader));
+                        ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
+                        // ctx.log->Error("%s", glslang_shader_get_preprocessed_code(shader));
 
-                std::vector<uint32_t> out_shader_module(glslang_program_SPIRV_get_size(program));
-                glslang_program_SPIRV_get(program, out_shader_module.data());
-
-                spvtools::Optimizer opt(use_spv14 ? SPV_ENV_UNIVERSAL_1_4 : SPV_ENV_UNIVERSAL_1_3);
-
-                auto print_msg_to_stderr = [&ctx](spv_message_level_t, const char *, const spv_position_t &,
-                                                  const char *m) { ctx.log->Error("%s", m); };
-                opt.SetMessageConsumer(print_msg_to_stderr);
-
-                opt.RegisterPass(spvtools::CreateWrapOpKillPass())
-                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                    .RegisterPass(spvtools::CreateMergeReturnPass())
-                    .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreatePrivateToLocalPass())
-                    .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-                    .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreateScalarReplacementPass())
-                    .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-                    .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-                    .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreateEliminateDeadConstantPass())
-                    .RegisterPass(spvtools::CreateUnifyConstantPass())
-                    .RegisterPass(spvtools::CreateCCPPass())
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreateLoopUnrollPass(true))
-                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                    .RegisterPass(spvtools::CreateLocalRedundancyEliminationPass())
-                    .RegisterPass(spvtools::CreateCombineAccessChainsPass())
-                    .RegisterPass(spvtools::CreateSimplificationPass())
-                    .RegisterPass(spvtools::CreateScalarReplacementPass())
-                    .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-                    .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreateVectorDCEPass())
-                    .RegisterPass(spvtools::CreateDeadInsertElimPass())
-                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                    .RegisterPass(spvtools::CreateSimplificationPass())
-                    .RegisterPass(spvtools::CreateIfConversionPass())
-                    .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
-                    .RegisterPass(spvtools::CreateReduceLoadSizePass())
-                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                    .RegisterPass(spvtools::CreateBlockMergePass())
-                    .RegisterPass(spvtools::CreateRedundancyEliminationPass())
-                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                    .RegisterPass(spvtools::CreateBlockMergePass())
-                    .RegisterPass(spvtools::CreateSimplificationPass())
-                    .RegisterPass(spvtools::CreateStripDebugInfoPass())
-                    .RegisterPass(spvtools::CreateStripNonSemanticInfoPass());
-                opt.SetValidateAfterAll(true);
-
-                spvtools::OptimizerOptions opt_options;
-                opt_options.set_preserve_bindings(true);
-
-                if (!opt.Run(out_shader_module.data(), out_shader_module.size(), &out_shader_module, opt_options)) {
 #if !defined(NDEBUG) && defined(_WIN32)
-                    __debugbreak();
+                        __debugbreak();
 #endif
-                    return false;
-                }
+                        continue;
+                    }
 
-                { // write output file
-                    std::ofstream out_spv_file(output_file, std::ios::binary);
-                    out_spv_file.write((char *)out_shader_module.data(), out_shader_module.size() * sizeof(uint32_t));
+                    glslang_program_t *program = glslang_program_create();
+                    SCOPE_EXIT(glslang_program_delete(program);)
+                    glslang_program_add_shader(program, shader);
+
+                    int msg_rules = GLSLANG_MSG_SPV_RULES_BIT;
+                    if (sh_output == eShaderOutput::VK_SPIRV) {
+                        msg_rules |= GLSLANG_MSG_VULKAN_RULES_BIT;
+                    }
+                    if (!glslang_program_link(program, msg_rules)) {
+                        ctx.log->Error("GLSL linking failed %s\n", out_file);
+                        ctx.log->Error("%s\n", glslang_program_get_info_log(program));
+                        ctx.log->Error("%s\n", glslang_program_get_info_debug_log(program));
+
+#if !defined(NDEBUG) && defined(_WIN32)
+                        __debugbreak();
+#endif
+                        return false;
+                    }
+
+                    glslang_program_SPIRV_generate(program, glslang_input.stage);
+
+                    std::vector<uint32_t> out_shader_module(glslang_program_SPIRV_get_size(program));
+                    glslang_program_SPIRV_get(program, out_shader_module.data());
+
+                    if (EnableOptimization) {
+                        spvtools::Optimizer opt(use_spv14 ? SPV_ENV_UNIVERSAL_1_4 : SPV_ENV_UNIVERSAL_1_3);
+
+                        auto print_msg_to_stderr = [&ctx](spv_message_level_t, const char *, const spv_position_t &,
+                                                          const char *m) { ctx.log->Error("%s", m); };
+                        opt.SetMessageConsumer(print_msg_to_stderr);
+
+                        opt.RegisterPass(spvtools::CreateWrapOpKillPass())
+                            .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                            .RegisterPass(spvtools::CreateMergeReturnPass())
+                            .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreatePrivateToLocalPass())
+                            .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+                            .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreateScalarReplacementPass())
+                            .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+                            .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+                            .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreateEliminateDeadConstantPass())
+                            .RegisterPass(spvtools::CreateUnifyConstantPass())
+                            .RegisterPass(spvtools::CreateCCPPass())
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreateLoopUnrollPass(true))
+                            .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                            .RegisterPass(spvtools::CreateLocalRedundancyEliminationPass())
+                            .RegisterPass(spvtools::CreateCombineAccessChainsPass())
+                            .RegisterPass(spvtools::CreateSimplificationPass())
+                            .RegisterPass(spvtools::CreateScalarReplacementPass())
+                            .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+                            .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreateVectorDCEPass())
+                            .RegisterPass(spvtools::CreateDeadInsertElimPass())
+                            .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                            .RegisterPass(spvtools::CreateSimplificationPass())
+                            .RegisterPass(spvtools::CreateIfConversionPass())
+                            .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
+                            .RegisterPass(spvtools::CreateReduceLoadSizePass())
+                            .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                            .RegisterPass(spvtools::CreateBlockMergePass())
+                            .RegisterPass(spvtools::CreateRedundancyEliminationPass())
+                            .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                            .RegisterPass(spvtools::CreateBlockMergePass())
+                            .RegisterPass(spvtools::CreateSimplificationPass())
+                            .RegisterPass(spvtools::CreateStripDebugInfoPass())
+                            .RegisterPass(spvtools::CreateStripNonSemanticInfoPass());
+                        opt.SetValidateAfterAll(true);
+
+                        spvtools::OptimizerOptions opt_options;
+                        opt_options.set_preserve_bindings(true);
+
+                        if (!opt.Run(out_shader_module.data(), out_shader_module.size(), &out_shader_module,
+                                     opt_options)) {
+#if !defined(NDEBUG) && defined(_WIN32)
+                            __debugbreak();
+#endif
+                            return false;
+                        }
+                    }
+
+                    { // write output file
+                        std::ofstream out_spv_file(output_file, std::ios::binary);
+                        out_spv_file.write((char *)out_shader_module.data(),
+                                           out_shader_module.size() * sizeof(uint32_t));
+                    }
                 }
             }
         }

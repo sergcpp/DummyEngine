@@ -2,6 +2,7 @@
 
 #include <optional>
 
+//#include <Eng/scene/SceneManager.h>
 #include <Eng/ViewerBase.h>
 
 #if defined(__ANDROID__)
@@ -14,6 +15,7 @@ class ILog;
 
 namespace Eng {
 struct assets_context_t;
+struct asset_output_t;
 class Cmdline;
 class SceneManager;
 class PhysicsManager;
@@ -82,5 +84,5 @@ class Viewer : public Eng::ViewerBase {
     static void PrepareAssets(const char *platform = "all");
     static bool HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
                                Ren::SmallVectorImpl<std::string, alignof(std::string)> &,
-                               Ren::SmallVectorImpl<std::string, alignof(std::string)> &);
+                               Ren::SmallVectorImpl<Eng::asset_output_t, 8> &);
 };
