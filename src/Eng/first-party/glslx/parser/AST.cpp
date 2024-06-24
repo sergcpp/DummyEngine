@@ -22,11 +22,11 @@ static_assert(sizeof(g_statement_names) / sizeof(g_statement_names[0]) == int(eS
 } // namespace glslx
 
 glslx::TrUnit::~TrUnit() {
-    for (char *str : str) {
-        free(str);
+    for (char *_str : str) {
+        alloc.allocator.deallocate(_str, strlen(_str) + 1);
     }
-    for (ast_memory &mem : mem) {
-        mem.destroy();
+    for (ast_memory &mem : alloc.allocations) {
+        mem.destroy(alloc.allocator);
     }
 }
 

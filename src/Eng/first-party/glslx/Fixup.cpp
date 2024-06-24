@@ -78,7 +78,7 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
 
                 const int size = int(strlen(var->name));
 
-                char *copy = (char *)malloc(size + temp_len + 1);
+                char *copy = tu_->alloc.allocator.allocate(size + temp_len + 1);
                 if (copy) {
                     memcpy(copy, var->name, size);
                     memcpy(copy + size, temp, temp_len);

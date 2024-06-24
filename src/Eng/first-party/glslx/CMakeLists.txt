@@ -46,6 +46,7 @@ set(PARSER_SOURCE_FILES parser/AST.h
                         parser/Operators.inl
                         parser/Parser.h
                         parser/Parser.cpp
+                        parser/PoolAlloc.h
                         parser/Utils.h
                         parser/Utils.cpp)
 

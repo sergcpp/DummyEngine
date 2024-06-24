@@ -15,19 +15,22 @@ struct top_level_t {
     eInterpolation interpolation = eInterpolation::None;
     ast_type *type = nullptr;
     ast_constant_expression *initial_value = nullptr;
-    std::vector<ast_constant_expression *> array_sizes;
+    vector<ast_constant_expression *> array_sizes;
     size_t array_on_type_offset = 0;
-    std::vector<ast_layout_qualifier *> layout_qualifiers;
+    vector<ast_layout_qualifier *> layout_qualifiers;
     bool is_invariant = false;
     bool is_precise = false;
     bool is_array = false;
     const char *name = nullptr;
+
+    explicit top_level_t(MultiPoolAllocator<char> &alloc) : array_sizes(alloc), layout_qualifiers(alloc) {}
 };
 
 class Parser {
     using scope = std::vector<ast_variable *>;
 
     std::unique_ptr<TrUnit> ast_;
+    MultiPoolAllocator<char> allocator_ = MultiPoolAllocator<char>(8, 128);
     Lexer lexer_;
     std::string_view source_;
     token_t tok_;
@@ -43,7 +46,7 @@ class Parser {
             return nullptr;
         }
         const size_t size = strlen(str) + 1;
-        char *copy = (char *)malloc(size);
+        char *copy = ast_->alloc.allocator.allocate(size);
         if (!copy) {
             return nullptr;
         }
@@ -52,8 +55,8 @@ class Parser {
         return copy;
     }
 
-    template <class T, class... Args> T *astnew(Args... args) {
-        return new (&ast_->mem) T(std::forward<Args>(args)...);
+    template <class T, class... Args> T *astnew(Args&&... args) {
+        return new (&ast_->alloc) T(std::forward<Args>(args)...);
     }
 
     static bool strnil(const char *str) { return !str || !*str; }

@@ -312,6 +312,8 @@ void glslx::WriterGLSL::Write_WhileStatement(const ast_while_statement *statemen
     case eStatement::Expression:
         Write_ExpressionStatement(static_cast<const ast_expression_statement *>(statement->condition), out_stream, {});
         break;
+    default:
+        break;
     }
     out_stream << ")";
     Write_Statement(statement->body, out_stream, output_flags & ~Bitmask{eOutputFlags::WriteTabs});
@@ -347,6 +349,8 @@ void glslx::WriterGLSL::Write_ForStatement(const ast_for_statement *statement, s
         case eStatement::Expression:
             Write_ExpressionStatement(static_cast<ast_expression_statement *>(statement->init), out_stream,
                                       eOutputFlags::Semicolon);
+            break;
+        default:
             break;
         }
     } else {
@@ -446,6 +450,8 @@ void glslx::WriterGLSL::Write_Statement(const ast_statement *statement, std::ost
         break;
     case eStatement::ExtJump:
         Write_ExtJumpStatement(static_cast<const ast_ext_jump_statement *>(statement), out_stream, out_flags);
+        break;
+    default:
         break;
     }
 }
@@ -553,6 +559,8 @@ void glslx::WriterGLSL::Write_Storage(const eStorage storage, std::ostream &out_
     case eStorage::CallableDataIn:
         out_stream << "callableDataInEXT ";
         break;
+    default:
+        break;
     }
 }
 
@@ -566,6 +574,8 @@ void glslx::WriterGLSL::Write_AuxStorage(eAuxStorage aux_storage, std::ostream &
         break;
     case eAuxStorage::Patch:
         out_stream << "patch ";
+        break;
+    default:
         break;
     }
 }
@@ -614,6 +624,8 @@ void glslx::WriterGLSL::Write_Precision(ePrecision precision, std::ostream &out_
     case ePrecision::Highp:
         out_stream << "highp ";
         break;
+    default:
+        break;
     }
 }
 
@@ -649,6 +661,8 @@ void glslx::WriterGLSL::Write_GlobalVariable(const ast_global_variable *variable
         break;
     case eInterpolation::Noperspective:
         out_stream << "noperspective ";
+        break;
+    default:
         break;
     }
 
@@ -858,6 +872,8 @@ void glslx::WriterGLSL::Write_ExtensionDirective(const ast_extension_directive *
         break;
     case eExtBehavior::Disable:
         out_stream << "disable\n";
+        break;
+    default:
         break;
     }
 }

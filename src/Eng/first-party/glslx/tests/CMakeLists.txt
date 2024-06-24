@@ -6,6 +6,7 @@ add_executable(test_glslx main.cpp
                           test_fixup.cpp
                           test_hlsl_writer.cpp
                           test_parser.cpp
+                          test_pool_alloc.cpp
                           test_preprocessor.cpp
                           test_scope_exit.cpp
                           test_small_vector.cpp

@@ -5,8 +5,11 @@
 #include <string>
 
 #include "../SmallVector.h"
+#include "PoolAlloc.h"
 
 namespace glslx {
+template <typename T> using vector = std::vector<T, MultiPoolAllocator<T>>;
+
 enum class eTokType {
     Eof,
     Whitespace,
@@ -68,8 +71,9 @@ struct token_t {
         eOperator as_operator;
         directive_t as_directive;
     };
-    std::vector<char> string_mem;
+    vector<char> string_mem;
 
+    token_t(MultiPoolAllocator<char> &_alloc) : string_mem(_alloc) {}
     int precedence() const;
 };
 
@@ -113,8 +117,8 @@ class Lexer {
     void ReadNumeric(bool octal, bool hex, std::string &out_digits);
 
   public:
-    Lexer() = default;
-    Lexer(std::string_view source);
+    Lexer(MultiPoolAllocator<char> &alloc) : temp_tok_(alloc) {}
+    Lexer(MultiPoolAllocator<char> &alloc, std::string_view source);
 
     location_t location() const { return loc_; }
     size_t position() const { return loc_.pos; }

@@ -296,7 +296,7 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool 
 
         if (op1_type && op2_type) {
             if (operation->oper == eOperator::multiply && is_matrix_type(op1_type) && get_vector_size(op2_type) > 1) {
-                ast_function_call func_call;
+                ast_function_call func_call(tu_->alloc.allocator);
                 func_call.name = "mul";
                 func_call.parameters.push_back(operation->operand2);
                 func_call.parameters.push_back(operation->operand1);

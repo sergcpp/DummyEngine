@@ -10,6 +10,7 @@ void test_scope_exit();
 void test_small_vector();
 void test_span();
 void test_parser();
+void test_pool_alloc();
 void test_preprocessor();
 
 bool g_stop_on_fail;
@@ -22,6 +23,7 @@ int main() {
     test_scope_exit();
     test_small_vector();
     test_span();
+    test_pool_alloc();
     test_preprocessor();
     test_parser();
     test_fixup();

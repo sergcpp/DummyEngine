@@ -123,6 +123,8 @@ void glslx::Mark_Expression(ast_expression *expression) {
             Mark_Expression(arr_specifier->expressions[i]);
         }
     } break;
+    default:
+        break;
     }
 }
 
@@ -196,6 +198,8 @@ void glslx::Mark_Statement(ast_statement *statement) {
             Mark_Expression(return_statement->expression);
         }
     } break;
+    default:
+        break;
     }
 }
 
@@ -285,13 +289,13 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
     }
 
     // changes the order, but we don't care
-    for (size_t i = 0; i < tu->mem.size(); ++i) {
-        if (tu->mem[i].data->gc) {
-            tu->mem[i].data->gc = 0;
+    for (size_t i = 0; i < tu->alloc.allocations.size(); ++i) {
+        if (tu->alloc.allocations[i].data->gc) {
+            tu->alloc.allocations[i].data->gc = 0;
         } else {
-            tu->mem[i].destroy();
-            tu->mem[i] = tu->mem.back();
-            tu->mem.pop_back();
+            tu->alloc.allocations[i].destroy(tu->alloc.allocator);
+            tu->alloc.allocations[i] = tu->alloc.allocations.back();
+            tu->alloc.allocations.pop_back();
         }
     }
 }

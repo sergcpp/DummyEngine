@@ -17,7 +17,7 @@ runs:
         cd build
         cmake .. -G "Visual Studio 17 2022" ${{ inputs.cmake-args }}
         cd ..
-        cmake --build build --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_Phy test_Snd --config ${{ inputs.config }} --parallel 16
+        cmake --build build --target DummyApp test_Eng test_glslx test_Ray test_Ren test_SW test_Sys test_Net test_Phy test_Snd --config ${{ inputs.config }} --parallel 16
         if [ -n "${{ inputs.bin-dir }}" ]; then
           mkdir $WORK_DIR/${{ inputs.bin-dir }}
           mkdir $WORK_DIR/${{ inputs.bin-dir }}/test_data
@@ -29,6 +29,7 @@ runs:
           cp build/src/Eng/first-party/Phy/tests/${{ inputs.config }}/test_Phy* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Eng/first-party/Snd/tests/${{ inputs.config }}/test_Snd* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Eng/first-party/Net/tests/${{ inputs.config }}/test_Net* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/glslx/tests/${{ inputs.config }}/test_glslx* $WORK_DIR/${{ inputs.bin-dir }}
           cp DummyApp*.exe $WORK_DIR/${{ inputs.bin-dir }}
         fi
       shell: bash

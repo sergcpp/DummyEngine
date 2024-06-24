@@ -28,7 +28,7 @@ int glslx::token_t::precedence() const {
     return -1;
 }
 
-glslx::Lexer::Lexer(std::string_view source) : source_(source) {}
+glslx::Lexer::Lexer(MultiPoolAllocator<char> &alloc, std::string_view source) : source_(source), temp_tok_(alloc) {}
 
 void glslx::Lexer::ReadSingle(token_t &out) {
     out.string_mem.clear();
