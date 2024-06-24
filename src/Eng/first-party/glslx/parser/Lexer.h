@@ -107,6 +107,7 @@ extern const operator_info_t g_operators[];
 class Lexer {
     std::string_view source_;
     location_t loc_;
+    token_t temp_tok_;
     const char *error_ = nullptr;
 
     void ReadNumeric(bool octal, bool hex, std::string &out_digits);
@@ -132,12 +133,11 @@ class Lexer {
             ReadSingle(out);
         } while (skip_whitespace && (out.type == eTokType::Whitespace || out.type == eTokType::Comment) && !error_);
     }
-    token_t Peek() {
-        token_t ret;
+    const token_t &Peek() {
         const location_t loc_before = loc_;
-        Read(ret, true);
+        Read(temp_tok_, true);
         loc_ = loc_before;
-        return ret;
+        return temp_tok_;
     }
 
     void SkipWhitespace(bool skip_newline = false);

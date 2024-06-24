@@ -349,9 +349,11 @@ bool glslx::Parser::ParseTopLevel(std::vector<top_level_t> &items) {
 bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuation) {
     std::vector<top_level_t> items;
     while (!is_builtin() && !is_type(eTokType::Identifier)) {
-        token_t tok = lexer_.Peek();
-        if (tok.type == eTokType::Eof) {
-            return false;
+        { // check EOF
+            const token_t &tok = lexer_.Peek();
+            if (tok.type == eTokType::Eof) {
+                return false;
+            }
         }
         top_level_t item;
         if (continuation) {
@@ -501,7 +503,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
 
     if (!continuation && !level.type) {
         if (is_type(eTokType::Identifier)) {
-            const token_t peek = lexer_.Peek();
+            const token_t &peek = lexer_.Peek();
             if (level.is_invariant && peek.type == eTokType::Semicolon) {
                 ast_variable *var = FindVariable(tok_.as_identifier);
                 if (!var) {
@@ -1385,7 +1387,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
                     parameter->base_type = FindType(tok_.as_identifier);
                 }
 
-                const token_t peek = lexer_.Peek();
+                const token_t &peek = lexer_.Peek();
                 if (peek.type == eTokType::Identifier) {
                     parameter->name = strnew(peek.as_identifier);
                     if (!next()) {
@@ -1573,7 +1575,7 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
         return nullptr;
     }
     while (true) {
-        token_t peek = lexer_.Peek();
+        const token_t &peek = lexer_.Peek();
         if (peek.type == eTokType::Operator && peek.as_operator == eOperator::dot) {
             if (!next()) { // skip last
                 return nullptr;
@@ -1817,7 +1819,7 @@ glslx::ast_expression *glslx::Parser::ParseUnaryPrefix(const Bitmask<eEndConditi
     } else if (is_builtin()) {
         return ParseConstructorCall();
     } else if (is_type(eTokType::Identifier)) {
-        token_t peek = lexer_.Peek();
+        const token_t &peek = lexer_.Peek();
         if (peek.type == eTokType::Operator && peek.as_operator == eOperator::parenthesis_begin) {
             ast_type *type = FindType(tok_.as_identifier);
             if (type) {
@@ -1862,7 +1864,7 @@ glslx::ast_constant_expression *glslx::Parser::ParseArraySize() {
 glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition> condition) {
     bool accept_paren = false;
     if (is_builtin()) {
-        const token_t peek = lexer_.Peek();
+        const token_t &peek = lexer_.Peek();
         if (peek.type == eTokType::Operator && peek.as_operator == eOperator::bracket_begin) {
             if (!next()) {
                 return nullptr;
@@ -2159,7 +2161,7 @@ glslx::ast_if_statement *glslx::Parser::ParseIfStatement(const Bitmask<eCtrlFlow
         return nullptr;
     }
     statement->then_statement = ParseStatement();
-    token_t peek = lexer_.Peek();
+    const token_t &peek = lexer_.Peek();
     if (peek.type == eTokType::Keyword && peek.as_keyword == eKeyword::K_else) {
         if (!next()) { // skip ';' or '}'
             return nullptr;

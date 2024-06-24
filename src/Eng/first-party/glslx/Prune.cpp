@@ -284,13 +284,14 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
         }
     }
 
-    for (auto it = begin(tu->mem); it != end(tu->mem);) {
-        if (it->data->gc) {
-            it->data->gc = 0;
-            ++it;
+    // changes the order, but we don't care
+    for (size_t i = 0; i < tu->mem.size(); ++i) {
+        if (tu->mem[i].data->gc) {
+            tu->mem[i].data->gc = 0;
         } else {
-            it->destroy();
-            it = tu->mem.erase(it);
+            tu->mem[i].destroy();
+            tu->mem[i] = tu->mem.back();
+            tu->mem.pop_back();
         }
     }
 }

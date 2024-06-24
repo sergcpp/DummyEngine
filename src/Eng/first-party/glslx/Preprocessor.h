@@ -95,9 +95,7 @@ class Preprocessor {
 
         size_t line, pos;
 
-        bool operator==(const token_t &rhs) const {
-            return type == rhs.type && raw_view == rhs.raw_view;
-        }
+        bool operator==(const token_t &rhs) const { return type == rhs.type && raw_view == rhs.raw_view; }
     };
 
     struct macro_desc_t {
@@ -125,6 +123,7 @@ class Preprocessor {
 
     std::string current_line_;
     std::deque<token_t> tokens_queue_;
+    std::string temp_str_;
 
     bool expect(const eTokenType expected_type, const eTokenType actual_type) {
         if (expected_type != actual_type) {
@@ -136,9 +135,9 @@ class Preprocessor {
 
     void ReadLine(std::string &out_line);
     void RequestSourceLine(std::string &out_line);
-    token_t ScanTokens(std::string &inout_line);
-    token_t ScanSeparator(char ch, std::string &inout_line);
-    token_t GetNextToken();
+    void ScanTokens(token_t &out_tok, std::string &inout_line);
+    void ScanSeparator(token_t &out_tok, char ch, std::string &inout_line);
+    void GetNextToken(token_t &out_tok);
 
     std::string ExtractSingleLineComment(const std::string &line);
     std::string ExtractMultiLineComment(std::string &line);
@@ -165,7 +164,7 @@ class Preprocessor {
     }
 
     std::vector<token_t> ExpandMacroDefinition(const macro_desc_t &macro, const token_t &token,
-                                               const std::function<token_t()> &get_next_token);
+                                               const std::function<void(token_t &)> &get_next_token);
     int EvaluateExpression(Span<const token_t> tokens);
 
   public:
