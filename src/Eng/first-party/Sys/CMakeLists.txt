@@ -40,7 +40,6 @@ set(SOURCE_FILES AssetFile.h
                  AssetFileIO.cpp
                  AsyncFileReader.h
                  BinaryTree.h
-                 BitmapAlloc.h
                  Delegate.h
                  DynLib.h
                  DynLib.cpp
