@@ -332,7 +332,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 Ren::Vec4f{p_list_->env.sun_col[0], p_list_->env.sun_col[1], p_list_->env.sun_col[2], 0.0f};
             if (p_list_->env.sun_angle != 0.0f) {
                 const float radius = tan_angle;
-                const float mul = 2.0f / (Ren::Pi<float>() * radius * radius);
+                const float mul = 1.0f / (Ren::Pi<float>() * radius * radius);
                 shrd_data.sun_col *= mul;
             }
             shrd_data.env_col = Ren::Vec4f{p_list_->env.env_col[0], p_list_->env.env_col[1], p_list_->env.env_col[2],

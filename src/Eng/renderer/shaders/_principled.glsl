@@ -306,25 +306,21 @@ vec3 EvaluateSunLight(const vec3 light_color, const vec3 light_dir, const float 
                       const vec3 I, const vec3 N, const lobe_weights_t lobe_weights, const ltc_params_t ltc,
                       sampler2D ltc_luts, const float sheen, const vec3 base_color, const vec3 sheen_color,
                       const vec3 spec_color, const vec3 clearcoat_color) {
-    //if (dot(N, light_dir) < 0.0) {
-    //    return vec3(0.0);
-    //}
-
-    vec3 ret = vec3(0.0);
-
     vec3 u = vec3(1.0, 0.0, 0.0);
     if (abs(light_dir.y) < 0.999) {
         u = vec3(0.0, 1.0, 0.0);
     }
 
     vec3 v = normalize(cross(u, light_dir));
-    u = cross(N, v);
+    u = cross(light_dir, v);
 
     vec3 points[4];
     points[0] = pos_ws + light_dir + light_radius * u + light_radius * v;
     points[1] = pos_ws + light_dir + light_radius * u - light_radius * v;
     points[2] = pos_ws + light_dir - light_radius * u - light_radius * v;
     points[3] = pos_ws + light_dir - light_radius * u + light_radius * v;
+
+    vec3 ret = vec3(0.0);
 
     if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
         const vec3 dcol = base_color;
