@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = motion_blur
-	commit = 35d05e3e62cbaaa0f4787a68158f7a24e1f6159f
+	branch = shader_comp
+	commit = 818789edde12db6b04735895b0707d29c9dd4635
 	method = merge
 	cmdver = 0.4.6
-	parent = d1ca7d147ba280227adca213c2a3f37c91000c50
+	parent = efa67a63a437653b61d578d8f025104893f477e9
