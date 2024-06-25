@@ -79,6 +79,15 @@ vec4 SampleColor(sampler2D s, vec2 uvs) {
     return ret;
 }
 
+vec4 SampleColorLinear(sampler2D s, vec2 uvs) {
+    vec4 ret = textureLod(s, uvs, 0.0);
+    ret.xyz = Tonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX)));
+#if defined(YCoCg)
+    ret.xyz = RGB_to_YCoCg(ret.xyz);
+#endif
+    return ret;
+}
+
 vec4 SampleColorMotion(sampler2D s, vec2 uv, vec2 vel) {
     const vec2 v = 0.5 * vel;
     const int SampleCount = 3;
@@ -89,10 +98,10 @@ vec4 SampleColorMotion(sampler2D s, vec2 uv, vec2 vel) {
     vec4 accu = vec4(0.0);
     float wsum = 0.0;
 
-    for (int i = -SampleCount; i <= SampleCount; i++) {
+    for (int i = -SampleCount; i <= SampleCount; ++i) {
         const vec2 motion_uv = pos0 + float(i) * vtap;
         const float w = saturate(motion_uv) == motion_uv ? 1.0 : 0.0;
-        accu += w * SampleColor(s, motion_uv);
+        accu += w * SampleColorLinear(s, motion_uv);
         wsum += w;
     }
 
