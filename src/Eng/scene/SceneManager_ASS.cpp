@@ -30,7 +30,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 4;
+const uint32_t AssetsBuildVersion = 5;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -274,10 +274,17 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                 } else {
                     file_not_changed = false;
                 }
-
                 const std::string out_t_str = std::to_string(out_t);
-                const JsStringP &js_out_file_time = output.second.as_obj().at("time").as_str();
 
+                if (!output.second.as_obj().Has("in_time") || !output.second.as_obj().Has("out_time")) {
+                    file_not_changed = false;
+                    continue;
+                }
+
+                const JsStringP &js_out_in_file_time = output.second.as_obj().at("in_time").as_str();
+                const JsStringP &js_out_file_time = output.second.as_obj().at("out_time").as_str();
+
+                file_not_changed &= (js_out_in_file_time.val == js_in_file_time.val);
                 file_not_changed &= (strncmp(js_out_file_time.val.c_str(), out_t_str.c_str(), 32) == 0);
             }
         } else {
@@ -293,7 +300,18 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                 if (js_in_file_hash.val == in_hash_str) {
                     JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
                     for (auto &output : js_outputs.elements) {
+                        const Ren::Bitmask<Eng::eAssetFlags> flags = Ren::Bitmask<Eng::eAssetFlags>{
+                            uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
+                        if (SkipAssetForCurrentBuild(flags)) {
+                            continue;
+                        }
+
                         JsObjectP &js_output = output.second.as_obj();
+
+                        if (!js_output.Has("hash")) {
+                            file_not_changed = false;
+                            continue;
+                        }
 
                         const uint32_t out_hash = HashFile(output.first, ctx.log);
                         const std::string out_hash_str = std::to_string(out_hash);
@@ -721,6 +739,12 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
             return;
         }
 
+        std::string in_t_str;
+        if (std::filesystem::exists(in_file)) {
+            const auto in_t = to_time_t(std::filesystem::last_write_time(in_file));
+            in_t_str = std::to_string(in_t);
+        }
+
         // std::lock_guard<std::mutex> _(ctx.cache_mtx);
 
         Ren::SmallVector<std::string, 32> dependencies;
@@ -746,8 +770,14 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
                 JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
                 for (const asset_output_t &out_file : outputs) {
-                    const uint32_t out_hash = HashFile(out_file.name, ctx.log);
-                    const std::string out_hash_str = std::to_string(out_hash);
+                    std::string out_t_str = "0", out_hash_str = "0";
+                    if (std::filesystem::exists(out_file.name)) {
+                        const uint32_t out_hash = HashFile(out_file.name, ctx.log);
+                        out_hash_str = std::to_string(out_hash);
+
+                        const auto out_t = to_time_t(std::filesystem::last_write_time(out_file.name));
+                        out_t_str = std::to_string(out_t);
+                    }
 
                     if (!js_outputs.Has(out_file.name)) {
                         js_outputs.Insert(out_file.name, JsObjectP{*ctx.mp_alloc});
@@ -763,6 +793,10 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         js_flags.val = std::to_string(uint32_t(out_file.flags)).c_str();
                     }
 
+                    if (SkipAssetForCurrentBuild(out_file.flags)) {
+                        continue;
+                    }
+
                     // store new hash value
                     if (!js_output.Has("hash")) {
                         js_output.Insert("hash", JsStringP(out_hash_str, *ctx.mp_alloc));
@@ -771,17 +805,17 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         js_hash.val = out_hash_str.c_str();
                     }
 
-                    std::string out_t_str = "0";
-                    if (std::filesystem::exists(out_file.name)) {
-                        const auto out_t = to_time_t(std::filesystem::last_write_time(out_file.name));
-                        out_t_str = std::to_string(out_t);
-                    }
-
-                    // store new time value
-                    if (!js_output.Has("time")) {
-                        js_output.Insert("time", JsStringP(out_t_str, *ctx.mp_alloc));
+                    // store new time values
+                    if (!js_output.Has("in_time")) {
+                        js_output.Insert("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
                     } else {
-                        JsStringP &js_time = js_output["time"].as_str();
+                        JsStringP &js_time = js_output["in_time"].as_str();
+                        js_time.val = in_t_str;
+                    }
+                    if (!js_output.Has("out_time")) {
+                        js_output.Insert("out_time", JsStringP(out_t_str, *ctx.mp_alloc));
+                    } else {
+                        JsStringP &js_time = js_output["out_time"].as_str();
                         js_time.val = out_t_str;
                     }
                 }
