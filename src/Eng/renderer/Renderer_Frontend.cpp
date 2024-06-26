@@ -637,7 +637,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
                 geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
                 assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
-                geo.material_index = front_mat.index() | (back_mat.index() << 16);
+                geo.material_index = front_mat.index();
+                if (!(front_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                    geo.material_index |= MATERIAL_SOLID_BIT;
+                }
+                geo.material_index |= (back_mat.index() << 16);
+                if (!(back_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                    geo.material_index |= (MATERIAL_SOLID_BIT << 16);
+                }
                 geo.flags = 0;
 
                 ++new_instance.geo_count;
@@ -1120,7 +1127,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
                                 geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
                                 assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
-                                geo.material_index = front_mat.index() | (back_mat.index() << 16);
+                                geo.material_index = front_mat.index();
+                                if (!(front_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                                    geo.material_index |= MATERIAL_SOLID_BIT;
+                                }
+                                geo.material_index |= (back_mat.index() << 16);
+                                if (!(back_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                                    geo.material_index |= (MATERIAL_SOLID_BIT << 16);
+                                }
                                 geo.flags = 0;
 
                                 ++new_instance.geo_count;

@@ -115,7 +115,10 @@ void main() {
 
             const RTGeoInstance geo = g_geometries[geo_index];
             const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-            const MaterialData mat = g_materials[mat_index];
+            if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
+                break;
+            }
+            const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
             const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
             const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
@@ -198,7 +201,7 @@ void main() {
 
         const RTGeoInstance geo = g_geometries[geo_index];
         const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-        const MaterialData mat = g_materials[mat_index];
+        const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
         const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
         const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;

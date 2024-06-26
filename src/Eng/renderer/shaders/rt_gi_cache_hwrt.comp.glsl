@@ -113,7 +113,7 @@ void main() {
 
             const RTGeoInstance geo = g_geometries[custom_index + geo_index];
             const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-            const MaterialData mat = g_materials[mat_index];
+            const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
             const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
             const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
@@ -181,7 +181,7 @@ void main() {
 
         const RTGeoInstance geo = g_geometries[custom_index + geo_index];
         const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-        const MaterialData mat = g_materials[mat_index];
+        const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
         const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
         const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
