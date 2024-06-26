@@ -59,9 +59,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         frame_textures.gi_cache_data = data->offset_tex =
             rt_gi_cache.AddTextureInput(persistent_data.probe_volume.data.get(), Stg::ComputeShader);
 
-        data->grid_origin = persistent_data.probe_volume.origin;
-        data->grid_scroll = persistent_data.probe_volume.scroll;
-        data->grid_spacing = persistent_data.probe_volume.spacing;
+        data->probe_volume = &persistent_data.probe_volume;
 
         ray_data = data->out_ray_data_tex =
             rt_gi_cache.AddStorageImageOutput(persistent_data.probe_volume.ray_data.get(), stage);

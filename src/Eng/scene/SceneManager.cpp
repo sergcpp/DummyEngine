@@ -902,6 +902,9 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
         return;
     }
 
+    scene_data_.persistent_data.probe_volume.scroll =
+        Ren::Vec3i{origin / scene_data_.persistent_data.probe_volume.spacing};
+
     cam_.SetupView(origin, target, up);
     cam_.Perspective(fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();

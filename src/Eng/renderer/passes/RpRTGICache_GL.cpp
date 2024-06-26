@@ -102,12 +102,12 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_gi_tex.arr}};
 
     RTGICache::Params uniform_params = {};
-    uniform_params.grid_origin =
-        Ren::Vec4f(pass_data_->grid_origin[0], pass_data_->grid_origin[1], pass_data_->grid_origin[2], 0.0f);
-    uniform_params.grid_scroll =
-        Ren::Vec4i(pass_data_->grid_scroll[0], pass_data_->grid_scroll[1], pass_data_->grid_scroll[2], 0.0f);
-    uniform_params.grid_spacing =
-        Ren::Vec4f(pass_data_->grid_spacing[0], pass_data_->grid_spacing[1], pass_data_->grid_spacing[2], 0.0f);
+    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volume->origin[0], pass_data_->probe_volume->origin[1],
+                                            pass_data_->probe_volume->origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volume->scroll[0], pass_data_->probe_volume->scroll[1],
+                                            pass_data_->probe_volume->scroll[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volume->spacing[0], pass_data_->probe_volume->spacing[1],
+                                             pass_data_->probe_volume->spacing[2], 0.0f);
 
     Ren::DispatchCompute(pi_rt_gi_cache_swrt_,
                          Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),

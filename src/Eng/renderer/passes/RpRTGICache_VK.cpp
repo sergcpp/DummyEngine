@@ -63,12 +63,12 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTGICache::Params uniform_params = {};
-    uniform_params.grid_origin =
-        Ren::Vec4f(pass_data_->grid_origin[0], pass_data_->grid_origin[1], pass_data_->grid_origin[2], 0.0f);
-    uniform_params.grid_scroll =
-        Ren::Vec4i(pass_data_->grid_scroll[0], pass_data_->grid_scroll[1], pass_data_->grid_scroll[2], 0.0f);
-    uniform_params.grid_spacing =
-        Ren::Vec4f(pass_data_->grid_spacing[0], pass_data_->grid_spacing[1], pass_data_->grid_spacing[2], 0.0f);
+    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volume->origin[0], pass_data_->probe_volume->origin[1],
+                                            pass_data_->probe_volume->origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volume->scroll[0], pass_data_->probe_volume->scroll[1],
+                                            pass_data_->probe_volume->scroll[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volume->spacing[0], pass_data_->probe_volume->spacing[1],
+                                             pass_data_->probe_volume->spacing[2], 0.0f);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_inline_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
@@ -180,12 +180,12 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTGICache::Params uniform_params = {};
-    uniform_params.grid_origin =
-        Ren::Vec4f(pass_data_->grid_origin[0], pass_data_->grid_origin[1], pass_data_->grid_origin[2], 0.0f);
-    uniform_params.grid_scroll =
-        Ren::Vec4i(pass_data_->grid_scroll[0], pass_data_->grid_scroll[1], pass_data_->grid_scroll[2], 0.0f);
-    uniform_params.grid_spacing =
-        Ren::Vec4f(pass_data_->grid_spacing[0], pass_data_->grid_spacing[1], pass_data_->grid_spacing[2], 0.0f);
+    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volume->origin[0], pass_data_->probe_volume->origin[1],
+                                            pass_data_->probe_volume->origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volume->scroll[0], pass_data_->probe_volume->scroll[1],
+                                            pass_data_->probe_volume->scroll[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volume->spacing[0], pass_data_->probe_volume->spacing[1],
+                                             pass_data_->probe_volume->spacing[2], 0.0f);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);

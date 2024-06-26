@@ -32,12 +32,12 @@ void Eng::RpDebugProbes::Execute(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr}};
 
     ProbeDebug::Params uniform_params = {};
-    uniform_params.grid_origin =
-        Ren::Vec4f(pass_data_->grid_origin[0], pass_data_->grid_origin[1], pass_data_->grid_origin[2], 0.0f);
-    uniform_params.grid_scroll =
-        Ren::Vec4i(pass_data_->grid_scroll[0], pass_data_->grid_scroll[1], pass_data_->grid_scroll[2], 0.0f);
-    uniform_params.grid_spacing =
-        Ren::Vec4f(pass_data_->grid_spacing[0], pass_data_->grid_spacing[1], pass_data_->grid_spacing[2], 0.0f);
+    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volume->origin[0], pass_data_->probe_volume->origin[1],
+                                            pass_data_->probe_volume->origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volume->scroll[0], pass_data_->probe_volume->scroll[1],
+                                            pass_data_->probe_volume->scroll[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volume->spacing[0], pass_data_->probe_volume->spacing[1],
+                                             pass_data_->probe_volume->spacing[2], 0.0f);
 
     const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};

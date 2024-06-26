@@ -36,8 +36,7 @@ struct RpRTGICacheData {
 
     RpResRef out_ray_data_tex;
 
-    Ren::Vec3f grid_origin, grid_spacing;
-    Ren::Vec3i grid_scroll;
+    const ProbeVolume *probe_volume = nullptr;
 };
 
 class RpRTGICache : public RpExecutor {

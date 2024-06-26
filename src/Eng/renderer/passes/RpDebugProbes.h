@@ -14,8 +14,7 @@ struct RpDebugProbesData {
     RpResRef depth_tex;
     RpResRef output_tex;
 
-    Ren::Vec3f grid_origin, grid_spacing;
-    Ren::Vec3i grid_scroll;
+    const ProbeVolume *probe_volume = nullptr;
 };
 
 class RpDebugProbes : public RpExecutor {

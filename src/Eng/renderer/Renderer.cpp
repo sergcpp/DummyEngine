@@ -1098,9 +1098,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->distance_tex =
                 debug_probes.AddTextureInput(frame_textures.gi_cache_dist, Ren::eStageBits::FragmentShader);
 
-            data->grid_origin = persistent_data.probe_volume.origin;
-            data->grid_scroll = persistent_data.probe_volume.scroll;
-            data->grid_spacing = persistent_data.probe_volume.spacing;
+            data->probe_volume = &persistent_data.probe_volume;
 
             frame_textures.depth = data->depth_tex = debug_probes.AddDepthOutput(frame_textures.depth);
             frame_textures.color = data->output_tex = debug_probes.AddColorOutput(frame_textures.color);
