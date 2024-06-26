@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = shader_comp
-	commit = 912fb1d2e29df57144407989299f4240fe121ff7
+	branch = fixes_25_06
+	commit = b208b51e4c78ae89d6e78567cd804068945466e0
 	method = merge
 	cmdver = 0.4.6
-	parent = 0e192af15a7f079b71a3562421327c624988c10f
+	parent = 6375d0647ae7bc6fbee117ceea7b1efdf1410a0f
