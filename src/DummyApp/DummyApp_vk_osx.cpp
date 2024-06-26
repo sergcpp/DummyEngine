@@ -262,9 +262,11 @@ int DummyApp::Run(int argc, char *argv[]) {
         __itt_frame_end_v3(__g_itt_domain, nullptr);
     }
 
+    const int exit_status = viewer_->exit_status;
+
     this->Destroy();
 
-    return 0;
+    return exit_status;
 }
 
 #undef None
