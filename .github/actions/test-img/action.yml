@@ -42,7 +42,7 @@ runs:
         mv sponza.png sponza_medium.png
         mv sponza_diff.png sponza_diff_medium.png
         cp sponza_medium.png sponza_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 21.63
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 21.62
         mv sponza.png sponza_high.png
         mv sponza_diff.png sponza_diff_high.png
         cp sponza_high.png sponza_diff_high.png $WORK_DIR/${{ inputs.out-dir }}

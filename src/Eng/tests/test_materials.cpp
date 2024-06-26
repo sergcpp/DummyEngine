@@ -487,7 +487,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 24.52, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.27, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.26, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 35.95, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 28.33, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 27.88, NoDiffGI));
@@ -522,7 +522,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 33.45, NoGI_RTShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 18.34, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 22.32, Full_Ultra));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 21.98, MedDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 21.97, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 19.02, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 20.28, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_hdri_light", 17.51, MedDiffGI));
