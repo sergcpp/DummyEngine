@@ -169,14 +169,8 @@ class CompStorage {
 
 namespace Eng {
 struct ProbeVolume {
-    Ren::Vec3f origin, spacing;
-    Ren::Vec3i scroll;
-    mutable bool reset_relocation = true;
-    mutable bool reset_classification = true;
-    std::unique_ptr<Ren::Texture2DArray> ray_data;
-    std::unique_ptr<Ren::Texture2DArray> irradiance;
-    std::unique_ptr<Ren::Texture2DArray> distance;
-    std::unique_ptr<Ren::Texture2DArray> data;
+    mutable Ren::Vec3f origin, spacing;
+    mutable Ren::Vec3i scroll, scroll_diff;
 };
 
 static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
@@ -213,7 +207,14 @@ struct PersistentGpuData {
     uint32_t rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;
 
-    ProbeVolume probe_volume;
+    std::unique_ptr<Ren::Texture2DArray> probe_ray_data;
+    std::unique_ptr<Ren::Texture2DArray> probe_irradiance;
+    std::unique_ptr<Ren::Texture2DArray> probe_distance;
+    std::unique_ptr<Ren::Texture2DArray> probe_offset;
+    std::vector<ProbeVolume> probe_volumes;
+
+    mutable bool reset_probe_relocation = true;
+    mutable bool reset_probe_classification = true;
 
     PersistentGpuData();
     ~PersistentGpuData();

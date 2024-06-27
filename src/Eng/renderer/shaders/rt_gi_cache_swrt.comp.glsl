@@ -75,12 +75,13 @@ void main() {
     const ivec3 probe_coords = get_probe_coords(probe_index);
     probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
 
-    const ivec3 tex_coords = get_probe_texel_coords(probe_index);
-    if (ray_index > PROBE_FIXED_RAYS_COUNT && texelFetch(g_offset_tex, tex_coords, 0).w < 0.5) {
+    const ivec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+    if (!IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz) &&
+        ray_index >= PROBE_FIXED_RAYS_COUNT && texelFetch(g_offset_tex, tex_coords, 0).w < 0.5) {
         return;
     }
 
-    const vec3 probe_pos = get_probe_pos_ws(probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz, g_offset_tex);
+    const vec3 probe_pos = get_probe_pos_ws(g_params.volume_index, probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz, g_offset_tex);
     const vec3 probe_ray_dir = get_probe_ray_dir(ray_index);
     const ivec3 output_coords = get_ray_data_coords(ray_index, probe_index);
 
@@ -401,11 +402,15 @@ void main() {
             }
         }
 
-        if (lobe_weights.diffuse > 0.0) {
-            const vec3 irradiance = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_params.grid_spacing.xyz), N,
-                                                          g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
-            const float cache_weight = clamp(inter.t / (0.5 * length(g_params.grid_spacing.xyz)), 0.0, 1.0);
-            light_total += cache_weight * (lobe_weights.diffuse_mul / M_PI) * base_color * irradiance;
+        for (int i = 0; i < PROBE_VOLUMES_COUNT && (lobe_weights.diffuse > 0.0); ++i) {
+            const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+            if (weight > 0.0) {
+                vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz), N,
+                                                        g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                irradiance *= clamp(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)), 0.0, 1.0);
+                light_total += lobe_weights.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
+                break;
+            }
         }
 
         final_result = vec4(light_total, backfacing ? -inter.t : inter.t);

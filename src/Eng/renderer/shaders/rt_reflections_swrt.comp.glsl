@@ -101,7 +101,7 @@ void main() {
     const vec3 normal_ws = normal_roughness.xyz;
     const vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
-    const float roughness = normal_roughness.w * normal_roughness.w;
+    const float first_roughness = normal_roughness.w * normal_roughness.w;
 
     const vec2 px_center = vec2(icoord) + vec2(0.5);
     const vec2 in_uv = px_center / vec2(g_params.img_size);
@@ -122,11 +122,11 @@ void main() {
 
     const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
-    const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
+    const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, first_roughness);
 
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
-    const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u.xy);
+    const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, first_roughness, u.xy);
     vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
 
     vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
@@ -236,7 +236,7 @@ void main() {
             }
 
             const vec3 rotated_dir = rotate_xz(refl_ray_ws, g_shrd_data.env_col.w);
-            const float lod = 8.0 * roughness;
+            const float lod = 8.0 * first_roughness;
             final_color += throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, lod).rgb;
             break;
         } else {
@@ -472,10 +472,17 @@ void main() {
             }
 
 #ifdef GI_CACHE
-            if (lobe_weights.diffuse > 0.0) {
-                const vec3 irradiance = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_params.grid_spacing.xyz), N,
-                                                              g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
-                light_total += (lobe_weights.diffuse_mul / M_PI) * base_color * irradiance;
+            for (int i = 0; i < PROBE_VOLUMES_COUNT && (lobe_weights.diffuse > 0.0); ++i) {
+                const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                if (weight > 0.0) {
+                    vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,
+                                                            g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                    if (first_roughness > 0.001) {
+                        irradiance *= saturate(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
+                    }
+                    light_total += lobe_weights.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
+                    break;
+                }
             }
 #endif
 
@@ -496,7 +503,7 @@ void main() {
     }
 
     final_color = compress_hdr(final_color);
-    first_ray_len = GetNormHitDist(first_ray_len, view_z, roughness);
+    first_ray_len = GetNormHitDist(first_ray_len, view_z, first_roughness);
 #if 0
     int copy_count = 0;
     if (copy_horizontal) ++copy_count;

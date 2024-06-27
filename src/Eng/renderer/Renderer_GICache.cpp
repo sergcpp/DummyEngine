@@ -52,17 +52,18 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
         data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
 
-        frame_textures.gi_cache = data->irradiance_tex =
-            rt_gi_cache.AddTextureInput(persistent_data.probe_volume.irradiance.get(), Stg::ComputeShader);
-        frame_textures.gi_cache_dist = data->distance_tex =
-            rt_gi_cache.AddTextureInput(persistent_data.probe_volume.distance.get(), Stg::ComputeShader);
-        frame_textures.gi_cache_data = data->offset_tex =
-            rt_gi_cache.AddTextureInput(persistent_data.probe_volume.data.get(), Stg::ComputeShader);
+        frame_textures.gi_cache_irradiance = data->irradiance_tex =
+            rt_gi_cache.AddTextureInput(persistent_data.probe_irradiance.get(), Stg::ComputeShader);
+        frame_textures.gi_cache_distance = data->distance_tex =
+            rt_gi_cache.AddTextureInput(persistent_data.probe_distance.get(), Stg::ComputeShader);
+        frame_textures.gi_cache_offset = data->offset_tex =
+            rt_gi_cache.AddTextureInput(persistent_data.probe_offset.get(), Stg::ComputeShader);
 
-        data->probe_volume = &persistent_data.probe_volume;
+        data->view_state = &view_state_;
+        data->probe_volumes = persistent_data.probe_volumes;
 
         ray_data = data->out_ray_data_tex =
-            rt_gi_cache.AddStorageImageOutput(persistent_data.probe_volume.ray_data.get(), stage);
+            rt_gi_cache.AddStorageImageOutput(persistent_data.probe_ray_data.get(), stage);
 
         rp_rt_gi_cache_.Setup(rp_builder_, &view_state_, &bindless, data);
         rt_gi_cache.set_executor(&rp_rt_gi_cache_);
@@ -84,11 +85,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         auto *data = probe_blend.AllocPassData<PassData>();
 
         ray_data = data->ray_data = probe_blend.AddTextureInput(ray_data, Stg::ComputeShader);
-        frame_textures.gi_cache_data = data->offset_tex =
-            probe_blend.AddTextureInput(frame_textures.gi_cache_data, Stg::ComputeShader);
-
-        frame_textures.gi_cache = data->output_tex =
-            probe_blend.AddStorageImageOutput(frame_textures.gi_cache, Stg::ComputeShader);
+        frame_textures.gi_cache_irradiance = data->output_tex =
+            probe_blend.AddStorageImageOutput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
+        frame_textures.gi_cache_offset = data->offset_tex =
+            probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
             RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
@@ -99,17 +99,23 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                                              {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
                                              {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_irr_tex.arr}};
 
-            const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
-            const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
-            const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
+            const int volume_to_update = p_list_->volume_to_update;
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
+            const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
 
-            // ProbeBlend::Params uniform_params = {};
-            // uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            // uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            // uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            ProbeBlend::Params uniform_params = {};
+            uniform_params.volume_index = volume_to_update;
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            uniform_params.grid_scroll_diff =
+                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
 
             Ren::DispatchCompute(pi_probe_blend_[0], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
-                                 bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
+                                 bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(),
+                                 ctx_.log());
         });
     }
 
@@ -125,11 +131,11 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         auto *data = probe_blend.AllocPassData<PassData>();
 
         ray_data = data->ray_data = probe_blend.AddTextureInput(ray_data, Stg::ComputeShader);
-        frame_textures.gi_cache_data = data->offset_tex =
-            probe_blend.AddTextureInput(frame_textures.gi_cache_data, Stg::ComputeShader);
+        frame_textures.gi_cache_offset = data->offset_tex =
+            probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
-        frame_textures.gi_cache_dist = data->output_tex =
-            probe_blend.AddStorageImageOutput(persistent_data.probe_volume.distance.get(), Stg::ComputeShader);
+        frame_textures.gi_cache_distance = data->output_tex =
+            probe_blend.AddStorageImageOutput(persistent_data.probe_distance.get(), Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
             RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
@@ -140,13 +146,18 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                                              {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
                                              {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_dist_tex.arr}};
 
-            const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
-            const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
-            const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
+            const int volume_to_update = p_list_->volume_to_update;
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
+            const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
 
             ProbeBlend::Params uniform_params = {};
+            uniform_params.volume_index = volume_to_update;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            uniform_params.grid_scroll_diff =
+                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
 
             Ren::DispatchCompute(pi_probe_blend_[1], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
@@ -156,7 +167,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
     }
 
     { // Relocate probes
-        auto &probe_relocate = rp_builder_.AddPass("PROBE RELOC");
+        auto &probe_relocate = rp_builder_.AddPass("PROBE RELOCATE");
 
         struct PassData {
             RpResRef ray_data;
@@ -167,8 +178,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
         ray_data = data->ray_data = probe_relocate.AddTextureInput(ray_data, Stg::ComputeShader);
 
-        frame_textures.gi_cache_data = data->output_tex =
-            probe_relocate.AddStorageImageOutput(persistent_data.probe_volume.data.get(), Stg::ComputeShader);
+        frame_textures.gi_cache_offset = data->output_tex =
+            probe_relocate.AddStorageImageOutput(persistent_data.probe_offset.get(), Stg::ComputeShader);
 
         probe_relocate.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
             RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
@@ -178,26 +189,25 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                 {Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
                 {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.arr}};
 
-            const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
-            const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
-            const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
+            const int volume_to_update = p_list_->volume_to_update;
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
 
             const int probe_count = PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES;
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (probe_count + ProbeRelocate::LOCAL_GROUP_SIZE_X - 1) / ProbeRelocate::LOCAL_GROUP_SIZE_X, 1u, 1u};
 
-            if (persistent_data.probe_volume.reset_relocation) {
-                persistent_data.probe_volume.reset_relocation = false;
-                Ren::DispatchCompute(pi_probe_relocate_[1], grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(),
-                                     ctx_.log());
-            } else {
-                ProbeRelocate::Params uniform_params = {};
-                uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-                uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-                uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            ProbeRelocate::Params uniform_params = {};
+            uniform_params.volume_index = volume_to_update;
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
 
-                Ren::DispatchCompute(pi_probe_relocate_[0], grp_count, bindings, &uniform_params,
-                                     sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            Ren::DispatchCompute(pi_probe_relocate_[persistent_data.reset_probe_relocation], grp_count, bindings,
+                                 &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            if (volume_to_update == PROBE_VOLUMES_COUNT - 1) {
+                persistent_data.reset_probe_relocation = false;
             }
         });
     }
@@ -214,8 +224,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
         ray_data = data->ray_data = probe_classify.AddTextureInput(ray_data, Stg::ComputeShader);
 
-        frame_textures.gi_cache_data = data->output_tex =
-            probe_classify.AddStorageImageOutput(persistent_data.probe_volume.data.get(), Stg::ComputeShader);
+        frame_textures.gi_cache_offset = data->output_tex =
+            probe_classify.AddStorageImageOutput(persistent_data.probe_offset.get(), Stg::ComputeShader);
 
         probe_classify.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
             RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
@@ -225,26 +235,25 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                 {Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
                 {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.arr}};
 
-            const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
-            const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
-            const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
+            const int volume_to_update = p_list_->volume_to_update;
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
 
             const int probe_count = PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES;
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (probe_count + ProbeClassify::LOCAL_GROUP_SIZE_X - 1) / ProbeClassify::LOCAL_GROUP_SIZE_X, 1u, 1u};
 
-            if (persistent_data.probe_volume.reset_classification) {
-                Ren::DispatchCompute(pi_probe_classify_[1], grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(),
-                                     ctx_.log());
-                persistent_data.probe_volume.reset_classification = false;
-            } else {
-                ProbeClassify::Params uniform_params = {};
-                uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-                uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-                uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            ProbeClassify::Params uniform_params = {};
+            uniform_params.volume_index = volume_to_update;
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
 
-                Ren::DispatchCompute(pi_probe_classify_[0], grp_count, bindings, &uniform_params,
-                                     sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            Ren::DispatchCompute(pi_probe_classify_[persistent_data.reset_probe_classification], grp_count, bindings,
+                                 &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            if (volume_to_update == PROBE_VOLUMES_COUNT - 1) {
+                persistent_data.reset_probe_classification = false;
             }
         });
     }

@@ -40,6 +40,13 @@ struct AtmosphereParams {
     vec4 ground_albedo;
 };
 
+struct ProbeVolume {
+    vec4 origin;
+    vec4 spacing;
+    ivec4 scroll;
+    ivec4 scroll_diff;
+};
+
 INTERFACE_END
 
 #endif // TYPES_H

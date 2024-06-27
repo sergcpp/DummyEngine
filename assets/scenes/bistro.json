@@ -18,8 +18,7 @@
             22.747352511816967
         ],
         "env_map": "physical_sky",
-        "clouds_density": 0.25,
-        "probe_volume_spacing": 4.0
+        "clouds_density": 0.25
     },
     "camera": {
         "view_origin": [

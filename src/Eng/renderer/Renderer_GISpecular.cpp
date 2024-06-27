@@ -376,11 +376,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
 
-            data->probe_volume = &persistent_data.probe_volume;
+            data->probe_volume = &persistent_data.probe_volumes[0];
             if (settings.gi_quality != eGIQuality::Off) {
-                data->irradiance_tex = rt_refl.AddTextureInput(frame_textures.gi_cache, stage);
-                data->distance_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_dist, stage);
-                data->offset_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_data, stage);
+                data->irradiance_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
+                data->distance_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_distance, stage);
+                data->offset_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_offset, stage);
             }
 
             refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);

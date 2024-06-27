@@ -26,7 +26,7 @@ class RpSubpass {
 
     std::unique_ptr<RpExecutor> executor_;
     RpExecutor *p_executor_ = nullptr;
-    Sys::InplaceFunction<void(RpBuilder &builder), 24> execute_cb_;
+    Sys::InplaceFunction<void(RpBuilder &builder), 32> execute_cb_;
 
     mutable Ren::SmallVector<int16_t, 16> depends_on_passes_;
     mutable bool visited_ = false;

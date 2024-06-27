@@ -271,7 +271,6 @@ struct render_settings_t {
             bool debug_blur : 1;
             bool debug_timings : 1;
             bool debug_bvh : 1;
-            bool debug_probes : 1;
             bool debug_ellipsoids : 1;
             bool debug_freeze : 1;
             bool debug_motion : 1;
@@ -291,12 +290,13 @@ struct render_settings_t {
 
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
+    int8_t debug_probes = -1;
 
     bool operator==(const render_settings_t &rhs) {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
                gi_quality == rhs.gi_quality && sky_quality == rhs.sky_quality && debug_rt == rhs.debug_rt &&
-               debug_denoise == rhs.debug_denoise;
+               debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes;
     }
     bool operator!=(const render_settings_t &rhs) { return !operator==(rhs); }
 
@@ -348,7 +348,7 @@ struct ViewState {
     Ren::Vec2i act_res, scr_res;
     float vertical_fov;
     float pixel_spread_angle;
-    int frame_index;
+    int frame_index, volume_to_update;
     Ren::Vec3f prev_cam_pos, prev_sun_dir;
     Ren::Mat4f clip_from_world, view_from_world, prev_view_from_world, prev_clip_from_world, down_buf_view_from_world,
         prev_clip_from_view;
@@ -367,12 +367,14 @@ struct SharedDataBlock {
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     Ren::Vec4u item_counts;
     Ren::Vec4f ambient_hack;
+    Types::ProbeVolume probe_volumes[PROBE_VOLUMES_COUNT];
     uint32_t portals[MAX_PORTALS_TOTAL] = {0xffffffff};
     ProbeItem probes[MAX_PROBES_TOTAL] = {};
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
     Types::AtmosphereParams atmosphere;
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16, "!");
+static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + PROBE_VOLUMES_COUNT * 64,
+              "!");
 
 const int MAX_MATERIAL_PARAMS = 4;
 

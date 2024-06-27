@@ -130,6 +130,9 @@ struct DrawList {
 
     mutable Ren::BufferRef shared_data_stage_buf;
 
+    int volume_to_update = -1;
+    Ren::Vec3f bbox_min, bbox_max;
+
     std::vector<TexEntry> visible_textures;
     std::vector<TexEntry> desired_textures;
 

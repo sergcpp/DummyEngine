@@ -6,9 +6,6 @@
 INTERFACE_START(RTGI)
 
 struct Params {
-    vec4 grid_origin;
-    ivec4 grid_scroll;
-    vec4 grid_spacing;
     uvec2 img_size;
     float pixel_spread_angle;
     uint frame_index;

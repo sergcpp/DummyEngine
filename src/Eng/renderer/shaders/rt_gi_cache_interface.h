@@ -6,11 +6,14 @@
 INTERFACE_START(RTGICache)
 
 struct Params {
+    int volume_index;
+    int _pad0;
+    int _pad1;
+    int _pad2;
     vec4 grid_origin;
     ivec4 grid_scroll;
+    ivec4 grid_scroll_diff;
     vec4 grid_spacing;
-    //float pixel_spread_angle;
-    //uint frame_index;
 };
 
 struct RayPayload {

@@ -17,8 +17,7 @@
             90.16239708218438,
             -33.61769932118252
         ],
-        "env_map": "physical_sky",
-        "probe_volume_spacing": 1.25
+        "env_map": "physical_sky"
     },
     "camera": {
         "view_origin": [

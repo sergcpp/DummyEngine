@@ -6,6 +6,10 @@
 INTERFACE_START(ProbeClassify)
 
 struct Params {
+    int volume_index;
+    int _pad0;
+    int _pad1;
+    int _pad2;
     vec4 grid_origin;
     ivec4 grid_scroll;
     vec4 grid_spacing;

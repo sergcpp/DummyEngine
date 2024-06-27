@@ -482,6 +482,44 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         log->Error("[Renderer] Failed to initialize primitive drawing!");
     }
 
+    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+        const ProbeVolume &volume = persistent_data.probe_volumes[i];
+        if (i == list.volume_to_update) {
+            const Ren::Vec3i new_scroll = Ren::Vec3i{(list.draw_cam.world_position() - volume.origin) / volume.spacing};
+            volume.scroll_diff = new_scroll - volume.scroll;
+            volume.scroll = new_scroll;
+        } else {
+            volume.scroll_diff = Ren::Vec3i{0};
+        }
+    }
+
+    if (list.volume_to_update == PROBE_VOLUMES_COUNT - 1) {
+        // force the last volume to cover the whole scene
+        const ProbeVolume &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
+        last_volume.spacing = (list.bbox_max - list.bbox_min) / PROBE_VOLUME_RES;
+        last_volume.spacing =
+            Ren::Vec3f{std::max(std::max(last_volume.spacing[0], last_volume.spacing[1]), last_volume.spacing[2])};
+        const Ren::Vec3i new_scroll =
+            Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - last_volume.origin) / last_volume.spacing};
+        last_volume.scroll_diff = new_scroll - last_volume.scroll;
+        last_volume.scroll = new_scroll;
+    }
+
+    float probe_volume_spacing = 0.5f;
+    for (int i = 0; i < PROBE_VOLUMES_COUNT - 1; ++i) {
+        const ProbeVolume &volume = persistent_data.probe_volumes[i];
+        const ProbeVolume &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
+
+        if (probe_volume_spacing > last_volume.spacing[0]) {
+            volume.spacing = last_volume.spacing[0];
+            volume.scroll = Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - volume.origin) / volume.spacing};
+        } else {
+            volume.spacing = probe_volume_spacing;
+        }
+
+        probe_volume_spacing *= 2.0f;
+    }
+
     const bool cur_msaa_enabled = false; //(list.render_flags & EnableMsaa) != 0;
     const bool cur_hq_ssr_enabled = int(list.render_settings.reflections_quality) >= int(eReflectionsQuality::High);
     const bool cur_dof_enabled = list.render_settings.enable_dof;
@@ -575,6 +613,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     view_state_.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_.vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_.scr_res[1]));
     view_state_.frame_index = list.frame_index;
+    view_state_.volume_to_update = list.volume_to_update;
 
     if (list.render_settings.taa_mode != eTAAMode::Off) {
         const int samples_to_use =
@@ -654,7 +693,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         InitSkyResources();
 
         auto &common_buffers = *rp_builder_.AllocPassData<CommonBuffers>();
-        AddBuffersUpdatePass(common_buffers);
+        AddBuffersUpdatePass(common_buffers, persistent_data);
         AddLightBuffersUpdatePass(common_buffers);
         AddSunColorUpdatePass(common_buffers);
 
@@ -1084,7 +1123,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         // Debug geometry
         //
-        if (list.render_settings.debug_probes) {
+        if (list.render_settings.debug_probes != -1) {
             auto &debug_probes = rp_builder_.AddPass("DEBUG PROBES");
 
             auto *data = debug_probes.AllocPassData<RpDebugProbesData>();
@@ -1092,13 +1131,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->shared_data =
                 debug_probes.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::VertexShader);
             data->offset_tex =
-                debug_probes.AddTextureInput(frame_textures.gi_cache_data, Ren::eStageBits::VertexShader);
+                debug_probes.AddTextureInput(frame_textures.gi_cache_offset, Ren::eStageBits::VertexShader);
             data->irradiance_tex =
-                debug_probes.AddTextureInput(frame_textures.gi_cache, Ren::eStageBits::FragmentShader);
+                debug_probes.AddTextureInput(frame_textures.gi_cache_irradiance, Ren::eStageBits::FragmentShader);
             data->distance_tex =
-                debug_probes.AddTextureInput(frame_textures.gi_cache_dist, Ren::eStageBits::FragmentShader);
+                debug_probes.AddTextureInput(frame_textures.gi_cache_distance, Ren::eStageBits::FragmentShader);
+            data->exposure_tex = debug_probes.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
 
-            data->probe_volume = &persistent_data.probe_volume;
+            data->volume_to_debug = list.render_settings.debug_probes;
+            data->probe_volumes = persistent_data.probe_volumes;
 
             frame_textures.depth = data->depth_tex = debug_probes.AddDepthOutput(frame_textures.depth);
             frame_textures.color = data->output_tex = debug_probes.AddColorOutput(frame_textures.color);

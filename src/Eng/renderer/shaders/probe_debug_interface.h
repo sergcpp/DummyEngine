@@ -6,6 +6,10 @@
 INTERFACE_START(ProbeDebug)
 
 struct Params {
+    int volume_index;
+    int _pad0;
+    int _pad1;
+    int _pad2;
     vec4 grid_origin;
     ivec4 grid_scroll;
     vec4 grid_spacing;
@@ -13,6 +17,7 @@ struct Params {
 
 const int IRRADIANCE_TEX_SLOT = 0;
 const int OFFSET_TEX_SLOT = 1;
+const int EXPOSURE_TEX_SLOT = 2;
 
 INTERFACE_END
 

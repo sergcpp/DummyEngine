@@ -29,8 +29,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
     RpResRef gi_fallback;
 
-    if (frame_textures.gi_cache) {
-        // Skip expensive raytracing, sample GI cache probes to gather indirect lighting
+    if (frame_textures.gi_cache_irradiance) {
         auto &probe_sample = rp_builder_.AddPass("PROBE SAMPLE");
 
         struct PassData {
@@ -50,9 +49,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->depth_tex = probe_sample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->normals_tex = probe_sample.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->ssao_tex = probe_sample.AddTextureInput(frame_textures.ssao, Stg::ComputeShader);
-        data->irradiance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache, Stg::ComputeShader);
-        data->distance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_dist, Stg::ComputeShader);
-        data->offset_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_data, Stg::ComputeShader);
+        data->irradiance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
+        data->distance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
+        data->offset_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+
         { // gi texture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
@@ -88,9 +88,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 (view_state_.act_res[0] + ProbeSample::LOCAL_GROUP_SIZE_X - 1u) / ProbeSample::LOCAL_GROUP_SIZE_X,
                 (view_state_.act_res[1] + ProbeSample::LOCAL_GROUP_SIZE_Y - 1u) / ProbeSample::LOCAL_GROUP_SIZE_Y, 1u};
 
-            const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
-            const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
-            const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[0].origin;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[0].scroll;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[0].spacing;
 
             ProbeSample::Params uniform_params;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
@@ -443,11 +443,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 #endif
             }
 
-            data->probe_volume = &persistent_data.probe_volume;
             if (settings.gi_quality != eGIQuality::Off) {
-                data->irradiance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache, stage);
-                data->distance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_dist, stage);
-                data->offset_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_data, stage);
+                data->irradiance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
+                data->distance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_distance, stage);
+                data->offset_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_offset, stage);
             }
 
             data->dummy_black = rt_gi.AddTextureInput(dummy_black_, stage);

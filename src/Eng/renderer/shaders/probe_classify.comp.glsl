@@ -19,7 +19,7 @@ vec3 _get_probe_pos_ws(const ivec3 coords, const ivec3 offset, const vec3 grid_o
     const vec3 pos_ws = get_probe_pos_ws(coords, offset, grid_origin, grid_spacing);
 
     const int probe_index = get_scrolling_probe_index(coords, offset);
-    const ivec3 tex_coords = get_probe_texel_coords(probe_index);
+    const ivec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
 
     return pos_ws + imageLoad(g_out_img, tex_coords).xyz;
 }
@@ -32,13 +32,13 @@ void main() {
         return;
     }
 
-    const ivec3 output_coords = get_probe_texel_coords(probe_index);
+    const ivec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
     vec4 offset = imageLoad(g_out_img, output_coords);
 
 #ifdef RESET
     offset.w = PROBE_STATE_ACTIVE;
 #else
-    int backface_count = 0;
+    int backface_count = 0, outdoor_count = 0;
     float hit_distances[PROBE_FIXED_RAYS_COUNT];
 
     for (int i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
@@ -47,6 +47,9 @@ void main() {
         hit_distances[i] = texelFetch(g_ray_data, ray_data_coords, 0).w;
         if (hit_distances[i] < 0.0) {
             ++backface_count;
+        }
+        if (hit_distances[i] > 100.0) {
+            ++outdoor_count;
         }
     }
 
@@ -85,7 +88,7 @@ void main() {
             const float max_distance = min(distances.x, min(distances.y, distances.z));
 
             if (hit_distances[i] <= max_distance) {
-                offset.w = PROBE_STATE_ACTIVE;
+                offset.w = (outdoor_count > (PROBE_FIXED_RAYS_COUNT - backface_count) / 2) ? PROBE_STATE_ACTIVE_OUTDOOR : PROBE_STATE_ACTIVE;
                 break;
             }
         }

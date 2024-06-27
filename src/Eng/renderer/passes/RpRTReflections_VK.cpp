@@ -162,14 +162,7 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.layout(), 0, 2, descr_sets, 0,
                                      nullptr);
 
-    const Ren::Vec3f &grid_origin = pass_data_->probe_volume->origin;
-    const Ren::Vec3i &grid_scroll = pass_data_->probe_volume->scroll;
-    const Ren::Vec3f &grid_spacing = pass_data_->probe_volume->spacing;
-
     RTReflections::Params uniform_params;
-    uniform_params.grid_origin = Ren::Vec4f(grid_origin[0], grid_origin[1], grid_origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(grid_scroll[0], grid_scroll[1], grid_scroll[2], 0.0f);
-    uniform_params.grid_spacing = Ren::Vec4f(grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f);
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
@@ -307,14 +300,7 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.layout(), 0, 2, descr_sets, 0,
                                      nullptr);
 
-    const Ren::Vec3f &grid_origin = pass_data_->probe_volume->origin;
-    const Ren::Vec3i &grid_scroll = pass_data_->probe_volume->scroll;
-    const Ren::Vec3f &grid_spacing = pass_data_->probe_volume->spacing;
-
     RTReflections::Params uniform_params;
-    uniform_params.grid_origin = Ren::Vec4f(grid_origin[0], grid_origin[1], grid_origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(grid_scroll[0], grid_scroll[1], grid_scroll[2], 0.0f);
-    uniform_params.grid_spacing = Ren::Vec4f(grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f);
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 

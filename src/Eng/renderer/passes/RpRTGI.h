@@ -37,7 +37,6 @@ struct RpRTGIData {
     RpResRef offset_tex;
 
     Ren::IAccStructure *tlas = nullptr;
-    const ProbeVolume *probe_volume = nullptr;
 
     struct {
         uint32_t root_node;

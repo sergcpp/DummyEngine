@@ -15,6 +15,7 @@ void Eng::RpDebugProbes::Execute(RpBuilder &builder) {
     RpAllocTex &offset_tex = builder.GetReadTexture(pass_data_->offset_tex);
     RpAllocTex &irradiance_tex = builder.GetReadTexture(pass_data_->irradiance_tex);
     RpAllocTex &distance_tex = builder.GetReadTexture(pass_data_->distance_tex);
+    RpAllocTex &exposure_tex = builder.GetReadTexture(pass_data_->exposure_tex);
     RpAllocTex &depth_tex = builder.GetWriteTexture(pass_data_->depth_tex);
     RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
 
@@ -29,15 +30,16 @@ void Eng::RpDebugProbes::Execute(RpBuilder &builder) {
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::OFFSET_TEX_SLOT, *offset_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr}};
+        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
+        {Ren::eBindTarget::Tex2DSampled, ProbeDebug::EXPOSURE_TEX_SLOT, *exposure_tex.ref}};
+
+    const ProbeVolume &volume = pass_data_->probe_volumes[pass_data_->volume_to_debug];
 
     ProbeDebug::Params uniform_params = {};
-    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volume->origin[0], pass_data_->probe_volume->origin[1],
-                                            pass_data_->probe_volume->origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volume->scroll[0], pass_data_->probe_volume->scroll[1],
-                                            pass_data_->probe_volume->scroll[2], 0.0f);
-    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volume->spacing[0], pass_data_->probe_volume->spacing[1],
-                                             pass_data_->probe_volume->spacing[2], 0.0f);
+    uniform_params.volume_index = pass_data_->volume_to_debug;
+    uniform_params.grid_origin = Ren::Vec4f(volume.origin[0], volume.origin[1], volume.origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(volume.scroll[0], volume.scroll[1], volume.scroll[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(volume.spacing[0], volume.spacing[1], volume.spacing[2], 0.0f);
 
     const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};

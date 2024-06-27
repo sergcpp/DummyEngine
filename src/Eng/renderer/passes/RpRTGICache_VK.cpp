@@ -63,12 +63,20 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTGICache::Params uniform_params = {};
-    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volume->origin[0], pass_data_->probe_volume->origin[1],
-                                            pass_data_->probe_volume->origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volume->scroll[0], pass_data_->probe_volume->scroll[1],
-                                            pass_data_->probe_volume->scroll[2], 0.0f);
-    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volume->spacing[0], pass_data_->probe_volume->spacing[1],
-                                             pass_data_->probe_volume->spacing[2], 0.0f);
+    uniform_params.volume_index = view_state_->volume_to_update;
+    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].origin[0],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].origin[1],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volumes[view_state_->volume_to_update].scroll[0],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].scroll[1],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].scroll[2], 0.0f);
+    uniform_params.grid_scroll_diff =
+        Ren::Vec4i(pass_data_->probe_volumes[view_state_->volume_to_update].scroll_diff[0],
+                   pass_data_->probe_volumes[view_state_->volume_to_update].scroll_diff[1],
+                   pass_data_->probe_volumes[view_state_->volume_to_update].scroll_diff[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].spacing[0],
+                                             pass_data_->probe_volumes[view_state_->volume_to_update].spacing[1],
+                                             pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_inline_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
@@ -180,12 +188,20 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTGICache::Params uniform_params = {};
-    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volume->origin[0], pass_data_->probe_volume->origin[1],
-                                            pass_data_->probe_volume->origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volume->scroll[0], pass_data_->probe_volume->scroll[1],
-                                            pass_data_->probe_volume->scroll[2], 0.0f);
-    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volume->spacing[0], pass_data_->probe_volume->spacing[1],
-                                             pass_data_->probe_volume->spacing[2], 0.0f);
+    uniform_params.volume_index = view_state_->volume_to_update;
+    uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].origin[0],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].origin[1],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(pass_data_->probe_volumes[view_state_->volume_to_update].scroll[0],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].scroll[1],
+                                            pass_data_->probe_volumes[view_state_->volume_to_update].scroll[2], 0.0f);
+    uniform_params.grid_scroll_diff =
+        Ren::Vec4i(pass_data_->probe_volumes[view_state_->volume_to_update].scroll_diff[0],
+                   pass_data_->probe_volumes[view_state_->volume_to_update].scroll_diff[1],
+                   pass_data_->probe_volumes[view_state_->volume_to_update].scroll_diff[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].spacing[0],
+                                             pass_data_->probe_volumes[view_state_->volume_to_update].spacing[1],
+                                             pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);

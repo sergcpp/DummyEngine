@@ -226,6 +226,18 @@ template <typename T, int N> force_inline Vec<T, N> Floor(const Vec<T, N> &v) {
     return ret;
 }
 
+template <typename T, int N> force_inline Vec<T, N> AbsFloor(const Vec<T, N> &v) {
+    Vec<T, N> ret;
+    for (int i = 0; i < N; i++) {
+        if (ret[i] > 0.0f) {
+            ret[i] = std::floor(v[i]);
+        } else {
+            ret[i] = std::ceil(v[i]);
+        }
+    }
+    return ret;
+}
+
 template <typename T, int N> force_inline Vec<T, N> Ceil(const Vec<T, N> &v) {
     Vec<T, N> ret;
     for (int i = 0; i < N; i++) {

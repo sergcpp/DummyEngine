@@ -401,8 +401,6 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         }
     }
 
-    float probe_volume_spacing = 0.5f;
-
     if (js_scene.Has("environment")) {
         const JsObjectP &js_env = js_scene.at("environment").as_obj();
         if (js_env.Has("sun_dir")) {
@@ -566,10 +564,6 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         } else {
             scene_data_.env.atmosphere.clouds_density = 0.5f;
         }
-
-        if (js_env.Has("probe_volume_spacing")) {
-            probe_volume_spacing = float(js_env.at("probe_volume_spacing").as_num().val);
-        }
     } else {
         scene_data_.env = {};
     }
@@ -594,49 +588,55 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
     const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
 
-    scene_data_.persistent_data.probe_volume.origin = Ren::Vec3f{0.0f, 0.0f, 0.0f};
-    scene_data_.persistent_data.probe_volume.spacing = Ren::Vec3f{probe_volume_spacing};
-
-    // TODO: Allocate atlases on demand!
-    // ~45mb
-    scene_data_.persistent_data.probe_volume.ray_data = std::make_unique<Ren::Texture2DArray>(
+    // TODO: make this temporary FG resource
+    // ~8mb
+    scene_data_.persistent_data.probe_ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
         PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
-    // ~12mb
-    scene_data_.persistent_data.probe_volume.irradiance = std::make_unique<Ren::Texture2DArray>(
+    // ~16mb
+    scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES,
-        PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES, PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F,
+        PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES, PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRGBA16F,
         Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
-    // ~23mb
-    scene_data_.persistent_data.probe_volume.distance = std::make_unique<Ren::Texture2DArray>(
+    // ~64mb
+    scene_data_.persistent_data.probe_distance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES * PROBE_DISTANCE_RES,
-        PROBE_VOLUME_RES * PROBE_DISTANCE_RES, PROBE_VOLUME_RES, Ren::eTexFormat::RawRG16F,
+        PROBE_VOLUME_RES * PROBE_DISTANCE_RES, PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRG16F,
         Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
-    // ~200kb
-    scene_data_.persistent_data.probe_volume.data = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume Data", PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES,
-        Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+    // ~0.25mb
+    scene_data_.persistent_data.probe_offset = std::make_unique<Ren::Texture2DArray>(
+        ren_ctx_.api_ctx(), "Probe Volume Offset", PROBE_VOLUME_RES, PROBE_VOLUME_RES,
+        PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
 
-    { // clear data
-        Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
+    Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
-        const Ren::TransitionInfo transitions[] = {
-            {scene_data_.persistent_data.probe_volume.ray_data.get(), Ren::eResState::CopyDst},
-            {scene_data_.persistent_data.probe_volume.irradiance.get(), Ren::eResState::CopyDst},
-            {scene_data_.persistent_data.probe_volume.distance.get(), Ren::eResState::CopyDst},
-            {scene_data_.persistent_data.probe_volume.data.get(), Ren::eResState::CopyDst}};
-        Ren::TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+    const Ren::TransitionInfo transitions[] = {
+        {scene_data_.persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
+        {scene_data_.persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
+        {scene_data_.persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
+        {scene_data_.persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
+    Ren::TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
-        const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-        scene_data_.persistent_data.probe_volume.ray_data->Clear(rgba, cmd_buf);
-        scene_data_.persistent_data.probe_volume.irradiance->Clear(rgba, cmd_buf);
-        scene_data_.persistent_data.probe_volume.distance->Clear(rgba, cmd_buf);
-        scene_data_.persistent_data.probe_volume.data->Clear(rgba, cmd_buf);
-        ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+    const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    scene_data_.persistent_data.probe_ray_data->Clear(rgba, cmd_buf);
+    scene_data_.persistent_data.probe_irradiance->Clear(rgba, cmd_buf);
+    scene_data_.persistent_data.probe_distance->Clear(rgba, cmd_buf);
+    scene_data_.persistent_data.probe_offset->Clear(rgba, cmd_buf);
+
+    ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+    float probe_volume_spacing = 0.5f;
+    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+        ProbeVolume &volume = scene_data_.persistent_data.probe_volumes.emplace_back();
+
+        volume.origin = Ren::Vec3f{0.0f};
+        volume.spacing = Ren::Vec3f{probe_volume_spacing};
+
+        probe_volume_spacing *= 2.0f;
     }
 
     __itt_task_end(__g_itt_domain);
@@ -901,9 +901,6 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
         // view is minimized?
         return;
     }
-
-    scene_data_.persistent_data.probe_volume.scroll =
-        Ren::Vec3i{origin / scene_data_.persistent_data.probe_volume.spacing};
 
     cam_.SetupView(origin, target, up);
     cam_.Perspective(fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);

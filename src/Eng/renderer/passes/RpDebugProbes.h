@@ -11,10 +11,12 @@ struct RpDebugProbesData {
     RpResRef offset_tex;
     RpResRef irradiance_tex;
     RpResRef distance_tex;
+    RpResRef exposure_tex;
     RpResRef depth_tex;
     RpResRef output_tex;
 
-    const ProbeVolume *probe_volume = nullptr;
+    int volume_to_debug = 0;
+    Ren::Span<const ProbeVolume> probe_volumes;
 };
 
 class RpDebugProbes : public RpExecutor {

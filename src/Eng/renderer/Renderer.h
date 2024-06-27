@@ -269,14 +269,14 @@ class Renderer {
         RpResRef sun_shadow;
         RpResRef exposure;
 
-        RpResRef gi_cache;
-        RpResRef gi_cache_dist;
-        RpResRef gi_cache_data;
+        RpResRef gi_cache_irradiance;
+        RpResRef gi_cache_distance;
+        RpResRef gi_cache_offset;
     };
 
     void InitSkyResources();
 
-    void AddBuffersUpdatePass(CommonBuffers &common_buffers);
+    void AddBuffersUpdatePass(CommonBuffers &common_buffers, const PersistentGpuData &persistent_data);
     void AddLightBuffersUpdatePass(CommonBuffers &common_buffers);
     void AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
     void AddSunColorUpdatePass(CommonBuffers &common_buffers);

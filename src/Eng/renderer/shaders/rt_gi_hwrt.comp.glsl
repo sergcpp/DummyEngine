@@ -424,12 +424,18 @@ void main() {
 
             final_color += throughput * light_total;
 #ifdef GI_CACHE
-            if (lobe_weights.diffuse > 0.0 && hit_t > 0.5 * length(g_params.grid_spacing.xyz)) {
-                const vec3 irradiance = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_params.grid_spacing.xyz), N,
-                                                              g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
-                final_color += throughput * (lobe_weights.diffuse_mul / M_PI) * base_color * irradiance;
-                // terminate ray
-                throughput *= 0.0;
+            for (int i = 0; i < PROBE_VOLUMES_COUNT && (lobe_weights.diffuse > 0.0); ++i) {
+                const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                if (weight > 0.0) {
+                    if (hit_t > 0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)) {
+                        const vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,
+                                                                      g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                        final_color += throughput * lobe_weights.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
+                        // terminate ray
+                        throughput *= 0.0;
+                    }
+                    break;
+                }
             }
 #endif
             throughput *= lobe_weights.diffuse_mul * base_color;

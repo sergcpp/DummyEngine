@@ -467,7 +467,11 @@ void GSBaseState::Enter() {
     });
 
     cmdline_->RegisterCommand("r_showProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
-        renderer_->settings.debug_probes = !renderer_->settings.debug_probes;
+        if (args.size() > 1) {
+            renderer_->settings.debug_probes = int8_t(args[1].val);
+        } else {
+            renderer_->settings.debug_probes = -1;
+        }
         return true;
     });
 

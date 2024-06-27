@@ -50,8 +50,19 @@ void main() {
 
     const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);
 
-    vec3 final_color = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_params.grid_spacing.xyz), normal.xyz,
-                                             g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
+    vec3 final_color = vec3(0.0);
+    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+        const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+        if (weight > 0.0) {
+            final_color += weight * get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i].spacing.xyz), normal.xyz,
+                                                          g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+            if (weight < 1.0 && i < PROBE_VOLUMES_COUNT - 1) {
+                final_color += (1.0 - weight) * get_volume_irradiance(i + 1, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i + 1].spacing.xyz), normal.xyz,
+                                                                      g_shrd_data.probe_volumes[i + 1].scroll.xyz, g_shrd_data.probe_volumes[i + 1].origin.xyz, g_shrd_data.probe_volumes[i + 1].spacing.xyz);
+            }
+            break;
+        }
+    }
     final_color *= texelFetch(g_ssao_tex, icoord, 0).x;
 
     imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color / M_PI), 1.0));

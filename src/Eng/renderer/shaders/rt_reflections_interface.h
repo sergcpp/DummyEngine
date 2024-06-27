@@ -6,12 +6,9 @@
 INTERFACE_START(RTReflections)
 
 struct Params {
-    vec4 grid_origin;
-    ivec4 grid_scroll;
-    vec4 grid_spacing;
     uvec2 img_size;
     float pixel_spread_angle;
-    float _pad[1];
+    float _pad0;
 };
 
 struct RayPayload {

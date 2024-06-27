@@ -35,9 +35,11 @@ void main() {
                                  (gl_LocalInvocationID.y == 0) || (gl_LocalInvocationID.y == (TEXEL_RES - 2 + 1));
 
     if (!is_border_texel) {
-        const ivec3 tex_coords = get_probe_texel_coords(probe_index);
-        if (texelFetch(g_offset_tex, tex_coords, 0).w < 0.5) {
-            //return;
+        const bool is_scrolling_plane_probe = IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz);
+
+        const ivec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+        if (!is_scrolling_plane_probe && texelFetch(g_offset_tex, tex_coords, 0).w < 0.5) {
+            return;
         }
 
         const ivec3 thread_coords = ivec3(gl_WorkGroupID.x * (TEXEL_RES - 2),
@@ -88,10 +90,10 @@ void main() {
 
         result.rgb *= 1.0 / (2.0 * max(result.a, epsilon));
 
-        vec3 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID)).rgb;
+        vec3 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES)).rgb;
 
         float hysteresis = 0.97;
-        if (dot(probe_irradiance_mean, probe_irradiance_mean) == 0.0) {
+        if (is_scrolling_plane_probe || dot(probe_irradiance_mean, probe_irradiance_mean) == 0.0) {
             hysteresis = 0.0;
         }
 
@@ -101,7 +103,7 @@ void main() {
         //result = vec4(mix(result.rg, probe_irradiance_mean.rg, hysteresis), 0.0, 1.0);
 #endif
 
-        imageStore(g_out_img, ivec3(gl_GlobalInvocationID), result);
+        imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES), result);
     }
 
     groupMemoryBarrier(); barrier();
@@ -110,7 +112,7 @@ void main() {
         const bool is_corner_texel = (gl_LocalInvocationID.x == 0 || gl_LocalInvocationID.x == (TEXEL_RES - 1)) && (gl_LocalInvocationID.y == 0 || gl_LocalInvocationID.y == (TEXEL_RES - 1));
         const bool is_row_texel = (gl_LocalInvocationID.x > 0 && gl_LocalInvocationID.x < (TEXEL_RES - 1));
 
-        ivec3 copy_coords = ivec3(gl_WorkGroupID.x * TEXEL_RES, gl_WorkGroupID.y * TEXEL_RES, gl_GlobalInvocationID.z);
+        ivec3 copy_coords = ivec3(gl_WorkGroupID.x * TEXEL_RES, gl_WorkGroupID.y * TEXEL_RES, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES);
 
         if (is_corner_texel) {
             copy_coords.x += int(gl_LocalInvocationID.x > 0 ? 1 : (TEXEL_RES - 2));
@@ -124,6 +126,6 @@ void main() {
         }
 
         const vec4 result = imageLoad(g_out_img, copy_coords);
-        imageStore(g_out_img, ivec3(gl_GlobalInvocationID), result);
+        imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES), result);
     }
 }

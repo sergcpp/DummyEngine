@@ -130,14 +130,7 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
                                   ? (irradiance_tex ? pi_rt_gi_2bounce_swrt_[1] : pi_rt_gi_2bounce_swrt_[0])
                                   : (irradiance_tex ? pi_rt_gi_swrt_[1] : pi_rt_gi_swrt_[0]);
 
-    const Ren::Vec3f &grid_origin = pass_data_->probe_volume->origin;
-    const Ren::Vec3i &grid_scroll = pass_data_->probe_volume->scroll;
-    const Ren::Vec3f &grid_spacing = pass_data_->probe_volume->spacing;
-
     RTGI::Params uniform_params;
-    uniform_params.grid_origin = Ren::Vec4f(grid_origin[0], grid_origin[1], grid_origin[2], 0.0f);
-    uniform_params.grid_scroll = Ren::Vec4i(grid_scroll[0], grid_scroll[1], grid_scroll[2], 0.0f);
-    uniform_params.grid_spacing = Ren::Vec4f(grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f);
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;

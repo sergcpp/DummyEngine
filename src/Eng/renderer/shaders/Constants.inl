@@ -127,7 +127,8 @@ const int DECALS_BUF_STRIDE = 7;
 const int MESH_BUF_STRIDE = 3;
 const int MESH_INSTANCE_BUF_STRIDE = 9;
 
-const int PROBE_VOLUME_RES = 28;
+const int PROBE_VOLUME_RES = 16;
+const int PROBE_VOLUMES_COUNT = 8;
 const int PROBE_TOTAL_RAYS_COUNT = 256;
 const int PROBE_FIXED_RAYS_COUNT = 32;
 const int PROBE_IRRADIANCE_RES = 8;
@@ -135,6 +136,7 @@ const int PROBE_DISTANCE_RES = 16;
 
 const float PROBE_STATE_INACTIVE = 0;
 const float PROBE_STATE_ACTIVE = 1;
+const float PROBE_STATE_ACTIVE_OUTDOOR = 2;
 
 const float HDR_FACTOR = 32;
 

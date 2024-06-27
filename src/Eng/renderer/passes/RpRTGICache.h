@@ -36,7 +36,8 @@ struct RpRTGICacheData {
 
     RpResRef out_ray_data_tex;
 
-    const ProbeVolume *probe_volume = nullptr;
+    const ViewState *view_state = nullptr;
+    Ren::Span<const ProbeVolume> probe_volumes;
 };
 
 class RpRTGICache : public RpExecutor {

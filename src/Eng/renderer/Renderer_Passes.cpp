@@ -185,7 +185,7 @@ bool Eng::Renderer::InitPipelines() {
     return success;
 }
 
-void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
+void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const PersistentGpuData &persistent_data) {
     auto &update_bufs = rp_builder_.AddPass("UPDATE BUFFERS");
 
     { // create skin transforms buffer
@@ -220,7 +220,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter Buf", desc);
     }
 
-    update_bufs.set_execute_cb([this, &common_buffers, shared_data_res](RpBuilder &builder) {
+    update_bufs.set_execute_cb([this, &common_buffers, &persistent_data, shared_data_res](RpBuilder &builder) {
         Ren::Context &ctx = builder.ctx();
         RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms_res);
         RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
@@ -388,6 +388,18 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 env_mip_count = float(p_list_->env.env_map->params.mip_count);
             }
             shrd_data.ambient_hack = Ren::Vec4f{0.0f, 0.0f, 0.0f, env_mip_count};
+
+            for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+                shrd_data.probe_volumes[i].origin =
+                    Ren::Vec4f{persistent_data.probe_volumes[i].origin[0], persistent_data.probe_volumes[i].origin[1],
+                               persistent_data.probe_volumes[i].origin[2], 0.0f};
+                shrd_data.probe_volumes[i].spacing =
+                    Ren::Vec4f{persistent_data.probe_volumes[i].spacing[0], persistent_data.probe_volumes[i].spacing[1],
+                               persistent_data.probe_volumes[i].spacing[2], 0.0f};
+                shrd_data.probe_volumes[i].scroll =
+                    Ren::Vec4i{persistent_data.probe_volumes[i].scroll[0], persistent_data.probe_volumes[i].scroll[1],
+                               persistent_data.probe_volumes[i].scroll[2], 0.0f};
+            }
 
             memcpy(&shrd_data.probes[0], p_list_->probes.data(), sizeof(ProbeItem) * p_list_->probes.size());
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data(),

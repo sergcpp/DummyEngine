@@ -23,7 +23,7 @@ void main() {
         return;
     }
 
-    const ivec3 output_coords = get_probe_texel_coords(probe_index);
+    const ivec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
     vec4 offset = imageLoad(g_out_img, output_coords);
 
 #ifdef RESET

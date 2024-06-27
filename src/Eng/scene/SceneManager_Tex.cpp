@@ -219,8 +219,8 @@ void Eng::SceneManager::TextureLoaderProc() {
         if (read_success) {
             const Ren::Tex2DParams &cur_p = req->ref->params;
 
-            const int max_load_w = std::max(cur_p.w * 2, 64);
-            const int max_load_h = std::max(cur_p.h * 2, 64);
+            const int max_load_w = std::max(cur_p.w * 2, 256);
+            const int max_load_h = std::max(cur_p.h * 2, 256);
 
             int w = int(req->orig_w), h = int(req->orig_h);
             for (int i = 0; i < req->orig_mip_count; i++) {
