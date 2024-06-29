@@ -90,7 +90,8 @@ float _copysign(const float val, const float sign) {
 vec3 safe_invert(vec3 v) {
     vec3 ret;
     for (int i = 0; i < 3; ++i) {
-        ret[i] = (abs(v[i]) > FLT_EPS) ? (1.0 / v[i]) : _copysign(FLT_MAX, v[i]);
+        //ret[i] = (abs(v[i]) > FLT_EPS) ? (1.0 / v[i]) : _copysign(FLT_MAX, v[i]);
+        ret[i] = 1.0 / ((abs(v[i]) > FLT_EPS) ? v[i] : _copysign(FLT_EPS, v[i]));
     }
     return ret;
 }
@@ -166,9 +167,9 @@ void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_in
 const int MAX_STACK_SIZE = 48;
 shared uint g_stack[64][MAX_STACK_SIZE];
 
-void Traverse_MicroTree_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positions, usamplerBuffer vtx_indices, usamplerBuffer prim_indices,
-                                  vec3 ro, vec3 rd, vec3 inv_d, int obj_index, uint node_index,
-                                  uint first_vertex, uint stack_size, inout hit_data_t inter, int geo_index, int geo_count) {
+void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positions, usamplerBuffer vtx_indices, usamplerBuffer prim_indices,
+                             vec3 ro, vec3 rd, vec3 inv_d, int obj_index, uint node_index,
+                             uint first_vertex, uint stack_size, inout hit_data_t inter, int geo_index, int geo_count) {
     const vec3 neg_inv_do = -inv_d * ro;
 
     uint initial_stack_size = stack_size;
@@ -203,9 +204,9 @@ void Traverse_MicroTree_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_po
     }
 }
 
-void Traverse_MacroTree_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes, samplerBuffer mesh_instances, usamplerBuffer meshes, samplerBuffer vtx_positions,
-                                  usamplerBuffer vtx_indices, usamplerBuffer prim_indices, vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint ray_flags, uint node_index,
-                                  inout hit_data_t inter) {
+void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes, samplerBuffer mesh_instances, usamplerBuffer meshes, samplerBuffer vtx_positions,
+                             usamplerBuffer vtx_indices, usamplerBuffer prim_indices, vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint ray_flags, uint node_index,
+                             inout hit_data_t inter) {
     vec3 orig_neg_inv_do = -orig_inv_rd * orig_ro;
 
     uint stack_size = 0;
@@ -258,8 +259,8 @@ void Traverse_MacroTree_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_n
                 const uvec2 m_vindex_gcount = texelFetch(meshes, int(MESH_BUF_STRIDE * mesh_index + 2)).xy;
 
                 const uint geo_index = floatBitsToUint(mi_bbox_min.w);
-                Traverse_MicroTree_WithStack(blas_nodes, vtx_positions, vtx_indices, prim_indices, ro, rd, inv_d, int(i), m_node_index, m_vindex_gcount.x,
-                                             stack_size, inter, int(geo_index), int(m_vindex_gcount.y));
+                Traverse_BLAS_WithStack(blas_nodes, vtx_positions, vtx_indices, prim_indices, ro, rd, inv_d, int(i), m_node_index, m_vindex_gcount.x,
+                                        stack_size, inter, int(geo_index), int(m_vindex_gcount.y));
             }
         }
     }
