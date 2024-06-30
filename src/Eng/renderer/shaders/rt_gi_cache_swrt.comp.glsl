@@ -82,7 +82,7 @@ void main() {
     }
 
     const vec3 probe_pos = get_probe_pos_ws(g_params.volume_index, probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz, g_offset_tex);
-    const vec3 probe_ray_dir = get_probe_ray_dir(ray_index);
+    const vec3 probe_ray_dir = get_probe_ray_dir(ray_index, g_params.quat_rot);
     const ivec3 output_coords = get_ray_data_coords(ray_index, probe_index);
 
     const vec3 inv_d = safe_invert(probe_ray_dir);

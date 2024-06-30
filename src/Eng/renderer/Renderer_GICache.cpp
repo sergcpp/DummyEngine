@@ -112,6 +112,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_scroll_diff =
                 Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
             Ren::DispatchCompute(pi_probe_blend_[0], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
                                  bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(),
@@ -159,6 +160,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_scroll_diff =
                 Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
             Ren::DispatchCompute(pi_probe_blend_[1], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
                                  bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(),
@@ -203,6 +205,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
             Ren::DispatchCompute(pi_probe_relocate_[persistent_data.reset_probe_relocation], grp_count, bindings,
                                  &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
@@ -249,6 +252,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
             Ren::DispatchCompute(pi_probe_classify_[persistent_data.reset_probe_classification], grp_count, bindings,
                                  &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());

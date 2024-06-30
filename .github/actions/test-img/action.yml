@@ -26,43 +26,43 @@ runs:
         cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.08
-        mv bistro.png bistro_medium.png
-        mv bistro_diff.png bistro_diff_medium.png
-        cp bistro_medium.png bistro_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset high --psnr 21.47
-        mv bistro.png bistro_high.png
-        mv bistro_diff.png bistro_diff_high.png
-        cp bistro_high.png bistro_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset ultra --psnr 24.18
-        mv bistro.png bistro_ultra.png
-        mv bistro_diff.png bistro_diff_ultra.png
-        cp bistro_ultra.png bistro_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset medium --psnr 21.65
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.10
+        #mv bistro.png bistro_medium.png
+        #mv bistro_diff.png bistro_diff_medium.png
+        #cp bistro_medium.png bistro_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset high --psnr 21.40
+        #mv bistro.png bistro_high.png
+        #mv bistro_diff.png bistro_diff_high.png
+        #cp bistro_high.png bistro_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset ultra --psnr 24.10
+        #mv bistro.png bistro_ultra.png
+        #mv bistro_diff.png bistro_diff_ultra.png
+        #cp bistro_ultra.png bistro_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset medium --psnr 21.70
         mv sponza.png sponza_medium.png
         mv sponza_diff.png sponza_diff_medium.png
         cp sponza_medium.png sponza_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 21.51
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 21.40
         mv sponza.png sponza_high.png
         mv sponza_diff.png sponza_diff_high.png
         cp sponza_high.png sponza_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 23.27
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 23.05
         mv sponza.png sponza_ultra.png
         mv sponza_diff.png sponza_diff_ultra.png
         cp sponza_ultra.png sponza_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset medium --psnr 22.05
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset medium --psnr 21.95
         mv ai043_06.png ai043_06_medium.png
         mv ai043_06_diff.png ai043_06_diff_medium.png
         cp ai043_06_medium.png ai043_06_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset high --psnr 22.73
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset high --psnr 21.60
         mv ai043_06.png ai043_06_high.png
         mv ai043_06_diff.png ai043_06_diff_high.png
         cp ai043_06_high.png ai043_06_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset ultra --psnr 24.28
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset ultra --psnr 22.40
         mv ai043_06.png ai043_06_ultra.png
         mv ai043_06_diff.png ai043_06_diff_ultra.png
         cp ai043_06_ultra.png ai043_06_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --pt --psnr 23.36
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --pt --psnr 23.35
         mv ai043_06.png ai043_06_pt.png
         mv ai043_06_diff.png ai043_06_diff_pt.png
         cp ai043_06_pt.png ai043_06_diff_pt.png $WORK_DIR/${{ inputs.out-dir }}

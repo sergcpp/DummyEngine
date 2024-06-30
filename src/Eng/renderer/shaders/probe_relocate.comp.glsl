@@ -59,11 +59,11 @@ void main() {
     vec3 full_offset = vec3(1e27);
 
     if (closest_back_index != -1 && (backface_count / float(PROBE_FIXED_RAYS_COUNT)) > 0.25) {
-        const vec3 closest_back_dir = get_probe_ray_dir(closest_back_index);
+        const vec3 closest_back_dir = get_probe_ray_dir(closest_back_index, g_params.quat_rot);
         full_offset = offset.xyz + closest_back_dir * (closest_back_dist + MinFrontDistance * 0.5);
     } else if (closest_front_dist < MinFrontDistance) {
-        const vec3 closest_front_dir = get_probe_ray_dir(closest_front_index);
-        vec3 farthest_front_dir = get_probe_ray_dir(farthest_front_index);
+        const vec3 closest_front_dir = get_probe_ray_dir(closest_front_index, g_params.quat_rot);
+        vec3 farthest_front_dir = get_probe_ray_dir(farthest_front_index, g_params.quat_rot);
         if (dot(closest_front_dir, farthest_front_dir) <= 0.0) {
             farthest_front_dir *= min(farthest_front_dist, 1.0);
             full_offset = offset.xyz + farthest_front_dir;

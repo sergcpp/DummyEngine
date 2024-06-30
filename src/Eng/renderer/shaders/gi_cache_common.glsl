@@ -88,19 +88,25 @@ vec3 get_probe_pos_ws(const int volume_index, const ivec3 coords, const ivec3 of
 vec3 spherical_fibonacci(const float sample_index, const float sample_count) {
     const float b = (sqrt(5.0) * 0.5 + 0.5) - 1.0;
     const float phi = 2.0 * M_PI * fract(sample_index * b);
-    const float cos_theta = 1.0 - (2.0 * sample_index + 1.0) * (1.0 / sample_count);
+    const float cos_theta = 1.0 - (2.0 * sample_index + 1.0) / sample_count;
     const float sin_theta = sqrt(saturate(1.0 - (cos_theta * cos_theta)));
     return vec3(cos(phi) * sin_theta, sin(phi) * sin_theta, cos_theta);
 }
 
-vec3 get_probe_ray_dir(const int ray_index) {
+vec3 quat_rotate(const vec3 v, const vec4 q) {
+    const vec3 b = q.xyz;
+    const float b2 = dot(b, b);
+    return (v * (q.w * q.w - b2) + b * (dot(v, b) * 2.0) + cross(b, v) * (q.w * 2.0));
+}
+
+vec3 get_probe_ray_dir(const int ray_index, vec4 rot_quat) {
     const bool is_fixed_ray = (ray_index < PROBE_FIXED_RAYS_COUNT);
     const int rays_count = is_fixed_ray ? PROBE_FIXED_RAYS_COUNT : (PROBE_TOTAL_RAYS_COUNT - PROBE_FIXED_RAYS_COUNT);
     const int sample_index = is_fixed_ray ? ray_index : (ray_index - PROBE_FIXED_RAYS_COUNT);
 
-    const vec3 dir = spherical_fibonacci(float(sample_index), float(rays_count));
+    vec3 dir = spherical_fibonacci(float(sample_index), float(rays_count));
     if (!is_fixed_ray) {
-        // TODO: rotation
+        dir = quat_rotate(dir, rot_quat);
     }
     return normalize(dir);
 }

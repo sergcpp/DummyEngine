@@ -364,10 +364,24 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                 const float rand_angle =
                     std::modf(float(view_state_.frame_index) * RendererInternal::GoldenRatio, &_unused) * 2.0f *
                     Ren::Pi<float>();
-                const float ca = std::cos(rand_angle);
-                const float sa = std::sin(rand_angle);
+                const float ca = std::cos(rand_angle), sa = std::sin(rand_angle);
                 view_state_.rand_rotators[0] = Ren::Vec4f{-sa, ca, -ca, sa};
                 view_state_.rand_rotators[1] = Ren::Vec4f{ca, sa, -sa, ca};
+            }
+
+            { // random rotator used by GI probes
+                const int sample_index = view_state_.frame_index / PROBE_VOLUMES_COUNT;
+
+                float yaw = 0.0f, pitch = 0.0f, roll = 0.0f;
+                if ((sample_index % 2) == 1) {
+                    yaw = pitch = roll = 0.125f;
+                }
+
+                yaw *= 2.0f * Ren::Pi<float>();
+                pitch *= 2.0f * Ren::Pi<float>();
+                roll *= 2.0f * Ren::Pi<float>();
+
+                view_state_.probe_ray_rotator = Ren::ToQuat(yaw, pitch, roll);
             }
 
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();

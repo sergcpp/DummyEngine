@@ -14,6 +14,7 @@ struct Params {
     ivec4 grid_scroll;
     ivec4 grid_scroll_diff;
     vec4 grid_spacing;
+    vec4 quat_rot;
 };
 
 const int RAY_DATA_TEX_SLOT = 1;

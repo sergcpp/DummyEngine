@@ -65,7 +65,7 @@ void main() {
                 continue;
             }
 
-            const vec3 probe_ray_dir = get_probe_ray_dir(i);
+            const vec3 probe_ray_dir = get_probe_ray_dir(i, g_params.quat_rot);
 
             const vec3 x_normal = vec3(probe_ray_dir.x / max(abs(probe_ray_dir.x), 0.000001), 0.0, 0.0);
             const vec3 y_normal = vec3(0.0, probe_ray_dir.y / max(abs(probe_ray_dir.y), 0.000001), 0.0);

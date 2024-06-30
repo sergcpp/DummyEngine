@@ -53,7 +53,7 @@ void main() {
         int backfaces = 0;
 
         for (int i = PROBE_FIXED_RAYS_COUNT; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
-            const vec3 ray_dir = get_probe_ray_dir(i);
+            const vec3 ray_dir = get_probe_ray_dir(i, g_params.quat_rot);
 
             float weight = clamp(dot(probe_ray_dir, ray_dir), 0.0, 1.0);
 
@@ -90,17 +90,27 @@ void main() {
 
         result.rgb *= 1.0 / (2.0 * max(result.a, epsilon));
 
-        vec3 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES)).rgb;
+        const vec4 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES));
 
-        float hysteresis = 0.97;
-        if (is_scrolling_plane_probe || dot(probe_irradiance_mean, probe_irradiance_mean) == 0.0) {
-            hysteresis = 0.0;
+#if defined(RADIANCE)
+        // Stable 2-sample accumulation (approximate)
+        float lum_curr = lum(result.rgb);
+        float lum_prev = probe_irradiance_mean.w;
+        float lum_hist = lum(probe_irradiance_mean.rgb);
+        float lum_desired = 0.5 * (lum_curr + lum_prev);
+
+        float history_weight = clamp((lum_desired - lum_curr) / (lum_hist - lum_curr), 0.0, 0.97);
+#elif defined(DISTANCE)
+        float history_weight = 0.97;
+#endif
+        if (is_scrolling_plane_probe || dot(probe_irradiance_mean.rgb, probe_irradiance_mean.rgb) == 0.0) {
+            history_weight = 0.0;
         }
 
 #if defined(RADIANCE)
-        //result = vec4(mix(result.rgb, probe_irradiance_mean, hysteresis), 1.0);
+        result = vec4(mix(result.rgb, probe_irradiance_mean.rgb, history_weight), lum_curr);
 #elif defined(DISTANCE)
-        //result = vec4(mix(result.rg, probe_irradiance_mean.rg, hysteresis), 0.0, 1.0);
+        result = vec4(mix(result.rg, probe_irradiance_mean.rg, history_weight), 0.0, 1.0);
 #endif
 
         imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES), result);

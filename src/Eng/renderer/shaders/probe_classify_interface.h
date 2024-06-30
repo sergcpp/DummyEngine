@@ -13,6 +13,7 @@ struct Params {
     vec4 grid_origin;
     ivec4 grid_scroll;
     vec4 grid_spacing;
+    vec4 quat_rot;
 };
 
 const int LOCAL_GROUP_SIZE_X = 32;

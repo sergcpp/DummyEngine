@@ -77,6 +77,7 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
     uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].spacing[0],
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[1],
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
+    uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_inline_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
@@ -202,6 +203,7 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
     uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].spacing[0],
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[1],
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
+    uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);

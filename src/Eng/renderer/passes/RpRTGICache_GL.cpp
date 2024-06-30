@@ -116,6 +116,7 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
     uniform_params.grid_spacing = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].spacing[0],
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[1],
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
+    uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
     Ren::DispatchCompute(pi_rt_gi_cache_swrt_,
                          Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),

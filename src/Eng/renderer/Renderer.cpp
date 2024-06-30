@@ -482,6 +482,26 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         log->Error("[Renderer] Failed to initialize primitive drawing!");
     }
 
+    if (frame_index_ == 0 && settings.taa_mode != eTAAMode::Static) {
+        persistent_data.reset_probe_classification = true;
+        persistent_data.reset_probe_relocation = true;
+
+        Ren::CommandBuffer cmd_buf = ctx_.current_cmd_buf();
+
+        const Ren::TransitionInfo transitions[] = {
+            {persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
+            {persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
+            {persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
+            {persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
+        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+
+        const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        persistent_data.probe_ray_data->Clear(rgba, cmd_buf);
+        persistent_data.probe_irradiance->Clear(rgba, cmd_buf);
+        persistent_data.probe_distance->Clear(rgba, cmd_buf);
+        persistent_data.probe_offset->Clear(rgba, cmd_buf);
+    }
+
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const ProbeVolume &volume = persistent_data.probe_volumes[i];
         if (i == list.volume_to_update) {

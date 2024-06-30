@@ -720,7 +720,7 @@ void GSBaseState::Draw() {
             render_target = capture_result_;
             if (capture_state_ == eCaptureState::Warmup) {
                 log_->Info("Warmup iteration #%i", renderer_->accumulated_frames());
-                if (renderer_->accumulated_frames() >= 32) {
+                if (renderer_->accumulated_frames() >= 64) {
                     capture_state_ = eCaptureState::Started;
                     main_view_lists_[0].frame_index = 0;
                     main_view_lists_[1].frame_index = 0;
