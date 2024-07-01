@@ -156,6 +156,8 @@ template <typename T> class QuatT {
 
         return res;
     }
+
+    force_inline operator Vec<T, 4>() const { return Vec<T, 4>(x, y, z, w); }
 };
 
 template <typename T> force_inline T Dot(const QuatT<T> &lhs, const QuatT<T> &rhs) {
@@ -271,4 +273,4 @@ template <typename T> force_inline QuatT<T> MakeQuat(const T *v) { return QuatT<
 
 using Quatf = QuatT<float>;
 using Quatd = QuatT<double>;
-} // namespace Phy
+} // namespace Ren
