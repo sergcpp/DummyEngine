@@ -61,8 +61,11 @@ bool Eng::Renderer::InitPipelines() {
                                                                    : "internal/ssr_classify.comp.glsl@NO_SUBGROUP");
     success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
     success &=
-        init_pipeline(pi_ssr_trace_hq_, ctx_.capabilities.subgroup ? "internal/ssr_trace_hq.comp.glsl"
-                                                                   : "internal/ssr_trace_hq.comp.glsl@NO_SUBGROUP");
+        init_pipeline(pi_ssr_trace_hq_[0], ctx_.capabilities.subgroup ? "internal/ssr_trace_hq.comp.glsl"
+                                                                      : "internal/ssr_trace_hq.comp.glsl@NO_SUBGROUP");
+    success &= init_pipeline(pi_ssr_trace_hq_[1], ctx_.capabilities.subgroup
+                                                      ? "internal/ssr_trace_hq.comp.glsl@GI_CACHE"
+                                                      : "internal/ssr_trace_hq.comp.glsl@GI_CACHE;NO_SUBGROUP");
     success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
 
     // Reflections denoising

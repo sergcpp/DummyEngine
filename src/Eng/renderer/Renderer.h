@@ -216,7 +216,7 @@ class Renderer {
 
     Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
     // HQ SSR
-    Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
+    Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2];
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
     Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;

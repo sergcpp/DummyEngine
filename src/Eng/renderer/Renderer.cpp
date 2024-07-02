@@ -1209,14 +1209,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             data->env_tex = debug_rt.AddTextureInput(list.env.env_map, stages);
 
-            if (list.env.lm_direct) {
-                data->lm_tex[0] = debug_rt.AddTextureInput(list.env.lm_direct, stages);
-            }
-            for (int i = 0; i < 4; ++i) {
-                if (list.env.lm_indir_sh[i]) {
-                    data->lm_tex[i + 1] = debug_rt.AddTextureInput(list.env.lm_indir_sh[i], stages);
-                }
-            }
+            data->irradiance_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_irradiance, stages);
+            data->distance_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_distance, stages);
+            data->offset_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_offset, stages);
 
             data->dummy_black = debug_rt.AddTextureInput(dummy_black_, stages);
 

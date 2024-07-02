@@ -228,6 +228,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             RpResRef shared_data;
             RpResRef color_tex, normal_tex, depth_hierarchy;
 
+            RpResRef albedo_tex, specular_tex, ltc_luts_tex, irradiance_tex, distance_tex, offset_tex;
+
             RpResRef in_ray_list, indir_args, inout_ray_counter;
             RpResRef refl_tex, out_ray_list;
         };
@@ -238,6 +240,15 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->color_tex = ssr_trace_hq.AddTextureInput(frame_textures.color, Stg::ComputeShader);
         data->normal_tex = ssr_trace_hq.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->depth_hierarchy = ssr_trace_hq.AddTextureInput(depth_hierarchy, Stg::ComputeShader);
+
+        if (frame_textures.gi_cache_irradiance) {
+            data->albedo_tex = ssr_trace_hq.AddTextureInput(frame_textures.albedo, Stg::ComputeShader);
+            data->specular_tex = ssr_trace_hq.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
+            data->ltc_luts_tex = ssr_trace_hq.AddTextureInput(ltc_luts_, Stg::ComputeShader);
+            data->irradiance_tex = ssr_trace_hq.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
+            data->distance_tex = ssr_trace_hq.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
+            data->offset_tex = ssr_trace_hq.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+        }
 
         data->in_ray_list = ssr_trace_hq.AddStorageReadonlyInput(ray_list, Stg::ComputeShader);
         data->indir_args = ssr_trace_hq.AddIndirectBufferInput(indir_disp_buf);
@@ -261,27 +272,51 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             RpAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
             RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
+            RpAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
+                       *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+            if (data->irradiance_tex) {
+                albedo_tex = &builder.GetReadTexture(data->albedo_tex);
+                specular_tex = &builder.GetReadTexture(data->specular_tex);
+                ltc_luts_tex = &builder.GetReadTexture(data->ltc_luts_tex);
+
+                irradiance_tex = &builder.GetReadTexture(data->irradiance_tex);
+                distance_tex = &builder.GetReadTexture(data->distance_tex);
+                offset_tex = &builder.GetReadTexture(data->offset_tex);
+            }
+
             RpAllocTex &out_refl_tex = builder.GetWriteTexture(data->refl_tex);
             RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
             RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
-            const Ren::Binding bindings[] = {
+            Ren::SmallVector<Ren::Binding, 24> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::Tex2DSampled, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
+                {Trg::Tex2DSampled, SSRTraceHQ::NORMAL_TEX_SLOT, *normal_tex.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
                 {Trg::SBufRO, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
                 {Trg::Image2D, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::SBufRW, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                 {Trg::SBufRW, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
+            if (irradiance_tex) {
+                bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::ALBEDO_TEX_SLOT, *albedo_tex->ref);
+                bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::SPECULAR_TEX_SLOT, *specular_tex->ref);
+                bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
+
+                bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, SSRTraceHQ::IRRADIANCE_TEX_SLOT,
+                                      *irradiance_tex->arr);
+                bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, SSRTraceHQ::DISTANCE_TEX_SLOT,
+                                      *distance_tex->arr);
+                bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, SSRTraceHQ::OFFSET_TEX_SLOT,
+                                      *offset_tex->arr);
+            }
 
             SSRTraceHQ::Params uniform_params;
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
 
-            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_, *indir_args_buf.ref, 0, bindings, &uniform_params,
-                                         sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_[irradiance_tex != nullptr], *indir_args_buf.ref, 0, bindings,
+                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                          builder.ctx().log());
         });
     }

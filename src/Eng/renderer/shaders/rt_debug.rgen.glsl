@@ -49,5 +49,5 @@ void main() {
                 0                           // payload
                 );
 
-    imageStore(g_out_image, ivec2(gl_LaunchIDEXT.xy), vec4(g_pld.col, 1.0));
+    imageStore(g_out_image, ivec2(gl_LaunchIDEXT.xy), vec4(compress_hdr(g_pld.col), 1.0));
 }

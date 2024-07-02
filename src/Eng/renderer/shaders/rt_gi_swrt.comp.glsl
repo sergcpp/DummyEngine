@@ -475,13 +475,22 @@ void main() {
 
             final_color += throughput * light_total;
 #ifdef GI_CACHE
-            for (int i = 0; i < PROBE_VOLUMES_COUNT && (lobe_weights.diffuse > 0.0); ++i) {
+            for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
                 const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
                 if (weight > 0.0) {
-                    if (inter.t > 0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)) {
-                        const vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,
-                                                                      g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
-                        final_color += throughput * lobe_weights.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
+                    if (lobe_weights.specular > 0.0) {
+                        const vec3 refl_dir = reflect(gi_ray_ws, N);
+                        vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
+                                                                  g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                        avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
+                        avg_radiance *= saturate(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
+                        light_total += throughput * (1.0 / M_PI) * avg_radiance;
+                    }
+                    if (lobe_weights.diffuse > 0.0 && inter.t > 0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)) {
+                        vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(gi_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,
+                                                                g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                        irradiance *= base_color * ltc.diff_t2.x;
+                        final_color += throughput * lobe_weights.diffuse_mul * (1.0 / M_PI) * irradiance;
                         // terminate ray
                         throughput *= 0.0;
                     }
@@ -489,7 +498,7 @@ void main() {
                 }
             }
 #endif
-            throughput *= lobe_weights.diffuse_mul * base_color;
+            throughput *= lobe_weights.diffuse_mul * base_color * ltc.diff_t2.x;
             ray_len = inter.t;
             if (j == 0) {
                 first_ray_len = ray_len;

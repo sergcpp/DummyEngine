@@ -249,7 +249,8 @@ void main() {
     }
 
     const vec4 gi_fetch = textureLod(g_gi_tex, px_uvs, 0.0);
-    vec3 gi_contribution = lobe_weights.diffuse_mul * base_color * decompress_hdr(gi_fetch.xyz);
+    vec3 gi_contribution = lobe_weights.diffuse_mul * decompress_hdr(gi_fetch.xyz);
+    gi_contribution *= base_color * ltc.diff_t2.x;
     // Recover small details lost during denoising
     gi_contribution *= pow(saturate(2.0 * gi_fetch.w), 0.2);
 

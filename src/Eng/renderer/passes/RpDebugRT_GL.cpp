@@ -29,16 +29,16 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
-    RpAllocTex *lm_tex[5];
-    for (int i = 0; i < 5; ++i) {
-        if (pass_data_->lm_tex[i]) {
-            lm_tex[i] = &builder.GetReadTexture(pass_data_->lm_tex[i]);
-        } else {
-            lm_tex[i] = &dummy_black;
-        }
-    }
     RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
     RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
+
+    RpAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    if (pass_data_->irradiance_tex) {
+        irradiance_tex = &builder.GetReadTexture(pass_data_->irradiance_tex);
+        distance_tex = &builder.GetReadTexture(pass_data_->distance_tex);
+        offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
+    }
+
     RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
@@ -85,7 +85,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
             ctx.CreateTexture1D("Meshes TBO", meshes_buf.ref, Ren::eTexFormat::RawRG32UI, 0, meshes_buf.ref->size());
     }
 
-    const Ren::Binding bindings[] = {
+    Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
@@ -98,11 +98,6 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTDebug::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 0, *lm_tex[0]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 1, *lm_tex[1]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
         {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
@@ -110,6 +105,11 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
+    if (irradiance_tex) {
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT, *offset_tex->arr);
+    }
 
     const auto grp_count =
         Ren::Vec3u{(view_state_->act_res[0] + RTDebug::LOCAL_GROUP_SIZE_X - 1u) / RTDebug::LOCAL_GROUP_SIZE_X,

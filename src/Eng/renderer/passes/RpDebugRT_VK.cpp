@@ -21,16 +21,16 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
-    RpAllocTex *lm_tex[5];
-    for (int i = 0; i < 5; ++i) {
-        if (pass_data_->lm_tex[i]) {
-            lm_tex[i] = &builder.GetReadTexture(pass_data_->lm_tex[i]);
-        } else {
-            lm_tex[i] = &dummy_black;
-        }
-    }
     RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
     RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
+
+    RpAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    if (pass_data_->irradiance_tex) {
+        irradiance_tex = &builder.GetReadTexture(pass_data_->irradiance_tex);
+        distance_tex = &builder.GetReadTexture(pass_data_->distance_tex);
+        offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
+    }
+
     RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
@@ -40,203 +40,31 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    VkDescriptorSetLayout descr_set_layout = pi_debug_hwrt_.prog()->descr_set_layouts()[0];
-    Ren::DescrSizes descr_sizes;
-    descr_sizes.img_sampler_count = 14;
-    descr_sizes.store_img_count = 1;
-    descr_sizes.ubuf_count = 1;
-    descr_sizes.acc_count = 1;
-    descr_sizes.sbuf_count = 6;
-    VkDescriptorSet descr_sets[2];
-    descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
-    descr_sets[1] = bindless_tex_->rt_textures_descr_set;
-
-    { // update descriptor set
-        const VkDescriptorBufferInfo ubuf_info = {unif_sh_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorImageInfo env_info = {env_tex.ref->handle().sampler, env_tex.ref->handle().views[0],
-                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}; // environment texture
-        const VkDescriptorImageInfo shadowmap_tex_info = shadowmap_tex.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo ltc_luts_tex_info = ltc_luts_tex.ref->vk_desc_image_info();
-        const VkDescriptorBufferInfo geo_data_info = {geo_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo mat_data_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo vtx_buf1_info = {vtx_buf1.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo vtx_buf2_info = {vtx_buf2.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo ndx_buf_info = {ndx_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo lights_buf_info = {lights_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkBufferView cells_buf_view = cells_buf.tbos[0]->view();
-        const VkBufferView items_buf_view = items_buf.tbos[0]->view();
-        const VkDescriptorImageInfo lm_infos[] = {
-            lm_tex[0]->ref->vk_desc_image_info(), lm_tex[1]->ref->vk_desc_image_info(),
-            lm_tex[2]->ref->vk_desc_image_info(), lm_tex[3]->ref->vk_desc_image_info(),
-            lm_tex[4]->ref->vk_desc_image_info()};
-        const VkAccelerationStructureKHR tlas = acc_struct->vk_handle();
-
-        VkDescriptorImageInfo output_img_info;
-        if (output_tex) {
-            output_img_info = output_tex->ref->vk_desc_image_info(0, VK_IMAGE_LAYOUT_GENERAL);
-        } else {
-            output_img_info = ctx.backbuffer_ref()->vk_desc_image_info(0, VK_IMAGE_LAYOUT_GENERAL);
-        }
-
-        Ren::SmallVector<VkWriteDescriptorSet, 32> descr_writes;
-        { // shared buf
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = BIND_UB_SHARED_DATA_BUF;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pBufferInfo = &ubuf_info;
-        }
-        VkWriteDescriptorSetAccelerationStructureKHR desc_tlas_info = {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
-        desc_tlas_info.pAccelerationStructures = &tlas;
-        desc_tlas_info.accelerationStructureCount = 1;
-        { // acceleration structure
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::TLAS_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-            descr_write.descriptorCount = 1;
-            descr_write.pNext = &desc_tlas_info;
-        }
-        { // env texture
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::ENV_TEX_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descr_write.descriptorCount = 1;
-            descr_write.pImageInfo = &env_info;
-        }
-        { // geometry data
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::GEO_DATA_BUF_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pBufferInfo = &geo_data_info;
-        }
-        { // materials
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::MATERIAL_BUF_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pBufferInfo = &mat_data_info;
-        }
-        { // vtx_buf1
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::VTX_BUF1_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pBufferInfo = &vtx_buf1_info;
-        }
-        { // vtx_buf1
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::VTX_BUF2_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pBufferInfo = &vtx_buf2_info;
-        }
-        { // ndx_buf
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::NDX_BUF_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pBufferInfo = &ndx_buf_info;
-        }
-        { // lights_buf
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::LIGHTS_BUF_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pBufferInfo = &lights_buf_info;
-        }
-        { // cells_buf
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::CELLS_BUF_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pTexelBufferView = &cells_buf_view;
-        }
-        { // items_buf
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::ITEMS_BUF_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-            descr_write.descriptorCount = 1;
-            descr_write.pTexelBufferView = &items_buf_view;
-        }
-        { // shadowmap_tex
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::SHADOW_TEX_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descr_write.descriptorCount = 1;
-            descr_write.pImageInfo = &shadowmap_tex_info;
-        }
-        { // LTC LUTs
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::LTC_LUTS_TEX_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descr_write.descriptorCount = 1;
-            descr_write.pImageInfo = &ltc_luts_tex_info;
-        }
-        { // lightmap
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::LMAP_TEX_SLOTS;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descr_write.descriptorCount = 5;
-            descr_write.pImageInfo = lm_infos;
-        }
-        { // output image
-            auto &descr_write = descr_writes.emplace_back();
-            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = RTDebug::OUT_IMG_SLOT;
-            descr_write.dstArrayElement = 0;
-            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            descr_write.descriptorCount = 1;
-            descr_write.pImageInfo = &output_img_info;
-        }
-
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0,
-                                        nullptr);
+    Ren::SmallVector<Ren::Binding, 24> bindings = {
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+        {Ren::eBindTarget::AccStruct, RTDebug::TLAS_SLOT, *acc_struct},
+        {Ren::eBindTarget::Tex2DSampled, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::VTX_BUF1_SLOT, *vtx_buf1.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::VTX_BUF2_SLOT, *vtx_buf2.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::NDX_BUF_SLOT, *ndx_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
+        {Ren::eBindTarget::TBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+        {Ren::eBindTarget::Tex2DSampled, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
+    if (irradiance_tex) {
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
+
+    VkDescriptorSet descr_sets[2];
+    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_debug_hwrt_.prog()->descr_set_layouts()[0], bindings,
+                                              ctx.default_descr_alloc(), ctx.log());
+    descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.handle());
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.layout(), 0, 2,
@@ -272,16 +100,16 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
-    RpAllocTex *lm_tex[5];
-    for (int i = 0; i < 5; ++i) {
-        if (pass_data_->lm_tex[i]) {
-            lm_tex[i] = &builder.GetReadTexture(pass_data_->lm_tex[i]);
-        } else {
-            lm_tex[i] = &dummy_black;
-        }
-    }
     RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
     RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
+
+    RpAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    if (pass_data_->irradiance_tex) {
+        irradiance_tex = &builder.GetReadTexture(pass_data_->irradiance_tex);
+        distance_tex = &builder.GetReadTexture(pass_data_->distance_tex);
+        offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
+    }
+
     RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
@@ -328,7 +156,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
             ctx.CreateTexture1D("Meshes TBO", meshes_buf.ref, Ren::eTexFormat::RawRG32UI, 0, meshes_buf.ref->size());
     }
 
-    const Ren::Binding bindings[] = {
+    Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
@@ -341,17 +169,17 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 0, *lm_tex[0]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 1, *lm_tex[1]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
-        {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
+    if (irradiance_tex) {
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT, *offset_tex->arr);
+    }
 
     const auto grp_count =
         Ren::Vec3u{(view_state_->act_res[0] + RTDebug::LOCAL_GROUP_SIZE_X - 1u) / RTDebug::LOCAL_GROUP_SIZE_X,

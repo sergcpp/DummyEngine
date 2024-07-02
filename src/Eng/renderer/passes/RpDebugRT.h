@@ -20,11 +20,14 @@ struct RpDebugRTData {
     RpResRef env_tex;
     RpResRef lights_buf;
     RpResRef shadowmap_tex;
-    RpResRef lm_tex[5];
     RpResRef ltc_luts_tex;
     RpResRef cells_buf;
     RpResRef items_buf;
     RpResRef dummy_black;
+
+    RpResRef irradiance_tex;
+    RpResRef distance_tex;
+    RpResRef offset_tex;
 
     struct {
         uint32_t root_node;

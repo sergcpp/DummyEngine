@@ -26,7 +26,7 @@ void Eng::RpDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 #if defined(USE_VK_RENDER)
         if (ctx.capabilities.hwrt) {
             Ren::ProgramRef debug_hwrt_prog =
-                sh.LoadProgram(ctx, "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl",
+                sh.LoadProgram(ctx, "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl@GI_CACHE",
                                "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", {});
             assert(debug_hwrt_prog->ready());
 
@@ -35,7 +35,7 @@ void Eng::RpDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             }
         }
 #endif
-        Ren::ProgramRef debug_swrt_prog = sh.LoadProgram(ctx, "internal/rt_debug_swrt.comp.glsl");
+        Ren::ProgramRef debug_swrt_prog = sh.LoadProgram(ctx, "internal/rt_debug_swrt.comp.glsl@GI_CACHE");
         assert(debug_swrt_prog->ready());
 
         if (!pi_debug_swrt_.Init(ctx.api_ctx(), debug_swrt_prog, ctx.log())) {

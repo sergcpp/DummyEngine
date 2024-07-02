@@ -14,6 +14,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
+    if (settings.gi_quality == eGIQuality::Off) {
+        return;
+    }
+
     RpResRef ray_data;
 
     if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
