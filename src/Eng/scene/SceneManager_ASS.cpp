@@ -30,7 +30,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 8;
+const uint32_t AssetsBuildVersion = 10;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -42,8 +42,9 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     int _w, _h;
     std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(in_file_data, _w, _h, format);
 
-    if (_w != w || _h != h)
+    if (_w != w || _h != h) {
         return;
+    }
 
     if (format == Ren::eTexFormat::RawRGB888) {
         int i = 0;

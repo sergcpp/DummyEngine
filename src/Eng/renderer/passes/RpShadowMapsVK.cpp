@@ -40,7 +40,7 @@ void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf
 void _clear_region(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     VkClearAttachment clear_att = {};
     clear_att.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    clear_att.clearValue.depthStencil.depth = 1.0f;
+    clear_att.clearValue.depthStencil.depth = 0.0f;
 
     VkClearRect clear_rect = {};
     clear_rect.rect.offset = {sh_list.scissor_test_pos[0],

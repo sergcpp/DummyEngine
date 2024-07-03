@@ -95,7 +95,9 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
     glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id()));
     if (clear_depth_) {
+        glClearDepthf(0.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glClearDepthf(1.0f);
     } else {
         glClear(GL_STENCIL_BUFFER_BIT);
     }

@@ -52,7 +52,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
     rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Dynamic);
 
     rast_state.depth.test_enabled = true;
-    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
     rast_state.scissor.enabled = true;
     rast_state.blend.enabled = false;
 
@@ -83,6 +83,8 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
 
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_fb_.id());
+
+    glClearDepthf(0.0f);
 
     bool region_cleared[MAX_SHADOWMAPS_TOTAL] = {};
 
@@ -256,6 +258,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
     glDisable(GL_SCISSOR_TEST);
     glPolygonOffset(0.0f, 0.0f);
     glDisable(GL_POLYGON_OFFSET_FILL);
+    glClearDepthf(1.0f);
 
     glBindVertexArray(0);
     Ren::GLUnbindSamplers(0, 1);

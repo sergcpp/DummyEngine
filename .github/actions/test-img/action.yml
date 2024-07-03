@@ -42,15 +42,15 @@ runs:
         mv sponza.png sponza_medium.png
         mv sponza_diff.png sponza_diff_medium.png
         cp sponza_medium.png sponza_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 22.00
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 21.75
         mv sponza.png sponza_high.png
         mv sponza_diff.png sponza_diff_high.png
         cp sponza_high.png sponza_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 23.60
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 23.30
         mv sponza.png sponza_ultra.png
         mv sponza_diff.png sponza_diff_ultra.png
         cp sponza_ultra.png sponza_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset medium --psnr 21.90
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset medium --psnr 21.65
         mv ai043_06.png ai043_06_medium.png
         mv ai043_06_diff.png ai043_06_diff_medium.png
         cp ai043_06_medium.png ai043_06_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}

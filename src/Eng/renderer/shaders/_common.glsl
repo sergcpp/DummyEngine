@@ -31,10 +31,10 @@
 #define length2(x) dot(x, x)
 
 #define LinearizeDepth(z, clip_info) \
-    (((clip_info)[0] / ((z) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2])))
+    (((clip_info)[0] / ((1.0 - (z)) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2])))
 
 #define DelinearizeDepth(z, clip_info) \
-    (((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
+    (1.0 - ((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
 
 float approx_acos(float x) { // max error is 0.000068f
     float negate = float(x < 0);

@@ -63,7 +63,7 @@ void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 _offset,
     radiance = texelFetch(g_gi_tex, dispatch_thread_id, 0);
     variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
     normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).xyz;
-    depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
+    depth = 1.0 - texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
 }
 
 void StoreWithOffset(ivec2 group_thread_id, ivec2 _offset, vec4 radiance, float variance, vec3 normal, float depth) {

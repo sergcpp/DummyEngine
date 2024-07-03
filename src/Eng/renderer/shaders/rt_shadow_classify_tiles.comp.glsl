@@ -14,6 +14,8 @@
 
 #pragma multi_compile _ NO_SUBGROUP
 
+#define INVERTED_DEPTH_RANGE
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };

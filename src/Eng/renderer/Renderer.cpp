@@ -409,7 +409,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         // params.sampling.max_lod.from_float(0.0f);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.sampling.compare = Ren::eTexCompare::LEqual;
+        params.sampling.compare = Ren::eTexCompare::GEqual;
 
         Ren::eTexLoadStatus status;
         shadow_map_tex_ = ctx_.LoadTexture2D("Shadow Map", params, ctx_.default_mem_allocs(), &status);

@@ -43,15 +43,20 @@ void Ren::Frustum::UpdateFromMatrix(const Mat4f &xform) {
     planes[int(eCamPlane::Bottom)].n[2] = xform[2][3] + xform[2][1];
     planes[int(eCamPlane::Bottom)].d = xform[3][3] + xform[3][1];
 
-    planes[int(eCamPlane::Near)].n[0] = xform[0][3] + xform[0][2];
+    planes[int(eCamPlane::Far)].n[0] = xform[0][2];
+    planes[int(eCamPlane::Far)].n[1] = xform[1][2];
+    planes[int(eCamPlane::Far)].n[2] = xform[2][2];
+    planes[int(eCamPlane::Far)].d = xform[3][2];
+
+    /*planes[int(eCamPlane::Near)].n[0] = xform[0][3] + xform[0][2];
     planes[int(eCamPlane::Near)].n[1] = xform[1][3] + xform[1][2];
     planes[int(eCamPlane::Near)].n[2] = xform[2][3] + xform[2][2];
-    planes[int(eCamPlane::Near)].d = xform[3][3] + xform[3][2];
+    planes[int(eCamPlane::Near)].d = xform[3][3] + xform[3][2];*/
 
-    planes[int(eCamPlane::Far)].n[0] = xform[0][3] - xform[0][2];
-    planes[int(eCamPlane::Far)].n[1] = xform[1][3] - xform[1][2];
-    planes[int(eCamPlane::Far)].n[2] = xform[2][3] - xform[2][2];
-    planes[int(eCamPlane::Far)].d = xform[3][3] - xform[3][2];
+    planes[int(eCamPlane::Near)].n[0] = xform[0][3] - xform[0][2];
+    planes[int(eCamPlane::Near)].n[1] = xform[1][3] - xform[1][2];
+    planes[int(eCamPlane::Near)].n[2] = xform[2][3] - xform[2][2];
+    planes[int(eCamPlane::Near)].d = xform[3][3] - xform[3][2];
 
     for (int pl = 0; pl < int(eCamPlane::_Count); pl++) {
         const float inv_l = 1.0f / std::sqrt(planes[pl].n[0] * planes[pl].n[0] + planes[pl].n[1] * planes[pl].n[1] +
@@ -181,7 +186,14 @@ void Ren::Camera::Perspective(const eZRangeMode mode, const float angle, const f
     aspect_ = aspect;
     near_ = nearr;
     far_ = farr;
-    proj_matrix_ = PerspectiveProjection(angle, aspect, nearr, farr, mode == eZRangeMode::ZeroToOne);
+    proj_matrix_ = PerspectiveProjection(angle, aspect, nearr, farr, mode != eZRangeMode::NegOneToOne);
+    if (mode == eZRangeMode::OneToZero) {
+        const Mat4f reverse_z = Mat4f{Vec4f{1.0f, 0.0f, 0.0f, 0.0f},  //
+                                      Vec4f{0.0f, 1.0f, 0.0f, 0.0f},  //
+                                      Vec4f{0.0f, 0.0f, -1.0f, 0.0f}, //
+                                      Vec4f{0.0f, 0.0f, 1.0f, 1.0f}};
+        proj_matrix_ = reverse_z * proj_matrix_;
+    }
 }
 
 void Ren::Camera::Orthographic(const eZRangeMode mode, const float left, const float right, const float top,
@@ -189,7 +201,14 @@ void Ren::Camera::Orthographic(const eZRangeMode mode, const float left, const f
     is_orthographic_ = true;
     near_ = nearr;
     far_ = farr;
-    proj_matrix_ = OrthographicProjection(left, right, top, down, nearr, farr, mode == eZRangeMode::ZeroToOne);
+    proj_matrix_ = OrthographicProjection(left, right, top, down, nearr, farr, mode != eZRangeMode::NegOneToOne);
+    if (mode == eZRangeMode::OneToZero) {
+        const Mat4f reverse_z = Mat4f{Vec4f{1.0f, 0.0f, 0.0f, 0.0f},  //
+                                      Vec4f{0.0f, 1.0f, 0.0f, 0.0f},  //
+                                      Vec4f{0.0f, 0.0f, -1.0f, 0.0f}, //
+                                      Vec4f{0.0f, 0.0f, 1.0f, 1.0f}};
+        proj_matrix_ = reverse_z * proj_matrix_;
+    }
 }
 
 void Ren::Camera::Move(const Vec3f &v, const float delta_time) {
@@ -259,10 +278,10 @@ void Ren::Camera::ExtractSubFrustums(const int resx, const int resy, const int r
             const float ybot = -1.0f + float(y) * grid_size_cs[1], ytop = -1.0f + float(y + 1) * grid_size_cs[1];
 
             for (int x = 0; x < resx; x++) {
-                auto p0 = Vec4f{-1.0f + float(x) * grid_size_cs[0], ybot, 0.0f, 1.0f},
-                     p1 = Vec4f{-1.0f + float(x) * grid_size_cs[0], ytop, 0.0f, 1.0f},
-                     p2 = Vec4f{-1.0f + float(x + 1) * grid_size_cs[0], ytop, 0.0f, 1.0f},
-                     p3 = Vec4f{-1.0f + float(x + 1) * grid_size_cs[0], ybot, 0.0f, 1.0f};
+                auto p0 = Vec4f{-1.0f + float(x) * grid_size_cs[0], ybot, 1.0f, 1.0f},
+                     p1 = Vec4f{-1.0f + float(x) * grid_size_cs[0], ytop, 1.0f, 1.0f},
+                     p2 = Vec4f{-1.0f + float(x + 1) * grid_size_cs[0], ytop, 1.0f, 1.0f},
+                     p3 = Vec4f{-1.0f + float(x + 1) * grid_size_cs[0], ybot, 1.0f, 1.0f};
 
                 p0 = world_from_clip * p0;
                 p1 = world_from_clip * p1;

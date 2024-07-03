@@ -27,7 +27,7 @@ void main() {
         return;
     }
     const float center_depth = texelFetch(g_depth_tex, ivec2(gl_GlobalInvocationID.xy), 0).x;
-    if (center_depth == 1.0) {
+    if (center_depth == 0.0) {
         imageStore(g_out_img, ivec2(gl_GlobalInvocationID.xy), vec4(1.0));
         return;
     }

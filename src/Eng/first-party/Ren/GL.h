@@ -788,6 +788,8 @@ typedef void (APIENTRY *PFNGLCLEARBUFFERFVPROC)(GLenum buffer, GLint drawbuffer,
 typedef void (APIENTRY *PFNGLCLEARBUFFERSUBDATAPROC)(GLenum target, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
 typedef void (APIENTRY *PFNGLCLEARTEXIMAGEPROC)(GLuint texture, GLint level, GLenum format, GLenum type, const void *data);
 
+typedef void (APIENTRY *PFNGLCLEARDEPTHFPROC)(GLfloat depth);
+
 typedef void (APIENTRY *PFNGLBINDIMAGETEXTUREPROC)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 
 typedef void (APIENTRY *PFNGLCLIPCONTROLPROC)(GLenum origin, GLenum depth);
@@ -1070,6 +1072,8 @@ typedef void (APIENTRY* PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GL
 #define glClearBufferSubData        ren_glClearBufferSubData
 #define glClearTexImage             ren_glClearTexImage
 
+#define glClearDepthf               ren_glClearDepthf
+
 #define glBindImageTexture          ren_glBindImageTexture
 
 #define glClipControl               ren_glClipControl
@@ -1314,6 +1318,8 @@ EXTERN_FUNC PFNGLCLEARBUFFERFVPROC              ren_glClearBufferfv;
 
 EXTERN_FUNC PFNGLCLEARBUFFERSUBDATAPROC         ren_glClearBufferSubData;
 EXTERN_FUNC PFNGLCLEARTEXIMAGEPROC              ren_glClearTexImage;
+
+EXTERN_FUNC PFNGLCLEARDEPTHFPROC                ren_glClearDepthf;
 
 EXTERN_FUNC PFNGLBINDIMAGETEXTUREPROC           ren_glBindImageTexture;
 

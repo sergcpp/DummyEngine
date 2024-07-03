@@ -10,6 +10,9 @@
 #ifndef LEAST_DETAILED_MIP
     #define LEAST_DETAILED_MIP 6
 #endif
+#ifndef REVERSE_Z
+    #define REVERSE_Z 1
+#endif
 
 #define FLOAT_MAX 3.402823466e+38
 
@@ -71,7 +74,11 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
             // choose nearest intersection
             float t_min = min(min(t.x, t.y), t.z);
 
-            bool is_above_surface = surf_z > cur_pos_ss.z;
+#if REVERSE_Z
+            const bool is_above_surface = surf_z < cur_pos_ss.z;
+#else
+            const bool is_above_surface = surf_z > cur_pos_ss.z;
+#endif
 
             increment_mip = increment_mip && (t_min != t.z) && is_above_surface;
 

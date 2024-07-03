@@ -3,7 +3,7 @@
 
 bool IsDiffuseSurface(sampler2D depth_tex, usampler2D specular_tex, ivec2 px_coords) {
     const float depth = texelFetch(depth_tex, px_coords, 0).r;
-    if (depth < 1.0) {
+    if (depth > 0.0) {
         const uint packed_mat_params = texelFetch(specular_tex, px_coords, 0).r;
         vec4 mat_params0, mat_params1;
         UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
@@ -13,7 +13,7 @@ bool IsDiffuseSurface(sampler2D depth_tex, usampler2D specular_tex, ivec2 px_coo
 }
 
 bool IsDiffuseSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
-    if (depth_fetch < 1.0) {
+    if (depth_fetch > 0.0) {
         const uint packed_mat_params = textureLod(specular_tex, uv, 0.0).r;
         vec4 mat_params0, mat_params1;
         UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);

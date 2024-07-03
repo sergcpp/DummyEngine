@@ -230,7 +230,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -275,7 +275,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -339,7 +339,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -393,7 +393,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -464,7 +464,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -519,7 +519,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -575,7 +575,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -635,7 +635,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -696,7 +696,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -753,7 +753,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -811,7 +811,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -873,7 +873,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         const int rp_index = (clear_depth_ && !draws_count) ? 0 : 1;
 
         VkClearValue clear_value = {};
-        clear_value.depthStencil.depth = 1.0f;
+        clear_value.depthStencil.depth = 0.0f;
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};

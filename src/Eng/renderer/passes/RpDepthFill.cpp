@@ -203,7 +203,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
         { // static solid/transp
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
-            rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Less);
+            rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Greater);
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.write_mask = 0xff;
@@ -250,7 +250,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
         { // moving solid/transp
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.write_mask = 0xff;
@@ -297,7 +297,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
         { // vege solid/transp
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.write_mask = 0xff;
@@ -352,7 +352,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
         { // vege moving solid/transp
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.write_mask = 0xff;
@@ -387,7 +387,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
         { // skin solid/transp
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.write_mask = 0xff;
@@ -442,7 +442,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
         { // skin moving solid/transp
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
             rast_state.stencil.enabled = true;
             rast_state.stencil.write_mask = 0xff;

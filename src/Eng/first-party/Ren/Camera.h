@@ -5,7 +5,7 @@
 #include "MMat.h"
 
 namespace Ren {
-enum class eZRangeMode { NegOneToOne, ZeroToOne };
+enum class eZRangeMode { NegOneToOne, ZeroToOne, OneToZero };
 enum class ePointPos { Front, Back, OnPlane };
 
 struct Plane {

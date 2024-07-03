@@ -34,7 +34,7 @@ ivec2 limit_coords(ivec2 icoord) {
     return clamp(icoord, ivec2(0), g_params.depth_size.xy - 1);
 }
 
-#define REDUCE_OP min
+#define REDUCE_OP max
 
 float ReduceSrcDepth4(ivec2 base) {
     float v0 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 0)), 0).r;

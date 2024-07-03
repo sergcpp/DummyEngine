@@ -903,7 +903,7 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     }
 
     cam_.SetupView(origin, target, up);
-    cam_.Perspective(Ren::eZRangeMode::ZeroToOne, fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
+    cam_.Perspective(Ren::eZRangeMode::OneToZero, fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
     cam_.set_render_mask(Ren::Bitmask<Drawable::eVisibility>{Drawable::eVisibility::Camera});
@@ -912,7 +912,7 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     const float ExtendedFrustumFrontOffset = 200.0f;
 
     ext_cam_.SetupView(origin - ExtendedFrustumOffset * cam_.fwd(), origin, cam_.up());
-    ext_cam_.Perspective(Ren::eZRangeMode::ZeroToOne, cam_.angle(), cam_.aspect(), 1.0f,
+    ext_cam_.Perspective(Ren::eZRangeMode::OneToZero, cam_.angle(), cam_.aspect(), 1.0f,
                          ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
     ext_cam_.UpdatePlanes();
 

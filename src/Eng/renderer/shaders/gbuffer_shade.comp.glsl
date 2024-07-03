@@ -43,7 +43,7 @@ void main() {
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).r;
-    if (depth == 1.0) {
+    if (depth == 0.0) {
         return;
     }
     const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
@@ -179,15 +179,15 @@ void main() {
 
             //light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
 
-            const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
+            const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES / 2));
             const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
             const float MaxShadowRadiusPx = 5.0;
 
-            vec2 blocker = BlockerSearch(g_shadow_val_tex, pp.xyz, MaxShadowRadiusPx * pp.z, rotator);
+            vec2 blocker = BlockerSearch(g_shadow_val_tex, pp.xyz, MaxShadowRadiusPx * (1.0 - pp.z), rotator);
             if (blocker.y > 0.5) {
                 blocker.x /= blocker.y;
 
-                float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / blocker.x;
+                float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / (1.0 - blocker.x);
                 const float filter_radius_px = clamp(penumbra_size_approx, MinShadowRadiusPx, MaxShadowRadiusPx);
                 float visibility = 0.0;
                 for (int i = 0; i < 16; ++i) {

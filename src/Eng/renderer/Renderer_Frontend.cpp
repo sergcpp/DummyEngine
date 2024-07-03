@@ -45,23 +45,7 @@ template <typename T> void RadixSort_LSB(T *begin, T *end, T *begin1) {
     }
 }
 
-#if defined(USE_VK_RENDER)
 static const Ren::Vec4f ClipFrustumPoints[] = {
-    Ren::Vec4f{-1.0f, -1.0f, 0.0f, 1.0f}, Ren::Vec4f{1.0f, -1.0f, 0.0f, 1.0f},
-    Ren::Vec4f{1.0f, 1.0f, 0.0f, 1.0f},   Ren::Vec4f{-1.0f, 1.0f, 0.0f, 1.0f},
-
-    Ren::Vec4f{-1.0f, -1.0f, 1.0f, 1.0f}, Ren::Vec4f{1.0f, -1.0f, 1.0f, 1.0f},
-    Ren::Vec4f{1.0f, 1.0f, 1.0f, 1.0f},   Ren::Vec4f{-1.0f, 1.0f, 1.0f, 1.0f}};
-#else
-static const Ren::Vec4f ClipFrustumPoints[] = {
-    Ren::Vec4f{-1.0f, -1.0f, -1.0f, 1.0f}, Ren::Vec4f{1.0f, -1.0f, -1.0f, 1.0f},
-    Ren::Vec4f{1.0f, 1.0f, -1.0f, 1.0f},   Ren::Vec4f{-1.0f, 1.0f, -1.0f, 1.0f},
-
-    Ren::Vec4f{-1.0f, -1.0f, 1.0f, 1.0f},  Ren::Vec4f{1.0f, -1.0f, 1.0f, 1.0f},
-    Ren::Vec4f{1.0f, 1.0f, 1.0f, 1.0f},    Ren::Vec4f{-1.0f, 1.0f, 1.0f, 1.0f}};
-#endif
-
-static const Ren::Vec4f ClipFrustumPointsNew[] = {
     Ren::Vec4f{-1.0f, -1.0f, 0.0f, 1.0f}, Ren::Vec4f{1.0f, -1.0f, 0.0f, 1.0f},
     Ren::Vec4f{1.0f, 1.0f, 0.0f, 1.0f},   Ren::Vec4f{-1.0f, 1.0f, 0.0f, 1.0f},
 
@@ -550,7 +534,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                           bbox_max = Vec3f{std::numeric_limits<float>::lowest()};
 
                     for (int k = 0; k < 8; k++) {
-                        Vec4f p = world_from_clip * ClipFrustumPointsNew[k];
+                        Vec4f p = world_from_clip * ClipFrustumPoints[k];
                         p /= p[3];
 
                         bbox_min = Min(bbox_min, Vec3f{p});
@@ -774,7 +758,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 bounding_radius = 0.5f * max_dist;
             } else {
                 Camera temp_cam = list.draw_cam;
-                temp_cam.Perspective(Ren::eZRangeMode::ZeroToOne, list.draw_cam.angle(), list.draw_cam.aspect(),
+                temp_cam.Perspective(Ren::eZRangeMode::OneToZero, list.draw_cam.angle(), list.draw_cam.aspect(),
                                      near_planes[casc], far_planes[casc]);
                 temp_cam.UpdatePlanes();
 
@@ -824,7 +808,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             Camera shadow_cam;
             shadow_cam.SetupView(cam_center, cam_target, cam_up);
-            shadow_cam.Orthographic(Ren::eZRangeMode::ZeroToOne, -bounding_radius, bounding_radius, bounding_radius,
+            shadow_cam.Orthographic(Ren::eZRangeMode::OneToZero, -bounding_radius, bounding_radius, bounding_radius,
                                     -bounding_radius, 0.0f, cam_extents);
             shadow_cam.UpdatePlanes();
 
@@ -840,8 +824,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             sh_list.shadow_batch_count = 0;
             sh_list.cam_near = shadow_cam.near();
             sh_list.cam_far = shadow_cam.far();
-            sh_list.bias[0] = scene.env.sun_shadow_bias[0];
-            sh_list.bias[1] = scene.env.sun_shadow_bias[1];
+            sh_list.bias[0] = -scene.env.sun_shadow_bias[0];
+            sh_list.bias[1] = -scene.env.sun_shadow_bias[1];
 
             Frustum sh_clip_frustum;
             if (casc == 3) {
@@ -855,7 +839,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 Vec4f frustum_points[8] = {REN_UNINITIALIZE_X8(Vec4f)};
 
                 for (int k = 0; k < 8; k++) {
-                    frustum_points[k] = tmp_cam_world_from_clip * ClipFrustumPointsNew[k];
+                    frustum_points[k] = tmp_cam_world_from_clip * ClipFrustumPoints[k];
                     frustum_points[k] /= frustum_points[k][3];
                 }
 
@@ -1343,7 +1327,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 Camera shadow_cam;
                 shadow_cam.SetupView(light_center, light_center + _light_dir, _light_up);
-                shadow_cam.Perspective(Ren::eZRangeMode::ZeroToOne, light_angle, 1.0f, ls->cull_offset,
+                shadow_cam.Perspective(Ren::eZRangeMode::OneToZero, light_angle, 1.0f, ls->cull_offset,
                                        ls->cull_radius);
                 shadow_cam.UpdatePlanes();
 
@@ -1370,8 +1354,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 sh_list.shadow_batch_start = uint32_t(list.shadow_batches.size());
                 sh_list.shadow_batch_count = 0;
                 sh_list.view_frustum_outline_count = 0;
-                sh_list.bias[0] = ls->shadow_bias[0];
-                sh_list.bias[1] = ls->shadow_bias[1];
+                sh_list.bias[0] = -ls->shadow_bias[0];
+                sh_list.bias[1] = -ls->shadow_bias[1];
 
                 bool light_sees_dynamic_objects = false;
 
@@ -1502,7 +1486,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     }
                 }
 
-                shadow_cam.Perspective(Ren::eZRangeMode::ZeroToOne, light_angle, 1.0f,
+                shadow_cam.Perspective(Ren::eZRangeMode::OneToZero, light_angle, 1.0f,
                                        std::max(ls->cull_offset, near_clip), std::min(ls->cull_radius, far_clip));
 
                 sh_list.cam_near = region->cam_near = shadow_cam.near();

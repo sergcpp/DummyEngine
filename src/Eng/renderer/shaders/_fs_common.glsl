@@ -306,12 +306,12 @@ vec2 BlockerSearch(sampler2D shadow_val_tex, vec3 shadow_uv, float search_radius
         vec2 uv = shadow_uv.xy + search_radius * RotateVector(rotator, g_poisson_disk_8[i] / shadow_size);
 #if GATHER4_BLOCKER_SEARCH
         vec4 depth = textureGather(shadow_val_tex, uv, 0);
-        vec4 valid = vec4(lessThan(depth, vec4(shadow_uv.z)));
+        vec4 valid = vec4(greaterThan(depth, vec4(shadow_uv.z)));
         avg_distance += dot(valid, depth);
         count += dot(valid, vec4(1.0));
 #else
-        float depth = textureLod(shadow_val_tex, uv, 0.0).x;
-        if (depth < shadow_uv.z) {
+        const float depth = textureLod(shadow_val_tex, uv, 0.0).x;
+        if (depth > shadow_uv.z) {
             avg_distance += depth;
             count += 1.0;
         }
@@ -322,7 +322,7 @@ vec2 BlockerSearch(sampler2D shadow_val_tex, vec3 shadow_uv, float search_radius
 }
 
 float GetCascadeVisibility(int cascade, sampler2DShadow shadow_tex, sampler2D shadow_val_tex, mat4x3 aVertexShUVs, vec4 rotator, float softness_factor) {
-    const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
+    const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES / 2));
     const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
     const float MaxShadowRadiusPx = 16.0;
 

@@ -94,7 +94,7 @@ void Eng::RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAll
             rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Dynamic);
 
             rast_state.depth.test_enabled = true;
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
             rast_state.scissor.enabled = true;
 
             if (!pi_solid_[2].Init(ctx.api_ctx(), rast_state, shadow_solid_prog, &vi_depth_pass_solid_, &rp_depth_only_,

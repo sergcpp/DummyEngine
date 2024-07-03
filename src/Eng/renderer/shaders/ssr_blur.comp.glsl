@@ -198,7 +198,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
     if (!IsReflectiveSurface(center_depth, g_spec_tex, pix_uv)) {
-        //return;
+        return;
     }
     const float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info);
 

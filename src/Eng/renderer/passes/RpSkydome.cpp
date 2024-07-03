@@ -57,7 +57,7 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
 #endif
 
     Ren::Camera temp_cam;
-    temp_cam.Perspective(Ren::eZRangeMode::ZeroToOne, 90.0f, 1.0f, 1.0f, 10000.0f);
+    temp_cam.Perspective(Ren::eZRangeMode::OneToZero, 90.0f, 1.0f, 1.0f, 10000.0f);
     for (int i = 0; i < 6; i++) {
         temp_cam.SetupView(Ren::Vec3f{0.0f}, axises[i], ups[i]);
 
@@ -93,7 +93,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = view_state_->act_res[1];
     rast_state.depth.test_enabled = true;
     rast_state.depth.write_enabled = false;
-    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
     rast_state.blend.enabled = false;
 
     rast_state.stencil.enabled = true;

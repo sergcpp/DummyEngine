@@ -275,6 +275,8 @@ bool Ren::InitGLExtentions(ILog *log) {
     LOAD_GL_FUN(glClearBufferSubData)
     LOAD_GL_FUN(glClearTexImage)
 
+    LOAD_GL_FUN(glClearDepthf)
+
     LOAD_GL_FUN(glBindImageTexture)
 
     LOAD_GL_FUN(glClipControl)

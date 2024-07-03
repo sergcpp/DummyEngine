@@ -144,8 +144,8 @@ void main() {
     ivec2 closest_frag = ivec2(0, 0);
 
     for (int i = 0; i < 8; i++) {
-        float depth = texelFetch(g_depth_curr, uvs_px + offsets[i], 0).r;
-        if (depth < min_depth) {
+        const float depth = texelFetch(g_depth_curr, uvs_px + offsets[i], 0).r;
+        if (depth > min_depth) {
             closest_frag = offsets[i];
             min_depth = depth;
         }

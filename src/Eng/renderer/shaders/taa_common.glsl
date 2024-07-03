@@ -55,16 +55,16 @@ vec3 FindClosestFragment_3x3(sampler2D dtex, const vec2 uv, const vec2 texel_siz
     const vec3 dbr = vec3( 1,  1, textureLodOffset(dtex, uv, 0.0, ivec2( 1,  1)).x);
 
     vec3 dmin = dtl;
-    if (dmin.z > dtc.z) dmin = dtc;
-    if (dmin.z > dtr.z) dmin = dtr;
+    if (dmin.z < dtc.z) dmin = dtc;
+    if (dmin.z < dtr.z) dmin = dtr;
 
-    if (dmin.z > dml.z) dmin = dml;
-    if (dmin.z > dmc.z) dmin = dmc;
-    if (dmin.z > dmr.z) dmin = dmr;
+    if (dmin.z < dml.z) dmin = dml;
+    if (dmin.z < dmc.z) dmin = dmc;
+    if (dmin.z < dmr.z) dmin = dmr;
 
-    if (dmin.z > dbl.z) dmin = dbl;
-    if (dmin.z > dbc.z) dmin = dbc;
-    if (dmin.z > dbr.z) dmin = dbr;
+    if (dmin.z < dbl.z) dmin = dbl;
+    if (dmin.z < dbc.z) dmin = dbc;
+    if (dmin.z < dbr.z) dmin = dbr;
 
     return vec3(uv + texel_size * dmin.xy, dmin.z);
 }
