@@ -197,8 +197,7 @@ template <typename T, int M, int N> Vec<T, M> operator*(const Mat<T, M, N> &lhs,
     return res;
 }
 
-template <typename T, int M, int N, int P>
-Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
+template <typename T, int M, int N, int P> Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
     auto res = Mat<T, M, P>{Uninitialize};
     for (int m = 0; m < M; m++) {
         for (int p = 0; p < P; p++) {
@@ -485,7 +484,8 @@ template <typename T> void LookAt(Mat<T, 4, 4> &m, const Vec<T, 3> &src, const V
 }
 
 template <typename T>
-void PerspectiveProjection(Mat<T, 4, 4> &m, const T fov, const T aspect, const T znear, const T zfar) {
+Mat<T, 4, 4> PerspectiveProjection(const T fov, const T aspect, const T znear, const T zfar,
+                                   const bool z_range_zero_to_one) {
     const T xymax = znear * std::tan(fov * Pi<T>() / T(360));
     const T ymin = -xymax;
     const T xmin = -xymax;
@@ -496,6 +496,8 @@ void PerspectiveProjection(Mat<T, 4, 4> &m, const T fov, const T aspect, const T
     const T w = 2 * znear / (width * aspect);
     const T h = 2 * znear / height;
 
+    Mat<T, 4, 4> m;
+
     m[0][0] = w;
     m[0][1] = m[0][2] = m[0][3] = T(0);
 
@@ -503,47 +505,52 @@ void PerspectiveProjection(Mat<T, 4, 4> &m, const T fov, const T aspect, const T
     m[1][0] = m[1][2] = m[1][3] = T(0);
 
     m[2][0] = m[2][1] = T(0);
-#if defined(USE_VK_RENDER)
-    m[2][2] = zfar / (znear - zfar);
-#else
-    m[2][2] = -(zfar + znear) / (zfar - znear);
-#endif
+    if (z_range_zero_to_one) {
+        m[2][2] = zfar / (znear - zfar);
+    } else {
+        m[2][2] = -(zfar + znear) / (zfar - znear);
+    }
     m[2][3] = T(-1);
 
     m[3][0] = m[3][1] = T(0);
-#if defined(USE_VK_RENDER)
-    m[3][2] = -(zfar * znear) / (zfar - znear);
-#else
-    m[3][2] = -2 * (zfar * znear) / (zfar - znear);
-#endif
+    if (z_range_zero_to_one) {
+        m[3][2] = -(zfar * znear) / (zfar - znear);
+    } else {
+        m[3][2] = -2 * (zfar * znear) / (zfar - znear);
+    }
     m[3][3] = T(0);
+
+    return m;
 }
 
 template <typename T>
-void OrthographicProjection(Mat<T, 4, 4> &m, const T left, const T right, const T bottom, const T top, const T nnear,
-                            const T ffar) {
+Mat<T, 4, 4> OrthographicProjection(const T left, const T right, const T bottom, const T top, const T nnear,
+                                    const T ffar, const bool z_range_zero_to_one) {
     T r_width = T(1) / (right - left);
     T r_height = T(1) / (top - bottom);
     T r_depth = T(1) / (ffar - nnear);
 
-    m = Mat<T, 4, 4>{T(0)};
+    Mat<T, 4, 4> m = Mat<T, 4, 4>{T(0)};
 
     m[0][0] = T(2) * r_width;
     m[1][1] = T(2) * r_height;
-#if defined(USE_VK_RENDER)
-    m[2][2] = -r_depth;
-#else
-    m[2][2] = -T(2) * r_depth;
-#endif
+    if (z_range_zero_to_one) {
+        m[2][2] = -r_depth;
+    } else {
+        m[2][2] = -T(2) * r_depth;
+    }
     m[3][0] = -(right + left) * r_width;
     m[3][1] = -(top + bottom) * r_height;
-#if defined(USE_VK_RENDER)
-    m[3][2] = -nnear * r_depth;
-#else
-    m[3][2] = -(ffar + nnear) * r_depth;
-#endif
+    if (z_range_zero_to_one) {
+        m[3][2] = -nnear * r_depth;
+    } else {
+        m[3][2] = -(ffar + nnear) * r_depth;
+    }
     m[3][3] = T(1);
+
+    return m;
 }
+
 } // namespace Ren
 
 #undef force_inline

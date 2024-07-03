@@ -9,12 +9,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-#if defined(VULKAN)
-layout (binding = BIND_UB_SHARED_DATA_BUF, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -68,21 +63,14 @@ void main() {
     const vec2 px_center = vec2(icoord) + vec2(0.5);
     const vec2 in_uv = px_center / vec2(g_params.img_size);
 
-#if defined(VULKAN)
-    vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
-    ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-    vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
-#endif // VULKAN
+    const vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
-    ray_origin_vs /= ray_origin_vs.w;
+    const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
+    const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, icoord);
+    const vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs, 0.0)).xyz;
 
-    vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, icoord);
-    vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
-
-    vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
+    vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
     ray_origin_ws /= ray_origin_ws.w;
 
     g_pld.cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
@@ -100,7 +88,7 @@ void main() {
                     0,                  // missIndex
                     ray_origin_ws.xyz,  // origin
                     t_min,              // Tmin
-                    refl_ray_ws.xyz,    // direction
+                    refl_ray_ws,        // direction
                     t_max,              // Tmax
                     0                   // payload
                     );

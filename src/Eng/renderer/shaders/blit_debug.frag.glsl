@@ -19,11 +19,7 @@ layout(location = 15) uniform ivec2 g_res;
 layout(location = 16) uniform float g_mode;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

@@ -61,6 +61,13 @@ static const Ren::Vec4f ClipFrustumPoints[] = {
     Ren::Vec4f{1.0f, 1.0f, 1.0f, 1.0f},    Ren::Vec4f{-1.0f, 1.0f, 1.0f, 1.0f}};
 #endif
 
+static const Ren::Vec4f ClipFrustumPointsNew[] = {
+    Ren::Vec4f{-1.0f, -1.0f, 0.0f, 1.0f}, Ren::Vec4f{1.0f, -1.0f, 0.0f, 1.0f},
+    Ren::Vec4f{1.0f, 1.0f, 0.0f, 1.0f},   Ren::Vec4f{-1.0f, 1.0f, 0.0f, 1.0f},
+
+    Ren::Vec4f{-1.0f, -1.0f, 1.0f, 1.0f}, Ren::Vec4f{1.0f, -1.0f, 1.0f, 1.0f},
+    Ren::Vec4f{1.0f, 1.0f, 1.0f, 1.0f},   Ren::Vec4f{-1.0f, 1.0f, 1.0f, 1.0f}};
+
 Ren::Vec3f FindSupport(const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max, const Ren::Vec3f &dir) {
     const Ren::Vec3f points[8] = {bbox_min,
                                   Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_max[2]},
@@ -543,7 +550,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                           bbox_max = Vec3f{std::numeric_limits<float>::lowest()};
 
                     for (int k = 0; k < 8; k++) {
-                        Vec4f p = world_from_clip * ClipFrustumPoints[k];
+                        Vec4f p = world_from_clip * ClipFrustumPointsNew[k];
                         p /= p[3];
 
                         bbox_min = Min(bbox_min, Vec3f{p});
@@ -767,8 +774,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 bounding_radius = 0.5f * max_dist;
             } else {
                 Camera temp_cam = list.draw_cam;
-                temp_cam.Perspective(list.draw_cam.angle(), list.draw_cam.aspect(), near_planes[casc],
-                                     far_planes[casc]);
+                temp_cam.Perspective(Ren::eZRangeMode::ZeroToOne, list.draw_cam.angle(), list.draw_cam.aspect(),
+                                     near_planes[casc], far_planes[casc]);
                 temp_cam.UpdatePlanes();
 
                 const Mat4f &tmp_cam_view_from_world = temp_cam.view_matrix(),
@@ -817,8 +824,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             Camera shadow_cam;
             shadow_cam.SetupView(cam_center, cam_target, cam_up);
-            shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f,
-                                    cam_extents);
+            shadow_cam.Orthographic(Ren::eZRangeMode::ZeroToOne, -bounding_radius, bounding_radius, bounding_radius,
+                                    -bounding_radius, 0.0f, cam_extents);
             shadow_cam.UpdatePlanes();
 
             const Mat4f sh_clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
@@ -848,7 +855,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 Vec4f frustum_points[8] = {REN_UNINITIALIZE_X8(Vec4f)};
 
                 for (int k = 0; k < 8; k++) {
-                    frustum_points[k] = tmp_cam_world_from_clip * ClipFrustumPoints[k];
+                    frustum_points[k] = tmp_cam_world_from_clip * ClipFrustumPointsNew[k];
                     frustum_points[k] /= frustum_points[k][3];
                 }
 
@@ -1336,7 +1343,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 Camera shadow_cam;
                 shadow_cam.SetupView(light_center, light_center + _light_dir, _light_up);
-                shadow_cam.Perspective(light_angle, 1.0f, ls->cull_offset, ls->cull_radius);
+                shadow_cam.Perspective(Ren::eZRangeMode::ZeroToOne, light_angle, 1.0f, ls->cull_offset,
+                                       ls->cull_radius);
                 shadow_cam.UpdatePlanes();
 
                 if (i < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
@@ -1369,22 +1377,22 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 float near_clip = ls->cull_radius, far_clip = 0.0f;
 
-                const uint32_t skip_check_bit = (1u << 31u);
-                const uint32_t index_bits = ~skip_check_bit;
+                const uint32_t SkipCheckBit = (1u << 31u);
+                const uint32_t IndexBits = ~SkipCheckBit;
 
                 stack_size = 0;
                 stack[stack_size++] = scene.root_node;
 
                 while (stack_size) {
-                    const uint32_t cur = stack[--stack_size] & index_bits;
-                    uint32_t skip_check = stack[stack_size] & skip_check_bit;
+                    const uint32_t cur = stack[--stack_size] & IndexBits;
+                    uint32_t skip_check = stack[stack_size] & SkipCheckBit;
                     const bvh_node_t *n = &scene.nodes[cur];
 
                     const eVisResult res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
                     if (res == eVisResult::Invisible) {
                         continue;
                     } else if (res == eVisResult::FullyVisible) {
-                        skip_check = skip_check_bit;
+                        skip_check = SkipCheckBit;
                     }
 
                     if (!n->leaf_node) {
@@ -1494,8 +1502,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     }
                 }
 
-                shadow_cam.Perspective(light_angle, 1.0f, std::max(ls->cull_offset, near_clip),
-                                       std::min(ls->cull_radius, far_clip));
+                shadow_cam.Perspective(Ren::eZRangeMode::ZeroToOne, light_angle, 1.0f,
+                                       std::max(ls->cull_offset, near_clip), std::min(ls->cull_radius, far_clip));
 
                 sh_list.cam_near = region->cam_near = shadow_cam.near();
                 sh_list.cam_far = region->cam_far = shadow_cam.far();

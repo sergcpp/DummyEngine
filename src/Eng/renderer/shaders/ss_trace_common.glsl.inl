@@ -23,10 +23,8 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
 
 #if defined(VULKAN)
     ray_offsetet_ss.y = -ray_offsetet_ss.y;
-    ray_offsetet_ss.xy = 0.5 * ray_offsetet_ss.xy + 0.5;
-#else // VULKAN
-    ray_offsetet_ss.xyz = 0.5 * ray_offsetet_ss.xyz + 0.5;
 #endif // VULKAN
+    ray_offsetet_ss.xy = 0.5 * ray_offsetet_ss.xy + 0.5;
 
     vec3 ray_dir_ss = normalize(ray_offsetet_ss.xyz - ray_origin_ss);
     vec3 ray_dir_ss_inv = mix(1.0 / ray_dir_ss, vec3(FLOAT_MAX), equal(ray_dir_ss, vec3(0.0)));
@@ -104,11 +102,9 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
     }
 
     vec3 hit_point_cs = cur_pos_ss;
-#if defined(VULKAN)
     hit_point_cs.xy = 2.0 * hit_point_cs.xy - 1.0;
+#if defined(VULKAN)
     hit_point_cs.y = -hit_point_cs.y;
-#else // VULKAN
-    hit_point_cs.xyz = 2.0 * hit_point_cs.xyz - 1.0;
 #endif // VULKAN
 
     out_hit_point_cs = hit_point_cs.xyz;
@@ -118,11 +114,8 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
 
     out_hit_point_vs = hit_point_vs.xyz;
 
-    float hit_depth_fetch = texelFetch(depth_tex, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
-    vec4 hit_surf_cs = vec4(hit_point_cs.xy, hit_depth_fetch, 1.0);
-#if !defined(VULKAN)
-    hit_surf_cs.z = 2.0 * hit_surf_cs.z - 1.0;
-#endif // VULKAN
+    const float hit_depth_fetch = texelFetch(depth_tex, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
+    const vec4 hit_surf_cs = vec4(hit_point_cs.xy, hit_depth_fetch, 1.0);
 
     vec4 hit_surf_vs = g_shrd_data.view_from_clip * hit_surf_cs;
     hit_surf_vs.xyz /= hit_surf_vs.w;

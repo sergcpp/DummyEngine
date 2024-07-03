@@ -39,8 +39,8 @@ void Eng::Decal::Read(const JsObjectP &js_in, Decal &de) {
                          float(js_dim.at(2).as_num().val)};
     }
 
-    Ren::OrthographicProjection(de.proj, -0.5f * dim[0], 0.5f * dim[0], -0.5f * dim[1], 0.5f * dim[1], 0.0f,
-                                1.0f * dim[2]);
+    de.proj = Ren::OrthographicProjection(-0.5f * dim[0], 0.5f * dim[0], -0.5f * dim[1], 0.5f * dim[1], 0.0f,
+                                          1.0f * dim[2], true /* z_range_zero_to_one */);
 }
 
 void Eng::Decal::Write(const Decal &de, JsObjectP &js_out) {}

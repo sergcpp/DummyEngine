@@ -33,7 +33,6 @@ layout(binding = BIND_BINDLESS_TEX) readonly buffer TextureHandles {
 };
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) out vec3 g_vtx_pos_cs;
 layout(location = 1) out vec2 g_vtx_uvs_cs;
 layout(location = 2) out vec3 g_vtx_norm_cs;
@@ -45,19 +44,6 @@ layout(location = 10) out flat uvec2 g_norm_tex;
 layout(location = 11) out flat uvec2 g_spec_tex;
 layout(location = 12) out flat uvec2 g_bump_tex;
 #endif // GL_ARB_bindless_texture
-#else
-out vec3 g_vtx_pos_cs;
-out vec2 g_vtx_uvs_cs;
-out vec3 g_vtx_norm_cs;
-out vec3 g_vtx_tangent_cs;
-out vec3 g_vtx_sh_uvs_cs[4];
-#if defined(GL_ARB_bindless_texture)
-out flat uvec2 g_diff_tex;
-out flat uvec2 g_norm_tex;
-out flat uvec2 g_spec_tex;
-out flat uvec2 g_bump_tex;
-#endif // GL_ARB_bindless_texture
-#endif
 
 //invariant gl_Position;
 

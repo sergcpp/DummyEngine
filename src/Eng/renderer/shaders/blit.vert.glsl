@@ -13,11 +13,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = 0) uniform vec4 uTransform;
 #endif*/
 
-#if defined(VULKAN)
-layout(location = 0)
-#endif
-out vec2 g_vtx_uvs;
-
+layout(location = 0) out vec2 g_vtx_uvs;
 
 void main() {
     g_vtx_uvs = g_in_vtx_uvs;//uTransform.xy + g_in_vtx_uvs * uTransform.zw;

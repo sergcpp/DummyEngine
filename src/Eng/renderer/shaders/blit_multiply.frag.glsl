@@ -16,11 +16,7 @@ layout(binding = BIND_ENV_TEX) uniform samplerCubeArray g_env_tex;
 layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
 layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

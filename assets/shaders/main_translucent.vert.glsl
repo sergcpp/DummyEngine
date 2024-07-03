@@ -68,11 +68,7 @@ void main(void) {
 
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
-#if defined(VULKAN)
         shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-#else // VULKAN
-        shadow_uvs = 0.5 * shadow_uvs + 0.5;
-#endif // VULKAN
         shadow_uvs.xy *= vec2(0.25, 0.5);
         shadow_uvs.xy += offsets[i];
 #if defined(VULKAN)

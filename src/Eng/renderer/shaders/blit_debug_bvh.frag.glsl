@@ -17,11 +17,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = 12) uniform int g_root_index;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

@@ -119,8 +119,6 @@ vec3 ShadeHitPoint(const vec2 uv, const vec3 hit_point_vs, const vec3 refl_ray_v
 
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-    //approx_spec = compress_hdr(normal.xyz * 0.5 + 0.5);
-
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
@@ -159,17 +157,9 @@ void main() {
     const vec3 normal_ws = norm_rough.xyz;
     const vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
-    vec3 ray_origin_ss = vec3(norm_uvs, depth);
-    vec4 ray_origin_cs = vec4(ray_origin_ss, 1.0);
-#if defined(VULKAN)
-    ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
-    ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-    ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - 1.0;
-#endif // VULKAN
-
-    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
-    ray_origin_vs /= ray_origin_vs.w;
+    const vec3 ray_origin_ss = vec3(norm_uvs, depth);
+    const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
     const float view_z = -ray_origin_vs.z;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);

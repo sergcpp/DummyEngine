@@ -26,6 +26,7 @@ enum class eBlendFactor : uint8_t {
 enum class eStencilOp : uint8_t { Keep, Zero, Replace, Incr, Decr, Invert, _Count };
 enum class ePolygonMode : uint8_t { Fill, Line, _Count };
 enum class eDepthBiasMode : uint8_t { Disabled, Static, Dynamic };
+enum class eDepthRangeMode : uint8_t { ZeroToOne, NegOneToOne, _Count };
 
 union PolyState {
     struct {
@@ -47,11 +48,14 @@ union DepthState {
     struct {
         uint8_t test_enabled : 1;
         uint8_t write_enabled : 1;
-        uint8_t compare_op : 6;
+        uint8_t range_mode : 1;
+        uint8_t compare_op : 5;
     };
     uint8_t bits;
 
-    DepthState() : test_enabled(0), write_enabled(1), compare_op(uint8_t(eCompareOp::Always)) {}
+    DepthState()
+        : test_enabled(0), write_enabled(1), compare_op(uint8_t(eCompareOp::Always)),
+          range_mode(uint8_t(eDepthRangeMode::ZeroToOne)) {}
 };
 static_assert(sizeof(DepthState) == 1, "!");
 
@@ -162,6 +166,6 @@ inline bool operator==(const RastState &lhs, const RastState &rhs) {
     return memcmp(&lhs, &rhs, sizeof(RastState)) == 0;
 }
 
-//inline bool operator<(const RastState &lhs, const RastState &rhs) {}
+// inline bool operator<(const RastState &lhs, const RastState &rhs) {}
 
 } // namespace Ren

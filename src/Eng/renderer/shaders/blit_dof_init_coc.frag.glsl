@@ -16,11 +16,7 @@ layout(location = 1) uniform vec4 g_dof_equation;
 
 layout(binding = BIND_BASE0_TEX) uniform sampler2D g_depth;
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out float outCoc;
 

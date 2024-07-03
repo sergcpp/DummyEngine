@@ -150,15 +150,8 @@ bool IsDisoccluded(uvec2 did, float depth, vec3 velocity) {
     vec2 texel_size = g_params.inv_img_size;
     vec2 uv = (vec2(did) + vec2(0.5)) * texel_size;
 
-    vec4 point_cs = vec4(uv, depth, 1.0);
-#if defined(VULKAN)
-    point_cs.xy = 2.0 * point_cs.xy - vec2(1.0);
-    point_cs.y = -point_cs.y;
-#else // VULKAN
-    point_cs.xyz = 2.0 * point_cs.xyz - vec3(1.0);
-#endif // VULKAN
-
-    vec2 previous_uv = uv - velocity.xy;
+    const vec4 point_cs = vec4(2.0 * uv - 1.0, depth, 1.0);
+    const vec2 previous_uv = uv - velocity.xy;
 
     bool is_disoccluded = true;
     if (all(greaterThan(previous_uv, vec2(0.0))) && all(lessThan(previous_uv, vec2(1.0)))) {
@@ -166,9 +159,8 @@ bool IsDisoccluded(uvec2 did, float depth, vec3 velocity) {
         vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(did), 0).x).xyz;
 
         // How aligned with the view vector? (the more Z aligned, the higher the depth errors)
-        vec4 point_ws = g_shrd_data.world_from_clip * point_cs;
-        point_ws /= point_ws.w;
-        vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - point_ws.xyz);
+        const vec3 point_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, point_cs);
+        const vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - point_ws);
         float z_alignment = 1.0 - dot(view_direction, normal);
         z_alignment = pow(z_alignment, 8);
 
@@ -190,13 +182,7 @@ bool IsDisoccluded2x2(uvec2 did, float depth, vec3 velocity) {
     vec2 texel_size = g_params.inv_img_size;
     vec2 uv = (vec2(did) + vec2(0.5)) * texel_size;
 
-    vec4 point_cs = vec4(uv, depth, 1.0);
-#if defined(VULKAN)
-    point_cs.xy = 2.0 * point_cs.xy - vec2(1.0);
-    point_cs.y = -point_cs.y;
-#else // VULKAN
-    point_cs.xyz = 2.0 * point_cs.xyz - vec3(1.0);
-#endif // VULKAN
+    const vec4 point_cs = vec4(2.0 * uv - 1.0, depth, 1.0);
 
     vec2 previous_uv = uv - velocity.xy;
     vec2 previous_uv_base = (floor(previous_uv * g_params.img_size - vec2(0.5)) + vec2(0.5)) * g_params.inv_img_size;
@@ -207,9 +193,8 @@ bool IsDisoccluded2x2(uvec2 did, float depth, vec3 velocity) {
         vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(did), 0).x).xyz;
 
         // How aligned with the view vector? (the more Z aligned, the higher the depth errors)
-        vec4 point_ws = g_shrd_data.world_from_clip * point_cs;
-        point_ws /= point_ws.w;
-        vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - point_ws.xyz);
+        const vec3 point_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, point_cs);
+        const vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - point_ws);
         float z_alignment = 1.0 - dot(view_direction, normal);
         z_alignment = pow(z_alignment, 8);
 

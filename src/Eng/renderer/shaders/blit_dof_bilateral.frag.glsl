@@ -13,11 +13,7 @@ layout(location = 1) uniform float vertical;
 layout(location = 2) uniform float ref_depth;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

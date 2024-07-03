@@ -6,11 +6,7 @@
 layout(binding = BIND_BASE0_TEX) uniform sampler2D s_accum_tex;
 layout(binding = BIND_BASE1_TEX) uniform sampler2D s_additional_tex;
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

@@ -57,7 +57,7 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
 #endif
 
     Ren::Camera temp_cam;
-    temp_cam.Perspective(90.0f, 1.0f, 1.0f, 10000.0f);
+    temp_cam.Perspective(Ren::eZRangeMode::ZeroToOne, 90.0f, 1.0f, 1.0f, 10000.0f);
     for (int i = 0; i < 6; i++) {
         temp_cam.SetupView(Ren::Vec3f{0.0f}, axises[i], ups[i]);
 

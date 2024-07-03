@@ -326,7 +326,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     }
 
     // Setup camera
-    cam_.Perspective(45.0f, float(w) / h, 0.05f, 10000.0f);
+    cam_.Perspective(Ren::eZRangeMode::ZeroToOne, 45.0f, float(w) / h, 0.05f, 10000.0f);
 
     // Compile model or anim and/or load from file
 

@@ -112,11 +112,7 @@ void main(void) {
                 vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(g_vtx_pos, 1.0);
                 pp /= pp.w;
 
-#if defined(VULKAN)
-                pp.xy = pp.xy * 0.5 + vec2(0.5);
-#else // VULKAN
-                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-#endif // VULKAN
+                pp.xy = pp.xy * 0.5 + 0.5;
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
 #if defined(VULKAN)
                 pp.y = 1.0 - pp.y;

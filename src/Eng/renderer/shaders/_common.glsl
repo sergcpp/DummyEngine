@@ -240,6 +240,14 @@ vec3 decompress_hdr(const vec3 val) {
     return val * HDR_FACTOR;
 }
 
+vec3 TransformFromClipSpace(const mat4 world_from_clip, vec4 pos_cs) {
+#if defined(VULKAN)
+    pos_cs.y = -pos_cs.y;
+#endif // VULKAN
+    const vec4 pos_ws = world_from_clip * pos_cs;
+    return pos_ws.xyz / pos_ws.w;
+}
+
 vec2 RotateVector(vec4 rotator, vec2 v) { return v.x * rotator.xz + v.y * rotator.yw; }
 vec4 CombineRotators(vec4 r1, vec4 r2 ) { return r1.xyxy * r2.xxzz + r1.zwzw * r2.yyww; }
 

@@ -5,11 +5,7 @@
 layout(binding = BIND_BASE0_TEX) uniform sampler2D g_shrunk_coc;
 layout(binding = BIND_BASE1_TEX) uniform sampler2D g_blurred_coc;
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out float outCoc;
 

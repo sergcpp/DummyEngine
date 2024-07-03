@@ -29,11 +29,7 @@ layout(binding = BIND_ENV_TEX) uniform samplerCubeArray g_probe_textures;
 layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
 layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 
@@ -92,20 +88,13 @@ void main() {
     vec2 brdf;
 
     {   // apply cubemap contribution
-#if defined(VULKAN)
-        vec4 ray_origin_cs = vec4(2.0 * g_vtx_uvs.xy - 1.0, depth, 1.0);
-        ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-        vec4 ray_origin_cs = vec4(2.0 * vec3(g_vtx_uvs.xy, depth) - 1.0, 1.0);
-#endif // VULKAN
+        const vec4 ray_origin_cs = vec4(2.0 * g_vtx_uvs.xy - 1.0, depth, 1.0);
+        const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-        vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
-        ray_origin_vs /= ray_origin_vs.w;
+        const vec3 view_ray_ws = normalize((g_shrd_data.world_from_view * vec4(ray_origin_vs, 0.0)).xyz);
+        const vec3 refl_ray_ws = reflect(view_ray_ws, normal);
 
-        vec3 view_ray_ws = normalize((g_shrd_data.world_from_view * vec4(ray_origin_vs.xyz, 0.0)).xyz);
-        vec3 refl_ray_ws = reflect(view_ray_ws, normal);
-
-        vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
+        vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
         ray_origin_ws /= ray_origin_ws.w;
 
         float k = log2(d0 / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];

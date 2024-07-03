@@ -119,22 +119,15 @@ void main() {
     vec2 px_center = vec2(icoord) + 0.5;
     vec2 in_uv = px_center / vec2(g_params.img_size);
 
-#if defined(VULKAN)
-    vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
-    ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-    vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
-#endif // VULKAN
-
-    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
-    ray_origin_vs /= ray_origin_vs.w;
+    const vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
     const float view_z = -ray_origin_vs.z;
 
-    vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    vec3 gi_ray_vs = SampleDiffuseVector(normal_vs, icoord, 0);
-    vec3 gi_ray_ws = (g_shrd_data.world_from_view * vec4(gi_ray_vs.xyz, 0.0)).xyz;
+    const vec3 view_ray_vs = normalize(ray_origin_vs);
+    const vec3 gi_ray_vs = SampleDiffuseVector(normal_vs, icoord, 0);
+    vec3 gi_ray_ws = (g_shrd_data.world_from_view * vec4(gi_ray_vs, 0.0)).xyz;
 
-    vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
+    vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
     ray_origin_ws /= ray_origin_ws.w;
 
     // Bias to avoid self-intersection
@@ -161,7 +154,7 @@ void main() {
                               (1u << RAY_TYPE_DIFFUSE), // cullMask
                               ray_origin_ws.xyz,        // origin
                               t_min,                    // tMin
-                              gi_ray_ws.xyz,            // direction
+                              gi_ray_ws,                // direction
                               t_max                     // tMax
                              );
 
@@ -208,14 +201,14 @@ void main() {
                 const vec3 light_forward = normalize(cross(light_u, light_v));
 
                 const float plane_dist = dot(light_forward, light_pos);
-                const float cos_theta = dot(gi_ray_ws.xyz, light_forward);
+                const float cos_theta = dot(gi_ray_ws, light_forward);
                 const float t = (plane_dist - dot(light_forward, ray_origin_ws.xyz)) / min(cos_theta, -FLT_EPS);
 
                 if (cos_theta < 0.0 && t > 0.0) {
                     light_u /= dot(light_u, light_u);
                     light_v /= dot(light_v, light_v);
 
-                    const vec3 p = ray_origin_ws.xyz + gi_ray_ws.xyz * t;
+                    const vec3 p = ray_origin_ws.xyz + gi_ray_ws * t;
                     const vec3 vi = p - light_pos;
                     const float a1 = dot(light_u, vi);
                     if (a1 >= -1.0 && a1 <= 1.0) {
@@ -228,7 +221,7 @@ void main() {
                 }
             }
 
-            const vec3 rotated_dir = rotate_xz(gi_ray_ws.xyz, g_shrd_data.env_col.w);
+            const vec3 rotated_dir = rotate_xz(gi_ray_ws, g_shrd_data.env_col.w);
             const float env_mip_count = g_shrd_data.ambient_hack.w;
             final_color += throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).rgb;
             break;
@@ -292,8 +285,8 @@ void main() {
             }
             tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
-            const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * hit_t;
-            const vec3 I = -gi_ray_ws.xyz;
+            const vec3 P = ray_origin_ws.xyz + gi_ray_ws * hit_t;
+            const vec3 I = -gi_ray_ws;
             const float N_dot_V = saturate(dot(N, I));
 
             vec3 tint_color = vec3(0.0);
@@ -380,11 +373,7 @@ void main() {
                     vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
                     pp /= pp.w;
 
-                    #if defined(VULKAN)
-                        pp.xy = pp.xy * 0.5 + vec2(0.5);
-                    #else // VULKAN
-                        pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-                    #endif // VULKAN
+                    pp.xy = pp.xy * 0.5 + vec2(0.5);
                     pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                     #if defined(VULKAN)
                         pp.y = 1.0 - pp.y;
@@ -404,11 +393,7 @@ void main() {
                 pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
                 vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
-        #if defined(VULKAN)
                 shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-        #else // VULKAN
-                shadow_uvs = 0.5 * shadow_uvs + 0.5;
-        #endif // VULKAN
                 shadow_uvs.xy *= vec2(0.25, 0.5);
                 shadow_uvs.xy += vec2(0.25, 0.5);
         #if defined(VULKAN)

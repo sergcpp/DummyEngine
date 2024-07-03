@@ -34,18 +34,10 @@ void main() {
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).r;
 
-    vec4 pos_cs = vec4(norm_uvs, depth, 1.0);
-#if defined(VULKAN)
-    pos_cs.xy = 2.0 * pos_cs.xy - 1.0;
-    pos_cs.y = -pos_cs.y;
-#else // VULKAN
-    pos_cs.xyz = 2.0 * pos_cs.xyz - 1.0;
-#endif // VULKAN
+    const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
+    const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
-    vec4 pos_ws = g_shrd_data.world_from_clip * pos_cs;
-    pos_ws /= pos_ws.w;
-
-    const vec3 P = pos_ws.xyz;
+    const vec3 P = pos_ws;
     const vec3 I = normalize(P - g_shrd_data.cam_pos_and_exp.xyz);
 
     const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);

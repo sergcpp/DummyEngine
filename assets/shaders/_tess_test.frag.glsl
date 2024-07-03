@@ -27,7 +27,6 @@ layout (binding = 0, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#if defined(VULKAN)
 layout(location = 0) in vec3 g_vtx_pos;
 layout(location = 1) in vec2 g_vtx_uvs;
 layout(location = 2) in vec3 g_vtx_normal;
@@ -40,20 +39,6 @@ layout(location = 10) in flat uvec2 g_norm_tex;
 layout(location = 11) in flat uvec2 g_spec_tex;
 layout(location = 12) in flat uvec2 g_bump_tex;
 #endif // GL_ARB_bindless_texture
-#else
-in vec3 g_vtx_pos;
-in vec2 g_vtx_uvs;
-in vec3 g_vtx_normal;
-in vec3 g_vtx_tangent;
-in vec3 g_vtx_sh_uvs[4];
-in float g_tex_height;
-#if defined(GL_ARB_bindless_texture)
-in flat uvec2 g_diff_tex;
-in flat uvec2 g_norm_tex;
-in flat uvec2 g_spec_tex;
-in flat uvec2 g_bump_tex;
-#endif // GL_ARB_bindless_texture
-#endif
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 layout(location = LOC_OUT_NORM) out vec4 g_out_normal;

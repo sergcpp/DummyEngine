@@ -1,11 +1,7 @@
 #version 430 core
 #extension GL_ARB_texture_multisample : enable
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color_accum;
 layout(location = 1) out vec4 g_out_alpha_and_revealage;

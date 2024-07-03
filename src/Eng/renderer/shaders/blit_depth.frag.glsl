@@ -16,11 +16,7 @@ layout(location = 1) uniform float near;
 layout(location = 2) uniform float far;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

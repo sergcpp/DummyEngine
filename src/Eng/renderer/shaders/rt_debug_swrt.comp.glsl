@@ -89,16 +89,12 @@ void main() {
 
     const vec2 px_center = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);
     const vec2 in_uv = px_center / vec2(g_params.img_size);
-    vec2 d = in_uv * 2.0 - 1.0;
-#if defined(VULKAN)
-    d.y = -d.y;
-#endif
+    const vec2 d = in_uv * 2.0 - 1.0;
 
     vec4 origin = g_shrd_data.world_from_view * vec4(0, 0, 0, 1);
     origin /= origin.w;
-    vec4 target = g_shrd_data.view_from_clip * vec4(d.xy, 1, 1);
-    target /= target.w;
-    vec4 direction = g_shrd_data.world_from_view * vec4(normalize(target.xyz), 0);
+    const vec3 target = TransformFromClipSpace(g_shrd_data.view_from_clip, vec4(d.xy, 1, 1));
+    vec4 direction = g_shrd_data.world_from_view * vec4(normalize(target), 0);
 
     vec3 inv_d = safe_invert(direction.xyz);
 
@@ -328,11 +324,7 @@ void main() {
 
         vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
         projected_p /= projected_p[3];
-        #if defined(VULKAN)
-            projected_p.xy = projected_p.xy * 0.5 + 0.5;
-        #else // VULKAN
-            projected_p.xyz = projected_p.xyz * 0.5 + 0.5;
-        #endif // VULKAN
+        projected_p.xy = projected_p.xy * 0.5 + 0.5;
 
         const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
         const float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
@@ -372,11 +364,7 @@ void main() {
                 vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
                 pp /= pp.w;
 
-                #if defined(VULKAN)
-                    pp.xy = pp.xy * 0.5 + vec2(0.5);
-                #else // VULKAN
-                    pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-                #endif // VULKAN
+                pp.xy = pp.xy * 0.5 + vec2(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 #if defined(VULKAN)
                     pp.y = 1.0 - pp.y;
@@ -396,11 +384,7 @@ void main() {
             pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
             vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
-    #if defined(VULKAN)
             shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-    #else // VULKAN
-            shadow_uvs = 0.5 * shadow_uvs + 0.5;
-    #endif // VULKAN
             shadow_uvs.xy *= vec2(0.25, 0.5);
             shadow_uvs.xy += vec2(0.25, 0.5);
     #if defined(VULKAN)

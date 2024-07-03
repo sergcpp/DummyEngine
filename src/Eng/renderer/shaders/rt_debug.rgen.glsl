@@ -4,12 +4,7 @@
 #include "_common.glsl"
 #include "rt_debug_interface.h"
 
-#if defined(VULKAN)
-layout (binding = BIND_UB_SHARED_DATA_BUF, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

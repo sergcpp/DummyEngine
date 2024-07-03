@@ -20,19 +20,11 @@ layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
 
 layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 
-#if defined(VULKAN)
 layout(location = 0) out vec3 g_vtx_pos;
 layout(location = 1) out vec2 g_vtx_uvs;
 layout(location = 2) out vec3 g_vtx_normal;
 layout(location = 3) out vec3 g_vtx_tangent;
 layout(location = 4) out vec3 g_vtx_sh_uvs[4];
-#else
-out vec3 g_vtx_pos;
-out vec2 g_vtx_uvs;
-out vec3 g_vtx_normal;
-out vec3 g_vtx_tangent;
-out vec3 g_vtx_sh_uvs[4];
-#endif
 
 invariant gl_Position;
 

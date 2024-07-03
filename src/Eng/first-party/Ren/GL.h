@@ -529,6 +529,12 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_UNSIGNED_INT_5_9_9_9_REV     0x8C3E
 #define GL_FLOAT_32_UNSIGNED_INT_24_8_REV 0x8dad
 
+#define GL_LOWER_LEFT                   0x8ca1
+#define GL_UPPER_LEFT                   0x8ca2
+
+#define GL_NEGATIVE_ONE_TO_ONE          0x935e
+#define GL_ZERO_TO_ONE                  0x935f
+
 #ifndef APIENTRY
 #if defined(_WIN32)
 #define WINAPI      __stdcall
@@ -784,10 +790,12 @@ typedef void (APIENTRY *PFNGLCLEARTEXIMAGEPROC)(GLuint texture, GLint level, GLe
 
 typedef void (APIENTRY *PFNGLBINDIMAGETEXTUREPROC)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 
+typedef void (APIENTRY *PFNGLCLIPCONTROLPROC)(GLenum origin, GLenum depth);
+
 #endif
 
 //
-// direct state access
+// Direct state access
 //
 
 typedef void (APIENTRY *PFNGLCREATETEXTURESPROC)(GLenum target, GLsizei n, GLuint *textures);
@@ -1063,6 +1071,8 @@ typedef void (APIENTRY* PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GL
 #define glClearTexImage             ren_glClearTexImage
 
 #define glBindImageTexture          ren_glBindImageTexture
+
+#define glClipControl               ren_glClipControl
 #endif
 
 //
@@ -1306,6 +1316,8 @@ EXTERN_FUNC PFNGLCLEARBUFFERSUBDATAPROC         ren_glClearBufferSubData;
 EXTERN_FUNC PFNGLCLEARTEXIMAGEPROC              ren_glClearTexImage;
 
 EXTERN_FUNC PFNGLBINDIMAGETEXTUREPROC           ren_glBindImageTexture;
+
+EXTERN_FUNC PFNGLCLIPCONTROLPROC                ren_glClipControl;
 
 #endif
 

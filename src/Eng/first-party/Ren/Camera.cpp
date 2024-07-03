@@ -174,21 +174,22 @@ void Ren::Camera::SetPxOffset(const Vec2f px_offset) const {
     }
 }
 
-void Ren::Camera::Perspective(const float angle, const float aspect, const float nearr, const float farr) {
+void Ren::Camera::Perspective(const eZRangeMode mode, const float angle, const float aspect, const float nearr,
+                              const float farr) {
     is_orthographic_ = false;
     angle_ = angle;
     aspect_ = aspect;
     near_ = nearr;
     far_ = farr;
-    PerspectiveProjection(proj_matrix_, angle, aspect, nearr, farr);
+    proj_matrix_ = PerspectiveProjection(angle, aspect, nearr, farr, mode == eZRangeMode::ZeroToOne);
 }
 
-void Ren::Camera::Orthographic(const float left, const float right, const float top, const float down,
-                               const float nearr, const float farr) {
+void Ren::Camera::Orthographic(const eZRangeMode mode, const float left, const float right, const float top,
+                               const float down, const float nearr, const float farr) {
     is_orthographic_ = true;
     near_ = nearr;
     far_ = farr;
-    OrthographicProjection(proj_matrix_, left, right, top, down, nearr, farr);
+    proj_matrix_ = OrthographicProjection(left, right, top, down, nearr, farr, mode == eZRangeMode::ZeroToOne);
 }
 
 void Ren::Camera::Move(const Vec3f &v, const float delta_time) {

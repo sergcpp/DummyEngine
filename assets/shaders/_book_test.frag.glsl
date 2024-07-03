@@ -20,19 +20,11 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#if defined(VULKAN)
 layout(location = 0) in vec3 g_vtx_pos;
 layout(location = 1) in vec2 g_vtx_uvs;
 layout(location = 2) in vec3 g_vtx_normal;
 layout(location = 3) in vec3 g_vtx_tangent;
 layout(location = 4) in vec3 g_vtx_sh_uvs[4];
-#else
-in vec3 g_vtx_pos;
-in vec2 g_vtx_uvs;
-in vec3 g_vtx_normal;
-in vec3 g_vtx_tangent;
-in vec3 g_vtx_sh_uvs[4];
-#endif
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 layout(location = LOC_OUT_NORM) out vec4 g_out_normal;

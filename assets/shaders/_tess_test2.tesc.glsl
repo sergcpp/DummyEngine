@@ -5,19 +5,11 @@
 
 layout (vertices = 1) out;
 
-#if defined(VULKAN)
 layout(location = 0) in vec3 g_vtx_pos_cs[];
 layout(location = 1) in vec2 g_vtx_uvs_cs[];
 layout(location = 2) in vec3 g_vtx_norm_cs[];
 layout(location = 3) in vec3 g_vtx_tangent_cs[];
 layout(location = 4) in vec3 g_vtx_sh_uvs_cs[][4];
-#else
-in vec3 g_vtx_pos_cs[];
-in vec2 g_vtx_uvs_cs[];
-in vec3 g_vtx_norm_cs[];
-in vec3 g_vtx_tangent_cs[];
-in vec3 g_vtx_sh_uvs_cs[][4];
-#endif
 
 struct OutputPatch {
     vec3 aVertexPos_B030;

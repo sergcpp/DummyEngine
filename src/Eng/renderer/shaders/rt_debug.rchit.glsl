@@ -216,11 +216,7 @@ void main() {
             vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
             pp /= pp.w;
 
-            #if defined(VULKAN)
-                pp.xy = pp.xy * 0.5 + vec2(0.5);
-            #else // VULKAN
-                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-            #endif // VULKAN
+            pp.xy = pp.xy * 0.5 + vec2(0.5);
             pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
             #if defined(VULKAN)
                 pp.y = 1.0 - pp.y;
@@ -240,11 +236,7 @@ void main() {
         pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
         vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
-#if defined(VULKAN)
         shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-#else // VULKAN
-        shadow_uvs = 0.5 * shadow_uvs + 0.5;
-#endif // VULKAN
         shadow_uvs.xy *= vec2(0.25, 0.5);
         shadow_uvs.xy += vec2(0.25, 0.5);
 #if defined(VULKAN)

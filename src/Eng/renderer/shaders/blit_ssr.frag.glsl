@@ -180,18 +180,10 @@ void main() {
     vec3 normal_ws = normal_roughness.xyz;
     vec3 normal_vs = (g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz;
 
-    vec4 ray_origin_cs = vec4(norm_uvs, depth, 1.0);
-#if defined(VULKAN)
-    ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - vec2(1.0);
-    ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-    ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - vec3(1.0);
-#endif // VULKAN
+    const vec4 ray_origin_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
-    ray_origin_vs /= ray_origin_vs.w;
-
-    vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
+    vec3 view_ray_vs = normalize(ray_origin_vs);
     vec3 refl_ray_vs = reflect(view_ray_vs, normal_vs);
 
     ivec2 c = pix_uvs;
@@ -200,7 +192,7 @@ void main() {
     vec2 hit_pixel;
     vec3 hit_point;
 
-    if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, jitter, hit_pixel, hit_point)) {
+    if (IntersectRay(ray_origin_vs, refl_ray_vs, jitter, hit_pixel, hit_point)) {
         hit_pixel /= g_shrd_data.res_and_fres.xy;
 
         // reproject hitpoint into a clip space of previous frame

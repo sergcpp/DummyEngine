@@ -26,11 +26,7 @@ layout(location = 3) uniform vec4 g_dof_lerp_bias;
 layout(location = 1) uniform vec3 g_dof_equation;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

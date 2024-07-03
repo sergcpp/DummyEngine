@@ -12,11 +12,7 @@ layout(offset = 16) vec4 g_transform;
 layout(location = 0) uniform vec4 g_transform;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

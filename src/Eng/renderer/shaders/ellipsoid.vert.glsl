@@ -17,11 +17,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = U_M_MATRIX_LOC) uniform mat4 g_mmatrix;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) out vec3 g_vtx_pos;
-#else
-out vec3 g_vtx_pos;
-#endif
 
 void main() {
     vec3 vertex_position_ws = (g_mmatrix * vec4(g_in_vtx_pos, 1.0)).xyz;

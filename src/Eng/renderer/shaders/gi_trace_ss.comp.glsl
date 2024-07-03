@@ -73,23 +73,15 @@ void main() {
 
     vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
-    vec3 ray_origin_ss = vec3(norm_uvs, depth);
-    vec4 ray_origin_cs = vec4(ray_origin_ss, 1.0);
-#if defined(VULKAN)
-    ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
-    ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-    ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - 1.0;
-#endif // VULKAN
+    const vec3 ray_origin_ss = vec3(norm_uvs, depth);
+    const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy, ray_origin_ss.z, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
-    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
-    ray_origin_vs /= ray_origin_vs.w;
-
-    vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, pix_uvs);
+    const vec3 view_ray_vs = normalize(ray_origin_vs);
+    const vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, pix_uvs);
 
     vec3 hit_point_cs, hit_point_vs;
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point_cs, hit_point_vs);
+    const bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point_cs, hit_point_vs);
 
     vec4 out_color = vec4(0.0, 0.0, 0.0, 100.0);
     if (hit_found) {
@@ -99,7 +91,7 @@ void main() {
 #endif // VULKAN
         uv.xy = 0.5 * uv.xy + 0.5;
 
-        out_color = vec4(textureLod(color_tex, uv, 0.0).rgb, distance(hit_point_vs, ray_origin_vs.xyz));
+        out_color = vec4(textureLod(color_tex, uv, 0.0).rgb, distance(hit_point_vs, ray_origin_vs));
     }
 
     out_color.w = GetNormHitDist(out_color.w, -ray_origin_vs.z, 1.0);

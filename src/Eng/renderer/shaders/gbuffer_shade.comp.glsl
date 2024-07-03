@@ -58,16 +58,8 @@ void main() {
     const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
-    vec4 pos_cs = vec4(norm_uvs, depth, 1.0);
-#if defined(VULKAN)
-    pos_cs.xy = 2.0 * pos_cs.xy - 1.0;
-    pos_cs.y = -pos_cs.y;
-#else // VULKAN
-    pos_cs.xyz = 2.0 * pos_cs.xyz - 1.0;
-#endif // VULKAN
-
-    vec4 pos_ws = g_shrd_data.world_from_clip * pos_cs;
-    pos_ws /= pos_ws.w;
+    const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
+    const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
     const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
     const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);
@@ -179,15 +171,10 @@ void main() {
             vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
             pp /= pp.w;
 
-            #if defined(VULKAN)
-                pp.xy = pp.xy * 0.5 + vec2(0.5);
-            #else // VULKAN
-                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-            #endif // VULKAN
+            pp.xy = pp.xy * 0.5 + 0.5;
             pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
             #if defined(VULKAN)
                 pp.y = 1.0 - pp.y;
-                reg_tr.y = 1.0 - reg_tr.y;
             #endif // VULKAN
 
             //light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);

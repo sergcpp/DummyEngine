@@ -28,22 +28,14 @@ void main() {
     const float depth = texelFetch(g_depth_tex, icoord, 0).r;
     const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
 
-    vec4 pos_cs = vec4(norm_uvs, depth, 1.0);
-#if defined(VULKAN)
-    pos_cs.xy = 2.0 * pos_cs.xy - 1.0;
-    pos_cs.y = -pos_cs.y;
-#else // VULKAN
-    pos_cs.xyz = 2.0 * pos_cs.xyz - 1.0;
-#endif // VULKAN
-
-    vec4 pos_ws = g_shrd_data.world_from_clip * pos_cs;
-    pos_ws /= pos_ws.w;
+    const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
+    const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
     const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
     const uint packed_mat_params = texelFetch(g_spec_tex, icoord, 0).r;
     const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x);
 
-    const vec3 P = pos_ws.xyz;
+    const vec3 P = pos_ws;
     const vec3 I = normalize(g_shrd_data.cam_pos_and_exp.xyz - P);
     const vec3 N = normal.xyz;
     const float N_dot_V = saturate(dot(N, I));

@@ -48,13 +48,17 @@ const uint32_t gl_stencil_op[] = {
 };
 static_assert(std::size(gl_stencil_op) == size_t(eStencilOp::_Count), "!");
 
-#ifndef __ANDROID__
 const uint32_t gl_polygon_mode[] = {
     GL_FILL, // Fill
     GL_LINE, // Line
 };
 static_assert(std::size(gl_polygon_mode) == size_t(ePolygonMode::_Count), "!");
-#endif
+
+const uint32_t gl_depth_range_mode[] = {
+    GL_ZERO_TO_ONE, // ZeroToOne
+    GL_NEGATIVE_ONE_TO_ONE // NegOneToOne
+};
+static_assert(std::size(gl_depth_range_mode) == size_t(eDepthRangeMode::_Count), "!");
 
 eCullFace cull_face_from_gl_enum(GLenum face) {
     if (face == GL_FRONT) {
@@ -127,6 +131,7 @@ void Ren::RastState::Apply(const RastState *ref) const {
             glDisable(GL_DEPTH_TEST);
         }
         glDepthFunc(gl_compare_op[depth.compare_op]);
+        glClipControl(GL_LOWER_LEFT, gl_depth_range_mode[depth.range_mode]);
     }
 
     if (!ref || ref->depth.write_enabled != depth.write_enabled) {

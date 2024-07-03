@@ -39,15 +39,8 @@ void main() {
     vec2 px_center = vec2(icoord) + 0.5;
     vec2 in_uv = px_center / vec2(g_params.img_size);
 
-#if defined(VULKAN)
-    vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
-    ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-    vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
-#endif // VULKAN
-
-    vec4 pos_ws = g_shrd_data.world_from_clip * ray_origin_cs;
-    pos_ws /= pos_ws.w;
+    const vec4 pos_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
+    const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
     const float dot_N_L = saturate(dot(normal_ws, g_shrd_data.sun_dir.xyz));
 
@@ -63,17 +56,13 @@ void main() {
         );
 
         const vec2 shadow_offsets = get_shadow_offsets(dot_N_L);
-        vec3 pos_ws_biased = pos_ws.xyz;
+        vec3 pos_ws_biased = pos_ws;
         pos_ws_biased += 0.001 * shadow_offsets.x * normal_ws;
         pos_ws_biased += 0.003 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
         /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
             vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(pos_ws_biased, 1.0)).xyz;
-    #if defined(VULKAN)
             shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-    #else // VULKAN
-            shadow_uvs = 0.5 * shadow_uvs + 0.5;
-    #endif // VULKAN
             shadow_uvs.xy *= vec2(0.25, 0.5);
             shadow_uvs.xy += offsets[i];
     #if defined(VULKAN)

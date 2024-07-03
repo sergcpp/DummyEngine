@@ -14,11 +14,7 @@ layout(location = 2) uniform int src_face;
 layout(location = 3) uniform float src_level;
 #endif
 
-#if defined(VULKAN)
 layout(location = 0) in vec2 g_vtx_uvs;
-#else
-in vec2 g_vtx_uvs;
-#endif
 
 layout(location = 0) out vec4 g_out_color;
 

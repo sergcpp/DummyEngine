@@ -106,15 +106,8 @@ void main() {
     const vec2 px_center = vec2(icoord) + vec2(0.5);
     const vec2 in_uv = px_center / vec2(g_params.img_size);
 
-#if defined(VULKAN)
-    vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
-    ray_origin_cs.y = -ray_origin_cs.y;
-#else // VULKAN
-    vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
-#endif // VULKAN
-
-    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
-    ray_origin_vs /= ray_origin_vs.w;
+    const vec4 ray_origin_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
     const float view_z = -ray_origin_vs.z;
 
     const float t_min = 0.001;
@@ -124,12 +117,12 @@ void main() {
 
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, first_roughness);
 
-    const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
+    const vec3 view_ray_vs = normalize(ray_origin_vs);
     const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, first_roughness, u.xy);
     vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
 
-    vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
+    vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
     ray_origin_ws /= ray_origin_ws.w;
 
     ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + view_z * NormalBiasViewAddition) * normal_ws;
@@ -375,11 +368,7 @@ void main() {
 
             vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
             projected_p /= projected_p[3];
-            #if defined(VULKAN)
-                projected_p.xy = projected_p.xy * 0.5 + 0.5;
-            #else // VULKAN
-                projected_p.xyz = projected_p.xyz * 0.5 + 0.5;
-            #endif // VULKAN
+            projected_p.xy = projected_p.xy * 0.5 + 0.5;
 
             const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
             const float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
@@ -429,11 +418,7 @@ void main() {
                     vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
                     pp /= pp.w;
 
-                    #if defined(VULKAN)
-                        pp.xy = pp.xy * 0.5 + vec2(0.5);
-                    #else // VULKAN
-                        pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-                    #endif // VULKAN
+                    pp.xy = pp.xy * 0.5 + 0.5;
                     pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                     #if defined(VULKAN)
                         pp.y = 1.0 - pp.y;
@@ -453,11 +438,7 @@ void main() {
                 pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
                 vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
-        #if defined(VULKAN)
                 shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-        #else // VULKAN
-                shadow_uvs = 0.5 * shadow_uvs + 0.5;
-        #endif // VULKAN
                 shadow_uvs.xy *= vec2(0.25, 0.5);
                 shadow_uvs.xy += vec2(0.25, 0.5);
         #if defined(VULKAN)

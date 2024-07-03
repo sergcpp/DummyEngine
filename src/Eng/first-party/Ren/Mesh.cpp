@@ -6,12 +6,6 @@
 #include "Pipeline.h"
 #include "Utils.h"
 
-#if defined(USE_GL_RENDER)
-#include "GL.h"
-#elif defined(USE_SW_RENDER)
-#include "SW/SW.h"
-#endif
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)
