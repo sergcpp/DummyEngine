@@ -4,10 +4,10 @@ Cross platform Vulkan/OpenGL 3d engine for personal experimentation.
 
 <div>
 <div float="middle">
-    <img src="bistro.png" width="98%" />
+    <img src="bistro.jpg" width="98%" />
 </div>
 <div float="middle">
-    <img src="ai043_06.png" width="44.6%" />
-    <img src="sponza.png" width="53%" />
+    <img src="ai043_06.jpg" width="44.6%" />
+    <img src="sponza.jpg" width="53%" />
 </div>
 </div>
