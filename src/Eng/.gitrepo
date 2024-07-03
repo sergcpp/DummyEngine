@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = probe_rot
-	commit = 9cf2bc32a23ade74c6899818b09e96610b07331c
+	branch = secondary_specular
+	commit = 8a2dc0ff1e7da17e9cd67ecfe5b082481ecf0f47
 	method = merge
 	cmdver = 0.4.6
-	parent = 9bedc4b90cf884647eea77f4d234e8a7dc99bf45
+	parent = d8320b7e33369771fc7853fa43c4b2b068742eec
