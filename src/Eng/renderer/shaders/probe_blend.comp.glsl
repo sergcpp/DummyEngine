@@ -66,7 +66,7 @@ void main() {
 
             if (ray_data.a < 0.0) {
                 ++backfaces;
-                if (backfaces > 24) {
+                if (!is_scrolling_plane_probe && backfaces > 24) {
                     return;
                 }
             }

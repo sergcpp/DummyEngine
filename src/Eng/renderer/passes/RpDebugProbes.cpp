@@ -25,7 +25,7 @@ void Eng::RpDebugProbes::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = view_state_->act_res[1];
 
     rast_state.depth.test_enabled = true;
-    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},

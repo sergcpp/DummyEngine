@@ -19,7 +19,7 @@
 //
 // https://github.com/GPUOpen-Effects/FidelityFX-SSSR
 //
-bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampler2D depth_tex, usampler2D norm_tex,
+bool IntersectRay(const vec3 ray_origin_ss, const vec3 ray_origin_vs, const vec3 ray_dir_vs, sampler2D depth_tex, usampler2D norm_tex,
                   out vec3 out_hit_point_cs, out vec3 out_hit_point_vs) {
     vec4 ray_offsetet_ss = g_shrd_data.clip_from_view * vec4(ray_origin_vs + ray_dir_vs, 1.0);
     ray_offsetet_ss.xyz /= ray_offsetet_ss.w;
@@ -29,8 +29,8 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
 #endif // VULKAN
     ray_offsetet_ss.xy = 0.5 * ray_offsetet_ss.xy + 0.5;
 
-    vec3 ray_dir_ss = normalize(ray_offsetet_ss.xyz - ray_origin_ss);
-    vec3 ray_dir_ss_inv = mix(1.0 / ray_dir_ss, vec3(FLOAT_MAX), equal(ray_dir_ss, vec3(0.0)));
+    const vec3 ray_dir_ss = normalize(ray_offsetet_ss.xyz - ray_origin_ss);
+    const vec3 ray_dir_ss_inv = mix(1.0 / ray_dir_ss, vec3(FLOAT_MAX), equal(ray_dir_ss, vec3(0.0)));
 
     int cur_mip = MOST_DETAILED_MIP;
 
@@ -40,18 +40,18 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
     vec2 uv_offset = 0.005 * exp2(MOST_DETAILED_MIP) / g_shrd_data.res_and_fres.xy;
     uv_offset = mix(uv_offset, -uv_offset, lessThan(ray_dir_ss.xy, vec2(0.0)));
 
-    vec2 floor_offset = mix(vec2(1.0), vec2(0.0), lessThan(ray_dir_ss.xy, vec2(0.0)));
+    const vec2 floor_offset = mix(vec2(1.0), vec2(0.0), lessThan(ray_dir_ss.xy, vec2(0.0)));
 
     float cur_t;
     vec3 cur_pos_ss;
 
     { // advance ray to avoid self intersection
-        vec2 cur_mip_pos = cur_mip_res * ray_origin_ss.xy;
+        const vec2 cur_mip_pos = cur_mip_res * ray_origin_ss.xy;
 
         vec2 xy_plane = floor(cur_mip_pos) + floor_offset;
         xy_plane = xy_plane * cur_mip_res_inv + uv_offset;
 
-        vec2 t = (xy_plane - ray_origin_ss.xy) * ray_dir_ss_inv.xy;
+        const vec2 t = (xy_plane - ray_origin_ss.xy) * ray_dir_ss_inv.xy;
         cur_t = min(t.x, t.y);
         cur_pos_ss = ray_origin_ss.xyz + cur_t * ray_dir_ss;
     }
@@ -102,8 +102,8 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
     }
 
     // Reject if we hit surface from the back
-    vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(norm_tex, cur_pos_ss.xy, 0.0).x).xyz;
-    vec3 hit_normal_vs = (g_shrd_data.view_from_world * vec4(hit_normal_ws, 0.0)).xyz;
+    const  vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(norm_tex, cur_pos_ss.xy, 0.0).x).xyz;
+    const vec3 hit_normal_vs = (g_shrd_data.view_from_world * vec4(hit_normal_ws, 0.0)).xyz;
     if (dot(hit_normal_vs, ray_dir_vs) > 0.0) {
         return false;
     }
@@ -126,7 +126,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, sampl
 
     vec4 hit_surf_vs = g_shrd_data.view_from_clip * hit_surf_cs;
     hit_surf_vs.xyz /= hit_surf_vs.w;
-    float dist_vs = distance(hit_point_vs.xyz, hit_surf_vs.xyz);
+    const float dist_vs = distance(hit_point_vs.xyz, hit_surf_vs.xyz);
 
     return dist_vs < Z_THICKNESS;
 }
