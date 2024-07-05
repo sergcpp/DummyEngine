@@ -110,7 +110,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_gi_stabilization_, "internal/gi_stabilization.comp.glsl");
 
     // Sun Shadow
-    success &= init_pipeline(pi_sun_shadows_, "internal/sun_shadows.comp.glsl");
+    success &= init_pipeline(pi_sun_shadows_, "internal/sun_shadows.comp.glsl@SS_SHADOW");
     success &= init_pipeline(pi_sun_brightness_, "internal/sun_brightness.comp.glsl");
     success &= init_pipeline(pi_shadow_classify_,
                              ctx_.capabilities.subgroup ? "internal/rt_shadow_classify.comp.glsl"

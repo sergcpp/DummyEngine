@@ -48,7 +48,7 @@ layout(std430, binding = INOUT_RAY_COUNTER_SLOT) coherent buffer RayCounter {
     uint g_inout_ray_counter[];
 };
 
-#include "ss_trace_common.glsl.inl"
+#include "ss_trace_hierarchical.glsl.inl"
 
 void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
     g_out_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
