@@ -69,7 +69,11 @@ bool IntersectRay(const vec3 ray_origin_ss, const vec3 ray_origin_vs, const vec3
             // o + d * t = p' => t = (p' - o) / d
             vec3 t = (boundary_planes - ray_origin_ss.xyz) * ray_dir_ss_inv;
 
+#if REVERSE_Z
+            t.z = (ray_dir_ss.z < 0.0) ? t.z : FLOAT_MAX;
+#else
             t.z = (ray_dir_ss.z > 0.0) ? t.z : FLOAT_MAX;
+#endif
 
             // choose nearest intersection
             float t_min = min(min(t.x, t.y), t.z);
