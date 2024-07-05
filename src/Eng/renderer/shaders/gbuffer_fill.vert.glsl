@@ -57,6 +57,7 @@ layout(location = 3) out vec3 g_vtx_tangent;
 layout(location = 8) out flat vec4 g_base_color;
 layout(location = 9) out flat vec4 g_mat_params0;
 layout(location = 10) out flat vec4 g_mat_params1;
+layout(location = 11) out flat float g_shadow_vis;
 
 invariant gl_Position;
 
@@ -107,6 +108,9 @@ void main(void) {
     g_base_color = mat.params[0];
     g_mat_params0 = mat.params[1];
     g_mat_params1 = mat.params[2];
+
+    const uint vis_mask = floatBitsToUint(texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 7).x);
+    g_shadow_vis = ((vis_mask & (1u << 1)) != 0) ? 1.0 : 0.0;
 
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)

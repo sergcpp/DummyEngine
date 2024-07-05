@@ -90,7 +90,8 @@ struct InstanceData {
         };
     };
     float normal_matrix[3][4];
-    float _pad0[4];
+    uint32_t vis_mask;
+    float _pad0[3];
     float prev_model_matrix[3][4];
     float _pad1[4];
 };

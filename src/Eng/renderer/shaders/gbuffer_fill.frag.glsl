@@ -46,6 +46,7 @@ layout(location = 3) in vec3 g_vtx_tangent;
 layout(location = 8) in flat vec4 g_base_color;
 layout(location = 9) in flat vec4 g_mat_params0;
 layout(location = 10) in flat vec4 g_mat_params1;
+layout(location = 11) in flat float g_shadow_vis;
 
 layout(location = LOC_OUT_ALBEDO) out vec4 g_out_albedo;
 layout(location = LOC_OUT_NORM) out uint g_out_normal;
@@ -150,9 +151,9 @@ void main(void) {
 
     // TODO: try to get rid of explicit srgb conversion
 #if !FORCE_GREY_ALBEDO
-    g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, 1.0);
+    g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, g_shadow_vis);
 #else
-    g_out_albedo = vec4(0.5, 0.5, 0.5, 1.0);
+    g_out_albedo = vec4(0.5, 0.5, 0.5, g_shadow_vis);
 #endif
     g_out_normal = PackNormalAndRoughnessNew(normal, final_roughness, dither);
 #ifndef FORCE_METALLIC

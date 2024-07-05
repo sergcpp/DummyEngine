@@ -1619,6 +1619,7 @@ void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj
     using namespace SceneManagerInternal;
 
     const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *drawables = (Drawable *)scene_data_.comp_store[CompDrawable]->SequentialData();
     const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
     const auto *vegs = (VegState *)scene_data_.comp_store[CompVegState]->SequentialData();
 
@@ -1646,6 +1647,11 @@ void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj
         InstanceData &instance = instance_stage[i - obj_beg];
         memcpy(&instance.model_matrix[0][0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
         memcpy(&instance.prev_model_matrix[0][0], ValuePtr(prev_world_from_object_trans), 12 * sizeof(float));
+
+        if (obj.comp_mask & CompDrawableBit) {
+            const Drawable &dr = drawables[obj.components[CompDrawable]];
+            instance.vis_mask = uint8_t(dr.vis_mask);
+        }
 
         if (obj.comp_mask & CompLightmapBit) {
             const Lightmap &lm = lightmaps[obj.components[CompLightmap]];

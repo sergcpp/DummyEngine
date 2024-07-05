@@ -5,6 +5,8 @@
 #include "_principled.glsl"
 #include "gbuffer_shade_interface.h"
 
+#pragma multi_compile _ SS_SHADOW
+
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
@@ -34,6 +36,17 @@ layout(binding = OUT_COLOR_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
+#define MAX_TRACE_DIST 0.15
+#define MAX_TRACE_STEPS 16
+#define Z_THICKNESS 0.02
+#define STRIDE_PX 3.0
+
+float LinearDepthTexelFetch(const vec2 hit_pixel) {
+    return LinearizeDepth(texelFetch(g_depth_tex, clamp(ivec2(hit_pixel), ivec2(0), ivec2(g_params.img_size) - 1), 0).x, g_shrd_data.clip_info);
+}
+
+#include "ss_trace_simple.glsl.inl"
+
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
         return;
@@ -59,6 +72,7 @@ void main() {
     const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
+    const vec3 pos_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, pos_cs);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
     const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
@@ -162,8 +176,37 @@ void main() {
             light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
         }
 
+        float final_visibility = 1.0;
+
         int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
         [[dont_flatten]] if (shadowreg_index != -1) {
+#ifdef SS_SHADOW
+            if (lin_depth < 30.0) {
+                vec2 hit_pixel;
+                vec3 hit_point;
+
+                float occlusion = 0.0;
+
+                const float jitter = Bayer4x4(uvec2(icoord), 0);
+                const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(litem.pos_and_radius.xyz - P), 0.0)).xyz;
+                if (IntersectRay(pos_vs + 0.005 * vec3(0.0, 0.0, 1.0), light_dir_vs, jitter /* jitter */, hit_pixel, hit_point)) {
+                    const float shadow_vis = texelFetch(g_albedo_tex, ivec2(hit_pixel), 0).w;
+                    if (shadow_vis > 0.5) {
+                        occlusion = 1.0;
+                    }
+                }
+
+                // view distance falloff
+                occlusion *= saturate(30.0 - lin_depth);
+                // shadow fadeout
+                occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs)));
+                // fix shadow terminator
+                occlusion *= saturate(abs(8.0 * dot(N, normalize(litem.pos_and_radius.xyz - P))));
+
+                final_visibility -= occlusion;
+            }
+#endif
+
             vec3 from_light = normalize(P + 0.1 * (hash - 0.5) * N - litem.pos_and_radius.xyz);
             shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
@@ -189,16 +232,16 @@ void main() {
 
                 float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / (1.0 - blocker.x);
                 const float filter_radius_px = clamp(penumbra_size_approx, MinShadowRadiusPx, MaxShadowRadiusPx);
-                float visibility = 0.0;
+                float shadow_visibility = 0.0;
                 for (int i = 0; i < 16; ++i) {
                     vec2 uv = pp.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
-                    visibility += textureLod(g_shadow_tex, vec3(uv, pp.z), 0.0);
+                    shadow_visibility += textureLod(g_shadow_tex, vec3(uv, pp.z), 0.0);
                 }
-                light_contribution *= (visibility / 16.0);
+                final_visibility = min(final_visibility, shadow_visibility / 16.0);
             }
         }
 
-        artificial_light += light_contribution;
+        artificial_light += light_contribution * final_visibility;
     }
 
     //
