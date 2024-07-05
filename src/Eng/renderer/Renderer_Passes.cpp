@@ -377,8 +377,14 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
 
                 float yaw = 0.0f, pitch = 0.0f, roll = 0.0f;
                 if ((sample_index % 2) == 1) {
-                    yaw = pitch = roll = 0.125f;
+                    yaw = 0.3098f;
+                    pitch = 0.5f;
+                    roll = 0.5f;
                 }
+
+                // yaw = rand_.GetNormalizedFloat();
+                // pitch = rand_.GetNormalizedFloat();
+                // yaw = rand_.GetNormalizedFloat();
 
                 yaw *= 2.0f * Ren::Pi<float>();
                 pitch *= 2.0f * Ren::Pi<float>();

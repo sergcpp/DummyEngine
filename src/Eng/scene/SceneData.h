@@ -171,6 +171,7 @@ namespace Eng {
 struct ProbeVolume {
     mutable Ren::Vec3f origin, spacing;
     mutable Ren::Vec3i scroll, scroll_diff;
+    mutable int updates_count = 0;
 };
 
 static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;

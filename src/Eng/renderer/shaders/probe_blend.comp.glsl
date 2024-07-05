@@ -100,8 +100,9 @@ void main() {
         float lum_desired = 0.5 * (lum_curr + lum_prev);
 
         float history_weight = clamp((lum_desired - lum_curr) / (lum_hist - lum_curr), 0.0, 0.97);
+        //float history_weight = g_params.hysteresis;
 #elif defined(DISTANCE)
-        float history_weight = 0.97;
+        float history_weight = g_params.hysteresis;
 #endif
         if (is_scrolling_plane_probe || dot(probe_irradiance_mean.rgb, probe_irradiance_mean.rgb) == 0.0) {
             history_weight = 0.0;

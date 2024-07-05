@@ -500,6 +500,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         persistent_data.probe_irradiance->Clear(rgba, cmd_buf);
         persistent_data.probe_distance->Clear(rgba, cmd_buf);
         persistent_data.probe_offset->Clear(rgba, cmd_buf);
+
+        for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+            persistent_data.probe_volumes[i].updates_count = 0;
+        }
     }
 
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
@@ -508,6 +512,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const Ren::Vec3i new_scroll = Ren::Vec3i{(list.draw_cam.world_position() - volume.origin) / volume.spacing};
             volume.scroll_diff = new_scroll - volume.scroll;
             volume.scroll = new_scroll;
+            ++volume.updates_count;
         } else {
             volume.scroll_diff = Ren::Vec3i{0};
         }

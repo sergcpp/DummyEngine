@@ -7,7 +7,7 @@ INTERFACE_START(ProbeBlend)
 
 struct Params {
     int volume_index;
-    int _pad0;
+    float hysteresis;
     int _pad1;
     int _pad2;
     vec4 grid_origin;

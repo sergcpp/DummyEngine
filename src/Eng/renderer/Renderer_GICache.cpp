@@ -108,9 +108,11 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
             const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
+            const int updates_count = persistent_data.probe_volumes[volume_to_update].updates_count;
 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
+            uniform_params.hysteresis = 0.97f;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.grid_scroll_diff =
@@ -156,9 +158,11 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
             const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
+            const int updates_count = persistent_data.probe_volumes[volume_to_update].updates_count;
 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
+            uniform_params.hysteresis = 0.97f;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.grid_scroll_diff =
