@@ -91,7 +91,4 @@ void main() {
 #endif // TRANSPARENT
 
     gl_Position = g_shadow_view_proj_mat * vec4(vtx_pos_ws, 1.0);
-#if defined(VULKAN)
-    gl_Position.y = -gl_Position.y;
-#endif
 }

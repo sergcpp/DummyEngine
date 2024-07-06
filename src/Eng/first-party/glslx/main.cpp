@@ -13,6 +13,7 @@ int main(int argc, char *argv[]) {
     const char *shader = nullptr;
     const char *target = nullptr;
     bool prune = true;
+    bool flip_y = false;
 
     glslx::preprocessor_config_t preprocessor_config;
 
@@ -40,6 +41,8 @@ int main(int argc, char *argv[]) {
             preprocessor_config.default_macros.push_back({def_name, def_value});
         } else if (strcmp(argv[i], "--noprune") == 0) {
             prune = false;
+        } else if (strcmp(argv[i], "--flip_vertex_y") == 0) {
+            flip_y = true;
         }
     }
 
@@ -52,6 +55,7 @@ int main(int argc, char *argv[]) {
         printf(" --target,-t : (optional) Target name (GLSL, HLSL)\n");
         printf(" --preprocess,-p : (optional) Intermediate preprocessed file name\n");
         printf(" --noprune : (optional) Do not prune unreachable objects\n");
+        printf(" --flip_vertex_y : (optional) Flip vertex Y component\n");
         return 0;
     }
 
@@ -161,6 +165,13 @@ int main(int argc, char *argv[]) {
             return -1;
         }
 
+        if (flip_y || strcmp(target, "HLSL") == 0) {
+            glslx::fixup_config_t config;
+            config.randomize_loop_counters = (strcmp(target, "HLSL") == 0);
+            config.flip_vertex_y = flip_y;
+            glslx::Fixup(config).Apply(tu.get());
+        }
+
         if (prune) {
             Prune_Unreachable(tu.get());
         }
@@ -169,7 +180,6 @@ int main(int argc, char *argv[]) {
             std::ofstream out_file(output_name, std::ios::binary);
             glslx::WriterGLSL().Write(tu.get(), out_file);
         } else if (strcmp(target, "HLSL") == 0) {
-            glslx::Fixup().Apply(tu.get());
             std::ofstream out_file(output_name, std::ios::binary);
             glslx::WriterHLSL().Write(tu.get(), out_file);
         } else {

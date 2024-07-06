@@ -8,6 +8,7 @@ struct fixup_config_t {
     bool remove_const = false;
     bool remove_ctrl_flow_attributes = false;
     bool remove_inout_layout = false;
+    bool flip_vertex_y = false;
 };
 
 class Fixup {

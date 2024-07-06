@@ -44,7 +44,4 @@ void main() {
     g_vtx_pos = vertex_position_ws;
 
     gl_Position = g_shrd_data.clip_from_world * vec4(vertex_position_ws, 1.0);
-#if defined(VULKAN)
-    gl_Position.y = -gl_Position.y;
-#endif
 }

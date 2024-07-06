@@ -98,9 +98,6 @@ void main() {
 
     const vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(vtx_pos_ls_curr, 1.0)).xyz;
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws_curr, 1.0);
-#if defined(VULKAN)
-    gl_Position.y = -gl_Position.y;
-#endif
 
 #ifdef OUTPUT_VELOCITY
     const vec4 wind_scroll_prev = g_shrd_data.wind_scroll_prev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);

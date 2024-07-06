@@ -79,9 +79,6 @@ void main() {
 
     const vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos_curr, 1.0)).xyz;
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws_curr, 1.0);
-#if defined(VULKAN)
-    gl_Position.y = -gl_Position.y;
-#endif
 
 #ifdef OUTPUT_VELOCITY
     g_vtx_pos_cs_curr = gl_Position.xyw;

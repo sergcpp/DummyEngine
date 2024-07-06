@@ -134,4 +134,39 @@ void glslx::Fixup::Apply(TrUnit *tu) {
         next_counter_ = 0;
         Visit_Function(func);
     }
+    if (config_.flip_vertex_y && tu->type == eTrUnitType::Vertex) {
+        ast_function *main_function = nullptr;
+        for (ast_function *func : tu->functions) {
+            if (strcmp(func->name, "main") == 0) {
+                main_function = func;
+            }
+        }
+        ast_global_variable *gl_Position = nullptr;
+        for (ast_global_variable *var : tu->globals) {
+            if (strcmp(var->name, "gl_Position") == 0) {
+                gl_Position = var;
+                break;
+            }
+        }
+        if (main_function && gl_Position) {
+            auto *variable_identifier = new (&tu->alloc) ast_variable_identifier(gl_Position);
+
+            auto *lhs = new (&tu->alloc) ast_field_or_swizzle();
+            lhs->operand = variable_identifier;
+            lhs->name = "y";
+
+            auto *y_field = new (&tu->alloc) ast_field_or_swizzle();
+            y_field->operand = variable_identifier;
+            y_field->name = "y";
+            auto *rhs = new (&tu->alloc) ast_unary_expression(eExprType::UnaryMinus, y_field);
+
+            auto *expr = new (&tu->alloc) ast_assignment_expression(eOperator::assign);
+            expr->operand1 = lhs;
+            expr->operand2 = rhs;
+
+            auto *statement = new (&tu->alloc) ast_expression_statement(expr);
+
+            main_function->statements.push_back(statement);
+        }
+    }
 }

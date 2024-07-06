@@ -64,7 +64,4 @@ void main() {
 
     vec3 vertex_position_ws = (MMatrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     gl_Position = g_shadow_view_proj_mat * vec4(vertex_position_ws, 1.0);
-#if defined(VULKAN)
-    gl_Position.y = -gl_Position.y;
-#endif
 }

@@ -326,6 +326,8 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     if (sh_output == eShaderOutput::GLSL) {
                         config.remove_const = true;
                         config.remove_ctrl_flow_attributes = true;
+                    } else if (sh_output == eShaderOutput::VK_SPIRV) {
+                        config.flip_vertex_y = true;
                     }
                     glslx::Fixup(config).Apply(ast.get());
 
