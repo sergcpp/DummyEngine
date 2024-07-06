@@ -63,7 +63,4 @@ void main(void) {
 #endif // GL_ARB_bindless_texture
 
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws, 1.0);
-#if defined(VULKAN)
-    gl_Position.y = -gl_Position.y;
-#endif
 }
