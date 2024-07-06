@@ -207,7 +207,7 @@ void main() {
             }
 #endif
 
-            vec3 from_light = normalize(P + 0.1 * (hash - 0.5) * N - litem.pos_and_radius.xyz);
+            vec3 from_light = normalize(P + 0.05 * (hash - 0.5) * N - litem.pos_and_radius.xyz);
             shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
