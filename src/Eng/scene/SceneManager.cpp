@@ -459,9 +459,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
                 Ren::Tex2DParams p;
                 p.w = p.h = 1024;
                 p.format = Ren::eTexFormat::RawRGBA16F;
-                p.usage =
-                    (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::RenderTarget);
-                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Storage |
+                           Ren::eTexUsageBits::RenderTarget);
+                p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 Ren::eTexLoadStatus status;

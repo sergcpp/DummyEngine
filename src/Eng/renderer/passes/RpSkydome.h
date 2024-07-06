@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 
 #include "../Renderer_DrawList.h"
 #include "../graph/SubPass.h"
@@ -33,6 +34,7 @@ class RpSkydomeCube : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef prog_skydome_phys_;
+    Ren::Pipeline pi_skydome_downsample_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 

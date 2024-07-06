@@ -6,6 +6,7 @@
 #include "../../utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
+#include "../shaders/skydome_downsample_interface.h"
 #include "../shaders/skydome_interface.h"
 
 void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
@@ -68,12 +69,71 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, color_targets, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     }
+
+    const int mip_count = color_tex.ref->params.mip_count;
+    for (int face = 0; face < 6; ++face) {
+        for (int mip = 1; mip < mip_count; mip += 4) {
+            const Ren::TransitionInfo transitions[] = {{color_tex.ref.get(), Ren::eResState::UnorderedAccess}};
+            Ren::TransitionResourceStates(builder.ctx().api_ctx(), builder.ctx().current_cmd_buf(), Ren::AllStages,
+                                            Ren::AllStages, transitions);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled,
+                                                SkydomeDownsample::INPUT_TEX_SLOT,
+                                                {*color_tex.ref, (mip - 1) * 6 + face + 1}},
+                                                {Ren::eBindTarget::Image2D,
+                                                SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                                0,
+                                                1,
+                                                {*color_tex.ref, mip * 6 + face + 1}},
+                                                {Ren::eBindTarget::Image2D,
+                                                SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                                1,
+                                                1,
+                                                {*color_tex.ref, std::min(mip + 1, mip_count - 1) * 6 + face + 1}},
+                                                {Ren::eBindTarget::Image2D,
+                                                SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                                2,
+                                                1,
+                                                {*color_tex.ref, std::min(mip + 2, mip_count - 1) * 6 + face + 1}},
+                                                {Ren::eBindTarget::Image2D,
+                                                SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                                3,
+                                                1,
+                                                {*color_tex.ref, std::min(mip + 3, mip_count - 1) * 6 + face + 1}}};
+
+            SkydomeDownsample::Params uniform_params = {};
+            uniform_params.img_size[0] = (color_tex.ref->params.w >> mip);
+            uniform_params.img_size[1] = (color_tex.ref->params.h >> mip);
+            uniform_params.mip_count = std::min(4, mip_count - mip);
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(uniform_params.img_size[0] + SkydomeDownsample::LOCAL_GROUP_SIZE_X - 1) /
+                                SkydomeDownsample::LOCAL_GROUP_SIZE_X,
+                            (uniform_params.img_size[1] + SkydomeDownsample::LOCAL_GROUP_SIZE_Y - 1) /
+                                SkydomeDownsample::LOCAL_GROUP_SIZE_Y,
+                            1u};
+
+            Ren::DispatchCompute(pi_skydome_downsample_, grp_count, bindings, &uniform_params,
+                                    sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        }
+    }
+
+    const Ren::TransitionInfo transitions[] = {{color_tex.ref.get(), Ren::eResState::RenderTarget}};
+    Ren::TransitionResourceStates(builder.ctx().api_ctx(), builder.ctx().current_cmd_buf(), Ren::AllStages,
+                                  Ren::AllStages, transitions);
 }
 
 void Eng::RpSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         prog_skydome_phys_ = sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl");
         assert(prog_skydome_phys_->ready());
+
+        Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/skydome_downsample.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_skydome_downsample_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
+            ctx.log()->Error("RpSkydomeCube: Failed to initialize pipeline!");
+        }
 
         initialized = true;
     }

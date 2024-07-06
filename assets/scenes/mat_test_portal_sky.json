@@ -6,16 +6,11 @@
             -0.541675210,
             -0.642787635
         ],
-        "sun_col" : [
-            0,
-            0,
-            0
-        ],
+        "sun_col" : [ 144809.866891, 129443.618266, 127098.894121 ],
         "sun_angle" : 10.0,
         "sun_shadow_bias" : [ 0.0, 0.0 ],
-        "env_col" : [ 4.0, 4.0, 4.0 ],
-        "env_map" : "env/meadow_2k.hdr",
-        "env_map_rot" : 135.0
+        "env_col" : [ 1.0, 1.0, 1.0 ],
+        "env_map" : "physical_sky"
     },
     "objects" : [
         {
@@ -159,10 +154,10 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/room.mesh"
+                "mesh_file" : "mat_test/room_solid.mesh"
             },
             "acc_structure" : {
-                "mesh_file" : "mat_test/room.mesh"
+                "mesh_file" : "mat_test/room_solid.mesh"
             }
         },
         {
@@ -192,45 +187,6 @@
                 "cull_radius": 10.0,
                 "cast_shadow": true
             }
-        },
-        {
-            "transform" : {
-                "pos" : [
-                    0,
-                    1,
-                    0
-                ],
-                "rot" : [
-                    0,
-                    0,
-                    0
-                ]
-            },
-            "probe" : {
-                "radius" : 0.1,
-                "sh_coeffs" : [
-                    [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    [
-                        0.0,
-                        0.0,
-                        0.0
-                    ]
-                ]
-            }
         }
     ],
     "camera" : {
@@ -244,7 +200,7 @@
         "fwd_speed" : 0.005,
         "fov0" : 18.1806,
         "fov" : 45.0,
-        "min_exposure" : -8,
-        "max_exposure" : 0
+        "min_exposure" : -12,
+        "max_exposure" : -12
     }
 }

@@ -159,10 +159,10 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/room.mesh"
+                "mesh_file" : "mat_test/room_solid.mesh"
             },
             "acc_structure" : {
-                "mesh_file" : "mat_test/room.mesh"
+                "mesh_file" : "mat_test/room_solid.mesh"
             }
         },
         {
