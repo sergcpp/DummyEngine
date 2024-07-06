@@ -179,15 +179,15 @@ void Ren::Camera::SetPxOffset(const Vec2f px_offset) const {
     }
 }
 
-void Ren::Camera::Perspective(const eZRangeMode mode, const float angle, const float aspect, const float nearr,
+void Ren::Camera::Perspective(const eZRange mode, const float angle, const float aspect, const float nearr,
                               const float farr) {
     is_orthographic_ = false;
     angle_ = angle;
     aspect_ = aspect;
     near_ = nearr;
     far_ = farr;
-    proj_matrix_ = PerspectiveProjection(angle, aspect, nearr, farr, mode != eZRangeMode::NegOneToOne);
-    if (mode == eZRangeMode::OneToZero) {
+    proj_matrix_ = PerspectiveProjection(angle, aspect, nearr, farr, mode != eZRange::NegOneToOne);
+    if (mode == eZRange::OneToZero) {
         const Mat4f reverse_z = Mat4f{Vec4f{1.0f, 0.0f, 0.0f, 0.0f},  //
                                       Vec4f{0.0f, 1.0f, 0.0f, 0.0f},  //
                                       Vec4f{0.0f, 0.0f, -1.0f, 0.0f}, //
@@ -196,13 +196,13 @@ void Ren::Camera::Perspective(const eZRangeMode mode, const float angle, const f
     }
 }
 
-void Ren::Camera::Orthographic(const eZRangeMode mode, const float left, const float right, const float top,
+void Ren::Camera::Orthographic(const eZRange mode, const float left, const float right, const float top,
                                const float down, const float nearr, const float farr) {
     is_orthographic_ = true;
     near_ = nearr;
     far_ = farr;
-    proj_matrix_ = OrthographicProjection(left, right, top, down, nearr, farr, mode != eZRangeMode::NegOneToOne);
-    if (mode == eZRangeMode::OneToZero) {
+    proj_matrix_ = OrthographicProjection(left, right, top, down, nearr, farr, mode != eZRange::NegOneToOne);
+    if (mode == eZRange::OneToZero) {
         const Mat4f reverse_z = Mat4f{Vec4f{1.0f, 0.0f, 0.0f, 0.0f},  //
                                       Vec4f{0.0f, 1.0f, 0.0f, 0.0f},  //
                                       Vec4f{0.0f, 0.0f, -1.0f, 0.0f}, //

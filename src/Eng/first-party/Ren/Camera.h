@@ -5,7 +5,7 @@
 #include "MMat.h"
 
 namespace Ren {
-enum class eZRangeMode { NegOneToOne, ZeroToOne, OneToZero };
+enum class eZRange { NegOneToOne, ZeroToOne, OneToZero };
 enum class ePointPos { Front, Back, OnPlane };
 
 struct Plane {
@@ -96,8 +96,8 @@ class Camera {
 
     bool is_orthographic() const { return is_orthographic_; }
 
-    void Perspective(eZRangeMode mode, float angle, float aspect, float near, float far);
-    void Orthographic(eZRangeMode mode, float left, float right, float top, float down, float near, float far);
+    void Perspective(eZRange mode, float angle, float aspect, float near, float far);
+    void Orthographic(eZRange mode, float left, float right, float top, float down, float near, float far);
 
     void SetupView(const Vec3f &center, const Vec3f &target, const Vec3f &up);
     void SetPxOffset(Vec2f px_offset) const;

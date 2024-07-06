@@ -81,7 +81,7 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
     random_ = viewer->random();
 
     // Prepare cam for probes updating
-    temp_probe_cam_.Perspective(Ren::eZRangeMode::OneToZero, 90.0f, 1.0f, 0.1f, 10000.0f);
+    temp_probe_cam_.Perspective(Ren::eZRange::OneToZero, 90.0f, 1.0f, 0.1f, 10000.0f);
     temp_probe_cam_.set_render_mask(uint32_t(Eng::Drawable::eVisibility::Probes));
 
     //

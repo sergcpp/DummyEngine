@@ -758,7 +758,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 bounding_radius = 0.5f * max_dist;
             } else {
                 Camera temp_cam = list.draw_cam;
-                temp_cam.Perspective(Ren::eZRangeMode::OneToZero, list.draw_cam.angle(), list.draw_cam.aspect(),
+                temp_cam.Perspective(Ren::eZRange::OneToZero, list.draw_cam.angle(), list.draw_cam.aspect(),
                                      near_planes[casc], far_planes[casc]);
                 temp_cam.UpdatePlanes();
 
@@ -808,7 +808,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             Camera shadow_cam;
             shadow_cam.SetupView(cam_center, cam_target, cam_up);
-            shadow_cam.Orthographic(Ren::eZRangeMode::OneToZero, -bounding_radius, bounding_radius, bounding_radius,
+            shadow_cam.Orthographic(Ren::eZRange::OneToZero, -bounding_radius, bounding_radius, bounding_radius,
                                     -bounding_radius, 0.0f, cam_extents);
             shadow_cam.UpdatePlanes();
 
@@ -1327,7 +1327,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 Camera shadow_cam;
                 shadow_cam.SetupView(light_center, light_center + _light_dir, _light_up);
-                shadow_cam.Perspective(Ren::eZRangeMode::OneToZero, light_angle, 1.0f, ls->cull_offset,
+                shadow_cam.Perspective(Ren::eZRange::OneToZero, light_angle, 1.0f, ls->cull_offset,
                                        ls->cull_radius);
                 shadow_cam.UpdatePlanes();
 
@@ -1486,7 +1486,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     }
                 }
 
-                shadow_cam.Perspective(Ren::eZRangeMode::OneToZero, light_angle, 1.0f,
+                shadow_cam.Perspective(Ren::eZRange::OneToZero, light_angle, 1.0f,
                                        std::max(ls->cull_offset, near_clip), std::min(ls->cull_radius, far_clip));
 
                 sh_list.cam_near = region->cam_near = shadow_cam.near();
