@@ -74,7 +74,7 @@ void main() {
     vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
     const vec3 ray_origin_ss = vec3(norm_uvs, depth);
-    const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy, ray_origin_ss.z, 1.0);
+    const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
 
     const vec3 view_ray_vs = normalize(ray_origin_vs);
