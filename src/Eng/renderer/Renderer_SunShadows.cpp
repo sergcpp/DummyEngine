@@ -134,7 +134,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, RTShadowClassify::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, RTShadowClassify::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassify::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, *tile_counter_buf.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowClassify::TILE_LIST_SLOT, *tile_list_buf.ref},
@@ -379,11 +379,11 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::HISTORY_TEX_SLOT, *hist_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::PREV_DEPTH_TEX_SLOT, *prev_depth_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::PREV_DEPTH_TEX_SLOT, {*prev_depth_tex.ref, 1}},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::PREV_MOMENTS_TEX_SLOT, *prev_moments_tex.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowClassifyTiles::RAY_HITS_BUF_SLOT, *ray_hits_buf.ref},
                 {Ren::eBindTarget::SBufRW, RTShadowClassifyTiles::OUT_TILE_METADATA_BUF_SLOT,
@@ -455,7 +455,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
@@ -522,7 +522,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
@@ -589,7 +589,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
@@ -662,7 +662,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-            {Ren::eBindTarget::Tex2DSampled, SunShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, SunShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Ren::eBindTarget::Tex2DSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SunShadows::SHADOW_TEX_VAL_SLOT, *shadow_tex.ref, nearest_sampler_.get()},

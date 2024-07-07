@@ -41,7 +41,7 @@ void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                      {Ren::eBindTarget::Tex2DSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
                                      //{Ren::eBindTarget::Tex2DSampled, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
                                      {Ren::eBindTarget::Tex2DSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
@@ -126,7 +126,7 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
         {Ren::eBindTarget::Tex2DSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
         //{Ren::eBindTarget::Tex2DSampled, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
@@ -259,7 +259,7 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
         {Ren::eBindTarget::Tex2DSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
         //{Ren::eBindTarget::Tex2DSampled, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},

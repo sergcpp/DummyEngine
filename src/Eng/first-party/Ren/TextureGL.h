@@ -16,6 +16,7 @@ class ILog;
 
 struct TexHandle {
     uint32_t id = 0;         // native gl name
+    SmallVector<uint32_t, 1> views;
     uint32_t generation = 0; // used to identify unique texture (name can be reused)
 
     TexHandle() = default;

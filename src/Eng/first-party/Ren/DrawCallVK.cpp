@@ -29,12 +29,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             } else {
                 info.sampler = b.handle.tex->handle().sampler;
             }
-            if (IsDepthStencilFormat(b.handle.tex->params.format)) {
-                // use depth-only image view
-                info.imageView = b.handle.tex->handle().views[1];
-            } else {
-                info.imageView = b.handle.tex->handle().views[0];
-            }
+            info.imageView = b.handle.tex->handle().views[b.handle.view_index];
             info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.tex->resource_state));
 
             auto &new_write = descr_writes.emplace_back();
@@ -144,24 +139,19 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
         } else if (b.trg == eBindTarget::Image2D) {
             auto &info = img_storage_infos[descr_sizes.store_img_count++];
             info.sampler = b.handle.tex->handle().sampler;
-            if (IsDepthStencilFormat(b.handle.tex->params.format)) {
-                // use depth-only image view
-                info.imageView = b.handle.tex->handle().views[1];
-            } else {
-                info.imageView = b.handle.tex->handle().views[0];
-            }
+            info.imageView = b.handle.tex->handle().views[b.handle.view_index];
             info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             new_write.dstBinding = b.loc;
-            new_write.dstArrayElement = 0;
+            new_write.dstArrayElement = b.offset;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            new_write.descriptorCount = 1;
+            new_write.descriptorCount = b.size ? b.size : 1;
             new_write.pImageInfo = &info;
 
-            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
-            used_bindings |= (1ull << b.loc);
+            assert((used_bindings & (1ull << (b.loc + b.offset))) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << (b.loc + b.offset));
         } else if (b.trg == eBindTarget::Image2DArray) {
             auto &info = img_storage_infos[descr_sizes.store_img_count++];
             info.sampler = b.handle.tex2d_arr->sampler().vk_handle();

@@ -32,7 +32,7 @@ void Eng::RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
                                      {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
@@ -87,7 +87,7 @@ void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
                                      {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
@@ -179,7 +179,7 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
         {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
         {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},

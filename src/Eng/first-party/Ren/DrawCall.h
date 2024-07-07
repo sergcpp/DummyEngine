@@ -51,9 +51,11 @@ struct OpaqueHandle {
         const AccStructureVK *acc_struct;
 #endif
     };
+    int view_index = 0;
+
     OpaqueHandle() = default;
     OpaqueHandle(const Texture1D &_tex) : tex_buf(&_tex) {}
-    OpaqueHandle(const Texture2D &_tex) : tex(&_tex) {}
+    OpaqueHandle(const Texture2D &_tex, int _view_index = 0) : tex(&_tex), view_index(_view_index) {}
     OpaqueHandle(const Texture3D &_tex) : tex3d(&_tex) {}
     OpaqueHandle(const Buffer &_buf) : buf(&_buf) {}
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
@@ -79,7 +81,7 @@ struct Binding {
     Binding(eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
 };
-static_assert(sizeof(Binding) == sizeof(void *) + 8 + sizeof(void *), "!");
+static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *), "!");
 
 #if defined(USE_VK_RENDER)
 VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, Span<const Binding> bindings,

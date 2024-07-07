@@ -45,7 +45,7 @@ void Eng::RpSSRCompose2::Execute(RpBuilder &builder) {
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
             {Ren::eBindTarget::Tex2DSampled, SSRCompose2::SPEC_TEX_SLOT, *spec_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, SSRCompose2::DEPTH_TEX_SLOT, *depth_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, SSRCompose2::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Ren::eBindTarget::Tex2DSampled, SSRCompose2::NORM_TEX_SLOT, *normal_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SSRCompose2::REFL_TEX_SLOT, *refl_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SSRCompose2::BRDF_TEX_SLOT, *brdf_lut.ref},

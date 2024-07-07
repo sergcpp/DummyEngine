@@ -153,7 +153,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             }
 
             const Ren::Binding bindings[] = {
-                {Trg::Tex2DSampled, SSRClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRClassifyTiles::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Trg::Tex2DSampled, SSRClassifyTiles::SPEC_TEX_SLOT, *spec_tex.ref},
                 {Trg::Tex2DSampled, SSRClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2DSampled, SSRClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
@@ -534,10 +534,10 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-                {Trg::Tex2DSampled, SSRReproject::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Trg::Tex2DSampled, SSRReproject::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Trg::Tex2DSampled, SSRReproject::DEPTH_HIST_TEX_SLOT, *depth_hist_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
                 {Trg::Tex2DSampled, SSRReproject::NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
@@ -624,7 +624,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
-                {Trg::Tex2DSampled, SSRPrefilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRPrefilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Trg::Tex2DSampled, SSRPrefilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2DSampled, SSRPrefilter::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
                 {Trg::Tex2DSampled, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
@@ -796,7 +796,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                    {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Trg::Tex2DSampled, SSRBlur::SPEC_TEX_SLOT, *spec_tex.ref},
                     {Trg::Tex2DSampled, SSRBlur::NORM_TEX_SLOT, *norm_tex.ref},
                     {Trg::Tex2DSampled, SSRBlur::REFL_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
@@ -860,7 +860,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                    {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Trg::Tex2DSampled, SSRBlur::SPEC_TEX_SLOT, *spec_tex.ref},
                     {Trg::Tex2DSampled, SSRBlur::NORM_TEX_SLOT, *norm_tex.ref},
                     {Trg::Tex2DSampled, SSRBlur::REFL_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
@@ -922,7 +922,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_ssr_tex);
 
                 const Ren::Binding bindings[] = {
-                    {Trg::Tex2DSampled, SSRStabilization::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Trg::Tex2DSampled, SSRStabilization::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Trg::Tex2DSampled, SSRStabilization::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                     {Trg::Tex2DSampled, SSRStabilization::SSR_TEX_SLOT, *gi_tex.ref},
                     {Trg::Tex2DSampled, SSRStabilization::SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
@@ -1037,7 +1037,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                      *unif_sh_data_buf.ref},
                     {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};

@@ -57,7 +57,7 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
         // TODO: get rid of global binding slots
         const Ren::Binding bindings[] = {
             {clean_buf_bind_target, BIND_REFL_SPEC_TEX, *spec_tex.ref},
-            {clean_buf_bind_target, BIND_REFL_DEPTH_TEX, *depth_tex.ref},
+            {clean_buf_bind_target, BIND_REFL_DEPTH_TEX, {*depth_tex.ref, 1}},
             {clean_buf_bind_target, BIND_REFL_NORM_TEX, *normal_tex.ref},
             //
             {Ren::eBindTarget::Tex2DSampled, BIND_REFL_DEPTH_LOW_TEX, *depth_down_2x_tex.ref},

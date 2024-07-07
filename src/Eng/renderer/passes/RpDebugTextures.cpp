@@ -116,9 +116,9 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         Ren::Binding bindings[3];
 
         if (view_state_->is_multisampled) {
-            bindings[0] = {Ren::eBindTarget::Tex2DMs, BIND_BASE0_TEX, *depth_tex.ref};
+            bindings[0] = {Ren::eBindTarget::Tex2DMs, BIND_BASE0_TEX, {*depth_tex.ref, 1}};
         } else {
-            bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *depth_tex.ref};
+            bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, {*depth_tex.ref, 1}};
         }
 
         bindings[1] = {Ren::eBindTarget::TBuf, BIND_CELLS_BUF, *cells_buf.tbos[0]};

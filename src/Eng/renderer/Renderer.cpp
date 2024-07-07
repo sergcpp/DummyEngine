@@ -488,11 +488,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         Ren::CommandBuffer cmd_buf = ctx_.current_cmd_buf();
 
-        const Ren::TransitionInfo transitions[] = {
-            {persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
-            {persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
-            {persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
-            {persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
+        const Ren::TransitionInfo transitions[] = {{persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
+                                                   {persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
+                                                   {persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
+                                                   {persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
         Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
         const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -643,10 +642,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     if (list.render_settings.taa_mode != eTAAMode::Off) {
         const int samples_to_use =
             (list.render_settings.taa_mode == eTAAMode::Static) ? TaaSampleCountStatic : TaaSampleCountNormal;
-        const int halton_sample =
+        const int sample_index =
             ((list.render_settings.taa_mode == eTAAMode::Static) ? accumulated_frames_ : list.frame_index) %
             samples_to_use;
-        Ren::Vec2f jitter = PMJSamples64[halton_sample];
+        Ren::Vec2f jitter = PMJSamples64[sample_index];
 
         auto lookup_filter_table = [this](float x) {
             x *= (PxFilterTableSize - 1);

@@ -151,8 +151,10 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
                                          0, nullptr);
 
-        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
-                                    uniform_data_offset, uniform_data_len, uniform_data);
+        if (uniform_data) {
+            api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
+                                        uniform_data_offset, uniform_data_len, uniform_data);
+        }
 
         if (prim == ePrim::Quad) {
             pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
@@ -188,17 +190,20 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
         api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
-        const VkViewport viewport = {0.0f, 0.0f, float(fb->w), float(fb->h), 0.0f, 1.0f};
+        const VkViewport viewport = {0.0f, 0.0f, float(new_rast_state.viewport[2]), float(new_rast_state.viewport[3]),
+                                     0.0f, 1.0f};
         api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
-        const VkRect2D scissor = {0, 0, uint32_t(fb->w), uint32_t(fb->h)};
+        const VkRect2D scissor = {0, 0, uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])};
         api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
                                          0, nullptr);
 
-        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
-                                    uniform_data_offset, uniform_data_len, uniform_data);
+        if (uniform_data) {
+            api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
+                                        uniform_data_offset, uniform_data_len, uniform_data);
+        }
 
         if (prim == ePrim::Quad) {
             pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);

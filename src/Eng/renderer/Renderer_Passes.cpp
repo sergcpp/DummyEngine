@@ -1110,7 +1110,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::TBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
             {Ren::eBindTarget::TBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
             {Ren::eBindTarget::TBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, *depth_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::NORMAL_TEX_SLOT, *normal_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SPECULAR_TEX_SLOT, *spec_tex.ref},
@@ -1238,7 +1238,7 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Ren::eBindTarget::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
 
                 Bilateral::Params uniform_params;
@@ -1294,7 +1294,7 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Ren::eBindTarget::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
 
                 Bilateral::Params uniform_params;
@@ -1349,7 +1349,7 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, Upscale::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, Upscale::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Ren::eBindTarget::Tex2DSampled, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
                 Upscale::Params uniform_params;
@@ -1399,7 +1399,7 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
 
             RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, *depth_tex.ref},
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::NORMAL_TEX_SLOT, *norm_tex.ref},
                                              {Trg::Image2D, GTAO::OUT_IMG_SLOT, *output_tex.ref}};
 
@@ -1450,7 +1450,7 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
 
             RpAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, *depth_tex.ref},
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
                                              {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
@@ -1497,7 +1497,7 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
 
             RpAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, *depth_tex.ref},
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
                                              {Trg::Tex2DSampled, GTAO::GTAO_HIST_TEX_SLOT, *ao_hist_tex.ref},
@@ -1553,7 +1553,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
         rast_state.viewport[3] = view_state_.act_res[1];
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2DSampled, BlitStaticVel::DEPTH_TEX_SLOT, *depth_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, BlitStaticVel::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
 
         const Ren::RenderTarget render_targets[] = {{velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -1721,7 +1721,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 const Ren::Binding bindings[] = {
                     {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                     {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
 
@@ -1820,7 +1820,7 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
         rast_state.viewport[2] = view_state_.act_res[0] / 2;
         rast_state.viewport[3] = view_state_.act_res[1] / 2;
 
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, DownDepth::DEPTH_TEX_SLOT, *depth_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, DownDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}}};
 
         DownDepth::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};

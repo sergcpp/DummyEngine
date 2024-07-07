@@ -221,9 +221,9 @@ void RpDOF::Execute(RpBuilder &builder) {
         bindings[1] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *color_tex.ref};
 
         if (view_state_->is_multisampled) {
-            bindings[2] = {Ren::eBindTarget::Tex2DMs, 3, *depth_tex.ref};
+            bindings[2] = {Ren::eBindTarget::Tex2DMs, 3, {*depth_tex.ref, 1}};
         } else {
-            bindings[2] = {Ren::eBindTarget::Tex2D, 3, *depth_tex.ref};
+            bindings[2] = {Ren::eBindTarget::Tex2D, 3, {*depth_tex.ref, 1}};
         }
 
         bindings[3] = {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX, *blur1_4x_tex.ref};

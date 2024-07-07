@@ -350,6 +350,12 @@ void Ren::Texture2D::Free() {
     if (params.format != eTexFormat::Undefined && !bool(params.flags & eTexFlagBits::NoOwnership)) {
         auto tex_id = GLuint(handle_.id);
         glDeleteTextures(1, &tex_id);
+        for (uint32_t view : handle_.views) {
+            if (view != tex_id) {
+                auto tex_id = GLuint(view);
+                glDeleteTextures(1, &tex_id);
+            }
+        }
         handle_ = {};
         params.format = eTexFormat::Undefined;
     }
@@ -486,6 +492,11 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
                 }
             }
         }
+    }
+
+    if (IsDepthStencilFormat(p.format)) {
+        // create additional 'depth-only' image view (for compatibility with VK)
+        handle_.views.push_back(tex_id);
     }
 
     if (p.samples == 1) {
@@ -707,6 +718,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
     const eTexFilter f = params.sampling.filter;
 
     const int mip_count = CalcMipCount(w, h, 1, f);
+    params.mip_count = mip_count;
 
     // allocate all mip levels
     ren_glTextureStorage2D_Comp(GL_TEXTURE_CUBE_MAP, tex_id, mip_count, internal_format, w, h);
@@ -726,6 +738,21 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
     }
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    if (uint32_t(params.usage & eTexUsageBits::RenderTarget) != 0) {
+        // create additional image views
+        for (int j = 0; j < mip_count; ++j) {
+            for (int i = 0; i < 6; ++i) {
+                GLuint tex_view;
+                glGenTextures(1, &tex_view);
+                glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, i, 1);
+#ifdef ENABLE_OBJ_LABELS
+                glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
+#endif
+                handle_.views.push_back(tex_view);
+            }
+        }
+    }
 
     params.cube = 1;
 

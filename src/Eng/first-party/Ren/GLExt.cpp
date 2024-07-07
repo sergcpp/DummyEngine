@@ -417,6 +417,8 @@ bool Ren::InitGLExtentions(ILog *log) {
     } else {
         ren_glNamedBufferStorage_Comp = ren_glNamedBufferStorage_Comp_emu;
     }
+
+    LOAD_GL_FUN(glTextureView)
 #else
     ren_glCreateTextures = ren_glCreateTextures_emu;
 

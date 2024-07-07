@@ -1089,6 +1089,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
     initialized_mips_ = 0;
 
     const int mip_count = CalcMipCount(p.w, p.h, 1, p.sampling.filter);
+    params.mip_count = mip_count;
 
     { // create image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -1173,35 +1174,37 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
 
     if (uint32_t(params.usage & eTexUsageBits::RenderTarget) != 0) {
         // create additional image views
-        for (int i = 0; i < 6; ++i) {
-            VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-            view_info.image = handle_.img;
-            view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            view_info.format = g_vk_formats[size_t(p.format)];
-            if (bool(p.flags & eTexFlagBits::SRGB)) {
-                view_info.format = ToSRGBFormat(view_info.format);
-            }
-            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            view_info.subresourceRange.baseMipLevel = 0;
-            view_info.subresourceRange.levelCount = mip_count;
-            view_info.subresourceRange.baseArrayLayer = i;
-            view_info.subresourceRange.layerCount = 1;
+        for (int j = 0; j < mip_count; ++j) {
+            for (int i = 0; i < 6; ++i) {
+                VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+                view_info.image = handle_.img;
+                view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                view_info.format = g_vk_formats[size_t(p.format)];
+                if (bool(p.flags & eTexFlagBits::SRGB)) {
+                    view_info.format = ToSRGBFormat(view_info.format);
+                }
+                view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                view_info.subresourceRange.baseMipLevel = j;
+                view_info.subresourceRange.levelCount = 1;
+                view_info.subresourceRange.baseArrayLayer = i;
+                view_info.subresourceRange.layerCount = 1;
 
-            handle_.views.emplace_back(VK_NULL_HANDLE);
-            const VkResult res =
-                api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
-            if (res != VK_SUCCESS) {
-                log->Error("Failed to create image view!");
-                return;
-            }
+                handle_.views.emplace_back(VK_NULL_HANDLE);
+                const VkResult res =
+                    api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
+                if (res != VK_SUCCESS) {
+                    log->Error("Failed to create image view!");
+                    return;
+                }
 
 #ifdef ENABLE_OBJ_LABELS
-            VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-            name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-            name_info.objectHandle = uint64_t(handle_.views.back());
-            name_info.pObjectName = name_.c_str();
-            api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+                VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+                name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+                name_info.objectHandle = uint64_t(handle_.views.back());
+                name_info.pObjectName = name_.c_str();
+                api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
+            }
         }
     }
 
