@@ -505,7 +505,7 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         return vec3(0.0);
     }
 
-    vec3 irradiance = (outdoor_weight > indoor_weight) ? (outdoor_irradiance / outdoor_weight) : (indoor_irradiance / indoor_weight);
+    vec3 irradiance = (0.5 * outdoor_weight > indoor_weight) ? (outdoor_irradiance / outdoor_weight) : (indoor_irradiance / indoor_weight);
 
     irradiance *= 2.0 * M_PI;   // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
 

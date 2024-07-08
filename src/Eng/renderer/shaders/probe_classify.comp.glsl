@@ -88,7 +88,7 @@ void main() {
             const float max_distance = min(distances.x, min(distances.y, distances.z));
 
             if (hit_distances[i] <= max_distance) {
-                offset.w = (outdoor_count > (PROBE_FIXED_RAYS_COUNT - backface_count) / 2) ? PROBE_STATE_ACTIVE_OUTDOOR : PROBE_STATE_ACTIVE;
+                offset.w = (outdoor_count > (PROBE_FIXED_RAYS_COUNT - backface_count) / 3) ? PROBE_STATE_ACTIVE_OUTDOOR : PROBE_STATE_ACTIVE;
                 break;
             }
         }

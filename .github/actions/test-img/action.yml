@@ -50,15 +50,15 @@ runs:
         mv sponza.png sponza_ultra.png
         mv sponza_diff.png sponza_diff_ultra.png
         cp sponza_ultra.png sponza_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset medium --psnr 21.75
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset medium --psnr 21.67
         mv ai043_06.png ai043_06_medium.png
         mv ai043_06_diff.png ai043_06_diff_medium.png
         cp ai043_06_medium.png ai043_06_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset high --psnr 24.60
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset high --psnr 22.95
         mv ai043_06.png ai043_06_high.png
         mv ai043_06_diff.png ai043_06_diff_high.png
         cp ai043_06_high.png ai043_06_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset ultra --psnr 25.60
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --preset ultra --psnr 24.70
         mv ai043_06.png ai043_06_ultra.png
         mv ai043_06_diff.png ai043_06_diff_ultra.png
         cp ai043_06_ultra.png ai043_06_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}

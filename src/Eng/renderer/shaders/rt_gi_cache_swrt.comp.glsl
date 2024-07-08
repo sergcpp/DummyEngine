@@ -394,16 +394,16 @@ void main() {
             const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
             if (weight > 0.0) {
                 if (lobe_weights.diffuse > 0.0) {
-                    vec3 irradiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz), N,
-                                                            g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                    vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz), N,
+                                                                g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
                     irradiance *= base_color * ltc.diff_t2.x;
                     irradiance *= clamp(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)), 0.0, 1.0);
                     light_total += lobe_weights.diffuse_mul * (1.0 / M_PI) * irradiance;
                 }
                 /*if (lobe_weights.specular > 0.0) {
                     const vec3 refl_dir = reflect(probe_ray_dir, N);
-                    vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
-                                                              g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+                    vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
+                                                                  g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
                     avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
                     avg_radiance *= saturate(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz)));
                     light_total += (1.0 / M_PI) * avg_radiance;
