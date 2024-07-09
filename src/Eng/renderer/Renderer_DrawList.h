@@ -52,6 +52,7 @@ struct EnvironmentWeak {
     Ren::WeakTex2DRef env_map;
     Ren::WeakTex2DRef lm_direct, lm_indir, lm_indir_sh[4];
     float sun_shadow_bias[2] = {4.0f, 8.0f};
+    uint32_t generation;
 
     Ren::String env_map_name;
     AtmosphereParams atmosphere;
@@ -79,6 +80,7 @@ struct EnvironmentWeak {
         sun_shadow_bias[1] = env.sun_shadow_bias[1];
         env_map_name = env.env_map_name;
         atmosphere = env.atmosphere;
+        generation = env.generation;
     }
 };
 // static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");

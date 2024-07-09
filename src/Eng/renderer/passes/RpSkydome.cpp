@@ -21,6 +21,12 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
     RpAllocTex &noise3d_tex = builder.GetReadTexture(pass_data_->noise3d_tex);
     RpAllocTex &color_tex = builder.GetWriteTexture(pass_data_->color_tex);
 
+    if (view_state_->env_generation == generation_) {
+        return;
+    }
+
+    generation_ = view_state_->env_generation;
+
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
     rast_state.viewport[2] = color_tex.ref->params.w;
@@ -124,7 +130,7 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
 }
 
 void Eng::RpSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
+    if (!initialized_) {
         prog_skydome_phys_ = sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl");
         assert(prog_skydome_phys_->ready());
 
@@ -135,7 +141,7 @@ void Eng::RpSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             ctx.log()->Error("RpSkydomeCube: Failed to initialize pipeline!");
         }
 
-        initialized = true;
+        initialized_ = true;
     }
 }
 

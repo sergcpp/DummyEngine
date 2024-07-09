@@ -1820,7 +1820,8 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
         rast_state.viewport[2] = view_state_.act_res[0] / 2;
         rast_state.viewport[3] = view_state_.act_res[1] / 2;
 
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, DownDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}}};
+        const Ren::Binding bindings[] = {
+            {Ren::eBindTarget::Tex2DSampled, DownDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}}};
 
         DownDepth::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};

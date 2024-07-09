@@ -639,6 +639,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     view_state_.frame_index = list.frame_index;
     view_state_.volume_to_update = list.volume_to_update;
 
+    view_state_.env_generation = list.env.generation;
+
     if (list.render_settings.taa_mode != eTAAMode::Off) {
         const int samples_to_use =
             (list.render_settings.taa_mode == eTAAMode::Static) ? TaaSampleCountStatic : TaaSampleCountNormal;

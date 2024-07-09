@@ -117,6 +117,7 @@ struct Environment {
     Ren::Tex2DRef env_map;
     Ren::Tex2DRef lm_direct, lm_indir, lm_indir_sh[4];
     float sun_shadow_bias[2] = {4.0f, 8.0f};
+    uint32_t generation = 0;
 
     Ren::String env_map_name;
     AtmosphereParams atmosphere;

@@ -26,7 +26,8 @@ struct RpSkydomeCubeData {
 
 class RpSkydomeCube : public RpExecutor {
     PrimDraw &prim_draw_;
-    bool initialized = false;
+    bool initialized_ = false;
+    uint32_t generation_ = 0xffffffff;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
