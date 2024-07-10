@@ -74,9 +74,6 @@ void main() {
 
 #ifdef OUTPUT_VELOCITY
     vec2 unjitter = g_shrd_data.taa_info.xy;
-#if defined(VULKAN)
-    unjitter.y = -unjitter.y;
-#endif
     const vec2 curr = g_vtx_pos_cs_curr.xy / g_vtx_pos_cs_curr.z;
     const vec2 prev = g_vtx_pos_cs_prev.xy / g_vtx_pos_cs_prev.z;
     g_out_velocity.xy = 0.5 * (curr + unjitter - prev);

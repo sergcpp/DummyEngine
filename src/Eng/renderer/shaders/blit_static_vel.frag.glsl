@@ -31,7 +31,6 @@ void main() {
     vec2 unjitter = g_shrd_data.taa_info.xy;
 #if defined(VULKAN)
     point_cs.y = -point_cs.y;
-    unjitter.y = -unjitter.y;
 #endif
     g_out_velocity.xy = 0.5 * (point_cs.xy + unjitter - point_prev_cs.xy);
 #if defined(VULKAN)

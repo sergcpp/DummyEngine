@@ -259,11 +259,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             shrd_data.clip_from_view = p_list_->draw_cam.proj_matrix();
 
             shrd_data.taa_info[0] = p_list_->draw_cam.px_offset()[0];
-#if defined(USE_VK_RENDER)
-            shrd_data.taa_info[1] = -p_list_->draw_cam.px_offset()[1];
-#else
             shrd_data.taa_info[1] = p_list_->draw_cam.px_offset()[1];
-#endif
             memcpy(&shrd_data.taa_info[2], &view_state_.frame_index, sizeof(float));
             shrd_data.taa_info[3] =
                 std::tan(0.5f * p_list_->draw_cam.angle() * Ren::Pi<float>() / 180.0f) / float(view_state_.act_res[1]);

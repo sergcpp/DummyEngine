@@ -147,9 +147,6 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     vec3 ray_vs = vec3(uv, z);
 
     vec2 unjitter = g_shrd_data.taa_info.xy;
-#if defined(VULKAN)
-    unjitter.y = -unjitter.y;
-#endif
 
     { // project from screen space to view space
         ray_vs.xy = 2.0 * ray_vs.xy - 1.0;
