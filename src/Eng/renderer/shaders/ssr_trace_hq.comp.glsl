@@ -162,9 +162,9 @@ void main() {
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
     const float view_z = -ray_origin_vs.z;
 
-    vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    vec2 u = texelFetch(g_noise_tex, pix_uvs % 128, 0).rg;
-    vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
+    const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
+    const vec2 u = texelFetch(g_noise_tex, pix_uvs % 128, 0).rg;
+    const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
 
     vec3 hit_point_cs, hit_point_vs;
     vec3 out_color = vec3(0.0);
@@ -223,4 +223,3 @@ void main() {
         imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
     }
 }
-

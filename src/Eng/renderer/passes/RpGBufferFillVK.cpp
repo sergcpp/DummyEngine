@@ -170,6 +170,12 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
+    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
+                                 0.0f, 1.0f};
+    api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+    const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+
     const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches};
     const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices};
 

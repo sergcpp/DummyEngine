@@ -308,10 +308,12 @@ void GSBaseState::Enter() {
     });
 
     cmdline_->RegisterCommand("r_sky", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
-        if (args[1].val > 0.5) {
+        if (args[1].val > 1.5) {
+            renderer_->settings.sky_quality = Eng::eSkyQuality::Ultra;
+        } else if (args[1].val > 0.5) {
             renderer_->settings.sky_quality = Eng::eSkyQuality::High;
         } else {
-            renderer_->settings.sky_quality = Eng::eSkyQuality::Low;
+            renderer_->settings.sky_quality = Eng::eSkyQuality::Medium;
         }
         return true;
     });
@@ -638,14 +640,17 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         renderer_->settings.gi_quality = Eng::eGIQuality::Medium;
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
+        renderer_->settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::High) {
         renderer_->settings.gi_quality = Eng::eGIQuality::High;
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
+        renderer_->settings.sky_quality = Eng::eSkyQuality::High;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::Ultra) {
         renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+        renderer_->settings.sky_quality = Eng::eSkyQuality::Ultra;
     }
     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 

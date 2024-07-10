@@ -236,6 +236,8 @@ class Renderer {
     Ren::Pipeline pi_sun_brightness_;
     // Autoexposure
     Ren::Pipeline pi_histogram_sample_, pi_histogram_exposure_;
+    // Sky
+    Ren::Pipeline pi_sky_upsample_;
     // Debug
     Ren::Pipeline pi_debug_velocity_;
 

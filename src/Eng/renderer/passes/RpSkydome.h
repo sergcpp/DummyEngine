@@ -51,7 +51,7 @@ class RpSkydomeCube : public RpExecutor {
 };
 
 struct RpSkydomeScreenData {
-    eSkyQuality sky_quality = eSkyQuality::Low;
+    eSkyQuality sky_quality = eSkyQuality::Medium;
 
     RpResRef shared_data;
     RpResRef env_tex;
@@ -77,7 +77,7 @@ class RpSkydomeScreen : public RpExecutor {
     const RpSkydomeScreenData *pass_data_ = nullptr;
 
     // lazily initialized data
-    Ren::ProgramRef prog_skydome_simple_, prog_skydome_phys_;
+    Ren::ProgramRef prog_skydome_simple_, prog_skydome_phys_[2];
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
@@ -90,5 +90,7 @@ class RpSkydomeScreen : public RpExecutor {
     }
 
     void Execute(RpBuilder &builder) override;
+
+    static Ren::Vec2i sample_pos(int frame_index);
 };
 } // namespace Eng

@@ -2,6 +2,8 @@
 
 #include "_cs_common.glsl"
 #include "sun_brightness_interface.h"
+
+#define ENABLE_SUN_DISK 0
 #include "atmosphere_common.glsl"
 
 layout(binding = TRANSMITTANCE_LUT_SLOT) uniform sampler2D g_trasmittance_lut;

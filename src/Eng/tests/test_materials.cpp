@@ -97,24 +97,31 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Off;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
+        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoGI) {
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
+        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoGI_RTShadow) {
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
+        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoDiffGI) {
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
+        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
+        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::MedDiffGI) {
         renderer.settings.gi_quality = Eng::eGIQuality::Medium;
+        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::Full_Ultra) {
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
         renderer.settings.gi_quality = Eng::eGIQuality::Ultra;
+        renderer.settings.sky_quality = Eng::eSkyQuality::Ultra;
     }
 
     Eng::path_config_t paths;
@@ -517,8 +524,8 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 26.73, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 26.59, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 27.83, Full_Ultra));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 33.55, NoShadow));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 29.24, NoGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 33.53, NoShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 29.23, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 33.44, NoGI_RTShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 21.36, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 22.29, Full_Ultra));

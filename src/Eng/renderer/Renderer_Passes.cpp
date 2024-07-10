@@ -24,6 +24,7 @@
 #include "shaders/gtao_interface.h"
 #include "shaders/histogram_exposure_interface.h"
 #include "shaders/histogram_sample_interface.h"
+#include "shaders/skydome_interface.h"
 #include "shaders/sun_brightness_interface.h"
 
 namespace RendererInternal {
@@ -132,6 +133,9 @@ bool Eng::Renderer::InitPipelines() {
     // Autoexposure
     success &= init_pipeline(pi_histogram_sample_, "internal/histogram_sample.comp.glsl");
     success &= init_pipeline(pi_histogram_exposure_, "internal/histogram_exposure.comp.glsl");
+
+    // Sky
+    success &= init_pipeline(pi_sky_upsample_, "internal/skydome_upsample.comp.glsl");
 
     // Debugging
     success &= init_pipeline(pi_debug_velocity_, "internal/debug_velocity.comp.glsl");
@@ -758,32 +762,128 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         skydome_cube.set_executor(&rp_skydome_cube_);
     }
 
-    auto &skymap = rp_builder_.AddPass("SKYDOME");
+    RpResRef sky_temp;
+    { // Main pass
+        auto &skymap = rp_builder_.AddPass("SKYDOME");
 
-    auto *data = skymap.AllocPassData<RpSkydomeScreenData>();
+        auto *data = skymap.AllocPassData<RpSkydomeScreenData>();
+        data->shared_data = skymap.AddUniformBufferInput(
+            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+        if (p_list_->env.env_map_name != "physical_sky") {
+            frame_textures.envmap = data->env_tex =
+                skymap.AddTextureInput(p_list_->env.env_map, Ren::eStageBits::FragmentShader);
+            frame_textures.color = data->color_tex = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
+            frame_textures.depth = data->depth_tex = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+        } else {
+            data->sky_quality = settings.sky_quality;
+            frame_textures.envmap = data->env_tex =
+                skymap.AddTextureInput(frame_textures.envmap, Ren::eStageBits::FragmentShader);
+            data->phys.transmittance_lut =
+                skymap.AddTextureInput(sky_transmittance_lut_, Ren::eStageBits::FragmentShader);
+            data->phys.multiscatter_lut =
+                skymap.AddTextureInput(sky_multiscatter_lut_, Ren::eStageBits::FragmentShader);
+            data->phys.moon_tex = skymap.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
+            data->phys.weather_tex = skymap.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
+            data->phys.cirrus_tex = skymap.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
+            data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
 
-    data->shared_data = skymap.AddUniformBufferInput(common_buffers.shared_data_res,
-                                                     Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    if (p_list_->env.env_map_name != "physical_sky") {
-        frame_textures.envmap = data->env_tex =
-            skymap.AddTextureInput(p_list_->env.env_map, Ren::eStageBits::FragmentShader);
-    } else {
-        data->sky_quality = settings.sky_quality;
-        frame_textures.envmap = data->env_tex =
-            skymap.AddTextureInput(frame_textures.envmap, Ren::eStageBits::FragmentShader);
-        data->phys.transmittance_lut = skymap.AddTextureInput(sky_transmittance_lut_, Ren::eStageBits::FragmentShader);
-        data->phys.multiscatter_lut = skymap.AddTextureInput(sky_multiscatter_lut_, Ren::eStageBits::FragmentShader);
-        data->phys.moon_tex = skymap.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
-        data->phys.weather_tex = skymap.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
-        data->phys.cirrus_tex = skymap.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
-        data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
+            if (settings.sky_quality == eSkyQuality::High) {
+                frame_textures.depth = data->depth_tex =
+                    skymap.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
+
+                Ren::Tex2DParams params;
+                params.w = (view_state_.scr_res[0] + 3) / 4;
+                params.h = (view_state_.scr_res[1] + 3) / 4;
+                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                sky_temp = data->color_tex = skymap.AddColorOutput("SKY TEMP", params);
+            } else {
+                frame_textures.color = data->color_tex =
+                    skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
+                frame_textures.depth = data->depth_tex =
+                    skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+            }
+        }
+
+        rp_skydome_.Setup(&view_state_, data);
+        skymap.set_executor(&rp_skydome_);
     }
 
-    frame_textures.color = data->color_tex = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
-    frame_textures.depth = data->depth_tex = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+    if (p_list_->env.env_map_name != "physical_sky") {
+        return;
+    }
 
-    rp_skydome_.Setup(&view_state_, data);
-    skymap.set_executor(&rp_skydome_);
+    if (settings.sky_quality == eSkyQuality::High) {
+        auto &sky_upsample = rp_builder_.AddPass("SKY UPSAMPLE");
+
+        struct PassData {
+            RpResRef shared_data;
+            RpResRef depth_tex;
+            RpResRef env_map;
+            RpResRef sky_temp_tex;
+            RpResRef sky_hist_tex;
+            RpResRef output_tex;
+            RpResRef output_hist_tex;
+        };
+
+        auto *data = sky_upsample.AllocPassData<PassData>();
+        data->shared_data =
+            sky_upsample.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
+        frame_textures.depth = data->depth_tex =
+            sky_upsample.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+        frame_textures.envmap = data->env_map =
+            sky_upsample.AddTextureInput(frame_textures.envmap, Ren::eStageBits::ComputeShader);
+        data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Ren::eStageBits::ComputeShader);
+
+        RpResRef sky_upsampled;
+        {
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            sky_upsampled = data->output_hist_tex =
+                sky_upsample.AddStorageImageOutput("SKY HIST", params, Ren::eStageBits::ComputeShader);
+        }
+
+        data->sky_hist_tex = sky_upsample.AddHistoryTextureInput(sky_upsampled, Ren::eStageBits::ComputeShader);
+        frame_textures.color = data->output_tex = sky_upsample.AddStorageImageOutput(
+            MAIN_COLOR_TEX, frame_textures.color_params, Ren::eStageBits::ComputeShader);
+
+        sky_upsample.set_execute_cb([data, this](RpBuilder &builder) {
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &env_map_tex = builder.GetReadTexture(data->env_map);
+            RpAllocTex &sky_temp_tex = builder.GetReadTexture(data->sky_temp_tex);
+            RpAllocTex &sky_hist_tex = builder.GetReadTexture(data->sky_hist_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            RpAllocTex &output_hist_tex = builder.GetWriteTexture(data->output_hist_tex);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::Tex2DSampled, Skydome::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Ren::eBindTarget::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
+                {Ren::eBindTarget::Image2D, Skydome::OUT_IMG_SLOT, *output_tex.ref},
+                {Ren::eBindTarget::Image2D, Skydome::OUT_HIST_IMG_SLOT, *output_hist_tex.ref}};
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
+                (view_state_.act_res[1] + Skydome::LOCAL_GROUP_SIZE_Y - 1u) / Skydome::LOCAL_GROUP_SIZE_Y, 1u};
+
+            Skydome::Params uniform_params;
+            uniform_params.img_size = view_state_.scr_res;
+            uniform_params.sample_coord = RpSkydomeScreen::sample_pos(view_state_.frame_index);
+
+            Ren::DispatchCompute(pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
 }
 
 void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
