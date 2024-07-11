@@ -45,8 +45,6 @@ void main() {
 
     // initial fallback color
     vec4 out_color = textureLod(g_env_tex, view_ray_ws, 0.0);
-    out_color.xyz = compress_hdr(out_color.xyz);
-
     // sun disk is missing from cubemap, add it here
     if (g_shrd_data.sun_dir.w > 0.0 && view_ray_ws.y > -0.01) {
         const float costh = dot(view_ray_ws, g_shrd_data.sun_dir.xyz);
@@ -54,6 +52,7 @@ void main() {
         const float sun_disk = smoothstep(cos_theta - SKY_SUN_BLEND_VAL, cos_theta + SKY_SUN_BLEND_VAL, costh);
         out_color.xyz += sun_disk * g_shrd_data.sun_col.xyz;
     }
+    out_color.xyz = compress_hdr(out_color.xyz);
 
     vec4 prev_ray_origin_cs = g_shrd_data.prev_clip_from_world * vec4(ray_origin_ws, 1.0);
     prev_ray_origin_cs /= prev_ray_origin_cs.w;
