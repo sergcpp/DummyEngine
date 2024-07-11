@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = sky_upscaling
-	commit = f713f1182982e2d87aeaf69dd0bc1097f0e39ca3
+	branch = sky_curl
+	commit = 839d937d33f96e72c55d015bad33fa10264cc36f
 	method = merge
 	cmdver = 0.4.6
-	parent = f986a57b3f6c5dac73f38fc52cf7e656f6899fbf
+	parent = 1247ce10d5e4004d77334a8560a7bab59055b53b
