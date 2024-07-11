@@ -110,6 +110,8 @@ template <typename T, int N> class Vec {
     DEFINE_ARITHMETIC_OPERATOR(*)
     DEFINE_ARITHMETIC_OPERATOR(/)
     DEFINE_ARITHMETIC_OPERATOR(%)
+
+#undef DEFINE_ARITHMETIC_OPERATOR
 };
 
 template <typename T, int N> force_inline bool operator!=(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
