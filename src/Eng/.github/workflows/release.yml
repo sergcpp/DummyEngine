@@ -347,7 +347,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-amd-output"
-          test-args: "-j2 --device AMD --full"
+          test-args: "--device AMD --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -370,7 +370,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-nv-output"
-          test-args: "-j2 --device NV --full"
+          test-args: "--device NV --full -vl 0"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -393,7 +393,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-arc-output"
-          test-args: "-j2 --device Arc --full"
+          test-args: "--device Arc --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -416,7 +416,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-xe-output"
-          test-args: "-j2 --device Xe  --full"
+          test-args: "--device Xe --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -485,7 +485,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-amd-output"
-          test-args: "-j2 --device AMD --full"
+          test-args: "--device AMD --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -508,7 +508,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-nv-output"
-          test-args: "-j2 --device NV --full"
+          test-args: "--device NV --full"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()

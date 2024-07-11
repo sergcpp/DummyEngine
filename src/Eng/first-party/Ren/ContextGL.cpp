@@ -15,8 +15,10 @@ void APIENTRY DebugCallback(const GLenum source, const GLenum type, const GLuint
                             const GLsizei length, const GLchar *message, const void *userParam) {
     auto *self = reinterpret_cast<const Context *>(userParam);
     if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-        if (id != 131154 /* pixel-path performance warning */ && id != 131186 /* buffer performance warning */) {
+        if (severity == GL_DEBUG_SEVERITY_HIGH) {
             self->log()->Error("%s", message);
+        } else {
+            self->log()->Warning("%s", message);
         }
     } else if (type != GL_DEBUG_TYPE_PUSH_GROUP && type != GL_DEBUG_TYPE_POP_GROUP && type != GL_DEBUG_TYPE_OTHER) {
         self->log()->Warning("%s", message);
@@ -228,7 +230,8 @@ int Ren::Context::WriteTimestamp(const bool) {
 
 uint64_t Ren::Context::GetTimestampIntervalDurationUs(const int query_beg, const int query_end) const {
     return uint64_t(float(api_ctx_->query_results[api_ctx_->backend_frame][query_end] -
-                          api_ctx_->query_results[api_ctx_->backend_frame][query_beg]) / 1000.0f);
+                          api_ctx_->query_results[api_ctx_->backend_frame][query_beg]) /
+                    1000.0f);
 }
 
 #ifdef _MSC_VER

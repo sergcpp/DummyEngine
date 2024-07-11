@@ -91,7 +91,10 @@ int main(int argc, char *argv[]) {
     puts(" ---------------");
     test_materials(mt_run_pool, full, device_name, validation_level, nohwrt);
 
-    return g_tests_success ? 0 : -1;
+    bool tests_success_final = g_tests_success;
+    tests_success_final &= !g_log_contains_errors;
+
+    return tests_success_final ? 0 : -1;
 }
 
 //
