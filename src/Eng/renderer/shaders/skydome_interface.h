@@ -25,10 +25,11 @@ const int MULTISCATTER_LUT_SLOT = 4;
 const int MOON_TEX_SLOT = 5;
 const int WEATHER_TEX_SLOT = 6;
 const int CIRRUS_TEX_SLOT = 7;
-const int NOISE3D_TEX_SLOT = 8;
-const int DEPTH_TEX_SLOT = 9;
-const int SKY_TEX_SLOT = 10;
-const int SKY_HIST_TEX_SLOT = 11;
+const int CURL_TEX_SLOT = 8;
+const int NOISE3D_TEX_SLOT = 9;
+const int DEPTH_TEX_SLOT = 10;
+const int SKY_TEX_SLOT = 11;
+const int SKY_HIST_TEX_SLOT = 12;
 
 const int OUT_IMG_SLOT = 0;
 const int OUT_HIST_IMG_SLOT = 1;

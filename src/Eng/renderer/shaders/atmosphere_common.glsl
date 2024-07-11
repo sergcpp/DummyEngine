@@ -4,6 +4,9 @@
 #ifndef ENABLE_SUN_DISK
     #define ENABLE_SUN_DISK 1
 #endif
+#ifndef ENABLE_CLOUDS_CURL
+    #define ENABLE_CLOUDS_CURL 1
+#endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
@@ -241,7 +244,7 @@ float GetDensityHeightGradientForPoint(float height, float cloud_type) {
            smoothstep(cloudGradient.z, cloudGradient.w, height);
 }
 
-float GetCloudsDensity(sampler2D weather_tex, sampler3D noise3d_tex, vec3 local_position, out float out_local_height, out float out_height_fraction, out vec3 out_up_vector) {
+float GetCloudsDensity(sampler2D weather_tex, sampler2D curl_tex, sampler3D noise3d_tex, vec3 local_position, out float out_local_height, out float out_height_fraction, out vec3 out_up_vector) {
     out_local_height = AtmosphereHeight(local_position, out_up_vector);
     out_height_fraction =
         (out_local_height - g_shrd_data.atmosphere.clouds_height_beg) / (g_shrd_data.atmosphere.clouds_height_end - g_shrd_data.atmosphere.clouds_height_beg);
@@ -264,12 +267,21 @@ float GetCloudsDensity(sampler2D weather_tex, sampler3D noise3d_tex, vec3 local_
 
     local_position /= 1.5 * (g_shrd_data.atmosphere.clouds_height_end - g_shrd_data.atmosphere.clouds_height_beg);
 
+#if ENABLE_CLOUDS_CURL
+    // TODO: Apply animated cloud offset here
+    const vec3 curl_read0 = textureLod(curl_tex, 8.0 * local_position.xz, 0.0).xyz;
+    local_position += curl_read0 * out_height_fraction * 0.25;
+
+    const vec3 curl_read1 = textureLod(curl_tex, 16.0 * local_position.yx, 0.0).yzx;
+    local_position += curl_read1 * (1.0 - out_height_fraction) * 0.05;
+#endif
+
     const float noise_read = textureLod(noise3d_tex, local_position, 0.0).x;
     return 3.0 * mix(max(0.0, 1.0 - cloud_type * 2.0), 1.0, out_height_fraction) *
            remap(cloud_coverage, 0.6 * noise_read);
 }
 
-float TraceCloudShadow(sampler2D weather_tex, sampler3D noise3d_tex, const uint rand_hash, vec3 ray_start, const vec3 ray_dir) {
+float TraceCloudShadow(sampler2D weather_tex, sampler2D curl_tex, sampler3D noise3d_tex, const uint rand_hash, vec3 ray_start, const vec3 ray_dir) {
     const vec4 clouds_intersection = CloudsIntersection(ray_start, ray_dir);
     if (clouds_intersection.w > 0) {
         const int SampleCount = 24;
@@ -281,7 +293,7 @@ float TraceCloudShadow(sampler2D weather_tex, sampler3D noise3d_tex, const uint 
         for (int i = 0; i < SampleCount; ++i) {
             float local_height, height_fraction;
             vec3 up_vector;
-            const float local_density = GetCloudsDensity(weather_tex, noise3d_tex, pos, local_height, height_fraction, up_vector);
+            const float local_density = GetCloudsDensity(weather_tex, curl_tex, noise3d_tex, pos, local_height, height_fraction, up_vector);
             ret += local_density;
             pos += ray_dir * StepSize;
         }
@@ -382,7 +394,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
 }
 
 vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, uint rand_hash, sampler2D transmittance_lut, sampler2D multiscatter_lut,
-                         sampler2D moon_tex, sampler2D weather_tex, sampler2D cirrus_tex, sampler3D noise3d_tex, out vec3 total_transmittance) {
+                         sampler2D moon_tex, sampler2D weather_tex, sampler2D cirrus_tex, sampler2D curl_tex, sampler3D noise3d_tex, out vec3 total_transmittance) {
     const vec2 atm_intersection = AtmosphereIntersection(ray_start, ray_dir);
     ray_length = min(ray_length, atm_intersection.y);
     if (atm_intersection.x > 0) {
@@ -481,7 +493,7 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
             for (int i = 0; i < SKY_CLOUDS_SAMPLE_COUNT; ++i) {
                 float local_height, height_fraction;
                 vec3 up_vector;
-                const float local_density = GetCloudsDensity(weather_tex, noise3d_tex, local_position, local_height, height_fraction, up_vector);
+                const float local_density = GetCloudsDensity(weather_tex, curl_tex, noise3d_tex, local_position, local_height, height_fraction, up_vector);
                 if (local_density > 0.0) {
                     const float local_transmittance = exp(-local_density * step_size);
                     const float ambient_visibility = (0.75 + 1.5 * max(0.0, height_fraction - 0.1));
@@ -490,7 +502,7 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
                         // main light contribution
                         const vec2 planet_intersection = PlanetIntersection(local_position, g_shrd_data.sun_dir.xyz);
                         const float planet_shadow = planet_intersection.x > 0 ? 0.0 : 1.0;
-                        const float cloud_shadow = TraceCloudShadow(weather_tex, noise3d_tex, rand_hash, local_position, g_shrd_data.sun_dir.xyz);
+                        const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, rand_hash, local_position, g_shrd_data.sun_dir.xyz);
 
                         clouds += total_transmittance *
                                 (planet_shadow * GetLightEnergy(cloud_shadow, local_density, phase_w) +
@@ -498,7 +510,7 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
                                 (1.0 - local_transmittance) * light_transmittance;
                     } else if (g_shrd_data.atmosphere.moon_radius > 0.0) {
                         // moon reflection contribution (totally fake)
-                        const float cloud_shadow = TraceCloudShadow(weather_tex, noise3d_tex, rand_hash, local_position, moon_dir);
+                        const float cloud_shadow = TraceCloudShadow(weather_tex, curl_tex, noise3d_tex, rand_hash, local_position, moon_dir);
 
                         clouds += SKY_MOON_SUN_RELATION * total_transmittance *
                                 (GetLightEnergy(cloud_shadow, local_density, moon_phase_w) +

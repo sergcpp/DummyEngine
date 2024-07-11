@@ -100,7 +100,8 @@ class Renderer {
         noise_tex_;
     Ren::Tex3DRef tonemap_lut_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_buf_, ranking_tile_buf_;
-    Ren::Tex2DRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_;
+    Ren::Tex2DRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_,
+        sky_curl_tex_;
     Ren::Tex3DRef sky_noise3d_tex_;
 
     // FrameBuf probe_sample_buf_;

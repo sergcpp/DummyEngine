@@ -19,6 +19,7 @@ struct RpSkydomeCubeData {
     RpResRef moon_tex;
     RpResRef weather_tex;
     RpResRef cirrus_tex;
+    RpResRef curl_tex;
     RpResRef noise3d_tex;
 
     RpResRef color_tex;
@@ -61,6 +62,7 @@ struct RpSkydomeScreenData {
         RpResRef moon_tex;
         RpResRef weather_tex;
         RpResRef cirrus_tex;
+        RpResRef curl_tex;
         RpResRef noise3d_tex;
     } phys;
 

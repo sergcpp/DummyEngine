@@ -26,6 +26,7 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
     RpAllocTex &moon_tex = builder.GetReadTexture(pass_data_->moon_tex);
     RpAllocTex &weather_tex = builder.GetReadTexture(pass_data_->weather_tex);
     RpAllocTex &cirrus_tex = builder.GetReadTexture(pass_data_->cirrus_tex);
+    RpAllocTex &curl_tex = builder.GetReadTexture(pass_data_->curl_tex);
     RpAllocTex &noise3d_tex = builder.GetReadTexture(pass_data_->noise3d_tex);
     RpAllocTex &color_tex = builder.GetWriteTexture(pass_data_->color_tex);
 
@@ -47,6 +48,7 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref},
         {Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d}};
 
 #if defined(USE_GL_RENDER)
@@ -182,6 +184,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
         RpAllocTex &moon_tex = builder.GetReadTexture(pass_data_->phys.moon_tex);
         RpAllocTex &weather_tex = builder.GetReadTexture(pass_data_->phys.weather_tex);
         RpAllocTex &cirrus_tex = builder.GetReadTexture(pass_data_->phys.cirrus_tex);
+        RpAllocTex &curl_tex = builder.GetReadTexture(pass_data_->phys.curl_tex);
         RpAllocTex &noise3d_tex = builder.GetReadTexture(pass_data_->phys.noise3d_tex);
         RpAllocTex &depth_tex = builder.GetWriteTexture(pass_data_->depth_tex);
 
@@ -190,6 +193,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d);
 
         rast_state.viewport[2] = view_state_->act_res[0];
@@ -205,6 +209,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
         RpAllocTex &moon_tex = builder.GetReadTexture(pass_data_->phys.moon_tex);
         RpAllocTex &weather_tex = builder.GetReadTexture(pass_data_->phys.weather_tex);
         RpAllocTex &cirrus_tex = builder.GetReadTexture(pass_data_->phys.cirrus_tex);
+        RpAllocTex &curl_tex = builder.GetReadTexture(pass_data_->phys.curl_tex);
         RpAllocTex &noise3d_tex = builder.GetReadTexture(pass_data_->phys.noise3d_tex);
         RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
 
@@ -213,6 +218,7 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::DEPTH_TEX_SLOT,
                               Ren::OpaqueHandle{*depth_tex.ref, 1});

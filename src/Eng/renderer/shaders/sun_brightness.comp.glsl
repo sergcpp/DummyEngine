@@ -4,6 +4,7 @@
 #include "sun_brightness_interface.h"
 
 #define ENABLE_SUN_DISK 0
+#define ENABLE_CLOUDS_CURL 0
 #include "atmosphere_common.glsl"
 
 layout(binding = TRANSMITTANCE_LUT_SLOT) uniform sampler2D g_trasmittance_lut;
@@ -36,7 +37,8 @@ void main() {
     const vec2 planet_intersection = PlanetIntersection(sample_pos, sample_dir);
     if (planet_intersection.x <= 0) {
         IntegrateScattering(sample_pos, sample_dir, FLT_MAX, 0,
-                            g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex, g_cirrus_tex, g_noise3d_tex, transmittance);
+                            g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex,
+                            g_cirrus_tex, g_cirrus_tex, g_noise3d_tex, transmittance);
     }
     barrier(); groupMemoryBarrier();
 

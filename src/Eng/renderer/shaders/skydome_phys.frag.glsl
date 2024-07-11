@@ -34,6 +34,7 @@ layout(binding = MULTISCATTER_LUT_SLOT) uniform sampler2D g_multiscatter_lut;
 layout(binding = MOON_TEX_SLOT) uniform sampler2D g_moon_tex;
 layout(binding = WEATHER_TEX_SLOT) uniform sampler2D g_weather_tex;
 layout(binding = CIRRUS_TEX_SLOT) uniform sampler2D g_cirrus_tex;
+layout(binding = CURL_TEX_SLOT) uniform sampler2D g_curl_tex;
 layout(binding = NOISE3D_TEX_SLOT) uniform sampler3D g_noise3d_tex;
 
 #ifdef SUBSAMPLE
@@ -103,7 +104,8 @@ void main() {
 
     vec3 transmittance;
     vec3 radiance = g_shrd_data.env_col.xyz * IntegrateScattering(vec3(0.0, g_shrd_data.atmosphere.viewpoint_height, 0.0), view_dir_ws, FLT_MAX, rand_hash,
-                                                                  g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex, g_cirrus_tex, g_noise3d_tex, transmittance);
+                                                                  g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex,
+                                                                  g_cirrus_tex, g_curl_tex, g_noise3d_tex, transmittance);
 #if defined(SCREEN)
     radiance = compress_hdr(radiance);
 #endif

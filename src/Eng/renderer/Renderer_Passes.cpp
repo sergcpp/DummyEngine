@@ -571,6 +571,7 @@ void Eng::Renderer::InitSkyResources() {
         sky_moon_tex_ = {};
         sky_weather_tex_ = {};
         sky_cirrus_tex_ = {};
+        sky_curl_tex_ = {};
         sky_noise3d_tex_ = {};
     } else {
         if (!sky_transmittance_lut_) {
@@ -701,6 +702,31 @@ void Eng::Renderer::InitSkyResources() {
                     ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
+            { // Init Curl texture
+                Sys::AssetFile curl_tex("assets_pc/textures/internal/curl.dds");
+                std::vector<uint8_t> data(curl_tex.size());
+                curl_tex.Read((char *)&data[0], curl_tex.size());
+
+                Ren::DDSHeader header = {};
+                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
+
+                Ren::Tex2DParams p;
+                p.w = header.dwWidth;
+                p.h = header.dwHeight;
+                p.format = Ren::eTexFormat::RawRGBA8888;
+                p.flags = Ren::eTexFlagBits::SRGB;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.sampling.wrap = Ren::eTexWrap::Repeat;
+
+                Ren::eTexLoadStatus status;
+                sky_curl_tex_ =
+                    ctx_.LoadTexture2D("Sky Curl Tex",
+                                       Ren::Span{&data[0] + sizeof(Ren::DDSHeader) + sizeof(Ren::DDS_HEADER_DXT10),
+                                                 data.size() - sizeof(Ren::DDSHeader) - sizeof(Ren::DDS_HEADER_DXT10)},
+                                       p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+            }
             { // Init 3d noise texture
                 Sys::AssetFile noise_tex("assets_pc/textures/internal/3dnoise.dds");
                 std::vector<uint8_t> data(noise_tex.size());
@@ -755,6 +781,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         data->moon_tex = skydome_cube.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
         data->weather_tex = skydome_cube.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
         data->cirrus_tex = skydome_cube.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
+        data->curl_tex = skydome_cube.AddTextureInput(sky_curl_tex_, Ren::eStageBits::FragmentShader);
         data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
         frame_textures.envmap = data->color_tex = skydome_cube.AddColorOutput(p_list_->env.env_map);
 
@@ -785,6 +812,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             data->phys.moon_tex = skymap.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
             data->phys.weather_tex = skymap.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
             data->phys.cirrus_tex = skymap.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
+            data->phys.curl_tex = skymap.AddTextureInput(sky_curl_tex_, Ren::eStageBits::FragmentShader);
             data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
 
             if (settings.sky_quality == eSkyQuality::High) {
