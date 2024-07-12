@@ -720,11 +720,9 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_curl_tex_ =
-                    ctx_.LoadTexture2D("Sky Curl Tex",
-                                       Ren::Span{&data[0] + sizeof(Ren::DDSHeader) + sizeof(Ren::DDS_HEADER_DXT10),
-                                                 data.size() - sizeof(Ren::DDSHeader) - sizeof(Ren::DDS_HEADER_DXT10)},
-                                       p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                sky_curl_tex_ = ctx_.LoadTexture2D(
+                    "Sky Curl Tex", Ren::Span{&data[0] + sizeof(Ren::DDSHeader), data.size() - sizeof(Ren::DDSHeader)},
+                    p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init 3d noise texture
