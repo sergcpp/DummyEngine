@@ -3,6 +3,7 @@
 
 #undef NDEBUG
 #include <cassert>
+#include <cstdio>
 
 #define assert_throws(expr) {           \
             bool _ = false;             \
