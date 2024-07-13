@@ -14,9 +14,9 @@ void test_var() {
         v1 = 12;
         v2 = 12;
 
-        assert(v1 == v2);
-        assert(v2.val() == 12);
-        assert(v1.hash() != v2.hash());
+        require(v1 == v2);
+        require(v2.val() == 12);
+        require(v1.hash() != v2.hash());
     }
 
     { // Var test2
@@ -26,8 +26,8 @@ void test_var() {
         v1 = 13;
         v2 = 12;
 
-        assert(v1 != v2);
-        assert(v1.hash() == v2.hash());
+        require(v1 != v2);
+        require(v1.hash() == v2.hash());
     }
 
     { // Var test3
@@ -47,8 +47,8 @@ void test_var() {
         v1 = {1, 2, 3, 5.13f};
         v2 = {11.1f, 12.2f, 10.0};
 
-        assert(v1.a == 1);
-        assert(v2.dd == 10.0);
+        require(v1.a == 1);
+        require(v2.dd == 10.0);
     }
 
     { // VarContainer save/load test
@@ -72,9 +72,9 @@ void test_var() {
             cnt.SaveVar(v3);
             cnt.SaveVar(v4);
 
-            assert(cnt.size() == 4);
+            require(cnt.size() == 4);
             pack = cnt.Pack();
-            assert(pack.size() == sizeof(VarContainer::int_type) * 2 + 2 * 4 * sizeof(VarContainer::int_type) +
+            require(pack.size() == sizeof(VarContainer::int_type) * 2 + 2 * 4 * sizeof(VarContainer::int_type) +
                                       2 * sizeof(int) + sizeof(float) + sizeof(S1));
         }
 
@@ -82,24 +82,24 @@ void test_var() {
         v2 = 14;
         v3 = 15.044f;
         v4 = {-4.5f, -11, -5.6};
-        assert(v1 == 11);
-        assert(v2 == 14);
-        assert(v3 == 15.044f);
-        assert(v4.d == -5.6);
+        require(v1 == 11);
+        require(v2 == 14);
+        require(v3 == 15.044f);
+        require(v4.d == -5.6);
 
         Net::VarContainer cnt;
         cnt.UnPack(pack);
-        assert(cnt.size() == 4);
+        require(cnt.size() == 4);
 
-        assert(cnt.LoadVar(v1));
-        assert(cnt.LoadVar(v2));
-        assert(cnt.LoadVar(v3));
-        assert(cnt.LoadVar(v4));
+        require(cnt.LoadVar(v1));
+        require(cnt.LoadVar(v2));
+        require(cnt.LoadVar(v3));
+        require(cnt.LoadVar(v4));
 
-        assert(v1 == 12);
-        assert(v2 == 13);
-        assert(v3 == 25.251f);
-        assert(v4.d == 5.6);
+        require(v1 == 12);
+        require(v2 == 13);
+        require(v3 == 25.251f);
+        require(v4.d == 5.6);
     }
 
     { // VarContainer update test
@@ -134,15 +134,15 @@ void test_var() {
         }
         VarContainer cnt;
         cnt.UnPack(pack);
-        assert(cnt.size() == 3);
+        require(cnt.size() == 3);
 
-        assert(cnt.LoadVar(v1));
-        assert(cnt.LoadVar(v2));
-        assert(cnt.LoadVar(v3));
+        require(cnt.LoadVar(v1));
+        require(cnt.LoadVar(v2));
+        require(cnt.LoadVar(v3));
 
-        assert(v1 == 11);
-        assert(v2 == 14);
-        assert(v3 == 15.044f);
+        require(v1 == 11);
+        require(v2 == 14);
+        require(v3 == 15.044f);
     }
 
     { // VarContainer nested test
@@ -169,9 +169,9 @@ void test_var() {
 
         Packet packet = cnt.Pack();
 
-        assert(c1.size() == 2);
-        assert(c2.size() == 2);
-        assert(cnt.size() == 2);
+        require(c1.size() == 2);
+        require(c2.size() == 2);
+        require(cnt.size() == 2);
 
         v1 = 123;
         v2 = 557575;
@@ -184,25 +184,25 @@ void test_var() {
 
         cnt.UnPack(packet);
 
-        assert(cnt.LoadVar(c1));
-        assert(cnt.LoadVar(c2));
+        require(cnt.LoadVar(c1));
+        require(cnt.LoadVar(c2));
 
-        assert(c1.LoadVar(v1));
-        assert(c1.LoadVar(v2));
+        require(c1.LoadVar(v1));
+        require(c1.LoadVar(v2));
 
-        assert(c2.LoadVar(v3));
-        assert(c2.LoadVar(v4));
+        require(c2.LoadVar(v3));
+        require(c2.LoadVar(v4));
 
-        assert(c1.size() == 2);
-        assert(c2.size() == 2);
-        assert(cnt.size() == 2);
+        require(c1.size() == 2);
+        require(c2.size() == 2);
+        require(cnt.size() == 2);
 
-        assert(v1.val() == 12);
-        assert(v2.val() == 14);
-        assert(v3 == 25.251f);
-        assert(v4.x == 4.5f);
-        assert(v4.s == 11);
-        assert(v4.d == 5.6);
+        require(v1.val() == 12);
+        require(v2.val() == 14);
+        require(v3 == 25.251f);
+        require(v4.x == 4.5f);
+        require(v4.s == 11);
+        require(v4.d == 5.6);
     }
 
     { // VarContainer large struct
@@ -215,12 +215,12 @@ void test_var() {
 
         Net::VarContainer cnt;
         Net::Var<SomeLargeGameState> s1 = {"Variable", state};
-        assert(s1.number == state.number);
+        require(s1.number == state.number);
         cnt.SaveVar(s1);
 
         Net::Var<SomeLargeGameState> s2 = {"Variable", state};
         cnt.LoadVar(s2);
-        assert(s2.number == state.number);
+        require(s2.number == state.number);
     }
 
     { // VarContainer string
@@ -232,7 +232,7 @@ void test_var() {
         Net::Var<std::string> s2 = {"String"};
         cnt.LoadVar(s2);
 
-        assert(s1 == s2);
+        require(s1 == s2);
     }
 
     printf("OK\n");

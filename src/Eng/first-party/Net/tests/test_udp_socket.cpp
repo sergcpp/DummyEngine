@@ -9,33 +9,33 @@ void test_udp_socket() {
 
     { // UDPSocket open/close
         Net::UDPSocket socket;
-        assert(!socket.IsOpen());
-        assert_nothrow(socket.Open(30000));
-        assert(socket.IsOpen());
+        require(!socket.IsOpen());
+        require_nothrow(socket.Open(30000));
+        require(socket.IsOpen());
         socket.Close();
-        assert(!socket.IsOpen());
-        assert_nothrow(socket.Open(30000));
-        assert(socket.IsOpen());
+        require(!socket.IsOpen());
+        require_nothrow(socket.Open(30000));
+        require(socket.IsOpen());
     }
 
     { // UDPSocket same port fail
         Net::UDPSocket a, b;
-        assert_nothrow(a.Open(30000, false));
-        assert_throws(b.Open(30000, false));
-        assert(a.IsOpen());
-        assert(!b.IsOpen());
+        require_nothrow(a.Open(30000, false));
+        require_throws(b.Open(30000, false));
+        require(a.IsOpen());
+        require(!b.IsOpen());
     }
 
     { // UDPSocket send and receive packets
         Net::UDPSocket a, b;
-        assert_nothrow(a.Open(30000));
-        assert_nothrow(b.Open(30001));
+        require_nothrow(a.Open(30000));
+        require_nothrow(b.Open(30001));
         const char packet[] = "packet data";
         bool a_received_packet = false;
         bool b_received_packet = false;
         while (!a_received_packet && !b_received_packet) {
-            assert(a.Send(Net::Address(127, 0, 0, 1, 30001), packet, sizeof(packet)));
-            assert(b.Send(Net::Address(127, 0, 0, 1, 30000), packet, sizeof(packet)));
+            require(a.Send(Net::Address(127, 0, 0, 1, 30001), packet, sizeof(packet)));
+            require(b.Send(Net::Address(127, 0, 0, 1, 30000), packet, sizeof(packet)));
 
             while (true) {
                 Net::Address sender;
@@ -61,8 +61,8 @@ void test_udp_socket() {
                 }
             }
         }
-        assert(a_received_packet);
-        assert(b_received_packet);
+        require(a_received_packet);
+        require(b_received_packet);
     }
 
     printf("OK\n");

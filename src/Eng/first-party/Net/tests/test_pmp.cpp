@@ -10,16 +10,16 @@ void test_pmp() {
 
     { // Should retrieve external ip first
         Net::PMPSession s1(Net::ePMPProto::UDP, Net::Address(127, 0, 0, 1, 5351), 30000, 30005);
-        assert(s1.state() == Net::PMPSession::eState::RetrieveExternalIP);
+        require(s1.state() == Net::PMPSession::eState::RetrieveExternalIP);
     }
 
     { // Retrieve external ip timeout
         Net::PMPSession s1(Net::ePMPProto::UDP, Net::Address(127, 0, 0, 1, 5351), 30000, 30005);
         s1.Update(64000);
-        assert(s1.state() == Net::PMPSession::eState::IdleUnsupported);
+        require(s1.state() == Net::PMPSession::eState::IdleUnsupported);
         // should be idle forever
         s1.Update(100000000);
-        assert(s1.state() == Net::PMPSession::eState::IdleUnsupported);
+        require(s1.state() == Net::PMPSession::eState::IdleUnsupported);
     }
 
     { // Retrieve external ip unsupported version
@@ -48,8 +48,8 @@ void test_pmp() {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
-        assert(time_acc < 1000 + 16);
-        assert(s1.state() == Net::PMPSession::eState::IdleRetrieveExternalIPError);
+        require(time_acc < 1000 + 16);
+        require(s1.state() == Net::PMPSession::eState::IdleRetrieveExternalIPError);
     }
 
     { // Retrieve external ip error
@@ -69,8 +69,8 @@ void test_pmp() {
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
                 auto *req = (Net::PMPExternalIPRequest *)recv_buf;
-                assert(req->vers() == 0);
-                assert(req->op() == 0);
+                require(req->vers() == 0);
+                require(req->op() == 0);
 
                 Net::PMPExternalIPResponse resp;
                 resp.set_ip(12345);
@@ -85,8 +85,8 @@ void test_pmp() {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
-        assert(time_acc < 1000);
-        assert(s1.state() == Net::PMPSession::eState::IdleRetrieveExternalIPError);
+        require(time_acc < 1000);
+        require(s1.state() == Net::PMPSession::eState::IdleRetrieveExternalIPError);
     }
 
     { // Create port mapping timeout
@@ -106,8 +106,8 @@ void test_pmp() {
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
                 auto *req = (Net::PMPExternalIPRequest *)recv_buf;
-                assert(req->vers() == 0);
-                assert(req->op() == 0);
+                require(req->vers() == 0);
+                require(req->op() == 0);
 
                 Net::PMPExternalIPResponse resp;
                 resp.set_ip(12345);
@@ -122,14 +122,14 @@ void test_pmp() {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
-        assert(time_acc < 1000);
-        assert(s1.external_ip() == Net::Address(12345, 0));
-        assert(s1.state() == Net::PMPSession::eState::CreatePortMapping);
-        assert(s1.time() == 1000);
+        require(time_acc < 1000);
+        require(s1.external_ip() == Net::Address(12345, 0));
+        require(s1.state() == Net::PMPSession::eState::CreatePortMapping);
+        require(s1.time() == 1000);
 
         s1.Update(64000);
 
-        assert(s1.state() == Net::PMPSession::eState::IdleUnsupported);
+        require(s1.state() == Net::PMPSession::eState::IdleUnsupported);
     }
 
     { // Create port mapping error
@@ -149,8 +149,8 @@ void test_pmp() {
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
                 auto *req = (Net::PMPExternalIPRequest *)recv_buf;
-                assert(req->vers() == 0);
-                assert(req->op() == 0);
+                require(req->vers() == 0);
+                require(req->op() == 0);
 
                 Net::PMPExternalIPResponse resp;
                 resp.set_ip(12345);
@@ -172,11 +172,11 @@ void test_pmp() {
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPMappingRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
                 auto *req = (Net::PMPMappingRequest *)recv_buf;
-                assert(req->vers() == 0);
-                assert(req->op() == 1);
-                assert(req->internal_port() == 30000);
-                assert(req->external_port() == 30005);
-                assert(req->lifetime() == 7200);
+                require(req->vers() == 0);
+                require(req->op() == 1);
+                require(req->internal_port() == 30000);
+                require(req->external_port() == 30005);
+                require(req->lifetime() == 7200);
 
                 Net::PMPMappingResponse resp(Net::ePMPProto::UDP);
                 resp.set_res_code(Net::ePMPResCode::Failure);
@@ -190,8 +190,8 @@ void test_pmp() {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
-        assert(time_acc < 1000);
-        assert(s1.state() == Net::PMPSession::eState::IdleCreatePortMappingError);
+        require(time_acc < 1000);
+        require(s1.state() == Net::PMPSession::eState::IdleCreatePortMappingError);
     }
 
     { // Create port mapping success
@@ -211,8 +211,8 @@ void test_pmp() {
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
                 auto *req = (Net::PMPExternalIPRequest *)recv_buf;
-                assert(req->vers() == 0);
-                assert(req->op() == 0);
+                require(req->vers() == 0);
+                require(req->op() == 0);
 
                 Net::PMPExternalIPResponse resp;
                 resp.set_ip(12345);
@@ -234,11 +234,11 @@ void test_pmp() {
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPMappingRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
                 auto *req = (Net::PMPMappingRequest *)recv_buf;
-                assert(req->vers() == 0);
-                assert(req->op() == 1);
-                assert(req->internal_port() == 30000);
-                assert(req->external_port() == 30005);
-                assert(req->lifetime() == 7200);
+                require(req->vers() == 0);
+                require(req->op() == 1);
+                require(req->internal_port() == 30000);
+                require(req->external_port() == 30005);
+                require(req->lifetime() == 7200);
 
                 Net::PMPMappingResponse resp(Net::ePMPProto::UDP);
                 resp.set_res_code(Net::ePMPResCode::Success);
@@ -256,8 +256,8 @@ void test_pmp() {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
-        assert(time_acc < 1000);
-        assert(s1.state() == Net::PMPSession::eState::IdleMapped);
+        require(time_acc < 1000);
+        require(s1.state() == Net::PMPSession::eState::IdleMapped);
 
         // simulate nat restart
 
@@ -277,8 +277,8 @@ void test_pmp() {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
-        assert(time_acc < 1000);
-        assert(s1.state() == Net::PMPSession::eState::CreatePortMapping);
+        require(time_acc < 1000);
+        require(s1.state() == Net::PMPSession::eState::CreatePortMapping);
     }
 
     printf("OK\n");

@@ -28,30 +28,30 @@ void test_http() {
 
     { // Parse upgrade to websocket
         Net::HTTPRequest req;
-        assert(req.Parse(pack1));
+        require(req.Parse(pack1));
 
-        assert(req.method().type == Net::eMethodType::GET);
-        assert(req.method().arg == "/");
-        assert(req.method().ver == Net::eHTTPVer::_1_1);
+        require(req.method().type == Net::eMethodType::GET);
+        require(req.method().arg == "/");
+        require(req.method().ver == Net::eHTTPVer::_1_1);
 
-        assert(req.host_addr() == Net::Address(192, 168, 0, 102, 30000));
+        require(req.host_addr() == Net::Address(192, 168, 0, 102, 30000));
 
-        assert(req.field("User-Agent") ==
-               "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:48.0) Gecko/20100101 Firefox/48.0");
+        require(req.field("User-Agent") ==
+                "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:48.0) Gecko/20100101 Firefox/48.0");
 
-        assert(req.field("Accept") == "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        assert(req.field("Accept-Language") == "en-US,en;q=0.5");
-        assert(req.field("Accept-Encoding") == "gzip, deflate");
+        require(req.field("Accept") == "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        require(req.field("Accept-Language") == "en-US,en;q=0.5");
+        require(req.field("Accept-Encoding") == "gzip, deflate");
 
-        assert(req.field("Sec-WebSocket-Version") == "13");
-        assert(req.field("Origin") == "null");
-        assert(req.field("Sec-WebSocket-Protocol") == "binary");
-        assert(req.field("Sec-WebSocket-Extensions") == "permessage-deflate");
+        require(req.field("Sec-WebSocket-Version") == "13");
+        require(req.field("Origin") == "null");
+        require(req.field("Sec-WebSocket-Protocol") == "binary");
+        require(req.field("Sec-WebSocket-Extensions") == "permessage-deflate");
 
-        assert(req.field("Connection") == "keep-alive, Upgrade");
-        assert(req.field("Pragma") == "no-cache");
-        assert(req.field("Cache-Control") == "no-cache");
-        assert(req.field("Upgrade") == "websocket");
+        require(req.field("Connection") == "keep-alive, Upgrade");
+        require(req.field("Pragma") == "no-cache");
+        require(req.field("Cache-Control") == "no-cache");
+        require(req.field("Upgrade") == "websocket");
     }
 
     printf("OK\n");

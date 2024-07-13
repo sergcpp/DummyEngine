@@ -23,14 +23,14 @@ void test_pcp() {
             req.MakeAnnounceRequest(client_address);
 
             int sz = req.Write(buf, sizeof(buf));
-            assert(sz != -1);
+            require(sz != -1);
 
             Net::PCPRequest req1;
 
-            assert(req1.Read(buf, sz));
-            assert(req1.opcode() == Net::ePCPOpCode::Announce);
-            assert(req1.lifetime() == 0);
-            assert(req1.client_address().address() == client_address.address());
+            require(req1.Read(buf, sz));
+            require(req1.opcode() == Net::ePCPOpCode::Announce);
+            require(req1.lifetime() == 0);
+            require(req1.client_address().address() == client_address.address());
         }
 
         {
@@ -38,19 +38,19 @@ void test_pcp() {
             req.MakeMapRequest(Net::ePCPProto::UDP, 12345, 17891, 7200, client_address, nonce);
 
             int sz = req.Write(buf, sizeof(buf));
-            assert(sz != -1);
+            require(sz != -1);
 
             Net::PCPRequest req1;
 
-            assert(req1.Read(buf, sz));
-            assert(req1.opcode() == Net::ePCPOpCode::Map);
-            assert(req1.internal_port() == 12345);
-            assert(req1.external_port() == 17891);
-            assert(req1.lifetime() == 7200);
-            assert(req1.client_address().address() == client_address.address());
-            assert(req1.nonce() == nonce);
-            assert(req1.proto() == Net::ePCPProto::UDP);
-            assert(req1.external_address() == Net::Address());
+            require(req1.Read(buf, sz));
+            require(req1.opcode() == Net::ePCPOpCode::Map);
+            require(req1.internal_port() == 12345);
+            require(req1.external_port() == 17891);
+            require(req1.lifetime() == 7200);
+            require(req1.client_address().address() == client_address.address());
+            require(req1.nonce() == nonce);
+            require(req1.proto() == Net::ePCPProto::UDP);
+            require(req1.external_address() == Net::Address());
         }
 
         {
@@ -59,20 +59,20 @@ void test_pcp() {
                                 nonce);
 
             int sz = req.Write(buf, sizeof(buf));
-            assert(sz != -1);
+            require(sz != -1);
 
             Net::PCPRequest req1;
 
-            assert(req1.Read(buf, sz));
-            assert(req1.opcode() == Net::ePCPOpCode::Peer);
-            assert(req1.internal_port() == 12345);
-            assert(req1.external_port() == 17891);
-            assert(req1.lifetime() == 7200);
-            assert(req1.external_address() == external_address);
-            assert(req1.remote_port() == 55765);
-            assert(req1.proto() == Net::ePCPProto::UDP);
-            assert(req1.remote_address() == remote_address);
-            assert(req1.nonce() == nonce);
+            require(req1.Read(buf, sz));
+            require(req1.opcode() == Net::ePCPOpCode::Peer);
+            require(req1.internal_port() == 12345);
+            require(req1.external_port() == 17891);
+            require(req1.lifetime() == 7200);
+            require(req1.external_address() == external_address);
+            require(req1.remote_port() == 55765);
+            require(req1.proto() == Net::ePCPProto::UDP);
+            require(req1.remote_address() == remote_address);
+            require(req1.nonce() == nonce);
         }
     }
 
@@ -89,14 +89,14 @@ void test_pcp() {
             resp.MakeAnnounceResponse(Net::ePCPResCode::Success);
 
             int sz = resp.Write(buf, sizeof(buf));
-            assert(sz != -1);
+            require(sz != -1);
 
             Net::PCPResponse resp1;
 
-            assert(resp1.Read(buf, sz));
-            assert(resp1.opcode() == Net::ePCPOpCode::Announce);
-            assert(resp1.res_code() == Net::ePCPResCode::Success);
-            assert(resp1.lifetime() == 0);
+            require(resp1.Read(buf, sz));
+            require(resp1.opcode() == Net::ePCPOpCode::Announce);
+            require(resp1.res_code() == Net::ePCPResCode::Success);
+            require(resp1.lifetime() == 0);
         }
 
         {
@@ -105,17 +105,17 @@ void test_pcp() {
                                  external_address, nonce);
 
             int sz = resp.Write(buf, sizeof(buf));
-            assert(sz != -1);
+            require(sz != -1);
 
             Net::PCPResponse resp1;
 
-            assert(resp1.Read(buf, sz));
-            assert(resp1.opcode() == Net::ePCPOpCode::Map);
-            assert(resp1.res_code() == Net::ePCPResCode::Success);
-            assert(resp1.lifetime() == 7200);
-            assert(resp1.time() == 120);
-            assert(resp1.external_address().address() == external_address.address());
-            assert(resp1.nonce() == nonce);
+            require(resp1.Read(buf, sz));
+            require(resp1.opcode() == Net::ePCPOpCode::Map);
+            require(resp1.res_code() == Net::ePCPResCode::Success);
+            require(resp1.lifetime() == 7200);
+            require(resp1.time() == 120);
+            require(resp1.external_address().address() == external_address.address());
+            require(resp1.nonce() == nonce);
         }
 
         {
@@ -124,17 +124,17 @@ void test_pcp() {
                                   external_address, 61478, remote_address, nonce);
 
             int sz = resp.Write(buf, sizeof(buf));
-            assert(sz != -1);
+            require(sz != -1);
 
             Net::PCPResponse resp1;
 
-            assert(resp1.Read(buf, sz));
-            assert(resp1.opcode() == Net::ePCPOpCode::Peer);
-            assert(resp1.res_code() == Net::ePCPResCode::Success);
-            assert(resp1.lifetime() == 7200);
-            assert(resp1.time() == 120);
-            assert(resp1.external_address().address() == external_address.address());
-            assert(resp1.nonce() == nonce);
+            require(resp1.Read(buf, sz));
+            require(resp1.opcode() == Net::ePCPOpCode::Peer);
+            require(resp1.res_code() == Net::ePCPResCode::Success);
+            require(resp1.lifetime() == 7200);
+            require(resp1.time() == 120);
+            require(resp1.external_address().address() == external_address.address());
+            require(resp1.nonce() == nonce);
         }
     }
 
@@ -147,21 +147,21 @@ void test_pcp() {
         Net::Address fake_pcp_address(127, 0, 0, 1, 30001);
 
         Net::PCPSession ses(Net::ePCPProto::UDP, fake_pcp_address, 30000, 30001, 7200);
-        assert(ses.state() == Net::PCPSession::eState::RequestMapping);
+        require(ses.state() == Net::PCPSession::eState::RequestMapping);
 
         ses.Update(16);
 
         Net::Address sender;
-        assert(fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
+        require(fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
 
         ses.Update(16);
-        assert(!fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
+        require(!fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
 
         ses.Update(4000);
-        assert(fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
+        require(fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
 
         ses.Update(16);
-        assert(!fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
+        require(!fake_pcp_srv.Receive(sender, buf, sizeof(buf)));
     }
 
     {
@@ -196,8 +196,8 @@ void test_pcp() {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
-        assert(time_acc < 1000);
-        assert(s1.state() == Net::PCPSession::eState::IdleMapped);
+        require(time_acc < 1000);
+        require(s1.state() == Net::PCPSession::eState::IdleMapped);
     }
 
     printf("OK\n");

@@ -26,8 +26,8 @@ void test_compress() {
 
     Net::Packet decompr = Net::DecompressLZO(compr);
 
-    assert(decompr.size() == test_buf.size());
-    assert(test_buf == decompr);
+    require(decompr.size() == test_buf.size());
+    require(test_buf == decompr);
 
     printf("OK\n");
 }

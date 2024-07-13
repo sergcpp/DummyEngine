@@ -18,8 +18,8 @@ void test_udp_connection() {
         Net::UDPConnection client(protocol_id, timeout_s);
         Net::UDPConnection server(protocol_id, timeout_s);
 
-        assert_nothrow(client.Start(client_port));
-        assert_nothrow(server.Start(server_port));
+        require_nothrow(client.Start(client_port));
+        require_nothrow(server.Start(server_port));
 
         client.Connect(Net::Address(127, 0, 0, 1, server_port));
         server.Listen();
@@ -59,8 +59,8 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(client.connected());
-        assert(server.connected());
+        require(client.connected());
+        require(server.connected());
     }
 
     { // UDPConnection join timeout
@@ -72,7 +72,7 @@ void test_udp_connection() {
 
         Net::UDPConnection client(protocol_id, timeout_s);
 
-        assert_nothrow(client.Start(client_port));
+        require_nothrow(client.Start(client_port));
 
         client.Connect(Net::Address(127, 0, 0, 1, server_port));
 
@@ -96,8 +96,8 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(!client.connected());
-        assert(client.connect_failed());
+        require(!client.connected());
+        require(client.connect_failed());
     }
 
     { // UDPConnection join busy
@@ -112,8 +112,8 @@ void test_udp_connection() {
         Net::UDPConnection client(protocol_id, timeout_s);
         Net::UDPConnection server(protocol_id, timeout_s);
 
-        assert_nothrow(client.Start(client_port));
-        assert_nothrow(server.Start(server_port));
+        require_nothrow(client.Start(client_port));
+        require_nothrow(server.Start(server_port));
 
         client.Connect(Net::Address(127, 0, 0, 1, server_port));
         server.Listen();
@@ -153,13 +153,13 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(client.connected());
-        assert(server.connected());
+        require(client.connected());
+        require(server.connected());
 
         // attempt another connection, verify connect fails (busy)
 
         Net::UDPConnection busy(protocol_id, timeout_s);
-        assert_nothrow(busy.Start(client_port + 1));
+        require_nothrow(busy.Start(client_port + 1));
         busy.Connect(Net::Address(127, 0, 0, 1, server_port));
 
         while (true) {
@@ -206,10 +206,10 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(client.connected());
-        assert(server.connected());
-        assert(!busy.connected());
-        assert(busy.connect_failed());
+        require(client.connected());
+        require(server.connected());
+        require(!busy.connected());
+        require(busy.connect_failed());
     }
 
     { // UDPConnection rejoin
@@ -222,8 +222,8 @@ void test_udp_connection() {
         Net::UDPConnection client(crotocol_id, timeout_s);
         Net::UDPConnection server(crotocol_id, timeout_s);
 
-        assert_nothrow(client.Start(client_port));
-        assert_nothrow(server.Start(server_port));
+        require_nothrow(client.Start(client_port));
+        require_nothrow(server.Start(server_port));
 
         // connect client and server
 
@@ -265,8 +265,8 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(client.connected());
-        assert(server.connected());
+        require(client.connected());
+        require(server.connected());
 
         // let connection timeout
 
@@ -274,15 +274,17 @@ void test_udp_connection() {
             while (true) {
                 unsigned char packet[256];
                 int bytes_read = client.ReceivePacket(packet, sizeof(packet));
-                if (bytes_read == 0)
+                if (bytes_read == 0) {
                     break;
+                }
             }
 
             while (true) {
                 unsigned char packet[256];
                 int bytes_read = server.ReceivePacket(packet, sizeof(packet));
-                if (bytes_read == 0)
+                if (bytes_read == 0) {
                     break;
+                }
             }
 
             client.Update(dt_s);
@@ -291,8 +293,8 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(!client.connected());
-        assert(!server.connected());
+        require(!client.connected());
+        require(!server.connected());
 
         // reconnect client
 
@@ -333,8 +335,8 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(client.connected());
-        assert(server.connected());
+        require(client.connected());
+        require(server.connected());
     }
 
     { // UDPConnection payload
@@ -347,8 +349,8 @@ void test_udp_connection() {
         Net::UDPConnection client(protocol_id, timeout_s);
         Net::UDPConnection server(protocol_id, timeout_s);
 
-        assert_nothrow(client.Start(client_port));
-        assert_nothrow(server.Start(server_port));
+        require_nothrow(client.Start(client_port));
+        require_nothrow(server.Start(server_port));
 
         client.Connect(Net::Address(127, 0, 0, 1, server_port));
         server.Listen();
@@ -369,17 +371,19 @@ void test_udp_connection() {
             while (true) {
                 unsigned char packet[256];
                 int bytes_read = client.ReceivePacket(packet, sizeof(packet));
-                if (bytes_read == 0)
+                if (bytes_read == 0) {
                     break;
-                assert(strcmp((const char *)packet, "server to client") == 0);
+                }
+                require(strcmp((const char *)packet, "server to client") == 0);
             }
 
             while (true) {
                 unsigned char packet[256];
                 int bytes_read = server.ReceivePacket(packet, sizeof(packet));
-                if (bytes_read == 0)
+                if (bytes_read == 0) {
                     break;
-                assert(strcmp((const char *)packet, "client to server") == 0);
+                }
+                require(strcmp((const char *)packet, "client to server") == 0);
             }
 
             client.Update(dt_s);
@@ -388,8 +392,8 @@ void test_udp_connection() {
             std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
-        assert(client.connected());
-        assert(server.connected());
+        require(client.connected());
+        require(server.connected());
     }
 
     printf("OK\n");

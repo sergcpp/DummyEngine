@@ -1,6 +1,8 @@
 
 #include <cstdio>
 
+#include <atomic>
+
 #include "../Net.h"
 #include "../InterprocessLock.h"
 
@@ -18,6 +20,9 @@ void test_types();
 void test_udp_connection();
 void test_udp_socket();
 void test_var();
+
+bool g_stop_on_fail = false;
+std::atomic_bool g_tests_success{true};
 
 int main() {
     printf("Net Version: %s\n", Net::Version());

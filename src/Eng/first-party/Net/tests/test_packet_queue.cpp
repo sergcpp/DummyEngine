@@ -20,7 +20,7 @@ void test_packet_queue() {
             Net::PacketData data(0, 0, 0);
             data.sequence = i;
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
-            assert(f.packet_queue.verify_sorted(f.maximum_sequence));
+            require(f.packet_queue.verify_sorted(f.maximum_sequence));
         }
     }
 
@@ -31,7 +31,7 @@ void test_packet_queue() {
             Net::PacketData data(0, 0, 0);
             data.sequence = i;
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
-            assert(f.packet_queue.verify_sorted(f.maximum_sequence));
+            require(f.packet_queue.verify_sorted(f.maximum_sequence));
         }
     }
 
@@ -42,7 +42,7 @@ void test_packet_queue() {
             Net::PacketData data(0, 0, 0);
             data.sequence = unsigned(rand() & 0xFF);
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
-            assert(f.packet_queue.verify_sorted(f.maximum_sequence));
+            require(f.packet_queue.verify_sorted(f.maximum_sequence));
         }
     }
 
@@ -53,13 +53,13 @@ void test_packet_queue() {
             Net::PacketData data(0, 0, 0);
             data.sequence = i;
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
-            assert(f.packet_queue.verify_sorted(f.maximum_sequence));
+            require(f.packet_queue.verify_sorted(f.maximum_sequence));
         }
         for (unsigned i = 0; i <= 50; i++) {
             Net::PacketData data(0, 0, 0);
             data.sequence = i;
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
-            assert(f.packet_queue.verify_sorted(f.maximum_sequence));
+            require(f.packet_queue.verify_sorted(f.maximum_sequence));
         }
     }
 
