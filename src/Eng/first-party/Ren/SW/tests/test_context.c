@@ -6,6 +6,8 @@
 #include "../SWcontext.h"
 
 void test_context() {
+    printf("Test context            | ");
+
     SWcontext *ctx = malloc(sizeof(SWcontext));
     swCtxInit(ctx, 100, 100);
     require(ctx->framebuffers[0].pixels != NULL);
@@ -36,4 +38,6 @@ void test_context() {
 
     swCtxDestroy(ctx);
     free(ctx);
+
+    printf("OK\n");
 }

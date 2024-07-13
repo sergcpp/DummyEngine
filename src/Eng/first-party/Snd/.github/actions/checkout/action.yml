@@ -1,0 +1,24 @@
+name: 'Init Repo'
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        REPO_URL="${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }}"
+        cd ../..
+        mkdir -p builds
+        cd builds
+        if [ -d "Snd/.git" ]; then
+          echo "Reset existing repository"
+          cd Snd
+          git remote set-url origin $REPO_URL
+          git fetch --all
+          git fetch --tags
+          git checkout -f ${{ env.GITHUB_SHA }}
+          git clean -fdx
+        else
+          echo "Clone new repository"
+          git clone $REPO_URL -b ${{ env.GITHUB_REF_NAME }}
+          cd Snd
+          git fetch --tags
+        fi
+      shell: bash

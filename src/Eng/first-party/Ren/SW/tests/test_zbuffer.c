@@ -8,6 +8,8 @@ static const int RES_W = 50;
 static const int RES_H = 16;
 
 void test_zbuffer() {
+    printf("Test zbuffer            | ");
+
     const SWfloat eps = (SWfloat)0.0001;
 
 #define TEST_BEGIN                  \
@@ -86,6 +88,8 @@ void test_zbuffer() {
 
         TEST_END
     }
+
+    printf("OK\n");
 }
 
 #undef TEST_BEGIN

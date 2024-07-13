@@ -3,6 +3,7 @@
 #include "../SWprogram.h"
 
 void test_program() {
+    printf("Test program            | ");
 
     {
         // Program swProgRegUniform
@@ -39,4 +40,6 @@ void test_program() {
 
         swProgDestroy(&p_);
     }
+
+    printf("OK\n");
 }

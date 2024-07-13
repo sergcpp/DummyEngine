@@ -3,6 +3,8 @@
 #include "../VarContainer.h"
 
 void test_var() {
+    printf("Test var                | ");
+
     using namespace Net;
 
     { // Var test1
@@ -232,4 +234,6 @@ void test_var() {
 
         assert(s1 == s2);
     }
+
+    printf("OK\n");
 }

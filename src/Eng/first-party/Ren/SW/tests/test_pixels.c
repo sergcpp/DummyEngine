@@ -37,6 +37,7 @@ static const SWfloat px_FRGBA[] = { 0, 0, 0, 1,         1, 0, 0, 0,             
     require(fabs((vec)[3] - (_3)) < 0.1f);
 
 void test_pixels() {
+    printf("Test pixels             | ");
 
     {
         // Get pixels RGB888
@@ -283,6 +284,8 @@ void test_pixels() {
         REQUIRE_VEC4_EQ(&bgra_buf[4 * (4 * 3 + 0)], 255, 255, 255, 0);
         REQUIRE_VEC4_EQ(&bgra_buf[4 * (4 * 3 + 3)], 255, 0, 255, 0);
     }
+
+    printf("OK\n");
 }
 
 #undef REQUIRE_VEC4_EQ

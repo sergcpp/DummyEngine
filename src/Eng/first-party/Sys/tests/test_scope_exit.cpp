@@ -3,6 +3,8 @@
 #include "../ScopeExit.h"
 
 void test_scope_exit() {
+    printf("Test scope_exit         | ");
+
     bool test = false;
 
     {
@@ -11,4 +13,6 @@ void test_scope_exit() {
     }
 
     require(test);
+
+    printf("OK\n");
 }

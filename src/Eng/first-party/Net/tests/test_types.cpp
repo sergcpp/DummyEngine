@@ -4,6 +4,8 @@
 #include "../Types.h"
 
 void test_types() {
+    printf("Test types              | ");
+
     // Check endianness conversion
 
     { // int16
@@ -127,4 +129,6 @@ void test_types() {
     {   // check hton
 
     }*/
+
+    printf("OK\n");
 }

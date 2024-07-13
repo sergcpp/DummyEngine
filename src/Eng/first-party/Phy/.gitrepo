@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Phy
-	branch = update_06_02
-	commit = 33db8cb7e11ab4c3d945ef28d5eee64f8dd47a5c
+	branch = master
+	commit = 94582748b6d1b21b0f9f05183a20aa2cbf9bcb03
 	method = merge
 	cmdver = 0.4.6
 	parent = d858ce36c7cb967539497cddbdf643080f36289f

@@ -6,6 +6,7 @@
 #include "../NAT_PCP.h"
 
 void test_pcp() {
+    printf("Test pcp                | ");
 
     { // Request read/write
         char buf[128];
@@ -198,4 +199,6 @@ void test_pcp() {
         assert(time_acc < 1000);
         assert(s1.state() == Net::PCPSession::eState::IdleMapped);
     }
+
+    printf("OK\n");
 }

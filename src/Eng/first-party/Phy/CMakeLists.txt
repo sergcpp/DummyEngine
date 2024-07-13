@@ -32,6 +32,8 @@ set(SOURCE_FILES    Body.h
                     MMat.h
                     MQuat.h
                     MVec.h
+                    Phy.h
+                    Phy.cpp
                     Shape.h
                     Shape.cpp
                     SmallVector.h

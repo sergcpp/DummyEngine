@@ -12,6 +12,8 @@
 #include "../PoolAlloc.h"
 
 void test_alloc() {
+    printf("Test alloc              | ");
+
     { // Basic usage
         char buf[256];
         for (int i = 0; i < 256; i++) {
@@ -226,4 +228,6 @@ void test_alloc() {
 
         require(str == "teststringmoredatatogoaroundsmallstringoptimization");
     }
+
+    printf("OK\n");
 }

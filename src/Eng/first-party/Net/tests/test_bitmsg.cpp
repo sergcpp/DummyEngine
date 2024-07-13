@@ -15,6 +15,8 @@ class TestMsg : public Net::BitMsg {
 };
 
 void test_bitmsg() {
+    printf("Test bitmsg             | ");
+
     { // Wrong bits write number should throw runtime_error
         TestMsg msg;
         assert_throws(msg.WriteBits(0, 0));
@@ -29,7 +31,6 @@ void test_bitmsg() {
         assert_throws(msg.WriteBits(-10, -3));
         assert_nothrow(msg.WriteBits(-4, -3));
     }
-
     { // Write values
         TestMsg msg;
         assert(msg.len() == 0);
@@ -54,14 +55,12 @@ void test_bitmsg() {
         assert(msg.write_data()[1] == 0b11001);
         assert(msg.len() == 1);
     }
-
     { // Wrong bits read number should throw runtime_error
         TestMsg msg;
         assert_throws(msg.ReadBits(0));
         assert_throws(msg.ReadBits(-32));
         assert_throws(msg.ReadBits(33));
     }
-
     { // Read values
         TestMsg msg;
         msg.len() = 2;
@@ -74,7 +73,6 @@ void test_bitmsg() {
         assert(msg.ReadBits(1) == 1);
         assert(msg.ReadBits(4) == 12);
     }
-
     { // Writing values
         TestMsg msg;
 
@@ -192,7 +190,6 @@ void test_bitmsg() {
         assert(msg.write_data()[25] == 0b00001110);
         assert(msg.write_data()[26] == 0b0);
     }
-
     { // Reading values
         TestMsg msg;
 
@@ -236,4 +233,6 @@ void test_bitmsg() {
         float f1 = *reinterpret_cast<float *>(&temp);
         assert(msg.Read<float>() == f1);
     }
+
+    printf("OK\n");
 }

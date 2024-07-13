@@ -8,6 +8,8 @@
 #include "../AsyncFileReader.h"
 
 void test_async_file() {
+    printf("Test async_file         | ");
+
     const char *test_file_name = "test.bin";
     const size_t test_file_size = 64 * 1000 * 1000;
 
@@ -93,4 +95,6 @@ void test_async_file() {
 
     // remove test file
     std::remove(test_file_name);
+
+    printf("OK\n");
 }

@@ -33,6 +33,8 @@ set(SOURCE_FILES    Address.h
                     NAT_PCP.cpp
                     NAT_PMP.h
                     NAT_PMP.cpp
+                    Net.h
+                    Net.cpp
                     PacketQueue.h
                     ReliabilitySystem.h
                     ReliabilitySystem.cpp

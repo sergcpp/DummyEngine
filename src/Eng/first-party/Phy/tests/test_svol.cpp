@@ -3,6 +3,8 @@
 #include "../Utils.h"
 
 void test_svol() {
+    printf("Test svol               | ");
+
     using namespace Phy;
 
     static const Vec3 org_pts[] = {Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0, 0, 1)};
@@ -116,4 +118,6 @@ void test_svol() {
         require(v[1] == Approx(0.0));
         require(v[2] == Approx(0.0));
     }
+
+    printf("OK\n");
 }

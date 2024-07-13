@@ -10,6 +10,7 @@ const int maximum_sequence = 255;
 }
 
 void test_reliable_udp_connection() {
+    printf("Test rel_udp_connection | ");
 
     { // Check bit index for sequence
         assert(Net::ReliabilitySystem::bit_index_for_sequence(99, 100, maximum_sequence) == 0);
@@ -766,4 +767,6 @@ void test_reliable_udp_connection() {
         assert(client.connected());
         assert(server.connected());
     }
+
+    printf("OK\n");
 }

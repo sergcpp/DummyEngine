@@ -3,6 +3,8 @@
 #include "../SmallVector.h"
 
 void test_vector() {
+    printf("Test vector             | ");
+
     { // basic usage with trivial type
         Sys::SmallVector<int, 16> vec;
 
@@ -69,4 +71,6 @@ void test_vector() {
         require(vec.empty() == false);
         require(vec.size() == 17);
     }
+
+    printf("OK\n");
 }

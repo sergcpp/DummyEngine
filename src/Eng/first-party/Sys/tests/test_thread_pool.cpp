@@ -6,6 +6,8 @@
 #include "../ThreadPool.h"
 
 void test_thread_pool() {
+    printf("Test thread_pool        | ");
+
     //
     // [A]
     //    \
@@ -184,4 +186,6 @@ void test_thread_pool() {
             require(data[i] == 1);
         }
     }
+
+    printf("OK\n");
 }

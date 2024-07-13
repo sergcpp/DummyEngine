@@ -73,6 +73,8 @@ const char json_example3[] = "{\n"
 }
 
 void test_json() {
+    printf("Test json               | ");
+
     { // Test types
         { // JsNumber
             JsNumber n1(3.1568);
@@ -668,4 +670,6 @@ AGAIN5:
             goto AGAIN6;
         }
     }
-    }
+
+    printf("OK\n");
+}

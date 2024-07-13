@@ -55,6 +55,8 @@ set(SOURCE_FILES AssetFile.h
                  Signal_.h
                  SmallVector.h
                  SpinLock.h
+                 Sys.h
+                 Sys.cpp
                  ThreadPool.h
                  ThreadWorker.h
                  Time_.h

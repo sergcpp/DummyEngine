@@ -10,6 +10,7 @@ SWubyte tex[] = { 0, 0, 0,        1, 0, 0,        0, 1, 0,        0, 0, 255,
                 };
 
 void test_framebuffer() {
+    printf("Test framebuffer        | ");
 
 #define TEST_BEGIN                          \
     SWframebuffer f;                        \
@@ -97,6 +98,8 @@ void test_framebuffer() {
 
         TEST_END;
     }
+
+    printf("OK\n");
 }
 #undef TEST_BEGIN
 #undef TEST_END

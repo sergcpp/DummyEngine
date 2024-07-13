@@ -1,5 +1,7 @@
 #include "Context.h"
 
+const char *Snd::Version() { return "v0.1.0-unknown-commit"; }
+
 Snd::BufferRef Snd::Context::LoadBuffer(std::string_view name, Span<const uint8_t> data, const BufParams &params,
                                         eBufLoadStatus *load_status) {
     BufferRef ref = buffers_.FindByName(name);

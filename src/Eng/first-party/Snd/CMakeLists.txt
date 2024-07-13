@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(Snd)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Only one backend for now
 set(SOUND_BACKEND AL)
 
@@ -32,7 +35,7 @@ if(WIN32)
 			set(OPENAL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/third-party/OpenAL/include")
 			set(OPENAL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/OpenAL/libs/Win32")
 		endif()
-		set(LIBS debug OpenAL32d optimized OpenAL32)
+		set(LIBS winmm debug OpenAL32d optimized OpenAL32)
 	endif()
 else(WIN32)
     if(${SOUND_BACKEND} STREQUAL "AL")

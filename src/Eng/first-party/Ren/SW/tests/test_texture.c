@@ -12,6 +12,7 @@ static SWubyte test_texture_tex[] = { 0, 0, 0,        1, 0, 0,        0, 1, 0,  
                        };
 
 void test_texture() {
+    printf("Test texture            | ");
 
     {
         // Texture init move
@@ -48,4 +49,6 @@ void test_texture() {
         swTexDestroy(&t_);
         require(t_.pixels == NULL);
     }
+
+    printf("OK\n");
 }

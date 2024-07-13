@@ -1,6 +1,7 @@
 
 #include <cstdio>
 
+#include "../Net.h"
 #include "../InterprocessLock.h"
 
 void test_address();
@@ -19,6 +20,9 @@ void test_udp_socket();
 void test_var();
 
 int main() {
+    printf("Net Version: %s\n", Net::Version());
+    puts(" ---------------");
+
     // Ensure only single instance is running
     Net::InterprocessLock _("test_Net lock");
 
@@ -36,5 +40,4 @@ int main() {
     //test_tcp_socket();
     //test_udp_connection();
     //test_udp_socket();
-    puts("OK");
 }

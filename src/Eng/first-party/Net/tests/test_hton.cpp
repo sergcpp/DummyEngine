@@ -3,6 +3,8 @@
 #include "../Types.h"
 
 void test_hton() {
+    printf("Test hton               | ");
+
     using namespace Net;
 
     { // uint32_t
@@ -20,4 +22,6 @@ void test_hton() {
         v2 = ntoh(v2);
         assert(v2 == v1);
     }
+
+    printf("OK\n");
 }

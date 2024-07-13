@@ -5,6 +5,8 @@
 #include "../SWbuffer.h"
 
 void test_buffer() {
+    printf("Test buffer             | ");
+
     {
         // Buffer init/destroy
         SWbuffer b;
@@ -25,4 +27,6 @@ void test_buffer() {
         require(strcmp(data1, data1_chk) == 0);
         swBufDestroy(&b);
     }
+
+    printf("OK\n");
 }

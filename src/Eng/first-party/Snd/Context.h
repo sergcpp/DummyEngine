@@ -8,6 +8,8 @@ typedef struct ALCcontext ALCcontext;
 namespace Snd {
 class ILog;
 
+const char *Version();
+
 class Context {
     ILog *log_ = nullptr;
 #if defined(USE_AL_SOUND)

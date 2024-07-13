@@ -3,6 +3,8 @@
 #include "../MVec.h"
 
 void test_vec() {
+    printf("Test vec                | ");
+
     using namespace Phy;
 
     {
@@ -187,4 +189,6 @@ void test_vec() {
         require(v3[2] == Approx(1.5f));
         require(v3[3] == Approx(2.0f));
     }
+
+    printf("OK\n");
 }

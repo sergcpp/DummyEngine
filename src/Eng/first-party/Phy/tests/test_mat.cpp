@@ -3,6 +3,8 @@
 #include "../MMat.h"
 
 void test_mat() {
+    printf("Test mat                | ");
+
     using namespace Phy;
 
     {
@@ -55,4 +57,6 @@ void test_mat() {
         require(v3[1][0] == Approx(23.0f));
         require(v3[1][1] == Approx(34.0f));
     }
+
+    printf("OK\n");
 }

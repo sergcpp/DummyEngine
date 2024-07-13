@@ -3,6 +3,8 @@
 #include "../Address.h"
 
 void test_address() {
+    printf("Test address            | ");
+
     {
         Net::Address addr;
         assert(addr.a() == 0);
@@ -12,7 +14,6 @@ void test_address() {
         assert(addr.port() == 0);
         assert(addr.address() == 0);
     }
-
     {
         const unsigned char a = 100;
         const unsigned char b = 110;
@@ -26,7 +27,6 @@ void test_address() {
         assert(d == address.d());
         assert(port == address.port());
     }
-
     {
         Net::Address x(100, 110, 0, 1, 50000);
         Net::Address y(101, 210, 6, 5, 50002);
@@ -34,10 +34,11 @@ void test_address() {
         assert(y == y);
         assert(x == x);
     }
-
     {
         Net::Address x(100, 110, 0, 1, 50000);
         std::string s = x.str();
         assert(s == "100.110.0.1:50000");
     }
+
+    printf("OK\n");
 }

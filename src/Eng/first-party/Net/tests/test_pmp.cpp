@@ -6,6 +6,7 @@
 #include "../NAT_PMP.h"
 
 void test_pmp() {
+    printf("Test pmp                | ");
 
     { // Should retrieve external ip first
         Net::PMPSession s1(Net::ePMPProto::UDP, Net::Address(127, 0, 0, 1, 5351), 30000, 30005);
@@ -279,4 +280,6 @@ void test_pmp() {
         assert(time_acc < 1000);
         assert(s1.state() == Net::PMPSession::eState::CreatePortMapping);
     }
+
+    printf("OK\n");
 }

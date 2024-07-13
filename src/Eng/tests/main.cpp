@@ -36,6 +36,7 @@ bool InitAndDestroyFakeGLContext();
 #endif
 
 int main(int argc, char *argv[]) {
+    puts(" ---------------");
     Eng::LogStdout log;
     { // PrepareAssets
         Sys::ThreadPool prep_threads(std::thread::hardware_concurrency(), Sys::eThreadPriority::Low,

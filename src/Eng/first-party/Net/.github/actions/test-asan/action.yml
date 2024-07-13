@@ -1,0 +1,18 @@
+name: 'Test'
+inputs:
+  bin-dir:
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.bin-dir }}
+        path: ${{ inputs.bin-dir }}/
+    - run: |
+        export ASAN_OPTIONS="windows_hook_legacy_allocators=false"
+        chmod +x ./${{ inputs.bin-dir }}/test_Net*
+        WORK_DIR=`pwd`
+        cd ../../builds/Net
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Net*
+      shell: bash

@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Net
-	branch = typesafe_enum
-	commit = 0284b34d6884f23b143f23e215092a4f7455cc71
+	branch = master
+	commit = 1be8d44fc096183dbe159e604747acc7cba98683
 	method = merge
 	cmdver = 0.4.6
-	parent = 2df543a6ebd47ee5dbdaac6a025012be81c4661a
+	parent = 406f6174950c335305d03846954b572956322bde

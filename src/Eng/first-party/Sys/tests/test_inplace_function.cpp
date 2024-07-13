@@ -3,6 +3,8 @@
 #include "../InplaceFunction.h"
 
 void test_inplace_function() {
+    printf("Test inplace_function   | ");
+
     struct BigStruct {
         char data[8];
         int number = 42;
@@ -38,4 +40,6 @@ void test_inplace_function() {
 
     func5 = nullptr;
     require(!func5);
+
+    printf("OK\n");
 }

@@ -5,6 +5,7 @@
 #include "../Socket.h"
 
 void test_udp_socket() {
+    printf("Test udp_socket         | ");
 
     { // UDPSocket open/close
         Net::UDPSocket socket;
@@ -63,4 +64,6 @@ void test_udp_socket() {
         assert(a_received_packet);
         assert(b_received_packet);
     }
+
+    printf("OK\n");
 }

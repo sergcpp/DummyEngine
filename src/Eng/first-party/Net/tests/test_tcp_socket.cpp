@@ -6,6 +6,7 @@
 #include "../Socket.h"
 
 void test_tcp_socket() {
+    printf("Test tcp_socket         | ");
 
     { // TCPSocket open/close
         Net::TCPSocket socket;
@@ -59,4 +60,6 @@ void test_tcp_socket() {
         assert(a.Send(packet, sizeof(packet)));
         thr.join();
     }
+
+    printf("OK\n");
 }

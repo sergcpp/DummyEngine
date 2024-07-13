@@ -20,6 +20,8 @@ public:
 }
 
 void test_signal() {
+    printf("Test signal             | ");
+
     { // Delegate bind
 
         { // Static func
@@ -91,4 +93,6 @@ void test_signal() {
         require(results[1] == Approx(3.7));
         require(results[2] == Approx(3.85));
     }
+
+    printf("OK\n");
 }

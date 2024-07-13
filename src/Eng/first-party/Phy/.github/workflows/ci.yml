@@ -1,0 +1,340 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  build-windows-x86_64-rel:
+    runs-on: [ windows ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-A x64 -DCMAKE_UNITY_BUILD=ON"
+          config: "Release"
+          bin-dir: "windows-x86_64"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-x86_64
+          path: windows-x86_64/
+  build-windows-x86_64-dbg:
+    runs-on: [ windows ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-A x64 -DCMAKE_UNITY_BUILD=ON"
+          config: "Debug"
+          bin-dir: "windows-x86_64"
+  build-windows-x86_64-dev:
+    runs-on: [ windows ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-A x64 -DCMAKE_UNITY_BUILD=ON"
+          config: "RelWithDebInfo"
+          bin-dir: "windows-x86_64"
+  build-windows-x86_64-asan:
+    runs-on: [ windows ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-A x64 -DCMAKE_UNITY_BUILD=ON"
+          config: "Asan"
+          bin-dir: "windows-x86_64-asan"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-x86_64-asan
+          path: windows-x86_64-asan/
+  build-windows-arm64-rel:
+    runs-on: [ windows ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-A ARM64 -DCMAKE_UNITY_BUILD=ON"
+          config: "Release"
+          bin-dir: "windows-arm64"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-arm64
+          path: windows-arm64/
+  build-windows-arm64-dbg:
+    runs-on: [ windows ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-A ARM64 -DCMAKE_UNITY_BUILD=ON"
+          config: "Debug"
+          bin-dir: "windows-arm64"
+  build-windows-arm64-dev:
+    runs-on: [ windows ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-A ARM64 -DCMAKE_UNITY_BUILD=ON"
+          config: "RelWithDebInfo"
+          bin-dir: "windows-arm64"
+  build-linux-x86_64-rel:
+    runs-on: [ linux ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DCMAKE_UNITY_BUILD=ON"
+          config: "Release"
+          bin-dir: "linux-x86_64"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x86_64
+          path: linux-x86_64/
+  build-linux-x86_64-dbg:
+    runs-on: [ linux ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DCMAKE_UNITY_BUILD=ON"
+          config: "Debug"
+          bin-dir: "linux-x86_64"
+  build-linux-x86_64-dev:
+    runs-on: [ linux ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DCMAKE_UNITY_BUILD=ON"
+          config: "RelWithDebInfo"
+          bin-dir: "linux-x86_64"
+  build-macos-universal-rel:
+    runs-on: [ macos ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-macos
+        with:
+          cmake-args: '-DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+          config: "Release"
+          bin-dir: "macos-universal"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-universal
+          path: macos-universal/
+  build-macos-universal-dbg:
+    runs-on: [ macos ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-macos
+        with:
+          cmake-args: '-DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+          config: "Debug"
+          bin-dir: "macos-universal"
+  build-macos-universal-dev:
+    runs-on: [ macos ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-macos
+        with:
+          cmake-args: '-DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+          config: "RelWithDebInfo"
+          bin-dir: "macos-universal"
+  test-windows-x86_64:
+    runs-on: [ windows, x86_64 ]
+    needs:
+      - build-windows-x86_64-asan
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test-asan
+        with:
+          bin-dir: "windows-x86_64-asan"
+  test-windows-arm64:
+    runs-on: [ windows, arm64 ]
+    needs:
+      - build-windows-arm64
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-arm64"
+  test-linux-x86_64:
+    runs-on: [ linux, x86_64 ]
+    needs:
+      - build-linux-x86_64-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "linux-x86_64"
+  test-macos-arm64:
+    runs-on: [ macos, arm64 ]
+    needs:
+      - build-macos-universal-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "macos-universal"
+  test-macos-x86_64:
+    runs-on: [ macos, x86_64 ]
+    needs:
+      - build-macos-universal-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "macos-universal"

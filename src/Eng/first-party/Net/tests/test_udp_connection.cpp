@@ -6,6 +6,7 @@
 #include "../UDPConnection.h"
 
 void test_udp_connection() {
+    printf("Test udp_connection     | ");
 
     { // UDPConnection join
         const int server_port = 30000;
@@ -390,4 +391,6 @@ void test_udp_connection() {
         assert(client.connected());
         assert(server.connected());
     }
+
+    printf("OK\n");
 }

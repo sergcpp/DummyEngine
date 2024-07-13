@@ -17,5 +17,4 @@ int main() {
     test_program();
     test_texture();
     test_zbuffer();
-    puts("OK");
 }

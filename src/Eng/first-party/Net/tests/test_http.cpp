@@ -24,6 +24,7 @@ const char pack1[] = "GET / HTTP/1.1\r\n"
 }
 
 void test_http() {
+    printf("Test http               | ");
 
     { // Parse upgrade to websocket
         Net::HTTPRequest req;
@@ -52,4 +53,6 @@ void test_http() {
         assert(req.field("Cache-Control") == "no-cache");
         assert(req.field("Upgrade") == "websocket");
     }
+
+    printf("OK\n");
 }

@@ -11,6 +11,7 @@ class PacketQueueTestsFixture {
 };
 
 void test_packet_queue() {
+    printf("Test packet_queue       | ");
 
     { // PacketQueue insert back
         PacketQueueTestsFixture f;
@@ -61,4 +62,6 @@ void test_packet_queue() {
             assert(f.packet_queue.verify_sorted(f.maximum_sequence));
         }
     }
+
+    printf("OK\n");
 }
