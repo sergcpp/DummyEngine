@@ -37,7 +37,7 @@ extern bool ignore_optick_errors;
 #include "Utils/Dictionary.h"
 #include "Utils/Log.h"
 
-Viewer::Viewer(const int w, const int h, const char *local_dir, const AppParams &_app_params, ILog *log)
+Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log)
     : ViewerBase(w, h, _app_params.validation_level, _app_params.nohwrt, log, _app_params.device_name.c_str()),
       log_(log), app_params(_app_params) {
     JsObject main_config;
@@ -245,16 +245,17 @@ void Viewer::Frame() {
     api_ctx->backend_frame = (api_ctx->backend_frame + 1) % Ren::MaxFramesInFlight;
 }
 
-void Viewer::PrepareAssets(const char *platform) {
+void Viewer::PrepareAssets(std::string_view platform) {
     Eng::LogStdout log;
 
     const double t1 = Sys::GetTimeS();
     Eng::SceneManager::RegisterAsset("tei.json", "dict", HConvTEIToDict);
 
-    Sys::ThreadPool temp_threads(std::thread::hardware_concurrency(), Sys::eThreadPriority::Low, "prepare_assets_thread");
+    Sys::ThreadPool temp_threads(std::thread::hardware_concurrency(), Sys::eThreadPriority::Low,
+                                 "prepare_assets_thread");
 
 #if !defined(__ANDROID__)
-    if (strcmp(platform, "all") == 0) {
+    if (platform == "all") {
         Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", &temp_threads, &log);
         Eng::SceneManager::PrepareAssets("assets", "assets_android", "android", &temp_threads, &log);
     } else {

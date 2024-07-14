@@ -2,10 +2,10 @@
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_control_flow_attributes : require
 
-#include "_rt_common.glsl"
 #include "_fs_common.glsl"
-#include "_texturing.glsl"
-#include "_principled.glsl"
+#include "rt_common.glsl"
+#include "texturing_common.glsl"
+#include "principled_common.glsl"
 
 #include "ssr_common.glsl"
 #include "gi_cache_common.glsl"

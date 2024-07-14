@@ -17,7 +17,7 @@ void DialogUI::Draw(Gui::Renderer *r) {
             font_.DrawText(r, choices_[i].text, pos, col, this);
         } else {
             char buf[256];
-            snprintf(buf, sizeof(buf), "%s [%s]", choices_[i].text, choices_[i].key);
+            snprintf(buf, sizeof(buf), "%s [%s]", choices_[i].text.data(), choices_[i].key.data());
             font_.DrawText(r, buf, pos, col, this);
         }
         return true;
@@ -75,7 +75,7 @@ void DialogUI::IterateChoices(
     }
 }
 
-void DialogUI::OnPushChoice(const char *key, const char *text, const int off) {
+void DialogUI::OnPushChoice(std::string_view key, std::string_view text, const int off) {
     choices_[choices_count_] = {key, text, off};
     ++choices_count_;
 }

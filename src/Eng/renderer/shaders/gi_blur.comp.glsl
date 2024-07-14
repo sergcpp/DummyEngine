@@ -2,7 +2,7 @@
 #extension GL_ARB_shading_language_packing : require
 
 #include "_cs_common.glsl"
-#include "_rt_common.glsl"
+#include "rt_common.glsl"
 #include "gi_common.glsl"
 #include "gi_blur_interface.h"
 

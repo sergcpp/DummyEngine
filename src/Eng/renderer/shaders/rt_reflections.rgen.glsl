@@ -1,7 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 
-#include "_rt_common.glsl"
+#include "rt_common.glsl"
 #include "ssr_common.glsl"
 #include "rt_reflections_interface.h"
 

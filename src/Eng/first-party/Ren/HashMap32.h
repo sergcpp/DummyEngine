@@ -54,6 +54,7 @@ template <typename K> class Hash {
 template <> class Hash<const char *> {
   public:
     uint32_t operator()(const char *s) const { return _str_hash(s); }
+    uint32_t operator()(const std::string_view &s) const { return _str_hash_len(s.data(), s.size()); }
 };
 
 template <> class Hash<std::string> {
@@ -82,6 +83,7 @@ template <typename K> class Equal {
 template <> class Equal<const char *> {
   public:
     bool operator()(const char *k1, const char *k2) const { return strcmp(k1, k2) == 0; }
+    bool operator()(const char *k1, std::string_view k2) const { return k2 == k1; }
 };
 
 template <> class Equal<std::string> {

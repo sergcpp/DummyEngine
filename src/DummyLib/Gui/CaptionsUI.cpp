@@ -22,7 +22,7 @@ void CaptionsUI::Draw(Gui::Renderer *r) {
 
 void CaptionsUI::Clear() { captions_count_ = 0; }
 
-void CaptionsUI::OnPushCaption(const char *text, const uint8_t color[4]) {
+void CaptionsUI::OnPushCaption(std::string_view text, const uint8_t color[4]) {
     SeqCaption &cap = captions_[captions_count_++];
     cap.text = text;
     memcpy(cap.color, color, 4);

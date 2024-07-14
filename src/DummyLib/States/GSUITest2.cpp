@@ -203,9 +203,9 @@ void GSUITest2::UpdateHint() {
     auto lookup_word = [this](const char *word, int mutation_cost) {
         Dictionary::dict_entry_res_t result = {};
         if (dict_->Lookup(word, result)) {
-            log_->Info("Result %s", result.trans[0]);
+            log_->Info("Result %s", result.trans[0].data());
 
-            std::string line = result.orth;
+            auto line = std::string{result.orth};
             if (result.pos == eGramGrpPos::Noun) {
                 line += " (noun";
 
@@ -231,7 +231,7 @@ void GSUITest2::UpdateHint() {
             results_lines_.emplace_back(std::move(line));
 
             int trans_index = 0;
-            while (result.trans[trans_index]) {
+            while (!result.trans[trans_index].empty()) {
                 results_lines_.emplace_back("    ");
                 results_lines_.back() += result.trans[trans_index];
                 trans_index++;

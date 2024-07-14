@@ -850,7 +850,7 @@ void Eng::RpBuilder::AllocateNeededResources(RpSubpass &pass) {
         for (Ren::Tex2DRef &t : textures_to_clear) {
             const float rgba[4] = {
                 float(t->params.fallback_color[0]) / 255.0f, float(t->params.fallback_color[1]) / 255.0f,
-                float(t->params.fallback_color[2]) / 255.0f, float(t->params.fallback_color[3]) / 255.0f};
+                float(t->params.fallback_color[2]) / 255.0f, 0.0f /*float(t->params.fallback_color[3]) / 255.0f*/};
             Ren::ClearImage(*t, rgba, cmd_buf);
         }
 

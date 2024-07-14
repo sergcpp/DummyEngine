@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <Eng/gui/BaseElement.h>
 
 namespace Gui {
@@ -10,7 +12,7 @@ class CaptionsUI : public Gui::BaseElement {
     const Gui::BitmapFont &font_;
 
     struct SeqCaption {
-        const char *text;
+        std::string_view text;
         uint8_t color[4];
     };
     SeqCaption captions_[16] = {};
@@ -23,5 +25,5 @@ class CaptionsUI : public Gui::BaseElement {
 
     void Clear();
 
-    void OnPushCaption(const char *text, const uint8_t color[4]);
+    void OnPushCaption(std::string_view text, const uint8_t color[4]);
 };

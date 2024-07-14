@@ -2,7 +2,7 @@
 #extension GL_EXT_ray_tracing : require
 
 #include "_common.glsl"
-#include "_principled.glsl"
+#include "principled_common.glsl"
 #include "rt_debug_interface.h"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {

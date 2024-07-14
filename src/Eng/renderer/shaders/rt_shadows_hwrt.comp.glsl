@@ -2,8 +2,8 @@
 #extension GL_KHR_shader_subgroup_arithmetic : require
 #extension GL_EXT_ray_query : require
 
-#include "_rt_common.glsl"
-#include "_texturing.glsl"
+#include "rt_common.glsl"
+#include "texturing_common.glsl"
 #include "rt_shadows_interface.h"
 #include "rt_shadow_common.glsl.inl"
 

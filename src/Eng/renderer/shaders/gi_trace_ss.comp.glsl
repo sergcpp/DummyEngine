@@ -4,7 +4,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "_rt_common.glsl"
+#include "rt_common.glsl"
 #include "gi_common.glsl"
 #include "gi_trace_ss_interface.h"
 

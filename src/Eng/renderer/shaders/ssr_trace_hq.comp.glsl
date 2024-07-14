@@ -4,8 +4,8 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "_rt_common.glsl"
-#include "_principled.glsl"
+#include "rt_common.glsl"
+#include "principled_common.glsl"
 #include "gi_cache_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_trace_hq_interface.h"

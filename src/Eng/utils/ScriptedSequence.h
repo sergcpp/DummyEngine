@@ -166,7 +166,7 @@ class ScriptedSequence {
     void Reset();
     void Update(double cur_time_s, bool playing);
 
-    Sys::Signal<void(const char *text, const uint8_t color[4])> push_caption_signal;
+    Sys::Signal<void(std::string_view text, const uint8_t color[4])> push_caption_signal;
 
     static const char *ActionTypeNames[];
 };

@@ -5,7 +5,7 @@
 
 #include "_vs_common.glsl"
 #include "_vs_instance_index_emu.glsl"
-#include "_texturing.glsl"
+#include "texturing_common.glsl"
 
 #pragma multi_compile _ MOVING
 #pragma multi_compile _ OUTPUT_VELOCITY

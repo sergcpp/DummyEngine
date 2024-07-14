@@ -6,10 +6,10 @@
 #define ENABLE_CLEARCOAT 0
 #define MIN_SPEC_ROUGHNESS 0.4
 
-#include "_rt_common.glsl"
 #include "_fs_common.glsl"
-#include "_texturing.glsl"
-#include "_principled.glsl"
+#include "rt_common.glsl"
+#include "texturing_common.glsl"
+#include "principled_common.glsl"
 #include "gi_cache_common.glsl"
 #include "rt_debug_interface.h"
 

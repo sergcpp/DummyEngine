@@ -416,20 +416,20 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
     return true;
 }
 
-void ReplaceTextureExtension(const char *platform, std::string &tex) {
+void ReplaceTextureExtension(std::string_view platform, std::string &tex) {
     size_t n;
     if ((n = tex.find(".uncompressed")) == std::string::npos) {
         if ((n = tex.find(".tga")) != std::string::npos) {
-            if (strcmp(platform, "pc") == 0) {
+            if (platform == "pc") {
                 tex.replace(n + 1, 3, "dds");
-            } else if (strcmp(platform, "android") == 0) {
+            } else if (platform == "android") {
                 tex.replace(n + 1, 3, "ktx");
             }
         } else if ((n = tex.find(".png")) != std::string::npos || (n = tex.find(".jpg")) != std::string::npos ||
                    (n = tex.find(".img")) != std::string::npos) {
-            if (strcmp(platform, "pc") == 0) {
+            if (platform == "pc") {
                 tex.replace(n + 1, 3, "dds");
-            } else if (strcmp(platform, "android") == 0) {
+            } else if (platform == "android") {
                 tex.replace(n + 1, 3, "ktx");
             }
         } else if ((n = tex.find(".hdr")) != std::string::npos) {
@@ -646,7 +646,7 @@ void Eng::SceneManager::RegisterAsset(const char *in_ext, const char *out_ext, c
     g_asset_handlers[in_ext] = {out_ext, convert_func};
 }
 
-bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
+bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, std::string_view platform,
                                       Sys::ThreadPool *p_threads, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
@@ -671,7 +671,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     g_asset_handlers["ttf"] = {"font", HConvTTFToFont};
     g_asset_handlers["json"] = {"json", HPreprocessJson};
 
-    if (strcmp(platform, "pc") == 0) {
+    if (platform == "pc") {
         // g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
         g_asset_handlers["hdr"] = {"dds", HConvHDRToDDS};
         g_asset_handlers["tex"] = {"dds", HConvToDDS};
@@ -683,7 +683,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["rahit.glsl"] = {"rahit.glsl", HCompileShader};
         g_asset_handlers["rmiss.glsl"] = {"rmiss.glsl", HCompileShader};
         g_asset_handlers["rcall.glsl"] = {"rcall.glsl", HCompileShader};
-    } else if (strcmp(platform, "android") == 0) {
+    } else if (platform == "android") {
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         // g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
         // g_asset_handlers["png"] = {"ktx", HConvToASTC};

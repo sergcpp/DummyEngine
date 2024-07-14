@@ -1,8 +1,9 @@
 #pragma once
 
 #include <optional>
+#include <string_view>
 
-//#include <Eng/scene/SceneManager.h>
+// #include <Eng/scene/SceneManager.h>
 #include <Eng/ViewerBase.h>
 
 #if defined(__ANDROID__)
@@ -37,11 +38,7 @@ class DebugInfoUI;
 class Dictionary;
 class FontStorage;
 
-enum class eGfxPreset {
-    Medium,
-    High,
-    Ultra
-};
+enum class eGfxPreset { Medium, High, Ultra };
 
 struct AppParams {
     std::string scene_name = "scenes/mat_test.json";
@@ -71,7 +68,7 @@ class Viewer : public Eng::ViewerBase {
   public:
     AppParams app_params = {};
 
-    Viewer(int w, int h, const char *local_dir, const AppParams &app_params, ILog *log);
+    Viewer(int w, int h, const AppParams &app_params, ILog *log);
     ~Viewer();
 
     FontStorage *font_storage() { return font_storage_.get(); }
@@ -81,7 +78,7 @@ class Viewer : public Eng::ViewerBase {
 
     void Frame() override;
 
-    static void PrepareAssets(const char *platform = "all");
+    static void PrepareAssets(std::string_view platform = "all");
     static bool HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
                                Ren::SmallVectorImpl<std::string, alignof(std::string)> &,
                                Ren::SmallVectorImpl<Eng::asset_output_t, 8> &);

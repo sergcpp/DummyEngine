@@ -196,11 +196,11 @@ void GSUITest4::OnEditSequence(const int id) {
     dial_edit_mode_ = 1;
 }
 
-void GSUITest4::OnStartPuzzle(const char *puzzle_name) {
+void GSUITest4::OnStartPuzzle(std::string_view puzzle_name) {
 #if defined(__ANDROID__)
-    const std::string file_name = std::string("assets/scenes/") + puzzle_name;
+    const std::string file_name = std::string("assets/scenes/") + std::string(puzzle_name);
 #else
-    const std::string file_name = std::string("assets_pc/scenes/") + puzzle_name;
+    const std::string file_name = std::string("assets_pc/scenes/") + std::string(puzzle_name);
 #endif
 
     Sys::AssetFile in_puzzle(file_name);

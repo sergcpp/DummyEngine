@@ -2,6 +2,7 @@
 
 #include <istream>
 #include <memory>
+#include <string_view>
 
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
@@ -20,11 +21,11 @@ class Dictionary {
         eGramGrpPos pos;
         eGramGrpNum num;
         eGramGrpGen gen;
-        const char *orth, *pron;
-        const char *trans[16];
+        std::string_view orth, pron;
+        std::string_view trans[16];
     };
 
-    bool Lookup(const char *key, dict_entry_res_t &result);
+    bool Lookup(std::string_view key, dict_entry_res_t &result);
 
     struct dict_link_compact_t {
         uint32_t key_str_off;

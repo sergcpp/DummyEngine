@@ -5,7 +5,7 @@
 #endif
 
 #include "internal/_fs_common.glsl"
-#include "internal/_texturing.glsl"
+#include "internal/texturing_common.glsl"
 
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = BIND_MAT_TEX0) uniform sampler2D g_diff_tex;

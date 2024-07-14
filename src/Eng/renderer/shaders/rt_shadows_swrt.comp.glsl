@@ -6,9 +6,9 @@
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-#include "_rt_common.glsl"
-#include "_swrt_common.glsl"
-#include "_texturing.glsl"
+#include "rt_common.glsl"
+#include "swrt_common.glsl"
+#include "texturing_common.glsl"
 #include "rt_shadows_interface.h"
 #include "rt_shadow_common.glsl.inl"
 

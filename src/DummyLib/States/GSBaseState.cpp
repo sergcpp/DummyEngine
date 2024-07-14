@@ -346,7 +346,7 @@ void GSBaseState::Enter() {
     });
 
     cmdline_->RegisterCommand("map", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
-        if (args.size() != 2 || args[1].type != Eng::Cmdline::eArgType::ArgString) {
+        if (args.size() != 2 || args[1].type != Eng::Cmdline::eArgType::String) {
             return false;
         }
 
@@ -897,7 +897,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         }
 
         if (!cmdline_history_.empty() && !cmdline_history_.back().empty()) {
-            const char *cmd = cmdline_history_.back().c_str();
+            std::string_view cmd = cmdline_history_.back();
             Ren::String hint_str;
             int index = cmdline_->NextHint(cmd, -1, hint_str);
             while (index != -1) {

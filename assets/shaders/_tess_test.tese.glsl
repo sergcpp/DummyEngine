@@ -5,7 +5,7 @@
 #endif
 
 #include "internal/_vs_common.glsl"
-#include "internal/_texturing.glsl"
+#include "internal/texturing_common.glsl"
 
 layout(triangles, fractional_odd_spacing, ccw) in;
 //layout(triangles, equal_spacing, ccw) in;

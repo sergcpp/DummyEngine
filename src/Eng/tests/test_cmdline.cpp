@@ -11,8 +11,8 @@ void test_cmdline() {
 
     cmdline.RegisterCommand("add", [&result](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         require(args.size() == 3);
-        require(args[1].type == Eng::Cmdline::eArgType::ArgNumber);
-        require(args[2].type == Eng::Cmdline::eArgType::ArgNumber);
+        require(args[1].type == Eng::Cmdline::eArgType::Number);
+        require(args[2].type == Eng::Cmdline::eArgType::Number);
 
         result = args[1].val + args[2].val;
 

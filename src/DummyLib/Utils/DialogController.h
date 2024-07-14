@@ -2,12 +2,14 @@
 
 #include <cstdint>
 
+#include <string_view>
+
 #include <Sys/Signal_.h>
 
 namespace Eng {
 class ScriptedDialog;
 class ScriptedSequence;
-}
+} // namespace Eng
 
 class DialogController {
   public:
@@ -29,14 +31,14 @@ class DialogController {
     Eng::ScriptedSequence *GetCurSequence() { return cur_seq_; }
     void SetCurSequence(int id);
 
-    void MakeChoice(const char *key);
+    void MakeChoice(std::string_view key);
     void ContinueChoice();
 
-    Sys::SignalN<void(const char *text, const uint8_t color[4])> push_caption_signal;
-    Sys::SignalN<void(const char *key, const char *text, int off)> push_choice_signal;
+    Sys::SignalN<void(std::string_view text, const uint8_t color[4])> push_caption_signal;
+    Sys::SignalN<void(std::string_view key, std::string_view text, int off)> push_choice_signal;
 
     Sys::SignalN<void(int id)> switch_sequence_signal;
-    Sys::SignalN<void(const char *puzzle)> start_puzzle_signal;
+    Sys::SignalN<void(std::string_view puzzle)> start_puzzle_signal;
 
   private:
     Eng::ScriptedDialog *dialog_ = nullptr;
@@ -47,5 +49,5 @@ class DialogController {
 
     double play_started_time_s_ = 0.0, play_time_s_ = 0.0;
 
-    void OnPushCaption(const char *text, const uint8_t color[4]);
+    void OnPushCaption(std::string_view text, const uint8_t color[4]);
 };

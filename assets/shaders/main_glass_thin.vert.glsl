@@ -5,7 +5,7 @@
 
 #include "internal/_vs_common.glsl"
 #include "internal/_vs_instance_index_emu.glsl"
-#include "internal/_texturing.glsl"
+#include "internal/texturing_common.glsl"
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 layout(location = VTX_NOR_LOC) in vec4 g_in_vtx_normal;

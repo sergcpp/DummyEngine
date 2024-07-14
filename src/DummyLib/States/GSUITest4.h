@@ -61,7 +61,7 @@ class GSUITest4 final : public GSBaseState {
     bool SaveSequence(std::string_view seq_name);
 
     void OnEditSequence(int id);
-    void OnStartPuzzle(const char *puzzle_name);
+    void OnStartPuzzle(std::string_view puzzle_name);
 
   public:
     explicit GSUITest4(Viewer *viewer);

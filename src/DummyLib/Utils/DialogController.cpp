@@ -115,7 +115,7 @@ void DialogController::SetCurSequence(const int id) {
     cur_seq_->push_caption_signal.Connect<DialogController, &DialogController::OnPushCaption>(this);
 }
 
-void DialogController::MakeChoice(const char *key) {
+void DialogController::MakeChoice(std::string_view key) {
     if (cur_seq_) {
         Eng::SeqChoice *ch = cur_seq_->GetChoice(key);
         next_seq_id_ = ch->seq_id;
@@ -136,6 +136,6 @@ void DialogController::ContinueChoice() {
     }
 }
 
-void DialogController::OnPushCaption(const char *text, const uint8_t color[4]) {
+void DialogController::OnPushCaption(std::string_view text, const uint8_t color[4]) {
     push_caption_signal.FireN(text, color);
 }

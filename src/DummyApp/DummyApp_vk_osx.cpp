@@ -138,7 +138,7 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
     try {
         Viewer::PrepareAssets("pc");
         log_ = std::make_unique<LogStdout>();
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, app_params, log_.get());
+        viewer_ = std::make_unique<Viewer>(w, h, app_params, log_.get());
 
         auto *input_manager = viewer_->input_manager();
         input_manager_ = input_manager;

@@ -1,8 +1,8 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 
-#include "_rt_common.glsl"
-#include "_texturing.glsl"
+#include "rt_common.glsl"
+#include "texturing_common.glsl"
 #include "rt_gi_interface.h"
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {

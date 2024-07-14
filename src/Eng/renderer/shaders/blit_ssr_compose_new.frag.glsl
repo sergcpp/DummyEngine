@@ -2,8 +2,8 @@
 #extension GL_ARB_texture_multisample : enable
 
 #include "_fs_common.glsl"
-#include "_rt_common.glsl"
-#include "_principled.glsl"
+#include "rt_common.glsl"
+#include "principled_common.glsl"
 #include "blit_ssr_compose_new_interface.h"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {

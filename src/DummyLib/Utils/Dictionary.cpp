@@ -1,6 +1,6 @@
 #include "Dictionary.h"
 
-bool Dictionary::Lookup(const char *key, dict_entry_res_t &result) {
+bool Dictionary::Lookup(std::string_view key, dict_entry_res_t &result) {
     const dict_link_nokey_t *link = hashmap_.Find(key);
     if (link) {
         for (uint32_t i = link->entry_index; i < link->entry_index + link->entry_count; i++) {

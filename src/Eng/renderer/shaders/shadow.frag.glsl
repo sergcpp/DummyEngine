@@ -4,7 +4,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "_texturing.glsl"
+#include "texturing_common.glsl"
 
 #pragma multi_compile _ TRANSPARENT
 #pragma multi_compile _ NO_BINDLESS

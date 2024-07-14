@@ -123,6 +123,8 @@ template <typename Alloc = std::allocator<char>> class BasicString {
         return true;
     }
 
+    bool StartsWith(std::string_view str) const { return StartsWith(str.data()); }
+
     bool EndsWith(const char *str) const {
         size_t len = strlen(str);
         for (size_t i = 0; i < len; i++) {
@@ -132,6 +134,8 @@ template <typename Alloc = std::allocator<char>> class BasicString {
         }
         return true;
     }
+
+    bool EndsWith(std::string_view str) const { return EndsWith(str.data()); }
 
     friend bool operator==(const BasicString &s1, const BasicString &s2) {
         return s1.str_ == s2.str_ || (s1.len_ == s2.len_ && memcmp(s1.str_, s2.str_, s1.len_) == 0);

@@ -5,7 +5,7 @@
 #endif
 
 #include "internal/_fs_common.glsl"
-#include "internal/_texturing.glsl"
+#include "internal/texturing_common.glsl"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 

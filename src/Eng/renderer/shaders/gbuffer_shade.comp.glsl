@@ -2,7 +2,7 @@
 #extension GL_EXT_control_flow_attributes : require
 
 #include "_fs_common.glsl"
-#include "_principled.glsl"
+#include "principled_common.glsl"
 #include "gbuffer_shade_interface.h"
 
 #pragma multi_compile _ SS_SHADOW

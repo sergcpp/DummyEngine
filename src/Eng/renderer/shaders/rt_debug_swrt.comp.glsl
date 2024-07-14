@@ -4,11 +4,11 @@
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-#include "_rt_common.glsl"
 #include "_fs_common.glsl"
-#include "_swrt_common.glsl"
-#include "_texturing.glsl"
-#include "_principled.glsl"
+#include "rt_common.glsl"
+#include "swrt_common.glsl"
+#include "texturing_common.glsl"
+#include "principled_common.glsl"
 #include "gi_cache_common.glsl"
 
 #include "rt_debug_interface.h"

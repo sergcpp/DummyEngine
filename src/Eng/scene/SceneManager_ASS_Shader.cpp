@@ -85,7 +85,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
             }*/
 
             if (line.rfind("#version ") == 0) {
-                if (strcmp(ctx.platform, "pc") == 0 && line.rfind("es") != std::string::npos) {
+                if (ctx.platform == "pc" && line.rfind("es") != std::string::npos) {
                     line = "#version 430";
                 }
                 orig_glsl_file_data += line + "\r\n";

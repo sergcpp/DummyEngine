@@ -1,7 +1,7 @@
 #ifndef _PRINCIPLED_GLSL
 #define _PRINCIPLED_GLSL
 
-#include "_ltc.glsl"
+#include "ltc_common.glsl"
 
 float fresnel_dielectric_cos(float cosi, float eta) {
     // compute fresnel reflectance without explicitly computing the refracted direction

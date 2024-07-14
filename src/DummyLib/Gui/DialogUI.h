@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <string_view>
 
 #include <Eng/gui/BaseElement.h>
 #include <Sys/Signal_.h>
@@ -10,8 +11,8 @@ class DialogUI : public Gui::BaseElement {
     bool debug_;
 
     struct {
-        const char *key;
-        const char *text;
+        std::string_view key;
+        std::string_view text;
         int off;
     } choices_[8] = {};
     int choices_count_ = 0;
@@ -34,7 +35,7 @@ class DialogUI : public Gui::BaseElement {
     void Press(const Ren::Vec2f &p, bool push) override;
     void Hover(const Ren::Vec2f &p) override;
 
-    void OnPushChoice(const char *key, const char *text, int off);
+    void OnPushChoice(std::string_view key, std::string_view text, int off);
 
-    Sys::SignalN<void(const char *key)> make_choice_signal;
+    Sys::SignalN<void(std::string_view key)> make_choice_signal;
 };
