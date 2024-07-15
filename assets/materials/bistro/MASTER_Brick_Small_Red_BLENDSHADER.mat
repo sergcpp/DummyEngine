@@ -13,4 +13,4 @@ params:
     - 1.0 1.0 1.0 1.0    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
     - 1.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
-    - 0.0 0.0 0.0 0.0    # tranparency, unused, unused, unused
+    - 0.0 0.0 0.0 0.0    # transparency, unused, unused, unused

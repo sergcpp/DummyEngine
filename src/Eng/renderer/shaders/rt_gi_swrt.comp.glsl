@@ -198,7 +198,7 @@ void main() {
 
                     const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
         #if defined(BINDLESS_TEXTURES)
-                    const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[4])), uv, 0.0).r;
+                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[4])), uv, 0.0).r;
                     if (alpha < 0.5) {
                         ro += (inter.t + 0.001) * gi_ray_ws;
                         inter.mask = 0;

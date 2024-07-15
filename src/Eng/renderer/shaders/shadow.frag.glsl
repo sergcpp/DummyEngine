@@ -24,14 +24,17 @@
 
 #ifdef TRANSPARENT
     layout(location = 0) in vec2 g_vtx_uvs0;
+    layout(location = 1) in flat float g_alpha;
     #if !defined(NO_BINDLESS)
-        layout(location = 1) in flat TEX_HANDLE g_alpha_tex;
+        layout(location = 2) in flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 
 void main() {
 #ifdef TRANSPARENT
-    float alpha = texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
-    if (alpha < 0.5) discard;
+    float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
+    if (alpha < 0.5) {
+        discard;
+    }
 #endif
 }
