@@ -61,7 +61,7 @@ layout(location = 11) out flat float g_shadow_vis;
 
 invariant gl_Position;
 
-void main(void) {
+void main() {
     const ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
     const mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
@@ -89,9 +89,9 @@ void main(void) {
     vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_nor_ls, vtx_tan_ls, g_noise_tex, wind_scroll, wind_params, wind_vec_ls, hdata);
 #endif // VEGETATION
 
-    vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
-    vec3 vtx_nor_ws = normalize((model_matrix * vec4(vtx_nor_ls, 0.0)).xyz);
-    vec3 vtx_tan_ws = normalize((model_matrix * vec4(vtx_tan_ls, 0.0)).xyz);
+    const vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
+    const vec3 vtx_nor_ws = normalize((model_matrix * vec4(vtx_nor_ls, 0.0)).xyz);
+    const vec3 vtx_tan_ws = normalize((model_matrix * vec4(vtx_tan_ls, 0.0)).xyz);
 
     g_vtx_pos = vtx_pos_ws;
     g_vtx_normal = vtx_nor_ws;

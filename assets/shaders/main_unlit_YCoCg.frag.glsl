@@ -25,7 +25,7 @@ layout(location = 8) in flat TEX_HANDLE g_mat0_tex;
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
 
-void main(void) {
+void main() {
     vec4 col = texture(SAMPLER2D(g_mat0_tex), g_vtx_uvs0);
 
     float scale = (col.b * (255.0 / 8.0)) + 1.0;

@@ -18,20 +18,20 @@
 #define FORCE_GREY_ALBEDO 0
 //#define FORCE_METALLIC 1.0
 
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
+    SharedData g_shrd_data;
+};
+
 #if defined(NO_BINDLESS)
-layout(binding = BIND_MAT_TEX0) uniform sampler2D g_base_tex;
-layout(binding = BIND_MAT_TEX1) uniform sampler2D g_norm_tex;
-layout(binding = BIND_MAT_TEX2) uniform sampler2D g_roug_tex;
-layout(binding = BIND_MAT_TEX3) uniform sampler2D g_metl_tex;
+    layout(binding = BIND_MAT_TEX0) uniform sampler2D g_base_tex;
+    layout(binding = BIND_MAT_TEX1) uniform sampler2D g_norm_tex;
+    layout(binding = BIND_MAT_TEX2) uniform sampler2D g_roug_tex;
+    layout(binding = BIND_MAT_TEX3) uniform sampler2D g_metl_tex;
 #endif // !NO_BINDLESS
 layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
 layout(binding = BIND_DECAL_BUF) uniform samplerBuffer g_decals_buf;
 layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
 layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
-
-layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
-};
 
 layout(location = 0) in vec3 g_vtx_pos;
 layout(location = 1) in vec2 g_vtx_uvs;
@@ -52,7 +52,7 @@ layout(location = LOC_OUT_ALBEDO) out vec4 g_out_albedo;
 layout(location = LOC_OUT_NORM) out uint g_out_normal;
 layout(location = LOC_OUT_SPEC) out uint g_out_specular;
 
-void main(void) {
+void main() {
     const float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);

@@ -123,11 +123,6 @@ void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
             }
         }
 
-        api_ctx_ = ctx.api_ctx();
-#if defined(USE_VK_RENDER)
-        InitDescrSetLayout();
-#endif
-
         initialized = true;
     }
 

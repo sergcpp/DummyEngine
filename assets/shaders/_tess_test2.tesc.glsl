@@ -86,7 +86,7 @@ void CalcPositions() {
     oPatch.aVertexPos_B111 += (oPatch.aVertexPos_B111 - Center) / 2.0;
 }
 
-void main(void) {
+void main() {
     for (int i = 0; i < 3; i++) {
         oPatch.g_in_vtx_uvs[i] = g_vtx_uvs_cs[i];
         oPatch.aVertexNormal[i] = g_vtx_norm_cs[i];

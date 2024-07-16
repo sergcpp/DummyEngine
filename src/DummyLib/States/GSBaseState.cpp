@@ -477,6 +477,15 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_showOIT", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        if (args.size() > 1) {
+            renderer_->settings.debug_oit_layer = int8_t(args[1].val);
+        } else {
+            renderer_->settings.debug_oit_layer = -1;
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_showEllipsoids", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_ellipsoids = !renderer_->settings.debug_ellipsoids;
         return true;

@@ -36,6 +36,8 @@ struct RpRTReflectionsData {
     RpResRef distance_tex;
     RpResRef offset_tex;
 
+    RpResRef oit_depth_buf;
+
     const Ren::IAccStructure *tlas = nullptr;
     const ProbeVolume *probe_volume = nullptr;
 
@@ -50,7 +52,7 @@ struct RpRTReflectionsData {
 
     bool four_bounces = false;
 
-    RpResRef out_refl_tex;
+    RpResRef out_refl_tex[OIT_REFLECTION_LAYERS];
 };
 
 class RpRTReflections : public RpExecutor {
@@ -59,7 +61,7 @@ class RpRTReflections : public RpExecutor {
     // lazily initialized data
     Ren::Pipeline pi_rt_reflections_;
     Ren::Pipeline pi_rt_reflections_inline_[2], pi_rt_reflections_4bounce_inline_[2];
-    Ren::Pipeline pi_rt_reflections_swrt_[2], pi_rt_reflections_4bounce_swrt_[2];
+    Ren::Pipeline pi_rt_reflections_swrt_[4], pi_rt_reflections_4bounce_swrt_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
@@ -80,6 +82,7 @@ class RpRTReflections : public RpExecutor {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
         pass_data_ = pass_data;
+        initialized = false;
     }
 
     void Execute(RpBuilder &builder) override;

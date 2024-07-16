@@ -14,6 +14,7 @@ extern "C" {
 #include "passes/RpCombine.h"
 #include "passes/RpDOF.h"
 #include "passes/RpDebugEllipsoids.h"
+#include "passes/RpDebugOIT.h"
 #include "passes/RpDebugProbes.h"
 #include "passes/RpDebugRT.h"
 #include "passes/RpDebugTextures.h"
@@ -21,6 +22,9 @@ extern "C" {
 #include "passes/RpDepthHierarchy.h"
 #include "passes/RpFXAA.h"
 #include "passes/RpGBufferFill.h"
+#include "passes/RpOITBlendLayer.h"
+#include "passes/RpOITDepthPeel.h"
+#include "passes/RpOITScheduleRays.h"
 #include "passes/RpOpaque.h"
 #include "passes/RpRTGI.h"
 #include "passes/RpRTGICache.h"
@@ -198,6 +202,10 @@ class Renderer {
     RpGBufferFill rp_gbuffer_fill_;
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
+    RpOITDepthPeel rp_oit_depth_peel_;
+    RpOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {{prim_draw_}, {prim_draw_}, {prim_draw_}, {prim_draw_}};
+    RpOITScheduleRays rp_oit_schedule_rays_;
+    RpRTReflections rp_oit_rt_reflections_;
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTGI rp_rt_gi_;
@@ -210,6 +218,7 @@ class Renderer {
 
     RpDebugProbes rp_debug_probes_ = {prim_draw_};
     RpDebugRT rp_debug_rt_;
+    RpDebugOIT rp_debug_oit_;
 
     ViewState view_state_;
     PrimDraw prim_draw_;
@@ -217,7 +226,7 @@ class Renderer {
 
     Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
     // HQ SSR
-    Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2];
+    Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2][2];
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
     Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
@@ -275,6 +284,8 @@ class Renderer {
         RpResRef gi_cache_irradiance;
         RpResRef gi_cache_distance;
         RpResRef gi_cache_offset;
+
+        RpResRef oit_depth_buf;
     };
 
     void InitSkyResources();
@@ -288,6 +299,10 @@ class Renderer {
     void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool enable_gi);
     void AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
+    void AddOITPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                      const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                      RpResRef depth_hierarchy, RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                      FrameTextures &frame_textures);
     void AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                    const BindlessTextureData &bindless, FrameTextures &frame_textures);
 

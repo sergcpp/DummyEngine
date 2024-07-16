@@ -35,14 +35,22 @@ float GetEdgeStoppingRoughnessWeight(float roughness_p, float roughness_q, float
     return 1.0 - smoothstep(sigma_min, sigma_max, abs(roughness_p - roughness_q));
 }
 
-uint PackRay(uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
-    uint ray_x_15bit = ray_coord.x & 32767u; // 0b111111111111111
-    uint ray_y_14bit = ray_coord.y & 16383u; // 0b11111111111111
-    uint copy_horizontal_1bit = copy_horizontal ? 1u : 0u;
-    uint copy_vertical_1bit = copy_vertical ? 1u : 0u;
-    uint copy_diagonal_1bit = copy_diagonal ? 1u : 0u;
+uint PackRay(const uvec2 ray_coord, const bool copy_horizontal, const bool copy_vertical, const bool copy_diagonal) {
+    const uint ray_x_15bit = ray_coord.x & 32767u; // 0b111111111111111
+    const uint ray_y_14bit = ray_coord.y & 16383u; // 0b11111111111111
+    const uint copy_horizontal_1bit = copy_horizontal ? 1u : 0u;
+    const uint copy_vertical_1bit = copy_vertical ? 1u : 0u;
+    const uint copy_diagonal_1bit = copy_diagonal ? 1u : 0u;
 
     return (copy_diagonal_1bit << 31u) | (copy_vertical_1bit << 30u) | (copy_horizontal_1bit << 29u) | (ray_y_14bit << 15u) | (ray_x_15bit << 0u);
+}
+
+uint PackRay(const uvec2 ray_coord, const uint layer_index) {
+    const uint ray_x_15bit = ray_coord.x & 32767u; // 0b111111111111111
+    const uint ray_y_14bit = ray_coord.y & 16383u; // 0b11111111111111
+    const uint layer_3bit = layer_index & 7u; // 0b111
+
+    return (layer_3bit << 29u) | (ray_y_14bit << 15u) | (ray_x_15bit << 0u);
 }
 
 void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out bool copy_horizontal, out bool copy_vertical, out bool copy_diagonal) {
@@ -51,6 +59,12 @@ void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out bool copy_horizon
     copy_horizontal = ((packed_ray >> 29u) & 1u) != 0u; // 0b1
     copy_vertical = ((packed_ray >> 30u) & 1u) != 0u; // 0b1
     copy_diagonal = ((packed_ray >> 31u) & 1u) != 0u; // 0b1
+}
+
+void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out uint layer_index) {
+    ray_coord.x = (packed_ray >> 0u) & 32767u; // 0b111111111111111
+    ray_coord.y = (packed_ray >> 15u) & 16383u; // 0b11111111111111
+    layer_index = (packed_ray >> 29u) & 7u; // 0b111
 }
 
 // http://jcgt.org/published/0007/04/01/paper.pdf

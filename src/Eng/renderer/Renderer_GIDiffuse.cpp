@@ -239,9 +239,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::SBufRO, GIClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Trg::SBufRO, GIClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
                 {Trg::SBufRO, GIClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Trg::TBuf, GIClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                {Trg::TBuf, GIClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                {Trg::TBuf, GIClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                {Trg::UTBuf, GIClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
+                {Trg::UTBuf, GIClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
+                {Trg::UTBuf, GIClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
                 {Trg::Image2D, GIClassifyTiles::GI_IMG_SLOT, *gi_tex.ref},
                 {Trg::Image2D, GIClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
 

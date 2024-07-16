@@ -80,7 +80,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 
 layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
-layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform writeonly restrict image2D g_out_color_img;
+layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_out_color_img;
 
 vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id, int bounce) {
     mat3 tbn_transform = CreateTBN(normal);

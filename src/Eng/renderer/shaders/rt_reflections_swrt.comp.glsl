@@ -14,8 +14,13 @@
 #include "gi_cache_common.glsl"
 #include "rt_reflections_interface.h"
 
+#pragma multi_compile _ LAYERED
 #pragma multi_compile _ TWO_BOUNCES FOUR_BOUNCES
 #pragma multi_compile _ GI_CACHE
+
+#if defined(LAYERED) && (defined(TWO_BOUNCES) || defined(FOUR_BOUNCES))
+    #pragma dont_compile
+#endif
 
 #if defined(FOUR_BOUNCES)
     #define NUM_BOUNCES 4
@@ -80,15 +85,25 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     uint g_ray_list[];
 };
 
-layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+#ifdef LAYERED
+    layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
+#else
+    layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+#endif
 
-layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform writeonly restrict image2D g_out_color_img;
+#ifdef LAYERED
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_out_color_img[OIT_REFLECTION_LAYERS];
+#else
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_out_color_img;
+#endif
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
     const uint ray_index = gl_WorkGroupID.x * 64 + gl_LocalInvocationIndex;
     if (ray_index >= g_ray_counter[5]) return;
+
+#ifndef LAYERED
     const uint packed_coords = g_ray_list[ray_index];
 
     uvec2 ray_coords;
@@ -110,13 +125,6 @@ void main() {
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
     const float view_z = -ray_origin_vs.z;
 
-    const float t_min = 0.001;
-    const float t_max = 100.0;
-
-    const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
-
-    const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, first_roughness);
-
     const vec3 view_ray_vs = normalize(ray_origin_vs);
     const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, first_roughness, u.xy);
@@ -126,6 +134,40 @@ void main() {
     ray_origin_ws /= ray_origin_ws.w;
 
     ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + view_z * NormalBiasViewAddition) * normal_ws;
+#else
+    const uint packed_coords = g_ray_list[2 * ray_index + 0];
+    const uint packed_dir = g_ray_list[2 * ray_index + 1];
+
+    uvec2 ray_coords;
+    uint layer_index;
+    UnpackRayCoords(packed_coords, ray_coords, layer_index);
+
+    const vec2 oct_dir = vec2(packed_dir & 0xffffu, (packed_dir >> 16) & 0xffffu) / 65535.0;
+    vec3 refl_ray_ws = UnpackUnitVector(oct_dir);
+
+    int frag_index = int(layer_index) * g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
+    frag_index += int(ray_coords.y) * g_shrd_data.ires_and_ifres.x + int(ray_coords.x);
+    const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, frag_index).x);
+    const float first_roughness = 0.0;
+
+    const ivec2 icoord = ivec2(ray_coords);
+    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec3 ray_origin_ss = vec3(norm_uvs, depth);
+    const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
+    const float view_z = -ray_origin_vs.z;
+
+    vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
+    ray_origin_ws /= ray_origin_ws.w;
+
+    vec4 u = vec4(0.0);
+#endif
+
+    const float t_min = 0.001;
+    const float t_max = 100.0;
+
+    const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
+    const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, first_roughness);
 
     float first_ray_len = 100.0, total_ray_len = 0.0;
     vec3 throughput = vec3(1.0);
@@ -507,6 +549,8 @@ void main() {
         final_color *= vec3(1.0, 0.0, 0.0);
     }
 #endif
+
+#ifndef LAYERED
     imageStore(g_out_color_img, icoord, vec4(final_color, first_ray_len));
 
     const ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
@@ -522,4 +566,11 @@ void main() {
         const ivec2 copy_coords = copy_target;
         imageStore(g_out_color_img, copy_coords, vec4(final_color, first_ray_len));
     }
+#else
+    [[dont_flatten]] if (layer_index == 0) {
+        imageStore(g_out_color_img[0], icoord / 2, vec4(final_color, 1.0));
+    } else {
+        imageStore(g_out_color_img[1], icoord / 2, vec4(final_color, 1.0));
+    }
+#endif
 }

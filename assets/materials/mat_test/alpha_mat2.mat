@@ -3,7 +3,7 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - two_sided
-    - alpha_test
+    - alpha_blend
 textures:
     - default_basecolor.tex
     - default_normalmap.dds
@@ -12,4 +12,4 @@ params:
     - 0.0 0.0 0.5 0.0      # base color, roughness
     - 0.0 0.0 0.5 0.0      # sheen, sheen_tint, specular, spec_tint
     - 0.0 0.0 0.0 0.0      # metallic, transmission, clearcoat, clearcoat_roughness
-    - 0.75 0.0 0.0 0.0     # transparency, unused, unused, unused
+    - 0.5 0.0 0.0 0.0      # transparency, unused, unused, unused

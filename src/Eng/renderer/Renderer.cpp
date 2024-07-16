@@ -1122,15 +1122,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
 
-        if (deferred_shading) {
-            // TODO: OIT
-        } else {
-            // Simple transparent pass
-            AddForwardTransparentPass(common_buffers, persistent_data, bindless_tex, frame_textures);
-        }
-
         //
-        // Reflections pass
+        // Reflections
         //
         if (list.render_settings.reflections_quality != eReflectionsQuality::Off &&
             !list.render_settings.debug_wireframe) {
@@ -1144,16 +1137,26 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
         }
 
+        //
+        // Transparency
+        //
+        if (deferred_shading) {
+            AddOITPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
+                         rt_geo_instances_res, rt_obj_instances_res, frame_textures);
+        } else {
+            // Simple transparent pass
+            AddForwardTransparentPass(common_buffers, persistent_data, bindless_tex, frame_textures);
+        }
+
         frame_textures.exposure = AddAutoexposurePasses(frame_textures.color);
 
         //
-        // Debug geometry
+        // Debug stuff
         //
         if (list.render_settings.debug_probes != -1) {
             auto &debug_probes = rp_builder_.AddPass("DEBUG PROBES");
 
             auto *data = debug_probes.AllocPassData<RpDebugProbesData>();
-
             data->shared_data =
                 debug_probes.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::VertexShader);
             data->offset_tex =
@@ -1172,6 +1175,20 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             rp_debug_probes_.Setup(rp_builder_, list, &view_state_, data);
             debug_probes.set_executor(&rp_debug_probes_);
+        }
+
+        if (list.render_settings.debug_oit_layer != -1) {
+            auto &debug_oit = rp_builder_.AddPass("DEBUG OIT");
+
+            auto *data = debug_oit.AllocPassData<RpDebugOIT::PassData>();
+            data->layer_index = list.render_settings.debug_oit_layer;
+            frame_textures.oit_depth_buf = data->oit_depth_buf =
+                debug_oit.AddStorageReadonlyInput(frame_textures.oit_depth_buf, Ren::eStageBits::ComputeShader);
+            frame_textures.color = data->output_tex =
+                debug_oit.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::ComputeShader);
+
+            rp_debug_oit_.Setup(rp_builder_, &view_state_, data);
+            debug_oit.set_executor(&rp_debug_oit_);
         }
 
         // if (list.render_flags & DebugEllipsoids) {

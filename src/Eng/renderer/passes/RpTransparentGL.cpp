@@ -49,17 +49,10 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
     rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
 
     // Bind main buffer for drawing
-#if defined(REN_DIRECT_DRAWING)
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    rast_state.viewport[2] = view_state_->scr_res[0];
-    rast_state.viewport[3] = view_state_->scr_res[1];
-#else
     glBindFramebuffer(GL_FRAMEBUFFER, transparent_draw_fb_[0][fb_to_use_].id());
 
     rast_state.viewport[2] = view_state_->act_res[0];
     rast_state.viewport[3] = view_state_->act_res[1];
-#endif
 
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
@@ -216,7 +209,6 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
         backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
     }
 
-#if !defined(REN_DIRECT_DRAWING)
     if (view_state_->is_multisampled) {
         /*Ren::DebugMarker _resolve_ms(ctx.api_ctx(), ctx.current_cmd_buf(), "RESOLVE MS BUFFER");
 
@@ -236,7 +228,6 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings, uniforms);*/
     }
-#endif
 }
 
 void Eng::RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {

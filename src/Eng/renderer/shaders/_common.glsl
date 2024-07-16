@@ -314,7 +314,7 @@ struct ShadowMapRegion {
     mat4 clip_from_world;
 };
 
-#define LIGHTS_BUF_STRIDE 5
+const int LIGHTS_BUF_STRIDE = 5;
 
 const int LIGHT_TYPE_SPHERE = 0;
 const int LIGHT_TYPE_RECT = 1;
@@ -340,6 +340,7 @@ struct SharedData {
     vec4 sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
     vec4 clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
+    ivec4 ires_and_ifres;
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;
     vec4 ambient_hack;

@@ -141,7 +141,8 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/Renderer_Names.h
                         renderer/Renderer_Passes.cpp
                         renderer/Renderer_Structs.h
-                        renderer/Renderer_SunShadows.cpp)
+                        renderer/Renderer_SunShadows.cpp
+                        renderer/Renderer_Transparent.cpp)
 
 set(SCENE_SOURCES   scene/Atmosphere.h
                     scene/Atmosphere.cpp
@@ -169,6 +170,8 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpBuildAccStructures.cpp
                     renderer/passes/RpCombine.h
                     renderer/passes/RpCombine.cpp
+                    renderer/passes/RpDebugOIT.h
+                    renderer/passes/RpDebugOIT.cpp
                     renderer/passes/RpDebugProbes.h
                     renderer/passes/RpDebugProbes.cpp
                     renderer/passes/RpDebugRT.h
@@ -179,6 +182,12 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpDepthHierarchy.cpp
                     renderer/passes/RpGBufferFill.h
                     renderer/passes/RpGBufferFill.cpp
+                    renderer/passes/RpOITBlendLayer.h
+                    renderer/passes/RpOITBlendLayer.cpp
+                    renderer/passes/RpOITDepthPeel.h
+                    renderer/passes/RpOITDepthPeel.cpp
+                    renderer/passes/RpOITScheduleRays.h
+                    renderer/passes/RpOITScheduleRays.cpp
                     renderer/passes/RpOpaque.h
                     renderer/passes/RpOpaque.cpp
                     renderer/passes/RpReadExposure.h
@@ -227,6 +236,9 @@ if(${RENDERER} STREQUAL "GL")
                         renderer/passes/RpFXAA.h                # GL-only for now
                         renderer/passes/RpFXAA.cpp              # GL-only for now
                         renderer/passes/RpGBufferFillGL.cpp
+                        renderer/passes/RpOITBlendLayerGL.cpp
+                        renderer/passes/RpOITDepthPeelGL.cpp
+                        renderer/passes/RpOITScheduleRaysGL.cpp
                         renderer/passes/RpOpaqueGL.cpp
                         renderer/passes/RpRTGI_GL.cpp
                         renderer/passes/RpRTGICache_GL.cpp
@@ -249,6 +261,9 @@ elseif(${RENDERER} STREQUAL "VK")
                      renderer/passes/RpDepthFillVK.cpp
                      renderer/passes/RpDepthHierarchyVK.cpp
                      renderer/passes/RpGBufferFillVK.cpp
+                     renderer/passes/RpOITBlendLayerVK.cpp
+                     renderer/passes/RpOITDepthPeelVK.cpp
+                     renderer/passes/RpOITScheduleRaysVK.cpp
                      renderer/passes/RpOpaqueVK.cpp
                      renderer/passes/RpRTGI_VK.cpp
                      renderer/passes/RpRTGICache_VK.cpp

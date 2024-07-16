@@ -37,8 +37,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 10;
     descr_sizes.ubuf_count = 1;
+    descr_sizes.utbuf_count = 4;
     descr_sizes.sbuf_count = 3;
-    descr_sizes.tbuf_count = 4;
     const VkDescriptorSet res_descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout_);
 
     { // update descriptor set

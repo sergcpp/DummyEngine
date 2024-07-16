@@ -19,7 +19,7 @@ layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = SHADOW_TEX_VAL_SLOT) uniform sampler2D g_shadow_val_tex;
 
-layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform writeonly restrict image2D g_out_shadow_img;
+layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform restrict writeonly image2D g_out_shadow_img;
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 

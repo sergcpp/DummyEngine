@@ -3,6 +3,7 @@
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
 #include <Ren/DescriptorPool.h>
+#include <Ren/DrawCall.h>
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
@@ -73,110 +74,25 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
     VkDescriptorSetLayout simple_descr_set_layout = pi_solid_[0].prog()->descr_set_layouts()[0];
     VkDescriptorSet simple_descr_sets[2];
     { // allocate descriptor sets
-        Ren::DescrSizes descr_sizes;
-        descr_sizes.sbuf_count = 1;
-        descr_sizes.tbuf_count = 1;
-
-        simple_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, simple_descr_set_layout);
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
+                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
+                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref}};
+        simple_descr_sets[0] =
+            Ren::PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
         simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
-    }
-
-    { // update descriptor set
-        const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
-        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
-                                                                  VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-
-        VkWriteDescriptorSet descr_writes[3];
-        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[0].dstSet = simple_descr_sets[0];
-        descr_writes[0].dstBinding = BIND_INST_BUF;
-        descr_writes[0].dstArrayElement = 0;
-        descr_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-        descr_writes[0].descriptorCount = 1;
-        descr_writes[0].pTexelBufferView = &instances_buf_view;
-
-        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[1].dstSet = simple_descr_sets[0];
-        descr_writes[1].dstBinding = BIND_INST_NDX_BUF;
-        descr_writes[1].dstArrayElement = 0;
-        descr_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descr_writes[1].descriptorCount = 1;
-        descr_writes[1].pBufferInfo = &instance_indices_buf_info;
-
-        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[2].dstSet = simple_descr_sets[0];
-        descr_writes[2].dstBinding = BIND_MATERIALS_BUF;
-        descr_writes[2].dstArrayElement = 0;
-        descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descr_writes[2].descriptorCount = 1;
-        descr_writes[2].pBufferInfo = &mat_buf_info;
-
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(std::size(descr_writes)), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_.prog()->descr_set_layouts()[0];
     VkDescriptorSet vege_descr_sets[2];
     { // allocate descriptor sets
-        Ren::DescrSizes descr_sizes;
-        descr_sizes.img_sampler_count = 1;
-        descr_sizes.sbuf_count = 1;
-        descr_sizes.tbuf_count = 1;
-
-        vege_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, vege_descr_set_layout);
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
+                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
+                                         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
+                                         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
+                                         {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref}};
+        vege_descr_sets[0] =
+            Ren::PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
         vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
-    }
-
-    { // update descriptor set
-        const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
-        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
-                                                                  VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorImageInfo img_info = noise_tex.ref->vk_desc_image_info();
-
-        VkWriteDescriptorSet descr_writes[5];
-        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[0].dstSet = vege_descr_sets[0];
-        descr_writes[0].dstBinding = BIND_UB_SHARED_DATA_BUF;
-        descr_writes[0].dstArrayElement = 0;
-        descr_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descr_writes[0].descriptorCount = 1;
-        descr_writes[0].pBufferInfo = &ubuf_info;
-
-        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[1].dstSet = vege_descr_sets[0];
-        descr_writes[1].dstBinding = BIND_INST_BUF;
-        descr_writes[1].dstArrayElement = 0;
-        descr_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-        descr_writes[1].descriptorCount = 1;
-        descr_writes[1].pTexelBufferView = &instances_buf_view;
-
-        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[2].dstSet = vege_descr_sets[0];
-        descr_writes[2].dstBinding = BIND_INST_NDX_BUF;
-        descr_writes[2].dstArrayElement = 0;
-        descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descr_writes[2].descriptorCount = 1;
-        descr_writes[2].pBufferInfo = &instance_indices_buf_info;
-
-        descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[3].dstSet = vege_descr_sets[0];
-        descr_writes[3].dstBinding = BIND_NOISE_TEX;
-        descr_writes[3].dstArrayElement = 0;
-        descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descr_writes[3].descriptorCount = 1;
-        descr_writes[3].pImageInfo = &img_info;
-
-        descr_writes[4] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[4].dstSet = vege_descr_sets[0];
-        descr_writes[4].dstBinding = BIND_MATERIALS_BUF;
-        descr_writes[4].dstArrayElement = 0;
-        descr_writes[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descr_writes[4].descriptorCount = 1;
-        descr_writes[4].pBufferInfo = &mat_buf_info;
-
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(std::size(descr_writes)), descr_writes, 0, nullptr);
     }
 
     bool region_cleared[MAX_SHADOWMAPS_TOTAL] = {};

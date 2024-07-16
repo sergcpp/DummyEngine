@@ -9,7 +9,7 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = INPUT_TEX_SLOT) uniform sampler2D g_input_tex;
 
-layout(binding = OUTPUT_IMG_SLOT, rgba16f) uniform writeonly image2D g_output_img[4];
+layout(binding = OUTPUT_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_output_img[4];
 
 shared vec4 g_shared[8][8];
 

@@ -90,10 +90,6 @@
             "drawable" : {
                 "mesh_file" : "mat_test/model.mesh",
                 "material_override" : [ "mat_test/alpha_mat1.mat" ]
-            },
-            "acc_structure" : {
-                "mesh_file" : "mat_test/model.mesh",
-                "material_override" : [ "mat_test/alpha_mat1.mat" ]
             }
         },
         {

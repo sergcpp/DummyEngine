@@ -455,7 +455,7 @@ out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;
 out vec4 aVertexAttrib_;
 
-void main(void) {
+void main() {
     vec3 vertex_normal_ws = normalize((uMMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vertex_tangent_ws = normalize((uMMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
@@ -483,7 +483,7 @@ out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;
 out vec4 aVertexAttrib_;
 
-void main(void) {
+void main() {
     vec3 vertex_normal_ws = normalize((uMMatrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vertex_tangent_ws = normalize((uMMatrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
@@ -514,7 +514,7 @@ out mat3 aVertexTBN_;
 out vec2 aVertexUVs1_;
 out vec4 aVertexAttrib_;
 
-void main(void) {
+void main() {
     uvec4 vtx_indices = uvec4(aVertexIndices);
     vec4 vtx_weights = aVertexWeights;
 
@@ -557,7 +557,7 @@ in vec4 aVertexAttrib_;
 
 out vec4 outColor;
 
-void main(void) {
+void main() {
     if (mode < 0.5) {
         vec4 color = texture(diffuse_texture, aVertexUVs1_);
         if (color.a < 0.1) discard;

@@ -23,7 +23,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
 layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
-layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform writeonly restrict image2D g_out_color_img;
+layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_out_color_img;
 
 layout(location = 0) rayPayloadEXT RayPayload g_pld;
 

@@ -34,7 +34,7 @@ layout (binding = 0, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-void main(void) {
+void main() {
     g_vtx_pos = gl_TessCoord[0] * g_vtx_pos_es[0] + gl_TessCoord[1] * g_vtx_pos_es[1] + gl_TessCoord[2] * g_vtx_pos_es[2];
     g_vtx_uvs = gl_TessCoord[0] * g_vtx_uvs_es[0] + gl_TessCoord[1] * g_vtx_uvs_es[1] + gl_TessCoord[2] * g_vtx_uvs_es[2];
     g_vtx_normal = gl_TessCoord[0] * g_vtx_norm_es[0] + gl_TessCoord[1] * g_vtx_norm_es[1] + gl_TessCoord[2] * g_vtx_norm_es[2];

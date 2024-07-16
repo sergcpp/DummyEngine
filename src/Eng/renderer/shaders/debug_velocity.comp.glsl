@@ -9,11 +9,9 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity_tex;
 
-layout(binding = OUT_IMG_SLOT, rgba8) uniform writeonly image2D g_out_img;
+layout(binding = OUT_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_out_img;
 
 // 2D vector field visualization by Morgan McGuire, @morgan3d, http://casual-effects.com
-
-const float PI = 3.1415927;
 
 const int   ARROW_V_STYLE = 1;
 const int   ARROW_LINE_STYLE = 2;
@@ -23,7 +21,7 @@ const int   ARROW_STYLE = ARROW_LINE_STYLE;
 const float ARROW_TILE_SIZE = 32.0;
 
 // How sharp should the arrow head be? Used
-const float ARROW_HEAD_ANGLE = 45.0 * PI / 180.0;
+const float ARROW_HEAD_ANGLE = 45.0 * M_PI / 180.0;
 
 // Used for ARROW_LINE_STYLE
 const float ARROW_HEAD_LENGTH = ARROW_TILE_SIZE / 6.0;

@@ -412,8 +412,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         __record_textures(list.visible_textures, front_mat.get(), (obj.comp_mask & CompAnimStateBit),
                                           cam_dist_u16);
 
-                        if (!deferred_shading || (front_mat_flags & eMatFlags::CustomShaded) ||
-                            (front_mat_flags & eMatFlags::AlphaBlend)) {
+                        if (!deferred_shading || (front_mat_flags & eMatFlags::CustomShaded)) {
                             CustomDrawBatch &fwd_batch = list.custom_batches.emplace_back();
 
                             fwd_batch.alpha_blend_bit = (front_mat_flags & eMatFlags::AlphaBlend) ? 1 : 0;
@@ -435,8 +434,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             fwd_batch.instance_count = 1;
                         }
 
-                        if (!(front_mat_flags & eMatFlags::AlphaBlend) ||
-                            ((front_mat_flags & eMatFlags::AlphaBlend) && (front_mat_flags & eMatFlags::AlphaTest))) {
+                        { // detph fill and gbuffer draw (in deferred mode)
                             BasicDrawBatch &base_batch = list.basic_batches.emplace_back();
 
                             base_batch.type_bits = BasicDrawBatch::TypeSimple;
@@ -447,9 +445,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             }
 
                             base_batch.alpha_test_bit = (front_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
+                            base_batch.alpha_blend_bit = (front_mat_flags & eMatFlags::AlphaBlend) ? 1 : 0;
                             base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
                             base_batch.two_sided_bit = (front_mat_flags & eMatFlags::TwoSided) ? 1 : 0;
-                            base_batch.custom_shaded = (front_mat_flags & eMatFlags::CustomShaded) ? 1 : 0;
                             base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
                             base_batch.base_vertex = base_vertex;
                             base_batch.indices_count = grp.num_indices;
@@ -1563,6 +1561,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             }
         }
 
+        list.alpha_blend_start_index = -1;
+
         // Merge similar batches
         for (uint32_t start = 0, end = 1; end <= uint32_t(list.basic_batch_indices.size()); end++) {
             if (end == list.basic_batch_indices.size() ||
@@ -1586,6 +1586,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         b1.instance_count += b2.instance_count;
                         b2.instance_count = 0;
                     }
+                }
+
+                if (list.alpha_blend_start_index == -1 && b1.alpha_blend_bit) {
+                    list.alpha_blend_start_index = int(start);
                 }
 
                 start = end;
@@ -1620,8 +1624,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
     }
 
-    list.alpha_blend_start_index = -1;
-
     // Merge similar batches
     for (uint32_t start = 0, end = 1; end <= uint32_t(list.custom_batch_indices.size()); end++) {
         if (end == list.custom_batch_indices.size() ||
@@ -1644,10 +1646,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     b1.instance_count += b2.instance_count;
                     b2.instance_count = 0;
                 }
-            }
-
-            if (list.alpha_blend_start_index == -1 && b1.alpha_blend_bit) {
-                list.alpha_blend_start_index = int(start);
             }
 
             start = end;

@@ -103,26 +103,26 @@ struct BasicDrawBatch {                        // NOLINT
     static const uint32_t TypeSkinned = 0b10u; // skeletal
     static const uint32_t TypeUnused = 0b11u;
 
-    static const uint32_t BitsSimple = (TypeSimple << 30u);
-    static const uint32_t BitsVege = (TypeVege << 30u);
-    static const uint32_t BitsSkinned = (TypeSkinned << 30u);
-    static const uint32_t BitsUnused = (TypeUnused << 30u);
-    static const uint32_t BitAlphaTest = (1u << 29u);
-    static const uint32_t BitMoving = (1u << 28u);
-    static const uint32_t BitTwoSided = (1u << 27u);
-    static const uint32_t BitBackSided = (1u << 26u);
-    static const uint32_t BitCustomShaded = (1u << 25u);
+    static const uint32_t BitsSimple = (TypeSimple << 29u);
+    static const uint32_t BitsVege = (TypeVege << 29u);
+    static const uint32_t BitsSkinned = (TypeSkinned << 29u);
+    static const uint32_t BitsUnused = (TypeUnused << 29u);
+    static const uint32_t BitAlphaTest = (1u << 28u);
+    static const uint32_t BitMoving = (1u << 27u);
+    static const uint32_t BitTwoSided = (1u << 26u);
+    static const uint32_t BitBackSided = (1u << 25u);
+    static const uint32_t BitAlphaBlend = (1u << 31u);
     static const uint32_t FlagBits = (0b1111111u << 25u);
 
     union {
         struct {
             uint32_t indices_offset : 25;
-            uint32_t custom_shaded : 1;
             uint32_t back_sided_bit : 1;
             uint32_t two_sided_bit : 1;
             uint32_t moving_bit : 1; // object uses two transforms
             uint32_t alpha_test_bit : 1;
             uint32_t type_bits : 2;
+            uint32_t alpha_blend_bit : 1;
         };
         uint32_t sort_key = 0;
     };
@@ -292,12 +292,14 @@ struct render_settings_t {
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
     int8_t debug_probes = -1;
+    int8_t debug_oit_layer = -1;
 
     bool operator==(const render_settings_t &rhs) {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
                gi_quality == rhs.gi_quality && sky_quality == rhs.sky_quality && debug_rt == rhs.debug_rt &&
-               debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes;
+               debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
+               debug_oit_layer == rhs.debug_oit_layer;
     }
     bool operator!=(const render_settings_t &rhs) { return !operator==(rhs); }
 
@@ -367,6 +369,7 @@ struct SharedDataBlock {
     Ren::Vec4f sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
     Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
+    Ren::Vec4i ires_and_ifres;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     Ren::Vec4u item_counts;
     Ren::Vec4f ambient_hack;
@@ -376,7 +379,8 @@ struct SharedDataBlock {
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
     Types::AtmosphereParams atmosphere;
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + PROBE_VOLUMES_COUNT * 64,
+static_assert(sizeof(SharedDataBlock) ==
+                  7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + 16 + PROBE_VOLUMES_COUNT * 64,
               "!");
 
 const int MAX_MATERIAL_PARAMS = 4;

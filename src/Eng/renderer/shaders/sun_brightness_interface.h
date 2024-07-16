@@ -5,13 +5,6 @@
 
 INTERFACE_START(SunBrightness)
 
-/*struct Params {
-    uvec2 img_size;
-    float enabled;
-    float pixel_spread_angle;
-    vec4 softness_factor;
-};*/
-
 const int LOCAL_GROUP_SIZE_X = 8;
 const int LOCAL_GROUP_SIZE_Y = 8;
 

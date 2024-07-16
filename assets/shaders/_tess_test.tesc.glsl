@@ -26,7 +26,7 @@ float GetTessLevel(float Distance0, float Distance1) {
     return min((32.0 * 1024.0) / (AvgDistance * AvgDistance), 64.0);
 }
 
-void main(void) {
+void main() {
     g_vtx_pos_es[gl_InvocationID] = g_vtx_pos_cs[gl_InvocationID];
     g_vtx_uvs_es[gl_InvocationID] = g_vtx_uvs_cs[gl_InvocationID];
     g_vtx_norm_es[gl_InvocationID] = g_vtx_norm_cs[gl_InvocationID];

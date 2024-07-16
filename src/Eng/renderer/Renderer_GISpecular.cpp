@@ -160,9 +160,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::SBufRO, SSRClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Trg::SBufRO, SSRClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
                 {Trg::SBufRO, SSRClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Trg::TBuf, SSRClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                {Trg::TBuf, SSRClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                {Trg::TBuf, SSRClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                {Trg::UTBuf, SSRClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
+                {Trg::UTBuf, SSRClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
+                {Trg::UTBuf, SSRClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
                 {Trg::Image2D, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref},
                 {Trg::Image2D, SSRClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
 
@@ -315,9 +315,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
 
-            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_[irradiance_tex != nullptr], *indir_args_buf.ref, 0, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_[0][irradiance_tex != nullptr], *indir_args_buf.ref, 0,
+                                         bindings, &uniform_params, sizeof(uniform_params),
+                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -418,7 +418,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 data->offset_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_offset, stage);
             }
 
-            refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
+            refl_tex = data->out_refl_tex[0] = rt_refl.AddStorageImageOutput(refl_tex, stage);
 
             rp_rt_reflections_.Setup(rp_builder_, &view_state_, &bindless, data);
             rt_refl.set_executor(&rp_rt_reflections_);

@@ -37,7 +37,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-void main(void) {
+void main() {
     g_vtx_uvs = gl_TessCoord[0] * oPatch.g_in_vtx_uvs[0] + gl_TessCoord[1] * oPatch.g_in_vtx_uvs[1] + gl_TessCoord[2] * oPatch.g_in_vtx_uvs[2];
     g_vtx_normal = gl_TessCoord[0] * oPatch.aVertexNormal[0] + gl_TessCoord[1] * oPatch.aVertexNormal[1] + gl_TessCoord[2] * oPatch.aVertexNormal[2];
     g_vtx_tangent = gl_TessCoord[0] * oPatch.aVertexTangent[0] + gl_TessCoord[1] * oPatch.aVertexTangent[1] + gl_TessCoord[2] * oPatch.aVertexTangent[2];

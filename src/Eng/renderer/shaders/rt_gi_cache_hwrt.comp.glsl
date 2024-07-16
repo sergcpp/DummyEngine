@@ -61,7 +61,7 @@ layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
 layout(binding = DISTANCE_TEX_SLOT) uniform sampler2DArray g_distance_tex;
 layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
-layout(binding = OUT_RAY_DATA_IMG_SLOT, rgba16f) uniform writeonly restrict image2DArray g_out_ray_data_img;
+layout(binding = OUT_RAY_DATA_IMG_SLOT, rgba16f) uniform restrict writeonly image2DArray g_out_ray_data_img;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 

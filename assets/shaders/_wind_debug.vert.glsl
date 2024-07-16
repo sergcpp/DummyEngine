@@ -28,7 +28,7 @@ layout(location = 4) out vec3 g_vtx_sh_uvs[4];
 
 invariant gl_Position;
 
-void main(void) {
+void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
     mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);

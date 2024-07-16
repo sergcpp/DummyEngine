@@ -27,7 +27,7 @@ layout(location = 4) in vec2 g_vtx_uvs0;
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
 
-void main(void) {
+void main() {
     vec3 col_yuv;
     col_yuv.x = texture(SAMPLER2D(g_mat0_tex), g_vtx_uvs0).r;
     col_yuv.yz = texture(SAMPLER2D(g_mat1_tex), g_vtx_uvs0).rg;

@@ -10,7 +10,7 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_ray_counter[];
 };
-layout(std430, binding = INDIR_ARGS_SLOT) writeonly buffer IndirArgs {
+layout(std430, binding = INDIR_ARGS_SLOT) restrict writeonly buffer IndirArgs {
     uint g_intersect_args[];
 };
 

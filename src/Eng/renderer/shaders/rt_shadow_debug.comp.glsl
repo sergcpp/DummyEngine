@@ -23,7 +23,7 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = HIT_MASK_TEX_SLOT) uniform usampler2D g_hit_mask_tex;
 
-layout(binding = OUT_RESULT_IMG_SLOT, r8) uniform writeonly image2D g_out_result_img;
+layout(binding = OUT_RESULT_IMG_SLOT, r8) uniform restrict writeonly image2D g_out_result_img;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 

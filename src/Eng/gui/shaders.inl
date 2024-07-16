@@ -26,7 +26,7 @@ layout(location = 2) flat out float aVertexMode_;
 flat out float aVertexMode_;
 #endif
 
-void main(void) {
+void main() {
     gl_Position = vec4(aVertexPosition, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
@@ -65,7 +65,7 @@ float median(float r, float g, float b) {
     return max(min(r, g), min(max(r, g), b));
 }
 
-void main(void) {
+void main() {
     vec4 tex_color = texture(s_texture, aVertexUVs_);
 
     if (aVertexMode_ < 0.25) {

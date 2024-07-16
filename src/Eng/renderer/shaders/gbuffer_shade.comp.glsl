@@ -151,13 +151,7 @@ void main() {
         const uint item_data = texelFetch(g_items_buf, int(i)).x;
         const int li = int(bitfieldExtract(item_data, 0, 12));
 
-        light_item_t litem;
-        litem.col_and_type = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
-        litem.pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
-        litem.dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
-        litem.u_and_reg = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3);
-        litem.v_and_blend = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
-
+        const light_item_t litem = FetchLightItem(g_lights_buf, li);
         const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
         lobe_weights_t _lobe_weights = lobe_weights;
@@ -247,7 +241,7 @@ void main() {
     //
     // Indirect probes
     //
-    vec3 indirect_col = vec3(0.0);
+    /*vec3 indirect_col = vec3(0.0);
     float total_fade = 0.0;
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
@@ -264,7 +258,7 @@ void main() {
     }
 
     indirect_col /= max(total_fade, 1.0);
-    indirect_col = max(1.0 * indirect_col, vec3(0.0));
+    indirect_col = max(1.0 * indirect_col, vec3(0.0));*/
 
     vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
 

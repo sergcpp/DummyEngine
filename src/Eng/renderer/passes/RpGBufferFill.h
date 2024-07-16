@@ -19,12 +19,8 @@ class RpGBufferFill : public RpExecutor {
 
     Ren::Framebuffer main_draw_fb_[Ren::MaxFramesInFlight][2];
     int fb_to_use_ = 0;
-#if defined(USE_VK_RENDER)
-    VkDescriptorSetLayout descr_set_layout_ = VK_NULL_HANDLE;
-#endif
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::ApiContext *api_ctx_ = nullptr;
     const ViewState *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
@@ -58,12 +54,7 @@ class RpGBufferFill : public RpExecutor {
                   RpAllocTex &depth_tex);
     void DrawOpaque(RpBuilder &builder);
 
-#if defined(USE_VK_RENDER)
-    void InitDescrSetLayout();
-#endif
   public:
-    ~RpGBufferFill();
-
     void Setup(const DrawList **p_list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
                const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
                const BindlessTextureData *bindless_tex, const RpResRef noise_tex, const RpResRef dummy_white,
@@ -100,8 +91,5 @@ class RpGBufferFill : public RpExecutor {
     }
 
     void Execute(RpBuilder &builder) override;
-
-    // TODO: remove this
-    int alpha_blend_start_index_ = -1;
 };
 } // namespace Eng

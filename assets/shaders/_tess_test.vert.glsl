@@ -47,7 +47,7 @@ layout(location = 12) out flat uvec2 g_bump_tex;
 
 //invariant gl_Position;
 
-void main(void) {
+void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
     mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);

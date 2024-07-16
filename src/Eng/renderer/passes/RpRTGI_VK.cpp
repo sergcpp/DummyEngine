@@ -142,8 +142,8 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
         {Ren::eBindTarget::SBufRO, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::TBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (irradiance_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
@@ -266,21 +266,21 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::SBufRO, RTGI::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::RAY_LIST_SLOT, *ray_list_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::ENV_TEX_SLOT, *env_tex.ref},
-        {Ren::eBindTarget::TBuf, RTGI::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTGI::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::MATERIAL_BUF_SLOT, *materials_buf.ref},
-        {Ren::eBindTarget::TBuf, RTGI::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::TBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (irradiance_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);

@@ -138,9 +138,9 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassify::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, *tile_counter_buf.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowClassify::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Ren::eBindTarget::TBuf, RTShadowClassify::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                {Ren::eBindTarget::TBuf, RTShadowClassify::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                {Ren::eBindTarget::TBuf, RTShadowClassify::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                {Ren::eBindTarget::UTBuf, RTShadowClassify::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
+                {Ren::eBindTarget::UTBuf, RTShadowClassify::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
+                {Ren::eBindTarget::UTBuf, RTShadowClassify::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
                 {Ren::eBindTarget::Image2D, RTShadowClassify::RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
                 {Ren::eBindTarget::Image2D, RTShadowClassify::NOISE_IMG_SLOT, *noise_tex.ref}};
 

@@ -345,7 +345,8 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
         new_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
         new_geo.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
         new_geo.flags = 0;
-        if (!(front_mat_flags & Ren::eMatFlags::AlphaTest) && !(back_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+        if (!(front_mat_flags & Ren::eMatFlags::AlphaTest) && !(back_mat->flags() & Ren::eMatFlags::AlphaTest) &&
+            !(front_mat_flags & Ren::eMatFlags::AlphaBlend) && !(back_mat->flags() & Ren::eMatFlags::AlphaBlend)) {
             new_geo.flags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
         }
         new_geo.geometry.triangles = tri_data;

@@ -24,9 +24,9 @@ layout(std430, binding = TILE_METADATA_BUF_SLOT) readonly buffer TileMetadata {
 };
 
 #if defined(PASS_0) || defined(PASS_1)
-layout(binding = OUT_RESULT_IMG_SLOT, rg16f) uniform writeonly image2D g_out_result_img;
+layout(binding = OUT_RESULT_IMG_SLOT, rg16f) uniform restrict writeonly image2D g_out_result_img;
 #else
-layout(binding = OUT_RESULT_IMG_SLOT, r8) uniform writeonly image2D g_out_result_img;
+layout(binding = OUT_RESULT_IMG_SLOT, r8) uniform restrict writeonly image2D g_out_result_img;
 #endif
 
 /**********************************************************************

@@ -31,7 +31,7 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
         offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
     }
 
-    RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -50,11 +50,11 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
         {Ren::eBindTarget::SBufRO, RTDebug::VTX_BUF2_SLOT, *vtx_buf2.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::TBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
+        {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex.ref}};
     if (irradiance_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);
@@ -110,7 +110,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
     }
 
-    RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -160,21 +160,21 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
-        {Ren::eBindTarget::TBuf, RTDebug::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::TBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
+        {Ren::eBindTarget::UTBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+        {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex.ref}};
     if (irradiance_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);

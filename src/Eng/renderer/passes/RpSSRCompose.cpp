@@ -66,8 +66,8 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
             {Ren::eBindTarget::Tex2DSampled, BIND_REFL_PREV_TEX, *down_buf_4x_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, BIND_REFL_BRDF_TEX, *brdf_lut.ref},
             //
-            {Ren::eBindTarget::TBuf, BIND_CELLS_BUF, *cells_buf.tbos[0]},
-            {Ren::eBindTarget::TBuf, BIND_ITEMS_BUF, *items_buf.tbos[0]},
+            {Ren::eBindTarget::UTBuf, BIND_CELLS_BUF, *cells_buf.tbos[0]},
+            {Ren::eBindTarget::UTBuf, BIND_ITEMS_BUF, *items_buf.tbos[0]},
             {Ren::eBindTarget::TexCubeArray, BIND_ENV_TEX, *probe_storage_},
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
 

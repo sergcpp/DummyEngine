@@ -53,12 +53,6 @@ class RpDepthFill : public RpExecutor {
     int fb_to_use_ = 0;
 
   public:
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, bool clear_depth,
-               const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
-               const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex, const char instances_buf[],
-               const char instance_indices_buf[], const char shared_data_buf[], const Ren::Tex2DRef &noise_tex,
-               const char main_depth_tex[], const char main_velocity_tex[]);
-
     void Setup(const DrawList **list, const ViewState *view_state, bool clear_depth, const RpResRef vtx_buf1,
                const RpResRef vtx_buf2, const RpResRef ndx_buf, const RpResRef materials_buf,
                const RpResRef textures_buf, const BindlessTextureData *bindless_tex, const RpResRef instances_buf,

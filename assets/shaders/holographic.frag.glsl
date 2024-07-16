@@ -40,7 +40,7 @@ layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
 layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 
-void main(void) {
+void main() {
     float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
 
     // remapped depth in [-1; 1] range used for moments calculation

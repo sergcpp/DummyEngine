@@ -380,7 +380,7 @@ mat3 CotangentFrame_Precise(vec3 normal, vec3 position, vec2 uv) {
     return mat3(T, B, N);
 }
 
-void main(void) {
+void main() {
     float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);

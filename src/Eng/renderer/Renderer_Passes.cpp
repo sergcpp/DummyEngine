@@ -61,12 +61,19 @@ bool Eng::Renderer::InitPipelines() {
         init_pipeline(pi_ssr_classify_, ctx_.capabilities.subgroup ? "internal/ssr_classify.comp.glsl"
                                                                    : "internal/ssr_classify.comp.glsl@NO_SUBGROUP");
     success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
+    success &= init_pipeline(pi_ssr_trace_hq_[0][0], ctx_.capabilities.subgroup
+                                                         ? "internal/ssr_trace_hq.comp.glsl"
+                                                         : "internal/ssr_trace_hq.comp.glsl@NO_SUBGROUP");
+    success &= init_pipeline(pi_ssr_trace_hq_[0][1], ctx_.capabilities.subgroup
+                                                         ? "internal/ssr_trace_hq.comp.glsl@GI_CACHE"
+                                                         : "internal/ssr_trace_hq.comp.glsl@GI_CACHE;NO_SUBGROUP");
+    success &= init_pipeline(pi_ssr_trace_hq_[1][0], ctx_.capabilities.subgroup
+                                                         ? "internal/ssr_trace_hq.comp.glsl@LAYERED"
+                                                         : "internal/ssr_trace_hq.comp.glsl@LAYERED;NO_SUBGROUP");
     success &=
-        init_pipeline(pi_ssr_trace_hq_[0], ctx_.capabilities.subgroup ? "internal/ssr_trace_hq.comp.glsl"
-                                                                      : "internal/ssr_trace_hq.comp.glsl@NO_SUBGROUP");
-    success &= init_pipeline(pi_ssr_trace_hq_[1], ctx_.capabilities.subgroup
-                                                      ? "internal/ssr_trace_hq.comp.glsl@GI_CACHE"
-                                                      : "internal/ssr_trace_hq.comp.glsl@GI_CACHE;NO_SUBGROUP");
+        init_pipeline(pi_ssr_trace_hq_[1][1], ctx_.capabilities.subgroup
+                                                  ? "internal/ssr_trace_hq.comp.glsl@LAYERED;GI_CACHE"
+                                                  : "internal/ssr_trace_hq.comp.glsl@LAYERED;GI_CACHE;NO_SUBGROUP");
     success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
 
     // Reflections denoising
@@ -344,6 +351,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             // actual resolution and full resolution
             shrd_data.res_and_fres = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
                                                 float(view_state_.scr_res[0]), float(view_state_.scr_res[1])};
+            shrd_data.ires_and_ifres = Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1],
+                                                  view_state_.scr_res[0], view_state_.scr_res[1]};
             { // main cam
                 const float near = p_list_->draw_cam.near(), far = p_list_->draw_cam.far();
                 const float time_s = 0.001f * Sys::GetTimeMs();
@@ -1228,10 +1237,10 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-            {Ren::eBindTarget::TBuf, GBufferShade::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-            {Ren::eBindTarget::TBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-            {Ren::eBindTarget::TBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
-            {Ren::eBindTarget::TBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
+            {Ren::eBindTarget::UTBuf, GBufferShade::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+            {Ren::eBindTarget::UTBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+            {Ren::eBindTarget::UTBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
+            {Ren::eBindTarget::UTBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::NORMAL_TEX_SLOT, *normal_tex.ref},

@@ -1,4 +1,5 @@
 #version 430 core
+#extension GL_EXT_control_flow_attributes : enable
 #ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_ballot : enable
 #endif
@@ -10,6 +11,7 @@
 #include "ssr_common.glsl"
 #include "ssr_trace_hq_interface.h"
 
+#pragma multi_compile _ LAYERED
 #pragma multi_compile _ GI_CACHE
 #pragma multi_compile _ NO_SUBGROUP
 
@@ -24,7 +26,11 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = COLOR_TEX_SLOT) uniform sampler2D g_color_tex;
 layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
-layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+#ifdef LAYERED
+    layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
+#else
+    layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+#endif
 
 #ifdef GI_CACHE
     layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
@@ -40,19 +46,19 @@ layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
     uint g_in_ray_list[];
 };
 
-layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
-layout(std430, binding = OUT_RAY_LIST_SLOT) writeonly buffer OutRayList {
+#ifdef LAYERED
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_color_img[OIT_REFLECTION_LAYERS];
+#else
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
+#endif
+layout(std430, binding = OUT_RAY_LIST_SLOT) restrict writeonly buffer OutRayList {
     uint g_out_ray_list[];
 };
-layout(std430, binding = INOUT_RAY_COUNTER_SLOT) coherent buffer RayCounter {
+layout(std430, binding = INOUT_RAY_COUNTER_SLOT) restrict coherent buffer RayCounter {
     uint g_inout_ray_counter[];
 };
 
 #include "ss_trace_hierarchical.glsl.inl"
-
-void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
-    g_out_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
-}
 
 layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
@@ -138,16 +144,17 @@ vec3 ShadeHitPoint(const vec2 uv, const vec3 hit_point_vs, const vec3 refl_ray_v
 }
 
 void main() {
-    uint ray_index = gl_WorkGroupID.x * 64 + gl_LocalInvocationIndex;
+    const uint ray_index = gl_WorkGroupID.x * 64 + gl_LocalInvocationIndex;
     if (ray_index >= g_inout_ray_counter[1]) return;
-    uint packed_coords = g_in_ray_list[ray_index];
+#ifndef LAYERED
+    const uint packed_coords = g_in_ray_list[ray_index];
 
     uvec2 ray_coords;
     bool copy_horizontal, copy_vertical, copy_diagonal;
     UnpackRayCoords(packed_coords, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
 
-    ivec2 pix_uvs = ivec2(ray_coords);
-    vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const ivec2 pix_uvs = ivec2(ray_coords);
+    const vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / g_shrd_data.res_and_fres.xy;
 
     vec4 norm_rough = UnpackNormalAndRoughness(texelFetch(g_normal_tex, pix_uvs, 0).x);
     const float roughness = norm_rough.w * norm_rough.w;
@@ -165,11 +172,34 @@ void main() {
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     const vec2 u = texelFetch(g_noise_tex, pix_uvs % 128, 0).rg;
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
+#else
+    const uint packed_coords = g_in_ray_list[2 * ray_index + 0];
+    const uint packed_dir = g_in_ray_list[2 * ray_index + 1];
+
+    uvec2 ray_coords;
+    uint layer_index;
+    UnpackRayCoords(packed_coords, ray_coords, layer_index);
+
+    const vec2 oct_dir = vec2(packed_dir & 0xffffu, (packed_dir >> 16) & 0xffffu) / 65535.0;
+    const vec3 refl_ray_ws = UnpackUnitVector(oct_dir);
+    const vec3 refl_ray_vs = normalize((g_shrd_data.view_from_world * vec4(refl_ray_ws, 0.0)).xyz);
+
+    int frag_index = int(layer_index) * g_shrd_data.ires_and_ifres.x * g_shrd_data.ires_and_ifres.y;
+    frag_index += int(ray_coords.y) * g_shrd_data.ires_and_ifres.x + int(ray_coords.x);
+    const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, frag_index).x);
+    const float roughness = 0.0;
+
+    const ivec2 pix_uvs = ivec2(ray_coords);
+    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec3 ray_origin_ss = vec3(norm_uvs, depth);
+    const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
+    const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
+    const float view_z = -ray_origin_vs.z;
+#endif
 
     vec3 hit_point_cs, hit_point_vs;
     vec3 out_color = vec3(0.0);
     bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_normal_tex, hit_point_cs, hit_point_vs);
-    //hit_found = false;
     if (hit_found) {
         vec2 uv = hit_point_cs.xy;
 #if defined(VULKAN)
@@ -179,6 +209,7 @@ void main() {
 
         out_color += ShadeHitPoint(uv, hit_point_vs, refl_ray_vs, length(hit_point_vs - ray_origin_vs.xyz), roughness);
     }
+
 
     { // schedule rt rays
         bool needs_ray = !hit_found;
@@ -194,19 +225,30 @@ void main() {
         base_ray_index = subgroupBroadcastFirst(base_ray_index);
         if (needs_ray) {
             uint ray_index = base_ray_index + local_ray_index_in_wave;
-            StoreRay(ray_index, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
+#ifndef LAYERED
+            g_out_ray_list[ray_index] = packed_coords;
+#else // LAYERED
+            g_out_ray_list[2 * ray_index + 0] = packed_coords;
+            g_out_ray_list[2 * ray_index + 1] = packed_dir;
+#endif // LAYERED
         }
-#else
+#else // NO_SUBGROUP
         if (needs_ray) {
             uint ray_index = atomicAdd(g_inout_ray_counter[4], 1);
-            StoreRay(ray_index, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
+#ifndef LAYERED
+            g_out_ray_list[ray_index] = packed_coords;
+#else // LAYERED
+            g_out_ray_list[2 * ray_index + 0] = packed_coords;
+            g_out_ray_list[2 * ray_index + 1] = packed_dir;
+#endif // LAYERED
         }
-#endif
+#endif // NO_SUBGROUP
     }
 
     float ray_len = hit_found ? distance(hit_point_vs, ray_origin_vs.xyz) : 0.0;
     ray_len = GetNormHitDist(ray_len, view_z, roughness);
 
+#ifndef LAYERED
     imageStore(g_out_color_img, pix_uvs, vec4(out_color, ray_len));
 
     const ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
@@ -222,4 +264,11 @@ void main() {
         const ivec2 copy_coords = copy_target;
         imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
     }
+#else
+    [[dont_flatten]] if (layer_index == 0) {
+        imageStore(g_out_color_img[0], pix_uvs / 2, vec4(out_color, 1.0));
+    } else if (layer_index == 1) {
+        imageStore(g_out_color_img[1], pix_uvs / 2, vec4(out_color, 1.0));
+    }
+#endif
 }

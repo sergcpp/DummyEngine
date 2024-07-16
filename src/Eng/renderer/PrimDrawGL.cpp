@@ -40,7 +40,7 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
         } else if (b.trg == Ren::eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
                                        GLuint(b.handle.cube_arr->handle().id));
-        } else if (b.trg == Ren::eBindTarget::TBuf) {
+        } else if (b.trg == Ren::eBindTarget::UTBuf) {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
                                        GLuint(b.handle.tex_buf->id()));
         } else if (b.trg == Ren::eBindTarget::Tex3DSampled) {

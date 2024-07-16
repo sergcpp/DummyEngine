@@ -126,7 +126,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             builder.rast_state() = rast_state;
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, 0u, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitCustomShaded, &draws_count);
 
             rast_state = pi_static_solid_[1].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
@@ -135,7 +134,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             builder.rast_state() = rast_state;
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitBackSided, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitBackSided | BDB::BitCustomShaded, &draws_count);
         }
 
         { // two-sided
@@ -148,8 +146,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             builder.rast_state() = rast_state;
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitTwoSided, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitTwoSided | BDB::BitCustomShaded,
-                            &draws_count);
         }
     }
 
@@ -177,7 +173,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             builder.rast_state() = rast_state;
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitMoving, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitMoving | BDB::BitCustomShaded, &draws_count);
         }
 
         { // two-sided
@@ -191,7 +186,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
             const uint32_t DrawMask = BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask | BDB::BitCustomShaded, &draws_count);
         }
     }
 
@@ -216,8 +210,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     BDB::BitAlphaTest, cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    BDB::BitAlphaTest | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
             { // two-sided
@@ -232,8 +224,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
 
@@ -261,8 +251,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
             { // two-sided
@@ -277,8 +265,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
     }
@@ -306,7 +292,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             builder.rast_state() = rast_state;
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitsVege, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitsVege | BDB::BitCustomShaded, &draws_count);
         }
 
         { // two-sided
@@ -320,7 +305,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask | BDB::BitCustomShaded, &draws_count);
         }
     }
 
@@ -343,7 +327,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask | BDB::BitCustomShaded, &draws_count);
         }
 
         { // two-sided
@@ -357,7 +340,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask | BDB::BitCustomShaded, &draws_count);
         }
     }
 
@@ -385,8 +367,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
             { // two-sided
@@ -401,8 +381,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
 
@@ -426,8 +404,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
             { // two-sided
@@ -442,8 +418,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
     }
@@ -468,8 +442,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             builder.rast_state() = rast_state;
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitsSkinned, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, BDB::BitsSkinned | BDB::BitCustomShaded,
-                            &draws_count);
         }
 
         { // two-sided
@@ -483,7 +455,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask | BDB::BitCustomShaded, &draws_count);
         }
     }
 
@@ -506,7 +477,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask | BDB::BitCustomShaded, &draws_count);
         }
 
         { // two-sided
@@ -520,7 +490,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
-            i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask | BDB::BitCustomShaded, &draws_count);
         }
     }
 
@@ -548,8 +517,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
             { // two-sided
@@ -564,8 +531,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
 
@@ -589,8 +554,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
             { // two-sided
@@ -605,8 +568,6 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
-                                    DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
     }

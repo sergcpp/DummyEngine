@@ -112,6 +112,16 @@ struct light_item_t {
     vec4 v_and_blend;
 };
 
+light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
+    light_item_t ret;
+    ret.col_and_type = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 0);
+    ret.pos_and_radius = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 1);
+    ret.dir_and_spot = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 2);
+    ret.u_and_reg = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 3);
+    ret.v_and_blend = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 4);
+    return ret;
+}
+
 #define ENABLE_SPHERE_LIGHT 1
 #define ENABLE_RECT_LIGHT 1
 #define ENABLE_DISK_LIGHT 1
