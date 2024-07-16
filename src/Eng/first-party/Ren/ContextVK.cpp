@@ -264,14 +264,15 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         const int MaxImgSamplerCount = 32;
         const int MaxStoreImgCount = 6;
         const int MaxUbufCount = 8;
+        const int MaxUTbufCount = 16;
         const int MaxSbufCount = 16;
-        const int MaxTbufCount = 16;
+        const int MaxSTbufCount = 4;
         const int MaxAccCount = (api_ctx_->raytracing_supported || api_ctx_->ray_query_supported) ? 1 : 0;
         const int InitialSetsCount = 16;
 
-        default_descr_alloc_[i] = std::make_unique<DescrMultiPoolAlloc>(api_ctx_.get(), PoolStep, MaxImgSamplerCount,
-                                                                        MaxStoreImgCount, MaxUbufCount, MaxSbufCount,
-                                                                        MaxTbufCount, MaxAccCount, InitialSetsCount);
+        default_descr_alloc_[i] = std::make_unique<DescrMultiPoolAlloc>(
+            api_ctx_.get(), PoolStep, MaxImgSamplerCount, MaxStoreImgCount, MaxUbufCount, MaxUTbufCount, MaxSbufCount,
+            MaxSTbufCount, MaxAccCount, InitialSetsCount);
     }
 
     VkPhysicalDeviceProperties device_properties = {};

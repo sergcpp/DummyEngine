@@ -91,8 +91,8 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << b.loc);
-        } else if (b.trg == eBindTarget::TBuf) {
-            ++descr_sizes.tbuf_count;
+        } else if (b.trg == eBindTarget::UTBuf) {
+            ++descr_sizes.utbuf_count;
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -117,6 +117,19 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             new_write.descriptorCount = 1;
             new_write.pBufferInfo = &sbuf;
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
+        } else if (b.trg == eBindTarget::STBufRO || b.trg == eBindTarget::STBufRW) {
+            ++descr_sizes.stbuf_count;
+
+            auto &new_write = descr_writes.emplace_back();
+            new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            new_write.dstBinding = b.loc;
+            new_write.dstArrayElement = 0;
+            new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+            new_write.descriptorCount = 1;
+            new_write.pTexelBufferView = &b.handle.tex_buf->view();
 
             assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << b.loc);

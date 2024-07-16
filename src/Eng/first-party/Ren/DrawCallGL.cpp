@@ -17,10 +17,12 @@ const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
     GL_TEXTURE_CUBE_MAP_ARRAY, // TexCubeArray
     GL_TEXTURE_3D,             // Tex3DSampled
-    GL_TEXTURE_BUFFER,         // TBuf
     GL_UNIFORM_BUFFER,         // UBuf
+    GL_TEXTURE_BUFFER,         // UTBuf
     GL_SHADER_STORAGE_BUFFER,  // SBufRO
     GL_SHADER_STORAGE_BUFFER,  // SBufRW
+    0xffffffff,                // STBufRO
+    0xffffffff,                // STBufRW
     0xffffffff,                // Image2D
     0xffffffff,                // Image2DArray
     0xffffffff                 // AccStruct
@@ -69,8 +71,14 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
             } else {
                 glBindBufferBase(GLBindTarget(b.trg), b.loc, b.handle.buf->id());
             }
-        } else if (b.trg == eBindTarget::TBuf) {
+        } else if (b.trg == eBindTarget::UTBuf) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
+        } else if (b.trg == eBindTarget::STBufRO) {
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_ONLY,
+                               GLInternalFormatFromTexFormat(b.handle.tex_buf->params().format, false));
+        } else if (b.trg == eBindTarget::STBufRW) {
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
+                               GLInternalFormatFromTexFormat(b.handle.tex_buf->params().format, false));
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Image2D) {
@@ -128,15 +136,15 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
             } else {
                 glBindBufferBase(GLBindTarget(b.trg), b.loc, b.handle.buf->id());
             }
-        } else if (b.trg == eBindTarget::TBuf) {
+        } else if (b.trg == eBindTarget::UTBuf) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Image2D) {
-            glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format, false));
         } else if (b.trg == eBindTarget::Image2DArray) {
-            glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex2d_arr->id()), 0, GL_TRUE, 0, GL_READ_WRITE,
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()), 0, GL_TRUE, 0, GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex2d_arr->format(), false));
         }
     }

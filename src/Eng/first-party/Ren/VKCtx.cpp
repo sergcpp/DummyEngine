@@ -522,6 +522,7 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
     features.samplerAnisotropy = VK_TRUE;
     features.imageCubeArray = VK_TRUE;
     features.fillModeNonSolid = VK_TRUE;
+    features.fragmentStoresAndAtomics = VK_TRUE;
     device_info.pEnabledFeatures = &features;
     void **pp_next = const_cast<void **>(&device_info.pNext);
 

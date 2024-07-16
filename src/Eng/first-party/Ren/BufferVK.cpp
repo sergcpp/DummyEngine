@@ -15,7 +15,8 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
     } else if (type == eBufType::VertexIndices) {
         flags |= (VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     } else if (type == eBufType::Texture) {
-        flags |= (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        flags |= (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT |
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     } else if (type == eBufType::Uniform) {
         flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     } else if (type == eBufType::Storage) {
