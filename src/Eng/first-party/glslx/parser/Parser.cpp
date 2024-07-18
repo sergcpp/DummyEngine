@@ -2822,6 +2822,7 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
         res &= AddHiddenGlobal(int_type, "gl_Layer") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_ViewportIndex") != nullptr;
         res &= AddHiddenGlobal(bool_type, "gl_HelperInvocation") != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_FragDepth", false, eStorage::Out) != nullptr;
     }
 
     // https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_shader_subgroup.txt
