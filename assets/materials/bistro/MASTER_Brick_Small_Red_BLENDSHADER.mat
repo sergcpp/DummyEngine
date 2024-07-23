@@ -3,7 +3,6 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - two_sided
-    - alpha_test
 textures:
     - bistro/MASTER_Brick_Small_Red_BLENDSHADER_BaseColor.tex
     - bistro/MASTER_Brick_Small_Red_BLENDSHADER_Normal.tex

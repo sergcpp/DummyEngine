@@ -3,7 +3,6 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - two_sided
-    - alpha_test
 textures:
     - bistro/Paris_LiquorBottle_01_Glass_Wine_BaseColor.tex
     - bistro/Paris_LiquorBottle_01_Glass_Wine_Normal.tex

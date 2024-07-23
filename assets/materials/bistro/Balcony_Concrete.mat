@@ -3,7 +3,6 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - two_sided
-    - alpha_test
 textures:
     - bistro/Balcony_Concrete_BaseColor.tex
     - bistro/Balcony_Concrete_Normal.tex

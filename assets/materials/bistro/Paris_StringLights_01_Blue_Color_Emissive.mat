@@ -3,7 +3,6 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - two_sided
-    - alpha_test
 textures:
     - bistro/Paris_StringLights_01_Blue_Color_Emissive_Emissive.tex
     - default_normalmap.dds

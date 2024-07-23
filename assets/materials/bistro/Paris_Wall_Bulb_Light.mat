@@ -3,7 +3,6 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - two_sided
-    - alpha_test
 textures:
     - bistro/Paris_Wall_Bulb_Light_BaseColor.tex
     - bistro/Paris_Wall_Bulb_Light_Normal.tex
