@@ -945,7 +945,8 @@ void Eng::RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int
     for (size_t i = 0; i < pass->output_.size(); i++) {
         if (pass->output_[i].desired_state != Ren::eResState::RenderTarget &&
             pass->output_[i].desired_state != Ren::eResState::DepthWrite &&
-            pass->output_[i].desired_state != Ren::eResState::UnorderedAccess) {
+            pass->output_[i].desired_state != Ren::eResState::UnorderedAccess &&
+            pass->output_[i].desired_state != Ren::eResState::CopyDst) {
             continue;
         }
         const int16_t prev_pass = FindPreviousWrittenInPass(pass->output_[i]);
