@@ -9,8 +9,9 @@ textures:
     - ai043_06/AM141_041_009_norm.tex
     - ai043_06/AM141_041_009_rough.tex
     - default_metallic.tex
-    - ai043_06/AM141_041_leaf_opacity.tex
+    - ai043_06/AM141_041_leaf_opacity_opacity.tex
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
     - 0.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
+    - 0.0 0.0 0.0 0.0    # transparency, ior, unused, unused
