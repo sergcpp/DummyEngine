@@ -1,0 +1,122 @@
+{
+    "name": "staircase",
+    "environment": {
+        "sun_dir": [
+            0.0,
+            -1.0,
+            0.0
+        ],
+        "sun_col": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "sun_angle": 0.1,
+        "env_col": [
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "camera": {
+        "view_origin": [
+            0.005555139854550362,
+            1.4567999839782715,
+            4.85515022277832
+        ],
+        "view_rot": [
+            93.30000157178065,
+            -0.0,
+            0.0
+        ],
+        "fov": 50.0000002530119,
+        "view_transform": "standard",
+        "filter": "blackman-harris",
+        "filter_width": 1.0,
+        "gamma": 1.0,
+        "min_exposure": 0.0,
+        "max_exposure": 0.0,
+        "fwd_speed": 0.05
+    },
+    "objects": [
+        {
+            "transform": {
+                "pos": [
+                    -0.48951101303100586,
+                    7.156869888305664,
+                    -1.6573400497436523
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "light": {
+                "type": "rectangle",
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "power": 350.0,
+                "width": 2.029599905014038,
+                "height": 2.138000011444092,
+                "cull_radius": 10.0,
+                "cast_shadow": true
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    89.99998201391065,
+                    -0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999999776482582,
+                    0.009999999776482582,
+                    0.009999999776482582
+                ]
+            },
+            "drawable": {
+                "mesh_file": "staircase/Mesh384_004.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "staircase/Mesh384_004.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    89.99998201391065,
+                    -0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999999776482582,
+                    0.009999999776482582,
+                    0.009999999776482582
+                ]
+            },
+            "drawable": {
+                "mesh_file": "staircase/Mesh384_008.gltf",
+                "visible_to_shadow": false
+            },
+            "acc_structure": {
+                "mesh_file": "staircase/Mesh384_008.gltf",
+                "visible_to_shadow": false
+            }
+        }
+    ]
+}

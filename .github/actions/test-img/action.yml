@@ -26,6 +26,19 @@ runs:
         cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset medium --psnr 26.35
+        mv staircase.png staircase_medium.png
+        mv staircase_diff.png staircase_diff_medium.png
+        cp staircase_medium.png staircase_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset high --psnr 26.95
+        mv staircase.png staircase_high.png
+        mv staircase_diff.png staircase_diff_high.png
+        cp staircase_high.png staircase_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset ultra --psnr 27.40
+        mv staircase.png staircase_ultra.png
+        mv staircase_diff.png staircase_diff_ultra.png
+        cp staircase_ultra.png staircase_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
+        #####
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.40
         mv bistro.png bistro_medium.png
         mv bistro_diff.png bistro_diff_medium.png
@@ -38,6 +51,7 @@ runs:
         mv bistro.png bistro_ultra.png
         mv bistro_diff.png bistro_diff_ultra.png
         cp bistro_ultra.png bistro_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
+        #####
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza_cycles.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset medium --psnr 21.50
         mv sponza.png sponza_medium.png
         mv sponza_diff.png sponza_diff_medium.png
@@ -50,6 +64,7 @@ runs:
         mv sponza.png sponza_ultra.png
         mv sponza_diff.png sponza_diff_ultra.png
         cp sponza_ultra.png sponza_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
+        #####
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset medium --psnr 20.15
         mv ai043_06.png ai043_06_medium.png
         mv ai043_06_diff.png ai043_06_diff_medium.png
