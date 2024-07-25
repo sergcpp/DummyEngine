@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_24_07
-	commit = e2d1b2b4c28669f6d3353eb31136e8f159e34e50
+	branch = fake_refraction
+	commit = 77a6d03a49b173115a1aed4214c1ec3cf230f610
 	method = merge
 	cmdver = 0.4.6
-	parent = b191eaacd55a73e48555a318a09a8583b4dbd503
+	parent = f6feb71b4e08bb6f3acc034a36cc64400c436d2a
