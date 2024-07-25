@@ -935,9 +935,9 @@ void Eng::RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int
     for (size_t i = 0; i < pass->input_.size(); i++) {
         const int16_t prev_pass = FindPreviousWrittenInPass(pass->input_[i]);
         if (prev_pass != -1) {
-            const auto it = std::find(std::begin(written_in_passes), std::end(written_in_passes), prev_pass);
-            if (it == std::end(written_in_passes)) {
-                written_in_passes.push_back(prev_pass);
+            const auto it = std::lower_bound(std::begin(written_in_passes), std::end(written_in_passes), prev_pass);
+            if (it == std::end(written_in_passes) || prev_pass < (*it)) {
+                written_in_passes.insert(it, prev_pass);
             }
         }
     }
@@ -951,9 +951,9 @@ void Eng::RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int
         }
         const int16_t prev_pass = FindPreviousWrittenInPass(pass->output_[i]);
         if (prev_pass != -1) {
-            const auto it = std::find(std::begin(written_in_passes), std::end(written_in_passes), prev_pass);
-            if (it == std::end(written_in_passes)) {
-                written_in_passes.push_back(prev_pass);
+            const auto it = std::lower_bound(std::begin(written_in_passes), std::end(written_in_passes), prev_pass);
+            if (it == std::end(written_in_passes) || prev_pass < (*it)) {
+                written_in_passes.insert(it, prev_pass);
             }
         }
     }
@@ -961,10 +961,11 @@ void Eng::RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int
     for (const int16_t i : written_in_passes) {
         RpSubpass *_pass = subpasses_[i];
         assert(_pass != pass);
+
         const auto it =
-            std::find(std::begin(pass->depends_on_passes_), std::end(pass->depends_on_passes_), _pass->index_);
-        if (it == std::end(pass->depends_on_passes_)) {
-            pass->depends_on_passes_.push_back(_pass->index_);
+            std::lower_bound(std::begin(pass->depends_on_passes_), std::end(pass->depends_on_passes_), _pass->index_);
+        if (it == std::end(pass->depends_on_passes_) || _pass->index_ < (*it)) {
+            pass->depends_on_passes_.insert(it, _pass->index_);
         }
         out_pass_stack.push_back(_pass);
         TraversePassDependencies_r(_pass, recursion_depth + 1, out_pass_stack);
