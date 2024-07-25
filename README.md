@@ -10,7 +10,7 @@ Cross platform Vulkan/OpenGL 3d engine for personal experimentation.
     <img src="bistro.jpg" width="98%" />
 </div>
 <div float="middle">
-    <img src="staircase.jpg" width="30.2%" />
-    <img src="sponza.jpg" width="67.2%" />
+    <img src="staircase.jpg" width="30.31%" />
+    <img src="sponza.jpg" width="67.36%" />
 </div>
 </div>
