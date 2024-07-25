@@ -207,6 +207,50 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         return *(end_ - 1);
     }
 
+    void insert(iterator pos, const T &el) {
+        ensure_reserved(size_t(end_ - begin_) + 1);
+        if (pos == end_) {
+            new (end_++) T(el);
+        } else {
+            iterator move_dst = end_;
+            iterator move_src = end_ - 1;
+
+            new (move_dst--) T(std::move(*move_src--));
+            ++end_;
+
+            while (move_dst != pos) {
+                (*move_dst) = std::move(*move_src);
+
+                --move_dst;
+                --move_src;
+            }
+
+            (*move_dst) = el;
+        }
+    }
+
+    void insert(iterator pos, T &&el) {
+        ensure_reserved(size_t(end_ - begin_) + 1);
+        if (pos == end_) {
+            new (end_++) T(std::move(el));
+        } else {
+            iterator move_dst = end_;
+            iterator move_src = end_ - 1;
+
+            new (move_dst--) T(std::move(*move_src--));
+            ++end_;
+
+            while (move_dst != pos) {
+                (*move_dst) = std::move(*move_src);
+
+                --move_dst;
+                --move_src;
+            }
+
+            (*move_dst) = std::move(*el);
+        }
+    }
+
     void pop_back() {
         assert(begin_ != end_);
         (--end_)->~T();
