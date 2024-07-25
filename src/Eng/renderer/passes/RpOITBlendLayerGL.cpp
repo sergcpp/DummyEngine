@@ -50,6 +50,9 @@ void Eng::RpOITBlendLayer::DrawTransparent(RpBuilder &builder, RpAllocTex &depth
     RpAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
     RpAllocBuf &oit_depth_buf = builder.GetReadBuffer(oit_depth_buf_);
 
+    RpAllocTex &back_color_tex = builder.GetReadTexture(back_color_tex_);
+    RpAllocTex &back_depth_tex = builder.GetReadTexture(back_depth_tex_);
+
     RpAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
     if (irradiance_tex_) {
         irradiance_tex = &builder.GetReadTexture(irradiance_tex_);
@@ -131,6 +134,9 @@ void Eng::RpOITBlendLayer::DrawTransparent(RpBuilder &builder, RpAllocTex &depth
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::SHADOW_TEX_SLOT, shadow_map_tex.ref->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::LTC_LUTS_TEX_SLOT, ltc_luts_tex.ref->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::ENV_TEX_SLOT, env_tex.ref->id());
+
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::BACK_COLOR_TEX_SLOT, back_color_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::BACK_DEPTH_TEX_SLOT, back_depth_tex.ref->id());
 
     if (irradiance_tex) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::IRRADIANCE_TEX_SLOT, irradiance_tex->arr->id());

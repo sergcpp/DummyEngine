@@ -39,18 +39,18 @@ layout(location = 0) in vec3 g_vtx_pos;
 layout(location = 1) in vec2 g_vtx_uvs;
 layout(location = 2) in vec3 g_vtx_normal;
 layout(location = 3) in vec3 g_vtx_tangent;
-layout(location = 4) in float g_alpha;
 #if !defined(NO_BINDLESS)
-    layout(location = 5) in flat TEX_HANDLE g_norm_tex;
-    layout(location = 6) in flat TEX_HANDLE g_alpha_tex;
+    layout(location = 4) in flat TEX_HANDLE g_norm_tex;
+    layout(location = 5) in flat TEX_HANDLE g_alpha_tex;
 #endif // !NO_BINDLESS
-layout(location = 7) in flat vec4 g_mat_params0;
+layout(location = 6) in flat vec4 g_mat_params0;
+layout(location = 7) in flat vec4 g_mat_params2;
 
 layout (early_fragment_tests) in;
 
 void main() {
     const vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
-    const float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
+    const float alpha = (1.0 - g_mat_params2.x) * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
 
     vec3 normal;
     normal.xy = norm_color * 2.0 - 1.0;
@@ -65,7 +65,8 @@ void main() {
     const vec3 N = normal.xyz;
 
     const float specular = g_mat_params0.z;
-    if (specular > 0.0 && alpha > 0.0 && all(equal((ivec2(gl_FragCoord.xy) % 2), ivec2(0)))) {
+    const float transmission = g_mat_params2.y;
+    if ((specular > 0.0 || transmission > 0.0) && alpha > 0.0 && all(equal((ivec2(gl_FragCoord.xy) % 2), ivec2(0)))) {
         int frag_index = int(gl_FragCoord.y) * g_shrd_data.ires_and_ifres.x + int(gl_FragCoord.x);
         const uint ztest = floatBitsToUint(gl_FragCoord.z);
         int layer_index = -1;

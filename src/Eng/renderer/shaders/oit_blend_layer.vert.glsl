@@ -48,17 +48,17 @@ layout(location = 0) out vec3 g_vtx_pos;
 layout(location = 1) out vec2 g_vtx_uvs;
 layout(location = 2) out vec3 g_vtx_normal;
 layout(location = 3) out vec3 g_vtx_tangent;
-layout(location = 4) out float g_alpha;
 #if !defined(NO_BINDLESS)
-    layout(location = 5) out flat TEX_HANDLE g_base_tex;
-    layout(location = 6) out flat TEX_HANDLE g_norm_tex;
-    layout(location = 7) out flat TEX_HANDLE g_roug_tex;
-    layout(location = 8) out flat TEX_HANDLE g_metl_tex;
-    layout(location = 9) out flat TEX_HANDLE g_alpha_tex;
+    layout(location = 4) out flat TEX_HANDLE g_base_tex;
+    layout(location = 5) out flat TEX_HANDLE g_norm_tex;
+    layout(location = 6) out flat TEX_HANDLE g_roug_tex;
+    layout(location = 7) out flat TEX_HANDLE g_metl_tex;
+    layout(location = 8) out flat TEX_HANDLE g_alpha_tex;
 #endif // !NO_BINDLESS
-layout(location = 10) out flat vec4 g_base_color;
-layout(location = 11) out flat vec4 g_mat_params0;
-layout(location = 12) out flat vec4 g_mat_params1;
+layout(location = 9) out flat vec4 g_base_color;
+layout(location = 10) out flat vec4 g_mat_params0;
+layout(location = 11) out flat vec4 g_mat_params1;
+layout(location = 12) out flat vec4 g_mat_params2;
 
 invariant gl_Position;
 
@@ -110,7 +110,7 @@ void main() {
     g_base_color = mat.params[0];
     g_mat_params0 = mat.params[1];
     g_mat_params1 = mat.params[2];
-    g_alpha = 1.0 - mat.params[3].x;
+    g_mat_params2 = mat.params[3];
 
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws, 1.0);
 }

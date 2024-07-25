@@ -40,6 +40,9 @@ layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
 
+layout(binding = BACK_COLOR_TEX_SLOT) uniform sampler2D g_back_color_tex;
+layout(binding = BACK_DEPTH_TEX_SLOT) uniform sampler2D g_back_depth_tex;
+
 #ifdef SPECULAR
     layout(binding = SPECULAR_TEX_SLOT) uniform sampler2D g_specular_tex;
 #endif
@@ -54,17 +57,17 @@ layout(location = 0) in vec3 g_vtx_pos;
 layout(location = 1) in vec2 g_vtx_uvs;
 layout(location = 2) in vec3 g_vtx_normal;
 layout(location = 3) in vec3 g_vtx_tangent;
-layout(location = 4) in float g_alpha;
 #if !defined(NO_BINDLESS)
-    layout(location = 5) in flat TEX_HANDLE g_base_tex;
-    layout(location = 6) in flat TEX_HANDLE g_norm_tex;
-    layout(location = 7) in flat TEX_HANDLE g_roug_tex;
-    layout(location = 8) in flat TEX_HANDLE g_metl_tex;
-    layout(location = 9) in flat TEX_HANDLE g_alpha_tex;
+    layout(location = 4) in flat TEX_HANDLE g_base_tex;
+    layout(location = 5) in flat TEX_HANDLE g_norm_tex;
+    layout(location = 6) in flat TEX_HANDLE g_roug_tex;
+    layout(location = 7) in flat TEX_HANDLE g_metl_tex;
+    layout(location = 8) in flat TEX_HANDLE g_alpha_tex;
 #endif // !NO_BINDLESS
-layout(location = 10) in flat vec4 g_base_color;
-layout(location = 11) in flat vec4 g_mat_params0;
-layout(location = 12) in flat vec4 g_mat_params1;
+layout(location = 9) in flat vec4 g_base_color;
+layout(location = 10) in flat vec4 g_mat_params0;
+layout(location = 11) in flat vec4 g_mat_params1;
+layout(location = 12) in flat vec4 g_mat_params2;
 
 layout(location = 0) out vec4 g_out_color;
 
@@ -73,12 +76,10 @@ void main() {
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
-    const int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
-
     const ivec2 icoord = ivec2(gl_FragCoord.xy);
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
+    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.res_and_fres.xy);
     const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                           bitfieldExtract(cell_data.x, 24, 8));
@@ -89,7 +90,7 @@ void main() {
     const vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
     const float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).r;
     const float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).r;
-    const float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
+    const float alpha = (1.0 - g_mat_params2.x) * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
 
     // TODO: Apply decals here (?)
 
@@ -128,6 +129,7 @@ void main() {
     const float transmission = g_mat_params1.y;
     const float clearcoat = g_mat_params1.z;
     const float clearcoat_roughness = g_mat_params1.w;
+    const float ior = g_mat_params2.y;
 
     vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
     spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -138,7 +140,7 @@ void main() {
     // Approximation of FH (using shading normal)
     const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
 
-    const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+    vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
     const float spec_color_lum = lum(approx_spec_col);
 
     const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
@@ -156,6 +158,10 @@ void main() {
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
+
+    if (lobe_weights.refraction > 0.0) {
+        approx_spec_col = vec3(1.0);
+    }
 
     vec3 artificial_light = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
@@ -236,7 +242,7 @@ void main() {
         const float sun_visibility =  GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
         if (sun_visibility > 0.0) {
             sun_color = sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                        sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }
     }
 
@@ -274,12 +280,35 @@ void main() {
     final_color += sun_color;
     final_color += gi_color;
 
+    float fresnel = 1.0;
+    [[dont_flatten]] if (lobe_weights.refraction > 0.0) {
+        const float eta = 1.0 / ior;//gl_FrontFacing ? (1.0 / ior) : (ior / 1.0);
+        fresnel = fresnel_dielectric_cos(dot(I, N), 1.0 / eta);
+
+        const float back_depth = texelFetch(g_back_depth_tex, icoord, 0).x;
+        const float back_lin_depth = LinearizeDepth(back_depth, g_shrd_data.clip_info);
+
+        const vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(N, 0.0)).xyz);
+
+        vec2 uvs_offset = -normal_vs.xy;
+    #if defined(VULKAN)
+        uvs_offset.y = -uvs_offset.y;
+    #endif
+
+        float k = 4.0 * saturate(ior - 1.0) * (back_lin_depth - lin_depth) / back_lin_depth;
+        k *= 0.5 - abs(norm_uvs.x - 0.5);
+        k *= 0.5 - abs(norm_uvs.y - 0.5);
+
+        const vec3 background_col = textureLod(g_back_color_tex, norm_uvs + k * uvs_offset, 0.0).xyz;
+        final_color += (1.0 - fresnel) * base_color * decompress_hdr(background_col);
+    }
+
 #ifdef SPECULAR
     //vec4 refl = textureLod(g_specular_tex, norm_uvs, 0.0);
     vec4 refl = SampleTextureCatmullRom(g_specular_tex, norm_uvs, vec2(g_shrd_data.ires_and_ifres.xy / 2));
     refl.xyz = decompress_hdr(refl.xyz / max(refl.w, 0.001));
-    if (lobe_weights.specular > 0.0) {
-        final_color += refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
+    if (lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) {
+        final_color += fresnel * refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
     }
 #endif
 

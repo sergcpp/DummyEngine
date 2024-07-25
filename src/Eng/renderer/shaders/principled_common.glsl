@@ -181,7 +181,7 @@ vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / M_PI;
         }
-        if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
+        if ((lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) && ENABLE_SPECULAR != 0) {
             const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided);
@@ -217,7 +217,7 @@ vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
-        if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
+        if ((lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) && ENABLE_SPECULAR != 0) {
             const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Rect(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided);
@@ -253,7 +253,7 @@ vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
-        if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
+        if ((lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) && ENABLE_SPECULAR != 0) {
             const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided);
@@ -287,7 +287,7 @@ vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff;
         }
-        if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
+        if ((lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) && ENABLE_SPECULAR != 0) {
             const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Line(N, I, pos_ws.xyz, ltc.spec_t1, points, 0.01);

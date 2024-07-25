@@ -408,69 +408,119 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
     }
 
     for (int i = 0; i < OIT_LAYERS_COUNT; ++i) {
-        const std::string pass_name = "OIT BLEND #" + std::to_string(i);
+        RpResRef back_color, back_depth;
+        { // copy background
+            const std::string pass_name = "OIT BACK #" + std::to_string(i);
 
-        auto &oit_blend_layer = rp_builder_.AddPass(pass_name);
-        const RpResRef vtx_buf1 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf1());
-        const RpResRef vtx_buf2 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf2());
-        const RpResRef ndx_buf = oit_blend_layer.AddIndexBufferInput(ctx_.default_indices_buf());
+            auto &oit_back = rp_builder_.AddPass(pass_name);
 
-        const RpResRef materials_buf =
-            oit_blend_layer.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
+            struct PassData {
+                RpResRef in_back_color;
+                RpResRef in_back_depth;
+                RpResRef out_back_color;
+                RpResRef out_back_depth;
+            };
+
+            auto *data = oit_back.AllocPassData<PassData>();
+            frame_textures.color = data->in_back_color = oit_back.AddTransferImageInput(frame_textures.color);
+            frame_textures.depth = data->in_back_depth = oit_back.AddTransferImageInput(frame_textures.depth);
+            { // background color
+                const std::string tex_name = "OIT Background Color #" + std::to_string(i);
+                back_color = data->out_back_color =
+                    oit_back.AddTransferImageOutput(tex_name, frame_textures.color_params);
+            }
+            { // background depth
+                const std::string tex_name = "OIT Background Depth #" + std::to_string(i);
+                back_depth = data->out_back_depth =
+                    oit_back.AddTransferImageOutput(tex_name, frame_textures.depth_params);
+            }
+
+            oit_back.set_execute_cb([this, data](RpBuilder &builder) {
+                RpAllocTex &in_back_color_tex = builder.GetReadTexture(data->in_back_color);
+                RpAllocTex &in_back_depth_tex = builder.GetReadTexture(data->in_back_depth);
+                RpAllocTex &out_back_color_tex = builder.GetWriteTexture(data->out_back_color);
+                RpAllocTex &out_back_depth_tex = builder.GetWriteTexture(data->out_back_depth);
+
+                const int w = in_back_color_tex.ref->params.w, h = in_back_color_tex.ref->params.h;
+
+                Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0,
+                                      *out_back_color_tex.ref, 0, 0, 0, 0, w, h);
+                Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0,
+                                      *out_back_depth_tex.ref, 0, 0, 0, 0, w, h);
+            });
+        }
+        { // blend
+            const std::string pass_name = "OIT BLEND #" + std::to_string(i);
+
+            auto &oit_blend_layer = rp_builder_.AddPass(pass_name);
+            const RpResRef vtx_buf1 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            const RpResRef vtx_buf2 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            const RpResRef ndx_buf = oit_blend_layer.AddIndexBufferInput(ctx_.default_indices_buf());
+
+            const RpResRef materials_buf =
+                oit_blend_layer.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-        const RpResRef textures_buf = oit_blend_layer.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+            const RpResRef textures_buf =
+                oit_blend_layer.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-        const RpResRef textures_buf = {};
+            const RpResRef textures_buf = {};
 #endif
 
-        const RpResRef noise_tex = oit_blend_layer.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-        const RpResRef white_tex =
-            oit_blend_layer.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
-        const RpResRef instances_buf = oit_blend_layer.AddStorageReadonlyInput(
-            persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
-        const RpResRef instances_indices_buf =
-            oit_blend_layer.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
+            const RpResRef noise_tex =
+                oit_blend_layer.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+            const RpResRef white_tex =
+                oit_blend_layer.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
+            const RpResRef instances_buf = oit_blend_layer.AddStorageReadonlyInput(
+                persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
+            const RpResRef instances_indices_buf =
+                oit_blend_layer.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-        const RpResRef shader_data_buf = oit_blend_layer.AddUniformBufferInput(common_buffers.shared_data_res,
-                                                                               Stg::VertexShader | Stg::FragmentShader);
+            const RpResRef shader_data_buf = oit_blend_layer.AddUniformBufferInput(
+                common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-        const RpResRef cells_buf =
-            oit_blend_layer.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-        const RpResRef items_buf =
-            oit_blend_layer.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-        const RpResRef lights_buf =
-            oit_blend_layer.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
-        const RpResRef decals_buf =
-            oit_blend_layer.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
+            const RpResRef cells_buf =
+                oit_blend_layer.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+            const RpResRef items_buf =
+                oit_blend_layer.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
+            const RpResRef lights_buf =
+                oit_blend_layer.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
+            const RpResRef decals_buf =
+                oit_blend_layer.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
-        const RpResRef shadow_map = oit_blend_layer.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
-        const RpResRef ltc_luts_tex = oit_blend_layer.AddTextureInput(ltc_luts_, Stg::FragmentShader);
-        const RpResRef env_tex = oit_blend_layer.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
+            const RpResRef shadow_map = oit_blend_layer.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+            const RpResRef ltc_luts_tex = oit_blend_layer.AddTextureInput(ltc_luts_, Stg::FragmentShader);
+            const RpResRef env_tex = oit_blend_layer.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
 
-        frame_textures.depth = oit_blend_layer.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
-        frame_textures.color = oit_blend_layer.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
-        oit_depth_buf = oit_blend_layer.AddStorageReadonlyInput(oit_depth_buf, Stg::FragmentShader);
+            frame_textures.depth = oit_blend_layer.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+            frame_textures.color = oit_blend_layer.AddColorOutput(frame_textures.color);
+            oit_depth_buf = oit_blend_layer.AddStorageReadonlyInput(oit_depth_buf, Stg::FragmentShader);
 
-        const int layer_index = OIT_LAYERS_COUNT - 1 - i;
+            const int layer_index = OIT_LAYERS_COUNT - 1 - i;
 
-        RpResRef specular_tex;
-        if (layer_index < OIT_REFLECTION_LAYERS && settings.reflections_quality != eReflectionsQuality::Off) {
-            specular_tex = oit_blend_layer.AddTextureInput(oit_specular[layer_index], Stg::FragmentShader);
+            RpResRef specular_tex;
+            if (layer_index < OIT_REFLECTION_LAYERS && settings.reflections_quality != eReflectionsQuality::Off) {
+                specular_tex = oit_blend_layer.AddTextureInput(oit_specular[layer_index], Stg::FragmentShader);
+            }
+
+            RpResRef irradiance_tex, distance_tex, offset_tex;
+            if (settings.gi_quality != eGIQuality::Off) {
+                irradiance_tex =
+                    oit_blend_layer.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::FragmentShader);
+                distance_tex = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_distance, Stg::FragmentShader);
+                offset_tex = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_offset, Stg::FragmentShader);
+            }
+
+            back_color = oit_blend_layer.AddTextureInput(back_color, Stg::FragmentShader);
+            back_depth = oit_blend_layer.AddTextureInput(back_depth, Stg::FragmentShader);
+
+            rp_oit_blend_layer_[i].Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf,
+                                         textures_buf, &bindless, cells_buf, items_buf, lights_buf, decals_buf,
+                                         noise_tex, white_tex, shadow_map, ltc_luts_tex, env_tex, instances_buf,
+                                         instances_indices_buf, shader_data_buf, frame_textures.depth,
+                                         frame_textures.color, oit_depth_buf, specular_tex, layer_index, irradiance_tex,
+                                         distance_tex, offset_tex, back_color, back_depth);
+            oit_blend_layer.set_executor(&rp_oit_blend_layer_[i]);
         }
-
-        RpResRef irradiance_tex, distance_tex, offset_tex;
-        if (settings.gi_quality != eGIQuality::Off) {
-            irradiance_tex = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::FragmentShader);
-            distance_tex = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_distance, Stg::FragmentShader);
-            offset_tex = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_offset, Stg::FragmentShader);
-        }
-
-        rp_oit_blend_layer_[i].Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-                                     &bindless, cells_buf, items_buf, lights_buf, decals_buf, noise_tex, white_tex,
-                                     shadow_map, ltc_luts_tex, env_tex, instances_buf, instances_indices_buf,
-                                     shader_data_buf, frame_textures.depth, frame_textures.color, oit_depth_buf,
-                                     specular_tex, layer_index, irradiance_tex, distance_tex, offset_tex);
-        oit_blend_layer.set_executor(&rp_oit_blend_layer_[i]);
     }
 
     frame_textures.oit_depth_buf = oit_depth_buf;

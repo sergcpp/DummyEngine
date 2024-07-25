@@ -38,6 +38,9 @@ void Eng::RpOITBlendLayer::DrawTransparent(RpBuilder &builder, RpAllocTex &depth
     RpAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
     RpAllocBuf &oit_depth_buf = builder.GetReadBuffer(oit_depth_buf_);
 
+    RpAllocTex &back_color_tex = builder.GetReadTexture(back_color_tex_);
+    RpAllocTex &back_depth_tex = builder.GetReadTexture(back_depth_tex_);
+
     RpAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
     if (irradiance_tex_) {
         irradiance_tex = &builder.GetReadTexture(irradiance_tex_);
@@ -89,7 +92,9 @@ void Eng::RpOITBlendLayer::DrawTransparent(RpBuilder &builder, RpAllocTex &depth
         {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::SHADOW_TEX_SLOT, *shadow_map_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::ENV_TEX_SLOT, *env_tex.ref}};
+        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_COLOR_TEX_SLOT, *back_color_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_DEPTH_TEX_SLOT, {*back_depth_tex.ref, 1}}};
     if (irradiance_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::IRRADIANCE_TEX_SLOT,
                               *irradiance_tex->arr);

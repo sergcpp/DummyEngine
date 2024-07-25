@@ -15,7 +15,7 @@ namespace Ren {
 class ILog;
 
 struct TexHandle {
-    uint32_t id = 0;         // native gl name
+    uint32_t id = 0; // native gl name
     SmallVector<uint32_t, 1> views;
     uint32_t generation = 0; // used to identify unique texture (name can be reused)
 
@@ -72,9 +72,11 @@ class Texture2D : public RefCounter {
               const Tex2DParams &p, ILog *log)
         : handle_{tex_id, 0}, params(p), ready_(true), name_(name) {}
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
-              Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
+              Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+              ILog *log);
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
-              Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
+              Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+              ILog *log);
     Texture2D(const Texture2D &rhs) = delete;
     Texture2D(Texture2D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture2D();
@@ -114,8 +116,8 @@ class Texture2D : public RefCounter {
 };
 
 void CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
-                      Texture2D &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y, uint32_t width,
-                      uint32_t height);
+                      Texture2D &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y, uint32_t dst_face,
+                      uint32_t width, uint32_t height);
 
 void ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf);
 

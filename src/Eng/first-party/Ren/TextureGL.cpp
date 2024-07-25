@@ -1172,10 +1172,10 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, 
 
 void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
                            const uint32_t src_y, Texture2D &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
-                           const uint32_t dst_y, const uint32_t width, const uint32_t height) {
+                           const uint32_t dst_y, const uint32_t dst_face, const uint32_t width, const uint32_t height) {
     glCopyImageSubData(GLuint(src_tex.id()), GL_TEXTURE_2D, GLint(src_level), GLint(src_x), GLint(src_y), 0,
-                       GLuint(dst_tex.id()), GL_TEXTURE_2D, GLint(dst_level), GLint(dst_x), GLint(dst_y), 0,
-                       GLsizei(width), GLsizei(height), 1);
+                       GLuint(dst_tex.id()), GL_TEXTURE_2D, GLint(dst_level), GLint(dst_x), GLint(dst_y),
+                       GLint(dst_face), GLsizei(width), GLsizei(height), 1);
 }
 
 void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf) {

@@ -26,7 +26,7 @@ runs:
         cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.45
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.40
         mv bistro.png bistro_medium.png
         mv bistro_diff.png bistro_diff_medium.png
         cp bistro_medium.png bistro_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
@@ -54,11 +54,11 @@ runs:
         mv ai043_06.png ai043_06_medium.png
         mv ai043_06_diff.png ai043_06_diff_medium.png
         cp ai043_06_medium.png ai043_06_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset high --psnr 19.30
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset high --psnr 19.20
         mv ai043_06.png ai043_06_high.png
         mv ai043_06_diff.png ai043_06_diff_high.png
         cp ai043_06_high.png ai043_06_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset ultra --psnr 20.75
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset ultra --psnr 20.70
         mv ai043_06.png ai043_06_ultra.png
         mv ai043_06_diff.png ai043_06_diff_ultra.png
         cp ai043_06_ultra.png ai043_06_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}

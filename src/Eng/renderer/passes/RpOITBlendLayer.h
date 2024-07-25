@@ -52,6 +52,9 @@ class RpOITBlendLayer : public RpExecutor {
     RpResRef distance_tex_;
     RpResRef offset_tex_;
 
+    RpResRef back_color_tex_;
+    RpResRef back_depth_tex_;
+
     RpResRef depth_tex_;
     RpResRef color_tex_;
 
@@ -70,7 +73,8 @@ class RpOITBlendLayer : public RpExecutor {
                const RpResRef env_tex, const RpResRef instances_buf, const RpResRef instance_indices_buf,
                const RpResRef shared_data_buf, const RpResRef depth_tex, const RpResRef color_tex,
                const RpResRef oit_depth_buf, const RpResRef oit_specular_tex, int depth_layer_index,
-               const RpResRef irradiance_tex, const RpResRef distance_tex, const RpResRef offset_tex) {
+               const RpResRef irradiance_tex, const RpResRef distance_tex, const RpResRef offset_tex,
+               const RpResRef back_color_tex, const RpResRef back_depth_tex) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
 
@@ -103,6 +107,9 @@ class RpOITBlendLayer : public RpExecutor {
         irradiance_tex_ = irradiance_tex;
         distance_tex_ = distance_tex;
         offset_tex_ = offset_tex;
+
+        back_color_tex_ = back_color_tex;
+        back_depth_tex_ = back_depth_tex;
     }
 
     void Execute(RpBuilder &builder) override;
