@@ -56,9 +56,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_2477.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_2477.gltf"
             }
         },
         {
@@ -2906,9 +2903,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_2091.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_2091.gltf"
             }
         },
         {
@@ -2985,9 +2979,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_2035.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_2035.gltf"
             }
         },
@@ -3145,9 +3136,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_2008.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_2008.gltf"
             }
         },
@@ -3910,9 +3898,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_2010.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_2010.gltf"
             }
         },
@@ -5196,9 +5181,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_2010.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_2010.gltf"
             }
         },
         {
@@ -5931,9 +5913,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_2114.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_2114.gltf"
             }
         },
         {
@@ -6090,9 +6069,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_2093.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_2093.gltf"
             }
         },
@@ -7531,9 +7507,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_2113.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_2113.gltf"
             }
         },
         {
@@ -7550,9 +7523,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_2091.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_2091.gltf"
             }
         },
@@ -8911,9 +8881,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_2011.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_2011.gltf"
             }
         },
         {
@@ -9030,9 +8997,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_2090.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_2090.gltf"
             }
         },
@@ -21131,9 +21095,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
         {
@@ -21150,9 +21111,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
@@ -21171,9 +21129,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
         {
@@ -21190,9 +21145,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
@@ -21211,9 +21163,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
         {
@@ -21230,9 +21179,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
@@ -21251,9 +21197,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
         {
@@ -21270,9 +21213,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
@@ -21291,9 +21231,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
         {
@@ -21310,9 +21247,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
@@ -21331,9 +21265,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
         {
@@ -21350,9 +21281,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1332.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1332.gltf"
             }
         },
@@ -21371,9 +21299,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1322.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1322.gltf"
             }
         },
         {
@@ -21390,9 +21315,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1321.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1321.gltf"
             }
         },
@@ -21411,9 +21333,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_13442.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_13442.gltf"
             }
         },
         {
@@ -21430,9 +21349,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1319.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1319.gltf"
             }
         },
@@ -21451,9 +21367,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1318.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1318.gltf"
             }
         },
         {
@@ -21470,9 +21383,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1317.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1317.gltf"
             }
         },
@@ -21491,9 +21401,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1316.gltf"
             }
         },
         {
@@ -21510,9 +21417,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1315.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1315.gltf"
             }
         },
@@ -21531,9 +21435,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1314.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1314.gltf"
             }
         },
         {
@@ -21550,9 +21451,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1313.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1313.gltf"
             }
         },
@@ -21571,9 +21469,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1311.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1311.gltf"
             }
         },
         {
@@ -21590,9 +21485,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1311.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1311.gltf"
             }
         },
@@ -21611,9 +21503,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1310.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1310.gltf"
             }
         },
         {
@@ -21630,9 +21519,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1309.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1309.gltf"
             }
         },
@@ -21651,9 +21537,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_1308.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_1308.gltf"
             }
         },
         {
@@ -21670,9 +21553,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_1307.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_1307.gltf"
             }
         },
@@ -24401,9 +24281,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_050.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_050.gltf"
             }
         },
         {
@@ -24425,9 +24302,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_050.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_050.gltf"
             }
         },
@@ -27976,9 +27850,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28000,9 +27871,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
@@ -28026,9 +27894,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
         {
@@ -28050,9 +27915,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
@@ -28076,9 +27938,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
         {
@@ -28100,9 +27959,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
@@ -28126,9 +27982,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
         {
@@ -28150,9 +28003,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
@@ -28176,9 +28026,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
         {
@@ -28200,9 +28047,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
@@ -28226,9 +28070,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28250,9 +28091,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
@@ -28276,9 +28114,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28300,9 +28135,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
@@ -28326,9 +28158,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28350,9 +28179,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
@@ -28376,9 +28202,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28400,9 +28223,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
@@ -28426,9 +28246,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
         {
@@ -28450,9 +28267,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
@@ -28476,9 +28290,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -28500,9 +28311,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -28526,9 +28334,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -28550,9 +28355,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -28576,9 +28378,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28600,9 +28399,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
@@ -28626,9 +28422,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28650,9 +28443,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
@@ -28676,9 +28466,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
         {
@@ -28700,9 +28487,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_202.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_202.gltf"
             }
         },
@@ -28726,9 +28510,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -28750,9 +28531,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -28776,9 +28554,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -28800,9 +28575,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -28826,9 +28598,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
         {
@@ -28850,9 +28619,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_201.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_201.gltf"
             }
         },
@@ -28876,9 +28642,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -28900,9 +28663,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -28926,9 +28686,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -28950,9 +28707,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -28976,9 +28730,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -29000,9 +28751,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -29026,9 +28774,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
         {
@@ -29050,9 +28795,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_230.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_230.gltf"
             }
         },
@@ -29076,9 +28818,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_240.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_240.gltf"
             }
         },
         {
@@ -29100,9 +28839,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_240.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_240.gltf"
             }
         },
@@ -29126,9 +28862,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_240.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_240.gltf"
             }
         },
         {
@@ -29150,9 +28883,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_240.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_240.gltf"
             }
         },
@@ -29176,9 +28906,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29200,9 +28927,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29226,9 +28950,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29250,9 +28971,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29276,9 +28994,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29300,9 +29015,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29326,9 +29038,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29350,9 +29059,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29376,9 +29082,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29400,9 +29103,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29426,9 +29126,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29450,9 +29147,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29476,9 +29170,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29500,9 +29191,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29526,9 +29214,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29550,9 +29235,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29576,9 +29258,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29600,9 +29279,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29626,9 +29302,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29650,9 +29323,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29676,9 +29346,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
         {
@@ -29700,9 +29367,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_259.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_259.gltf"
             }
         },
@@ -29726,9 +29390,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29750,9 +29411,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29776,9 +29434,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29800,9 +29455,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29826,9 +29478,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29850,9 +29499,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29876,9 +29522,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29900,9 +29543,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29926,9 +29566,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -29950,9 +29587,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -29976,9 +29610,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30000,9 +29631,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30026,9 +29654,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30050,9 +29675,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -30076,9 +29698,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30100,9 +29719,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30126,9 +29742,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30150,9 +29763,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30176,9 +29786,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30200,9 +29807,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30226,9 +29830,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30250,9 +29851,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30276,9 +29874,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30300,9 +29895,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30326,9 +29918,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30350,9 +29939,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30376,9 +29962,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30400,9 +29983,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30426,9 +30006,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30450,9 +30027,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30476,9 +30050,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30500,9 +30071,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30526,9 +30094,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30550,9 +30115,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30576,9 +30138,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30600,9 +30159,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30626,9 +30182,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30650,9 +30203,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30676,9 +30226,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30700,9 +30247,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30726,9 +30270,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30750,9 +30291,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30776,9 +30314,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30800,9 +30335,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30826,9 +30358,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -30850,9 +30379,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -30876,9 +30402,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -30900,9 +30423,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -30926,9 +30446,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -30950,9 +30467,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -30976,9 +30490,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -31000,9 +30511,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -31026,9 +30534,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -31050,9 +30555,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -31076,9 +30578,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -31100,9 +30599,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -31126,9 +30622,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -31150,9 +30643,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -31176,9 +30666,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31200,9 +30687,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31226,9 +30710,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31250,9 +30731,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31276,9 +30754,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31300,9 +30775,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31326,9 +30798,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31350,9 +30819,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31376,9 +30842,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31400,9 +30863,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31426,9 +30886,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31450,9 +30907,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31476,9 +30930,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31500,9 +30951,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31526,9 +30974,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31550,9 +30995,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31576,9 +31018,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31600,9 +31039,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31626,9 +31062,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31650,9 +31083,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31676,9 +31106,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
         {
@@ -31700,9 +31127,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_344.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_344.gltf"
             }
         },
@@ -31726,9 +31150,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -31750,9 +31171,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -31776,9 +31194,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -31800,9 +31215,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -31826,9 +31238,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -31850,9 +31259,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -31876,9 +31282,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -31900,9 +31303,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -31926,9 +31326,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -31950,9 +31347,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -31976,9 +31370,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -32000,9 +31391,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -32026,9 +31414,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -32050,9 +31435,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -32076,9 +31458,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -32100,9 +31479,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -32126,9 +31502,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -32150,9 +31523,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -32176,9 +31546,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -32200,9 +31567,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -32226,9 +31590,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -32250,9 +31611,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -32276,9 +31634,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32300,9 +31655,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32326,9 +31678,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32350,9 +31699,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32376,9 +31722,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32400,9 +31743,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32426,9 +31766,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32450,9 +31787,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32476,9 +31810,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32500,9 +31831,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32526,9 +31854,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32550,9 +31875,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32576,9 +31898,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32600,9 +31919,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32626,9 +31942,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32650,9 +31963,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32676,9 +31986,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32700,9 +32007,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32726,9 +32030,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32750,9 +32051,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32776,9 +32074,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32800,9 +32095,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32826,9 +32118,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32850,9 +32139,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32876,9 +32162,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32900,9 +32183,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32926,9 +32206,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -32950,9 +32227,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -32976,9 +32250,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -33000,9 +32271,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -33026,9 +32294,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -33050,9 +32315,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -33076,9 +32338,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -33100,9 +32359,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33126,9 +32382,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33150,9 +32403,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33176,9 +32426,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33200,9 +32447,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33226,9 +32470,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33250,9 +32491,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33276,9 +32514,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33300,9 +32535,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33326,9 +32558,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -33350,9 +32579,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33376,9 +32602,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33400,9 +32623,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33426,9 +32646,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33450,9 +32667,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33476,9 +32690,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33500,9 +32711,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33526,9 +32734,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33550,9 +32755,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33576,9 +32778,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -33600,9 +32799,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33626,9 +32822,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33650,9 +32843,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33676,9 +32866,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33700,9 +32887,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33726,9 +32910,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -33750,9 +32931,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33776,9 +32954,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33800,9 +32975,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -33826,9 +32998,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -33850,9 +33019,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
@@ -48601,9 +47767,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -48625,9 +47788,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -48651,9 +47811,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
         {
@@ -48675,9 +47832,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_244.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_244.gltf"
             }
         },
@@ -48701,9 +47855,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -48725,9 +47876,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -48751,9 +47899,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -48775,9 +47920,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -48801,9 +47943,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -48825,9 +47964,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -48851,9 +47987,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -48875,9 +48008,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -48901,9 +48031,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -48925,9 +48052,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
@@ -48951,9 +48075,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_312.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_312.gltf"
             }
         },
         {
@@ -48976,9 +48097,6 @@
             },
             "drawable": {
                 "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
-                "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
         {
@@ -49000,9 +48118,6 @@
                 ]
             },
             "drawable": {
-                "mesh_file": "bistro/Mesh_316.gltf"
-            },
-            "acc_structure": {
                 "mesh_file": "bistro/Mesh_316.gltf"
             }
         },
