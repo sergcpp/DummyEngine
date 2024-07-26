@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_25_07
-	commit = 49c843b5a740ccbcae182cd3373ce4baee4226ab
+	branch = light_flags
+	commit = 97b7ada7a5b7a50feeee920853004d9c8fdea4aa
 	method = merge
 	cmdver = 0.4.6
-	parent = 20432e72697d9d82c4b154c7c0fcc8e853e2ffe1
+	parent = ee6a441934b92bc597e98f14f3a505e969a09b4f
