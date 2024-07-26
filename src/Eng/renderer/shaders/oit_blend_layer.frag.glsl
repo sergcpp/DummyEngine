@@ -304,6 +304,7 @@ void main() {
         k *= 0.5 - abs(norm_uvs.y - 0.5);
 
         const vec3 background_col = textureLod(g_back_color_tex, norm_uvs + k * uvs_offset, 0.0).xyz;
+        final_color *= fresnel;
         final_color += (1.0 - fresnel) * base_color * decompress_hdr(background_col);
     }
 

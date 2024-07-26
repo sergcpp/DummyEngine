@@ -27,15 +27,15 @@ runs:
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
         ### Coffee maker
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset medium --psnr 19.75
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset medium --psnr 23.60
         mv coffee_maker.png coffee_maker_medium.png
         mv coffee_maker_diff.png coffee_maker_diff_medium.png
         cp coffee_maker_medium.png coffee_maker_diff_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset high --psnr 20.00
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset high --psnr 24.25
         mv coffee_maker.png coffee_maker_high.png
         mv coffee_maker_diff.png coffee_maker_diff_high.png
         cp coffee_maker_high.png coffee_maker_diff_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset ultra --psnr 20.10
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset ultra --psnr 24.45
         mv coffee_maker.png coffee_maker_ultra.png
         mv coffee_maker_diff.png coffee_maker_diff_ultra.png
         cp coffee_maker_ultra.png coffee_maker_diff_ultra.png $WORK_DIR/${{ inputs.out-dir }}
