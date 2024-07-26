@@ -151,6 +151,16 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.cast_shadow = js_in.at("cast_shadow").as_lit().val == JsLiteralType::True;
     }
 
+    ls.affect_diffuse = true;
+    if (js_in.Has("affect_diffuse")) {
+        ls.affect_diffuse = js_in.at("affect_diffuse").as_lit().val == JsLiteralType::True;
+    }
+
+    ls.affect_specular = true;
+    if (js_in.Has("affect_specular")) {
+        ls.affect_specular = js_in.at("affect_specular").as_lit().val == JsLiteralType::True;
+    }
+
     if (js_in.Has("shadow_bias")) {
         const JsArrayP &js_shadow_bias = js_in.at("shadow_bias").as_arr();
         ls.shadow_bias[0] = float(js_shadow_bias.at(0).as_num().val);
@@ -243,6 +253,14 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
 
     if (ls.cast_shadow) {
         js_out.Insert("cast_shadow", JsLiteral{JsLiteralType::True});
+    }
+
+    if (!ls.affect_diffuse) {
+        js_out.Insert("affect_diffuse", JsLiteral{JsLiteralType::False});
+    }
+
+    if (!ls.affect_specular) {
+        js_out.Insert("affect_specular", JsLiteral{JsLiteralType::False});
     }
 
     if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {

@@ -80,6 +80,8 @@ const int RAY_TYPE_SHADOW = 4;
 // Light
 const int LIGHT_TYPE_BITS = 0x3;
 const int LIGHT_PORTAL_BIT = (1 << 2);
+const int LIGHT_DIFFUSE_BIT = (1 << 3);
+const int LIGHT_SPECULAR_BIT = (1 << 4);
 
 // Shadow resolution
 const int SHADOWMAP_RES_PC = 8192;

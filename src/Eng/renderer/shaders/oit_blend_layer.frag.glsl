@@ -170,12 +170,16 @@ void main() {
 
         const light_item_t litem = FetchLightItem(g_lights_buf, li);
         const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+        const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
+        const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
         lobe_weights_t _lobe_weights = lobe_weights;
         if (is_portal) {
             _lobe_weights.specular *= portals_specular_ltc_weight;
             _lobe_weights.clearcoat *= portals_specular_ltc_weight;
         }
+        [[flatten]] if (!is_diffuse) _lobe_weights.diffuse = 0.0;
+        [[flatten]] if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
         vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
                                                       sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         if (all(equal(light_contribution, vec3(0.0)))) {

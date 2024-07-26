@@ -502,7 +502,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
                             list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                         }
-                        ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2);
+                        ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2) |
+                                            (light.affect_diffuse << 3) | (light.affect_specular << 4);
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light.radius;
                         memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -682,7 +683,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
                         list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                     }
-                    ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2);
+                    ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2) | (light.affect_diffuse << 3) |
+                                        (light.affect_specular << 4);
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                     ls.radius = light.radius;
                     memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -1325,8 +1327,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 Camera shadow_cam;
                 shadow_cam.SetupView(light_center, light_center + _light_dir, _light_up);
-                shadow_cam.Perspective(Ren::eZRange::OneToZero, light_angle, 1.0f, ls->cull_offset,
-                                       ls->cull_radius);
+                shadow_cam.Perspective(Ren::eZRange::OneToZero, light_angle, 1.0f, ls->cull_offset, ls->cull_radius);
                 shadow_cam.UpdatePlanes();
 
                 if (i < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
@@ -1484,8 +1485,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     }
                 }
 
-                shadow_cam.Perspective(Ren::eZRange::OneToZero, light_angle, 1.0f,
-                                       std::max(ls->cull_offset, near_clip), std::min(ls->cull_radius, far_clip));
+                shadow_cam.Perspective(Ren::eZRange::OneToZero, light_angle, 1.0f, std::max(ls->cull_offset, near_clip),
+                                       std::min(ls->cull_radius, far_clip));
 
                 sh_list.cam_near = region->cam_near = shadow_cam.near();
                 sh_list.cam_far = region->cam_far = shadow_cam.far();

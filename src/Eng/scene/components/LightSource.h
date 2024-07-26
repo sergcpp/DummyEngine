@@ -22,6 +22,7 @@ struct LightSource {
     float cull_offset, cull_radius;
     bool sky_portal = false;
     bool cast_shadow, cache_shadow;
+    bool affect_diffuse = true, affect_specular = true;
     float shadow_bias[2];
 
     float width, height;
