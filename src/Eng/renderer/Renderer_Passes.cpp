@@ -345,6 +345,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                 const float mul = 1.0f / (Ren::Pi<float>() * radius * radius);
                 shrd_data.sun_col *= mul;
             }
+            const float cos_theta = 1.0f / sqrtf(1.0f + tan_angle * tan_angle);
+            shrd_data.sun_col[3] = shrd_data.sun_col_point[3] = cos_theta;
             shrd_data.env_col = Ren::Vec4f{p_list_->env.env_col[0], p_list_->env.env_col[1], p_list_->env.env_col[2],
                                            p_list_->env.env_map_rot};
 
@@ -982,7 +984,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
-    { // Sample sun color
+    { // Update sun color
         auto &sun_color = rp_builder_.AddPass("SUN COLOR UPDATE");
 
         struct PassData {

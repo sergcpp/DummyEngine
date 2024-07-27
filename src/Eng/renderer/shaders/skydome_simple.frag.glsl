@@ -11,8 +11,6 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-#define SKY_SUN_BLEND_VAL 0.0005
-
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
 layout(location = 0) in vec3 g_vtx_pos;
@@ -28,7 +26,7 @@ void main() {
     // sun disk is missing from cubemap, add it here
     if (g_shrd_data.sun_dir.w > 0.0 && view_dir_ws.y > -0.01) {
         const float costh = dot(view_dir_ws, g_shrd_data.sun_dir.xyz);
-        const float cos_theta = 1.0 / sqrt(1.0 + g_shrd_data.sun_dir.w * g_shrd_data.sun_dir.w);
+        const float cos_theta = g_shrd_data.sun_col.w;
         const float sun_disk = smoothstep(cos_theta - SKY_SUN_BLEND_VAL, cos_theta + SKY_SUN_BLEND_VAL, costh);
         out_color += sun_disk * g_shrd_data.sun_col.xyz;
     }

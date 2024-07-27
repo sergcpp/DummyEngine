@@ -19,8 +19,6 @@ layout(binding = SKY_HIST_TEX_SLOT) uniform sampler2D g_sky_hist_tex;
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_img;
 layout(binding = OUT_HIST_IMG_SLOT, rgba16f) uniform image2D g_out_hist_img;
 
-#define SKY_SUN_BLEND_VAL 0.0005
-
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
@@ -48,7 +46,7 @@ void main() {
     // sun disk is missing from cubemap, add it here
     if (g_shrd_data.sun_dir.w > 0.0 && view_ray_ws.y > -0.01) {
         const float costh = dot(view_ray_ws, g_shrd_data.sun_dir.xyz);
-        const float cos_theta = 1.0 / sqrt(1.0 + g_shrd_data.sun_dir.w * g_shrd_data.sun_dir.w);
+        const float cos_theta = g_shrd_data.sun_col.w;
         const float sun_disk = smoothstep(cos_theta - SKY_SUN_BLEND_VAL, cos_theta + SKY_SUN_BLEND_VAL, costh);
         out_color.xyz += sun_disk * g_shrd_data.sun_col.xyz;
     }

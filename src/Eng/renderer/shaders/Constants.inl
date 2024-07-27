@@ -156,6 +156,7 @@ const int SKY_CLOUDS_SAMPLE_COUNT = 96;
 const float SKY_CLOUDS_HORIZON_CUTOFF = 0.005f;
 const float SKY_MOON_SUN_RELATION = 0.0000001f;
 const float SKY_STARS_THRESHOLD = 14.0f;
+const float SKY_SUN_BLEND_VAL = 0.000005f;
 
 // Autoexposure
 const int EXPOSURE_HISTOGRAM_RES = 64;

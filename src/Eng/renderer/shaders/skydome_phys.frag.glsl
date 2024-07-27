@@ -16,12 +16,6 @@
     #define ENABLE_SUN_DISK 0
 #endif
 
-#ifdef SUBSAMPLE
-    #define SKY_SUN_BLEND_VAL 0.0005
-#else
-    #define SKY_SUN_BLEND_VAL 0.000005
-#endif
-
 #include "atmosphere_common.glsl"
 
 LAYOUT_PARAMS uniform UniformParams {
