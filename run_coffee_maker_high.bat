@@ -1,0 +1,1 @@
+DummyAppVK.exe -s scenes/coffee_maker.json -w 800 -h 1000 --preset high
