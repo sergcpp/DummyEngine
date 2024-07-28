@@ -172,8 +172,8 @@ struct light_t {
     uint32_t cast_shadow : 1;
     uint32_t visible : 1;
     uint32_t sky_portal : 1;
-    uint32_t blocking : 1;
-    uint32_t _unused : 24;
+    uint32_t ray_visibility : 8;
+    uint32_t _unused0 : 17;
     float col[3];
     union {
         struct {
@@ -373,7 +373,7 @@ struct environment_t {
     float back_map_rotation;
     const float *qtree_mips[16];
     int qtree_levels;
-    bool multiple_importance;
+    bool importance_sample;
     uint32_t light_index;
     uint32_t env_map_res;  // 16-bit
     uint32_t back_map_res; // 16-bit

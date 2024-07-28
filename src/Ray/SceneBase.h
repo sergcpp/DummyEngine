@@ -61,7 +61,7 @@ struct shading_node_desc_t {
     float ior = 1;                                             ///< IOR for reflective or refractive material
     float tint = 0;                                            ///< Specular tint
     TextureHandle metallic_texture = InvalidTextureHandle;     ///< Metalness texture
-    bool multiple_importance = false;                          ///< Enable explicit emissive geometry sampling
+    bool importance_sample = false;                            ///< Enable explicit emissive geometry sampling
     bool mix_add = false;                                      ///< Enable additive mixing
 };
 
@@ -92,7 +92,7 @@ struct principled_mat_desc_t {
     TextureHandle alpha_texture = InvalidTextureHandle;     ///< Transparency texture
     TextureHandle normal_map = InvalidTextureHandle;        ///< Material normalmap
     float normal_map_intensity = 1;                         ///< Normalmap intensity
-    bool multiple_importance = false;                       ///< Enable explicit emissive geometry sampling
+    bool importance_sample = false;                         ///< Enable explicit emissive geometry sampling
 };
 
 /// Defines mesh region with specific material
@@ -195,8 +195,11 @@ struct tex_desc_t {
 struct directional_light_desc_t {
     float color[3] = {1.0f, 1.0f, 1.0f};
     float direction[3] = {0.0f, -1.0f, 0.0f}, angle = 0.0f;
-    bool visible = true; // visibility only affects secondary bounces
+    bool visible = true;
     bool cast_shadow = true;
+    bool diffuse_visibility = true;    ///< Light visibility to diffuse rays
+    bool specular_visibility = true;   ///< Light visibility to specular rays
+    bool refraction_visibility = true; ///< Light visibility to refraction (transmission) rays
 };
 
 /// Spherical light source description
@@ -204,8 +207,11 @@ struct sphere_light_desc_t {
     float color[3] = {1.0f, 1.0f, 1.0f};
     float position[3] = {0.0f, 0.0f, 0.0f};
     float radius = 1.0f;
-    bool visible = true; // visibility only affects secondary bounces
+    bool visible = true;
     bool cast_shadow = true;
+    bool diffuse_visibility = true;    ///< Light visibility to diffuse rays
+    bool specular_visibility = true;   ///< Light visibility to specular rays
+    bool refraction_visibility = true; ///< Light visibility to refraction (transmission) rays
 };
 
 /// Spotlight description
@@ -216,8 +222,11 @@ struct spot_light_desc_t {
     float spot_size = 45.0f;
     float spot_blend = 0.15f;
     float radius = 1.0f;
-    bool visible = true; // visibility only affects secondary bounces
+    bool visible = true;
     bool cast_shadow = true;
+    bool diffuse_visibility = true;    ///< Light visibility to diffuse rays
+    bool specular_visibility = true;   ///< Light visibility to specular rays
+    bool refraction_visibility = true; ///< Light visibility to refraction (transmission) rays
 };
 
 /// Rectangular lightsource description
@@ -225,8 +234,11 @@ struct rect_light_desc_t {
     float color[3] = {1.0f, 1.0f, 1.0f};
     float width = 1.0f, height = 1.0f;
     bool sky_portal = false;
-    bool visible = true; // visibility only affects secondary bounces
+    bool visible = true;
     bool cast_shadow = true;
+    bool diffuse_visibility = true;    ///< Light visibility to diffuse rays
+    bool specular_visibility = true;   ///< Light visibility to specular rays
+    bool refraction_visibility = true; ///< Light visibility to refraction (transmission) rays
 };
 
 /// Disk lightsource description
@@ -234,8 +246,11 @@ struct disk_light_desc_t {
     float color[3] = {1.0f, 1.0f, 1.0f};
     float size_x = 1.0f, size_y = 1.0f;
     bool sky_portal = false;
-    bool visible = true; // visibility only affects secondary bounces
+    bool visible = true;
     bool cast_shadow = true;
+    bool diffuse_visibility = true;    ///< Light visibility to diffuse rays
+    bool specular_visibility = true;   ///< Light visibility to specular rays
+    bool refraction_visibility = true; ///< Light visibility to refraction (transmission) rays
 };
 
 /// Line light description
@@ -243,8 +258,11 @@ struct line_light_desc_t {
     float color[3] = {1.0f, 1.0f, 1.0f};
     float radius = 1.0f, height = 1.0f;
     bool sky_portal = false;
-    bool visible = true; // visibility only affects secondary bounces
+    bool visible = true;
     bool cast_shadow = true;
+    bool diffuse_visibility = true;    ///< Light visibility to diffuse rays
+    bool specular_visibility = true;   ///< Light visibility to specular rays
+    bool refraction_visibility = true; ///< Light visibility to refraction (transmission) rays
 };
 
 /// Camera description
@@ -310,7 +328,7 @@ struct atmosphere_params_t {
     float atmosphere_density = 1.0f;                   ///< Atmosphere density multiplier
     float stars_brightness = 1.0f;                     ///< Brightness of the stars in the sky (set to 0.0 to disable)
     float moon_radius = 1737400.0f;                    ///< Moon radius (set to 0.0 to disable)
-    float moon_distance = 100000000.0f;//363100000.0f; ///< Distance from Earth to the Moon
+    float moon_distance = 100000000.0f;                // 363100000.0f; ///< Distance from Earth to the Moon
     alignas(16) float moon_dir[4] = {0.707f, 0.707f, 0.0f, 0.0f};
     alignas(16) float rayleigh_scattering[4] = {5.802f * 1e-6f, 13.558f * 1e-6f, 33.100f * 1e-6f, 0.0f};
     alignas(16) float mie_scattering[4] = {3.996f * 1e-6f, 3.996f * 1e-6f, 3.996f * 1e-6f, 0.0f};
@@ -329,7 +347,7 @@ struct environment_desc_t {
     float env_map_rotation = 0.0f;                 ///< Environment map rotation in radians
     float back_map_rotation = 0.0f;                ///< Background map rotation in radians
     int envmap_resolution = 1024;                  ///< Resolution of the generated env texture
-    bool multiple_importance = true;               ///< Enable explicit env map sampling
+    bool importance_sample = true;                 ///< Enable explicit env map sampling
     atmosphere_params_t atmosphere;                ///< Atmosphere parameters
 };
 
