@@ -1432,6 +1432,8 @@ void GSBaseState::InitScene_PT() {
                         spot_light_desc.radius = ls.radius;
                         spot_light_desc.spot_size = ls.angle_deg;
                         spot_light_desc.spot_blend = ls.spot_blend;
+                        spot_light_desc.diffuse_visibility = ls.affect_diffuse;
+                        spot_light_desc.specular_visibility = ls.affect_specular;
                         const Ray::LightHandle new_light = ray_scene_->AddLight(spot_light_desc);
                     } else {
                         Ray::sphere_light_desc_t sphere_light_desc;
@@ -1449,6 +1451,8 @@ void GSBaseState::InitScene_PT() {
                     rect_light_desc.width = ls.width;
                     rect_light_desc.height = ls.height;
                     rect_light_desc.sky_portal = ls.sky_portal;
+                    rect_light_desc.diffuse_visibility = ls.affect_diffuse;
+                    rect_light_desc.specular_visibility = ls.affect_specular;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(rect_light_desc, ValuePtr(tr.world_from_object));
                 } else if (ls.type == Eng::eLightType::Disk) {
@@ -1456,6 +1460,8 @@ void GSBaseState::InitScene_PT() {
                     memcpy(disk_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                     disk_light_desc.size_x = ls.width;
                     disk_light_desc.size_y = ls.height;
+                    disk_light_desc.diffuse_visibility = ls.affect_diffuse;
+                    disk_light_desc.specular_visibility = ls.affect_specular;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(disk_light_desc, ValuePtr(tr.world_from_object));
                 } else if (ls.type == Eng::eLightType::Line) {
@@ -1463,6 +1469,8 @@ void GSBaseState::InitScene_PT() {
                     memcpy(line_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                     line_light_desc.radius = ls.radius;
                     line_light_desc.height = ls.height;
+                    line_light_desc.diffuse_visibility = ls.affect_diffuse;
+                    line_light_desc.specular_visibility = ls.affect_specular;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(line_light_desc, ValuePtr(tr.world_from_object));
                 }
