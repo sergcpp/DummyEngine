@@ -693,28 +693,33 @@ void GSBaseState::Draw() {
 
     OPTICK_GPU_EVENT("Draw");
 
-    if (streaming_finished_ && !viewer_->app_params.ref_name.empty() && capture_state_ == eCaptureState::None) {
-        if (viewer_->app_params.pt) {
+    if (streaming_finished_) {
+        if (viewer_->app_params.pt && !use_pt_) {
             InitRenderer_PT();
             InitScene_PT();
             use_pt_ = true;
             invalidate_view_ = true;
+            viewer_->app_params.pt = false;
         } else {
-            if (USE_TWO_THREADS) {
-                std::unique_lock<std::mutex> lock(mtx_);
-                while (notified_) {
-                    thr_done_.wait(lock);
+            if (!viewer_->app_params.ref_name.empty() && capture_state_ == eCaptureState::None) {
+                if (USE_TWO_THREADS) {
+                    std::unique_lock<std::mutex> lock(mtx_);
+                    while (notified_) {
+                        thr_done_.wait(lock);
+                    }
                 }
+                main_view_lists_[0].Clear();
+                main_view_lists_[1].Clear();
+                random_->Reset(0);
+                renderer_->settings.taa_mode = Eng::eTAAMode::Static;
+                main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
+                renderer_->reset_accumulation();
             }
-            main_view_lists_[0].Clear();
-            main_view_lists_[1].Clear();
-            random_->Reset(0);
-            renderer_->settings.taa_mode = Eng::eTAAMode::Static;
-            main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
-            renderer_->reset_accumulation();
         }
-        capture_state_ = eCaptureState::Warmup;
-        log_->Info("Starting capture!");
+        if (!viewer_->app_params.ref_name.empty() && capture_state_ == eCaptureState::None) {
+            capture_state_ = eCaptureState::Warmup;
+            log_->Info("Starting capture!");
+        }
     }
 
     Ren::Tex2DRef render_target;

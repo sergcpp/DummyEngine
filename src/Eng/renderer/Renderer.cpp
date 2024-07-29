@@ -1643,7 +1643,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
     bool resolution_changed = false;
     if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1]) {
         resolution_changed = true;
-        view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.scr_res = view_state_.act_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
     }
 
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
