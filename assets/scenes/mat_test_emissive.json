@@ -89,11 +89,11 @@
             },
             "drawable" : {
                 "mesh_file" : "mat_test/model.mesh",
-                "material_override" : [ "mat_test/complex_mat2.mat" ]
+                "material_override" : [ "mat_test/emit_mat0.mat" ]
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/model.mesh",
-                "material_override" : [ "mat_test/complex_mat2.mat" ]
+                "material_override" : [ "mat_test/emit_mat0.mat" ]
             }
         },
         {
@@ -152,8 +152,8 @@
                     1.0,
                     1.0
                 ],
-                "power" : 2.13855,
-                "power0" : 0.0,
+                "power0" : 2.13855,
+                "power" : 0.0,
                 "width" : 0.162,
                 "height" : 0.162,
                 "cast_shadow" : true
@@ -175,8 +175,8 @@
                     1.0,
                     1.0
                 ],
-                "power" : 4.2998,
-                "power0" : 0.0,
+                "power0" : 4.2998,
+                "power" : 0.0,
                 "radius" : 0.1,
                 "width" : 0.1296,
                 "height" : 0.1296,

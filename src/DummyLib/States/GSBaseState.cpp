@@ -1325,6 +1325,7 @@ void GSBaseState::InitScene_PT() {
                         mat_desc.roughness = front_mat->params[0][3];
                         mat_desc.roughness_texture = load_texture(*front_mat->textures[2]);
                         mat_desc.specular = 0.0f;
+                        mat_desc.importance_sample = true;
                         if (front_mat->params.size() > 1) {
                             mat_desc.sheen = front_mat->params[1][0];
                             mat_desc.sheen_tint = front_mat->params[1][1];
@@ -1339,7 +1340,11 @@ void GSBaseState::InitScene_PT() {
                         }
                         if (front_mat->params.size() > 3) {
                             mat_desc.alpha = 1.0f - front_mat->params[3][0];
-                            mat_desc.ior = front_mat->params[3][1];
+                            if (mat_desc.transmission > 0.0f) {
+                                mat_desc.ior = front_mat->params[3][1];
+                            } else {
+                                memcpy(mat_desc.emission_color, &front_mat->params[3][1], 3 * sizeof(float));
+                            }
                         }
                         if (front_mat->textures.size() > 3) {
                             mat_desc.metallic_texture = load_texture(*front_mat->textures[3]);
@@ -1363,6 +1368,7 @@ void GSBaseState::InitScene_PT() {
                         mat_desc.roughness = back_mat->params[0][3];
                         mat_desc.roughness_texture = load_texture(*back_mat->textures[2]);
                         mat_desc.specular = 0.0f;
+                        mat_desc.importance_sample = true;
                         if (back_mat->params.size() > 1) {
                             mat_desc.sheen = back_mat->params[1][0];
                             mat_desc.sheen_tint = back_mat->params[1][1];
@@ -1377,7 +1383,11 @@ void GSBaseState::InitScene_PT() {
                         }
                         if (back_mat->params.size() > 3) {
                             mat_desc.alpha = 1.0f - back_mat->params[3][0];
-                            mat_desc.ior = back_mat->params[3][1];
+                            if (mat_desc.transmission > 0.0f) {
+                                mat_desc.ior = back_mat->params[3][1];
+                            } else {
+                                memcpy(mat_desc.emission_color, &front_mat->params[3][1], 3 * sizeof(float));
+                            }
                         }
                         if (back_mat->textures.size() > 3) {
                             mat_desc.metallic_texture = load_texture(*back_mat->textures[3]);

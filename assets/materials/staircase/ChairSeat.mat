@@ -12,4 +12,4 @@ params:
     - 0.11764699965715408 0.05490199849009514 0.06666669994592667 0.5    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
     - 0.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
-    - 0.0 0.0 0.0 0.0    # transparency, ior, unused, unused
+    - 0.0 0.0 0.0 0.0    # transparency, ior/emission color
