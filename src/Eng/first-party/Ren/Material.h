@@ -18,7 +18,7 @@
 namespace Ren {
 class ILog;
 
-enum class eMatFlags { AlphaTest, AlphaBlend, DepthWrite, TwoSided, CustomShaded };
+enum class eMatFlags { AlphaTest, AlphaBlend, DepthWrite, TwoSided, Emissive, CustomShaded };
 
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData, CreatedFromData_NeedsMore };
 

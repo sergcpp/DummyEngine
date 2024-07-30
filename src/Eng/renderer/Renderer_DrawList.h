@@ -104,6 +104,7 @@ struct DrawList {
     std::vector<CustomDrawBatch> custom_batches;
     std::vector<uint32_t> custom_batch_indices;
     int alpha_blend_start_index = -1;
+    int emissive_start_index = -1;
     std::vector<SkinTransform> skin_transforms;
     mutable Ren::BufferRef skin_transforms_stage_buf;
     std::vector<SkinRegion> skin_regions;

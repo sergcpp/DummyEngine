@@ -102,6 +102,12 @@ const int MAX_OBJ_COUNT = 4194304;
 const int MAX_TEX_COUNT = 262144;
 
 const int MAX_TEX_PER_MATERIAL = 6;
+const int MAT_TEX_BASECOLOR = 0;
+const int MAT_TEX_NORMALMAP = 1;
+const int MAT_TEX_ROUGHNESS = 2;
+const int MAT_TEX_METALLIC = 3;
+const int MAT_TEX_ALPHA = 4;
+const int MAT_TEX_EMISSION = 5;
 const int MAX_MATERIALS_COUNT = 262144;
 
 const int MAX_INSTANCES_TOTAL = 262144;

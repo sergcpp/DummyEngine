@@ -99,10 +99,10 @@ void main() {
     g_vtx_uvs = g_in_vtx_uvs0;
 
 #if !defined(NO_BINDLESS)
-    g_base_tex = GET_HANDLE(mat.texture_indices[0]);
-    g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
-    g_roug_tex = GET_HANDLE(mat.texture_indices[2]);
-    g_metl_tex = GET_HANDLE(mat.texture_indices[3]);
+    g_base_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]);
+    g_norm_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_NORMALMAP]);
+    g_roug_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS]);
+    g_metl_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC]);
 #endif // !NO_BINDLESS
 
     g_base_color = mat.params[0];

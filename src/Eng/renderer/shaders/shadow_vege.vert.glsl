@@ -88,7 +88,7 @@ void main() {
 
     g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
-    g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
+    g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
 #endif // !NO_BINDLESS
 #endif // TRANSPARENT
 

@@ -27,7 +27,7 @@ uint32_t _draw_list_range_full_rev(Eng::RpBuilder &builder, const Ren::MaterialS
                                    Eng::BackendInfo &backend_info);
 uint32_t _draw_range_ext2(Eng::RpBuilder &builder, const Ren::MaterialStorage &materials,
                           const Ren::Texture2D &white_tex, Ren::Span<const uint32_t> batch_indices,
-                          Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint32_t mask, uint32_t &cur_mat_id,
+                          Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint64_t mask, uint32_t &cur_mat_id,
                           int *draws_count);
 } // namespace RpSharedInternal
 
@@ -157,7 +157,7 @@ void Eng::RpOITScheduleRays::DrawTransparent(RpBuilder &builder, RpAllocTex &dep
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -184,7 +184,7 @@ void Eng::RpOITScheduleRays::DrawTransparent(RpBuilder &builder, RpAllocTex &dep
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -198,7 +198,7 @@ void Eng::RpOITScheduleRays::DrawTransparent(RpBuilder &builder, RpAllocTex &dep
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest;
+            const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -212,7 +212,7 @@ void Eng::RpOITScheduleRays::DrawTransparent(RpBuilder &builder, RpAllocTex &dep
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }

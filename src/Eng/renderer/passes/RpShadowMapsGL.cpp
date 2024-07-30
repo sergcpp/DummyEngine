@@ -10,10 +10,10 @@
 
 namespace RpSharedInternal {
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
-                     uint32_t i, uint32_t mask, int *draws_count);
+                     uint32_t i, uint64_t mask, int *draws_count);
 uint32_t _draw_range_ext(Eng::RpBuilder &builder, const Ren::MaterialStorage *materials,
                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
-                         uint32_t i, uint32_t mask, uint32_t &cur_mat_id, int *draws_count);
+                         uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 } // namespace RpSharedInternal

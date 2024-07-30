@@ -180,6 +180,8 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpDepthFill.cpp
                     renderer/passes/RpDepthHierarchy.h
                     renderer/passes/RpDepthHierarchy.cpp
+                    renderer/passes/RpEmissive.h
+                    renderer/passes/RpEmissive.cpp
                     renderer/passes/RpGBufferFill.h
                     renderer/passes/RpGBufferFill.cpp
                     renderer/passes/RpOITBlendLayer.h
@@ -231,6 +233,7 @@ if(${RENDERER} STREQUAL "GL")
                         renderer/passes/RpDebugEllipsoids.cpp   # GL-only for now
                         renderer/passes/RpDepthFillGL.cpp
                         renderer/passes/RpDepthHierarchyGL.cpp
+                        renderer/passes/RpEmissiveGL.cpp
                         renderer/passes/RpDOF.h                 # GL-only for now
                         renderer/passes/RpDOF.cpp               # GL-only for now
                         renderer/passes/RpFXAA.h                # GL-only for now
@@ -260,6 +263,7 @@ elseif(${RENDERER} STREQUAL "VK")
                      renderer/passes/RpDebugRT_VK.cpp
                      renderer/passes/RpDepthFillVK.cpp
                      renderer/passes/RpDepthHierarchyVK.cpp
+                     renderer/passes/RpEmissiveVK.cpp
                      renderer/passes/RpGBufferFillVK.cpp
                      renderer/passes/RpOITBlendLayerVK.cpp
                      renderer/passes/RpOITDepthPeelVK.cpp

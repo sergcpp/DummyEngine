@@ -15,7 +15,7 @@ void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
     glBindSampler(Eng::BIND_MAT_TEX4, mat.samplers[4]->id());
 }
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
-                     uint32_t i, uint32_t mask, int *draws_count) {
+                     uint32_t i, uint64_t mask, int *draws_count) {
     for (; i < zfill_batch_indices.size(); i++) {
         const auto &batch = zfill_batches[zfill_batch_indices[i]];
         if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
@@ -38,7 +38,7 @@ uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<co
 
 uint32_t _draw_range_ext(Eng::RpBuilder &builder, const Ren::MaterialStorage *materials,
                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
-                         uint32_t i, uint32_t mask, uint32_t &cur_mat_id, int *draws_count) {
+                         uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
     for (; i < batch_indices.size(); i++) {
@@ -184,7 +184,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitMoving | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
         }
     }
@@ -221,7 +221,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitTwoSided;
+                const uint64_t DrawMask = BDB::BitAlphaTest | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -248,7 +248,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving;
+                const uint64_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -262,7 +262,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
+                const uint64_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -303,7 +303,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
         }
     }
@@ -325,7 +325,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitMoving;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
         }
 
@@ -338,7 +338,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
         }
     }
@@ -364,7 +364,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest;
+                const uint64_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -378,7 +378,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
+                const uint64_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -401,7 +401,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving;
+                const uint64_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -415,7 +415,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
+                const uint64_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -453,7 +453,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
         }
     }
@@ -475,7 +475,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
         }
 
@@ -488,7 +488,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range(zfill_batch_indices, zfill_batches, i, DrawMask, &draws_count);
         }
     }
@@ -514,7 +514,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
+                const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -528,7 +528,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
+                const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -551,7 +551,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving;
+                const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }
@@ -565,7 +565,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
+                const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
                 i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
                                     cur_mat_id, &draws_count);
             }

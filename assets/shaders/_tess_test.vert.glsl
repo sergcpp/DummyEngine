@@ -77,9 +77,9 @@ void main() {
 
 #if defined(GL_ARB_bindless_texture)
     MaterialData mat = g_materials[instance.y];
-    g_diff_tex = texture_handles[mat.texture_indices[0]];
-    g_norm_tex = texture_handles[mat.texture_indices[1]];
-    g_spec_tex = texture_handles[mat.texture_indices[2]];
-    g_bump_tex = texture_handles[mat.texture_indices[3]];
+    g_diff_tex = texture_handles[mat.texture_indices[MAT_TEX_BASECOLOR]];
+    g_norm_tex = texture_handles[mat.texture_indices[MAT_TEX_NORMALMAP]];
+    g_spec_tex = texture_handles[mat.texture_indices[MAT_TEX_ROUGHNESS]];
+    g_bump_tex = texture_handles[mat.texture_indices[MAT_TEX_METALLIC]];
 #endif // GL_ARB_bindless_texture
 }

@@ -98,33 +98,35 @@ struct InstanceData {
 static_assert(sizeof(InstanceData) == 192, "!");
 
 struct BasicDrawBatch {                        // NOLINT
-    static const uint32_t TypeSimple = 0b00u;  // simple
-    static const uint32_t TypeVege = 0b01u;    // vegetation
-    static const uint32_t TypeSkinned = 0b10u; // skeletal
-    static const uint32_t TypeUnused = 0b11u;
+    static const uint64_t TypeSimple = 0b00ull;  // simple
+    static const uint64_t TypeVege = 0b01ull;    // vegetation
+    static const uint64_t TypeSkinned = 0b10ull; // skeletal
+    static const uint64_t TypeUnused = 0b11ull;
 
-    static const uint32_t BitsSimple = (TypeSimple << 29u);
-    static const uint32_t BitsVege = (TypeVege << 29u);
-    static const uint32_t BitsSkinned = (TypeSkinned << 29u);
-    static const uint32_t BitsUnused = (TypeUnused << 29u);
-    static const uint32_t BitAlphaTest = (1u << 28u);
-    static const uint32_t BitMoving = (1u << 27u);
-    static const uint32_t BitTwoSided = (1u << 26u);
-    static const uint32_t BitBackSided = (1u << 25u);
-    static const uint32_t BitAlphaBlend = (1u << 31u);
-    static const uint32_t FlagBits = (0b1111111u << 25u);
+    static const uint64_t BitsSimple = (TypeSimple << 31u);
+    static const uint64_t BitsVege = (TypeVege << 31u);
+    static const uint64_t BitsSkinned = (TypeSkinned << 31u);
+    static const uint64_t BitAlphaTest = (1ull << 30u);
+    static const uint64_t BitMoving = (1ull << 29u);
+    static const uint64_t BitTwoSided = (1ull << 28u);
+    static const uint64_t BitBackSided = (1ull << 27u);
+    static const uint64_t BitAlphaBlend = (1ull << 33u);
+    static const uint64_t BitEmissive = (1ull << 34u);
+    static const uint64_t FlagBits = (0b11111111ull << 27u);
 
     union {
         struct {
-            uint32_t indices_offset : 25;
-            uint32_t back_sided_bit : 1;
-            uint32_t two_sided_bit : 1;
-            uint32_t moving_bit : 1; // object uses two transforms
-            uint32_t alpha_test_bit : 1;
-            uint32_t type_bits : 2;
-            uint32_t alpha_blend_bit : 1;
+            uint64_t indices_offset : 27;
+            uint64_t back_sided_bit : 1;
+            uint64_t two_sided_bit : 1;
+            uint64_t moving_bit : 1; // object uses two transforms
+            uint64_t alpha_test_bit : 1;
+            uint64_t type_bits : 2;
+            uint64_t alpha_blend_bit : 1;
+            uint64_t emissive_bit : 1;
+            uint64_t _unused : 27;
         };
-        uint32_t sort_key = 0;
+        uint64_t sort_key = 0;
     };
 
     uint32_t indices_count;
@@ -133,7 +135,7 @@ struct BasicDrawBatch {                        // NOLINT
     uint32_t instance_start;
     uint32_t instance_count;
 };
-static_assert(offsetof(BasicDrawBatch, indices_count) == 4, "!");
+static_assert(offsetof(BasicDrawBatch, indices_count) == 8, "!");
 
 enum class eFwdPipeline { FrontfaceDraw, BackfaceDraw, Wireframe, _Count };
 

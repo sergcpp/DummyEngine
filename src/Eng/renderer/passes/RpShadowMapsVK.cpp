@@ -12,10 +12,10 @@
 
 namespace RpSharedInternal {
 uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, Ren::Span<const uint32_t> batch_indices,
-                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, const uint32_t mask, int *draws_count);
+                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint64_t mask, int *draws_count);
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
-                         uint32_t i, const uint32_t mask, const uint32_t materials_per_descriptor,
+                         uint32_t i, uint64_t mask, const uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 } // namespace RpSharedInternal
 
@@ -116,7 +116,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
         vi_depth_pass_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-        const uint32_t BitFlags[] = {0, BDB::BitBackSided, BDB::BitTwoSided};
+        const uint64_t BitFlags[] = {0, BDB::BitBackSided, BDB::BitTwoSided};
         for (int pi = 0; pi < 3; ++pi) {
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_[pi].handle());
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
@@ -210,7 +210,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
         vi_depth_pass_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-        const uint32_t BitFlags[] = {BDB::BitAlphaTest, BDB::BitAlphaTest | BDB::BitBackSided,
+        const uint64_t BitFlags[] = {BDB::BitAlphaTest, BDB::BitAlphaTest | BDB::BitBackSided,
                                      BDB::BitAlphaTest | BDB::BitTwoSided};
         for (int pi = 0; pi < 3; ++pi) {
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_[pi].handle());

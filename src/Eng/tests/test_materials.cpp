@@ -556,6 +556,10 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 22.03, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat4", 19.85, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat4", 19.79, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "emit_mat0", 23.55, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "emit_mat0", 23.33, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "emit_mat1", 22.18, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "emit_mat1", 22.21, Full_Ultra));
 
         for (auto &f : futures) {
             f.wait();

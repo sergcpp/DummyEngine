@@ -125,7 +125,7 @@ void main() {
             const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
             const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-            const float alpha = textureLod(SAMPLER2D(mat.texture_indices[4]), uv, 0.0).r;
+            const float alpha = textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).r;
             if (alpha >= 0.5) {
                 rayQueryConfirmIntersectionEXT(rq);
             }
@@ -198,7 +198,7 @@ void main() {
 
         const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
 
-        const vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
+        const vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
         const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
         vec3 tri_normal = cross(p1 - p0, p2 - p0);
@@ -211,7 +211,7 @@ void main() {
         tex_lod += log2(cone_width);
         tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
         tex_lod -= log2(abs(dot(rayQueryGetIntersectionObjectRayDirectionEXT(rq, true), tri_normal)));
-        vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
+        vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 
         const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
                                   unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
@@ -238,7 +238,7 @@ void main() {
         }
 
 #if defined(BINDLESS_TEXTURES)
-        const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[2])), uv, tex_lod).r;
+        const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS])), uv, tex_lod).r;
 #else
         const float roughness = mat.params[0].w;
 #endif
@@ -247,13 +247,18 @@ void main() {
         const float specular = mat.params[1].z;
         const float specular_tint = mat.params[1].w;
 #if defined(BINDLESS_TEXTURES)
-        const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[3])), uv, tex_lod).r;
+        const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC])), uv, tex_lod).r;
 #else
         const float metallic = mat.params[2].x;
 #endif
         const float transmission = mat.params[2].y;
         const float clearcoat = mat.params[2].z;
         const float clearcoat_roughness = mat.params[2].w;
+#if defined(BINDLESS_TEXTURES)
+        const vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+#else
+        const vec3 emission_color = mat.params[3].yzw;
+#endif
 
         vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
         spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -281,7 +286,7 @@ void main() {
 
         const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-        vec3 light_total = vec3(0.0);
+        vec3 light_total = emission_color;
 
         vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
         projected_p /= projected_p[3];

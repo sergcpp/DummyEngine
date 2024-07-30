@@ -20,6 +20,7 @@ extern "C" {
 #include "passes/RpDebugTextures.h"
 #include "passes/RpDepthFill.h"
 #include "passes/RpDepthHierarchy.h"
+#include "passes/RpEmissive.h"
 #include "passes/RpFXAA.h"
 #include "passes/RpGBufferFill.h"
 #include "passes/RpOITBlendLayer.h"
@@ -202,6 +203,7 @@ class Renderer {
     RpGBufferFill rp_gbuffer_fill_;
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
+    RpEmissive rp_emissive_;
     RpOITDepthPeel rp_oit_depth_peel_;
     RpOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {{prim_draw_}, {prim_draw_}, {prim_draw_}, {prim_draw_}};
     RpOITScheduleRays rp_oit_schedule_rays_;
@@ -297,6 +299,8 @@ class Renderer {
     void AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                             const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool enable_gi);
+    void AddEmissivesPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                          const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddOITPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,

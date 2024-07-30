@@ -95,8 +95,8 @@ void main() {
     g_vtx_uvs = g_in_vtx_uvs0;
 
 #if !defined(NO_BINDLESS)
-    g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
-    g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
+    g_norm_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_NORMALMAP]);
+    g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
 #endif // !NO_BINDLESS
 
     g_mat_params0 = mat.params[1];

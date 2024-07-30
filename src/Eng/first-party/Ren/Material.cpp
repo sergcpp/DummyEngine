@@ -160,6 +160,8 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                     flags_ |= eMatFlags::DepthWrite;
                 } else if (flag == "two_sided") {
                     flags_ |= eMatFlags::TwoSided;
+                } else if (flag == "emissive") {
+                    flags_ |= eMatFlags::Emissive;
                 } else if (flag == "custom_shaded") {
                     flags_ |= eMatFlags::CustomShaded;
                 } else {

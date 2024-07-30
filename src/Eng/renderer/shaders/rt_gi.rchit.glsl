@@ -55,7 +55,7 @@ void main() {
 
     vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
 
-    vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
+    vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
     float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
     vec3 tri_normal = cross(p1 - p0, p2 - p0);
@@ -68,7 +68,7 @@ void main() {
     tex_lod += log2(cone_width);
     tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
     tex_lod -= log2(abs(dot(gl_ObjectRayDirectionEXT, tri_normal)));
-    g_pld.col = SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
+    g_pld.col = SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 
     if ((geo.flags & RTGeoLightmappedBit) != 0u) {
         vec2 lm_uv0 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i0].w);

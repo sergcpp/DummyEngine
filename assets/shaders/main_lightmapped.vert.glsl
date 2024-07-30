@@ -83,9 +83,9 @@ void main() {
 
     MaterialData mat = g_materials[instance.y];
 #if defined(BINDLESS_TEXTURES)
-    g_diff_tex = GET_HANDLE(mat.texture_indices[0]);
-    g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
-    g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
+    g_diff_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]);
+    g_norm_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_NORMALMAP]);
+    g_spec_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS]);
 #endif // BINDLESS_TEXTURES
 
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws, 1.0);

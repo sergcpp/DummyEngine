@@ -72,7 +72,7 @@ void main() {
     const MaterialData mat = g_materials[instance.y];
     g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
-    g_alpha_tex = GET_HANDLE(mat.texture_indices[3]);
+    g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
 #endif // !NO_BINDLESS
     g_vtx_pos_ls = g_in_vtx_pos_curr;
 #endif

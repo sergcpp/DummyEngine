@@ -1269,6 +1269,43 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     });
 }
 
+void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                     const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+    using Stg = Ren::eStageBits;
+
+    auto &emissive = rp_builder_.AddPass("EMISSIVE");
+    const RpResRef vtx_buf1 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const RpResRef vtx_buf2 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const RpResRef ndx_buf = emissive.AddIndexBufferInput(ctx_.default_indices_buf());
+
+    const RpResRef materials_buf = emissive.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
+#if defined(USE_GL_RENDER)
+    const RpResRef textures_buf = emissive.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+#else
+    const RpResRef textures_buf = {};
+#endif
+
+    const RpResRef noise_tex = emissive.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const RpResRef dummy_white = emissive.AddTextureInput(dummy_white_, Stg::FragmentShader);
+    const RpResRef dummy_black = emissive.AddTextureInput(dummy_black_, Stg::FragmentShader);
+
+    const RpResRef instances_buf = emissive.AddStorageReadonlyInput(
+        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
+    const RpResRef instances_indices_buf =
+        emissive.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
+
+    const RpResRef shared_data_buf =
+        emissive.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+
+    frame_textures.color = emissive.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
+    frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+
+    rp_emissive_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
+                       noise_tex, dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf,
+                       frame_textures.color, frame_textures.depth);
+    emissive.set_executor(&rp_emissive_);
+}
+
 void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth_tex, RpResRef &out_ssao) {
     const Ren::Vec4i cur_res =
         Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1], view_state_.scr_res[0], view_state_.scr_res[1]};

@@ -12,7 +12,7 @@
 
 namespace RpSharedInternal {
 uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, Ren::Span<const uint32_t> batch_indices,
-                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, const uint32_t mask, int *draws_count) {
+                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, const uint64_t mask, int *draws_count) {
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
@@ -35,7 +35,7 @@ uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, Ren::Spa
 
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
-                         uint32_t i, const uint32_t mask, const uint32_t materials_per_descriptor,
+                         uint32_t i, const uint64_t mask, const uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count) {
     uint32_t bound_descr_id = 0;
     for (; i < batch_indices.size(); i++) {
@@ -66,7 +66,7 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
 }
 
 uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
-                     uint32_t mask);
+                     uint64_t mask);
 } // namespace RpSharedInternal
 
 void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf) {

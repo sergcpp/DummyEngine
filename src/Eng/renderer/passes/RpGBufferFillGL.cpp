@@ -10,7 +10,7 @@
 namespace RpSharedInternal {
 uint32_t _draw_range_ext2(Eng::RpBuilder &builder, const Ren::MaterialStorage &materials,
                           const Ren::Texture2D &white_tex, Ren::Span<const uint32_t> batch_indices,
-                          Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint32_t mask, uint32_t &cur_mat_id,
+                          Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint64_t mask, uint32_t &cur_mat_id,
                           int *draws_count) {
     auto &ctx = builder.ctx();
 
@@ -203,7 +203,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitMoving | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -230,7 +230,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -244,7 +244,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitMoving | BDB::BitAlphaTest;
+            const uint64_t DrawMask = BDB::BitMoving | BDB::BitAlphaTest;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -258,7 +258,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -292,7 +292,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -306,7 +306,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitMoving;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -320,7 +320,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -334,7 +334,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -348,7 +348,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -362,7 +362,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -376,7 +376,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -410,7 +410,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -424,7 +424,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -438,7 +438,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -452,7 +452,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -466,7 +466,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -480,7 +480,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
@@ -494,7 +494,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
+            const uint64_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }

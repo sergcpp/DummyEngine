@@ -1108,6 +1108,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // GBuffer shading pass
             AddDeferredShadingPass(common_buffers, frame_textures, list.render_settings.gi_quality != eGIQuality::Off);
 
+            // Emissives pass
+            AddEmissivesPass(common_buffers, persistent_data, bindless_tex, frame_textures);
+
             // Additional forward pass (for custom-shaded objects)
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         } else {
