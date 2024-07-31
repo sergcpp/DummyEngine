@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 87f681895323531e99175e807760e24c4ebdbea0
+	branch = emissives
+	commit = 32887d8279ba6d84ea442b9ad7f1aa93534695e1
 	method = merge
 	cmdver = 0.4.6
-	parent = 7e8428c212e89878098732feeac7960eb0708332
+	parent = 56bcbb8c3005ca330348f33c9d7ab6419311ed66
