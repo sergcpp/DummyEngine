@@ -354,7 +354,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
         auto &new_range = build_ranges.emplace_back();
         new_range.firstVertex = attribs.sub.offset / 16;
         new_range.primitiveCount = grp.num_indices / 3;
-        new_range.primitiveOffset = indices_start + grp.offset;
+        new_range.primitiveOffset = indices_start + grp.byte_offset;
         new_range.transformOffset = 0;
 
         prim_counts.push_back(grp.num_indices / 3);

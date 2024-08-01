@@ -10,6 +10,7 @@ struct Params {
     vec2 thresholds;
     uvec2 samples_and_guided;
     uint frame_index;
+    float clear;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

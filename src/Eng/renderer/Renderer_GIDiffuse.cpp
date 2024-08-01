@@ -15,6 +15,7 @@
 #include "shaders/gi_write_indirect_args_interface.h"
 #include "shaders/probe_sample_interface.h"
 #include "shaders/reconstruct_normals_interface.h"
+#include "shaders/sample_lights_interface.h"
 
 void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                                      const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
@@ -77,7 +78,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
                 {Trg::Tex2DSampled, ProbeSample::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::Tex2DSampled, ProbeSample::NORMAL_TEX_SLOT, *normals_tex.ref},
+                {Trg::Tex2DSampled, ProbeSample::NORM_TEX_SLOT, *normals_tex.ref},
                 {Trg::Tex2DSampled, ProbeSample::SSAO_TEX_SLOT, *ssao_tex.ref},
                 {Trg::Tex2DArraySampled, ProbeSample::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
                 {Trg::Tex2DArraySampled, ProbeSample::DISTANCE_TEX_SLOT, *distance_tex.arr},
@@ -105,7 +106,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         gi_fallback = rp_builder_.MakeTextureResource(dummy_black_);
     }
 
-    if (settings.gi_quality == eGIQuality::Medium) {
+    if (settings.gi_quality <= eGIQuality::Medium) {
         frame_textures.gi = gi_fallback;
         return;
     }
@@ -163,7 +164,11 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         auto *data = gi_classify.AllocPassData<PassData>();
         data->depth = gi_classify.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->spec_tex = gi_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
-        data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
+        if (debug_denoise) {
+            data->variance_history = gi_classify.AddTextureInput(dummy_black_, Stg::ComputeShader);
+        } else {
+            data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
+        }
         data->sobol = gi_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
         data->scrambling_tile = gi_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
         data->ranking_tile = gi_classify.AddStorageReadonlyInput(ranking_tile_buf_, Stg::ComputeShader);
@@ -357,6 +362,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GITraceSS::Params uniform_params;
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
+            uniform_params.lights_count = view_state_.stochastic_lights_count;
 
             Ren::DispatchComputeIndirect(pi_gi_trace_ss_, *indir_args_buf.ref, 0, bindings, &uniform_params,
                                          sizeof(uniform_params), builder.ctx().default_descr_alloc(),
@@ -437,7 +443,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
                 data->swrt.meshes_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
                 data->swrt.mesh_instances_buf = rt_gi.AddStorageReadonlyInput(rt_obj_instances_res, stage);
-
 #if defined(USE_GL_RENDER)
                 data->swrt.textures_buf = rt_gi.AddStorageReadonlyInput(bindless.textures_buf, stage);
 #endif
@@ -457,6 +462,62 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             rp_rt_gi_.Setup(rp_builder_, &view_state_, &bindless, data);
             rt_gi.set_executor(&rp_rt_gi_);
+        }
+
+        { // Direct light sampling
+            auto &sample_lights = rp_builder_.AddPass("SAMPLE LIGHTS");
+
+            auto *data = sample_lights.AllocPassData<RpSampleLightsData>();
+            data->shared_data = sample_lights.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->random_seq = sample_lights.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
+            if (persistent_data.stoch_lights_buf) {
+                data->lights_buf =
+                    sample_lights.AddStorageReadonlyInput(persistent_data.stoch_lights_buf, Stg::ComputeShader);
+            }
+
+            data->geo_data = sample_lights.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);
+            data->materials = sample_lights.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::ComputeShader);
+            data->vtx_buf1 = sample_lights.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), Stg::ComputeShader);
+            data->ndx_buf = sample_lights.AddStorageReadonlyInput(ctx_.default_indices_buf(), Stg::ComputeShader);
+            data->tlas_buf = sample_lights.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, Stg::ComputeShader);
+
+            if (!ctx_.capabilities.hwrt) {
+                data->swrt.root_node = persistent_data.swrt.rt_root_node;
+                data->swrt.rt_blas_buf =
+                    sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, Stg::ComputeShader);
+                data->swrt.prim_ndx_buf =
+                    sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, Stg::ComputeShader);
+                data->swrt.meshes_buf =
+                    sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, Stg::ComputeShader);
+                data->swrt.mesh_instances_buf =
+                    sample_lights.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
+#if defined(USE_GL_RENDER)
+                data->swrt.textures_buf =
+                    sample_lights.AddStorageReadonlyInput(bindless.textures_buf, Stg::ComputeShader);
+#endif
+            }
+
+            data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
+
+            data->albedo_tex = sample_lights.AddTextureInput(frame_textures.albedo, Stg::ComputeShader);
+            data->depth_tex = sample_lights.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+            data->norm_tex = sample_lights.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+            data->spec_tex = sample_lights.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
+
+            gi_tex = data->out_diffuse_tex = sample_lights.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
+
+            { // reflections texture
+                Ren::Tex2DParams params;
+                params.w = view_state_.scr_res[0];
+                params.h = view_state_.scr_res[1];
+                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                data->out_specular_tex = sample_lights.AddStorageImageOutput("SSR Temp 2", params, Stg::ComputeShader);
+            }
+
+            rp_sample_lights_.Setup(rp_builder_, &view_state_, &bindless, data);
+            sample_lights.set_executor(&rp_sample_lights_);
         }
     }
 

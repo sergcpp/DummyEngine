@@ -30,7 +30,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 14;
+const uint32_t AssetsBuildVersion = 16;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -668,6 +668,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     g_asset_handlers["tesc.glsl"] = {"tesc.glsl", HCompileShader};
     g_asset_handlers["tese.glsl"] = {"tese.glsl", HCompileShader};
     g_asset_handlers["comp.glsl"] = {"comp.glsl", HCompileShader};
+    g_asset_handlers["geom.glsl"] = {"geom.glsl", HCompileShader};
     g_asset_handlers["ttf"] = {"font", HConvTTFToFont};
     g_asset_handlers["json"] = {"json", HPreprocessJson};
 

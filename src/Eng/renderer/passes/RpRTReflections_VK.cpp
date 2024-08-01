@@ -67,6 +67,7 @@ void Eng::RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
     RTReflections::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
+    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_reflections_.layout(),
                                 VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
@@ -176,6 +177,7 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
     RTReflections::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
+    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);
@@ -348,6 +350,7 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RTReflections::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
+    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);

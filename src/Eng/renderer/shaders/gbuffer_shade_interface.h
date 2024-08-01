@@ -16,8 +16,8 @@ const int LOCAL_GROUP_SIZE_Y = 8;
 
 const int DEPTH_TEX_SLOT = 1;
 const int ALBEDO_TEX_SLOT = 2;
-const int NORMAL_TEX_SLOT = 3;
-const int SPECULAR_TEX_SLOT = 4;
+const int NORM_TEX_SLOT = 3;
+const int SPEC_TEX_SLOT = 4;
 
 const int SHADOW_TEX_SLOT = 5;
 const int SHADOW_VAL_TEX_SLOT = 6;

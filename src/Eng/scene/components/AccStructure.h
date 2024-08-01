@@ -22,5 +22,3 @@ struct AccStructure {
     static std::string_view name() { return "acc_structure"; }
 };
 } // namespace Eng
-
-

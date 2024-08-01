@@ -1245,8 +1245,8 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::UTBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::NORMAL_TEX_SLOT, *normal_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SPECULAR_TEX_SLOT, *spec_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, GBufferShade::NORM_TEX_SLOT, *normal_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SPEC_TEX_SLOT, *spec_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, *shad_tex.ref, nearest_sampler_.get()},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
@@ -1570,7 +1570,7 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
             RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                             {Trg::Tex2DSampled, GTAO::NORMAL_TEX_SLOT, *norm_tex.ref},
+                                             {Trg::Tex2DSampled, GTAO::NORM_TEX_SLOT, *norm_tex.ref},
                                              {Trg::Image2D, GTAO::OUT_IMG_SLOT, *output_tex.ref}};
 
             const Ren::Vec3u grp_count =

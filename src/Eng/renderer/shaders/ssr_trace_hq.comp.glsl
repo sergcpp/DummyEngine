@@ -25,7 +25,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = COLOR_TEX_SLOT) uniform sampler2D g_color_tex;
-layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 #ifdef LAYERED
     layout(binding = OIT_DEPTH_BUF_SLOT) uniform usamplerBuffer g_oit_depth_buf;
 #else
@@ -34,7 +34,7 @@ layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
 
 #ifdef GI_CACHE
     layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
-    layout(binding = SPECULAR_TEX_SLOT) uniform usampler2D g_specular_tex;
+    layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
     layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
     layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
@@ -197,9 +197,10 @@ void main() {
     const float view_z = -ray_origin_vs.z;
 #endif
 
-    vec3 hit_point_cs, hit_point_vs;
+    vec3 hit_point_cs, hit_point_vs, hit_normal_vs;
     vec3 out_color = vec3(0.0);
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_normal_tex, hit_point_cs, hit_point_vs);
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_normal_tex, hit_point_cs, hit_point_vs, hit_normal_vs);
+    hit_found = false;
     if (hit_found) {
         vec2 uv = hit_point_cs.xy;
 #if defined(VULKAN)
@@ -249,21 +250,25 @@ void main() {
     ray_len = GetNormHitDist(ray_len, view_z, roughness);
 
 #ifndef LAYERED
-    imageStore(g_out_color_img, pix_uvs, vec4(out_color, ray_len));
+    /*const vec3 prev_color = imageLoad(g_out_color_img, pix_uvs).xyz;
+    imageStore(g_out_color_img, pix_uvs, vec4(prev_color + out_color, ray_len));
 
     const ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         const ivec2 copy_coords = ivec2(copy_target.x, pix_uvs.y);
-        imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
+        const vec3 prev_color = imageLoad(g_out_color_img, copy_coords).xyz;
+        imageStore(g_out_color_img, copy_coords, vec4(prev_color + out_color, ray_len));
     }
     if (copy_vertical) {
         const ivec2 copy_coords = ivec2(pix_uvs.x, copy_target.y);
-        imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
+        const vec3 prev_color = imageLoad(g_out_color_img, copy_coords).xyz;
+        imageStore(g_out_color_img, copy_coords, vec4(prev_color + out_color, ray_len));
     }
     if (copy_diagonal) {
         const ivec2 copy_coords = copy_target;
-        imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
-    }
+        const vec3 prev_color = imageLoad(g_out_color_img, copy_coords).xyz;
+        imageStore(g_out_color_img, copy_coords, vec4(prev_color + out_color, ray_len));
+    }*/
 #else
     [[dont_flatten]] if (layer_index == 0) {
         imageStore(g_out_color_img[0], pix_uvs / 2, vec4(out_color, 1.0));

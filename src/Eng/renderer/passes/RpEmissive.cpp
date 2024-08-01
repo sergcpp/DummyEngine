@@ -32,12 +32,14 @@ void Eng::RpEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAlloc
 
         Ren::ProgramRef emissive_simple_prog =
             sh.LoadProgram(ctx, bindless ? "internal/emissive.vert.glsl" : "internal/emissive.vert.glsl@NO_BINDLESS",
-                           bindless ? "internal/emissive.frag.glsl" : "internal/emissive.frag.glsl@NO_BINDLESS");
+                           bindless ? "internal/emissive.frag.glsl" : "internal/emissive.frag.glsl@NO_BINDLESS", {}, {},
+                           bindless ? "internal/emissive.geom.glsl" : "internal/emissive.geom.glsl@NO_BINDLESS");
         assert(emissive_simple_prog->ready());
         Ren::ProgramRef emissive_vegetation_prog = sh.LoadProgram(
             ctx,
             bindless ? "internal/emissive.vert.glsl@VEGETATION" : "internal/emissive.vert.glsl@VEGETATION;NO_BINDLESS",
-            bindless ? "internal/emissive.frag.glsl" : "internal/emissive.frag.glsl@NO_BINDLESS");
+            bindless ? "internal/emissive.frag.glsl" : "internal/emissive.frag.glsl@NO_BINDLESS", {}, {},
+            bindless ? "internal/emissive.geom.glsl" : "internal/emissive.geom.glsl@NO_BINDLESS");
         assert(emissive_vegetation_prog->ready());
 
         const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());

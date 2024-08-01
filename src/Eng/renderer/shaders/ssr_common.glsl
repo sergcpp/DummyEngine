@@ -128,6 +128,37 @@ vec3 Sample_GGX_VNDF_Hemisphere(const vec3 Ve, float alpha, const float U1, cons
     return Sample_GGX_VNDF_Ellipsoid(Ve, alpha, alpha, U1, U2);
 }
 
+float D_GTR2(const float N_dot_H, const float a) {
+    const float a2 = (a * a);
+    const float t = 1.0 + (a2 - 1.0) * N_dot_H * N_dot_H;
+    return a2 / (M_PI * t * t);
+}
+
+float D_GGX(const vec3 H, const vec2 alpha) {
+    if (H[2] == 0.0) {
+        return 0.0;
+    }
+    const float sx = -H[0] / (H[2] * alpha.x);
+    const float sy = -H[1] / (H[2] * alpha.y);
+    const float s1 = 1.0 + sx * sx + sy * sy;
+    const float cos_theta_h4 = H[2] * H[2] * H[2] * H[2];
+    return 1.0 / ((s1 * s1) * M_PI * alpha.x * alpha.y * cos_theta_h4);
+}
+
+float GGX_VNDF_Reflection_Bounded_PDF(const float D, const vec3 view_dir_ts, const vec2 alpha) {
+    const vec2 ai = alpha * view_dir_ts.xy;
+    const float len2 = dot(ai, ai);
+    const float t = sqrt(len2 + view_dir_ts.z * view_dir_ts.z);
+    if (view_dir_ts.z >= 0.0) {
+        const float a = saturate(min(alpha.x, alpha.y));
+        const float s = 1.0 + length(view_dir_ts.xy);
+        const float a2 = a * a, s2 = s * s;
+        const float k = (1.0 - a2) * s2 / (s2 + a2 * view_dir_ts.z * view_dir_ts.z);
+        return D / (2.0 * (k * view_dir_ts.z + t));
+    }
+    return D * (t - view_dir_ts.z) / (2.0 * len2);
+}
+
 mat3 CreateTBN(vec3 N) {
     vec3 U;
     if (abs(N.z) > 0.0) {

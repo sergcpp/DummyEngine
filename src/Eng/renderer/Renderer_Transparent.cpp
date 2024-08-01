@@ -274,7 +274,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::Tex2DSampled, SSRTraceHQ::NORMAL_TEX_SLOT, *normal_tex.ref},
+                {Trg::Tex2DSampled, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
                 {Trg::UTBuf, SSRTraceHQ::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.tbos[0]},
                 {Trg::SBufRO, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
                 {Trg::SBufRW, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
@@ -284,7 +284,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             }
             if (irradiance_tex) {
                 bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::ALBEDO_TEX_SLOT, *albedo_tex->ref);
-                bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::SPECULAR_TEX_SLOT, *specular_tex->ref);
+                bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::SPEC_TEX_SLOT, *specular_tex->ref);
                 bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
 
                 bindings.emplace_back(Trg::Tex2DArraySampled, SSRTraceHQ::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
@@ -503,7 +503,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             }
 
             RpResRef irradiance_tex, distance_tex, offset_tex;
-            if (settings.gi_quality != eGIQuality::Off) {
+            if (settings.gi_quality != eGIQuality::Off && frame_textures.gi_cache_irradiance) {
                 irradiance_tex =
                     oit_blend_layer.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::FragmentShader);
                 distance_tex = oit_blend_layer.AddTextureInput(frame_textures.gi_cache_distance, Stg::FragmentShader);

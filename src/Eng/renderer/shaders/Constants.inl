@@ -78,10 +78,17 @@ const int RAY_TYPE_REFRACTION = 3;
 const int RAY_TYPE_SHADOW = 4;
 
 // Light
-const int LIGHT_TYPE_BITS = 0x3;
-const int LIGHT_PORTAL_BIT = (1 << 2);
-const int LIGHT_DIFFUSE_BIT = (1 << 3);
-const int LIGHT_SPECULAR_BIT = (1 << 4);
+const int LIGHT_TYPE_SPHERE = 0;
+const int LIGHT_TYPE_RECT = 1;
+const int LIGHT_TYPE_DISK = 2;
+const int LIGHT_TYPE_LINE = 3;
+const int LIGHT_TYPE_TRI = 4;
+
+const int LIGHT_TYPE_BITS = 0x7;
+const int LIGHT_PORTAL_BIT = (1 << 3);
+const int LIGHT_DIFFUSE_BIT = (1 << 4);
+const int LIGHT_SPECULAR_BIT = (1 << 5);
+const int LIGHT_DOUBLESIDED_BIT = (1 << 6);
 
 // Shadow resolution
 const int SHADOWMAP_RES_PC = 8192;

@@ -88,14 +88,12 @@ void main() {
         // TODO: use flat normal here
         ray_origin_ws.xyz += (NormalBiasConstant + abs(ray_origin_ws.xyz) * NormalBiasPosAddition + (-ray_origin_vs.z) * NormalBiasViewAddition) * normal_ws;
 
-        const uint ray_flags = 0;//gl_RayFlagsCullFrontFacingTrianglesEXT;
-
         float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
         rayQueryEXT rq;
         rayQueryInitializeEXT(rq,                       // rayQuery
                               g_tlas,                   // topLevel
-                              ray_flags,                // rayFlags
+                              0,                        // rayFlags
                               (1u << RAY_TYPE_SHADOW),  // cullMask
                               ray_origin_ws.xyz,        // origin
                               min_t,                    // tMin

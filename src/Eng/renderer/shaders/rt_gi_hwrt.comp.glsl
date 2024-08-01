@@ -305,7 +305,7 @@ void main() {
             const float transmission = mat.params[2].y;
             const float clearcoat = mat.params[2].z;
             const float clearcoat_roughness = mat.params[2].w;
-            const vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+            vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
 
             vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
             spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -334,6 +334,17 @@ void main() {
 
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
+            if (g_params.lights_count > 0 && j == 0) {
+                const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
+                float light_fwd_len;
+                vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+                const float cos_theta = -dot(I, light_forward);
+
+                const float bsdf_pdf = saturate(dot(N, I)) / M_PI;
+                const float ls_pdf = (hit_t * hit_t) / (0.5 * light_fwd_len * cos_theta * g_params.lights_count);
+                const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
+                emission_color *= mis_weight;
+            }
             vec3 light_total = emission_color;
 
             vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);

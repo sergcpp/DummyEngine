@@ -1918,7 +1918,7 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
 
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
-    Ren::ProgramRef prog = ctx_->LoadProgram(prog_name, {}, {}, {}, {}, &status);
+    Ren::ProgramRef prog = ctx_->LoadProgram(prog_name, {}, {}, {}, {}, {}, &status);
     if (!prog->ready()) {
         using namespace std;
 
@@ -1943,7 +1943,7 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
         Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Fragment, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
 
-        prog = ctx_->LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, &status);
+        prog = ctx_->LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, {}, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
 

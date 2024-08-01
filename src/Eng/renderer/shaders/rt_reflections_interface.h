@@ -8,7 +8,7 @@ INTERFACE_START(RTReflections)
 struct Params {
     uvec2 img_size;
     float pixel_spread_angle;
-    float _pad0;
+    float lights_count;
 };
 
 struct RayPayload {

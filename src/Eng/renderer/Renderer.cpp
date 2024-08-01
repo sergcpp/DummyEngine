@@ -72,6 +72,7 @@ extern const int TaaSampleCountStatic = 64;
 #include "precomputed/__ltc_sheen.inl"
 #include "precomputed/__ltc_specular.inl"
 #include "precomputed/__noise.inl"
+#include "precomputed/__pmj02_samples.inl"
 
 __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawList");
 } // namespace RendererInternal
@@ -323,6 +324,26 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         sobol_seq_buf_stage.FreeImmediate();
         scrambling_tile_buf_stage.FreeImmediate();
         ranking_tile_buf_stage.FreeImmediate();
+    }
+
+    { // PMJ samples
+        pmj_samples_buf_ = ctx_.LoadBuffer("PMJSamples", Ren::eBufType::Texture,
+                                           __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t));
+
+        Ren::Buffer pmj_samples_stage("PMJSamplesStage", ctx_.api_ctx(), Ren::eBufType::Upload,
+                                      pmj_samples_buf_->size());
+        { // init stage buf
+            uint8_t *mapped_ptr = pmj_samples_stage.Map();
+            memcpy(mapped_ptr, __pmj02_samples, __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t));
+            pmj_samples_stage.Unmap();
+        }
+
+        Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
+        Ren::CopyBufferToBuffer(pmj_samples_stage, 0, *pmj_samples_buf_, 0,
+                                __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t), cmd_buf);
+        ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+        pmj_samples_stage.FreeImmediate();
     }
 
     const auto vtx_buf1 = ctx_.default_vertex_buf1();
@@ -638,6 +659,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         2.0f * std::tan(0.5f * view_state_.vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_.scr_res[1]));
     view_state_.frame_index = list.frame_index;
     view_state_.volume_to_update = list.volume_to_update;
+    if (persistent_data.stoch_lights_buf && settings.gi_quality > eGIQuality::Medium) {
+        view_state_.stochastic_lights_count = persistent_data.stoch_lights_buf->size() / sizeof(LightItem);
+    } else {
+        view_state_.stochastic_lights_count = 0;
+    }
 
     view_state_.env_generation = list.env.generation;
 

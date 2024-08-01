@@ -34,6 +34,7 @@ extern "C" {
 #include "passes/RpReadExposure.h"
 #include "passes/RpSSRCompose.h"
 #include "passes/RpSSRCompose2.h"
+#include "passes/RpSampleLights.h"
 #include "passes/RpShadowMaps.h"
 #include "passes/RpSkinning.h"
 #include "passes/RpSkydome.h"
@@ -105,6 +106,7 @@ class Renderer {
         noise_tex_;
     Ren::Tex3DRef tonemap_lut_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_buf_, ranking_tile_buf_;
+    Ren::BufferRef pmj_samples_buf_;
     Ren::Tex2DRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_,
         sky_curl_tex_;
     Ren::Tex3DRef sky_noise3d_tex_;
@@ -214,6 +216,7 @@ class Renderer {
     RpRTGICache rp_rt_gi_cache_;
     RpRTReflections rp_rt_reflections_;
     RpRTShadows rp_rt_shadows_;
+    RpSampleLights rp_sample_lights_;
     RpReadExposure rp_read_exposure_;
     RpCombineData rp_combine_data_;
     RpCombine rp_combine_ = {prim_draw_};

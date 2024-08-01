@@ -9,6 +9,7 @@ struct Params {
     uvec2 img_size;
     float pixel_spread_angle;
     uint frame_index;
+    float lights_count;
 };
 
 struct RayPayload {

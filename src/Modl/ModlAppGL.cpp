@@ -41,8 +41,8 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
     const Material *mat = m->groups()[0].front_mat.get();
     ProgramRef p = mat->pipelines[0]->prog();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
+    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_handle().id);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_handle().id);
 
     p = diag_prog_;
     glUniform1f(U_MODE, float(view_mode_));
@@ -79,7 +79,8 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
-        glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT, reinterpret_cast<void *>(uintptr_t(grp.offset)));
+        glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
+                       reinterpret_cast<void *>(uintptr_t(grp.byte_offset)));
     }
 
     Ren::CheckError("", &log_);
@@ -92,8 +93,8 @@ void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
     const Material *mat = m->groups()[0].front_mat.get();
     ProgramRef p = mat->pipelines[0]->prog();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_id());
+    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_handle().id);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_handle().id);
 
     p = diag_colored_prog_;
     glUniform1f(U_MODE, float(view_mode_));
@@ -133,7 +134,7 @@ void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
         glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
-                       reinterpret_cast<const void *>(uintptr_t(grp.offset)));
+                       reinterpret_cast<const void *>(uintptr_t(grp.byte_offset)));
     }
 
     Ren::CheckError("", &log_);
@@ -323,7 +324,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
         glDrawElementsBaseVertex(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
-                                 reinterpret_cast<void *>(uintptr_t(grp.offset)), 0);
+                                 reinterpret_cast<void *>(uintptr_t(grp.byte_offset)), 0);
     }
 
     Ren::CheckError("", &log_);
@@ -600,11 +601,11 @@ void main() {
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
     Ren::eProgLoadStatus status;
-    diag_prog_ = ctx_->LoadProgram("__diag", diag_vs_ref, diag_fs_ref, {}, {}, &status);
+    diag_prog_ = ctx_->LoadProgram("__diag", diag_vs_ref, diag_fs_ref, {}, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_colored_prog_ = ctx_->LoadProgram("__diag_colored", diag_colored_vs_ref, diag_fs_ref, {}, {}, &status);
+    diag_colored_prog_ = ctx_->LoadProgram("__diag_colored", diag_colored_vs_ref, diag_fs_ref, {}, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_skinned_prog_ = ctx_->LoadProgram("__diag_skinned", diag_skinned_vs_ref, diag_fs_ref, {}, {}, &status);
+    diag_skinned_prog_ = ctx_->LoadProgram("__diag_skinned", diag_skinned_vs_ref, diag_fs_ref, {}, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     static const char skinning_cs[] = R"(

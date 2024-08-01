@@ -177,6 +177,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
+            uniform_params.clear = (view_state_.stochastic_lights_count > 0) ? 0.0f : 1.0f;
 
             Ren::DispatchCompute(pi_ssr_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -292,7 +293,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::Tex2DSampled, SSRTraceHQ::NORMAL_TEX_SLOT, *normal_tex.ref},
+                {Trg::Tex2DSampled, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
                 {Trg::Tex2DSampled, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
                 {Trg::SBufRO, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
                 {Trg::Image2D, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
@@ -300,7 +301,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::SBufRW, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
             if (irradiance_tex) {
                 bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::ALBEDO_TEX_SLOT, *albedo_tex->ref);
-                bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::SPECULAR_TEX_SLOT, *specular_tex->ref);
+                bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::SPEC_TEX_SLOT, *specular_tex->ref);
                 bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
 
                 bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, SSRTraceHQ::IRRADIANCE_TEX_SLOT,
@@ -1022,8 +1023,10 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             rast_state.blend.enabled = true;
-            rast_state.blend.src_color = rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::One);
-            rast_state.blend.dst_color = rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.src_color = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
+            rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
 
             rast_state.viewport[2] = view_state_.act_res[0];
             rast_state.viewport[3] = view_state_.act_res[1];

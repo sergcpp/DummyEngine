@@ -214,15 +214,6 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
 
 void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        /*Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(
-            ctx, "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",
-            "internal/rt_reflections.rahit.glsl", "internal/rt_reflections.rmiss.glsl", nullptr);
-        assert(rt_reflections_prog->ready());
-
-        if (!pi_rt_shadows_.Init(ctx.api_ctx(), std::move(rt_reflections_prog), ctx.log())) {
-            ctx.log()->Error("RpRTShadows: Failed to initialize pipeline!");
-        }*/
-
         if (ctx.capabilities.hwrt) {
             Ren::ProgramRef rt_shadows_inline_prog = sh.LoadProgram(ctx, "internal/rt_shadows_hwrt.comp.glsl");
             assert(rt_shadows_inline_prog->ready());

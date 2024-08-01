@@ -145,7 +145,7 @@ void Eng::RpOITBlendLayer::DrawTransparent(RpBuilder &builder, RpAllocTex &depth
     }
 
     if (specular_tex) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::SPECULAR_TEX_SLOT, specular_tex->ref->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::SPEC_TEX_SLOT, specular_tex->ref->id());
     }
 
     const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches};

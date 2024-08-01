@@ -307,8 +307,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         _surf->type = SW_OCCLUDER;
                         _surf->prim_type = SW_TRIANGLES;
                         _surf->index_type = SW_UNSIGNED_INT;
-                        _surf->attribs = mesh->attribs();
-                        _surf->indices = ((const uint8_t *)mesh->indices() + grp.offset);
+                        _surf->attribs = mesh->attribs().data();
+                        _surf->indices = ((const uint8_t *)mesh->indices().data() + grp.byte_offset);
                         _surf->stride = 13 * sizeof(float);
 
                         _surf->count = SWuint(grp.num_indices);
@@ -426,7 +426,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 fwd_batch.mat_id = 0;
                             }
                             fwd_batch.cam_dist = (front_mat_flags & eMatFlags::AlphaBlend) ? uint32_t(cam_dist_u8) : 0;
-                            fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                            fwd_batch.indices_offset = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                             fwd_batch.base_vertex = base_vertex;
                             fwd_batch.indices_count = grp.num_indices;
                             fwd_batch.instance_index = i.index;
@@ -448,7 +448,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             base_batch.alpha_test_bit = (front_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
                             base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
                             base_batch.two_sided_bit = (front_mat_flags & eMatFlags::TwoSided) ? 1 : 0;
-                            base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                            base_batch.indices_offset = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                             base_batch.base_vertex = base_vertex;
                             base_batch.indices_count = grp.num_indices;
                             base_batch.instance_index = i.index;
@@ -507,8 +507,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
                             list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                         }
-                        ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2) |
-                                            (light.affect_diffuse << 3) | (light.affect_specular << 4);
+                        ls.type_and_flags = uint32_t(light.type);
+                        ls.type_and_flags |= light.sky_portal ? LIGHT_PORTAL_BIT : 0;
+                        ls.type_and_flags |= light.affect_diffuse ? LIGHT_DIFFUSE_BIT : 0;
+                        ls.type_and_flags |= light.affect_specular ? LIGHT_SPECULAR_BIT : 0;
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light.radius;
                         memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -635,7 +637,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 }
 
                 RTGeoInstance &geo = list.rt_geo_instances[0].data[list.rt_geo_instances[0].count++];
-                geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
+                geo.indices_start = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                 geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
                 assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
                 geo.material_index = front_mat.index();
@@ -688,8 +690,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
                         list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                     }
-                    ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2) | (light.affect_diffuse << 3) |
-                                        (light.affect_specular << 4);
+                    ls.type_and_flags = uint32_t(light.type);
+                    ls.type_and_flags |= light.sky_portal ? LIGHT_PORTAL_BIT : 0;
+                    ls.type_and_flags |= light.affect_diffuse ? LIGHT_DIFFUSE_BIT : 0;
+                    ls.type_and_flags |= light.affect_specular ? LIGHT_SPECULAR_BIT : 0;
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                     ls.radius = light.radius;
                     memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -1126,7 +1130,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 }
 
                                 RTGeoInstance &geo = list.rt_geo_instances[1].data[list.rt_geo_instances[1].count++];
-                                geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
+                                geo.indices_start = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                                 geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
                                 assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
                                 geo.material_index = front_mat.index();
@@ -1177,7 +1181,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             batch.alpha_test_bit = (front_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
                             batch.moving_bit = 0;
                             batch.two_sided_bit = simple_twosided ? 1 : 0;
-                            batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
+                            batch.indices_offset =
+                                (mesh->indices_buf().sub.offset + grp.byte_offset) / sizeof(uint32_t);
                             batch.base_vertex = proc_objects_[i.index].base_vertex;
                             batch.indices_count = grp.num_indices;
                             batch.instance_index = i.index;
@@ -1457,7 +1462,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                     batch.moving_bit = 0;
                                     batch.two_sided_bit = simple_twosided ? 1 : 0;
                                     batch.indices_offset =
-                                        (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
+                                        (mesh->indices_buf().sub.offset + grp.byte_offset) / sizeof(uint32_t);
                                     batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
                                     batch.indices_count = grp.num_indices;
                                     batch.instance_index = n->prim_index;

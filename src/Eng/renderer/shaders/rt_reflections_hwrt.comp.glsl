@@ -94,7 +94,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 #ifdef LAYERED
     layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_out_color_img[OIT_REFLECTION_LAYERS];
 #else
-    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_out_color_img;
+    layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict image2D g_out_color_img;
 #endif
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -335,7 +335,7 @@ void main() {
             const float transmission = mat.params[2].y;
             const float clearcoat = mat.params[2].z;
             const float clearcoat_roughness = mat.params[2].w;
-            const vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+            vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
 
             vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
             spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -363,6 +363,26 @@ void main() {
             const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
+
+#ifndef LAYERED
+            if (j == 0 && g_params.lights_count > 0.0 && first_roughness > 1e-7) {
+                const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
+                float light_fwd_len;
+                vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+                const float cos_theta = -dot(I, light_forward);
+
+                const mat3 tbn_transform = CreateTBN(normal_ws);
+                const vec3 view_ray_ws = (g_shrd_data.world_from_view * vec4(view_ray_vs.xyz, 0.0)).xyz;
+                const vec3 view_dir_ts = tbn_transform * (-view_ray_ws);
+                const vec3 sampled_normal_ts = tbn_transform * normalize(refl_ray_ws - view_ray_ws);
+
+                const float D = D_GGX(sampled_normal_ts, vec2(first_roughness));
+                const float bsdf_pdf = GGX_VNDF_Reflection_Bounded_PDF(D, view_dir_ts, vec2(first_roughness));
+                const float ls_pdf = (hit_t * hit_t) / (0.5 * light_fwd_len * cos_theta * g_params.lights_count);
+                const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
+                emission_color *= mis_weight;
+            }
+#endif
 
             vec3 light_total = emission_color;
 
@@ -482,7 +502,11 @@ void main() {
             if (j == 0) {
                 first_ray_len = hit_t;
             }
-            throughput *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
+            if (lobe_weights.specular > 0.0) {
+                throughput *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
+            } else {
+                break;
+            }
             if (dot(throughput, throughput) < 0.001 || roughness > 0.25) {
                 break;
             }
@@ -511,20 +535,24 @@ void main() {
 #endif
 
 #ifndef LAYERED
-    imageStore(g_out_color_img, icoord, vec4(final_color, first_ray_len));
+    const vec3 prev_color = imageLoad(g_out_color_img, icoord).xyz;
+    imageStore(g_out_color_img, icoord, vec4(prev_color + final_color, first_ray_len));
 
     const ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         const ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
-        imageStore(g_out_color_img, copy_coords, vec4(final_color, first_ray_len));
+        const vec3 prev_color = imageLoad(g_out_color_img, copy_coords).xyz;
+        imageStore(g_out_color_img, copy_coords, vec4(prev_color + final_color, first_ray_len));
     }
     if (copy_vertical) {
         const ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
-        imageStore(g_out_color_img, copy_coords, vec4(final_color, first_ray_len));
+        const vec3 prev_color = imageLoad(g_out_color_img, copy_coords).xyz;
+        imageStore(g_out_color_img, copy_coords, vec4(prev_color + final_color, first_ray_len));
     }
     if (copy_diagonal) {
         const ivec2 copy_coords = copy_target;
-        imageStore(g_out_color_img, copy_coords, vec4(final_color, first_ray_len));
+        const vec3 prev_color = imageLoad(g_out_color_img, copy_coords).xyz;
+        imageStore(g_out_color_img, copy_coords, vec4(prev_color + final_color, first_ray_len));
     }
 #else
     [[dont_flatten]] if (layer_index == 0) {

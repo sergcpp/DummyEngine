@@ -6,12 +6,9 @@
 #include <Ren/MMat.h>
 #include <Ren/SmallVector.h>
 
+#include <Ren/Buffer.h>
 #if defined(USE_VK_RENDER)
-#include <Ren/Buffer.h>
-#include <Ren/Fwd.h>
 #include <Ren/VK.h>
-#elif defined(USE_GL_RENDER)
-#include <Ren/Buffer.h>
 #endif
 
 namespace Ren {
@@ -23,16 +20,8 @@ class IAccStructure;
 namespace Eng {
 #include "shaders/Constants.inl"
 
-struct LightItem {
-    float col[3];
-    uint32_t type_and_flags;
-    float pos[3], radius;
-    float dir[3], spot;
-    float u[3];
-    int shadowreg_index;
-    float v[3], blend;
-};
-static_assert(sizeof(LightItem) == 80, "!");
+using namespace Types;
+static_assert(sizeof(Types::LightItem) == 80, "!");
 
 struct DecalItem {
     float mat[3][4];
@@ -97,7 +86,7 @@ struct InstanceData {
 };
 static_assert(sizeof(InstanceData) == 192, "!");
 
-struct BasicDrawBatch {                        // NOLINT
+struct BasicDrawBatch {                          // NOLINT
     static const uint64_t TypeSimple = 0b00ull;  // simple
     static const uint64_t TypeVege = 0b01ull;    // vegetation
     static const uint64_t TypeSkinned = 0b10ull; // skeletal
@@ -353,7 +342,7 @@ struct ViewState {
     Ren::Vec2i act_res, scr_res;
     float vertical_fov;
     float pixel_spread_angle;
-    int frame_index, volume_to_update;
+    int frame_index, volume_to_update, stochastic_lights_count;
     Ren::Vec3f prev_cam_pos, prev_sun_dir;
     Ren::Mat4f clip_from_world, view_from_world, prev_view_from_world, prev_clip_from_world, down_buf_view_from_world,
         prev_clip_from_view;

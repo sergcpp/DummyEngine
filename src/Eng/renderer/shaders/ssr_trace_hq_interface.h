@@ -14,9 +14,9 @@ const int LOCAL_GROUP_SIZE_Y = 8;
 
 const int DEPTH_TEX_SLOT = 4;
 const int COLOR_TEX_SLOT = 5;
-const int NORMAL_TEX_SLOT = 6;
+const int NORM_TEX_SLOT = 6;
 const int ALBEDO_TEX_SLOT = 7;
-const int SPECULAR_TEX_SLOT = 8;
+const int SPEC_TEX_SLOT = 8;
 const int LTC_LUTS_TEX_SLOT = 9;
 const int IRRADIANCE_TEX_SLOT = 10;
 const int DISTANCE_TEX_SLOT = 11;

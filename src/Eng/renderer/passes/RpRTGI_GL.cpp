@@ -134,6 +134,7 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
+    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
 
     Ren::DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
                                  &uniform_params, sizeof(uniform_params), nullptr, ctx.log());

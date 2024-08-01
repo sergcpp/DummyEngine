@@ -510,7 +510,7 @@ void GSBaseState::Enter() {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::Reflection;
             } else if (args[1].val < 1.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::GI;
-            } else if (args[2].val < 2.5) {
+            } else if (args[1].val < 2.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::Shadow;
             }
         } else {
@@ -1281,9 +1281,9 @@ void GSBaseState::InitScene_PT() {
             const Eng::Drawable &dr = drawables[obj.components[Eng::CompDrawable]];
             const Ren::Mesh *mesh = dr.mesh.get();
             assert(mesh->type() == Ren::eMeshType::Simple);
-            const float *attribs = reinterpret_cast<const float *>(mesh->attribs());
+            Ren::Span<const float> attribs = mesh->attribs();
             const int vtx_count = int(mesh->attribs_buf1().size / 16);
-            const uint32_t *indices = reinterpret_cast<const uint32_t *>(mesh->indices());
+            Ren::Span<const uint32_t> indices = mesh->indices();
             const int ndx_count = int(mesh->indices_buf().size / sizeof(uint32_t));
 
             Ray::MeshHandle mesh_handle = Ray::InvalidMeshHandle;
@@ -1299,11 +1299,11 @@ void GSBaseState::InitScene_PT() {
                 Ray::mesh_desc_t mesh_desc;
                 mesh_desc.name = mesh->name().c_str();
                 mesh_desc.prim_type = Ray::ePrimType::TriangleList;
-                mesh_desc.vtx_positions = {{attribs, 13 * vtx_count}, 0, 13};
-                mesh_desc.vtx_normals = {{attribs, 13 * vtx_count}, 3, 13};
-                mesh_desc.vtx_binormals = {{attribs, 13 * vtx_count}, 6, 13};
-                mesh_desc.vtx_uvs = {{attribs, 13 * vtx_count}, 9, 13};
-                mesh_desc.vtx_indices = {indices, ndx_count};
+                mesh_desc.vtx_positions = {{attribs.data(), 13 * vtx_count}, 0, 13};
+                mesh_desc.vtx_normals = {{attribs.data(), 13 * vtx_count}, 3, 13};
+                mesh_desc.vtx_binormals = {{attribs.data(), 13 * vtx_count}, 6, 13};
+                mesh_desc.vtx_uvs = {{attribs.data(), 13 * vtx_count}, 9, 13};
+                mesh_desc.vtx_indices = {indices.data(), ndx_count};
 
                 std::vector<Ray::mat_group_desc_t> mat_groups;
 
@@ -1401,7 +1401,7 @@ void GSBaseState::InitScene_PT() {
                     }
 
                     mat_groups.emplace_back(mat_handles.first, mat_handles.second,
-                                            size_t(grp.offset / sizeof(uint32_t)), size_t(grp.num_indices));
+                                            size_t(grp.byte_offset / sizeof(uint32_t)), size_t(grp.num_indices));
                 }
                 mesh_desc.groups = mat_groups;
 

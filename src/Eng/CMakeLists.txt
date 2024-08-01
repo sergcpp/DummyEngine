@@ -202,6 +202,8 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpRTReflections.cpp
                     renderer/passes/RpRTShadows.h
                     renderer/passes/RpRTShadows.cpp
+                    renderer/passes/RpSampleLights.h
+                    renderer/passes/RpSampleLights.cpp
                     renderer/passes/RpShadowMaps.h
                     renderer/passes/RpShadowMaps.cpp
                     renderer/passes/RpSkinning.h
@@ -247,6 +249,7 @@ if(${RENDERER} STREQUAL "GL")
                         renderer/passes/RpRTGICache_GL.cpp
                         renderer/passes/RpRTReflections_GL.cpp
                         renderer/passes/RpRTShadows_GL.cpp
+                        renderer/passes/RpSampleLights_GL.cpp
                         renderer/passes/RpShadowMapsGL.cpp
                         renderer/passes/RpSkinningGL.cpp
                         renderer/passes/RpTransparentGL.cpp
@@ -273,6 +276,7 @@ elseif(${RENDERER} STREQUAL "VK")
                      renderer/passes/RpRTGICache_VK.cpp
                      renderer/passes/RpRTReflections_VK.cpp
                      renderer/passes/RpRTShadows_VK.cpp
+                     renderer/passes/RpSampleLights_VK.cpp
                      renderer/passes/RpShadowMapsVK.cpp
                      renderer/passes/RpSkinningVK.cpp
                      renderer/passes/RpTransparentVK.cpp

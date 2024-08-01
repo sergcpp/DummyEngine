@@ -48,3 +48,8 @@ float GetHitDistanceNormalization(float viewZ, float roughness) {
 float GetNormHitDist(float hitDist, float viewZ, float roughness) {
     return saturate(hitDist / GetHitDistanceNormalization(viewZ, roughness));
 }
+
+float power_heuristic(const float a, const float b) {
+    const float t = a * a;
+    return t / (b * b + t);
+}

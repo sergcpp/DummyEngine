@@ -76,6 +76,7 @@ void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) {
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
+    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_.layout(),
                                 VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
@@ -95,7 +96,6 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
     RpAllocTex &noise_tex = builder.GetReadTexture(pass_data_->noise_tex);
     RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
     RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
-    // RpAllocTex &flat_normal_tex = builder.GetReadTexture(pass_data_->flat_normal_tex);
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
     RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(pass_data_->ray_counter);
     RpAllocBuf &ray_list_buf = builder.GetReadBuffer(pass_data_->ray_list);
@@ -128,7 +128,6 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
         {Ren::eBindTarget::Tex2DSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
-        //{Ren::eBindTarget::Tex2DSampled, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBufRO, RTGI::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::RAY_LIST_SLOT, *ray_list_buf.ref},
@@ -168,6 +167,7 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
+    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);
@@ -305,6 +305,7 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
+    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);
@@ -316,8 +317,8 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
 void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         if (ctx.capabilities.hwrt) {
-            Ren::ProgramRef rt_gi_prog = sh.LoadProgram(ctx, "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",
-                                                        "internal/rt_gi.rahit.glsl", "internal/rt_gi.rmiss.glsl", {});
+            Ren::ProgramRef rt_gi_prog = sh.LoadProgram2(ctx, "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",
+                                                         "internal/rt_gi.rahit.glsl", "internal/rt_gi.rmiss.glsl", {});
             assert(rt_gi_prog->ready());
 
             if (!pi_rt_gi_.Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {

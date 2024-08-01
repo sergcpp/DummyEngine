@@ -8,7 +8,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 
 layout(binding = OUT_IMG_SLOT, r8) uniform image2D g_out_img;
 

@@ -218,6 +218,7 @@ class SceneManager {
     void Alloc_SWRT_TLAS();
 
     void RebuildSceneBVH();
+    void RebuildLightTree();
     void RemoveNode(uint32_t node_index);
 
     int scene_texture_load_counter_ = 0;

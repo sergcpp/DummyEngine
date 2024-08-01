@@ -103,7 +103,7 @@ void Eng::RpOITBlendLayer::DrawTransparent(RpBuilder &builder, RpAllocTex &depth
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
     if (specular_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, OITBlendLayer::SPECULAR_TEX_SLOT, *specular_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, OITBlendLayer::SPEC_TEX_SLOT, *specular_tex->ref);
     }
 
     int pi_index = -1;

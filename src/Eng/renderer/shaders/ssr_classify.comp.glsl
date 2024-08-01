@@ -193,7 +193,9 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     }
 #endif
 
-    imageStore(g_refl_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, -1.0));
+    if (g_params.clear > 0.5) {
+        imageStore(g_refl_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, -1.0));
+    }
 
     groupMemoryBarrier(); // Wait until all waves write into g_tile_count
     barrier();

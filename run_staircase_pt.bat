@@ -1,1 +1,1 @@
-DummyAppVK.exe -s scenes/staircase.json -w 720 -h 900 --pt
+DummyAppVK.exe -s scenes/staircase2.json -w 720 -h 900 --pt

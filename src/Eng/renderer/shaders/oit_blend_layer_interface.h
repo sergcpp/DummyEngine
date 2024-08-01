@@ -6,7 +6,7 @@
 INTERFACE_START(OITBlendLayer)
 
 const int SHADOW_TEX_SLOT = 4;
-const int SPECULAR_TEX_SLOT = 5;
+const int SPEC_TEX_SLOT = 5;
 const int LIGHT_BUF_SLOT = 6;
 const int DECAL_BUF_SLOT = 7;
 const int CELLS_BUF_SLOT = 8;

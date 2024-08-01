@@ -1,0 +1,40 @@
+#include "RpSampleLights.h"
+
+#include <Ren/Context.h>
+#include <Ren/RastState.h>
+#include <Ren/Texture.h>
+
+#include "../../utils/ShaderLoader.h"
+#include "../Renderer_Structs.h"
+
+void Eng::RpSampleLights::Execute(RpBuilder &builder) {
+    LazyInit(builder.ctx(), builder.sh());
+
+    if (builder.ctx().capabilities.hwrt) {
+        Execute_HWRT(builder);
+    } else {
+        Execute_SWRT(builder);
+    }
+}
+
+void Eng::RpSampleLights::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+    if (!initialized) {
+        if (ctx.capabilities.hwrt) {
+            Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights.comp.glsl@HWRT");
+            assert(prog->ready());
+
+            if (!pi_sample_lights_hwrt_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
+                ctx.log()->Error("RpSampleLights: Failed to initialize pipeline!");
+            }
+        }
+
+        Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_sample_lights_swrt_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
+            ctx.log()->Error("RpSampleLights: Failed to initialize pipeline!");
+        }
+
+        initialized = true;
+    }
+}

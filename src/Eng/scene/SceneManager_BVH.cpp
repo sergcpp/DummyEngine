@@ -564,8 +564,8 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     std::vector<Phy::prim_t> temp_primitives;
     std::vector<uint32_t> temp_indices;
 
-    const float *positions = reinterpret_cast<const float *>(acc.mesh->attribs());
-    const uint32_t *tri_indices = reinterpret_cast<const uint32_t *>(acc.mesh->indices());
+    Ren::Span<const float> positions = acc.mesh->attribs();
+    Ren::Span<const uint32_t> tri_indices = acc.mesh->indices();
 
     for (const Ren::TriGroup &grp : acc.mesh->groups()) {
         const Ren::Material *mat = grp.front_mat.get();
@@ -575,7 +575,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
             continue;
         }
 
-        const uint32_t index_beg = grp.offset / sizeof(uint32_t);
+        const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
         const uint32_t index_end = index_beg + grp.num_indices;
 
         for (uint32_t i = index_beg; i < index_end; i += 3) {
@@ -752,4 +752,102 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
     }
 
     return uint32_t(out_nodes.size() - root_node_index);
+}
+
+void Eng::SceneManager::RebuildLightTree() {
+    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
+
+    std::vector<LightItem> stochastic_lights;
+
+    const uint64_t RTCompMask = (CompTransformBit | CompAccStructureBit);
+    for (int i = 0; i < int(scene_data_.objects.size()); ++i) {
+        const SceneObject &obj = scene_data_.objects[i];
+        if ((obj.comp_mask & RTCompMask) != RTCompMask) {
+            continue;
+        }
+
+        const Transform &tr = transforms[obj.components[CompTransform]];
+        const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+
+        assert(acc.mesh->type() == Ren::eMeshType::Simple);
+        const int VertexStride = 13;
+
+        Ren::Span<const float> positions = acc.mesh->attribs();
+        Ren::Span<const uint32_t> tri_indices = acc.mesh->indices();
+
+        std::vector<Phy::prim_t> temp_primitives;
+        std::vector<uint32_t> temp_indices;
+
+        const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+        for (int j = 0; j < int(groups.size()); ++j) {
+            const Ren::TriGroup &grp = groups[j];
+
+            const Ren::MaterialRef &front_mat =
+                (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
+
+            const Ren::Bitmask<Ren::eMatFlags> front_mat_flags = front_mat->flags();
+            if ((front_mat_flags & Ren::eMatFlags::Emissive) == 0) {
+                continue;
+            }
+
+            const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
+            const uint32_t index_end = index_beg + grp.num_indices;
+
+            for (uint32_t i = index_beg; i < index_end; i += 3) {
+                const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
+
+                const Phy::Vec3f p0 = Phy::MakeVec3(&positions[i0 * VertexStride]),
+                                 p1 = Phy::MakeVec3(&positions[i1 * VertexStride]),
+                                 p2 = Phy::MakeVec3(&positions[i2 * VertexStride]);
+
+                const Ren::Vec4f p0_ws = tr.world_from_object * Ren::Vec4f{p0[0], p0[1], p0[2], 1.0f};
+                const Ren::Vec4f p1_ws = tr.world_from_object * Ren::Vec4f{p1[0], p1[1], p1[2], 1.0f};
+                const Ren::Vec4f p2_ws = tr.world_from_object * Ren::Vec4f{p2[0], p2[1], p2[2], 1.0f};
+
+                const Ren::Vec4f bbox_min_ws = Min(p0_ws, Min(p1_ws, p2_ws)),
+                                 bbox_max_ws = Max(p0_ws, Max(p1_ws, p2_ws));
+
+                const auto bbox_min = Phy::Vec3f{bbox_min_ws[0], bbox_min_ws[1], bbox_min_ws[2]},
+                           bbox_max = Phy::Vec3f{bbox_max_ws[0], bbox_max_ws[1], bbox_max_ws[2]};
+
+                temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
+                temp_indices.push_back(i / 3);
+
+                LightItem &tri_light = stochastic_lights.emplace_back();
+                tri_light.type_and_flags = LIGHT_TYPE_TRI;
+                if (bool(acc.vis_mask & AccStructure::eRayType::Diffuse)) {
+                    tri_light.type_and_flags |= LIGHT_DIFFUSE_BIT;
+                }
+                if (bool(acc.vis_mask & AccStructure::eRayType::Specular)) {
+                    tri_light.type_and_flags |= LIGHT_SPECULAR_BIT;
+                }
+                tri_light.type_and_flags |= LIGHT_DOUBLESIDED_BIT;
+                memcpy(tri_light.col, ValuePtr(front_mat->params[3]) + 1, 3 * sizeof(float));
+                memcpy(tri_light.pos, ValuePtr(p0_ws), 3 * sizeof(float));
+                memcpy(tri_light.u, ValuePtr(p1_ws), 3 * sizeof(float));
+                memcpy(tri_light.v, ValuePtr(p2_ws), 3 * sizeof(float));
+            }
+        }
+    }
+
+    if (!stochastic_lights.empty()) {
+        scene_data_.persistent_data.stoch_lights_buf = ren_ctx_.LoadBuffer(
+            "Stochastic Lights Buf", Ren::eBufType::Texture, uint32_t(stochastic_lights.size() * sizeof(LightItem)));
+
+        Ren::Buffer lights_buf_stage("Stochastic Lights Stage Buf", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
+                                     scene_data_.persistent_data.stoch_lights_buf->size());
+        { // init stage buf
+            uint8_t *mapped_ptr = lights_buf_stage.Map();
+            memcpy(mapped_ptr, stochastic_lights.data(), stochastic_lights.size() * sizeof(LightItem));
+            lights_buf_stage.Unmap();
+        }
+
+        Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
+        Ren::CopyBufferToBuffer(lights_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_buf, 0,
+                                uint32_t(stochastic_lights.size() * sizeof(LightItem)), cmd_buf);
+        ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+        lights_buf_stage.FreeImmediate();
+    }
 }

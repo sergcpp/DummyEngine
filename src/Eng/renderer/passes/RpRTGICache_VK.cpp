@@ -215,15 +215,6 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
 void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         if (ctx.capabilities.hwrt) {
-            /*Ren::ProgramRef rt_gi_prog =
-                sh.LoadProgram(ctx, "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",
-                               "internal/rt_gi.rahit.glsl", "internal/rt_gi.rmiss.glsl", {});
-            assert(rt_gi_prog->ready());
-
-            if (!pi_rt_gi_cache_.Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
-                ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
-            }*/
-
             Ren::ProgramRef rt_gi_cache_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_hwrt.comp.glsl");
             assert(rt_gi_cache_inline_prog->ready());
 

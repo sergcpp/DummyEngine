@@ -228,6 +228,10 @@ vec3 YCoCg_to_RGB(vec4 col) {
     return saturate(col_rgb);
 }
 
+vec3 normalize_len(const vec3 v, out float len) {
+    return (v / (len = length(v)));
+}
+
 float lum(vec3 color) {
     return dot(vec3(0.212671, 0.715160, 0.715160), color);
 }
@@ -315,11 +319,6 @@ struct ShadowMapRegion {
 };
 
 const int LIGHTS_BUF_STRIDE = 5;
-
-const int LIGHT_TYPE_SPHERE = 0;
-const int LIGHT_TYPE_RECT = 1;
-const int LIGHT_TYPE_DISK = 2;
-const int LIGHT_TYPE_LINE = 3;
 
 struct ProbeItem {
     vec4 pos_and_radius;

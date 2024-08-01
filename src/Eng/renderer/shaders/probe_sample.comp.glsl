@@ -13,7 +13,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = SSAO_TEX_SLOT) uniform sampler2D g_ssao_tex;
 
 layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;

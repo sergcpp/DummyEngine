@@ -44,7 +44,7 @@ layout(binding = BACK_COLOR_TEX_SLOT) uniform sampler2D g_back_color_tex;
 layout(binding = BACK_DEPTH_TEX_SLOT) uniform sampler2D g_back_depth_tex;
 
 #ifdef SPECULAR
-    layout(binding = SPECULAR_TEX_SLOT) uniform sampler2D g_specular_tex;
+    layout(binding = SPEC_TEX_SLOT) uniform sampler2D g_specular_tex;
 #endif
 
 #ifdef GI_CACHE

@@ -575,6 +575,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
     RebuildSceneBVH();
     RebuildMaterialTextureGraph();
+    RebuildLightTree();
 
     for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
         instance_data_to_update_.push_back(i);

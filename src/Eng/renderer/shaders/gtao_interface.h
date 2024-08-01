@@ -17,7 +17,7 @@ const int LOCAL_GROUP_SIZE_X = 8;
 const int LOCAL_GROUP_SIZE_Y = 8;
 
 const int DEPTH_TEX_SLOT = 1;
-const int NORMAL_TEX_SLOT = 2;
+const int NORM_TEX_SLOT = 2;
 const int GTAO_TEX_SLOT = 3;
 const int GTAO_HIST_TEX_SLOT = 4;
 const int VELOCITY_TEX_SLOT = 5;

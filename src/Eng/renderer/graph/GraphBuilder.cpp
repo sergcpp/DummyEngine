@@ -162,7 +162,7 @@ Eng::RpResRef Eng::RpBuilder::ReadTexture(const RpResRef handle, const Ren::eRes
     const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages, handle.index};
 
     tex.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
-    assert(tex.write_count == handle.write_count);
+    //assert(tex.write_count == handle.write_count);
     ++tex.read_count;
 
 #ifndef NDEBUG

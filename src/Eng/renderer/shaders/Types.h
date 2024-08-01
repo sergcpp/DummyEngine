@@ -47,6 +47,16 @@ struct ProbeVolume {
     ivec4 scroll_diff;
 };
 
+struct LightItem {
+    float col[3];
+    uint type_and_flags;
+    float pos[3], radius;
+    float dir[3], spot;
+    float u[3];
+    int shadowreg_index;
+    float v[3], blend;
+};
+
 INTERFACE_END
 
 #endif // TYPES_H

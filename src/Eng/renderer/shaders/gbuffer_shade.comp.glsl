@@ -17,8 +17,8 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
-layout(binding = SPECULAR_TEX_SLOT) uniform usampler2D g_specular_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
+layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = SHADOW_VAL_TEX_SLOT) uniform sampler2D g_shadow_val_tex;

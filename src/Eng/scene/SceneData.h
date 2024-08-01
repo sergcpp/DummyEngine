@@ -175,12 +175,24 @@ struct ProbeVolume {
     mutable int updates_count = 0;
 };
 
+struct LightItem {
+    float col[3];
+    uint32_t type_and_flags;
+    float pos[3], radius;
+    float dir[3], spot;
+    float u[3];
+    int shadowreg_index;
+    float v[3], blend;
+};
+static_assert(sizeof(LightItem) == 80, "!");
+
 static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
 
 struct PersistentGpuData {
     Ren::BufferRef instance_buf;
     Ren::Tex1DRef instance_buf_tbo;
     Ren::BufferRef materials_buf;
+    Ren::BufferRef stoch_lights_buf;
 #if defined(USE_VK_RENDER)
     std::unique_ptr<Ren::DescrPool> textures_descr_pool;
     VkDescriptorSetLayout textures_descr_layout = VK_NULL_HANDLE;
