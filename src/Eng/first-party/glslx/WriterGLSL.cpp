@@ -836,6 +836,9 @@ void glslx::WriterGLSL::Write_InterfaceBlock(const ast_interface_block *block, s
             } else {
                 out_stream << ", " << tu_->globals[i]->name;
             }
+            if (tu_->globals[i]->is_array) {
+                Write_ArraySize(tu_->globals[i]->array_sizes, out_stream);
+            }
             first = false;
             written_globals_.push_back(tu_->globals[i]);
         }

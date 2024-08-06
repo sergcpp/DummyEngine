@@ -813,6 +813,27 @@ void test_parser() {
         require(tr_unit == nullptr);
         require(strcmp(parser.error(), "first_character_invalid.glsl:1:1: error: Invalid character encountered") == 0);
     }
+    { // arrayness of redeclared block
+        static const char source[] = "in gl_PerVertex {\n"
+                                     "    vec4 gl_Position;\n"
+                                     "    float gl_PointSize;\n"
+                                     "    float gl_ClipDistance[];\n"
+                                     "    float gl_CullDistance[];\n"
+                                     "} gl_in[];\n";
+        static const char *expected = "in gl_PerVertex {\n"
+                                     "    vec4 gl_Position;\n"
+                                     "    float gl_PointSize;\n"
+                                     "    float gl_ClipDistance[];\n"
+                                     "    float gl_CullDistance[];\n"
+                                      "} gl_in[];\n";
 
+        glslx::Parser parser(source, "arrayness.glsl");
+        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Geometry);
+        require_fatal(tr_unit != nullptr);
+
+        std::stringstream ss;
+        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        require(ss.str() == expected);
+    }
     printf("OK\n");
 }
