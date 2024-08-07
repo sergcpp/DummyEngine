@@ -173,7 +173,7 @@ class Context {
 #endif
 
     ProgramRef LoadProgram(std::string_view name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-                           ShaderRef tes_ref, eProgLoadStatus *load_status);
+                           ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *load_status);
     ProgramRef LoadProgram(std::string_view name, ShaderRef cs_source, eProgLoadStatus *load_status);
 #elif defined(USE_SW_RENDER)
     ProgramRef LoadProgramSW(std::string_view name, void *vs_shader, void *fs_shader, int num_fvars,
@@ -181,8 +181,8 @@ class Context {
 #endif
 
 #if defined(USE_VK_RENDER)
-    ProgramRef LoadProgram(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
-                           ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *load_status);
+    ProgramRef LoadProgram2(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
+                            ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *load_status);
 #endif
 
     ProgramRef GetProgram(uint32_t index);

@@ -18,7 +18,7 @@ class ILog;
 enum class eMeshFlags { HasAlpha = 0 };
 
 struct TriGroup {
-    int offset = -1;
+    int byte_offset = -1;
     int num_indices = 0;
     MaterialRef front_mat, back_mat;
     Bitmask<eMeshFlags> flags;
@@ -92,7 +92,8 @@ class Mesh : public RefCounter {
     Bitmask<eMeshFlags> flags_;
     bool ready_ = false;
     BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_, indices_buf_;
-    std::unique_ptr<char[]> attribs_, indices_;
+    std::vector<float> attribs_;
+    std::vector<uint32_t> indices_;
     std::vector<VtxDelta> deltas_;
     SmallVector<TriGroup, 8> groups_;
     Vec3f bbox_min_, bbox_max_;
@@ -131,20 +132,15 @@ class Mesh : public RefCounter {
     eMeshType type() const { return type_; }
     Bitmask<eMeshFlags> flags() const { return flags_; }
     bool ready() const { return ready_; }
-#if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-    uint32_t attribs_buf1_id() const { return attribs_buf1_.buf->id(); }
-    uint32_t attribs_buf2_id() const { return attribs_buf2_.buf->id(); }
-    uint32_t indices_buf_id() const { return indices_buf_.buf->id(); }
-#endif
     BufHandle attribs_buf1_handle() const { return attribs_buf1_.buf->handle(); }
     BufHandle attribs_buf2_handle() const { return attribs_buf2_.buf->handle(); }
     BufHandle indices_buf_handle() const { return indices_buf_.buf->handle(); }
-    const void *attribs() const { return attribs_.get(); }
+    Span<const float> attribs() const { return attribs_; }
     const BufferRange &attribs_buf1() const { return attribs_buf1_; }
     const BufferRange &attribs_buf2() const { return attribs_buf2_; }
     const BufferRange &sk_attribs_buf() const { return sk_attribs_buf_; }
     const BufferRange &sk_deltas_buf() const { return sk_deltas_buf_; }
-    const void *indices() const { return indices_.get(); }
+    Span<const uint32_t> indices() const { return indices_; }
     const BufferRange &indices_buf() const { return indices_buf_; }
     Span<const TriGroup> groups() const { return groups_; }
     SmallVectorImpl<TriGroup> &groups() { return groups_; }

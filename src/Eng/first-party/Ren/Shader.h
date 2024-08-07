@@ -27,6 +27,7 @@ enum class eShaderType : uint8_t {
     Fragment,
     TesselationControl,
     TesselationEvaluation,
+    Geometry,
     Compute,
     RayGen,
     Miss,

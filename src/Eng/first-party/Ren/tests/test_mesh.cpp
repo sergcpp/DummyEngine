@@ -121,11 +121,11 @@ void test_mesh() {
 
         require(m_ref->groups().size() == 1);
 
-        require(m_ref->attribs() != nullptr);
+        require(!m_ref->attribs().empty());
         // 16 bytes per vertex in each buffer
         require(m_ref->attribs_buf1().size == 48);
         require(m_ref->attribs_buf2().size == 48);
-        require(m_ref->indices() != nullptr);
+        require(!m_ref->indices().empty());
         require(m_ref->indices_buf().size == 20);
 
         require(m_ref->flags() == Ren::eMeshFlags::HasAlpha);
@@ -195,10 +195,10 @@ void test_mesh() {
 
         require(m_ref->groups().size() == 1);
 
-        require(m_ref->attribs() != nullptr);
+        require(!m_ref->attribs().empty());
         // attribs have 48 bytes per vertex
         require(m_ref->sk_attribs_buf().size == 48 * 4);
-        require(m_ref->indices() != nullptr);
+        require(!m_ref->indices().empty());
         require(m_ref->indices_buf().size == 22);
 
         require(m_ref->flags() == 0);

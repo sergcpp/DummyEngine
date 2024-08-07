@@ -14,10 +14,10 @@ extern const VkShaderStageFlagBits g_shader_stages_vk[];
 } // namespace Ren
 
 Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-                      ShaderRef tes_ref, eProgLoadStatus *status, ILog *log) {
+                      ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *status, ILog *log) {
     name_ = String{name};
     api_ctx_ = api_ctx;
-    Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), status, log);
+    Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), std::move(gs_ref), status, log);
 }
 
 Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status,
@@ -29,11 +29,11 @@ Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_r
 
 Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref,
                       ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status,
-                      ILog *log) {
+                      ILog *log, int) {
     name_ = String{name};
     api_ctx_ = api_ctx;
-    Init(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
-         std::move(intersection_ref), status, log);
+    Init2(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
+          std::move(intersection_ref), status, log);
 }
 
 Ren::Program::~Program() { Destroy(); }
@@ -64,7 +64,7 @@ void Ren::Program::Destroy() {
     descr_set_layouts_.clear();
 }
 
-void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
+void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref,
                         eProgLoadStatus *status, ILog *log) {
     if (!vs_ref || !fs_ref) {
         (*status) = eProgLoadStatus::SetToDefault;
@@ -76,6 +76,7 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, S
     shaders_[int(eShaderType::Fragment)] = std::move(fs_ref);
     shaders_[int(eShaderType::TesselationControl)] = std::move(tcs_ref);
     shaders_[int(eShaderType::TesselationEvaluation)] = std::move(tes_ref);
+    shaders_[int(eShaderType::Geometry)] = std::move(gs_ref);
 
     if (!InitDescrSetLayouts(log)) {
         log->Error("Failed to initialize descriptor set layouts! (%s)", name_.c_str());
@@ -102,8 +103,8 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
     (*status) = eProgLoadStatus::CreatedFromData;
 }
 
-void Ren::Program::Init(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
-                        ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log) {
+void Ren::Program::Init2(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
+                         ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log) {
     if (!raygen_ref || (!closesthit_ref && !anyhit_ref) || !miss_ref) {
         (*status) = eProgLoadStatus::SetToDefault;
         return;

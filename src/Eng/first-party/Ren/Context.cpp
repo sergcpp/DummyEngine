@@ -140,18 +140,19 @@ Ren::ShaderRef Ren::Context::LoadShaderSPIRV(std::string_view name, Span<const u
 #endif
 
 Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-                                          ShaderRef tes_ref, eProgLoadStatus *load_status) {
+                                          ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
     if (!ref) {
         ref = programs_.Add(name, api_ctx_.get(), std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref),
-                            std::move(tes_ref), load_status, log_);
+                            std::move(tes_ref), std::move(gs_ref), load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) {
                 (*load_status) = eProgLoadStatus::Found;
             }
         } else if (!ref->ready() && vs_ref && fs_ref) {
-            ref->Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), load_status, log_);
+            ref->Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), std::move(gs_ref),
+                      load_status, log_);
         }
     }
     return ref;
@@ -173,21 +174,22 @@ Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef cs_re
 }
 
 #if defined(USE_VK_RENDER)
-Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref,
-                                          ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref,
-                                          eProgLoadStatus *load_status) {
+Ren::ProgramRef Ren::Context::LoadProgram2(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref,
+                                           ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref,
+                                           eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
     if (!ref) {
-        ref = programs_.Add(name, api_ctx_.get(), std::move(raygen_ref), std::move(closesthit_ref),
-                            std::move(anyhit_ref), std::move(miss_ref), std::move(intersection_ref), load_status, log_);
+        ref =
+            programs_.Add(name, api_ctx_.get(), std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref),
+                          std::move(miss_ref), std::move(intersection_ref), load_status, log_, 0);
     } else {
         if (ref->ready()) {
             if (load_status) {
                 (*load_status) = eProgLoadStatus::Found;
             }
         } else if (!ref->ready() && raygen_ref && (closesthit_ref || anyhit_ref) && miss_ref) {
-            ref->Init(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
-                      std::move(intersection_ref), load_status, log_);
+            ref->Init2(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
+                       std::move(intersection_ref), load_status, log_);
         }
     }
     return ref;

@@ -48,7 +48,7 @@ void main() {
 })";
 
         Ren::eProgLoadStatus status;
-        Ren::ProgramRef p = test.LoadProgram("constant", {}, {}, {}, {}, &status);
+        Ren::ProgramRef p = test.LoadProgram("constant", {}, {}, {}, {}, {}, &status);
 
         require(status == Ren::eProgLoadStatus::SetToDefault);
         require(p->name() == "constant");
@@ -61,7 +61,7 @@ void main() {
         Ren::ShaderRef fs_ref = test.LoadShaderGLSL("constant_fs", fs_src, Ren::eShaderType::Fragment, &sh_status);
         require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
-        test.LoadProgram("constant", vs_ref, fs_ref, {}, {}, &status);
+        test.LoadProgram("constant", vs_ref, fs_ref, {}, {}, {}, &status);
 
         require(status == Ren::eProgLoadStatus::CreatedFromData);
 
@@ -362,7 +362,7 @@ void main() {
             require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
             Ren::eProgLoadStatus status;
-            Ren::ProgramRef p = test.LoadProgram("simple", vs_ref, fs_ref, {}, {}, &status);
+            Ren::ProgramRef p = test.LoadProgram("simple", vs_ref, fs_ref, {}, {}, {}, &status);
             require(status == Ren::eProgLoadStatus::CreatedFromData);
 
             require(p->name() == "simple");

@@ -15,6 +15,7 @@ extern const VkShaderStageFlagBits g_shader_stages_vk[] = {
     VK_SHADER_STAGE_FRAGMENT_BIT,                // Frag
     VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    // Tesc
     VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, // Tese
+    VK_SHADER_STAGE_GEOMETRY_BIT,                // Geometry
     VK_SHADER_STAGE_COMPUTE_BIT,                 // Comp
     VK_SHADER_STAGE_RAYGEN_BIT_KHR,              // RayGen
     VK_SHADER_STAGE_MISS_BIT_KHR,                // Miss

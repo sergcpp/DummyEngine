@@ -18,9 +18,9 @@ void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_c
 } // namespace Ren
 
 Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-                      ShaderRef tes_ref, eProgLoadStatus *status, ILog *log) {
+                      ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *status, ILog *log) {
     name_ = String{name};
-    Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), status, log);
+    Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), std::move(gs_ref), status, log);
 }
 
 Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status,
@@ -58,7 +58,7 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
     return *this;
 }
 
-void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
+void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref,
                         eProgLoadStatus *status, ILog *log) {
     assert(id_ == 0);
 
@@ -74,6 +74,9 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, S
         if (tcs_ref && tes_ref) {
             glAttachShader(program, (GLuint)tcs_ref->id());
             glAttachShader(program, (GLuint)tes_ref->id());
+        }
+        if (gs_ref) {
+            glAttachShader(program, gs_ref->id());
         }
         glLinkProgram(program);
         GLint link_status = GL_FALSE;

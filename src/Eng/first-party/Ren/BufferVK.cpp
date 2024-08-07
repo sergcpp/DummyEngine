@@ -33,11 +33,10 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
 
     if ((type == eBufType::VertexAttribs || type == eBufType::VertexIndices || type == eBufType::Storage ||
          type == eBufType::Indirect)) {
+        flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
         if (api_ctx->raytracing_supported) {
             flags |= (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                       VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
-        } else {
-            flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
         }
     }
 

@@ -41,10 +41,10 @@ class Program : public RefCounter {
   public:
     Program() = default;
     Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-            ShaderRef tes_ref, eProgLoadStatus *status, ILog *log);
+            ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *status, ILog *log);
     Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
     Program(std::string_view name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref,
-            ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
+            ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log, int);
 
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -91,11 +91,11 @@ class Program : public RefCounter {
     Span<const VkDescriptorSetLayout> descr_set_layouts() const { return descr_set_layouts_; }
     Span<const VkPushConstantRange> pc_ranges() const { return pc_ranges_; }
 
-    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, eProgLoadStatus *status,
-              ILog *log);
+    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref,
+              eProgLoadStatus *status, ILog *log);
     void Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
-    void Init(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
-              ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
+    void Init2(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
+               ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
 };
 
 typedef StrongRef<Program> ProgramRef;

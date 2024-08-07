@@ -348,12 +348,12 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 
     const auto attribs_size = uint32_t(file_header.p[int(eMeshFileChunk::VtxAttributes)].length);
 
-    attribs_ = std::make_unique<char[]>(attribs_size);
-    data.read((char *)attribs_.get(), attribs_size);
+    attribs_.resize(attribs_size / sizeof(float));
+    data.read((char *)attribs_.data(), attribs_size);
 
     const auto index_data_size = uint32_t(file_header.p[int(eMeshFileChunk::TriIndices)].length);
-    indices_ = std::make_unique<char[]>(index_data_size);
-    data.read((char *)indices_.get(), index_data_size);
+    indices_.resize(index_data_size / sizeof(uint32_t));
+    data.read((char *)indices_.data(), index_data_size);
 
     const int materials_count = file_header.p[int(eMeshFileChunk::Materials)].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
@@ -373,8 +373,8 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         data.read((char *)&alpha, 4);
 
         auto &grp = groups_.emplace_back();
-        grp.offset = int(index * sizeof(uint32_t));
-        grp.num_indices = (int)num_indices;
+        grp.byte_offset = int(index * sizeof(uint32_t));
+        grp.num_indices = num_indices;
 
         if (alpha) {
             grp.flags |= eMeshFlags::HasAlpha;
@@ -405,13 +405,13 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
     assert(uintptr_t(index_data) % alignof(uint32_t) == 0);
 
-    const auto *orig_vertices = reinterpret_cast<const orig_vertex_t *>(attribs_.get());
+    const auto *orig_vertices = reinterpret_cast<const orig_vertex_t *>(attribs_.data());
 
     for (uint32_t i = 0; i < vertex_count; i++) {
         pack_vertex_data1(orig_vertices[i], vertices_data1[i]);
         pack_vertex_data2(orig_vertices[i], vertices_data2[i]);
     }
-    memcpy(index_data, indices_.get(), indices_buf_.size);
+    memcpy(index_data, indices_.data(), indices_buf_.size);
 
     stage_buf->Unmap();
 
@@ -457,12 +457,12 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 
     const auto attribs_size = uint32_t(file_header.p[int(eMeshFileChunk::VtxAttributes)].length);
 
-    attribs_ = std::make_unique<char[]>(attribs_size);
-    data.read((char *)attribs_.get(), attribs_size);
+    attribs_.resize(attribs_size / sizeof(float));
+    data.read((char *)attribs_.data(), attribs_size);
 
     const auto index_data_size = uint32_t(file_header.p[int(eMeshFileChunk::TriIndices)].length);
-    indices_ = std::make_unique<char[]>(index_data_size);
-    data.read((char *)indices_.get(), index_data_size);
+    indices_.resize(index_data_size / sizeof(uint32_t));
+    data.read((char *)indices_.data(), index_data_size);
 
     const int materials_count = file_header.p[int(eMeshFileChunk::Materials)].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
@@ -482,8 +482,8 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
         data.read((char *)&alpha, 4);
 
         auto &grp = groups_.emplace_back();
-        grp.offset = (int)(index * sizeof(uint32_t));
-        grp.num_indices = (int)num_indices;
+        grp.byte_offset = int(index * sizeof(uint32_t));
+        grp.num_indices = num_indices;
 
         if (alpha) {
             grp.flags |= eMeshFlags::HasAlpha;
@@ -509,13 +509,13 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
     auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
     assert(uintptr_t(index_data) % alignof(uint32_t) == 0);
 
-    const auto *orig_vertices = reinterpret_cast<const orig_vertex_colored_t *>(attribs_.get());
+    const auto *orig_vertices = reinterpret_cast<const orig_vertex_colored_t *>(attribs_.data());
 
     for (uint32_t i = 0; i < vertex_count; i++) {
         pack_vertex_data1(orig_vertices[i], vertices_data1[i]);
         pack_vertex_data2(orig_vertices[i], vertices_data2[i]);
     }
-    memcpy(index_data, indices_.get(), indices_buf_.size);
+    memcpy(index_data, indices_.data(), indices_buf_.size);
 
     stage_buf.Unmap();
 
@@ -565,12 +565,12 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     }
 
     const uint32_t sk_attribs_size = uint32_t(file_header.p[int(eMeshFileChunk::VtxAttributes)].length);
-    attribs_ = std::make_unique<char[]>(sk_attribs_size);
-    data.read((char *)attribs_.get(), sk_attribs_size);
+    attribs_.resize(sk_attribs_size / sizeof(float));
+    data.read((char *)attribs_.data(), sk_attribs_size);
 
     indices_buf_.size = uint32_t(file_header.p[int(eMeshFileChunk::TriIndices)].length);
-    indices_ = std::make_unique<char[]>(indices_buf_.size);
-    data.read((char *)indices_.get(), indices_buf_.size);
+    indices_.resize(indices_buf_.size / sizeof(uint32_t));
+    data.read((char *)indices_.data(), indices_buf_.size);
 
     const int materials_count = file_header.p[int(eMeshFileChunk::Materials)].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
@@ -590,8 +590,8 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         data.read((char *)&alpha, 4);
 
         auto &grp = groups_.emplace_back();
-        grp.offset = int(index * sizeof(uint32_t));
-        grp.num_indices = (int)num_indices;
+        grp.byte_offset = int(index * sizeof(uint32_t));
+        grp.num_indices = num_indices;
 
         if (alpha) {
             grp.flags |= eMeshFlags::HasAlpha;
@@ -684,12 +684,12 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     stage_buf_off += sk_attribs_buf_.size;
 
     if (vtx_color_present) {
-        const auto *orig_vertices = reinterpret_cast<const orig_vertex_skinned_colored_t *>(attribs_.get());
+        const auto *orig_vertices = reinterpret_cast<const orig_vertex_skinned_colored_t *>(attribs_.data());
         for (uint32_t i = 0; i < vertex_count; i++) {
             pack_vertex(orig_vertices[i], vertices[i]);
         }
     } else {
-        const auto *orig_vertices = reinterpret_cast<const orig_vertex_skinned_t *>(attribs_.get());
+        const auto *orig_vertices = reinterpret_cast<const orig_vertex_skinned_t *>(attribs_.data());
         for (uint32_t i = 0; i < vertex_count; i++) {
             pack_vertex(orig_vertices[i], vertices[i]);
         }
@@ -699,7 +699,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     auto *index_data = reinterpret_cast<uint32_t *>(stage_buf_ptr + stage_buf_off);
     const uint32_t indices_off = stage_buf_off;
     stage_buf_off += indices_buf_.size;
-    memcpy(index_data, indices_.get(), indices_buf_.size);
+    memcpy(index_data, indices_.data(), indices_buf_.size);
 
     stage_buf.Unmap();
 

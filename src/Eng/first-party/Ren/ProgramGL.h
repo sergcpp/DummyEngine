@@ -49,7 +49,7 @@ class Program : public RefCounter {
         name_ = String{name};
     }
     Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-            ShaderRef tes_ref, eProgLoadStatus *status, ILog *log);
+            ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *status, ILog *log);
     Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
 
     Program(const Program &rhs) = delete;
@@ -97,8 +97,8 @@ class Program : public RefCounter {
         return uniform_blocks_[0];
     }
 
-    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, eProgLoadStatus *status,
-              ILog *log);
+    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref,
+              eProgLoadStatus *status, ILog *log);
     void Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
 };
 
