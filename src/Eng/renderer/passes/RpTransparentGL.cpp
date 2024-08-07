@@ -45,8 +45,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
     rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
 
     rast_state.blend.enabled = true;
-    rast_state.blend.src = unsigned(Ren::eBlendFactor::SrcAlpha);
-    rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+    rast_state.blend.src_color = rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::SrcAlpha);
+    rast_state.blend.dst_color = rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
 
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, transparent_draw_fb_[0][fb_to_use_].id());
@@ -107,7 +107,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.tbos[0]->id()));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
-    //ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
+    // ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
     if (ctx.capabilities.bindless_texture) {
@@ -226,7 +226,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])}}};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings, uniforms);*/
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings,
+        uniforms);*/
     }
 }
 
@@ -402,7 +403,7 @@ void Eng::RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
     Ren::GLUnbindSamplers(BIND_MAT_TEX0, 8);
 }
 
-void Eng::RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder){}
+void Eng::RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder) {}
 
 //
 // This is needed for moment-based OIT
@@ -556,5 +557,4 @@ if (list.render_flags & EnableOIT) {
 
 #endif
 
-Eng::RpTransparent::~RpTransparent() {
-}
+Eng::RpTransparent::~RpTransparent() {}

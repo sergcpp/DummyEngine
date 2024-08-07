@@ -74,8 +74,8 @@ void Eng::RpEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAlloc
             rast_state.depth.test_enabled = true;
             rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
             rast_state.blend.enabled = true;
-            rast_state.blend.src = uint8_t(Ren::eBlendFactor::One);
-            rast_state.blend.dst = uint8_t(Ren::eBlendFactor::One);
+            rast_state.blend.src_color = rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
+            rast_state.blend.dst_color = rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
 
             if (!pi_simple_[2].Init(ctx.api_ctx(), rast_state, emissive_simple_prog, &vi_simple_, &rp_main_draw_, 0,
                                     ctx.log())) {
@@ -102,8 +102,8 @@ void Eng::RpEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAlloc
             rast_state.depth.test_enabled = true;
             rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
             rast_state.blend.enabled = true;
-            rast_state.blend.src = uint8_t(Ren::eBlendFactor::One);
-            rast_state.blend.dst = uint8_t(Ren::eBlendFactor::One);
+            rast_state.blend.src_color = rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
+            rast_state.blend.dst_color = rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
 
             if (!pi_vegetation_[1].Init(ctx.api_ctx(), rast_state, emissive_vegetation_prog, &vi_vegetation_,
                                         &rp_main_draw_, 0, ctx.log())) {

@@ -270,6 +270,7 @@ bool Ren::InitGLExtentions(ILog *log) {
     LOAD_GL_FUN(glDeleteSync)
 
     LOAD_GL_FUN(glBlendFunci)
+    LOAD_GL_FUN(glBlendFuncSeparate)
     LOAD_GL_FUN(glClearBufferfv)
 
     LOAD_GL_FUN(glClearBufferSubData)

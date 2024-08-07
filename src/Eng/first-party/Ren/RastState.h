@@ -65,16 +65,20 @@ inline bool operator<(const DepthState &lhs, const DepthState &rhs) { return lhs
 
 union BlendState {
     struct {
-        uint8_t enabled : 1;
-        uint8_t src : 3;
-        uint8_t dst : 3;
-        uint8_t _unused : 1;
+        uint16_t enabled : 1;
+        uint16_t src_color : 3;
+        uint16_t dst_color : 3;
+        uint16_t src_alpha : 3;
+        uint16_t dst_alpha : 3;
+        uint16_t _unused : 3;
     };
-    uint8_t bits;
+    uint16_t bits;
 
-    BlendState() : enabled(0), src(uint8_t(eBlendFactor::Zero)), dst(uint8_t(eBlendFactor::Zero)) {}
+    BlendState()
+        : enabled(0), src_color(uint8_t(eBlendFactor::Zero)), dst_color(uint8_t(eBlendFactor::Zero)),
+          src_alpha(uint8_t(eBlendFactor::Zero)), dst_alpha(uint8_t(eBlendFactor::Zero)) {}
 };
-static_assert(sizeof(BlendState) == 1, "!");
+static_assert(sizeof(BlendState) == 2, "!");
 
 inline bool operator==(const BlendState &lhs, const BlendState &rhs) { return lhs.bits == rhs.bits; }
 inline bool operator!=(const BlendState &lhs, const BlendState &rhs) { return lhs.bits != rhs.bits; }

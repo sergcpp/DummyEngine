@@ -55,7 +55,7 @@ const uint32_t gl_polygon_mode[] = {
 static_assert(std::size(gl_polygon_mode) == size_t(ePolygonMode::_Count), "!");
 
 const uint32_t gl_depth_range_mode[] = {
-    GL_ZERO_TO_ONE, // ZeroToOne
+    GL_ZERO_TO_ONE,        // ZeroToOne
     GL_NEGATIVE_ONE_TO_ONE // NegOneToOne
 };
 static_assert(std::size(gl_depth_range_mode) == size_t(eDepthRangeMode::_Count), "!");
@@ -148,7 +148,8 @@ void Ren::RastState::Apply(const RastState *ref) const {
         } else {
             glDisable(GL_BLEND);
         }
-        glBlendFunc(gl_blend_factor[blend.src], gl_blend_factor[blend.dst]);
+        glBlendFuncSeparate(gl_blend_factor[blend.src_color], gl_blend_factor[blend.dst_color],
+                            gl_blend_factor[blend.src_alpha], gl_blend_factor[blend.dst_alpha]);
     }
 
     if (!ref || ref->stencil != stencil) {

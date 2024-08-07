@@ -32,8 +32,10 @@ void Eng::RpSSRCompose2::Execute(RpBuilder &builder) {
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
     rast_state.blend.enabled = true;
-    rast_state.blend.src = unsigned(Ren::eBlendFactor::One);
-    rast_state.blend.dst = unsigned(Ren::eBlendFactor::One);
+    rast_state.blend.src_color = unsigned(Ren::eBlendFactor::One);
+    rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::One);
+    rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
+    rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
 
     rast_state.viewport[2] = view_state_->scr_res[0];
     rast_state.viewport[3] = view_state_->scr_res[1];

@@ -1022,8 +1022,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             rast_state.blend.enabled = true;
-            rast_state.blend.src = unsigned(Ren::eBlendFactor::One);
-            rast_state.blend.dst = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.src_color = rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.dst_color = rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
 
             rast_state.viewport[2] = view_state_.act_res[0];
             rast_state.viewport[3] = view_state_.act_res[1];

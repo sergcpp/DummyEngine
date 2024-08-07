@@ -815,8 +815,9 @@ typedef GLenum(APIENTRY *PFNGLCLIENTWAITSYNCPROC)(GLsync sync, GLbitfield flags,
 typedef void(APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
 typedef void(APIENTRY *PFNGLBLENDFUNCIPROC)(GLuint buf, GLenum sfactor, GLenum dfactor);
-typedef void(APIENTRY *PFNGLCLEARBUFFERFVPROC)(GLenum buffer, GLint drawbuffer, const GLfloat *value);
+typedef void(APIENTRY *PFNGLBLENDFUNCSEPARATEPROC)(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
 
+typedef void(APIENTRY *PFNGLCLEARBUFFERFVPROC)(GLenum buffer, GLint drawbuffer, const GLfloat *value);
 typedef void(APIENTRY *PFNGLCLEARBUFFERSUBDATAPROC)(GLenum target, GLenum internalformat, GLintptr offset,
                                                     GLsizeiptr size, GLenum format, GLenum type, const void *data);
 typedef void(APIENTRY *PFNGLCLEARTEXIMAGEPROC)(GLuint texture, GLint level, GLenum format, GLenum type,
@@ -1113,6 +1114,7 @@ typedef void(APIENTRY *PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GLf
 
 #define glBlendFunci ren_glBlendFunci
 #define glBlendFunci ren_glBlendFunci
+#define glBlendFuncSeparate ren_glBlendFuncSeparate
 #define glClearBufferfv ren_glClearBufferfv
 
 #define glClearBufferSubData ren_glClearBufferSubData
@@ -1361,6 +1363,7 @@ EXTERN_FUNC PFNGLWAITSYNCPROC ren_glWaitSync;
 EXTERN_FUNC PFNGLDELETESYNCPROC ren_glDeleteSync;
 
 EXTERN_FUNC PFNGLBLENDFUNCIPROC ren_glBlendFunci;
+EXTERN_FUNC PFNGLBLENDFUNCSEPARATEPROC ren_glBlendFuncSeparate;
 EXTERN_FUNC PFNGLCLEARBUFFERFVPROC ren_glClearBufferfv;
 
 EXTERN_FUNC PFNGLCLEARBUFFERSUBDATAPROC ren_glClearBufferSubData;

@@ -36,8 +36,8 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
     rast_state.blend.enabled = true;
-    rast_state.blend.src = unsigned(Ren::eBlendFactor::One);
-    rast_state.blend.dst = unsigned(Ren::eBlendFactor::One);
+    rast_state.blend.src_color = rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::One);
+    rast_state.blend.dst_color = rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
 
     rast_state.viewport[2] = view_state_->scr_res[0];
     rast_state.viewport[3] = view_state_->scr_res[1];
@@ -81,15 +81,15 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
 
 void Eng::RpSSRCompose::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
-        blit_ssr_compose_prog_ = sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl",
-                                                "internal/blit_ssr_compose.frag.glsl@HALFRES");
+        blit_ssr_compose_prog_ =
+            sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose.frag.glsl@HALFRES");
         assert(blit_ssr_compose_prog_->ready());
-        blit_ssr_compose_ms_prog_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl",
-                                                   "internal/blit_ssr_compose.frag.glsl@HALFRES;MSAA_4");
+        blit_ssr_compose_ms_prog_ =
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_ssr_compose.frag.glsl@HALFRES;MSAA_4");
         assert(blit_ssr_compose_ms_prog_->ready());
 
-        blit_ssr_compose_hq_prog_ = sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl",
-                                                   "internal/blit_ssr_compose.frag.glsl");
+        blit_ssr_compose_hq_prog_ =
+            sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose.frag.glsl");
         assert(blit_ssr_compose_hq_prog_->ready());
 
         initialized = true;

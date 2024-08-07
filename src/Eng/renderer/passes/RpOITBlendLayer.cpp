@@ -119,8 +119,10 @@ void Eng::RpOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, Rp
                 rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
 
                 rast_state.blend.enabled = true;
-                rast_state.blend.src = unsigned(Ren::eBlendFactor::SrcAlpha);
-                rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+                rast_state.blend.src_color = unsigned(Ren::eBlendFactor::SrcAlpha);
+                rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+                rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
+                rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
 
                 if (!pi_simple_[i][2].Init(ctx.api_ctx(), rast_state, oit_blend_simple_prog[i], &vi_simple_,
                                            &rp_oit_blend_, 0, ctx.log())) {
@@ -148,8 +150,10 @@ void Eng::RpOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, Rp
                 rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
 
                 rast_state.blend.enabled = true;
-                rast_state.blend.src = unsigned(Ren::eBlendFactor::SrcAlpha);
-                rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+                rast_state.blend.src_color = unsigned(Ren::eBlendFactor::SrcAlpha);
+                rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+                rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
+                rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
 
                 if (!pi_vegetation_[i][1].Init(ctx.api_ctx(), rast_state, oit_blend_vegetation_prog[i], &vi_vegetation_,
                                                &rp_oit_blend_, 0, ctx.log())) {

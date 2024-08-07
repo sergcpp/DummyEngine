@@ -239,11 +239,11 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
             auto &new_state = color_blend_attachment_states.emplace_back();
             new_state.blendEnable = rast_state.blend.enabled ? VK_TRUE : VK_FALSE;
             new_state.colorBlendOp = VK_BLEND_OP_ADD;
-            new_state.srcColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.src)];
-            new_state.dstColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst)];
+            new_state.srcColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.src_color)];
+            new_state.dstColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst_color)];
             new_state.alphaBlendOp = VK_BLEND_OP_ADD;
-            new_state.srcAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.src)];
-            new_state.dstAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst)];
+            new_state.srcAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.src_alpha)];
+            new_state.dstAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst_alpha)];
             new_state.colorWriteMask = 0xf;
         }
 

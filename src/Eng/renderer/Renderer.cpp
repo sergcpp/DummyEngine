@@ -1599,8 +1599,8 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
             rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
 
             rast_state.blend.enabled = true;
-            rast_state.blend.src = unsigned(Ren::eBlendFactor::SrcAlpha);
-            rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+            rast_state.blend.src_color = rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::SrcAlpha);
+            rast_state.blend.dst_color = rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
         }
 
         // find of create pipeline (linear search is good enough)
