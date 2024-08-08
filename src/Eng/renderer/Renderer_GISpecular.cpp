@@ -315,6 +315,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             SSRTraceHQ::Params uniform_params;
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
+            uniform_params.lights_count = float(view_state_.stochastic_lights_count);
 
             Ren::DispatchComputeIndirect(pi_ssr_trace_hq_[0][irradiance_tex != nullptr], *indir_args_buf.ref, 0,
                                          bindings, &uniform_params, sizeof(uniform_params),

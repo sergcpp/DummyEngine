@@ -62,11 +62,13 @@ layout(std430, binding = INOUT_RAY_COUNTER_SLOT) restrict coherent buffer RayCou
 
 layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
-vec3 ShadeHitPoint(const vec2 uv, const vec3 hit_point_vs, const vec3 refl_ray_vs, const float hit_t, const float first_roughness) {
+vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 view_ray_vs, const vec3 hit_point_vs, const vec3 refl_ray_vs, const vec3 hit_normal_vs, const float hit_t, const float first_roughness) {
     vec3 approx_spec = vec3(0.0);
+
+    const vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs, 0.0)).xyz;
 #ifdef GI_CACHE
-    const vec3 base_color = textureLod(g_albedo_tex, uv, 0.0).rgb;
     const vec4 normal = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).r);
+    const vec3 base_color = textureLod(g_albedo_tex, uv, 0.0).rgb;
     const uint packed_mat_params = textureLod(g_specular_tex, uv, 0.0).r;
 
     vec4 mat_params0, mat_params1;
@@ -74,8 +76,6 @@ vec3 ShadeHitPoint(const vec2 uv, const vec3 hit_point_vs, const vec3 refl_ray_v
 
     vec4 pos_ws = g_shrd_data.world_from_view * vec4(hit_point_vs, 1.0);
     pos_ws /= pos_ws.w;
-
-    vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs, 0.0)).xyz;
 
     const vec3 P = pos_ws.xyz;
     const vec3 I = normalize(g_shrd_data.cam_pos_and_exp.xyz - P);
@@ -140,7 +140,26 @@ vec3 ShadeHitPoint(const vec2 uv, const vec3 hit_point_vs, const vec3 refl_ray_v
         }
     }
 #endif
-    return textureLod(g_color_tex, uv, 0.0).rgb + compress_hdr(approx_spec);
+    vec4 ss_color = textureLod(g_color_tex, uv, 0.0);
+#ifndef LAYERED
+    if (ss_color.w > 0.0) {
+        // Resolve emissive MIS
+        const float cos_theta = -dot(refl_ray_vs, hit_normal_vs);
+
+        const mat3 tbn_transform = CreateTBN(norm_rough.xyz);
+        const vec3 view_ray_ws = (g_shrd_data.world_from_view * vec4(view_ray_vs, 0.0)).xyz;
+        const vec3 view_dir_ts = tbn_transform * (-view_ray_ws);
+        const vec3 sampled_normal_ts = tbn_transform * normalize(refl_ray_ws - view_ray_ws);
+
+        const float roughness = norm_rough.w * norm_rough.w;
+        const float D = D_GGX(sampled_normal_ts, vec2(roughness));
+        const float bsdf_pdf = GGX_VNDF_Reflection_Bounded_PDF(D, view_dir_ts, vec2(roughness));
+        const float ls_pdf = (hit_t * hit_t) / (ss_color.w * cos_theta * g_params.lights_count);
+        const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
+        ss_color.xyz *= mis_weight;
+    }
+#endif
+    return ss_color.xyz + compress_hdr(approx_spec);
 }
 
 void main() {
@@ -195,12 +214,13 @@ void main() {
     const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
     const float view_z = -ray_origin_vs.z;
+    const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
+    vec4 norm_rough = vec4(0.0); // stub
 #endif
 
     vec3 hit_point_cs, hit_point_vs, hit_normal_vs;
     vec3 out_color = vec3(0.0);
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_normal_tex, hit_point_cs, hit_point_vs, hit_normal_vs);
-    hit_found = false;
+    const bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_normal_tex, hit_point_cs, hit_point_vs, hit_normal_vs);
     if (hit_found) {
         vec2 uv = hit_point_cs.xy;
 #if defined(VULKAN)
@@ -208,7 +228,7 @@ void main() {
 #endif // VULKAN
         uv.xy = 0.5 * uv.xy + 0.5;
 
-        out_color += ShadeHitPoint(uv, hit_point_vs, refl_ray_vs, length(hit_point_vs - ray_origin_vs.xyz), roughness);
+        out_color += ShadeHitPoint(uv, norm_rough, view_ray_vs, hit_point_vs, refl_ray_vs, hit_normal_vs, length(hit_point_vs - ray_origin_vs.xyz), roughness);
     }
 
 
@@ -250,7 +270,7 @@ void main() {
     ray_len = GetNormHitDist(ray_len, view_z, roughness);
 
 #ifndef LAYERED
-    /*const vec3 prev_color = imageLoad(g_out_color_img, pix_uvs).xyz;
+    const vec3 prev_color = imageLoad(g_out_color_img, pix_uvs).xyz;
     imageStore(g_out_color_img, pix_uvs, vec4(prev_color + out_color, ray_len));
 
     const ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
@@ -268,7 +288,7 @@ void main() {
         const ivec2 copy_coords = copy_target;
         const vec3 prev_color = imageLoad(g_out_color_img, copy_coords).xyz;
         imageStore(g_out_color_img, copy_coords, vec4(prev_color + out_color, ray_len));
-    }*/
+    }
 #else
     [[dont_flatten]] if (layer_index == 0) {
         imageStore(g_out_color_img[0], pix_uvs / 2, vec4(out_color, 1.0));

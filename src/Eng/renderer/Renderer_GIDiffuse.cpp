@@ -362,7 +362,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GITraceSS::Params uniform_params;
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
-            uniform_params.lights_count = view_state_.stochastic_lights_count;
+            uniform_params.lights_count = float(view_state_.stochastic_lights_count);
 
             Ren::DispatchComputeIndirect(pi_gi_trace_ss_, *indir_args_buf.ref, 0, bindings, &uniform_params,
                                          sizeof(uniform_params), builder.ctx().default_descr_alloc(),

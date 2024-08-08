@@ -7,6 +7,7 @@ INTERFACE_START(SSRTraceHQ)
 
 struct Params {
     uvec4 resolution;
+    float lights_count;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;
