@@ -93,7 +93,7 @@ void main() {
 
         const float hit_t = distance(hit_point_vs, ray_origin_vs);
         out_color = textureLod(color_tex, uv, 0.0);
-        if (out_color.w > 0.0) {
+        if (g_params.lights_count > 0.0 && out_color.w > 0.0) {
             // Resolve emissive MIS
             const float cos_theta = -dot(refl_ray_vs, hit_normal_vs);
             const float bsdf_pdf = saturate(-dot(hit_normal_vs, refl_ray_vs)) / M_PI;

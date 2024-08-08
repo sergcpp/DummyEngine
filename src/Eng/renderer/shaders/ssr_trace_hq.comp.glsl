@@ -142,7 +142,7 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 view_ray_vs,
 #endif
     vec4 ss_color = textureLod(g_color_tex, uv, 0.0);
 #ifndef LAYERED
-    if (ss_color.w > 0.0) {
+    if (g_params.lights_count > 0.0 && ss_color.w > 0.0) {
         // Resolve emissive MIS
         const float cos_theta = -dot(refl_ray_vs, hit_normal_vs);
 

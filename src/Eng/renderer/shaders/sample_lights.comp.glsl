@@ -294,7 +294,7 @@ void main() {
                 if (alpha < 0.5) {
                     ro += (inter.t + 0.001) * L;
                     inter.mask = 0;
-                    inter_t -= inter.t;
+                    inter_t -= inter.t + 0.001;
                     inter.t = inter_t;
                     continue;
                 }
