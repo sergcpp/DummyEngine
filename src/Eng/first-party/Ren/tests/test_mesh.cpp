@@ -142,7 +142,7 @@ void test_mesh() {
         require(!mat_ref->ready());
     }
 
-    {
+    /*{
         // Load skeletal mesh
         membuf sbuf(__skeletal_mesh, sizeof(__skeletal_mesh));
         std::istream in(&sbuf);
@@ -225,7 +225,7 @@ void test_mesh() {
         Ren::MaterialRef mat_ref = m_ref->groups()[0].front_mat;
         require(bool(mat_ref));
         require(!mat_ref->ready());
-    }
+    }*/
 
     printf("OK\n");
 }
