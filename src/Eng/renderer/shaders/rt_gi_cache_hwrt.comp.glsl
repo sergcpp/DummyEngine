@@ -385,6 +385,7 @@ void main() {
         final_result = vec4(light_total, backfacing ? -hit_t : hit_t);
     }
 
+    //final_result.xyz = limit_intensity(final_result.xyz, 10.0);
     final_result.xyz = compress_hdr(final_result.xyz);
 
     imageStore(g_out_ray_data_img, output_coords, final_result);

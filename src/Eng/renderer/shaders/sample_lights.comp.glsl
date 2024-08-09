@@ -321,6 +321,7 @@ void main() {
         const float bsdf_pdf = saturate(dot(N, L)) / M_PI;
         const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
         diffuse_col *= mis_weight;
+        //diffuse_col = limit_intensity(diffuse_col, 10.0);
     }
 
     if (lobe_weights.specular > 1e-7 && roughness * roughness > 1e-7) {

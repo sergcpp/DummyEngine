@@ -236,6 +236,14 @@ float lum(vec3 color) {
     return dot(vec3(0.212671, 0.715160, 0.715160), color);
 }
 
+vec3 limit_intensity(vec3 color, const float limit) {
+    const float sum = color.x + color.y + color.z;
+    if (sum > 3.0 * limit) {
+        color *= (3.0 * limit / sum);
+    }
+    return color;
+}
+
 vec3 compress_hdr(const vec3 val) {
     return clamp(val / HDR_FACTOR, vec3(0.0), vec3(HALF_MAX - 1.0));
 }
