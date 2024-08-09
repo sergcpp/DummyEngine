@@ -811,22 +811,24 @@ void Eng::SceneManager::RebuildLightTree() {
                 const auto bbox_min = Phy::Vec3f{bbox_min_ws[0], bbox_min_ws[1], bbox_min_ws[2]},
                            bbox_max = Phy::Vec3f{bbox_max_ws[0], bbox_max_ws[1], bbox_max_ws[2]};
 
-                temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
-                temp_indices.push_back(i / 3);
+                if (Phy::Distance2(bbox_min, bbox_max) > 1e-7f) {
+                    temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
+                    temp_indices.push_back(i / 3);
 
-                LightItem &tri_light = stochastic_lights.emplace_back();
-                tri_light.type_and_flags = LIGHT_TYPE_TRI;
-                if (bool(acc.vis_mask & AccStructure::eRayType::Diffuse)) {
-                    tri_light.type_and_flags |= LIGHT_DIFFUSE_BIT;
+                    LightItem &tri_light = stochastic_lights.emplace_back();
+                    tri_light.type_and_flags = LIGHT_TYPE_TRI;
+                    if (bool(acc.vis_mask & AccStructure::eRayType::Diffuse)) {
+                        tri_light.type_and_flags |= LIGHT_DIFFUSE_BIT;
+                    }
+                    if (bool(acc.vis_mask & AccStructure::eRayType::Specular)) {
+                        tri_light.type_and_flags |= LIGHT_SPECULAR_BIT;
+                    }
+                    tri_light.type_and_flags |= LIGHT_DOUBLESIDED_BIT;
+                    memcpy(tri_light.col, ValuePtr(front_mat->params[3]) + 1, 3 * sizeof(float));
+                    memcpy(tri_light.pos, ValuePtr(p0_ws), 3 * sizeof(float));
+                    memcpy(tri_light.u, ValuePtr(p1_ws), 3 * sizeof(float));
+                    memcpy(tri_light.v, ValuePtr(p2_ws), 3 * sizeof(float));
                 }
-                if (bool(acc.vis_mask & AccStructure::eRayType::Specular)) {
-                    tri_light.type_and_flags |= LIGHT_SPECULAR_BIT;
-                }
-                tri_light.type_and_flags |= LIGHT_DOUBLESIDED_BIT;
-                memcpy(tri_light.col, ValuePtr(front_mat->params[3]) + 1, 3 * sizeof(float));
-                memcpy(tri_light.pos, ValuePtr(p0_ws), 3 * sizeof(float));
-                memcpy(tri_light.u, ValuePtr(p1_ws), 3 * sizeof(float));
-                memcpy(tri_light.v, ValuePtr(p2_ws), 3 * sizeof(float));
             }
         }
     }

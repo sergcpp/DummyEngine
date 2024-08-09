@@ -290,6 +290,10 @@ int DummyApp::Run(int argc, char *argv[]) {
             } else if (strcmp(argv[i], "ultra") == 0) {
                 app_params.gfx_preset = eGfxPreset::Ultra;
             }
+        } else if (strcmp(argv[i], "--sun_dir") == 0 && (++i != argc)) {
+            app_params.sun_dir[0] = strtof(argv[i++], nullptr);
+            app_params.sun_dir[1] = strtof(argv[i++], nullptr);
+            app_params.sun_dir[2] = strtof(argv[i], nullptr);
         }
     }
 

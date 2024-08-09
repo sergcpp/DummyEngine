@@ -664,6 +664,12 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 
     sun_dir_ = scene_manager_->scene_data().env.sun_dir;
+    if (std::abs(viewer_->app_params.sun_dir[0]) > 0.0f || std::abs(viewer_->app_params.sun_dir[1]) > 0.0f ||
+        std::abs(viewer_->app_params.sun_dir[2]) > 0.0f) {
+        sun_dir_[0] = viewer_->app_params.sun_dir[0];
+        sun_dir_[1] = viewer_->app_params.sun_dir[1];
+        sun_dir_[2] = viewer_->app_params.sun_dir[2];
+    }
 }
 
 void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
@@ -1221,7 +1227,8 @@ void GSBaseState::InitScene_PT() {
 
     auto load_texture = [&](const Ren::Texture2D &tex, bool is_srgb = false, bool is_YCoCg = false) {
         if (tex.name() == "default_basecolor.dds" || tex.name() == "default_normalmap.dds" ||
-            tex.name() == "default_roughness.dds" || tex.name() == "default_metallic.dds") {
+            tex.name() == "default_roughness.dds" || tex.name() == "default_metallic.dds" ||
+            tex.name() == "default_opacity.dds") {
             return Ray::InvalidTextureHandle;
         }
         auto tex_it = loaded_textures.find(tex.name().c_str());
@@ -1352,6 +1359,9 @@ void GSBaseState::InitScene_PT() {
                         if (front_mat->textures.size() > 4) {
                             mat_desc.alpha_texture = load_texture(*front_mat->textures[4]);
                         }
+                        if (front_mat->textures.size() > 5) {
+                            mat_desc.emission_texture = load_texture(*front_mat->textures[5], true, true);
+                        }
                         mat_desc.normal_map = load_texture(*front_mat->textures[1]);
 
                         const Ray::MaterialHandle new_mat = ray_scene_->AddMaterial(mat_desc);
@@ -1394,6 +1404,9 @@ void GSBaseState::InitScene_PT() {
                         }
                         if (back_mat->textures.size() > 4) {
                             mat_desc.alpha_texture = load_texture(*back_mat->textures[4]);
+                        }
+                        if (back_mat->textures.size() > 5) {
+                            mat_desc.emission_texture = load_texture(*back_mat->textures[5], true, true);
                         }
                         mat_desc.normal_map = load_texture(*back_mat->textures[1]);
 

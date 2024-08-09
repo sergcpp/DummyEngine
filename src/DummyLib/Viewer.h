@@ -52,6 +52,7 @@ struct AppParams {
     int pt_max_samples = 128;
     std::optional<float> exposure;
     eGfxPreset gfx_preset = eGfxPreset::High;
+    float sun_dir[3] = {};
 #ifndef NDEBUG
     int validation_level = 1;
 #else

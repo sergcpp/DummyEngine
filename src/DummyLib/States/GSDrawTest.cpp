@@ -434,8 +434,6 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
 
     Eng::SceneData &scene = scene_manager_->scene_data();
 
-    sun_dir_ = scene.env.sun_dir;
-
     {
         char wolf_name[] = "wolf00";
 
