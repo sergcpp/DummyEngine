@@ -120,6 +120,16 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
+            // total irradiance
+            uniform_params.input_offset = 0;
+            uniform_params.output_offset = 0;
+            Ren::DispatchCompute(pi_probe_blend_[0], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
+                                 bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(),
+                                 ctx_.log());
+
+            // diffuse-only irradiance
+            uniform_params.input_offset = PROBE_VOLUME_RES;
+            uniform_params.output_offset = PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES;
             Ren::DispatchCompute(pi_probe_blend_[0], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
                                  bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(),
                                  ctx_.log());

@@ -59,7 +59,7 @@ void main() {
 
             const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-            vec4 ray_data = texelFetch(g_ray_data, ray_data_coords, 0);
+            vec4 ray_data = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, g_params.input_offset), 0);
 
 #if defined(RADIANCE)
             ray_data.xyz = decompress_hdr(ray_data.xyz);
@@ -90,7 +90,7 @@ void main() {
 
         result.rgb *= 1.0 / (2.0 * max(result.a, epsilon));
 
-        const vec4 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES));
+        const vec4 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID.xy, g_params.output_offset + gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES));
 
 #if defined(RADIANCE)
         // Stable 2-sample accumulation (approximate)
@@ -114,7 +114,7 @@ void main() {
         result = vec4(mix(result.rg, probe_irradiance_mean.rg, history_weight), 0.0, 1.0);
 #endif
 
-        imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES), result);
+        imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xy, g_params.output_offset + gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES), result);
     }
 
     groupMemoryBarrier(); barrier();
@@ -137,6 +137,6 @@ void main() {
         }
 
         const vec4 result = imageLoad(g_out_img, copy_coords);
-        imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xy, gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES), result);
+        imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xy, g_params.output_offset + gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES), result);
     }
 }

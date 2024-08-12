@@ -375,7 +375,7 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
 
 vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,
                                const vec3 world_position, const vec3 surface_bias, const vec3 direction,
-                               const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing) {
+                               const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool diffuse_only) {
     // Bias the world space position
     const vec3 biased_world_position = (world_position + surface_bias);
 
@@ -483,6 +483,9 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
 
         // Get the probe's texture coordinates
         probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_IRRADIANCE_RES - 2);
+        if (diffuse_only) {
+            probe_texture_uv.z += float(PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES);
+        }
 
         // Sample the probe's irradiance
         const vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).rgb;

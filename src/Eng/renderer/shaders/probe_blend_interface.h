@@ -8,8 +8,8 @@ INTERFACE_START(ProbeBlend)
 struct Params {
     int volume_index;
     float hysteresis;
-    int _pad1;
-    int _pad2;
+    int input_offset;
+    int output_offset;
     vec4 grid_origin;
     ivec4 grid_scroll;
     ivec4 grid_scroll_diff;
