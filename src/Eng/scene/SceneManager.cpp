@@ -595,7 +595,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
         PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
-    // ~16mb
+    // ~9.43mb
     scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES,
         PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES, PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRGBA16F,
