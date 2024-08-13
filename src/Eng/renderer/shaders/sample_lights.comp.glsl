@@ -1,8 +1,6 @@
-#if defined(HWRT)
-#version 460
-#extension GL_EXT_ray_query : require
-#else
 #version 430 core
+#if defined(HWRT)
+#extension GL_EXT_ray_query : require
 #endif
 #extension GL_EXT_control_flow_attributes : enable
 #if !defined(VULKAN)

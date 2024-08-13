@@ -160,12 +160,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
         }
     }
 
-#if defined(NDEBUG)
-    const bool EnableOptimization = true;
-#else
-    const bool EnableOptimization = false;
-#endif
-
     enum class eShaderOutput { GLSL, VK_SPIRV };
 
     for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::VK_SPIRV}) {
@@ -328,6 +322,9 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         config.remove_ctrl_flow_attributes = true;
                     } else if (sh_output == eShaderOutput::VK_SPIRV) {
                         config.flip_vertex_y = true;
+                    }
+                    if (use_spv14) {
+                        config.force_version = 460;
                     }
                     glslx::Fixup(config).Apply(ast.get());
 

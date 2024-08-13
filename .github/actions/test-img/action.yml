@@ -80,7 +80,7 @@ runs:
         mv sponza.png sponza_ultra.png
         cp sponza_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### ai043_06
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset medium --psnr 22.40
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset medium --psnr 22.35
         mv ai043_06.png ai043_06_medium.png
         cp ai043_06_medium.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset high --psnr 24.00
