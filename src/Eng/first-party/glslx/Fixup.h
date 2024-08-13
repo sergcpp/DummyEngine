@@ -9,6 +9,8 @@ struct fixup_config_t {
     bool remove_ctrl_flow_attributes = false;
     bool remove_inout_layout = false;
     bool flip_vertex_y = false;
+    int force_version = -1;
+    eVerType force_version_type = eVerType::Core;
 };
 
 class Fixup {
