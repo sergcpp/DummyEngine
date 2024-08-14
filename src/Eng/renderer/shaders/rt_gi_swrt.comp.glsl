@@ -267,34 +267,40 @@ void main() {
             const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
             const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
 
-            const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-            const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-            const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+            vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
+            vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
+            vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
 
             const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
             const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
             const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
             const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
-#if defined(BINDLESS_TEXTURES)
-            const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
-                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
-                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5))));
-            const vec3 direction_obj_space = (inv_transform * vec4(gi_ray_ws.xyz, 0.0)).xyz;
 
+            const mat4x3 world_from_object = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
+                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
+                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
+            p0.xyz = (world_from_object * vec4(p0.xyz, 1.0)).xyz;
+            p1.xyz = (world_from_object * vec4(p1.xyz, 1.0)).xyz;
+            p2.xyz = (world_from_object * vec4(p2.xyz, 1.0)).xyz;
+
+#if defined(BINDLESS_TEXTURES)
             const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), 0).xy;
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
             vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
             const float pa = length(tri_normal);
             tri_normal /= pa;
+            if (backfacing) {
+                tri_normal = -tri_normal;
+            }
 
             float cone_width = _cone_width + g_params.pixel_spread_angle * inter.t;
 
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
-            tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
+            tex_lod -= log2(abs(dot(gi_ray_ws.xyz, tri_normal)));
 
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, tex_lod)));
 #else
@@ -315,15 +321,7 @@ void main() {
             if (backfacing) {
                 N = -N;
             }
-            const mat4x3 world_from_object = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
-                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
-                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
             N = normalize((world_from_object * vec4(N, 0.0)).xyz);
-
-            if (backfacing) {
-                tri_normal = -tri_normal;
-            }
-            tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
             const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * inter.t;
             const vec3 I = -gi_ray_ws.xyz;

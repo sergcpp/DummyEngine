@@ -342,7 +342,7 @@ struct ViewState {
     Ren::Vec2i act_res, scr_res;
     float vertical_fov;
     float pixel_spread_angle;
-    int frame_index, volume_to_update, stochastic_lights_count;
+    int frame_index, volume_to_update, stochastic_lights_count, stochastic_lights_count_cache;
     Ren::Vec3f prev_cam_pos, prev_sun_dir;
     Ren::Mat4f clip_from_world, view_from_world, prev_view_from_world, prev_clip_from_world, down_buf_view_from_world,
         prev_clip_from_view;

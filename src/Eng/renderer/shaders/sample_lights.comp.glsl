@@ -169,7 +169,7 @@ void main() {
     // Simple area sampling
     const vec2 rand_light_uv = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_UV, px_hash, int(g_params.frame_index));
     const float r1 = sqrt(rand_light_uv.x), r2 = rand_light_uv.y;
-    const vec2 luv = uv1 * (1.0f - r1) + r1 * (uv2 * (1.0f - r2) + uv3 * r2);
+    const vec2 luv = uv1 * (1.0 - r1) + r1 * (uv2 * (1.0 - r2) + uv3 * r2);
     const vec3 lp = p1 * (1.0 - r1) + r1 * (p2 * (1.0 - r2) + p3 * r2);
 
 #if defined(BINDLESS_TEXTURES)

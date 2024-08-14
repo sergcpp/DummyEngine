@@ -271,9 +271,12 @@ void main() {
             const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
             const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-            const vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
-            const vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
-            const vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+            vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
+            vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
+            vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+            p0.xyz = (world_from_object * vec4(p0.xyz, 1.0)).xyz;
+            p1.xyz = (world_from_object * vec4(p1.xyz, 1.0)).xyz;
+            p2.xyz = (world_from_object * vec4(p2.xyz, 1.0)).xyz;
 
             const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
             const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
@@ -287,6 +290,9 @@ void main() {
             vec3 tri_normal = cross(p1 - p0, p2 - p0);
             const float pa = length(tri_normal);
             tri_normal /= pa;
+            if (backfacing) {
+                tri_normal = -tri_normal;
+            }
 
             total_ray_len += hit_t;
             const float cone_width = _cone_width + g_params.pixel_spread_angle * total_ray_len;
@@ -294,7 +300,7 @@ void main() {
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
-            tex_lod -= log2(abs(dot(rayQueryGetIntersectionObjectRayDirectionEXT(rq, true), tri_normal)));
+            tex_lod -= log2(abs(dot(refl_ray_ws, tri_normal)));
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 
             const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
@@ -309,11 +315,6 @@ void main() {
                 N = -N;
             }
             N = normalize((world_from_object * vec4(N, 0.0)).xyz);
-
-            if (backfacing) {
-                tri_normal = -tri_normal;
-            }
-            tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
             const vec3 P = ray_origin_ws.xyz + refl_ray_ws * hit_t;
             const vec3 I = -refl_ray_ws;

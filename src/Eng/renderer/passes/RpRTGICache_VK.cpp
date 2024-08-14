@@ -7,7 +7,10 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/rt_gi_cache_interface.h"
 
-void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
+void Eng::RpRTGICache::Execute_HWRT(RpBuilder &builder) {
+    Ren::Context &ctx = builder.ctx();
+    Ren::ApiContext *api_ctx = ctx.api_ctx();
+
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -25,16 +28,24 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
     RpAllocTex &distance_tex = builder.GetReadTexture(pass_data_->distance_tex);
     RpAllocTex &offset_tex = builder.GetReadTexture(pass_data_->offset_tex);
 
-    RpAllocTex &out_ray_data_tex = builder.GetWriteTexture(pass_data_->out_ray_data_tex);
+    RpAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr;
+    if (pass_data_->stoch_lights_buf) {
+        random_seq_buf = &builder.GetReadBuffer(pass_data_->random_seq);
+        stoch_lights_buf = &builder.GetReadBuffer(pass_data_->stoch_lights_buf);
 
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+        if (!random_seq_buf->tbos[0] || random_seq_buf->tbos[0]->params().size != random_seq_buf->ref->size()) {
+            random_seq_buf->tbos[0] = builder.ctx().CreateTexture1D(
+                "Random Seq Buf TBO", random_seq_buf->ref, Ren::eTexFormat::RawR32UI, 0, random_seq_buf->ref->size());
+        }
+    }
+
+    RpAllocTex &out_ray_data_tex = builder.GetWriteTexture(pass_data_->out_ray_data_tex);
 
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(pass_data_->tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const Ren::Binding bindings[] = {
+    Ren::SmallVector<Ren::Binding, 16> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::AccStruct, RTGICache::TLAS_SLOT, *acc_struct},
@@ -52,18 +63,26 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
         {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
         {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_ray_data_tex.arr}};
+    if (stoch_lights_buf) {
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->tbos[0]);
+        bindings.emplace_back(Ren::eBindTarget::SBufRO, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
+    }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_inline_.prog()->descr_set_layouts()[0], bindings,
-                                              ctx.default_descr_alloc(), ctx.log());
+    descr_sets[0] = Ren::PrepareDescriptorSet(
+        api_ctx, pi_rt_gi_cache_hwrt_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0], bindings,
+        ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_gi_cache_inline_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_gi_cache_inline_.layout(), 0, 2,
-                                     descr_sets, 0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                               pi_rt_gi_cache_hwrt_[stoch_lights_buf != nullptr].handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                     pi_rt_gi_cache_hwrt_[stoch_lights_buf != nullptr].layout(), 0, 2, descr_sets, 0,
+                                     nullptr);
 
     RTGICache::Params uniform_params = {};
     uniform_params.volume_index = view_state_->volume_to_update;
+    uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
     uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].origin[0],
                                             pass_data_->probe_volumes[view_state_->volume_to_update].origin[1],
                                             pass_data_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
@@ -79,14 +98,17 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_inline_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                                sizeof(uniform_params), &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_hwrt_[stoch_lights_buf != nullptr].layout(),
+                                VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatch(cmd_buf, (PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
                            PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES);
 }
 
 void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
+    Ren::Context &ctx = builder.ctx();
+    Ren::ApiContext *api_ctx = ctx.api_ctx();
+
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -108,10 +130,18 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
     RpAllocTex &distance_tex = builder.GetReadTexture(pass_data_->distance_tex);
     RpAllocTex &offset_tex = builder.GetReadTexture(pass_data_->offset_tex);
 
-    RpAllocTex &out_ray_data_tex = builder.GetWriteTexture(pass_data_->out_ray_data_tex);
+    RpAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr;
+    if (pass_data_->stoch_lights_buf) {
+        random_seq_buf = &builder.GetReadBuffer(pass_data_->random_seq);
+        stoch_lights_buf = &builder.GetReadBuffer(pass_data_->stoch_lights_buf);
 
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
+        if (!random_seq_buf->tbos[0] || random_seq_buf->tbos[0]->params().size != random_seq_buf->ref->size()) {
+            random_seq_buf->tbos[0] = builder.ctx().CreateTexture1D(
+                "Random Seq Buf TBO", random_seq_buf->ref, Ren::eTexFormat::RawR32UI, 0, random_seq_buf->ref->size());
+        }
+    }
+
+    RpAllocTex &out_ray_data_tex = builder.GetWriteTexture(pass_data_->out_ray_data_tex);
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
         vtx_buf1.tbos[0] =
@@ -156,7 +186,7 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const Ren::Binding bindings[] = {
+    Ren::SmallVector<Ren::Binding, 16> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGICache::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
@@ -178,18 +208,26 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
         {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
         {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_ray_data_tex.arr}};
+    if (stoch_lights_buf) {
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->tbos[0]);
+        bindings.emplace_back(Ren::eBindTarget::SBufRO, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
+    }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_swrt_.prog()->descr_set_layouts()[0], bindings,
-                                              ctx.default_descr_alloc(), ctx.log());
+    descr_sets[0] = Ren::PrepareDescriptorSet(
+        api_ctx, pi_rt_gi_cache_swrt_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0], bindings,
+        ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_gi_cache_swrt_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_gi_cache_swrt_.layout(), 0, 2,
-                                     descr_sets, 0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                               pi_rt_gi_cache_swrt_[stoch_lights_buf != nullptr].handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                     pi_rt_gi_cache_swrt_[stoch_lights_buf != nullptr].layout(), 0, 2, descr_sets, 0,
+                                     nullptr);
 
     RTGICache::Params uniform_params = {};
     uniform_params.volume_index = view_state_->volume_to_update;
+    uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
     uniform_params.grid_origin = Ren::Vec4f(pass_data_->probe_volumes[view_state_->volume_to_update].origin[0],
                                             pass_data_->probe_volumes[view_state_->volume_to_update].origin[1],
                                             pass_data_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
@@ -205,8 +243,8 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                                sizeof(uniform_params), &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_swrt_[stoch_lights_buf != nullptr].layout(),
+                                VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatch(cmd_buf, (PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
                            PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES);
@@ -218,16 +256,30 @@ void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             Ren::ProgramRef rt_gi_cache_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_hwrt.comp.glsl");
             assert(rt_gi_cache_inline_prog->ready());
 
-            if (!pi_rt_gi_cache_inline_.Init(ctx.api_ctx(), std::move(rt_gi_cache_inline_prog), ctx.log())) {
-                ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
+            if (!pi_rt_gi_cache_hwrt_[0].Init(ctx.api_ctx(), std::move(rt_gi_cache_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTGICache: Failed to initialize pipeline!");
+            }
+
+            rt_gi_cache_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_hwrt.comp.glsl@STOCH_LIGHTS");
+            assert(rt_gi_cache_inline_prog->ready());
+
+            if (!pi_rt_gi_cache_hwrt_[1].Init(ctx.api_ctx(), std::move(rt_gi_cache_inline_prog), ctx.log())) {
+                ctx.log()->Error("RpRTGICache: Failed to initialize pipeline!");
             }
         }
 
         Ren::ProgramRef rt_gi_cache_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_swrt.comp.glsl");
         assert(rt_gi_cache_swrt_prog->ready());
 
-        if (!pi_rt_gi_cache_swrt_.Init(ctx.api_ctx(), std::move(rt_gi_cache_swrt_prog), ctx.log())) {
-            ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
+        if (!pi_rt_gi_cache_swrt_[0].Init(ctx.api_ctx(), std::move(rt_gi_cache_swrt_prog), ctx.log())) {
+            ctx.log()->Error("RpRTGICache: Failed to initialize pipeline!");
+        }
+
+        rt_gi_cache_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_swrt.comp.glsl@STOCH_LIGHTS");
+        assert(rt_gi_cache_swrt_prog->ready());
+
+        if (!pi_rt_gi_cache_swrt_[1].Init(ctx.api_ctx(), std::move(rt_gi_cache_swrt_prog), ctx.log())) {
+            ctx.log()->Error("RpRTGICache: Failed to initialize pipeline!");
         }
 
         initialized = true;

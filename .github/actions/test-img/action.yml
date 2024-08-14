@@ -50,17 +50,20 @@ runs:
         mv staircase.png staircase_pt.png
         cp staircase_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### Staircase (mesh lights)
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset high --psnr 24.50
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset medium --psnr 24.90
+        mv staircase2.png staircase2_medium.png
+        cp staircase2_medium.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset high --psnr 26.10
         mv staircase2.png staircase2_high.png
         cp staircase2_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset ultra --psnr 25.05
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset ultra --psnr 27.05
         mv staircase2.png staircase2_ultra.png
         cp staircase2_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --pt --psnr 35.95
         mv staircase2.png staircase2_pt.png
         cp staircase2_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### Bistro
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.40
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.35
         mv bistro.png bistro_medium.png
         cp bistro_medium.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset high --psnr 22.05
@@ -80,7 +83,7 @@ runs:
         mv sponza.png sponza_ultra.png
         cp sponza_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### ai043_06
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset medium --psnr 22.35
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset medium --psnr 22.30
         mv ai043_06.png ai043_06_medium.png
         cp ai043_06_medium.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 936 --preset high --psnr 24.00

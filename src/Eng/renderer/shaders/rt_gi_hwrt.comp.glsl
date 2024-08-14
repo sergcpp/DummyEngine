@@ -145,8 +145,6 @@ void main() {
     vec3 throughput = vec3(1.0);
 
     for (int j = 0; j < NUM_BOUNCES; ++j) {
-        vec3 tri_normal, albedo;
-
         rayQueryEXT rq;
         rayQueryInitializeEXT(rq,                       // rayQuery
                               g_tlas,                   // topLevel
@@ -242,9 +240,12 @@ void main() {
             const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
             const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-            const vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
-            const vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
-            const vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+            vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
+            vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
+            vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+            p0.xyz = (world_from_object * vec4(p0.xyz, 1.0)).xyz;
+            p1.xyz = (world_from_object * vec4(p1.xyz, 1.0)).xyz;
+            p2.xyz = (world_from_object * vec4(p2.xyz, 1.0)).xyz;
 
             const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
             const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
@@ -255,16 +256,19 @@ void main() {
             const vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
-            tri_normal = cross(p1 - p0, p2 - p0);
+            vec3 tri_normal = cross(p1 - p0, p2 - p0);
             float pa = length(tri_normal);
             tri_normal /= pa;
+            if (backfacing) {
+                tri_normal = -tri_normal;
+            }
 
             float cone_width = _cone_width + g_params.pixel_spread_angle * hit_t;
 
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
-            tex_lod -= log2(abs(dot(rayQueryGetIntersectionObjectRayDirectionEXT(rq, true), tri_normal)));
+            tex_lod -= log2(abs(dot(gi_ray_ws, tri_normal)));
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 
             const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
@@ -279,11 +283,6 @@ void main() {
                 N = -N;
             }
             N = normalize((world_from_object * vec4(N, 0.0)).xyz);
-
-            if (backfacing) {
-                tri_normal = -tri_normal;
-            }
-            tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
             const vec3 P = ray_origin_ws.xyz + gi_ray_ws * hit_t;
             const vec3 I = -gi_ray_ws;

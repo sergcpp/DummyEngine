@@ -86,7 +86,8 @@ bool Eng::Renderer::InitPipelines() {
 
     // GI Cache
     success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend.comp.glsl@RADIANCE");
-    success &= init_pipeline(pi_probe_blend_[1], "internal/probe_blend.comp.glsl@DISTANCE");
+    success &= init_pipeline(pi_probe_blend_[1], "internal/probe_blend.comp.glsl@RADIANCE;STOCH_LIGHTS");
+    success &= init_pipeline(pi_probe_blend_[2], "internal/probe_blend.comp.glsl@DISTANCE");
     success &= init_pipeline(pi_probe_relocate_[0], "internal/probe_relocate.comp.glsl");
     success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate.comp.glsl@RESET");
     success &= init_pipeline(pi_probe_classify_[0], "internal/probe_classify.comp.glsl");

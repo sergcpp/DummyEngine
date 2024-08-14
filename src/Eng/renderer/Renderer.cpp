@@ -659,10 +659,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         2.0f * std::tan(0.5f * view_state_.vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_.scr_res[1]));
     view_state_.frame_index = list.frame_index;
     view_state_.volume_to_update = list.volume_to_update;
+    view_state_.stochastic_lights_count = view_state_.stochastic_lights_count_cache = 0;
+    if (persistent_data.stoch_lights_buf) {
+        view_state_.stochastic_lights_count_cache = persistent_data.stoch_lights_buf->size() / sizeof(LightItem);
+    }
     if (persistent_data.stoch_lights_buf && settings.gi_quality > eGIQuality::Medium) {
         view_state_.stochastic_lights_count = persistent_data.stoch_lights_buf->size() / sizeof(LightItem);
-    } else {
-        view_state_.stochastic_lights_count = 0;
     }
 
     view_state_.env_generation = list.env.generation;

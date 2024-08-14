@@ -846,6 +846,8 @@ void Eng::SceneManager::RebuildLightTree() {
         }
     }
 
+    scene_data_.persistent_data.stoch_lights_buf = {};
+
     if (!stochastic_lights.empty()) {
         scene_data_.persistent_data.stoch_lights_buf = ren_ctx_.LoadBuffer(
             "Stochastic Lights Buf", Ren::eBufType::Texture, uint32_t(stochastic_lights.size() * sizeof(LightItem)));

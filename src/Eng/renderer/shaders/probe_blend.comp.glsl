@@ -6,6 +6,11 @@
 #include "probe_blend_interface.h"
 
 #pragma multi_compile RADIANCE DISTANCE
+#pragma multi_compile _ STOCH_LIGHTS
+
+#if defined(DISTANCE) && defined(STOCH_LIGHTS)
+    #pragma dont_compile
+#endif
 
 #if defined(RADIANCE)
     const int TEXEL_RES = PROBE_IRRADIANCE_RES;
@@ -55,7 +60,7 @@ void main() {
         for (int i = PROBE_FIXED_RAYS_COUNT; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
             const vec3 ray_dir = get_probe_ray_dir(i, g_params.quat_rot);
 
-            float weight = clamp(dot(probe_ray_dir, ray_dir), 0.0, 1.0);
+            float weight = saturate(dot(probe_ray_dir, ray_dir));
 
             const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
@@ -72,6 +77,7 @@ void main() {
             }
 
             result += vec4(weight * ray_data.rgb, weight);
+
 #elif defined(DISTANCE)
             const float max_ray_distance = length(g_params.grid_spacing) * 1.5;
             float ray_distance = min(abs(ray_data.a), max_ray_distance);
@@ -89,6 +95,21 @@ void main() {
         epsilon *= 1e-9;
 
         result.rgb *= 1.0 / (2.0 * max(result.a, epsilon));
+
+        vec4 direct_light = vec4(0.0);
+#if defined(STOCH_LIGHTS)
+        for (int i = 0; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
+            const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
+
+            const vec3 light_color = decompress_hdr(texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES), 0).xyz);
+            const vec3 light_dir = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 3 * PROBE_VOLUME_RES), 0).xyz;
+
+            const float weight = saturate(dot(probe_ray_dir, light_dir));
+
+            direct_light += vec4(weight * light_color, 1.0);
+        }
+        result.rgb += direct_light.xyz / (2.0 * direct_light.w);
+#endif
 
         const vec4 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID.xy, g_params.output_offset + gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES));
 

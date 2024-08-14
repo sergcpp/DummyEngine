@@ -590,10 +590,10 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
 
     // TODO: make this temporary FG resource
-    // ~8mb
+    // ~16mb
     scene_data_.persistent_data.probe_ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
-        2 * PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        4 * PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
     // ~18.87mb
     scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
