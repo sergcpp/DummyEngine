@@ -8,6 +8,9 @@ textures:
     - default_basecolor.tex
     - default_normalmap.dds
     - default_roughness.tex
+    - default_metallic.tex
+    - default_opacity.tex
+    - mat_test/emissive_stripes.tex
 params:
     - 0.0 0.0 0.0 0.5      # base color, roughness
     - 0.0 0.0 0.0 0.0      # sheen, sheen_tint, specular, spec_tint

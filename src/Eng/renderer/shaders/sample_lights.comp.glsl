@@ -148,7 +148,7 @@ void main() {
 
     //
 
-    const light_item_t litem = FetchLightItem(g_lights_buf, li);
+    light_item_t litem = FetchLightItem(g_lights_buf, li);
     const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
     const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
     const bool is_doublesided = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DOUBLESIDED_BIT) != 0;
@@ -159,6 +159,9 @@ void main() {
     const vec3 p1 = litem.pos_and_radius.xyz,
                p2 = litem.u_and_reg.xyz,
                p3 = litem.v_and_blend.xyz;
+    const vec2 uv1 = vec2(litem.pos_and_radius.w, litem.dir_and_spot.x),
+               uv2 = litem.dir_and_spot.yz,
+               uv3 = vec2(litem.dir_and_spot.w, litem.v_and_blend.w);
     const vec3 e1 = p2 - p1, e2 = p3 - p1;
     float light_fwd_len;
     vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
@@ -166,8 +169,12 @@ void main() {
     // Simple area sampling
     const vec2 rand_light_uv = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_UV, px_hash, int(g_params.frame_index));
     const float r1 = sqrt(rand_light_uv.x), r2 = rand_light_uv.y;
-    //luvs = uv1 * (1.0f - r1) + r1 * (uv2 * (1.0f - r2) + uv3 * r2);
+    const vec2 luv = uv1 * (1.0f - r1) + r1 * (uv2 * (1.0f - r2) + uv3 * r2);
     const vec3 lp = p1 * (1.0 - r1) + r1 * (p2 * (1.0 - r2) + p3 * r2);
+
+#if defined(BINDLESS_TEXTURES)
+    litem.col_and_type.xyz *= YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0));
+#endif
 
     float ls_dist;
     const vec3 L = normalize_len(lp - P, ls_dist);

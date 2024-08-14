@@ -801,6 +801,10 @@ void Eng::SceneManager::RebuildLightTree() {
                                  p1 = Phy::MakeVec3(&positions[i1 * VertexStride]),
                                  p2 = Phy::MakeVec3(&positions[i2 * VertexStride]);
 
+                const Phy::Vec2f uv0 = Phy::MakeVec2(&positions[i0 * VertexStride + 9]),
+                                 uv1 = Phy::MakeVec2(&positions[i1 * VertexStride + 9]),
+                                 uv2 = Phy::MakeVec2(&positions[i2 * VertexStride + 9]);
+
                 const Ren::Vec4f p0_ws = tr.world_from_object * Ren::Vec4f{p0[0], p0[1], p0[2], 1.0f};
                 const Ren::Vec4f p1_ws = tr.world_from_object * Ren::Vec4f{p1[0], p1[1], p1[2], 1.0f};
                 const Ren::Vec4f p2_ws = tr.world_from_object * Ren::Vec4f{p2[0], p2[1], p2[2], 1.0f};
@@ -828,6 +832,15 @@ void Eng::SceneManager::RebuildLightTree() {
                     memcpy(tri_light.pos, ValuePtr(p0_ws), 3 * sizeof(float));
                     memcpy(tri_light.u, ValuePtr(p1_ws), 3 * sizeof(float));
                     memcpy(tri_light.v, ValuePtr(p2_ws), 3 * sizeof(float));
+                    // store UVs
+                    tri_light.radius = uv0[0];
+                    tri_light.dir[0] = uv0[1];
+                    tri_light.dir[1] = uv1[0];
+                    tri_light.dir[2] = uv1[1];
+                    tri_light.spot = uv2[0];
+                    tri_light.blend = uv2[1];
+                    // use as emissive texture index
+                    tri_light.shadowreg_index = front_mat.index() * MAX_TEX_PER_MATERIAL + MAT_TEX_EMISSION;
                 }
             }
         }
