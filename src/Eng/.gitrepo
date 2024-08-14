@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = probe_specular
-	commit = 68417e698e58f82975b72c7854c06375be34a92a
+	branch = textured_emissive
+	commit = a631a44a81df76cf9625e9a02f7b1717136c445f
 	method = merge
 	cmdver = 0.4.6
-	parent = 60aab40f652a6c959b165f441b728e0fe23f2839
+	parent = 5381bc7a0a0d345ea8a33ce70c3a86b69c3eaf6e
