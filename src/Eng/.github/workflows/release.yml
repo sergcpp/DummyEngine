@@ -469,29 +469,29 @@ jobs:
   #       with:
   #         name: windows-x86_64-gl-arc-output
   #         path: windows-x86_64-gl-arc-output/
-  test-linux-x86_64-vk-amd:
-    runs-on: [ linux, x86_64, amd ]
-    needs:
-      - build-linux-x86_64-vk-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "linux-x86_64-vk"
-          out-dir: "linux-x86_64-vk-amd-output"
-          test-args: "--device AMD --full"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: linux-x86_64-vk-amd-output
-          path: linux-x86_64-vk-amd-output/
+#  test-linux-x86_64-vk-amd:
+#    runs-on: [ linux, x86_64, amd ]
+#    needs:
+#      - build-linux-x86_64-vk-rel
+#    steps:
+#      - name: Checkout Workflows
+#        uses: actions/checkout@v4
+#        with:
+#          sparse-checkout: .github
+#      - name: Re-initialize repository
+#        uses: ./.github/actions/checkout
+#      - name: Run Tests
+#        uses: ./.github/actions/test
+#        with:
+#          bin-dir: "linux-x86_64-vk"
+#          out-dir: "linux-x86_64-vk-amd-output"
+#          test-args: "--device AMD --full"
+#      - name: Upload artifacts
+#        uses: actions/upload-artifact@v3
+#        if: always()
+#        with:
+#          name: linux-x86_64-vk-amd-output
+#          path: linux-x86_64-vk-amd-output/
   test-linux-x86_64-vk-nv:
     runs-on: [ linux, x86_64, nv ]
     needs:

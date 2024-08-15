@@ -362,7 +362,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GITraceSS::Params uniform_params;
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
-            uniform_params.lights_count = float(view_state_.stochastic_lights_count);
 
             Ren::DispatchComputeIndirect(pi_gi_trace_ss_, *indir_args_buf.ref, 0, bindings, &uniform_params,
                                          sizeof(uniform_params), builder.ctx().default_descr_alloc(),
@@ -436,6 +435,13 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->cells_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_cells_res, stage);
             data->items_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_items_res, stage);
 
+            if (persistent_data.stoch_lights_buf) {
+                data->stoch_lights_buf =
+                    rt_gi.AddStorageReadonlyInput(persistent_data.stoch_lights_buf, Stg::ComputeShader);
+                data->light_nodes_buf =
+                    rt_gi.AddStorageReadonlyInput(persistent_data.stoch_lights_nodes_buf, Stg::ComputeShader);
+            }
+
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
                 data->swrt.rt_blas_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
@@ -448,11 +454,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 #endif
             }
 
-            if (settings.gi_quality != eGIQuality::Off) {
-                data->irradiance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
-                data->distance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_distance, stage);
-                data->offset_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_offset, stage);
-            }
+            data->irradiance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
+            data->distance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_distance, stage);
+            data->offset_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_offset, stage);
 
             data->dummy_black = rt_gi.AddTextureInput(dummy_black_, stage);
 
@@ -473,6 +477,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             if (persistent_data.stoch_lights_buf) {
                 data->lights_buf =
                     sample_lights.AddStorageReadonlyInput(persistent_data.stoch_lights_buf, Stg::ComputeShader);
+                data->nodes_buf =
+                    sample_lights.AddStorageReadonlyInput(persistent_data.stoch_lights_nodes_buf, Stg::ComputeShader);
             }
 
             data->geo_data = sample_lights.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);

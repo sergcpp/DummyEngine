@@ -30,7 +30,10 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
     const int prim_count = int(prim_indices.size());
     const bbox_t whole_box = {bbox_min, bbox_max};
 
-    float res_sah = s.oversplit_threshold * whole_box.surface_area() * prim_count;
+    float res_sah = FLT_MAX;
+    if (s.oversplit_threshold > 0.0f) {
+        res_sah = s.oversplit_threshold * whole_box.surface_area() * prim_count;
+    }
     int div_axis = -1;
     uint32_t div_index = 0;
     bbox_t res_left_bounds, res_right_bounds;
@@ -117,45 +120,50 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
                 {res_right_bounds.min, res_right_bounds.max}};
     } else {
         SmallVector<uint32_t, 1024> axis_lists[3];
-        for (int axis = 0; axis < 3; axis++) {
-            axis_lists[axis].reserve(prim_count);
-        }
 
-        for (int i = 0; i < prim_count; i++) {
-            axis_lists[0].push_back(i);
-            axis_lists[1].push_back(i);
-            axis_lists[2].push_back(i);
-        }
-
-        SmallVector<bbox_t, 1024> right_bounds(prim_count);
-
-        for (int axis = 0; axis < 3; axis++) {
-            auto &list = axis_lists[axis];
-
-            std::sort(list.begin(), list.end(), [axis, primitives, &prim_indices](uint32_t p1, uint32_t p2) -> bool {
-                return primitives[prim_indices[p1]].bbox_max[axis] < primitives[prim_indices[p2]].bbox_max[axis];
-            });
-
-            bbox_t cur_right_bounds;
-            for (size_t i = list.size() - 1; i > 0; i--) {
-                cur_right_bounds.min = Min(cur_right_bounds.min, primitives[prim_indices[list[i]]].bbox_min);
-                cur_right_bounds.max = Max(cur_right_bounds.max, primitives[prim_indices[list[i]]].bbox_max);
-                right_bounds[i - 1] = cur_right_bounds;
+        if (prim_count > s.min_primitives_in_leaf) {
+            for (int axis = 0; axis < 3; axis++) {
+                axis_lists[axis].reserve(prim_count);
             }
 
-            bbox_t left_bounds;
-            for (size_t i = 1; i < list.size(); i++) {
-                left_bounds.min = Min(left_bounds.min, primitives[prim_indices[list[i - 1]]].bbox_min);
-                left_bounds.max = Max(left_bounds.max, primitives[prim_indices[list[i - 1]]].bbox_max);
+            for (int i = 0; i < prim_count; i++) {
+                axis_lists[0].push_back(i);
+                axis_lists[1].push_back(i);
+                axis_lists[2].push_back(i);
+            }
 
-                const float sah = s.node_traversal_cost * whole_box.surface_area() + left_bounds.surface_area() * i +
-                                  right_bounds[i - 1].surface_area() * (list.size() - i);
-                if (sah < res_sah) {
-                    res_sah = sah;
-                    div_axis = axis;
-                    div_index = uint32_t(i);
-                    res_left_bounds = left_bounds;
-                    res_right_bounds = right_bounds[i - 1];
+            SmallVector<bbox_t, 1024> right_bounds(prim_count);
+
+            for (int axis = 0; axis < 3; axis++) {
+                auto &list = axis_lists[axis];
+
+                std::sort(list.begin(), list.end(),
+                          [axis, primitives, &prim_indices](uint32_t p1, uint32_t p2) -> bool {
+                              return primitives[prim_indices[p1]].bbox_max[axis] <
+                                     primitives[prim_indices[p2]].bbox_max[axis];
+                          });
+
+                bbox_t cur_right_bounds;
+                for (size_t i = list.size() - 1; i > 0; i--) {
+                    cur_right_bounds.min = Min(cur_right_bounds.min, primitives[prim_indices[list[i]]].bbox_min);
+                    cur_right_bounds.max = Max(cur_right_bounds.max, primitives[prim_indices[list[i]]].bbox_max);
+                    right_bounds[i - 1] = cur_right_bounds;
+                }
+
+                bbox_t left_bounds;
+                for (size_t i = 1; i < list.size(); i++) {
+                    left_bounds.min = Min(left_bounds.min, primitives[prim_indices[list[i - 1]]].bbox_min);
+                    left_bounds.max = Max(left_bounds.max, primitives[prim_indices[list[i - 1]]].bbox_max);
+
+                    const float sah =
+                        left_bounds.surface_area() * i + right_bounds[i - 1].surface_area() * (list.size() - i);
+                    if (sah < res_sah) {
+                        res_sah = sah;
+                        div_axis = axis;
+                        div_index = uint32_t(i);
+                        res_left_bounds = left_bounds;
+                        res_right_bounds = right_bounds[i - 1];
+                    }
                 }
             }
         }

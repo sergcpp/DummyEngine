@@ -7,13 +7,6 @@
 #include <numeric>
 #include <regex>
 
-#if defined(__linux__) || defined(__APPLE__)
-#include <sys/stat.h>
-#endif
-
-#undef max
-#undef min
-
 #include <Net/hash/Crc32.h>
 #include <Net/hash/murmur.h>
 // #include <Ray/internal/TextureSplitter.h>
@@ -30,7 +23,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 18;
+const uint32_t AssetsBuildVersion = 19;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -1236,10 +1229,10 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
             out_f.write((char *)&total_indices[0], sizeof(uint32_t) * total_indices.size());
 
             for (const std::string &str : materials) {
-                char name[64] = {};
-                strcpy(name, str.c_str());
-                strcat(name, ".mat");
-                out_f.write(name, sizeof(name));
+                std::string name = str;
+                name += ".mat";
+                name.resize(64);
+                out_f.write(name.c_str(), 64);
             }
 
             out_f.write((char *)&total_chunks[0], sizeof(MeshChunk) * total_chunks.size());

@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "--validation_level") == 0 || strcmp(argv[i], "-vl") == 0) {
             validation_level = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--nohwrt") == 0) {
-            // nohwrt = true;
+            nohwrt = true;
         } else if (strcmp(argv[i], "--full") == 0) {
             full = true;
         }

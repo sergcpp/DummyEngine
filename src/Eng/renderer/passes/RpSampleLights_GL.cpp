@@ -41,6 +41,7 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
     }
 
     RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
+    RpAllocBuf &nodes_buf = builder.GetReadBuffer(pass_data_->nodes_buf);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -52,6 +53,10 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
     if (!lights_buf.tbos[0] || lights_buf.tbos[0]->params().size != lights_buf.ref->size()) {
         lights_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", lights_buf.ref,
                                                            Ren::eTexFormat::RawRGBA32F, 0, lights_buf.ref->size());
+    }
+    if (!nodes_buf.tbos[0] || nodes_buf.tbos[0]->params().size != nodes_buf.ref->size()) {
+        nodes_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
+                                                          Ren::eTexFormat::RawRGBA32F, 0, nodes_buf.ref->size());
     }
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
@@ -95,6 +100,7 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::UTBuf, SampleLights::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::LIGHTS_BUF_SLOT, *lights_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, SampleLights::LIGHT_NODES_BUF_SLOT, *nodes_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
@@ -120,6 +126,6 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
     uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(LightItem));
     uniform_params.frame_index = view_state_->frame_index;
 
-    Ren::DispatchCompute(pi_sample_lights_swrt_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+    Ren::DispatchCompute(pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                          ctx.default_descr_alloc(), ctx.log());
 }

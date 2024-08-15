@@ -32,6 +32,9 @@ struct RpRTGIData {
     RpResRef indir_args;
     RpResRef tlas_buf; // fake read for now
 
+    RpResRef stoch_lights_buf;
+    RpResRef light_nodes_buf;
+
     RpResRef irradiance_tex;
     RpResRef distance_tex;
     RpResRef offset_tex;
@@ -53,12 +56,10 @@ struct RpRTGIData {
 };
 
 class RpRTGI : public RpExecutor {
-    bool initialized = false;
+    bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_rt_gi_;
-    Ren::Pipeline pi_rt_gi_inline_[2], pi_rt_gi_2bounce_inline_[2];
-    Ren::Pipeline pi_rt_gi_swrt_[2], pi_rt_gi_2bounce_swrt_[2];
+    Ren::Pipeline pi_rt_gi_[2], pi_rt_gi_2bounce_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
@@ -68,9 +69,7 @@ class RpRTGI : public RpExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT_Pipeline(RpBuilder &builder);
-    void Execute_HWRT_Inline(RpBuilder &builder);
-
+    void Execute_HWRT(RpBuilder &builder);
     void Execute_SWRT(RpBuilder &builder);
 
   public:

@@ -42,12 +42,11 @@ layout(binding = BIND_MAT_TEX4) uniform sampler2D g_pp_pos_tex;
 layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #endif
 
-layout(location = 0) out vec3 g_vtx_pos;
-layout(location = 1) out vec2 g_vtx_uvs;
+layout(location = 0) out vec2 g_vtx_uvs;
 #if !defined(NO_BINDLESS)
-    layout(location = 4) out flat TEX_HANDLE g_emission_tex;
+    layout(location = 1) out flat TEX_HANDLE g_emission_tex;
 #endif // !NO_BINDLESS
-layout(location = 5) out flat vec4 g_mat_params2;
+layout(location = 2) out flat vec4 g_mat_params2;
 
 invariant gl_Position;
 
@@ -81,7 +80,6 @@ void main() {
 
     const vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
 
-    g_vtx_pos = vtx_pos_ws;
     g_vtx_uvs = g_in_vtx_uvs0;
 
 #if !defined(NO_BINDLESS)

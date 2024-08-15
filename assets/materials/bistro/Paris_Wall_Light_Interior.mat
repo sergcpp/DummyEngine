@@ -2,7 +2,6 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
-    - two_sided
     - emissive
 textures:
     - bistro/Paris_Wall_Light_Interior_BaseColor.tex
@@ -16,3 +15,15 @@ params:
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
     - 1.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
     - 0.0 10.0 10.0 10.0    # transparency, ior/emission color
+---
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+textures:
+    - default_basecolor.tex
+    - default_normalmap.dds
+    - default_roughness.tex
+params:
+    - 0.0 0.0 0.0 0.0      # base color, roughness
+    - 0.0 0.0 0.0 0.0      # sheen, sheen_tint, specular, spec_tint
+    - 0.0 0.0 0.0 0.0      # metallic, transmission, clearcoat, clearcoat_roughness

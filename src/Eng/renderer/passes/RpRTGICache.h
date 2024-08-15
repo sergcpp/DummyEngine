@@ -15,8 +15,6 @@ struct RpRTGICacheData {
     RpResRef lights_buf;
     RpResRef shadowmap_tex;
     RpResRef ltc_luts_tex;
-    RpResRef random_seq;
-    RpResRef stoch_lights_buf;
     RpResRef cells_buf;
     RpResRef items_buf;
     RpResRef tlas_buf; // fake read for now
@@ -36,6 +34,10 @@ struct RpRTGICacheData {
     RpResRef distance_tex;
     RpResRef offset_tex;
 
+    RpResRef random_seq;
+    RpResRef stoch_lights_buf;
+    RpResRef light_nodes_buf;
+
     RpResRef out_ray_data_tex;
 
     const ViewState *view_state = nullptr;
@@ -43,11 +45,10 @@ struct RpRTGICacheData {
 };
 
 class RpRTGICache : public RpExecutor {
-    bool initialized = false;
+    bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_rt_gi_cache_hwrt_[2];
-    Ren::Pipeline pi_rt_gi_cache_swrt_[2];
+    Ren::Pipeline pi_rt_gi_cache_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

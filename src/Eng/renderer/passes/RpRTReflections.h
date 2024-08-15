@@ -36,6 +36,9 @@ struct RpRTReflectionsData {
     RpResRef distance_tex;
     RpResRef offset_tex;
 
+    RpResRef stoch_lights_buf;
+    RpResRef light_nodes_buf;
+
     RpResRef oit_depth_buf;
 
     const Ren::IAccStructure *tlas = nullptr;
@@ -56,33 +59,31 @@ struct RpRTReflectionsData {
 };
 
 class RpRTReflections : public RpExecutor {
-    bool initialized = false;
+    bool layered_ = false;
+    bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_rt_reflections_;
-    Ren::Pipeline pi_rt_reflections_inline_[2], pi_rt_reflections_4bounce_inline_[2];
-    Ren::Pipeline pi_rt_reflections_swrt_[4], pi_rt_reflections_4bounce_swrt_[2];
+    Ren::Pipeline pi_rt_reflections_[3], pi_rt_reflections_4bounce_[3];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const RpRTReflectionsData *pass_data_;
+    const RpRTReflectionsData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void Execute_HWRT_Pipeline(RpBuilder &builder);
-    void Execute_HWRT_Inline(RpBuilder &builder);
-
+    void Execute_HWRT(RpBuilder &builder);
     void Execute_SWRT(RpBuilder &builder);
 
   public:
+    explicit RpRTReflections(const bool layered) : layered_(layered) {}
+
     void Setup(RpBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,
                const RpRTReflectionsData *pass_data) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
         pass_data_ = pass_data;
-        initialized = false;
     }
 
     void Execute(RpBuilder &builder) override;

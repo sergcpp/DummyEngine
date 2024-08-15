@@ -7,7 +7,6 @@ INTERFACE_START(GITraceSS)
 
 struct Params {
     uvec4 resolution;
-    float lights_count;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

@@ -10,75 +10,7 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/rt_reflections_interface.h"
 
-void Eng::RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
-    RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
-    RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
-    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
-    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
-    RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
-    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
-    RpAllocTex &noise_tex = builder.GetReadTexture(pass_data_->noise_tex);
-    RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
-    RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
-    RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
-    RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(pass_data_->ray_counter);
-    RpAllocBuf &ray_list_buf = builder.GetReadBuffer(pass_data_->ray_list);
-    RpAllocBuf &indir_args_buf = builder.GetReadBuffer(pass_data_->indir_args);
-    RpAllocBuf &tlas_buf = builder.GetReadBuffer(pass_data_->tlas_buf);
-    RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
-    RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
-    RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
-
-    RpAllocTex &out_refl_tex = builder.GetWriteTexture(pass_data_->out_refl_tex[0]);
-
-    Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
-
-    auto *acc_struct = static_cast<const Ren::AccStructureVK *>(pass_data_->tlas);
-
-    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
-
-    const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
-        {Ren::eBindTarget::SBufRO, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
-        {Ren::eBindTarget::AccStruct, RTReflections::TLAS_SLOT, *acc_struct},
-        {Ren::eBindTarget::SBufRO, RTReflections::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-        {Ren::eBindTarget::SBufRO, RTReflections::MATERIAL_BUF_SLOT, *materials_buf.ref},
-        {Ren::eBindTarget::SBufRO, RTReflections::VTX_BUF1_SLOT, *vtx_buf1.ref},
-        {Ren::eBindTarget::SBufRO, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.ref},
-        {Ren::eBindTarget::SBufRO, RTReflections::NDX_BUF_SLOT, *ndx_buf.ref},
-        {Ren::eBindTarget::SBufRO, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref}};
-
-    VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_reflections_.prog()->descr_set_layouts()[0], bindings,
-                                              ctx.default_descr_alloc(), ctx.log());
-    descr_sets[1] = bindless_tex_->rt_textures_descr_set;
-
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_rt_reflections_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_rt_reflections_.layout(), 0, 2,
-                                     descr_sets, 0, nullptr);
-
-    RTReflections::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
-    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
-
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_reflections_.layout(),
-                                VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
-                                sizeof(uniform_params), &uniform_params);
-
-    api_ctx->vkCmdTraceRaysIndirectKHR(cmd_buf, pi_rt_reflections_.rgen_table(), pi_rt_reflections_.miss_table(),
-                                       pi_rt_reflections_.hit_table(), pi_rt_reflections_.call_table(),
-                                       indir_args_buf.ref->vk_device_address());
-}
-
-void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
+void Eng::RpRTReflections::Execute_HWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -104,6 +36,23 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
         irradiance_tex = &builder.GetReadTexture(pass_data_->irradiance_tex);
         distance_tex = &builder.GetReadTexture(pass_data_->distance_tex);
         offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
+    }
+
+    RpAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
+    if (pass_data_->stoch_lights_buf) {
+        stoch_lights_buf = &builder.GetReadBuffer(pass_data_->stoch_lights_buf);
+        light_nodes_buf = &builder.GetReadBuffer(pass_data_->light_nodes_buf);
+
+        if (!stoch_lights_buf->tbos[0] || stoch_lights_buf->tbos[0]->params().size != stoch_lights_buf->ref->size()) {
+            stoch_lights_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, stoch_lights_buf->ref->size());
+        }
+        if (!light_nodes_buf->tbos[0] || light_nodes_buf->tbos[0]->params().size != light_nodes_buf->ref->size()) {
+            light_nodes_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", light_nodes_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, light_nodes_buf->ref->size());
+        }
     }
 
     RpAllocBuf *oit_depth_buf = nullptr;
@@ -146,6 +95,11 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
                               *distance_tex->arr);
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
+    if (stoch_lights_buf) {
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::STOCH_LIGHTS_BUF_SLOT,
+                              *stoch_lights_buf->tbos[0]);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->tbos[0]);
+    }
     if (noise_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex->ref);
     }
@@ -160,26 +114,40 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
-    const Ren::Pipeline &pi =
-        pass_data_->four_bounces
-            ? (irradiance_tex ? pi_rt_reflections_4bounce_inline_[1] : pi_rt_reflections_4bounce_inline_[0])
-            : (irradiance_tex ? pi_rt_reflections_inline_[1] : pi_rt_reflections_inline_[0]);
+    const Ren::Pipeline *pi = nullptr;
+    if (pass_data_->four_bounces) {
+        if (stoch_lights_buf) {
+            pi = &pi_rt_reflections_4bounce_[2];
+        } else if (irradiance_tex) {
+            pi = &pi_rt_reflections_4bounce_[1];
+        } else {
+            pi = &pi_rt_reflections_4bounce_[0];
+        }
+    } else {
+        if (stoch_lights_buf) {
+            pi = &pi_rt_reflections_[2];
+        } else if (irradiance_tex) {
+            pi = &pi_rt_reflections_[1];
+        } else {
+            pi = &pi_rt_reflections_[0];
+        }
+    }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi->prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.layout(), 0, 2, descr_sets, 0,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->layout(), 0, 2, descr_sets, 0,
                                      nullptr);
 
     RTReflections::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
-    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
+    uniform_params.lights_count = view_state_->stochastic_lights_count;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
+    api_ctx->vkCmdPushConstants(cmd_buf, pi->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);
 
     api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(),
@@ -216,6 +184,23 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         irradiance_tex = &builder.GetReadTexture(pass_data_->irradiance_tex);
         distance_tex = &builder.GetReadTexture(pass_data_->distance_tex);
         offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
+    }
+
+    RpAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
+    if (pass_data_->stoch_lights_buf) {
+        stoch_lights_buf = &builder.GetReadBuffer(pass_data_->stoch_lights_buf);
+        light_nodes_buf = &builder.GetReadBuffer(pass_data_->light_nodes_buf);
+
+        if (!stoch_lights_buf->tbos[0] || stoch_lights_buf->tbos[0]->params().size != stoch_lights_buf->ref->size()) {
+            stoch_lights_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, stoch_lights_buf->ref->size());
+        }
+        if (!light_nodes_buf->tbos[0] || light_nodes_buf->tbos[0]->params().size != light_nodes_buf->ref->size()) {
+            light_nodes_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", light_nodes_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, light_nodes_buf->ref->size());
+        }
     }
 
     RpAllocBuf *oit_depth_buf = nullptr;
@@ -301,6 +286,11 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
                               *distance_tex->arr);
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
+    if (stoch_lights_buf) {
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::STOCH_LIGHTS_BUF_SLOT,
+                              *stoch_lights_buf->tbos[0]);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->tbos[0]);
+    }
     if (noise_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex->ref);
     }
@@ -317,24 +307,20 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
 
     const Ren::Pipeline *pi = nullptr;
     if (pass_data_->four_bounces) {
-        if (irradiance_tex) {
-            pi = &pi_rt_reflections_4bounce_swrt_[1];
+        if (stoch_lights_buf) {
+            pi = &pi_rt_reflections_4bounce_[2];
+        } else if (irradiance_tex) {
+            pi = &pi_rt_reflections_4bounce_[1];
         } else {
-            pi = &pi_rt_reflections_4bounce_swrt_[0];
+            pi = &pi_rt_reflections_4bounce_[0];
         }
     } else {
-        if (oit_depth_buf) {
-            if (irradiance_tex) {
-                pi = &pi_rt_reflections_swrt_[3];
-            } else {
-                pi = &pi_rt_reflections_swrt_[2];
-            }
+        if (stoch_lights_buf) {
+            pi = &pi_rt_reflections_[2];
+        } else if (irradiance_tex) {
+            pi = &pi_rt_reflections_[1];
         } else {
-            if (irradiance_tex) {
-                pi = &pi_rt_reflections_swrt_[1];
-            } else {
-                pi = &pi_rt_reflections_swrt_[0];
-            }
+            pi = &pi_rt_reflections_[0];
         }
     }
 
@@ -350,7 +336,7 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RTReflections::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
-    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
+    uniform_params.lights_count = view_state_->stochastic_lights_count;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);

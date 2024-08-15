@@ -31,14 +31,25 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
     RpAllocTex &distance_tex = builder.GetReadTexture(pass_data_->distance_tex);
     RpAllocTex &offset_tex = builder.GetReadTexture(pass_data_->offset_tex);
 
-    RpAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr;
+    RpAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (pass_data_->stoch_lights_buf) {
         random_seq_buf = &builder.GetReadBuffer(pass_data_->random_seq);
         stoch_lights_buf = &builder.GetReadBuffer(pass_data_->stoch_lights_buf);
+        light_nodes_buf = &builder.GetReadBuffer(pass_data_->light_nodes_buf);
 
         if (!random_seq_buf->tbos[0] || random_seq_buf->tbos[0]->params().size != random_seq_buf->ref->size()) {
             random_seq_buf->tbos[0] = builder.ctx().CreateTexture1D(
                 "Random Seq Buf TBO", random_seq_buf->ref, Ren::eTexFormat::RawR32UI, 0, random_seq_buf->ref->size());
+        }
+        if (!stoch_lights_buf->tbos[0] || stoch_lights_buf->tbos[0]->params().size != stoch_lights_buf->ref->size()) {
+            stoch_lights_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, stoch_lights_buf->ref->size());
+        }
+        if (!light_nodes_buf->tbos[0] || light_nodes_buf->tbos[0]->params().size != light_nodes_buf->ref->size()) {
+            light_nodes_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", light_nodes_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, light_nodes_buf->ref->size());
         }
     }
 
@@ -113,7 +124,8 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_gi_tex.arr}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->tbos[0]);
-        bindings.emplace_back(Ren::eBindTarget::SBufRO, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->tbos[0]);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->tbos[0]);
     }
 
     RTGICache::Params uniform_params = {};
@@ -134,28 +146,8 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
                                              pass_data_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
-    Ren::DispatchCompute(pi_rt_gi_cache_swrt_[stoch_lights_buf != nullptr],
+    Ren::DispatchCompute(pi_rt_gi_cache_[stoch_lights_buf != nullptr],
                          Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
                                     PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES},
                          bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(), ctx.log());
-}
-
-void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-        Ren::ProgramRef rt_gi_cache_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_swrt.comp.glsl");
-        assert(rt_gi_cache_swrt_prog->ready());
-
-        if (!pi_rt_gi_cache_swrt_[0].Init(ctx.api_ctx(), std::move(rt_gi_cache_swrt_prog), ctx.log())) {
-            ctx.log()->Error("RpRTGICache: Failed to initialize pipeline!");
-        }
-
-        rt_gi_cache_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_swrt.comp.glsl@STOCH_LIGHTS");
-        assert(rt_gi_cache_swrt_prog->ready());
-
-        if (!pi_rt_gi_cache_swrt_[1].Init(ctx.api_ctx(), std::move(rt_gi_cache_swrt_prog), ctx.log())) {
-            ctx.log()->Error("RpRTGICache: Failed to initialize pipeline!");
-        }
-
-        initialized = true;
-    }
 }

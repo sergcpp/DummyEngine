@@ -6,12 +6,13 @@
 #include "rt_common.glsl"
 #include "texturing_common.glsl"
 #include "principled_common.glsl"
-
 #include "ssr_common.glsl"
 #include "gi_cache_common.glsl"
+#include "light_bvh_common.glsl"
+
 #include "rt_reflections_interface.h"
 
-#pragma multi_compile _ LAYERED
+#pragma multi_compile _ LAYERED STOCH_LIGHTS
 #pragma multi_compile _ TWO_BOUNCES FOUR_BOUNCES
 #pragma multi_compile _ GI_CACHE
 
@@ -67,6 +68,11 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
 
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
+
+#ifdef STOCH_LIGHTS
+    layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform samplerBuffer g_stoch_lights_buf;
+    layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
+#endif
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
@@ -365,8 +371,10 @@ void main() {
 
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-#ifndef LAYERED
-            if (j == 0 && g_params.lights_count > 0.0 && first_roughness > 1e-7) {
+#ifdef STOCH_LIGHTS
+            if (j == 0 && hsum(emission_color) > 1e-7 && first_roughness > 1e-7) {
+                const float pdf_factor = EvalTriLightFactor(P, refl_ray_ws, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, ray_origin_ws.xyz);
+
                 const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
                 float light_fwd_len;
                 vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
@@ -379,7 +387,7 @@ void main() {
 
                 const float D = D_GGX(sampled_normal_ts, vec2(first_roughness));
                 const float bsdf_pdf = GGX_VNDF_Reflection_Bounded_PDF(D, view_dir_ts, vec2(first_roughness));
-                const float ls_pdf = (hit_t * hit_t) / (0.5 * light_fwd_len * cos_theta * g_params.lights_count);
+                const float ls_pdf = pdf_factor * (hit_t * hit_t) / (0.5 * light_fwd_len * cos_theta);
                 const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
                 emission_color *= mis_weight;
             }

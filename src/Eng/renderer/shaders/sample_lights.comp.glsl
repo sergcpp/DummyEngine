@@ -13,6 +13,7 @@
 #include "principled_common.glsl"
 #include "pmj_common.glsl"
 #include "ssr_common.glsl"
+#include "light_bvh_common.glsl"
 #include "sample_lights_interface.h"
 
 #pragma multi_compile _ HWRT
@@ -32,6 +33,7 @@ layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
 layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
 layout(binding = LIGHTS_BUF_SLOT) uniform samplerBuffer g_lights_buf;
+layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     RTGeoInstance g_geometries[];
@@ -144,7 +146,13 @@ void main() {
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
     const float light_pick_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_PICK, px_hash, int(g_params.frame_index)).x;
-    const int li = clamp(int(light_pick_rand * g_params.lights_count), 0, int(g_params.lights_count - 1));
+
+    float pdf_factor;
+    const int li = PickLightSource(P, g_light_nodes_buf, g_params.lights_count, light_pick_rand, pdf_factor);
+    if (li == -1) {
+        imageStore(g_out_specular_img, icoord, vec4(0.0));
+        return;
+    }
 
     //
 
@@ -173,7 +181,7 @@ void main() {
     const vec3 lp = p1 * (1.0 - r1) + r1 * (p2 * (1.0 - r2) + p3 * r2);
 
 #if defined(BINDLESS_TEXTURES)
-    litem.col_and_type.xyz *= YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0));
+    litem.col_and_type.xyz *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
 #endif
 
     float ls_dist;
@@ -183,8 +191,7 @@ void main() {
     if (is_doublesided) {
         cos_theta = abs(cos_theta);
     }
-    float ls_pdf = (ls_dist * ls_dist) / (0.5 * light_fwd_len * cos_theta);
-    ls_pdf /= float(g_params.lights_count);
+    const float ls_pdf = pdf_factor * (ls_dist * ls_dist) / (0.5 * light_fwd_len * cos_theta);
 
     //
 
@@ -319,7 +326,7 @@ void main() {
     vec3 diffuse_col = vec3(0.0);
     vec4 specular_col = vec4(0.0, 0.0, 0.0, -1.0);
 
-    if (lobe_weights.diffuse > 1e-7) {
+    if (lobe_weights.diffuse > 1e-7 && ls_pdf > 1e-7) {
         diffuse_col += litem.col_and_type.xyz * saturate(dot(N, L)) / (ls_pdf * M_PI);
         diffuse_col *= (1.0 - metallic) * (1.0 - transmission);
 
@@ -329,7 +336,7 @@ void main() {
         //diffuse_col = limit_intensity(diffuse_col, 10.0);
     }
 
-    if (lobe_weights.specular > 1e-7 && roughness * roughness > 1e-7) {
+    if (lobe_weights.specular > 1e-7 && roughness * roughness > 1e-7 && ls_pdf > 1e-7) {
         const mat3 tbn_transform = CreateTBN(N);
         const vec3 view_dir_ts = tbn_transform * I;
         const vec3 sampled_normal_ts = tbn_transform * normalize(L + I);
@@ -340,7 +347,7 @@ void main() {
         const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
 
         const float denom = 4.0 * abs(view_dir_ts[2] * reflected_dir_ts[2]);
-        specular_col.xyz = litem.col_and_type.xyz * D * mis_weight * saturate(reflected_dir_ts[2]) / (denom * ls_pdf);
+        specular_col.xyz = litem.col_and_type.xyz * D * mis_weight * saturate(reflected_dir_ts[2]) / (/*denom */ ls_pdf);
         specular_col.w = dot(specular_col.xyz, specular_col.xyz) > 1e-7 ? ls_dist : -1.0;
     }
 

@@ -13,6 +13,7 @@ struct RpSampleLightsData {
     RpResRef shared_data;
     RpResRef random_seq;
     RpResRef lights_buf;
+    RpResRef nodes_buf;
 
     RpResRef geo_data;
     RpResRef materials;
@@ -41,11 +42,10 @@ struct RpSampleLightsData {
 };
 
 class RpSampleLights : public RpExecutor {
-    bool initialized = false;
+    bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_sample_lights_hwrt_;
-    Ren::Pipeline pi_sample_lights_swrt_;
+    Ren::Pipeline pi_sample_lights_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
@@ -56,7 +56,6 @@ class RpSampleLights : public RpExecutor {
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     void Execute_HWRT(RpBuilder &builder);
-
     void Execute_SWRT(RpBuilder &builder);
 
   public:

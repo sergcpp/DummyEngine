@@ -7,11 +7,13 @@
 #include "principled_common.glsl"
 #include "gi_common.glsl"
 #include "gi_cache_common.glsl"
+#include "light_bvh_common.glsl"
 
 #include "rt_gi_interface.h"
 
 #pragma multi_compile _ TWO_BOUNCES
 #pragma multi_compile _ GI_CACHE
+#pragma multi_compile _ STOCH_LIGHTS
 
 #if defined(TWO_BOUNCES)
 #define NUM_BOUNCES 2
@@ -59,6 +61,11 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
 
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
+
+#ifdef STOCH_LIGHTS
+    layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform samplerBuffer g_stoch_lights_buf;
+    layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
+#endif
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
@@ -240,23 +247,23 @@ void main() {
             const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
             const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-            vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
-            vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
-            vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+            vec4 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0]);
+            vec4 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1]);
+            vec4 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2]);
             p0.xyz = (world_from_object * vec4(p0.xyz, 1.0)).xyz;
             p1.xyz = (world_from_object * vec4(p1.xyz, 1.0)).xyz;
             p2.xyz = (world_from_object * vec4(p2.xyz, 1.0)).xyz;
 
-            const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
-            const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
-            const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
+            const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+            const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+            const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
             const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
 
             const vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), 0).xy;
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
-            vec3 tri_normal = cross(p1 - p0, p2 - p0);
+            vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
             float pa = length(tri_normal);
             tri_normal /= pa;
             if (backfacing) {
@@ -333,17 +340,21 @@ void main() {
 
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-            if (g_params.lights_count > 0 && j == 0) {
+#ifdef STOCH_LIGHTS
+            if (j == 0 && hsum(emission_color) > 1e-7) {
+                const float pdf_factor = EvalTriLightFactor(P, gi_ray_ws, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, ray_origin_ws.xyz);
+
                 const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
                 float light_fwd_len;
-                vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+                const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
                 const float cos_theta = -dot(I, light_forward);
 
                 const float bsdf_pdf = saturate(dot(N, I)) / M_PI;
-                const float ls_pdf = (hit_t * hit_t) / (0.5 * light_fwd_len * cos_theta * g_params.lights_count);
+                const float ls_pdf = pdf_factor * (hit_t * hit_t) / (0.5 * light_fwd_len * cos_theta);
                 const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
                 emission_color *= mis_weight;
             }
+#endif
             vec3 light_total = emission_color;
 
             vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);

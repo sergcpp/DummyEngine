@@ -21,26 +21,6 @@ layout(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 g_out_color;
 
-bool _bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
-    float low = inv_d.x * (bbox_min[0] - o.x);
-    float high = inv_d.x * (bbox_max[0] - o.x);
-    float tmin = min(low, high);
-    float tmax = max(low, high);
-
-    low = inv_d.y * (bbox_min[1] - o.y);
-    high = inv_d.y * (bbox_max[1] - o.y);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
-
-    low = inv_d.z * (bbox_min[2] - o.z);
-    high = inv_d.z * (bbox_max[2] - o.z);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
-    tmax *= 1.00000024;
-
-    return tmin <= tmax && tmin <= t && tmax > 0.0;
-}
-
 void main() {
     vec2 norm_uvs = g_vtx_uvs / g_shrd_data.res_and_fres.xy;
 
@@ -85,7 +65,7 @@ void main() {
         vec4 node_data1 = texelFetch(g_nodes_buf, cur * 3 + 1);
         vec4 node_data2 = texelFetch(g_nodes_buf, cur * 3 + 2);
 
-        if (!_bbox_test(ray_start_ws.xyz, inv_dir, 100.0, node_data1.xyz, node_data2.xyz)) continue;
+        if (!bbox_test(ray_start_ws.xyz, inv_dir, 100.0, node_data1.xyz, node_data2.xyz)) continue;
 
         tree_complexity++;
 

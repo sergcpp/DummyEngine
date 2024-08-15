@@ -435,6 +435,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
 
                         { // detph fill and gbuffer draw (in deferred mode)
+                            list.basic_batches.reserve(list.basic_batches.size() + 3);
                             BasicDrawBatch &base_batch = list.basic_batches.emplace_back();
 
                             base_batch.type_bits = BasicDrawBatch::TypeSimple;
@@ -1163,6 +1164,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 __record_texture(list.visible_textures, front_mat->textures[4], 0, 0xffffu);
                             }
 
+                            list.basic_batches.reserve(list.shadow_batches.size() + 2);
                             BasicDrawBatch &batch = list.shadow_batches.emplace_back();
 
                             batch.type_bits = BasicDrawBatch::TypeSimple;
@@ -1442,6 +1444,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                         __record_texture(list.visible_textures, front_mat->textures[4], 0, 0xffffu);
                                     }
 
+                                    list.basic_batches.reserve(list.shadow_batches.size() + 2);
                                     BasicDrawBatch &batch = list.shadow_batches.emplace_back();
 
                                     batch.type_bits = BasicDrawBatch::TypeSimple;

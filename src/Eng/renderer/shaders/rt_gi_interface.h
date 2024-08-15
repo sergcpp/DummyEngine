@@ -9,12 +9,7 @@ struct Params {
     uvec2 img_size;
     float pixel_spread_angle;
     uint frame_index;
-    float lights_count;
-};
-
-struct RayPayload {
-    vec3 col;
-    float cone_width;
+    int lights_count;
 };
 
 const int TLAS_SLOT = 1;
@@ -42,6 +37,8 @@ const int ITEMS_BUF_SLOT = 22;
 const int IRRADIANCE_TEX_SLOT = 25;
 const int DISTANCE_TEX_SLOT = 26;
 const int OFFSET_TEX_SLOT = 27;
+const int STOCH_LIGHTS_BUF_SLOT = 28;
+const int LIGHT_NODES_BUF_SLOT = 29;
 
 const int OUT_GI_IMG_SLOT = 0;
 

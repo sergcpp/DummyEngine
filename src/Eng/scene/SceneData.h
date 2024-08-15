@@ -192,7 +192,7 @@ struct PersistentGpuData {
     Ren::BufferRef instance_buf;
     Ren::Tex1DRef instance_buf_tbo;
     Ren::BufferRef materials_buf;
-    Ren::BufferRef stoch_lights_buf;
+    Ren::BufferRef stoch_lights_buf, stoch_lights_nodes_buf;
 #if defined(USE_VK_RENDER)
     std::unique_ptr<Ren::DescrPool> textures_descr_pool;
     VkDescriptorSetLayout textures_descr_layout = VK_NULL_HANDLE;

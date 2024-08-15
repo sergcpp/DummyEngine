@@ -1663,7 +1663,6 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
 
     Phy::split_settings_t s;
     s.oversplit_threshold = 0.95f;
-    s.node_traversal_cost = 0.025f;
 
     while (!prim_lists.empty()) {
         Phy::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,

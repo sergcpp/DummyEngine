@@ -1600,7 +1600,7 @@ void Eng::Renderer::InitBackendInfo() {
     backend_info_.pass_timings.clear();
     for (auto &t : rp_builder_.pass_timings_[ctx_.backend_frame()]) {
         PassTiming &new_t = backend_info_.pass_timings.emplace_back();
-        strncpy(new_t.name, t.name.c_str(), sizeof(new_t.name));
+        new_t.name = t.name;
         new_t.duration = ctx_.GetTimestampIntervalDurationUs(t.query_beg, t.query_end);
     }
 

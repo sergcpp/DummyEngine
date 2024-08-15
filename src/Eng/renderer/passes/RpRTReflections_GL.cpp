@@ -10,9 +10,7 @@
 
 #include "../shaders/rt_reflections_interface.h"
 
-void Eng::RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
-
-void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::RpRTReflections::Execute_HWRT(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
 void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
@@ -45,6 +43,23 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         irradiance_tex = &builder.GetReadTexture(pass_data_->irradiance_tex);
         distance_tex = &builder.GetReadTexture(pass_data_->distance_tex);
         offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
+    }
+
+    RpAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
+    if (pass_data_->stoch_lights_buf) {
+        stoch_lights_buf = &builder.GetReadBuffer(pass_data_->stoch_lights_buf);
+        light_nodes_buf = &builder.GetReadBuffer(pass_data_->light_nodes_buf);
+
+        if (!stoch_lights_buf->tbos[0] || stoch_lights_buf->tbos[0]->params().size != stoch_lights_buf->ref->size()) {
+            stoch_lights_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, stoch_lights_buf->ref->size());
+        }
+        if (!light_nodes_buf->tbos[0] || light_nodes_buf->tbos[0]->params().size != light_nodes_buf->ref->size()) {
+            light_nodes_buf->tbos[0] =
+                builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", light_nodes_buf->ref,
+                                              Ren::eTexFormat::RawRGBA32F, 0, light_nodes_buf->ref->size());
+        }
     }
 
     RpAllocBuf *oit_depth_buf = nullptr;
@@ -129,6 +144,11 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
                               *distance_tex->arr);
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
+    if (stoch_lights_buf) {
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::STOCH_LIGHTS_BUF_SLOT,
+                              *stoch_lights_buf->tbos[0]);
+        bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->tbos[0]);
+    }
     if (noise_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex->ref);
     }
@@ -145,31 +165,27 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
 
     const Ren::Pipeline *pi = nullptr;
     if (pass_data_->four_bounces) {
-        if (irradiance_tex) {
-            pi = &pi_rt_reflections_4bounce_swrt_[1];
+        if (stoch_lights_buf) {
+            pi = &pi_rt_reflections_4bounce_[2];
+        } else if (irradiance_tex) {
+            pi = &pi_rt_reflections_4bounce_[1];
         } else {
-            pi = &pi_rt_reflections_4bounce_swrt_[0];
+            pi = &pi_rt_reflections_4bounce_[0];
         }
     } else {
-        if (oit_depth_buf) {
-            if (irradiance_tex) {
-                pi = &pi_rt_reflections_swrt_[3];
-            } else {
-                pi = &pi_rt_reflections_swrt_[2];
-            }
+        if (stoch_lights_buf) {
+            pi = &pi_rt_reflections_[2];
+        } else if (irradiance_tex) {
+            pi = &pi_rt_reflections_[1];
         } else {
-            if (irradiance_tex) {
-                pi = &pi_rt_reflections_swrt_[1];
-            } else {
-                pi = &pi_rt_reflections_swrt_[0];
-            }
+            pi = &pi_rt_reflections_[0];
         }
     }
 
     RTReflections::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
-    uniform_params.lights_count = float(view_state_->stochastic_lights_count);
+    uniform_params.lights_count = view_state_->stochastic_lights_count;
 
     Ren::DispatchComputeIndirect(*pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
                                  &uniform_params, sizeof(uniform_params), nullptr, ctx.log());

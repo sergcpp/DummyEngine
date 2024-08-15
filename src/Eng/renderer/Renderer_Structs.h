@@ -317,7 +317,7 @@ struct FrontendInfo {
 };
 
 struct PassTiming {
-    char name[64];
+    std::string name;
     uint64_t duration;
 };
 
@@ -446,11 +446,33 @@ struct gpu_bvh_node_t { // NOLINT
     };
     Ren::Vec3f bbox_max;
     union {
-        uint32_t prim_count; // First two bits are used for separation axis (0, 1 or 2 - x, y or z)
+        uint32_t prim_count; // First two bits are used for separation axis (00 - x, 01 - y, 11 - z)
         uint32_t right_child;
     };
 };
 static_assert(sizeof(gpu_bvh_node_t) == 32, "!");
+
+struct alignas(32) gpu_wbvh_node_t {
+    float bbox_min[3][8];
+    float bbox_max[3][8];
+    uint32_t child[8];
+};
+static_assert(sizeof(gpu_wbvh_node_t) == 224, "!");
+
+struct gpu_light_bvh_node_t : public gpu_bvh_node_t {
+    float flux;
+    Ren::Vec3f axis;
+    float omega_n; // cone angle enclosing light normals
+    float omega_e; // emission angle around each normal
+};
+static_assert(sizeof(gpu_light_bvh_node_t) == 56, "!");
+
+struct gpu_light_wbvh_node_t : public gpu_wbvh_node_t {
+    float flux[8];
+    uint32_t axis[8];
+    uint32_t cos_omega_ne[8];
+};
+static_assert(sizeof(gpu_light_wbvh_node_t) == 320, "!");
 
 struct gpu_mesh_t {
     uint32_t node_index, node_count;

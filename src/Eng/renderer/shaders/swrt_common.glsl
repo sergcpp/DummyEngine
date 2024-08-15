@@ -1,7 +1,8 @@
+#ifndef SWRT_COMMON_GLSL
+#define SWRT_COMMON_GLSL
 
 #include "_cs_common.glsl"
 
-#define MAX_DIST 3.402823466e+30
 #define FLT_MAX 3.402823466e+38
 
 #define IGNORE_BACKFACING 0
@@ -63,35 +64,11 @@ int IntersectTri(vec3 o, vec3 d, vec3 v0, vec3 v1, vec3 v2, out float t, out flo
 #endif
 }
 
-bool _bbox_test_fma(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_max) {
-    float low = fma(inv_d.x, bbox_min.x, neg_inv_d_o.x);
-    float high = fma(inv_d.x, bbox_max.x, neg_inv_d_o.x);
-    float tmin = min(low, high);
-    float tmax = max(low, high);
-
-    low = fma(inv_d.y, bbox_min.y, neg_inv_d_o.y);
-    high = fma(inv_d.y, bbox_max.y, neg_inv_d_o.y);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
-
-    low = fma(inv_d.z, bbox_min.z, neg_inv_d_o.z);
-    high = fma(inv_d.z, bbox_max.z, neg_inv_d_o.z);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
-    tmax *= 1.00000024;
-
-    return tmin <= tmax && tmin <= t && tmax > 0.0;
-}
-
-float _copysign(const float val, const float sign) {
-    return sign < 0.0 ? -abs(val) : abs(val);
-}
-
 vec3 safe_invert(vec3 v) {
     vec3 ret;
     for (int i = 0; i < 3; ++i) {
-        //ret[i] = (abs(v[i]) > FLT_EPS) ? (1.0 / v[i]) : _copysign(FLT_MAX, v[i]);
-        ret[i] = 1.0 / ((abs(v[i]) > FLT_EPS) ? v[i] : _copysign(FLT_EPS, v[i]));
+        //ret[i] = (abs(v[i]) > FLT_EPS) ? (1.0 / v[i]) : copysign(FLT_MAX, v[i]);
+        ret[i] = 1.0 / ((abs(v[i]) > FLT_EPS) ? v[i] : copysign(FLT_EPS, v[i]));
     }
     return ret;
 }
@@ -181,7 +158,7 @@ void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positio
         const vec4 bbox_min = texelFetch(blas_nodes, int(2 * cur + 0));
         const vec4 bbox_max = texelFetch(blas_nodes, int(2 * cur + 1));
 
-        if (!_bbox_test_fma(inv_d, neg_inv_do, inter.t, bbox_min.xyz, bbox_max.xyz)) {
+        if (!bbox_test_fma(inv_d, neg_inv_do, inter.t, bbox_min.xyz, bbox_max.xyz)) {
             continue;
         }
 
@@ -218,7 +195,7 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes,
         const vec4 n_bbox_min = texelFetch(tlas_nodes, int(2 * cur + 0));
         const vec4 n_bbox_max = texelFetch(tlas_nodes, int(2 * cur + 1));
 
-        if (!_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, n_bbox_min.xyz, n_bbox_max.xyz)) {
+        if (!bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, n_bbox_min.xyz, n_bbox_max.xyz)) {
             continue;
         }
 
@@ -242,7 +219,7 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes,
                 const uint visibility = floatBitsToUint(texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 2)).x);
 
                 if ((visibility & ray_flags) == 0 ||
-                    !_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, mi_bbox_min.xyz, mi_bbox_max.xyz)) {
+                    !bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, mi_bbox_min.xyz, mi_bbox_max.xyz)) {
                     continue;
                 }
 
@@ -266,4 +243,4 @@ void Traverse_TLAS_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes,
     }
 }
 
-#undef EPS
+#endif // SWRT_COMMON_GLSL

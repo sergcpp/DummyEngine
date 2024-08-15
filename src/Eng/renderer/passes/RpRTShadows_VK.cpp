@@ -98,19 +98,19 @@ void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
                                      {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_shadows_inline_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_inline_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_inline_.layout(), 0, 2,
-                                     descr_sets, 0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_.layout(), 0, 2, descr_sets,
+                                     0, nullptr);
 
     RTShadows::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_inline_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
@@ -194,42 +194,20 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_shadows_swrt_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_swrt_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_swrt_.layout(), 0, 2,
-                                     descr_sets, 0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_.layout(), 0, 2, descr_sets,
+                                     0, nullptr);
 
     RTShadows::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
-}
-
-void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-        if (ctx.capabilities.hwrt) {
-            Ren::ProgramRef rt_shadows_inline_prog = sh.LoadProgram(ctx, "internal/rt_shadows_hwrt.comp.glsl");
-            assert(rt_shadows_inline_prog->ready());
-
-            if (!pi_rt_shadows_inline_.Init(ctx.api_ctx(), std::move(rt_shadows_inline_prog), ctx.log())) {
-                ctx.log()->Error("RpRTShadows: Failed to initialize pipeline!");
-            }
-        }
-
-        Ren::ProgramRef rt_shadows_swrt_prog = sh.LoadProgram(ctx, "internal/rt_shadows_swrt.comp.glsl");
-        assert(rt_shadows_swrt_prog->ready());
-
-        if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log(), 32)) {
-            ctx.log()->Error("RpRTShadows: Failed to initialize pipeline!");
-        }
-
-        initialized = true;
-    }
 }

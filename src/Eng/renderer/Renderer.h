@@ -209,12 +209,12 @@ class Renderer {
     RpOITDepthPeel rp_oit_depth_peel_;
     RpOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {{prim_draw_}, {prim_draw_}, {prim_draw_}, {prim_draw_}};
     RpOITScheduleRays rp_oit_schedule_rays_;
-    RpRTReflections rp_oit_rt_reflections_;
+    RpRTReflections rp_oit_rt_reflections_ = RpRTReflections{true};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTGI rp_rt_gi_;
     RpRTGICache rp_rt_gi_cache_;
-    RpRTReflections rp_rt_reflections_;
+    RpRTReflections rp_rt_reflections_ = RpRTReflections{false};
     RpRTShadows rp_rt_shadows_;
     RpSampleLights rp_sample_lights_;
     RpReadExposure rp_read_exposure_;

@@ -38,12 +38,10 @@ struct RpRTShadowsData {
 };
 
 class RpRTShadows : public RpExecutor {
-    bool initialized = false;
+    bool initialized_ = false;
 
     // lazily initialized data
     Ren::Pipeline pi_rt_shadows_;
-    Ren::Pipeline pi_rt_shadows_inline_;
-    Ren::Pipeline pi_rt_shadows_swrt_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

@@ -64,6 +64,29 @@ void update_bbox(const Eng::bvh_node_t *nodes, Eng::bvh_node_t &node) {
     node.bbox_max = Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
 }
 
+uint16_t encode_snorm_u16(const float f) {
+    return uint16_t(std::round(Ren::Clamp((f + 1) / 2.0f, 0.0f, 1.0f) * 65535.0f));
+}
+
+uint32_t encode_cosines(const float cos_a, const float cos_b) {
+    const uint32_t a = uint32_t(std::floor(65535.0f * ((cos_a + 1.0f) / 2.0f)));
+    const uint32_t b = uint32_t(std::floor(65535.0f * ((cos_b + 1.0f) / 2.0f)));
+    return (a << 16) | b;
+}
+
+uint32_t EncodeOctDir(const Ren::Vec3f &d) {
+    const float denom = fabsf(d[0]) + fabsf(d[1]) + fabsf(d[2]);
+    const float v[3] = {d[0] / denom, d[1] / denom, d[2] / denom};
+    if (v[2] < 0.0f) {
+        const uint16_t x = encode_snorm_u16((1.0f - fabsf(v[1])) * copysignf(1.0f, v[0]));
+        const uint16_t y = encode_snorm_u16((1.0f - fabsf(v[0])) * copysignf(1.0f, v[1]));
+        return (uint32_t(x) << 16) | y;
+    }
+    const uint16_t x = encode_snorm_u16(v[0]);
+    const uint16_t y = encode_snorm_u16(v[1]);
+    return (uint32_t(x) << 16) | y;
+}
+
 Phy::Vec3f adapt(const Ren::Vec3f &v) { return Phy::Vec3f{v[0], v[1], v[2]}; }
 
 __itt_string_handle *itt_rebuild_bvh_str = __itt_string_handle_create("SceneManager::RebuildSceneBVH");
@@ -119,7 +142,7 @@ void Eng::SceneManager::RebuildSceneBVH() {
 
     Phy::split_settings_t s;
     s.oversplit_threshold = std::numeric_limits<float>::max();
-    s.node_traversal_cost = 0.0f;
+    s.min_primitives_in_leaf = 1;
 
     while (!prim_lists.empty()) {
         Phy::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
@@ -754,11 +777,173 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
     return uint32_t(out_nodes.size() - root_node_index);
 }
 
+uint32_t Eng::SceneManager::FlattenBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
+                                         const uint32_t parent_index, std::vector<gpu_light_wbvh_node_t> &out_nodes) {
+    using namespace SceneManagerInternal;
+
+    const gpu_light_bvh_node_t &cur_node = nodes[node_index];
+
+    // allocate new node
+    const auto new_node_index = uint32_t(out_nodes.size());
+    out_nodes.emplace_back();
+
+    if (cur_node.prim_index & LEAF_NODE_BIT) {
+        gpu_light_wbvh_node_t &new_node = out_nodes[new_node_index];
+
+        new_node.bbox_min[0][0] = cur_node.bbox_min[0];
+        new_node.bbox_min[1][0] = cur_node.bbox_min[1];
+        new_node.bbox_min[2][0] = cur_node.bbox_min[2];
+
+        new_node.bbox_max[0][0] = cur_node.bbox_max[0];
+        new_node.bbox_max[1][0] = cur_node.bbox_max[1];
+        new_node.bbox_max[2][0] = cur_node.bbox_max[2];
+
+        new_node.child[0] = cur_node.prim_index;
+        new_node.child[1] = cur_node.prim_count;
+
+        new_node.flux[0] = cur_node.flux;
+        new_node.axis[0] = EncodeOctDir(cur_node.axis);
+        new_node.cos_omega_ne[0] = encode_cosines(cosf(cur_node.omega_n), cosf(cur_node.omega_e));
+
+        return new_node_index;
+    }
+
+    // Gather children 2 levels deep
+
+    uint32_t children[8];
+    int children_count = 0;
+
+    const gpu_light_bvh_node_t &child0 = nodes[cur_node.left_child];
+
+    if (child0.prim_index & LEAF_NODE_BIT) {
+        children[children_count++] = cur_node.left_child & LEFT_CHILD_BITS;
+    } else {
+        const gpu_light_bvh_node_t &child00 = nodes[child0.left_child];
+        const gpu_light_bvh_node_t &child01 = nodes[child0.right_child & RIGHT_CHILD_BITS];
+
+        if (child00.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child0.left_child & LEFT_CHILD_BITS;
+        } else {
+            children[children_count++] = child00.left_child;
+            children[children_count++] = child00.right_child & RIGHT_CHILD_BITS;
+        }
+
+        if (child01.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child0.right_child & RIGHT_CHILD_BITS;
+        } else {
+            children[children_count++] = child01.left_child;
+            children[children_count++] = child01.right_child & RIGHT_CHILD_BITS;
+        }
+    }
+
+    const gpu_light_bvh_node_t &child1 = nodes[cur_node.right_child & RIGHT_CHILD_BITS];
+
+    if (child1.prim_index & LEAF_NODE_BIT) {
+        children[children_count++] = cur_node.right_child & RIGHT_CHILD_BITS;
+    } else {
+        const gpu_light_bvh_node_t &child10 = nodes[child1.left_child];
+        const gpu_light_bvh_node_t &child11 = nodes[child1.right_child & RIGHT_CHILD_BITS];
+
+        if (child10.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child1.left_child & LEFT_CHILD_BITS;
+        } else {
+            children[children_count++] = child10.left_child;
+            children[children_count++] = child10.right_child & RIGHT_CHILD_BITS;
+        }
+
+        if (child11.prim_index & LEAF_NODE_BIT) {
+            children[children_count++] = child1.right_child & RIGHT_CHILD_BITS;
+        } else {
+            children[children_count++] = child11.left_child;
+            children[children_count++] = child11.right_child & RIGHT_CHILD_BITS;
+        }
+    }
+
+    // Sort children in morton order
+    Ren::Vec3f children_centers[8], whole_box_min = {FLT_MAX}, whole_box_max = {-FLT_MAX};
+    for (int i = 0; i < children_count; i++) {
+        children_centers[i] = 0.5f * (nodes[children[i]].bbox_min + nodes[children[i]].bbox_max);
+        whole_box_min = Min(whole_box_min, children_centers[i]);
+        whole_box_max = Max(whole_box_max, children_centers[i]);
+    }
+
+    whole_box_max += 0.001f;
+
+    const Ren::Vec3f scale = 2.0f / (whole_box_max - whole_box_min);
+
+    uint32_t sorted_children[8] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+                                   0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+    for (int i = 0; i < children_count; i++) {
+        Ren::Vec3f code = (children_centers[i] - whole_box_min) * scale;
+
+        const auto x = uint32_t(code[0]), y = uint32_t(code[1]), z = uint32_t(code[2]);
+
+        uint32_t mort = (z << 2) | (y << 1) | (x << 0);
+
+        while (sorted_children[mort] != 0xffffffff) {
+            mort = (mort + 1) % 8;
+        }
+
+        sorted_children[mort] = children[i];
+    }
+
+    uint32_t new_children[8];
+
+    for (int i = 0; i < 8; i++) {
+        if (sorted_children[i] != 0xffffffff) {
+            new_children[i] = FlattenBVH_r(nodes, sorted_children[i], node_index, out_nodes);
+        } else {
+            new_children[i] = 0x7fffffff;
+        }
+    }
+
+    gpu_light_wbvh_node_t &new_node = out_nodes[new_node_index];
+    memcpy(new_node.child, new_children, sizeof(new_children));
+
+    for (int i = 0; i < 8; i++) {
+        if (new_children[i] != 0x7fffffff) {
+            new_node.bbox_min[0][i] = nodes[sorted_children[i]].bbox_min[0];
+            new_node.bbox_min[1][i] = nodes[sorted_children[i]].bbox_min[1];
+            new_node.bbox_min[2][i] = nodes[sorted_children[i]].bbox_min[2];
+
+            new_node.bbox_max[0][i] = nodes[sorted_children[i]].bbox_max[0];
+            new_node.bbox_max[1][i] = nodes[sorted_children[i]].bbox_max[1];
+            new_node.bbox_max[2][i] = nodes[sorted_children[i]].bbox_max[2];
+
+            new_node.flux[i] = nodes[sorted_children[i]].flux;
+            new_node.axis[i] = EncodeOctDir(nodes[sorted_children[i]].axis);
+            new_node.cos_omega_ne[i] =
+                encode_cosines(cosf(nodes[sorted_children[i]].omega_n), cosf(nodes[sorted_children[i]].omega_e));
+        } else {
+            // Init as invalid bounding box
+            new_node.bbox_min[0][i] = new_node.bbox_min[1][i] = new_node.bbox_min[2][i] = 0.0f;
+            new_node.bbox_max[0][i] = new_node.bbox_max[1][i] = new_node.bbox_max[2][i] = 0.0f;
+            // Init as zero light
+            new_node.flux[i] = 0.0f;
+            new_node.axis[i] = 0;
+            new_node.cos_omega_ne[i] = 0;
+        }
+    }
+
+    return new_node_index;
+}
+
 void Eng::SceneManager::RebuildLightTree() {
+    scene_data_.persistent_data.stoch_lights_buf = {};
+    scene_data_.persistent_data.stoch_lights_nodes_buf = {};
+
     const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
     const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
 
+    struct additional_data_t {
+        Ren::Vec3f axis;
+        float flux, omega_n, omega_e;
+    };
+    std::vector<additional_data_t> additional_data;
+
     std::vector<LightItem> stochastic_lights;
+    std::vector<Phy::prim_t> temp_primitives;
+    std::vector<uint32_t> temp_indices;
 
     const uint64_t RTCompMask = (CompTransformBit | CompAccStructureBit);
     for (int i = 0; i < int(scene_data_.objects.size()); ++i) {
@@ -776,20 +961,20 @@ void Eng::SceneManager::RebuildLightTree() {
         Ren::Span<const float> positions = acc.mesh->attribs();
         Ren::Span<const uint32_t> tri_indices = acc.mesh->indices();
 
-        std::vector<Phy::prim_t> temp_primitives;
-        std::vector<uint32_t> temp_indices;
-
         const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
         for (int j = 0; j < int(groups.size()); ++j) {
             const Ren::TriGroup &grp = groups[j];
 
             const Ren::MaterialRef &front_mat =
                 (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
+            const Ren::MaterialRef &back_mat =
+                (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
 
-            const Ren::Bitmask<Ren::eMatFlags> front_mat_flags = front_mat->flags();
-            if ((front_mat_flags & Ren::eMatFlags::Emissive) == 0) {
+            if ((front_mat->flags() & Ren::eMatFlags::Emissive) == 0) {
                 continue;
             }
+
+            const bool doublesided = (back_mat->flags() & Ren::eMatFlags::Emissive) != 0;
 
             const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
             const uint32_t index_end = index_beg + grp.num_indices;
@@ -816,7 +1001,19 @@ void Eng::SceneManager::RebuildLightTree() {
                            bbox_max = Phy::Vec3f{bbox_max_ws[0], bbox_max_ws[1], bbox_max_ws[2]};
 
                 if (Phy::Distance2(bbox_min, bbox_max) > 1e-7f) {
-                    temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
+                    const Ren::Vec3f light_forward =
+                        Cross(Ren::Vec3f{p1_ws} - Ren::Vec3f{p0_ws}, Ren::Vec3f{p2_ws} - Ren::Vec3f{p0_ws});
+                    const float area = 0.5f * Length(light_forward);
+
+                    const Ren::Vec3f axis = Normalize(light_forward);
+                    const float omega_n = doublesided ? Ren::Pi<float>() : 0.0f;
+                    const float omega_e = Ren::Pi<float>() / 2.0f;
+
+                    const float lum = front_mat->params[3][1] + front_mat->params[3][2] + front_mat->params[3][3];
+                    const float flux = lum * area;
+                    additional_data.push_back({axis, flux, omega_n, omega_e});
+
+                    temp_primitives.push_back({0, 0, 0, bbox_min, bbox_max});
                     temp_indices.push_back(i / 3);
 
                     LightItem &tri_light = stochastic_lights.emplace_back();
@@ -827,7 +1024,9 @@ void Eng::SceneManager::RebuildLightTree() {
                     if (bool(acc.vis_mask & AccStructure::eRayType::Specular)) {
                         tri_light.type_and_flags |= LIGHT_SPECULAR_BIT;
                     }
-                    tri_light.type_and_flags |= LIGHT_DOUBLESIDED_BIT;
+                    if (doublesided) {
+                        tri_light.type_and_flags |= LIGHT_DOUBLESIDED_BIT;
+                    }
                     memcpy(tri_light.col, ValuePtr(front_mat->params[3]) + 1, 3 * sizeof(float));
                     memcpy(tri_light.pos, ValuePtr(p0_ws), 3 * sizeof(float));
                     memcpy(tri_light.u, ValuePtr(p1_ws), 3 * sizeof(float));
@@ -846,11 +1045,122 @@ void Eng::SceneManager::RebuildLightTree() {
         }
     }
 
-    scene_data_.persistent_data.stoch_lights_buf = {};
+    if (stochastic_lights.empty()) {
+        return;
+    }
 
-    if (!stochastic_lights.empty()) {
+    std::vector<gpu_light_wbvh_node_t> light_wnodes;
+    { // Build BVH
+        std::vector<uint32_t> prim_indices;
+        prim_indices.reserve(temp_primitives.size());
+
+        std::vector<gpu_bvh_node_t> temp_nodes;
+
+        Phy::split_settings_t s;
+        s.oversplit_threshold = -1.0f;
+        s.min_primitives_in_leaf = 1;
+        PreprocessPrims_SAH(temp_primitives, s, temp_nodes, prim_indices);
+
+        // convert to light nodes
+        std::vector<gpu_light_bvh_node_t> light_nodes(temp_nodes.size(), gpu_light_bvh_node_t{});
+        for (uint32_t i = 0; i < temp_nodes.size(); ++i) {
+            static_cast<gpu_bvh_node_t &>(light_nodes[i]) = temp_nodes[i];
+            if ((temp_nodes[i].prim_index & LEAF_NODE_BIT) != 0) {
+                const uint32_t prim_index = prim_indices[temp_nodes[i].prim_index & PRIM_INDEX_BITS];
+                light_nodes[i].axis = additional_data[prim_index].axis;
+                light_nodes[i].flux = additional_data[prim_index].flux;
+                light_nodes[i].omega_n = additional_data[prim_index].omega_n;
+                light_nodes[i].omega_e = additional_data[prim_index].omega_e;
+            }
+        }
+
+        // Init parent array
+        std::vector<uint32_t> parent_indices(light_nodes.size());
+        parent_indices[0] = 0xffffffff; // root node has no parent
+
+        std::vector<uint32_t> leaf_indices;
+        leaf_indices.reserve(temp_primitives.size());
+
+        Ren::SmallVector<uint32_t, 128> stack;
+        stack.push_back(0);
+        while (!stack.empty()) {
+            const uint32_t i = stack.back();
+            stack.pop_back();
+
+            if ((light_nodes[i].prim_index & LEAF_NODE_BIT) == 0) {
+                const uint32_t left_child = (light_nodes[i].left_child & LEFT_CHILD_BITS),
+                               right_child = (light_nodes[i].right_child & RIGHT_CHILD_BITS);
+                parent_indices[left_child] = parent_indices[right_child] = i;
+
+                stack.push_back(left_child);
+                stack.push_back(right_child);
+            } else {
+                leaf_indices.push_back(i);
+            }
+        }
+
+        // Propagate flux and cone up the hierarchy
+        std::vector<uint32_t> to_process;
+        to_process.reserve(light_nodes.size());
+        to_process.insert(end(to_process), begin(leaf_indices), end(leaf_indices));
+        for (uint32_t i = 0; i < uint32_t(to_process.size()); ++i) {
+            const uint32_t n = to_process[i];
+            const uint32_t parent = parent_indices[n];
+            if (parent == 0xffffffff) {
+                continue;
+            }
+
+            light_nodes[parent].flux += light_nodes[n].flux;
+            if (light_nodes[parent].axis[0] == 0.0f && light_nodes[parent].axis[1] == 0.0f &&
+                light_nodes[parent].axis[2] == 0.0f) {
+                light_nodes[parent].axis = light_nodes[n].axis;
+                light_nodes[parent].omega_n = light_nodes[n].omega_n;
+            } else {
+                Ren::Vec3f axis1 = light_nodes[parent].axis, axis2 = light_nodes[n].axis;
+                const float angle_between = acosf(Ren::Clamp(Dot(axis1, axis2), -1.0f, 1.0f));
+
+                axis1 += axis2;
+                const float axis_length = Length(axis1);
+                if (axis_length != 0.0f) {
+                    axis1 /= axis_length;
+                } else {
+                    axis1 = Ren::Vec3f{0.0f, 1.0f, 0.0f};
+                }
+
+                light_nodes[parent].axis = axis1;
+
+                light_nodes[parent].omega_n =
+                    fminf(0.5f * (light_nodes[parent].omega_n +
+                                  fmaxf(light_nodes[parent].omega_n, angle_between + light_nodes[n].omega_n)),
+                          Ren::Pi<float>());
+            }
+            light_nodes[parent].omega_e = fmaxf(light_nodes[parent].omega_e, light_nodes[n].omega_e);
+            if ((light_nodes[parent].left_child & LEFT_CHILD_BITS) == n) {
+                to_process.push_back(parent);
+            }
+        }
+
+        // Remove indices indirection
+        for (uint32_t i = 0; i < leaf_indices.size(); ++i) {
+            gpu_light_bvh_node_t &n = light_nodes[leaf_indices[i]];
+            assert((n.prim_index & LEAF_NODE_BIT) != 0);
+            const uint32_t li_index = prim_indices[n.prim_index & PRIM_INDEX_BITS];
+            n.prim_index &= ~PRIM_INDEX_BITS;
+            n.prim_index |= li_index;
+        }
+
+        // Flatten to 8-wide BVH
+        const uint32_t root_node = FlattenBVH_r(light_nodes, 0, 0xffffffff, light_wnodes);
+        assert(root_node == 0);
+        (void)root_node;
+    }
+
+    { // Init GPU data
         scene_data_.persistent_data.stoch_lights_buf = ren_ctx_.LoadBuffer(
             "Stochastic Lights Buf", Ren::eBufType::Texture, uint32_t(stochastic_lights.size() * sizeof(LightItem)));
+        scene_data_.persistent_data.stoch_lights_nodes_buf =
+            ren_ctx_.LoadBuffer("Stochastic Light Nodes Buf", Ren::eBufType::Texture,
+                                uint32_t(light_wnodes.size() * sizeof(gpu_light_wbvh_node_t)));
 
         Ren::Buffer lights_buf_stage("Stochastic Lights Stage Buf", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
                                      scene_data_.persistent_data.stoch_lights_buf->size());
@@ -860,11 +1170,22 @@ void Eng::SceneManager::RebuildLightTree() {
             lights_buf_stage.Unmap();
         }
 
+        Ren::Buffer nodes_buf_stage("Stochastic Light Nodes Stage Buf", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
+                                    scene_data_.persistent_data.stoch_lights_nodes_buf->size());
+        { // init stage buf
+            uint8_t *mapped_ptr = nodes_buf_stage.Map();
+            memcpy(mapped_ptr, light_wnodes.data(), light_wnodes.size() * sizeof(gpu_light_wbvh_node_t));
+            nodes_buf_stage.Unmap();
+        }
+
         Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
         Ren::CopyBufferToBuffer(lights_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_buf, 0,
                                 uint32_t(stochastic_lights.size() * sizeof(LightItem)), cmd_buf);
+        Ren::CopyBufferToBuffer(nodes_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_nodes_buf, 0,
+                                uint32_t(light_wnodes.size() * sizeof(gpu_light_wbvh_node_t)), cmd_buf);
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 
         lights_buf_stage.FreeImmediate();
+        nodes_buf_stage.FreeImmediate();
     }
 }

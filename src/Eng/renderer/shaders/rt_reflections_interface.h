@@ -8,12 +8,7 @@ INTERFACE_START(RTReflections)
 struct Params {
     uvec2 img_size;
     float pixel_spread_angle;
-    float lights_count;
-};
-
-struct RayPayload {
-    vec3 col;
-    float cone_width;
+    int lights_count;
 };
 
 const int TLAS_SLOT = 2;
@@ -42,6 +37,8 @@ const int IRRADIANCE_TEX_SLOT = 25;
 const int DISTANCE_TEX_SLOT = 26;
 const int OFFSET_TEX_SLOT = 27;
 const int ITEMS_BUF_SLOT = 28;
+const int STOCH_LIGHTS_BUF_SLOT = 29;
+const int LIGHT_NODES_BUF_SLOT = 30;
 
 const int OUT_REFL_IMG_SLOT = 0;
 

@@ -289,6 +289,8 @@ class SceneManager {
 
     static uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
                                         std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
+    static uint32_t FlattenBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, uint32_t node_index,
+                                 uint32_t parent_index, std::vector<gpu_light_wbvh_node_t> &out_nodes);
 
     std::vector<char> temp_buf;
 

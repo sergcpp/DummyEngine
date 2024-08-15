@@ -6,6 +6,9 @@
 #include "_cs_common.glsl"
 #include "rt_common.glsl"
 #include "gi_common.glsl"
+#include "principled_common.glsl"
+#include "light_bvh_common.glsl"
+
 #include "gi_trace_ss_interface.h"
 
 #pragma multi_compile _ NO_SUBGROUP
@@ -81,7 +84,7 @@ void main() {
     const vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, pix_uvs);
 
     vec3 hit_point_cs, hit_point_vs, hit_normal_vs;
-    const bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point_cs, hit_point_vs, hit_normal_vs);
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point_cs, hit_point_vs, hit_normal_vs);
 
     vec4 out_color = vec4(0.0, 0.0, 0.0, 100.0);
     if (hit_found) {
@@ -93,13 +96,9 @@ void main() {
 
         const float hit_t = distance(hit_point_vs, ray_origin_vs);
         out_color = textureLod(color_tex, uv, 0.0);
-        if (g_params.lights_count > 0.0 && out_color.w > 0.0) {
-            // Resolve emissive MIS
-            const float cos_theta = -dot(refl_ray_vs, hit_normal_vs);
-            const float bsdf_pdf = saturate(-dot(hit_normal_vs, refl_ray_vs)) / M_PI;
-            const float ls_pdf = (hit_t * hit_t) / (out_color.w * cos_theta * g_params.lights_count);
-            const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
-            out_color.xyz *= mis_weight;
+        if (out_color.w > 0.0) {
+            // Skip emissive surface
+            hit_found = false;
         }
         out_color.w = hit_t;
     }

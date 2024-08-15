@@ -292,6 +292,11 @@ void main() {
         const float transmission = mat.params[2].y;
         const float clearcoat = mat.params[2].z;
         const float clearcoat_roughness = mat.params[2].w;
+#if defined(BINDLESS_TEXTURES)
+        const vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
+#else
+        const vec3 emission_color = mat.params[3].yzw;
+#endif
 
         vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
         spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -320,7 +325,7 @@ void main() {
 
         const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-        vec3 light_total = vec3(0.0);
+        vec3 light_total = emission_color;
 
         vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
         projected_p /= projected_p[3];

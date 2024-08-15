@@ -57,6 +57,17 @@ struct LightItem {
     float v[3], blend;
 };
 
+struct light_wbvh_node_t {
+    float bbox_min[3][8]; // SoA layout
+    float bbox_max[3][8];
+    uint child[8];
+    float flux[8];
+    uint axis[8];
+    uint cos_omega_ne[8];
+};
+
+const int LIGHT_NODES_BUF_STRIDE = 20;
+
 INTERFACE_END
 
 #endif // TYPES_H

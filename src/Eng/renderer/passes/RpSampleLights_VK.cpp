@@ -33,6 +33,7 @@ void Eng::RpSampleLights::Execute_HWRT(RpBuilder &builder) {
     }
 
     RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
+    RpAllocBuf &nodes_buf = builder.GetReadBuffer(pass_data_->nodes_buf);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -44,6 +45,10 @@ void Eng::RpSampleLights::Execute_HWRT(RpBuilder &builder) {
     if (!lights_buf.tbos[0] || lights_buf.tbos[0]->params().size != lights_buf.ref->size()) {
         lights_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", lights_buf.ref,
                                                            Ren::eTexFormat::RawRGBA32F, 0, lights_buf.ref->size());
+    }
+    if (!nodes_buf.tbos[0] || nodes_buf.tbos[0]->params().size != nodes_buf.ref->size()) {
+        nodes_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
+                                                          Ren::eTexFormat::RawRGBA32F, 0, nodes_buf.ref->size());
     }
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
@@ -62,6 +67,7 @@ void Eng::RpSampleLights::Execute_HWRT(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::UTBuf, SampleLights::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::LIGHTS_BUF_SLOT, *lights_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, SampleLights::LIGHT_NODES_BUF_SLOT, *nodes_buf.tbos[0]},
         {Ren::eBindTarget::AccStruct, SampleLights::TLAS_SLOT, *acc_struct},
         {Ren::eBindTarget::SBufRO, SampleLights::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, SampleLights::MATERIAL_BUF_SLOT, *materials_buf.ref},
@@ -84,17 +90,17 @@ void Eng::RpSampleLights::Execute_HWRT(RpBuilder &builder) {
     uniform_params.frame_index = view_state_->frame_index;
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_sample_lights_hwrt_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_sample_lights_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_hwrt_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_hwrt_.layout(), 0, 2,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_.layout(), 0, 2,
                                      descr_sets, 0, nullptr);
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_sample_lights_hwrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_sample_lights_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
     api_ctx->vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);
 }
@@ -127,6 +133,7 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
     }
 
     RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
+    RpAllocBuf &nodes_buf = builder.GetReadBuffer(pass_data_->nodes_buf);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -138,6 +145,10 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
     if (!lights_buf.tbos[0] || lights_buf.tbos[0]->params().size != lights_buf.ref->size()) {
         lights_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", lights_buf.ref,
                                                            Ren::eTexFormat::RawRGBA32F, 0, lights_buf.ref->size());
+    }
+    if (!nodes_buf.tbos[0] || nodes_buf.tbos[0]->params().size != nodes_buf.ref->size()) {
+        nodes_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
+                                                          Ren::eTexFormat::RawRGBA32F, 0, nodes_buf.ref->size());
     }
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
@@ -180,6 +191,7 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::UTBuf, SampleLights::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::LIGHTS_BUF_SLOT, *lights_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, SampleLights::LIGHT_NODES_BUF_SLOT, *nodes_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, SampleLights::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
@@ -206,17 +218,17 @@ void Eng::RpSampleLights::Execute_SWRT(RpBuilder &builder) {
     uniform_params.frame_index = view_state_->frame_index;
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_sample_lights_swrt_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_sample_lights_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_swrt_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_swrt_.layout(), 0, 2,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_sample_lights_.layout(), 0, 2,
                                      descr_sets, 0, nullptr);
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_sample_lights_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_sample_lights_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
     api_ctx->vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);
 }

@@ -123,7 +123,7 @@ bool IntersectRay(const vec3 ray_origin_ss, const vec3 ray_origin_vs, const vec3
     vec4 hit_point_vs = g_shrd_data.view_from_clip * vec4(hit_point_cs, 1.0);
     hit_point_vs.xyz /= hit_point_vs.w;
 
-    out_hit_point_vs = hit_point_vs.xyz;
+    //out_hit_point_vs = hit_point_vs.xyz;
 
     const float hit_depth_fetch = texelFetch(depth_tex, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
     const vec4 hit_surf_cs = vec4(hit_point_cs.xy, hit_depth_fetch, 1.0);
@@ -131,6 +131,8 @@ bool IntersectRay(const vec3 ray_origin_ss, const vec3 ray_origin_vs, const vec3
     vec4 hit_surf_vs = g_shrd_data.view_from_clip * hit_surf_cs;
     hit_surf_vs.xyz /= hit_surf_vs.w;
     const float dist_vs = distance(hit_point_vs.xyz, hit_surf_vs.xyz);
+
+    out_hit_point_vs = hit_surf_vs.xyz;
 
     return dist_vs < Z_THICKNESS;
 }

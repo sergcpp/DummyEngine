@@ -18,23 +18,22 @@ void Eng::RpSampleLights::Execute(RpBuilder &builder) {
 }
 
 void Eng::RpSampleLights::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
+    if (!initialized_) {
         if (ctx.capabilities.hwrt) {
             Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights.comp.glsl@HWRT");
             assert(prog->ready());
 
-            if (!pi_sample_lights_hwrt_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
+            if (!pi_sample_lights_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
+                ctx.log()->Error("RpSampleLights: Failed to initialize pipeline!");
+            }
+        } else {
+            Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights.comp.glsl");
+            assert(prog->ready());
+
+            if (!pi_sample_lights_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
                 ctx.log()->Error("RpSampleLights: Failed to initialize pipeline!");
             }
         }
-
-        Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_sample_lights_swrt_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
-            ctx.log()->Error("RpSampleLights: Failed to initialize pipeline!");
-        }
-
-        initialized = true;
+        initialized_ = true;
     }
 }

@@ -19,7 +19,7 @@ struct split_data_t {
 
 struct split_settings_t {
     float oversplit_threshold = 0.95f;
-    float node_traversal_cost = 0.025f;
+    int min_primitives_in_leaf = 8;
 };
 
 split_data_t SplitPrimitives_SAH(const prim_t *primitives, Span<const uint32_t> prim_indices,

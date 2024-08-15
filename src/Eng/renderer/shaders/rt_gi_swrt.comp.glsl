@@ -11,11 +11,13 @@
 #include "principled_common.glsl"
 #include "gi_common.glsl"
 #include "gi_cache_common.glsl"
+#include "light_bvh_common.glsl"
 
 #include "rt_gi_interface.h"
 
 #pragma multi_compile _ TWO_BOUNCES
 #pragma multi_compile _ GI_CACHE
+#pragma multi_compile _ STOCH_LIGHTS
 
 #if defined(TWO_BOUNCES)
 #define NUM_BOUNCES 2
@@ -60,6 +62,11 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
 
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
+
+#ifdef STOCH_LIGHTS
+    layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform samplerBuffer g_stoch_lights_buf;
+    layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
+#endif
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
@@ -300,7 +307,7 @@ void main() {
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
-            tex_lod -= log2(abs(dot(gi_ray_ws.xyz, tri_normal)));
+            tex_lod -= log2(abs(dot(gi_ray_ws, tri_normal)));
 
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, tex_lod)));
 #else
@@ -323,8 +330,8 @@ void main() {
             }
             N = normalize((world_from_object * vec4(N, 0.0)).xyz);
 
-            const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * inter.t;
-            const vec3 I = -gi_ray_ws.xyz;
+            const vec3 P = ray_origin_ws.xyz + gi_ray_ws * (t_min + inter.t);
+            const vec3 I = -gi_ray_ws;
             const float N_dot_V = saturate(dot(N, I));
 
             vec3 tint_color = vec3(0.0);
@@ -383,17 +390,21 @@ void main() {
 
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-            if (g_params.lights_count > 0 && j == 0) {
+#ifdef STOCH_LIGHTS
+            if (j == 0 && hsum(emission_color) > 1e-7) {
+                const float pdf_factor = EvalTriLightFactor(P, gi_ray_ws, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, ray_origin_ws.xyz);
+
                 const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
                 float light_fwd_len;
-                vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+                const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
                 const float cos_theta = -dot(I, light_forward);
 
                 const float bsdf_pdf = saturate(dot(N, I)) / M_PI;
-                const float ls_pdf = (inter.t * inter.t) / (0.5 * light_fwd_len * cos_theta * g_params.lights_count);
+                const float ls_pdf = pdf_factor * (inter.t * inter.t) / (0.5 * light_fwd_len * cos_theta);
                 const float mis_weight = power_heuristic(bsdf_pdf, ls_pdf);
                 emission_color *= mis_weight;
             }
+#endif
             vec3 light_total = emission_color;
 
             vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);

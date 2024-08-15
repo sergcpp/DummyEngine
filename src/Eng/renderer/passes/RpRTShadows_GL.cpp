@@ -95,21 +95,6 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
-    Ren::DispatchComputeIndirect(pi_rt_shadows_swrt_, *indir_args_buf.ref, 0, bindings, &uniform_params,
+    Ren::DispatchComputeIndirect(pi_rt_shadows_, *indir_args_buf.ref, 0, bindings, &uniform_params,
                                  sizeof(uniform_params), nullptr, ctx.log());
-}
-
-void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-        Ren::ProgramRef rt_shadows_swrt_prog =
-            sh.LoadProgram(ctx, ctx.capabilities.subgroup ? "internal/rt_shadows_swrt.comp.glsl"
-                                                          : "internal/rt_shadows_swrt.comp.glsl@NO_SUBGROUP");
-        assert(rt_shadows_swrt_prog->ready());
-
-        if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log())) {
-            ctx.log()->Error("RpRTShadows: Failed to initialize pipeline!");
-        }
-
-        initialized = true;
-    }
 }

@@ -1,3 +1,4 @@
+const float MAX_DIST = 3.402823466e+30f;
 
 // Resolution of frustum item grid
 const int ITEM_GRID_RES_X = 16;
