@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = textured_emissive
-	commit = 5d4d68ec5a1e0f00ef45d0be06908556c05ae407
+	branch = mesh_lights_cache
+	commit = bdf3d1d223a019030d4eabae0489ce8ac4e7ef8f
 	method = merge
 	cmdver = 0.4.6
-	parent = 1e82b19f905f23d89dd15d319dbc715c1b1d64c8
+	parent = 2428249ed5885b92c8868f8be88b7413c92c896d
