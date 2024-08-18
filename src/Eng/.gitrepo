@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = mesh_lights_cache
-	commit = bdf3d1d223a019030d4eabae0489ce8ac4e7ef8f
+	branch = light_bvh
+	commit = c7cb718ef539cb3bd452d5dc01856f9714bfa9fb
 	method = merge
 	cmdver = 0.4.6
-	parent = 2428249ed5885b92c8868f8be88b7413c92c896d
+	parent = c24911bc96a890852d1727449e29a10e46cf80c7
