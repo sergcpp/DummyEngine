@@ -14,8 +14,9 @@ runs:
     - run: |
         export ASAN_OPTIONS="windows_hook_legacy_allocators=false"
         chmod +x ./${{ inputs.bin-dir }}/test_Eng-asan
+        REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
         WORK_DIR=`pwd`
-        cd ../../builds/Eng
+        cd ../../builds/$REPO_NAME
         cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
         $WORK_DIR/${{ inputs.bin-dir }}/test_Eng-asan ${{ inputs.test-args }}
         cd ../../..

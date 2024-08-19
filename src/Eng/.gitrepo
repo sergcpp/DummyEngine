@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = spirv_opt
-	commit = a6bb85e3a2fe85550276b884a8e5ed4582d90f8e
+	branch = master
+	commit = f79c789c57460493a152fdbceb26c9705ad5f176
 	method = merge
 	cmdver = 0.4.6
-	parent = 31577027ab5b39d88b0044d55c3f671eb5537509
+	parent = bee5f509f30956d57c2f8a861617b55d3ad5fd71

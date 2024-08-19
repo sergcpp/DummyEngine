@@ -10,8 +10,9 @@ runs:
   using: 'composite'
   steps:
     - run: |
+        $REPO_NAME = $env:GITHUB_REPOSITORY.Split('/')[1]
         $WORK_DIR = Get-Location
-        cd ../../builds/Eng
+        cd ../../builds/$REPO_NAME
         python scripts/update_version_string.py Eng.cpp
         function Invoke-Environment {
           param

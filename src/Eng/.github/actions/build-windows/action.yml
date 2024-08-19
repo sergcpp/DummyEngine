@@ -10,8 +10,9 @@ runs:
   using: 'composite'
   steps:
     - run: |
+        REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
         WORK_DIR=`pwd`
-        cd ../../builds/Eng
+        cd ../../builds/$REPO_NAME
         python scripts/update_version_string.py Eng.cpp
         mkdir build
         cd build
