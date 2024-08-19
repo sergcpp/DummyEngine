@@ -10,8 +10,9 @@ runs:
   using: 'composite'
   steps:
     - run: |
+        $REPO_NAME = $env:GITHUB_REPOSITORY.Split('/')[1]
         $WORK_DIR = Get-Location
-        cd ../../builds/DummyEngine
+        cd ../../builds/$REPO_NAME
         python src/Eng/scripts/update_version_string.py src/DummyApp/DummyApp.cpp
         function Invoke-Environment {
           param

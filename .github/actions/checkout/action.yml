@@ -3,23 +3,23 @@ runs:
   using: 'composite'
   steps:
     - run: |
+        REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
         REPO_URL="${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }}"
         cd ../..
         mkdir -p builds
         cd builds
-        if [ -d "DummyEngine/.git" ]; then
+        if [ -d "$REPO_NAME/.git" ]; then
           echo "Reset existing repository"
-          cd DummyEngine
+          cd $REPO_NAME
           git remote set-url origin $REPO_URL
           git fetch --all
-          git fetch --tags
+          git fetch --tags -f
           git checkout -f ${{ env.GITHUB_SHA }}
-          #git reset --hard origin/${{ env.GITHUB_SHA }}
           git clean -fdx -e *assets_pc*
         else
           echo "Clone new repository"
-          git clone $REPO_URL -b ${{ env.GITHUB_SHA }}
-          cd DummyEngine
+          git clone $REPO_URL -b ${{ env.GITHUB_REF_NAME }}
+          cd $REPO_NAME
           git fetch --tags
         fi
       shell: bash
