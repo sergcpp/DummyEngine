@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_18_08
-	commit = 89f9f7386a8162dda3705df8ccc51051b0c5bad5
+	branch = spirv_opt
+	commit = a6bb85e3a2fe85550276b884a8e5ed4582d90f8e
 	method = merge
 	cmdver = 0.4.6
-	parent = 08899a6535a67edfe6d557062ddab8f2913b759a
+	parent = 31577027ab5b39d88b0044d55c3f671eb5537509
