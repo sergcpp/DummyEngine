@@ -318,6 +318,11 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_shadowJitter", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+        renderer_->settings.enable_shadow_jitter = !renderer_->settings.enable_shadow_jitter;
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_updateProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         Eng::SceneData &scene_data = scene_manager_->scene_data();
 
@@ -718,6 +723,7 @@ void GSBaseState::Draw() {
                 main_view_lists_[1].Clear();
                 random_->Reset(0);
                 renderer_->settings.taa_mode = Eng::eTAAMode::Static;
+                renderer_->settings.enable_shadow_jitter = true;
                 main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
                 renderer_->reset_accumulation();
             }

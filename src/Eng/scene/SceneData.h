@@ -183,8 +183,9 @@ struct LightItem {
     float u[3];
     int shadowreg_index;
     float v[3], blend;
+    float shadow_pos[3], _unused;
 };
-static_assert(sizeof(LightItem) == 80, "!");
+static_assert(sizeof(LightItem) == 96, "!");
 
 static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
 

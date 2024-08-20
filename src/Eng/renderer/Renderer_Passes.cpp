@@ -56,7 +56,8 @@ bool Eng::Renderer::InitPipelines() {
     bool success = true;
 
     success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
-    success &= init_pipeline(pi_gbuf_shade_, "internal/gbuffer_shade.comp.glsl@SS_SHADOW");
+    success &= init_pipeline(pi_gbuf_shade_[0], "internal/gbuffer_shade.comp.glsl@SS_SHADOW");
+    success &= init_pipeline(pi_gbuf_shade_[1], "internal/gbuffer_shade.comp.glsl@SHADOW_JITTER;SS_SHADOW");
     success &=
         init_pipeline(pi_ssr_classify_, ctx_.capabilities.subgroup ? "internal/ssr_classify.comp.glsl"
                                                                    : "internal/ssr_classify.comp.glsl@NO_SUBGROUP");
@@ -1266,8 +1267,8 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
-        Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                             builder.ctx().default_descr_alloc(), builder.ctx().log());
+        Ren::DispatchCompute(pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
+                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 }
 

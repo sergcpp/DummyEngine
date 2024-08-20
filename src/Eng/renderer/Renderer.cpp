@@ -37,7 +37,7 @@ float filter_blackman_harris(float v, float width) {
     return 0.35875f - 0.48829f * cosf(v) + 0.14128f * cosf(2.0f * v) - 0.01168f * cosf(3.0f * v);
 }
 
-const Ren::Vec2f PMJSamples64[64] = {
+extern const Ren::Vec2f PMJSamples64[64] = {
     Ren::Vec2f{0.958420f, 0.616889f}, Ren::Vec2f{0.103091f, 0.467694f}, Ren::Vec2f{0.615132f, 0.080424f},
     Ren::Vec2f{0.304792f, 0.849100f}, Ren::Vec2f{0.743586f, 0.931359f}, Ren::Vec2f{0.499603f, 0.185085f},
     Ren::Vec2f{0.796234f, 0.362629f}, Ren::Vec2f{0.188610f, 0.646428f}, Ren::Vec2f{0.824160f, 0.782852f},

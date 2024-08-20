@@ -21,7 +21,7 @@ namespace Eng {
 #include "shaders/Constants.inl"
 
 using namespace Types;
-static_assert(sizeof(Types::LightItem) == 80, "!");
+static_assert(sizeof(Types::LightItem) == 96, "!");
 
 struct DecalItem {
     float mat[3][4];
@@ -247,6 +247,7 @@ struct render_settings_t {
             bool enable_dof : 1;
             bool enable_bloom : 1;
             bool enable_timers : 1;
+            bool enable_shadow_jitter : 1;
         };
         uint32_t flags = 0xffffffff;
     };
@@ -284,6 +285,8 @@ struct render_settings_t {
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
     int8_t debug_probes = -1;
     int8_t debug_oit_layer = -1;
+
+    render_settings_t() { enable_shadow_jitter = false; }
 
     bool operator==(const render_settings_t &rhs) {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&

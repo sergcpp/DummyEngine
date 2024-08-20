@@ -330,8 +330,6 @@ struct ShadowMapRegion {
     mat4 clip_from_world;
 };
 
-const int LIGHTS_BUF_STRIDE = 5;
-
 struct ProbeItem {
     vec4 pos_and_radius;
     vec4 unused_and_layer;

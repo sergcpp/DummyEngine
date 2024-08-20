@@ -55,7 +55,9 @@ struct LightItem {
     float u[3];
     int shadowreg_index;
     float v[3], blend;
+    float shadow_pos[3], _unused;
 };
+const int LIGHTS_BUF_STRIDE = 6;
 
 struct light_wbvh_node_t {
     float bbox_min[3][8]; // SoA layout
@@ -65,7 +67,6 @@ struct light_wbvh_node_t {
     uint axis[8];
     uint cos_omega_ne[8];
 };
-
 const int LIGHT_NODES_BUF_STRIDE = 20;
 
 INTERFACE_END

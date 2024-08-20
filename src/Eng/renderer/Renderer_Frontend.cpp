@@ -95,6 +95,71 @@ uint32_t __record_texture(std::vector<Eng::TexEntry> &storage, const Ren::Tex2DR
 void __record_textures(std::vector<Eng::TexEntry> &storage, const Ren::Material *mat, bool is_animated,
                        uint16_t distance);
 
+extern const Ren::Vec2f PMJSamples64[64];
+
+const Ren::Vec3f SpherePoints64[64] = {
+    Ren::Vec3f{-0.606803f, -0.227542f, 0.012615f},  Ren::Vec3f{-0.481812f, 0.298798f, -0.395976f},
+    Ren::Vec3f{0.618312f, 0.214611f, 0.536968f},    Ren::Vec3f{-0.128685f, -0.327433f, 0.625708f},
+    Ren::Vec3f{0.192858f, 0.849842f, -0.004986f},   Ren::Vec3f{0.070345f, -0.317163f, -0.901680f},
+    Ren::Vec3f{-0.723223f, 0.412361f, 0.417792f},   Ren::Vec3f{0.491434f, 0.814199f, -0.050345f},
+    Ren::Vec3f{0.359948f, 0.623410f, 0.627263f},    Ren::Vec3f{-0.518696f, -0.024575f, -0.726868f},
+    Ren::Vec3f{-0.355859f, -0.779985f, -0.176428f}, Ren::Vec3f{0.427738f, 0.293318f, -0.373164f},
+    Ren::Vec3f{0.005584f, -0.386920f, 0.915436f},   Ren::Vec3f{-0.914031f, -0.349442f, -0.077900f},
+    Ren::Vec3f{-0.837404f, -0.361165f, 0.123485f},  Ren::Vec3f{-0.084971f, 0.169547f, 0.743860f},
+    Ren::Vec3f{-0.502519f, -0.736092f, -0.102331f}, Ren::Vec3f{0.125017f, 0.264481f, -0.395306f},
+    Ren::Vec3f{-0.309269f, 0.544252f, 0.598931f},   Ren::Vec3f{0.808337f, -0.309583f, 0.358690f},
+    Ren::Vec3f{0.342609f, 0.574856f, 0.731891f},    Ren::Vec3f{-0.369142f, -0.277635f, 0.828141f},
+    Ren::Vec3f{-0.761370f, 0.056724f, 0.430617f},   Ren::Vec3f{0.853650f, 0.297862f, -0.028660f},
+    Ren::Vec3f{0.381635f, 0.877480f, 0.003563f},    Ren::Vec3f{-0.246290f, -0.559757f, 0.070091f},
+    Ren::Vec3f{0.886535f, -0.178696f, -0.029253f},  Ren::Vec3f{-0.681287f, -0.176401f, 0.594572f},
+    Ren::Vec3f{0.329836f, 0.193350f, -0.804323f},   Ren::Vec3f{0.733830f, -0.614502f, -0.235493f},
+    Ren::Vec3f{0.513047f, 0.397844f, -0.050859f},   Ren::Vec3f{-0.638537f, -0.675933f, 0.059907f},
+    Ren::Vec3f{0.492650f, -0.559780f, -0.225643f},  Ren::Vec3f{-0.346062f, 0.800506f, -0.036251f},
+    Ren::Vec3f{-0.773794f, 0.547312f, -0.317664f},  Ren::Vec3f{-0.384989f, 0.171319f, -0.665306f},
+    Ren::Vec3f{0.888914f, 0.253291f, -0.366396f},   Ren::Vec3f{0.529483f, 0.763411f, 0.316835f},
+    Ren::Vec3f{-0.489054f, -0.149932f, -0.695513f}, Ren::Vec3f{0.042801f, -0.753047f, -0.461133f},
+    Ren::Vec3f{0.271533f, 0.127114f, -0.928428f},   Ren::Vec3f{-0.299383f, 0.295916f, 0.826113f},
+    Ren::Vec3f{0.427705f, 0.481979f, -0.675161f},   Ren::Vec3f{-0.458008f, -0.077514f, 0.548899f},
+    Ren::Vec3f{0.730487f, -0.049347f, -0.220412f},  Ren::Vec3f{-0.588273f, -0.689434f, -0.246883f},
+    Ren::Vec3f{-0.071152f, -0.904943f, -0.322627f}, Ren::Vec3f{0.719448f, -0.309481f, 0.264545f},
+    Ren::Vec3f{-0.808089f, -0.140940f, -0.487782f}, Ren::Vec3f{0.438911f, -0.625750f, -0.494734f},
+    Ren::Vec3f{-0.029029f, 0.041587f, -0.754928f},  Ren::Vec3f{0.500826f, 0.211516f, -0.493555f},
+    Ren::Vec3f{-0.585930f, 0.138124f, -0.437770f},  Ren::Vec3f{0.388122f, 0.465635f, 0.619553f},
+    Ren::Vec3f{-0.054235f, 0.525500f, 0.688979f},   Ren::Vec3f{-0.160195f, 0.817185f, -0.261551f},
+    Ren::Vec3f{0.590736f, 0.340311f, 0.465416f},    Ren::Vec3f{0.670968f, -0.408900f, -0.321072f},
+    Ren::Vec3f{0.846575f, 0.457948f, -0.176896f},   Ren::Vec3f{-0.039317f, -0.845867f, 0.344816f},
+    Ren::Vec3f{-0.188418f, 0.650853f, -0.722110f},  Ren::Vec3f{-0.049262f, -0.840064f, -0.054047f},
+    Ren::Vec3f{0.302508f, 0.472284f, -0.806392f},   Ren::Vec3f{0.826094f, -0.222098f, -0.426678f}};
+
+Ren::Vec4f JitterLightOffset(const Eng::eLightType type, const float radius, const Ren::Vec4f &u, const Ren::Vec4f &v,
+                             const int sample_index) {
+    const Ren::Vec2f r = PMJSamples64[sample_index % 64];
+    if (type == Eng::eLightType::Sphere) {
+        const Ren::Vec3f rv = radius * SpherePoints64[sample_index % 64];
+        return Ren::Vec4f{rv};
+    } else if (type == Eng::eLightType::Rect) {
+        return u * (2.0f * r[0] - 1.0f) + v * (2.0f * r[1] - 1.0f);
+    } else if (type == Eng::eLightType::Disk) {
+        Ren::Vec2f offset = 2.0f * r - Ren::Vec2f(1.0f);
+        if (offset[0] != 0.0f && offset[1] != 0.0f) {
+            float theta, r;
+            if (std::abs(offset[0]) > std::abs(offset[1])) {
+                r = offset[0];
+                theta = 0.25f * Ren::Pi<float>() * (offset[1] / offset[0]);
+            } else {
+                r = offset[1];
+                theta = 0.5f * Ren::Pi<float>() - 0.25f * Ren::Pi<float>() * (offset[0] / offset[1]);
+            }
+            offset[0] = r * std::cos(theta);
+            offset[1] = r * std::sin(theta);
+        }
+        return u * offset[0] + v * offset[1];
+    } else if (type == Eng::eLightType::Line) {
+        return u * (2.0f * r[0] - 1.0f);
+    }
+    return Ren::Vec4f{0.0f};
+}
+
 __itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
 __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("ProcessOccluders");
 } // namespace RendererInternal
@@ -186,6 +251,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const bool lighting_enabled = list.render_settings.enable_lights;
     const bool decals_enabled = list.render_settings.enable_decals;
     const bool shadows_enabled = (list.render_settings.shadows_quality != eShadowsQuality::Off);
+    const bool shadows_jitter_enabled = list.render_settings.enable_shadow_jitter;
     const bool rt_shadows_enabled = (list.render_settings.shadows_quality != eShadowsQuality::Raytraced);
 
     if (!lighting_enabled) {
@@ -520,6 +586,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         ls.shadowreg_index = -1;
                         memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
                         ls.blend = light.spot_blend * light.spot_blend;
+                        if (shadows_jitter_enabled) {
+                            pos += JitterLightOffset(light.type, ls.radius, u, v, list.frame_index);
+                        }
+                        memcpy(ls.shadow_pos, &pos[0], 3 * sizeof(float));
                     }
                 }
             }
@@ -703,6 +773,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     ls.shadowreg_index = -1;
                     memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
                     ls.blend = light.spot_blend * light.spot_blend;
+                    if (shadows_jitter_enabled) {
+                        pos += JitterLightOffset(light.type, ls.radius, u, v, list.frame_index);
+                    }
+                    memcpy(ls.shadow_pos, &pos[0], 3 * sizeof(float));
                 }
             }
         }
@@ -1227,8 +1301,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             continue;
         }
 
-        const auto light_center = Vec3f{l.pos[0], l.pos[1], l.pos[2]};
+        auto light_center = Vec3f{l.pos[0], l.pos[1], l.pos[2]};
         const float distance = Distance(light_center, cam_pos);
+        if (shadows_jitter_enabled) {
+            light_center = Vec3f{l.shadow_pos[0], l.shadow_pos[1], l.shadow_pos[2]};
+        }
 
         const int ShadowResolutions[][2] = {{512, 512}, {256, 256}, {128, 128}, {64, 64}};
 
@@ -1246,11 +1323,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         for (int r = 0; r < int(regions.size()); ++r) {
             // choose resolution based on distance
             int res_index = std::min(int(distance * 0.02f), 4);
-            if (ls->radius > 0.5f) {
+            if (!shadows_jitter_enabled && ls->radius > 0.5f) {
                 // make large light softer
                 res_index = std::min(res_index + 1, 4);
             }
-            if (ls->sky_portal) {
+            if (!shadows_jitter_enabled && ls->sky_portal) {
                 // make portal light softer
                 res_index = std::min(res_index + 1, 4);
             }
@@ -1512,12 +1589,12 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 reg.clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
 
                 if (!light_sees_dynamic_objects && region->last_update != 0xffffffff &&
-                    (scene.update_counter - region->last_update > 2)) {
+                    (scene.update_counter - region->last_update > 2) && !shadows_jitter_enabled) {
                     // nothing has changed within the last two frames, discard added batches
                     list.shadow_batches.resize(sh_list.shadow_batch_start);
                     sh_list.shadow_batch_count = 0;
                 } else {
-                    if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
+                    if (light_sees_dynamic_objects || region->last_update == 0xffffffff || shadows_jitter_enabled) {
                         region->last_update = scene.update_counter;
                     }
                     sh_list.shadow_batch_count = uint32_t(list.shadow_batches.size()) - sh_list.shadow_batch_start;

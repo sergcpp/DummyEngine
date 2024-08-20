@@ -229,7 +229,7 @@ class Renderer {
     PrimDraw prim_draw_;
     uint32_t frame_index_ = 0, accumulated_frames_ = 0;
 
-    Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
+    Ren::Pipeline pi_skinning_, pi_gbuf_shade_[2];
     // HQ SSR
     Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2][2];
     Ren::Pipeline pi_rt_write_indirect_;

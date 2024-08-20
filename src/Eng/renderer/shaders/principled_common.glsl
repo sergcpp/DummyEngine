@@ -110,6 +110,7 @@ struct light_item_t {
     vec4 dir_and_spot;
     vec4 u_and_reg;
     vec4 v_and_blend;
+    vec4 shadow_pos_and_unused;
 };
 
 light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
@@ -119,6 +120,7 @@ light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
     ret.dir_and_spot = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 2);
     ret.u_and_reg = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 3);
     ret.v_and_blend = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 4);
+    ret.shadow_pos_and_unused = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 5);
     return ret;
 }
 
