@@ -1,1 +1,0 @@
-DummyAppVK.exe -s scenes/ai043_06.json -w 1400 -h 936 --pt
