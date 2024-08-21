@@ -202,7 +202,7 @@ int PickLightSource(const vec3 P, samplerBuffer nodes_buf, const uint lights_cou
 
 shared float g_stack_factors[64][48];
 
-float EvalTriLightFactor(const vec3 P, const vec3 L, samplerBuffer nodes_buf, samplerBuffer lights_buf, const uint lights_count, const vec3 ro) {
+float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, samplerBuffer lights_buf, const uint lights_count, const uint tri_index, const vec3 ro) {
     uint stack_size = 0;
     g_stack_factors[gl_LocalInvocationIndex][stack_size] = 1.0;
     g_stack[gl_LocalInvocationIndex][stack_size++] = 0;
@@ -230,15 +230,8 @@ float EvalTriLightFactor(const vec3 P, const vec3 L, samplerBuffer nodes_buf, sa
 
             const light_item_t litem = FetchLightItem(lights_buf, light_index);
             const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;
-            [[dont_flatten]] if (type == LIGHT_TYPE_TRI) {
-                const vec3 p1 = litem.pos_and_radius.xyz,
-                           p2 = litem.u_and_reg.xyz,
-                           p3 = litem.v_and_blend.xyz;
-                float t, u, v;
-                if (IntersectTri(ro, L, p1, p2, p3, t, u, v) == 1) {
-                    // needed triangle found
-                    return cur_factor;
-                }
+            if (type == LIGHT_TYPE_TRI && floatBitsToUint(litem.shadow_pos_and_tri_index.w) == tri_index) {
+                return cur_factor;
             }
         }
     }

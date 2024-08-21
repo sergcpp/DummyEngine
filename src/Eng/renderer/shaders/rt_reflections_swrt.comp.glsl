@@ -421,7 +421,7 @@ void main() {
 
 #ifdef STOCH_LIGHTS
             if (j == 0 && hsum(emission_color) > 1e-7 && first_roughness > 1e-7) {
-                const float pdf_factor = EvalTriLightFactor(P, refl_ray_ws, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, ray_origin_ws.xyz);
+                const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, uint(tri_index), ray_origin_ws.xyz);
 
                 const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
                 float light_fwd_len;

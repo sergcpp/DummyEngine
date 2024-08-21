@@ -960,6 +960,7 @@ void Eng::SceneManager::RebuildLightTree() {
 
         Ren::Span<const float> positions = acc.mesh->attribs();
         Ren::Span<const uint32_t> tri_indices = acc.mesh->indices();
+        const uint32_t indices_start = acc.mesh->indices_buf().sub.offset / sizeof(uint32_t);
 
         const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
         for (int j = 0; j < int(groups.size()); ++j) {
@@ -1040,6 +1041,8 @@ void Eng::SceneManager::RebuildLightTree() {
                     tri_light.blend = uv2[1];
                     // use as emissive texture index
                     tri_light.shadowreg_index = front_mat.index() * MAX_TEX_PER_MATERIAL + MAT_TEX_EMISSION;
+                    // store triangle index
+                    tri_light.tri_index = (indices_start + i) / 3;
                 }
             }
         }

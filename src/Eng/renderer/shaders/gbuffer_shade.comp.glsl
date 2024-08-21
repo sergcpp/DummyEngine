@@ -171,7 +171,7 @@ void main() {
         }
         if (is_portal) {
             // Sample environment to create slight color variation
-            const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_unused.xyz - P), g_shrd_data.env_col.w);
+            const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
             light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
         }
 
@@ -187,7 +187,7 @@ void main() {
                 float occlusion = 0.0;
 
                 const float jitter = Bayer4x4(uvec2(icoord), 0);
-                const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(litem.shadow_pos_and_unused.xyz - P), 0.0)).xyz;
+                const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(litem.shadow_pos_and_tri_index.xyz - P), 0.0)).xyz;
                 if (IntersectRay(pos_vs + 0.005 * vec3(0.0, 0.0, 1.0), light_dir_vs, jitter /* jitter */, hit_pixel, hit_point)) {
                     const float shadow_vis = texelFetch(g_albedo_tex, ivec2(hit_pixel), 0).w;
                     if (shadow_vis > 0.5) {
@@ -200,13 +200,13 @@ void main() {
                 // shadow fadeout
                 occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs)));
                 // fix shadow terminator
-                occlusion *= saturate(abs(8.0 * dot(N, normalize(litem.shadow_pos_and_unused.xyz - P))));
+                occlusion *= saturate(abs(8.0 * dot(N, normalize(litem.shadow_pos_and_tri_index.xyz - P))));
 
                 final_visibility -= occlusion;
             }
 #endif // SS_SHADOW
 
-            vec3 from_light = normalize(P + 0.05 * (hash - 0.5) * N - litem.shadow_pos_and_unused.xyz);
+            vec3 from_light = normalize(P + 0.05 * (hash - 0.5) * N - litem.shadow_pos_and_tri_index.xyz);
             shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 

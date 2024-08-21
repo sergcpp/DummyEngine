@@ -55,7 +55,8 @@ struct LightItem {
     float u[3];
     int shadowreg_index;
     float v[3], blend;
-    float shadow_pos[3], _unused;
+    float shadow_pos[3];
+    uint tri_index;
 };
 const int LIGHTS_BUF_STRIDE = 6;
 
