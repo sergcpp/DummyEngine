@@ -160,127 +160,111 @@ set(SCENE_SOURCES   scene/Atmosphere.h
                     scene/SceneManager_Tex.cpp
                     scene/TexUpdateFileBuf.h)
 
-set(GRAPH_SOURCES   renderer/graph/GraphBuilder.h
-                    renderer/graph/GraphBuilder.cpp
-                    renderer/graph/SubPass.h
-                    renderer/graph/SubPass.cpp
-                    renderer/graph/Resource.h)
+set(FRAMEGRAPH_SOURCES  renderer/framegraph/FgBuilder.h
+                        renderer/framegraph/FgBuilder.cpp
+                        renderer/framegraph/FgNode.h
+                        renderer/framegraph/FgNode.cpp
+                        renderer/framegraph/FgResource.h)
 
-set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
-                    renderer/passes/RpBuildAccStructures.cpp
-                    renderer/passes/RpCombine.h
-                    renderer/passes/RpCombine.cpp
-                    renderer/passes/RpDebugOIT.h
-                    renderer/passes/RpDebugOIT.cpp
-                    renderer/passes/RpDebugProbes.h
-                    renderer/passes/RpDebugProbes.cpp
-                    renderer/passes/RpDebugRT.h
-                    renderer/passes/RpDebugRT.cpp
-                    renderer/passes/RpDepthFill.h
-                    renderer/passes/RpDepthFill.cpp
-                    renderer/passes/RpDepthHierarchy.h
-                    renderer/passes/RpDepthHierarchy.cpp
-                    renderer/passes/RpEmissive.h
-                    renderer/passes/RpEmissive.cpp
-                    renderer/passes/RpGBufferFill.h
-                    renderer/passes/RpGBufferFill.cpp
-                    renderer/passes/RpOITBlendLayer.h
-                    renderer/passes/RpOITBlendLayer.cpp
-                    renderer/passes/RpOITDepthPeel.h
-                    renderer/passes/RpOITDepthPeel.cpp
-                    renderer/passes/RpOITScheduleRays.h
-                    renderer/passes/RpOITScheduleRays.cpp
-                    renderer/passes/RpOpaque.h
-                    renderer/passes/RpOpaque.cpp
-                    renderer/passes/RpReadExposure.h
-                    renderer/passes/RpReadExposure.cpp
-                    renderer/passes/RpRTGI.h
-                    renderer/passes/RpRTGI.cpp
-                    renderer/passes/RpRTGICache.h
-                    renderer/passes/RpRTGICache.cpp
-                    renderer/passes/RpRTReflections.h
-                    renderer/passes/RpRTReflections.cpp
-                    renderer/passes/RpRTShadows.h
-                    renderer/passes/RpRTShadows.cpp
-                    renderer/passes/RpSampleLights.h
-                    renderer/passes/RpSampleLights.cpp
-                    renderer/passes/RpShadowMaps.h
-                    renderer/passes/RpShadowMaps.cpp
-                    renderer/passes/RpSkinning.h
-                    renderer/passes/RpSkinning.cpp
-                    renderer/passes/RpSkydome.h
-                    renderer/passes/RpSkydome.cpp
-                    renderer/passes/RpSSRCompose.h
-                    renderer/passes/RpSSRCompose.cpp
-                    renderer/passes/RpSSRCompose2.h
-                    renderer/passes/RpSSRCompose2.cpp
-                    renderer/passes/RpTransparent.h
-                    renderer/passes/RpTransparent.cpp
-                    renderer/passes/RpUpdateAccBuffers.h
-                    renderer/passes/RpUpdateAccBuffers.cpp)
+set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
+                        renderer/executors/ExBuildAccStructures.cpp
+                        renderer/executors/ExCombine.h
+                        renderer/executors/ExCombine.cpp
+                        renderer/executors/ExDebugOIT.h
+                        renderer/executors/ExDebugOIT.cpp
+                        renderer/executors/ExDebugProbes.h
+                        renderer/executors/ExDebugProbes.cpp
+                        renderer/executors/ExDebugRT.h
+                        renderer/executors/ExDebugRT.cpp
+                        renderer/executors/ExDepthFill.h
+                        renderer/executors/ExDepthFill.cpp
+                        renderer/executors/ExDepthHierarchy.h
+                        renderer/executors/ExDepthHierarchy.cpp
+                        renderer/executors/ExEmissive.h
+                        renderer/executors/ExEmissive.cpp
+                        renderer/executors/ExGBufferFill.h
+                        renderer/executors/ExGBufferFill.cpp
+                        renderer/executors/ExOITBlendLayer.h
+                        renderer/executors/ExOITBlendLayer.cpp
+                        renderer/executors/ExOITDepthPeel.h
+                        renderer/executors/ExOITDepthPeel.cpp
+                        renderer/executors/ExOITScheduleRays.h
+                        renderer/executors/ExOITScheduleRays.cpp
+                        renderer/executors/ExOpaque.h
+                        renderer/executors/ExOpaque.cpp
+                        renderer/executors/ExReadExposure.h
+                        renderer/executors/ExReadExposure.cpp
+                        renderer/executors/ExRTGI.h
+                        renderer/executors/ExRTGI.cpp
+                        renderer/executors/ExRTGICache.h
+                        renderer/executors/ExRTGICache.cpp
+                        renderer/executors/ExRTReflections.h
+                        renderer/executors/ExRTReflections.cpp
+                        renderer/executors/ExRTShadows.h
+                        renderer/executors/ExRTShadows.cpp
+                        renderer/executors/ExSampleLights.h
+                        renderer/executors/ExSampleLights.cpp
+                        renderer/executors/ExShadowMaps.h
+                        renderer/executors/ExShadowMaps.cpp
+                        renderer/executors/ExSkinning.h
+                        renderer/executors/ExSkinning.cpp
+                        renderer/executors/ExSkydome.h
+                        renderer/executors/ExSkydome.cpp
+                        renderer/executors/ExSSRCompose.h
+                        renderer/executors/ExSSRCompose.cpp
+                        renderer/executors/ExTransparent.h
+                        renderer/executors/ExTransparent.cpp
+                        renderer/executors/ExUpdateAccBuffers.h
+                        renderer/executors/ExUpdateAccBuffers.cpp)
 
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                          renderer/PrimDrawGL.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                       scene/SceneManagerGL.cpp)
-    set(GRAPH_SOURCES ${GRAPH_SOURCES}
-                      renderer/graph/GraphBuilderGL.cpp)
-    set(PASS_SOURCES ${PASS_SOURCES}
-                        renderer/passes/RpDebugRT_GL.cpp
-                        renderer/passes/RpDebugTextures.h       # GL-only for now
-                        renderer/passes/RpDebugTextures.cpp     # GL-only for now
-                        renderer/passes/RpDebugTexturesGL.cpp
-                        renderer/passes/RpDebugEllipsoids.h     # GL-only for now
-                        renderer/passes/RpDebugEllipsoids.cpp   # GL-only for now
-                        renderer/passes/RpDepthFillGL.cpp
-                        renderer/passes/RpDepthHierarchyGL.cpp
-                        renderer/passes/RpEmissiveGL.cpp
-                        renderer/passes/RpDOF.h                 # GL-only for now
-                        renderer/passes/RpDOF.cpp               # GL-only for now
-                        renderer/passes/RpFXAA.h                # GL-only for now
-                        renderer/passes/RpFXAA.cpp              # GL-only for now
-                        renderer/passes/RpGBufferFillGL.cpp
-                        renderer/passes/RpOITBlendLayerGL.cpp
-                        renderer/passes/RpOITDepthPeelGL.cpp
-                        renderer/passes/RpOITScheduleRaysGL.cpp
-                        renderer/passes/RpOpaqueGL.cpp
-                        renderer/passes/RpRTGI_GL.cpp
-                        renderer/passes/RpRTGICache_GL.cpp
-                        renderer/passes/RpRTReflections_GL.cpp
-                        renderer/passes/RpRTShadows_GL.cpp
-                        renderer/passes/RpSampleLights_GL.cpp
-                        renderer/passes/RpShadowMapsGL.cpp
-                        renderer/passes/RpSkinningGL.cpp
-                        renderer/passes/RpTransparentGL.cpp
-                        renderer/passes/RpUpdateAccBuffersGL.cpp)
+    set(EXECUTORS_SOURCES   ${EXECUTORS_SOURCES}
+                            renderer/executors/ExDebugRT_GL.cpp
+                            renderer/executors/ExDepthFillGL.cpp
+                            renderer/executors/ExDepthHierarchyGL.cpp
+                            renderer/executors/ExEmissiveGL.cpp
+                            renderer/executors/ExGBufferFillGL.cpp
+                            renderer/executors/ExOITBlendLayerGL.cpp
+                            renderer/executors/ExOITDepthPeelGL.cpp
+                            renderer/executors/ExOITScheduleRaysGL.cpp
+                            renderer/executors/ExOpaqueGL.cpp
+                            renderer/executors/ExRTGI_GL.cpp
+                            renderer/executors/ExRTGICache_GL.cpp
+                            renderer/executors/ExRTReflections_GL.cpp
+                            renderer/executors/ExRTShadows_GL.cpp
+                            renderer/executors/ExSampleLights_GL.cpp
+                            renderer/executors/ExShadowMapsGL.cpp
+                            renderer/executors/ExSkinningGL.cpp
+                            renderer/executors/ExTransparentGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                          renderer/PrimDrawVK.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                       scene/SceneManagerVK.cpp)
-    set(GRAPH_SOURCES ${GRAPH_SOURCES}
-                      renderer/graph/GraphBuilderVK.cpp)
-    set(PASS_SOURCES ${PASS_SOURCES}
-                     renderer/passes/RpBuildAccStructuresVK.cpp
-                     renderer/passes/RpDebugRT_VK.cpp
-                     renderer/passes/RpDepthFillVK.cpp
-                     renderer/passes/RpDepthHierarchyVK.cpp
-                     renderer/passes/RpEmissiveVK.cpp
-                     renderer/passes/RpGBufferFillVK.cpp
-                     renderer/passes/RpOITBlendLayerVK.cpp
-                     renderer/passes/RpOITDepthPeelVK.cpp
-                     renderer/passes/RpOITScheduleRaysVK.cpp
-                     renderer/passes/RpOpaqueVK.cpp
-                     renderer/passes/RpRTGI_VK.cpp
-                     renderer/passes/RpRTGICache_VK.cpp
-                     renderer/passes/RpRTReflections_VK.cpp
-                     renderer/passes/RpRTShadows_VK.cpp
-                     renderer/passes/RpSampleLights_VK.cpp
-                     renderer/passes/RpShadowMapsVK.cpp
-                     renderer/passes/RpSkinningVK.cpp
-                     renderer/passes/RpTransparentVK.cpp
-                     renderer/passes/RpUpdateAccBuffersVK.cpp)
+    set(EXECUTORS_SOURCES   ${EXECUTORS_SOURCES}
+                            renderer/executors/ExBuildAccStructuresVK.cpp
+                            renderer/executors/ExDebugRT_VK.cpp
+                            renderer/executors/ExDepthFillVK.cpp
+                            renderer/executors/ExDepthHierarchyVK.cpp
+                            renderer/executors/ExEmissiveVK.cpp
+                            renderer/executors/ExGBufferFillVK.cpp
+                            renderer/executors/ExOITBlendLayerVK.cpp
+                            renderer/executors/ExOITDepthPeelVK.cpp
+                            renderer/executors/ExOITScheduleRaysVK.cpp
+                            renderer/executors/ExOpaqueVK.cpp
+                            renderer/executors/ExRTGI_VK.cpp
+                            renderer/executors/ExRTGICache_VK.cpp
+                            renderer/executors/ExRTReflections_VK.cpp
+                            renderer/executors/ExRTShadows_VK.cpp
+                            renderer/executors/ExSampleLights_VK.cpp
+                            renderer/executors/ExShadowMapsVK.cpp
+                            renderer/executors/ExSkinningVK.cpp
+                            renderer/executors/ExTransparentVK.cpp
+                            renderer/executors/ExUpdateAccBuffersVK.cpp)
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                          renderer/RendererSW.cpp)
@@ -352,11 +336,11 @@ source_group("src\\input" FILES ${INPUT_SOURCE_FILES})
 list(APPEND ALL_SOURCE_FILES ${RENDERER_SOURCES})
 source_group("src\\renderer" FILES ${RENDERER_SOURCES})
 
-list(APPEND ALL_SOURCE_FILES ${GRAPH_SOURCES})
-source_group("src\\renderer\\graph" FILES ${GRAPH_SOURCES})
+list(APPEND ALL_SOURCE_FILES ${FRAMEGRAPH_SOURCES})
+source_group("src\\renderer\\framegraph" FILES ${FRAMEGRAPH_SOURCES})
 
-list(APPEND ALL_SOURCE_FILES ${PASS_SOURCES})
-source_group("src\\renderer\\passes" FILES ${PASS_SOURCES})
+list(APPEND ALL_SOURCE_FILES ${EXECUTORS_SOURCES})
+source_group("src\\renderer\\executors" FILES ${EXECUTORS_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${RENDERER_SHADERS})
 source_group("src\\renderer\\shaders" FILES ${RENDERER_SHADERS})

@@ -89,7 +89,7 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
 
 Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads)
     : ctx_(ctx), sh_(sh), rand_(rand), threads_(threads), shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT),
-      rp_builder_(ctx_, sh_) {
+      fg_builder_(ctx_, sh_) {
     using namespace RendererInternal;
 
     swCullCtxInit(&cull_ctx_, ctx.w(), ctx.h(), 0.0f);
@@ -723,7 +723,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     const bool probe_storage_changed = (list.probe_storage != probe_storage_);
     const bool rebuild_renderpasses = !cached_settings_.has_value() ||
                                       (cached_settings_.value() != list.render_settings) || probe_storage_changed ||
-                                      !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
+                                      !fg_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
 
     cached_settings_ = list.render_settings;
     cached_rp_index_ = 0;
@@ -739,43 +739,43 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     if (rebuild_renderpasses) {
         const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
 
-        rp_builder_.Reset();
+        fg_builder_.Reset();
         backbuffer_sources_.clear();
 
         accumulated_frames_ = 0;
 
         InitSkyResources();
 
-        auto &common_buffers = *rp_builder_.AllocPassData<CommonBuffers>();
+        auto &common_buffers = *fg_builder_.AllocNodeData<CommonBuffers>();
         AddBuffersUpdatePass(common_buffers, persistent_data);
         AddLightBuffersUpdatePass(common_buffers);
         AddSunColorUpdatePass(common_buffers);
 
         {
-            auto &skinning = rp_builder_.AddPass("SKINNING");
+            auto &skinning = fg_builder_.AddNode("SKINNING");
 
-            RpResRef skin_vtx_res =
+            FgResRef skin_vtx_res =
                 skinning.AddStorageReadonlyInput(ctx_.default_skin_vertex_buf(), Ren::eStageBits::ComputeShader);
-            RpResRef in_skin_transforms_res =
+            FgResRef in_skin_transforms_res =
                 skinning.AddStorageReadonlyInput(common_buffers.skin_transforms_res, Ren::eStageBits::ComputeShader);
-            RpResRef in_shape_keys_res =
+            FgResRef in_shape_keys_res =
                 skinning.AddStorageReadonlyInput(common_buffers.shape_keys_res, Ren::eStageBits::ComputeShader);
-            RpResRef delta_buf_res =
+            FgResRef delta_buf_res =
                 skinning.AddStorageReadonlyInput(ctx_.default_delta_buf(), Ren::eStageBits::ComputeShader);
 
-            RpResRef vtx_buf1_res =
+            FgResRef vtx_buf1_res =
                 skinning.AddStorageOutput(ctx_.default_vertex_buf1(), Ren::eStageBits::ComputeShader);
-            RpResRef vtx_buf2_res =
+            FgResRef vtx_buf2_res =
                 skinning.AddStorageOutput(ctx_.default_vertex_buf2(), Ren::eStageBits::ComputeShader);
 
-            skinning.make_executor<RpSkinningExecutor>(pi_skinning_, p_list_, skin_vtx_res, in_skin_transforms_res,
-                                                       in_shape_keys_res, delta_buf_res, vtx_buf1_res, vtx_buf2_res);
+            skinning.make_executor<ExSkinning>(pi_skinning_, p_list_, skin_vtx_res, in_skin_transforms_res,
+                                               in_shape_keys_res, delta_buf_res, vtx_buf1_res, vtx_buf2_res);
         }
 
         //
         // RT acceleration structures
         //
-        auto &acc_struct_data = *rp_builder_.AllocPassData<AccelerationStructureData>();
+        auto &acc_struct_data = *fg_builder_.AllocNodeData<AccelerationStructureData>();
         acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
         acc_struct_data.rt_sh_tlas_buf = persistent_data.rt_sh_tlas_buf;
         acc_struct_data.hwrt.rt_tlas_build_scratch_size = persistent_data.rt_tlas_build_scratch_size;
@@ -786,13 +786,13 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             acc_struct_data.rt_tlases[int(eTLASIndex::Shadow)] = persistent_data.rt_sh_tlas.get();
         }
 
-        RpResRef rt_geo_instances_res, rt_obj_instances_res, rt_sh_geo_instances_res, rt_sh_obj_instances_res;
+        FgResRef rt_geo_instances_res, rt_obj_instances_res, rt_sh_geo_instances_res, rt_sh_obj_instances_res;
 
         if (ctx_.capabilities.hwrt) {
-            auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
+            auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
             { // create geo instances buffer
-                RpBufDesc desc;
+                FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = RTGeoInstancesBufChunkSize;
 
@@ -800,67 +800,66 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
 
             { // create obj instances buffer
-                RpBufDesc desc;
+                FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = HWRTObjInstancesBufChunkSize;
 
                 rt_obj_instances_res = update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
             }
 
-            update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(p_list_, 0, rt_geo_instances_res,
-                                                                     rt_obj_instances_res);
+            update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 0, rt_geo_instances_res, rt_obj_instances_res);
 
-            auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
+            auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRCTS");
 
             rt_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res);
-            RpResRef rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
+            FgResRef rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
 
-            RpResRef rt_tlas_build_scratch_res;
+            FgResRef rt_tlas_build_scratch_res;
 
             { // create scratch buffer
-                RpBufDesc desc;
+                FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = acc_struct_data.hwrt.rt_tlas_build_scratch_size;
                 rt_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("TLAS Scratch Buf", desc);
             }
 
-            build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(
-                p_list_, 0, rt_obj_instances_res, &acc_struct_data, rt_tlas_res, rt_tlas_build_scratch_res);
+            build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 0, rt_obj_instances_res, &acc_struct_data,
+                                                                  rt_tlas_res, rt_tlas_build_scratch_res);
         } else if (ctx_.capabilities.swrt && acc_struct_data.rt_tlas_buf) {
-            auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
+            auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
             { // create geo instances buffer
-                RpBufDesc desc;
+                FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = RTGeoInstancesBufChunkSize;
 
                 rt_geo_instances_res = update_rt_bufs.AddTransferOutput("RT Geo Instances", desc);
             }
 
-            update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(p_list_, 0, rt_geo_instances_res, RpResRef{});
+            update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 0, rt_geo_instances_res, FgResRef{});
 
-            auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
+            auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRCTS");
 
             { // create obj instances buffer
-                RpBufDesc desc;
+                FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = SWRTObjInstancesBufChunkSize;
 
                 rt_obj_instances_res = build_acc_structs.AddTransferOutput("RT Obj Instances", desc);
             }
 
-            RpResRef rt_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf);
+            FgResRef rt_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf);
 
-            build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(p_list_, 0, rt_obj_instances_res,
-                                                                          &acc_struct_data, rt_tlas_res, RpResRef{});
+            build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 0, rt_obj_instances_res, &acc_struct_data,
+                                                                  rt_tlas_res, FgResRef{});
         }
 
         if (deferred_shading && list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
             if (ctx_.capabilities.hwrt) {
-                auto &update_rt_bufs = rp_builder_.AddPass("UPDATE SH ACC BUFS");
+                auto &update_rt_bufs = fg_builder_.AddNode("UPDATE SH ACC BUFS");
 
                 { // create geo instances buffer
-                    RpBufDesc desc;
+                    FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = RTGeoInstancesBufChunkSize;
 
@@ -868,96 +867,95 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 }
 
                 { // create obj instances buffer
-                    RpBufDesc desc;
+                    FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = HWRTObjInstancesBufChunkSize;
 
                     rt_sh_obj_instances_res = update_rt_bufs.AddTransferOutput("RT SH Obj Instances", desc);
                 }
 
-                update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(p_list_, 1, rt_sh_geo_instances_res,
-                                                                         rt_sh_obj_instances_res);
+                update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 1, rt_sh_geo_instances_res,
+                                                                 rt_sh_obj_instances_res);
 
                 ////
 
-                auto &build_acc_structs = rp_builder_.AddPass("SH ACC STRCTS");
+                auto &build_acc_structs = fg_builder_.AddNode("SH ACC STRCTS");
                 rt_sh_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_sh_obj_instances_res);
-                RpResRef rt_sh_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_sh_tlas_buf);
+                FgResRef rt_sh_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_sh_tlas_buf);
 
-                RpResRef rt_sh_tlas_build_scratch_res;
+                FgResRef rt_sh_tlas_build_scratch_res;
 
                 { // create scratch buffer
-                    RpBufDesc desc;
+                    FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = acc_struct_data.hwrt.rt_tlas_build_scratch_size;
                     rt_sh_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("SH TLAS Scratch Buf", desc);
                 }
 
-                build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(p_list_, 1, rt_sh_obj_instances_res,
-                                                                              &acc_struct_data, rt_sh_tlas_res,
-                                                                              rt_sh_tlas_build_scratch_res);
+                build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 1, rt_sh_obj_instances_res,
+                                                                      &acc_struct_data, rt_sh_tlas_res,
+                                                                      rt_sh_tlas_build_scratch_res);
             } else if (ctx_.capabilities.swrt && acc_struct_data.rt_sh_tlas_buf) {
-                auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
+                auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
                 { // create geo instances buffer
-                    RpBufDesc desc;
+                    FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = RTGeoInstancesBufChunkSize;
 
                     rt_sh_geo_instances_res = update_rt_bufs.AddTransferOutput("RT SH Geo Instances", desc);
                 }
 
-                update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(p_list_, 1, rt_sh_geo_instances_res,
-                                                                         RpResRef{});
+                update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 1, rt_sh_geo_instances_res, FgResRef{});
 
-                auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
+                auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRCTS");
 
                 { // create obj instances buffer
-                    RpBufDesc desc;
+                    FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = SWRTObjInstancesBufChunkSize;
 
                     rt_sh_obj_instances_res = build_acc_structs.AddTransferOutput("RT SH Obj Instances", desc);
                 }
 
-                RpResRef rt_sh_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_sh_tlas_buf);
+                FgResRef rt_sh_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_sh_tlas_buf);
 
-                build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(
-                    p_list_, 1, rt_sh_obj_instances_res, &acc_struct_data, rt_sh_tlas_res, RpResRef{});
+                build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 1, rt_sh_obj_instances_res,
+                                                                      &acc_struct_data, rt_sh_tlas_res, FgResRef{});
             }
         }
 
-        auto &frame_textures = *rp_builder_.AllocPassData<FrameTextures>();
+        auto &frame_textures = *fg_builder_.AllocNodeData<FrameTextures>();
 
         { // Shadow maps
-            auto &shadow_maps = rp_builder_.AddPass("SHADOW MAPS");
-            RpResRef vtx_buf1_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            RpResRef vtx_buf2_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            RpResRef ndx_buf_res = shadow_maps.AddIndexBufferInput(ctx_.default_indices_buf());
+            auto &shadow_maps = fg_builder_.AddNode("SHADOW MAPS");
+            FgResRef vtx_buf1_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            FgResRef vtx_buf2_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            FgResRef ndx_buf_res = shadow_maps.AddIndexBufferInput(ctx_.default_indices_buf());
 
-            RpResRef shared_data_res = shadow_maps.AddUniformBufferInput(
+            FgResRef shared_data_res = shadow_maps.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            RpResRef instances_res = shadow_maps.AddStorageReadonlyInput(
+            FgResRef instances_res = shadow_maps.AddStorageReadonlyInput(
                 persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
-            RpResRef instance_indices_res =
+            FgResRef instance_indices_res =
                 shadow_maps.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
-            RpResRef materials_buf_res =
+            FgResRef materials_buf_res =
                 shadow_maps.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-            RpResRef textures_buf_res =
+            FgResRef textures_buf_res =
                 shadow_maps.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
 #else
-            RpResRef textures_buf_res;
+            FgResRef textures_buf_res;
 #endif
-            RpResRef noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            FgResRef noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
 
             frame_textures.shadowmap = shadow_maps.AddDepthOutput(shadow_map_tex_);
 
-            rp_shadow_maps_.Setup(&p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
+            ex_shadow_maps_.Setup(&p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
                                   textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
                                   frame_textures.shadowmap);
-            shadow_maps.set_executor(&rp_shadow_maps_);
+            shadow_maps.set_executor(&ex_shadow_maps_);
         }
 
         frame_textures.depth_params.w = view_state_.scr_res[0];
@@ -1019,28 +1017,28 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // Depth prepass
         //
         if (list.render_settings.enable_zfill && !list.render_settings.debug_culling) {
-            auto &depth_fill = rp_builder_.AddPass("DEPTH FILL");
+            auto &depth_fill = fg_builder_.AddNode("DEPTH FILL");
 
-            RpResRef vtx_buf1 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            RpResRef vtx_buf2 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            RpResRef ndx_buf = depth_fill.AddIndexBufferInput(ctx_.default_indices_buf());
+            FgResRef vtx_buf1 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            FgResRef vtx_buf2 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            FgResRef ndx_buf = depth_fill.AddIndexBufferInput(ctx_.default_indices_buf());
 
-            RpResRef shared_data_res = depth_fill.AddUniformBufferInput(
+            FgResRef shared_data_res = depth_fill.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            RpResRef instances_res = depth_fill.AddStorageReadonlyInput(
+            FgResRef instances_res = depth_fill.AddStorageReadonlyInput(
                 persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
-            RpResRef instance_indices_res =
+            FgResRef instance_indices_res =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
-            RpResRef materials_buf_res =
+            FgResRef materials_buf_res =
                 depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-            RpResRef textures_buf_res =
+            FgResRef textures_buf_res =
                 depth_fill.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
 #else
-            RpResRef textures_buf_res;
+            FgResRef textures_buf_res;
 #endif
-            RpResRef noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            FgResRef noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
 
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
@@ -1054,17 +1052,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, params);
             }
 
-            rp_depth_fill_.Setup(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1, vtx_buf2,
+            ex_depth_fill_.Setup(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1, vtx_buf2,
                                  ndx_buf, materials_buf_res, textures_buf_res, &bindless_tex, instances_res,
                                  instance_indices_res, shared_data_res, noise_tex_res, frame_textures.depth,
                                  frame_textures.velocity);
-            depth_fill.set_executor(&rp_depth_fill_);
+            depth_fill.set_executor(&ex_depth_fill_);
         }
 
         //
         // Downsample depth
         //
-        RpResRef depth_down_2x, depth_hierarchy_tex;
+        FgResRef depth_down_2x, depth_hierarchy_tex;
 
         if (list.render_settings.enable_zfill &&
             (list.render_settings.enable_ssao ||
@@ -1073,20 +1071,20 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // TODO: get rid of this (or use on low spec only)
             AddDownsampleDepthPass(common_buffers, frame_textures.depth, depth_down_2x);
 
-            auto &depth_hierarchy = rp_builder_.AddPass("DEPTH HIERARCHY");
-            const RpResRef depth_tex =
+            auto &depth_hierarchy = fg_builder_.AddNode("DEPTH HIERARCHY");
+            const FgResRef depth_tex =
                 depth_hierarchy.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-            const RpResRef atomic_buf =
+            const FgResRef atomic_buf =
                 depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt_res, Ren::eStageBits::ComputeShader);
 
             { // 32-bit float depth hierarchy
                 Ren::Tex2DParams params;
-                params.w = ((view_state_.scr_res[0] + RpDepthHierarchy::TileSize - 1) / RpDepthHierarchy::TileSize) *
-                           RpDepthHierarchy::TileSize;
-                params.h = ((view_state_.scr_res[1] + RpDepthHierarchy::TileSize - 1) / RpDepthHierarchy::TileSize) *
-                           RpDepthHierarchy::TileSize;
+                params.w = ((view_state_.scr_res[0] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
+                           ExDepthHierarchy::TileSize;
+                params.h = ((view_state_.scr_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
+                           ExDepthHierarchy::TileSize;
                 params.format = Ren::eTexFormat::RawR32F;
-                params.mip_count = RpDepthHierarchy::MipCount;
+                params.mip_count = ExDepthHierarchy::MipCount;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
                 params.sampling.filter = Ren::eTexFilter::NearestMipmap;
 
@@ -1094,8 +1092,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", params, Ren::eStageBits::ComputeShader);
             }
 
-            rp_depth_hierarchy_.Setup(rp_builder_, &view_state_, depth_tex, atomic_buf, depth_hierarchy_tex);
-            depth_hierarchy.set_executor(&rp_depth_hierarchy_);
+            ex_depth_hierarchy_.Setup(fg_builder_, &view_state_, depth_tex, atomic_buf, depth_hierarchy_tex);
+            depth_hierarchy.set_executor(&ex_depth_hierarchy_);
         }
 
         if (!list.render_settings.debug_wireframe /*&& list.render_settings.taa_mode != eTAAMode::Static*/) {
@@ -1147,7 +1145,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (use_ssao) {
                 AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
             } else {
-                frame_textures.ssao = rp_builder_.MakeTextureResource(dummy_white_);
+                frame_textures.ssao = fg_builder_.MakeTextureResource(dummy_white_);
             }
 
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
@@ -1185,9 +1183,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // Debug stuff
         //
         if (list.render_settings.debug_probes != -1) {
-            auto &debug_probes = rp_builder_.AddPass("DEBUG PROBES");
+            auto &debug_probes = fg_builder_.AddNode("DEBUG PROBES");
 
-            auto *data = debug_probes.AllocPassData<RpDebugProbesData>();
+            auto *data = debug_probes.AllocNodeData<ExDebugProbes::Args>();
             data->shared_data =
                 debug_probes.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::VertexShader);
             data->offset_tex =
@@ -1204,37 +1202,37 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.depth = data->depth_tex = debug_probes.AddDepthOutput(frame_textures.depth);
             frame_textures.color = data->output_tex = debug_probes.AddColorOutput(frame_textures.color);
 
-            rp_debug_probes_.Setup(rp_builder_, list, &view_state_, data);
-            debug_probes.set_executor(&rp_debug_probes_);
+            ex_debug_probes_.Setup(fg_builder_, list, &view_state_, data);
+            debug_probes.set_executor(&ex_debug_probes_);
         }
 
         if (list.render_settings.debug_oit_layer != -1) {
-            auto &debug_oit = rp_builder_.AddPass("DEBUG OIT");
+            auto &debug_oit = fg_builder_.AddNode("DEBUG OIT");
 
-            auto *data = debug_oit.AllocPassData<RpDebugOIT::PassData>();
+            auto *data = debug_oit.AllocNodeData<ExDebugOIT::Args>();
             data->layer_index = list.render_settings.debug_oit_layer;
             frame_textures.oit_depth_buf = data->oit_depth_buf =
                 debug_oit.AddStorageReadonlyInput(frame_textures.oit_depth_buf, Ren::eStageBits::ComputeShader);
             frame_textures.color = data->output_tex =
                 debug_oit.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::ComputeShader);
 
-            rp_debug_oit_.Setup(rp_builder_, &view_state_, data);
-            debug_oit.set_executor(&rp_debug_oit_);
+            ex_debug_oit_.Setup(fg_builder_, &view_state_, data);
+            debug_oit.set_executor(&ex_debug_oit_);
         }
 
         // if (list.render_flags & DebugEllipsoids) {
-        //     rp_debug_ellipsoids_.Setup(rp_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
+        //     rp_debug_ellipsoids_.Setup(fg_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
         //     rp_tail->p_next = &rp_debug_ellipsoids_;
         //     rp_tail = rp_tail->p_next;
         // }
 
         if (list.render_settings.debug_rt != eDebugRT::Off && list.env.env_map &&
             (ctx_.capabilities.hwrt || ctx_.capabilities.swrt)) {
-            auto &debug_rt = rp_builder_.AddPass("DEBUG RT");
+            auto &debug_rt = fg_builder_.AddNode("DEBUG RT");
 
             const Ren::eStageBits stages = Ren::eStageBits::ComputeShader;
 
-            auto *data = debug_rt.AllocPassData<RpDebugRTData>();
+            auto *data = debug_rt.AllocNodeData<ExDebugRT::Args>();
             data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data_res, stages);
             data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_geo_instances_res, stages);
             data->materials_buf = debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, stages);
@@ -1272,11 +1270,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stages);
 
             const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlases[int(list.render_settings.debug_rt) - 1];
-            rp_debug_rt_.Setup(rp_builder_, &view_state_, tlas_to_debug, &bindless_tex, data);
-            debug_rt.set_executor(&rp_debug_rt_);
+            ex_debug_rt_.Setup(fg_builder_, &view_state_, tlas_to_debug, &bindless_tex, data);
+            debug_rt.set_executor(&ex_debug_rt_);
         }
 
-        RpResRef resolved_color;
+        FgResRef resolved_color;
 
         //
         // Temporal resolve
@@ -1296,7 +1294,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                                       list.render_settings.tonemap_mode != eTonemapMode::Off ||
                                       list.render_settings.reflections_quality != eReflectionsQuality::Off;
         if (downsample_color && !list.render_settings.debug_wireframe) {
-            RpResRef downsampled_res = rp_builder_.MakeTextureResource(down_tex_4x_);
+            FgResRef downsampled_res = fg_builder_.MakeTextureResource(down_tex_4x_);
             AddDownsampleColorPass(resolved_color, downsampled_res);
         }
 
@@ -1323,7 +1321,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 }
             }
 
-            rp_dof_.Setup(rp_builder_, &list.draw_cam, &view_state_, SHARED_DATA_BUF, color_in_name, MAIN_DEPTH_TEX,
+            rp_dof_.Setup(fg_builder_, &list.draw_cam, &view_state_, SHARED_DATA_BUF, color_in_name, MAIN_DEPTH_TEX,
                           DEPTH_DOWN_2X_TEX, DEPTH_DOWN_4X_TEX, down_tex_4x_, dof_out_name);
             rp_tail->p_next = &rp_dof_;
             rp_tail = rp_tail->p_next;
@@ -1333,7 +1331,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         // Blur
         //
-        RpResRef blur_tex;
+        FgResRef blur_tex;
         const bool use_blur = list.render_settings.enable_bloom ||
                               list.render_settings.tonemap_mode != eTonemapMode::Off ||
                               list.render_settings.reflections_quality != eReflectionsQuality::Off;
@@ -1355,7 +1353,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // Combine with blurred and tonemap
         //
         {
-            RpResRef color_tex;
+            FgResRef color_tex;
             const char *output_tex = nullptr;
 
             if (cur_msaa_enabled ||
@@ -1390,16 +1388,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             // TODO: Remove this condition
             if (list.env.env_map || true) {
-                auto &combine = rp_builder_.AddPass("COMBINE");
+                auto &combine = fg_builder_.AddNode("COMBINE");
 
-                rp_combine_data_ = {};
-                rp_combine_data_.exposure_tex =
+                ex_combine_args_ = {};
+                ex_combine_args_.exposure_tex =
                     combine.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
-                rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
+                ex_combine_args_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
                 if (false && list.render_settings.enable_bloom && blur_tex) {
-                    rp_combine_data_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+                    ex_combine_args_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
                 } else {
-                    rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+                    ex_combine_args_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
                 }
                 if (output_tex) {
                     Ren::Tex2DParams params;
@@ -1409,93 +1407,65 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-                    rp_combine_data_.output_tex = combine.AddColorOutput(output_tex, params);
+                    ex_combine_args_.output_tex = combine.AddColorOutput(output_tex, params);
                 } else if (target) {
-                    rp_combine_data_.output_tex = combine.AddColorOutput(target);
+                    ex_combine_args_.output_tex = combine.AddColorOutput(target);
                 } else {
-                    rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+                    ex_combine_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
                 }
-                rp_combine_data_.lut_tex = tonemap_lut_;
-                rp_combine_data_.tonemap_mode = int(list.render_settings.tonemap_mode);
-                rp_combine_data_.inv_gamma = 1.0f / list.draw_cam.gamma;
-                rp_combine_data_.fade = list.draw_cam.fade;
+                ex_combine_args_.lut_tex = tonemap_lut_;
+                ex_combine_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
+                ex_combine_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
+                ex_combine_args_.fade = list.draw_cam.fade;
 
-                backbuffer_sources_.push_back(rp_combine_data_.output_tex);
+                backbuffer_sources_.push_back(ex_combine_args_.output_tex);
 
-                rp_combine_.Setup(&view_state_, &rp_combine_data_);
-                combine.set_executor(&rp_combine_);
+                ex_combine_.Setup(&view_state_, &ex_combine_args_);
+                combine.set_executor(&ex_combine_);
             }
         }
 
         { // Readback exposure
-            auto &read_exposure = rp_builder_.AddPass("READ EXPOSURE");
+            auto &read_exposure = fg_builder_.AddNode("READ EXPOSURE");
 
-            auto *data = read_exposure.AllocPassData<RpReadExposureData>();
+            auto *data = read_exposure.AllocNodeData<ExReadExposure::Args>();
             data->input_tex = read_exposure.AddTransferImageInput(frame_textures.exposure);
 
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Readback;
             desc.size = Ren::MaxFramesInFlight * sizeof(float);
             data->output_buf = read_exposure.AddTransferOutput("Exposure Readback Buf", desc);
 
             backbuffer_sources_.push_back(data->output_buf);
 
-            rp_read_exposure_.Setup(data);
-            read_exposure.set_executor(&rp_read_exposure_);
+            ex_read_exposure_.Setup(data);
+            read_exposure.set_executor(&ex_read_exposure_);
         }
 
-#if defined(USE_GL_RENDER) && 0 // gl-only for now
-        //
-        // FXAA
-        //
-        if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {
-            // Ren::TexHandle output_tex =
-            //    target ? target->attachments[0].tex->handle() : Ren::TexHandle{};
-
-            rp_fxaa_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_COMBINED_TEX, nullptr);
-            rp_tail->p_next = &rp_fxaa_;
-            rp_tail = rp_tail->p_next;
-        }
-
-        //
-        // Debugging (draw auxiliary surfaces)
-        //
-        {
-            const Ren::WeakTex2DRef output_tex =
-                target ? Ren::WeakTex2DRef{target->attachments[0].tex} : Ren::WeakTex2DRef{};
-            rp_debug_textures_.Setup(rp_builder_, &view_state_, list, down_tex_4x_, SHARED_DATA_BUF, CELLS_BUF,
-                                     ITEMS_BUF, SHADOWMAP_TEX, deferred_shading ? MAIN_ALBEDO_TEX : MAIN_COLOR_TEX,
-                                     MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, SSAO_RES, BLUR_RES_TEX,
-                                     REDUCED_TEX, output_tex);
-            rp_tail->p_next = &rp_debug_textures_;
-            rp_tail = rp_tail->p_next;
-        }
-#endif
-
-        rp_builder_.Compile(backbuffer_sources_.data(), int(backbuffer_sources_.size()));
+        fg_builder_.Compile(backbuffer_sources_);
         const uint64_t rp_setup_end_us = Sys::GetTimeUs();
         ctx_.log()->Info("Renderpass setup is done in %.2fms", (rp_setup_end_us - rp_setup_beg_us) * 0.001);
     } else {
         // assert(!(list.render_flags & EnableFxaa));
         //  Use correct backbuffer image (assume topology is not changed)
         //  TODO: get rid of this
-        auto &combine = *rp_builder_.FindPass("COMBINE");
+        auto &combine = *fg_builder_.FindNode("COMBINE");
         if (target) {
-            rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, target);
+            ex_combine_args_.output_tex = combine.ReplaceColorOutput(0, target);
             if (blit_to_backbuffer) {
-                rp_combine_data_.output_tex2 = combine.ReplaceColorOutput(1, ctx_.backbuffer_ref());
+                ex_combine_args_.output_tex2 = combine.ReplaceColorOutput(1, ctx_.backbuffer_ref());
             }
         } else {
-            rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
+            ex_combine_args_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
 
-        rp_combine_data_.fade = list.draw_cam.fade;
+        ex_combine_args_.fade = list.draw_cam.fade;
 
-        rp_combine_.Setup(&view_state_, &rp_combine_data_);
-        combine.set_executor(&rp_combine_);
+        ex_combine_.Setup(&view_state_, &ex_combine_args_);
+        combine.set_executor(&ex_combine_);
     }
 
-    rp_builder_.Execute();
+    fg_builder_.Execute();
 
     { // store matrix to use it in next frame
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
@@ -1598,7 +1568,7 @@ void Eng::Renderer::InitBackendInfo() {
     }
 
     backend_info_.pass_timings.clear();
-    for (auto &t : rp_builder_.pass_timings_[ctx_.backend_frame()]) {
+    for (auto &t : fg_builder_.node_timings_[ctx_.backend_frame()]) {
         PassTiming &new_t = backend_info_.pass_timings.emplace_back();
         new_t.name = t.name;
         new_t.duration = ctx_.GetTimestampIntervalDurationUs(t.query_beg, t.query_end);
@@ -1678,7 +1648,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
     }
 
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
-                                      !rp_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
+                                      !fg_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
     cached_settings_ = settings;
     cached_rp_index_ = 1;
 
@@ -1703,14 +1673,14 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
     if (rebuild_renderpasses) {
         const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
 
-        rp_builder_.Reset();
+        fg_builder_.Reset();
         backbuffer_sources_.clear();
 
-        auto &update_image = rp_builder_.AddPass("UPDATE IMAGE");
+        auto &update_image = fg_builder_.AddNode("UPDATE IMAGE");
 
-        RpResRef stage_buf_res = update_image.AddTransferInput(temp_upload_buf);
+        FgResRef stage_buf_res = update_image.AddTransferInput(temp_upload_buf);
 
-        RpResRef output_tex_res;
+        FgResRef output_tex_res;
         { // output image
             Ren::Tex2DParams params;
             params.w = cur_scr_w;
@@ -1719,9 +1689,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
         }
 
-        update_image.set_execute_cb([this, stage_buf_res, output_tex_res](RpBuilder &builder) {
-            RpAllocBuf &stage_buf = builder.GetReadBuffer(stage_buf_res);
-            RpAllocTex &output_image = builder.GetWriteTexture(output_tex_res);
+        update_image.set_execute_cb([this, stage_buf_res, output_tex_res](FgBuilder &builder) {
+            FgAllocBuf &stage_buf = builder.GetReadBuffer(stage_buf_res);
+            FgAllocTex &output_image = builder.GetWriteTexture(output_tex_res);
 
             const int w = output_image.ref->params.w;
             const int h = output_image.ref->params.h;
@@ -1730,71 +1700,71 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
                                           builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
         });
 
-        RpResRef exposure_tex = AddAutoexposurePasses(output_tex_res);
+        FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res);
 
-        auto &combine = rp_builder_.AddPass("COMBINE");
+        auto &combine = fg_builder_.AddNode("COMBINE");
 
-        rp_combine_data_ = {};
-        rp_combine_data_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
-        rp_combine_data_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
-        rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+        ex_combine_args_ = {};
+        ex_combine_args_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+        ex_combine_args_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
+        ex_combine_args_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
         if (target) {
-            rp_combine_data_.output_tex = combine.AddColorOutput(target);
+            ex_combine_args_.output_tex = combine.AddColorOutput(target);
             if (blit_to_backbuffer) {
-                rp_combine_data_.output_tex2 = combine.AddColorOutput(ctx_.backbuffer_ref());
+                ex_combine_args_.output_tex2 = combine.AddColorOutput(ctx_.backbuffer_ref());
             }
         } else {
-            rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+            ex_combine_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
         }
 
-        rp_combine_data_.compressed = compressed;
-        rp_combine_data_.lut_tex = tonemap_lut_;
-        rp_combine_data_.tonemap_mode = int(settings.tonemap_mode);
-        rp_combine_data_.inv_gamma = 1.0f / gamma;
-        rp_combine_data_.fade = 0.0f;
+        ex_combine_args_.compressed = compressed;
+        ex_combine_args_.lut_tex = tonemap_lut_;
+        ex_combine_args_.tonemap_mode = int(settings.tonemap_mode);
+        ex_combine_args_.inv_gamma = 1.0f / gamma;
+        ex_combine_args_.fade = 0.0f;
 
-        backbuffer_sources_.push_back(rp_combine_data_.output_tex);
+        backbuffer_sources_.push_back(ex_combine_args_.output_tex);
 
-        rp_combine_.Setup(&view_state_, &rp_combine_data_);
-        combine.set_executor(&rp_combine_);
+        ex_combine_.Setup(&view_state_, &ex_combine_args_);
+        combine.set_executor(&ex_combine_);
 
         { // Readback exposure
-            auto &read_exposure = rp_builder_.AddPass("READ EXPOSURE");
+            auto &read_exposure = fg_builder_.AddNode("READ EXPOSURE");
 
-            auto *data = read_exposure.AllocPassData<RpReadExposureData>();
+            auto *data = read_exposure.AllocNodeData<ExReadExposure::Args>();
             data->input_tex = read_exposure.AddTransferImageInput(exposure_tex);
 
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Readback;
             desc.size = Ren::MaxFramesInFlight * sizeof(float);
             data->output_buf = read_exposure.AddTransferOutput("Exposure Readback Buf", desc);
 
             backbuffer_sources_.push_back(data->output_buf);
 
-            rp_read_exposure_.Setup(data);
-            read_exposure.set_executor(&rp_read_exposure_);
+            ex_read_exposure_.Setup(data);
+            read_exposure.set_executor(&ex_read_exposure_);
         }
 
-        rp_builder_.Compile();
+        fg_builder_.Compile();
 
         const uint64_t rp_setup_end_us = Sys::GetTimeUs();
         ctx_.log()->Info("Renderpass setup is done in %.2fms", (rp_setup_end_us - rp_setup_beg_us) * 0.001);
     } else {
-        auto *update_image = rp_builder_.FindPass("UPDATE IMAGE");
+        auto *update_image = fg_builder_.FindNode("UPDATE IMAGE");
         update_image->ReplaceTransferInput(0, temp_upload_buf);
 
-        auto *combine = rp_builder_.FindPass("COMBINE");
+        auto *combine = fg_builder_.FindNode("COMBINE");
         if (target) {
-            rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, target);
+            ex_combine_args_.output_tex = combine->ReplaceColorOutput(0, target);
             if (blit_to_backbuffer) {
-                rp_combine_data_.output_tex2 = combine->ReplaceColorOutput(1, ctx_.backbuffer_ref());
+                ex_combine_args_.output_tex2 = combine->ReplaceColorOutput(1, ctx_.backbuffer_ref());
             }
         } else {
-            rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
+            ex_combine_args_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
     }
 
-    rp_builder_.Execute();
+    fg_builder_.Execute();
 }
 
 #undef BBOX_POINTS

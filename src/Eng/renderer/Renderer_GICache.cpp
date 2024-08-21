@@ -9,8 +9,8 @@
 void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
                                      const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
-                                     const BindlessTextureData &bindless, RpResRef rt_geo_instances_res,
-                                     RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
+                                     const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
+                                     FgResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -18,12 +18,12 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         return;
     }
 
-    RpResRef ray_data;
+    FgResRef ray_data;
 
     if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
-        auto &rt_gi_cache = rp_builder_.AddPass("RT GI CACHE");
+        auto &rt_gi_cache = fg_builder_.AddNode("RT GI CACHE");
 
-        auto *data = rt_gi_cache.AllocPassData<RpRTGICacheData>();
+        auto *data = rt_gi_cache.AllocNodeData<ExRTGICache::Args>();
 
         const auto stage = Stg::ComputeShader;
 
@@ -74,8 +74,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         ray_data = data->out_ray_data_tex =
             rt_gi_cache.AddStorageImageOutput(persistent_data.probe_ray_data.get(), stage);
 
-        rp_rt_gi_cache_.Setup(rp_builder_, &view_state_, &bindless, data);
-        rt_gi_cache.set_executor(&rp_rt_gi_cache_);
+        ex_rt_gi_cache_.Setup(fg_builder_, &view_state_, &bindless, data);
+        rt_gi_cache.set_executor(&ex_rt_gi_cache_);
     }
 
     if (!ray_data) {
@@ -83,15 +83,15 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
     }
 
     { // Probe blending (irradiance)
-        auto &probe_blend = rp_builder_.AddPass("PROBE BLEND IRR");
+        auto &probe_blend = fg_builder_.AddNode("PROBE BLEND IRR");
 
         struct PassData {
-            RpResRef ray_data;
-            RpResRef offset_tex;
-            RpResRef output_tex;
+            FgResRef ray_data;
+            FgResRef offset_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = probe_blend.AllocPassData<PassData>();
+        auto *data = probe_blend.AllocNodeData<PassData>();
 
         ray_data = data->ray_data = probe_blend.AddTextureInput(ray_data, Stg::ComputeShader);
         frame_textures.gi_cache_irradiance = data->output_tex =
@@ -99,10 +99,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         frame_textures.gi_cache_offset = data->offset_tex =
             probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
-        probe_blend.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
-            RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            RpAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
-            RpAllocTex &out_irr_tex = builder.GetWriteTexture(data->output_tex);
+        probe_blend.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
+            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
+            FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
+            FgAllocTex &out_irr_tex = builder.GetWriteTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
                                              {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
@@ -142,15 +142,15 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
     }
 
     { // Probe blending (distance)
-        auto &probe_blend = rp_builder_.AddPass("PROBE BLEND DIST");
+        auto &probe_blend = fg_builder_.AddNode("PROBE BLEND DIST");
 
         struct PassData {
-            RpResRef ray_data;
-            RpResRef offset_tex;
-            RpResRef output_tex;
+            FgResRef ray_data;
+            FgResRef offset_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = probe_blend.AllocPassData<PassData>();
+        auto *data = probe_blend.AllocNodeData<PassData>();
 
         ray_data = data->ray_data = probe_blend.AddTextureInput(ray_data, Stg::ComputeShader);
         frame_textures.gi_cache_offset = data->offset_tex =
@@ -159,10 +159,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         frame_textures.gi_cache_distance = data->output_tex =
             probe_blend.AddStorageImageOutput(persistent_data.probe_distance.get(), Stg::ComputeShader);
 
-        probe_blend.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
-            RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            RpAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
-            RpAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
+        probe_blend.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
+            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
+            FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
+            FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
                                              {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
@@ -192,23 +192,23 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
     }
 
     { // Relocate probes
-        auto &probe_relocate = rp_builder_.AddPass("PROBE RELOCATE");
+        auto &probe_relocate = fg_builder_.AddNode("PROBE RELOCATE");
 
         struct PassData {
-            RpResRef ray_data;
-            RpResRef output_tex;
+            FgResRef ray_data;
+            FgResRef output_tex;
         };
 
-        auto *data = probe_relocate.AllocPassData<PassData>();
+        auto *data = probe_relocate.AllocNodeData<PassData>();
 
         ray_data = data->ray_data = probe_relocate.AddTextureInput(ray_data, Stg::ComputeShader);
 
         frame_textures.gi_cache_offset = data->output_tex =
             probe_relocate.AddStorageImageOutput(persistent_data.probe_offset.get(), Stg::ComputeShader);
 
-        probe_relocate.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
-            RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            RpAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
+        probe_relocate.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
+            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
+            FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
@@ -239,23 +239,23 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
     }
 
     { // Classify probes
-        auto &probe_classify = rp_builder_.AddPass("PROBE CLASSIFY");
+        auto &probe_classify = fg_builder_.AddNode("PROBE CLASSIFY");
 
         struct PassData {
-            RpResRef ray_data;
-            RpResRef output_tex;
+            FgResRef ray_data;
+            FgResRef output_tex;
         };
 
-        auto *data = probe_classify.AllocPassData<PassData>();
+        auto *data = probe_classify.AllocNodeData<PassData>();
 
         ray_data = data->ray_data = probe_classify.AddTextureInput(ray_data, Stg::ComputeShader);
 
         frame_textures.gi_cache_offset = data->output_tex =
             probe_classify.AddStorageImageOutput(persistent_data.probe_offset.get(), Stg::ComputeShader);
 
-        probe_classify.set_execute_cb([this, data, &persistent_data](RpBuilder &builder) {
-            RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
-            RpAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
+        probe_classify.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
+            FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
+            FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},

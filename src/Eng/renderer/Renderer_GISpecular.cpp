@@ -19,8 +19,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                         const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                                         const PersistentGpuData &persistent_data,
                                         const AccelerationStructureData &acc_struct_data,
-                                        const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                                        RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                                        const BindlessTextureData &bindless, const FgResRef depth_hierarchy,
+                                        FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                                         FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
@@ -31,53 +31,53 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     static const bool EnableBlur = true;
     const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
 
-    RpResRef ray_counter;
+    FgResRef ray_counter;
 
     { // Prepare atomic counter and ray length texture
-        auto &ssr_prepare = rp_builder_.AddPass("SSR PREPARE");
+        auto &ssr_prepare = fg_builder_.AddNode("SSR PREPARE");
 
         struct PassData {
-            RpResRef ray_counter;
-            RpResRef ray_length_tex;
+            FgResRef ray_counter;
+            FgResRef ray_length_tex;
         };
 
-        auto *data = ssr_prepare.AllocPassData<PassData>();
+        auto *data = ssr_prepare.AllocNodeData<PassData>();
 
         { // ray counter
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = 6 * sizeof(uint32_t);
 
             ray_counter = data->ray_counter = ssr_prepare.AddTransferOutput("Ray Counter", desc);
         }
 
-        ssr_prepare.set_execute_cb([data](RpBuilder &builder) {
-            RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+        ssr_prepare.set_execute_cb([data](FgBuilder &builder) {
+            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
 
             Ren::Context &ctx = builder.ctx();
             ray_counter_buf.ref->Fill(0, ray_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
         });
     }
 
-    RpResRef ray_list, tile_list;
-    RpResRef refl_tex, noise_tex;
+    FgResRef ray_list, tile_list;
+    FgResRef refl_tex, noise_tex;
 
     { // Classify pixel quads
-        auto &ssr_classify = rp_builder_.AddPass("SSR CLASSIFY");
+        auto &ssr_classify = fg_builder_.AddNode("SSR CLASSIFY");
 
         struct PassData {
-            RpResRef depth;
-            RpResRef specular;
-            RpResRef normal;
-            RpResRef variance_history;
-            RpResRef sobol, scrambling_tile, ranking_tile;
-            RpResRef ray_counter;
-            RpResRef ray_list;
-            RpResRef tile_list;
-            RpResRef out_refl_tex, out_noise_tex;
+            FgResRef depth;
+            FgResRef specular;
+            FgResRef normal;
+            FgResRef variance_history;
+            FgResRef sobol, scrambling_tile, ranking_tile;
+            FgResRef ray_counter;
+            FgResRef ray_list;
+            FgResRef tile_list;
+            FgResRef out_refl_tex, out_noise_tex;
         };
 
-        auto *data = ssr_classify.AllocPassData<PassData>();
+        auto *data = ssr_classify.AllocNodeData<PassData>();
         data->depth = ssr_classify.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->specular = ssr_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
         data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -88,14 +88,14 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
             ray_list = data->ray_list = ssr_classify.AddStorageOutput("Ray List", desc, Stg::ComputeShader);
         }
         { // tile list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8) * sizeof(uint32_t);
 
@@ -121,20 +121,20 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 ssr_classify.AddStorageImageOutput("Blue Noise Tex", params, Stg::ComputeShader);
         }
 
-        ssr_classify.set_execute_cb([this, data, SamplesPerQuad](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            RpAllocTex &spec_tex = builder.GetReadTexture(data->specular);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
-            RpAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
-            RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
-            RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
+        ssr_classify.set_execute_cb([this, data, SamplesPerQuad](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
+            FgAllocTex &spec_tex = builder.GetReadTexture(data->specular);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
+            FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
+            FgAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
+            FgAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
+            FgAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
 
-            RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-            RpAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
-            RpAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
-            RpAllocTex &refl_tex = builder.GetWriteTexture(data->out_refl_tex);
-            RpAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
+            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+            FgAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
+            FgAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
+            FgAllocTex &refl_tex = builder.GetWriteTexture(data->out_refl_tex);
+            FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
             // Initialize texel buffers if needed
             if (!sobol_buf.tbos[0]) {
@@ -184,21 +184,21 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    RpResRef indir_disp_buf;
+    FgResRef indir_disp_buf;
 
     { // Write indirect arguments
-        auto &write_indir = rp_builder_.AddPass("SSR INDIR ARGS");
+        auto &write_indir = fg_builder_.AddNode("SSR INDIR ARGS");
 
         struct PassData {
-            RpResRef ray_counter;
-            RpResRef indir_disp_buf;
+            FgResRef ray_counter;
+            FgResRef indir_disp_buf;
         };
 
-        auto *data = write_indir.AllocPassData<PassData>();
+        auto *data = write_indir.AllocNodeData<PassData>();
         ray_counter = data->ray_counter = write_indir.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // Indirect arguments
-            RpBufDesc desc = {};
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Indirect;
             desc.size = 2 * sizeof(Ren::DispatchIndirectCommand);
 
@@ -206,9 +206,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 write_indir.AddStorageOutput("Intersect Args", desc, Stg::ComputeShader);
         }
 
-        write_indir.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-            RpAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
+        write_indir.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+            FgAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
 
             const Ren::Binding bindings[] = {
                 {Trg::SBufRO, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
@@ -219,23 +219,23 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    RpResRef ray_rt_list;
+    FgResRef ray_rt_list;
 
     if (settings.reflections_quality != eReflectionsQuality::Raytraced_High) {
-        auto &ssr_trace_hq = rp_builder_.AddPass("SSR TRACE HQ");
+        auto &ssr_trace_hq = fg_builder_.AddNode("SSR TRACE HQ");
 
         struct PassData {
-            RpResRef noise_tex;
-            RpResRef shared_data;
-            RpResRef color_tex, normal_tex, depth_hierarchy;
+            FgResRef noise_tex;
+            FgResRef shared_data;
+            FgResRef color_tex, normal_tex, depth_hierarchy;
 
-            RpResRef albedo_tex, specular_tex, ltc_luts_tex, irradiance_tex, distance_tex, offset_tex;
+            FgResRef albedo_tex, specular_tex, ltc_luts_tex, irradiance_tex, distance_tex, offset_tex;
 
-            RpResRef in_ray_list, indir_args, inout_ray_counter;
-            RpResRef refl_tex, out_ray_list;
+            FgResRef in_ray_list, indir_args, inout_ray_counter;
+            FgResRef refl_tex, out_ray_list;
         };
 
-        auto *data = ssr_trace_hq.AllocPassData<PassData>();
+        auto *data = ssr_trace_hq.AllocNodeData<PassData>();
         data->noise_tex = ssr_trace_hq.AddTextureInput(noise_tex, Stg::ComputeShader);
         data->shared_data = ssr_trace_hq.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->color_tex = ssr_trace_hq.AddTextureInput(frame_textures.color, Stg::ComputeShader);
@@ -257,23 +257,23 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
 
         { // packed ray list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
             ray_rt_list = data->out_ray_list = ssr_trace_hq.AddStorageOutput("Ray RT List", desc, Stg::ComputeShader);
         }
 
-        ssr_trace_hq.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &noise_tex = builder.GetReadTexture(data->noise_tex);
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
-            RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
-            RpAllocTex &depth_hierarchy_tex = builder.GetReadTexture(data->depth_hierarchy);
-            RpAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+        ssr_trace_hq.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &noise_tex = builder.GetReadTexture(data->noise_tex);
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
+            FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+            FgAllocTex &depth_hierarchy_tex = builder.GetReadTexture(data->depth_hierarchy);
+            FgAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            RpAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
+            FgAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
                        *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
             if (data->irradiance_tex) {
                 albedo_tex = &builder.GetReadTexture(data->albedo_tex);
@@ -285,9 +285,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 offset_tex = &builder.GetReadTexture(data->offset_tex);
             }
 
-            RpAllocTex &out_refl_tex = builder.GetWriteTexture(data->refl_tex);
-            RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
-            RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
+            FgAllocTex &out_refl_tex = builder.GetWriteTexture(data->refl_tex);
+            FgAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
+            FgAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
             Ren::SmallVector<Ren::Binding, 24> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -324,21 +324,21 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
     if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && frame_textures.envmap &&
         int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
-        RpResRef indir_rt_disp_buf;
+        FgResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
-            auto &rt_disp_args = rp_builder_.AddPass("RT DISPATCH ARGS");
+            auto &rt_disp_args = fg_builder_.AddNode("RT DISPATCH ARGS");
 
             struct PassData {
-                RpResRef ray_counter;
-                RpResRef indir_disp_buf;
+                FgResRef ray_counter;
+                FgResRef indir_disp_buf;
             };
 
-            auto *data = rt_disp_args.AllocPassData<PassData>();
+            auto *data = rt_disp_args.AllocNodeData<PassData>();
             ray_counter = data->ray_counter = rt_disp_args.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
             { // Indirect arguments
-                RpBufDesc desc = {};
+                FgBufDesc desc = {};
                 desc.type = Ren::eBufType::Indirect;
                 desc.size = sizeof(Ren::TraceRaysIndirectCommand) + sizeof(Ren::DispatchIndirectCommand);
 
@@ -346,9 +346,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     rt_disp_args.AddStorageOutput("RT Dispatch Args", desc, Stg::ComputeShader);
             }
 
-            rt_disp_args.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-                RpAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
+            rt_disp_args.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+                FgAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
 
                 const Ren::Binding bindings[] = {
                     {Trg::SBufRW, SSRWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
@@ -363,10 +363,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
 
         { // Trace reflection rays
-            auto &rt_refl = rp_builder_.AddPass("RT REFLECTIONS");
+            auto &rt_refl = fg_builder_.AddNode("RT REFLECTIONS");
 
-            auto *data = rt_refl.AllocPassData<RpRTReflectionsData>();
-
+            auto *data = rt_refl.AllocNodeData<ExRTReflections::Args>();
             data->four_bounces = (settings.reflections_quality == eReflectionsQuality::Raytraced_High);
 
             const auto stage = Stg::ComputeShader;
@@ -428,31 +427,31 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             refl_tex = data->out_refl_tex[0] = rt_refl.AddStorageImageOutput(refl_tex, stage);
 
-            rp_rt_reflections_.Setup(rp_builder_, &view_state_, &bindless, data);
-            rt_refl.set_executor(&rp_rt_reflections_);
+            ex_rt_reflections_.Setup(fg_builder_, &view_state_, &bindless, data);
+            rt_refl.set_executor(&ex_rt_reflections_);
         }
     }
 
-    RpResRef reproj_refl_tex, avg_refl_tex;
-    RpResRef depth_hist_tex, sample_count_tex, variance_temp_tex;
+    FgResRef reproj_refl_tex, avg_refl_tex;
+    FgResRef depth_hist_tex, sample_count_tex, variance_temp_tex;
 
     { // Denoiser reprojection
-        auto &ssr_reproject = rp_builder_.AddPass("SSR REPROJECT");
+        auto &ssr_reproject = fg_builder_.AddNode("SSR REPROJECT");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef depth_tex, norm_tex, velocity_tex;
-            RpResRef depth_hist_tex, norm_hist_tex, refl_hist_tex, variance_hist_tex, sample_count_hist_tex;
-            RpResRef refl_tex;
-            RpResRef exposure_tex;
-            RpResRef tile_list;
-            RpResRef indir_args;
+            FgResRef shared_data;
+            FgResRef depth_tex, norm_tex, velocity_tex;
+            FgResRef depth_hist_tex, norm_hist_tex, refl_hist_tex, variance_hist_tex, sample_count_hist_tex;
+            FgResRef refl_tex;
+            FgResRef exposure_tex;
+            FgResRef tile_list;
+            FgResRef indir_args;
             uint32_t indir_args_offset = 0;
-            RpResRef out_reprojected_tex, out_avg_refl_tex;
-            RpResRef out_variance_tex, out_sample_count_tex;
+            FgResRef out_reprojected_tex, out_avg_refl_tex;
+            FgResRef out_variance_tex, out_sample_count_tex;
         };
 
-        auto *data = ssr_reproject.AllocPassData<PassData>();
+        auto *data = ssr_reproject.AllocNodeData<PassData>();
         data->shared_data = ssr_reproject.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->depth_tex = ssr_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = ssr_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -521,24 +520,24 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->sample_count_hist_tex =
             ssr_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
 
-        ssr_reproject.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-            RpAllocTex &depth_hist_tex = builder.GetReadTexture(data->depth_hist_tex);
-            RpAllocTex &norm_hist_tex = builder.GetReadTexture(data->norm_hist_tex);
-            RpAllocTex &refl_hist_tex = builder.GetReadTexture(data->refl_hist_tex);
-            RpAllocTex &variance_hist_tex = builder.GetReadTexture(data->variance_hist_tex);
-            RpAllocTex &sample_count_hist_tex = builder.GetReadTexture(data->sample_count_hist_tex);
-            RpAllocTex &relf_tex = builder.GetReadTexture(data->refl_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
-            RpAllocTex &out_reprojected_tex = builder.GetWriteTexture(data->out_reprojected_tex);
-            RpAllocTex &out_avg_refl_tex = builder.GetWriteTexture(data->out_avg_refl_tex);
-            RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
-            RpAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
+        ssr_reproject.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            FgAllocTex &depth_hist_tex = builder.GetReadTexture(data->depth_hist_tex);
+            FgAllocTex &norm_hist_tex = builder.GetReadTexture(data->norm_hist_tex);
+            FgAllocTex &refl_hist_tex = builder.GetReadTexture(data->refl_hist_tex);
+            FgAllocTex &variance_hist_tex = builder.GetReadTexture(data->variance_hist_tex);
+            FgAllocTex &sample_count_hist_tex = builder.GetReadTexture(data->sample_count_hist_tex);
+            FgAllocTex &relf_tex = builder.GetReadTexture(data->refl_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+            FgAllocTex &out_reprojected_tex = builder.GetWriteTexture(data->out_reprojected_tex);
+            FgAllocTex &out_avg_refl_tex = builder.GetWriteTexture(data->out_avg_refl_tex);
+            FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
+            FgAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
@@ -567,22 +566,22 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    RpResRef prefiltered_refl, variance_temp2_tex;
+    FgResRef prefiltered_refl, variance_temp2_tex;
 
     { // Denoiser prefilter
-        auto &ssr_prefilter = rp_builder_.AddPass("SSR PREFILTER");
+        auto &ssr_prefilter = fg_builder_.AddNode("SSR PREFILTER");
 
         struct PassData {
-            RpResRef depth_tex, norm_tex;
-            RpResRef avg_refl_tex, refl_tex;
-            RpResRef variance_tex, sample_count_tex;
-            RpResRef exposure_tex;
-            RpResRef tile_list, indir_args;
+            FgResRef depth_tex, norm_tex;
+            FgResRef avg_refl_tex, refl_tex;
+            FgResRef variance_tex, sample_count_tex;
+            FgResRef exposure_tex;
+            FgResRef tile_list, indir_args;
             uint32_t indir_args_offset = 0;
-            RpResRef out_refl_tex, out_variance_tex;
+            FgResRef out_refl_tex, out_variance_tex;
         };
 
-        auto *data = ssr_prefilter.AllocPassData<PassData>();
+        auto *data = ssr_prefilter.AllocNodeData<PassData>();
         data->depth_tex = ssr_prefilter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = ssr_prefilter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->avg_refl_tex = ssr_prefilter.AddTextureInput(avg_refl_tex, Stg::ComputeShader);
@@ -617,19 +616,19 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 ssr_prefilter.AddStorageImageOutput("Variance Temp 2", params, Stg::ComputeShader);
         }
 
-        ssr_prefilter.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &avg_refl_tex = builder.GetReadTexture(data->avg_refl_tex);
-            RpAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+        ssr_prefilter.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            FgAllocTex &avg_refl_tex = builder.GetReadTexture(data->avg_refl_tex);
+            FgAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
+            FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+            FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            RpAllocTex &out_refl_tex = builder.GetWriteTexture(data->out_refl_tex);
-            RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
+            FgAllocTex &out_refl_tex = builder.GetWriteTexture(data->out_refl_tex);
+            FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DSampled, SSRPrefilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
@@ -657,22 +656,22 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    RpResRef gi_specular_tex, ssr_variance_tex;
+    FgResRef gi_specular_tex, ssr_variance_tex;
 
     { // Denoiser accumulation
-        auto &ssr_temporal = rp_builder_.AddPass("SSR TEMPORAL");
+        auto &ssr_temporal = fg_builder_.AddNode("SSR TEMPORAL");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef norm_tex, avg_refl_tex, refl_tex, reproj_refl_tex;
-            RpResRef variance_tex, sample_count_tex, tile_list;
-            RpResRef exposure_tex;
-            RpResRef indir_args;
+            FgResRef shared_data;
+            FgResRef norm_tex, avg_refl_tex, refl_tex, reproj_refl_tex;
+            FgResRef variance_tex, sample_count_tex, tile_list;
+            FgResRef exposure_tex;
+            FgResRef indir_args;
             uint32_t indir_args_offset = 0;
-            RpResRef out_refl_tex, out_variance_tex;
+            FgResRef out_refl_tex, out_variance_tex;
         };
 
-        auto *data = ssr_temporal.AllocPassData<PassData>();
+        auto *data = ssr_temporal.AllocNodeData<PassData>();
         data->shared_data = ssr_temporal.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->norm_tex = ssr_temporal.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->avg_refl_tex = ssr_temporal.AddTextureInput(avg_refl_tex, Stg::ComputeShader);
@@ -711,20 +710,20 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 ssr_temporal.AddStorageImageOutput("Variance", params, Stg::ComputeShader);
         }
 
-        ssr_temporal.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &avg_refl_tex = builder.GetReadTexture(data->avg_refl_tex);
-            RpAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
-            RpAllocTex &reproj_refl_tex = builder.GetReadTexture(data->reproj_refl_tex);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+        ssr_temporal.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            FgAllocTex &avg_refl_tex = builder.GetReadTexture(data->avg_refl_tex);
+            FgAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
+            FgAllocTex &reproj_refl_tex = builder.GetReadTexture(data->reproj_refl_tex);
+            FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+            FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            RpAllocTex &out_refl_tex = builder.GetWriteTexture(data->out_refl_tex);
-            RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
+            FgAllocTex &out_refl_tex = builder.GetWriteTexture(data->out_refl_tex);
+            FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -748,24 +747,24 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    RpResRef refl_final = gi_specular_tex;
+    FgResRef refl_final = gi_specular_tex;
 
     if (EnableBlur) {
-        RpResRef gi_specular2_tex;
+        FgResRef gi_specular2_tex;
 
         { // Denoiser blur
-            auto &ssr_blur = rp_builder_.AddPass("SSR BLUR");
+            auto &ssr_blur = fg_builder_.AddNode("SSR BLUR");
 
             struct PassData {
-                RpResRef shared_data;
-                RpResRef depth_tex, spec_tex, norm_tex, gi_tex;
-                RpResRef sample_count_tex, variance_tex, tile_list;
-                RpResRef indir_args;
+                FgResRef shared_data;
+                FgResRef depth_tex, spec_tex, norm_tex, gi_tex;
+                FgResRef sample_count_tex, variance_tex, tile_list;
+                FgResRef indir_args;
                 uint32_t indir_args_offset = 0;
-                RpResRef out_gi_tex;
+                FgResRef out_gi_tex;
             };
 
-            auto *data = ssr_blur.AllocPassData<PassData>();
+            auto *data = ssr_blur.AllocNodeData<PassData>();
             data->shared_data = ssr_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
             data->depth_tex = ssr_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->spec_tex = ssr_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
@@ -789,18 +788,18 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     ssr_blur.AddStorageImageOutput("GI Specular 2", params, Stg::ComputeShader);
             }
 
-            ssr_blur.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-                RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
-                RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-                RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-                RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-                RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-                RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+            ssr_blur.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+                FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+                FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+                FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+                FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+                FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+                FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+                FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -825,21 +824,21 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             });
         }
 
-        RpResRef gi_specular3_tex;
+        FgResRef gi_specular3_tex;
 
         { // Denoiser blur 2
-            auto &ssr_post_blur = rp_builder_.AddPass("SSR POST BLUR");
+            auto &ssr_post_blur = fg_builder_.AddNode("SSR POST BLUR");
 
             struct PassData {
-                RpResRef shared_data;
-                RpResRef depth_tex, spec_tex, norm_tex, gi_tex, raylen_tex;
-                RpResRef sample_count_tex, variance_tex, tile_list;
-                RpResRef indir_args;
+                FgResRef shared_data;
+                FgResRef depth_tex, spec_tex, norm_tex, gi_tex, raylen_tex;
+                FgResRef sample_count_tex, variance_tex, tile_list;
+                FgResRef indir_args;
                 uint32_t indir_args_offset = 0;
-                RpResRef out_gi_tex;
+                FgResRef out_gi_tex;
             };
 
-            auto *data = ssr_post_blur.AllocPassData<PassData>();
+            auto *data = ssr_post_blur.AllocNodeData<PassData>();
             data->shared_data = ssr_post_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
             data->depth_tex = ssr_post_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->spec_tex = ssr_post_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
@@ -853,18 +852,18 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             gi_specular3_tex = data->out_gi_tex = ssr_post_blur.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
 
-            ssr_post_blur.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-                RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
-                RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-                RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-                RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-                RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-                RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+            ssr_post_blur.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+                FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+                FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+                FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+                FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+                FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+                FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+                FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -889,18 +888,18 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             });
         }
 
-        RpResRef gi_specular4_tex;
+        FgResRef gi_specular4_tex;
 
         { // Denoiser stabilization
-            auto &ssr_stabilization = rp_builder_.AddPass("SSR STABILIZATION");
+            auto &ssr_stabilization = fg_builder_.AddNode("SSR STABILIZATION");
 
             struct PassData {
-                RpResRef depth_tex, velocity_tex, ssr_tex, ssr_hist_tex;
-                RpResRef exposure_tex;
-                RpResRef out_ssr_tex;
+                FgResRef depth_tex, velocity_tex, ssr_tex, ssr_hist_tex;
+                FgResRef exposure_tex;
+                FgResRef out_ssr_tex;
             };
 
-            auto *data = ssr_stabilization.AllocPassData<PassData>();
+            auto *data = ssr_stabilization.AllocNodeData<PassData>();
             data->depth_tex = ssr_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->velocity_tex = ssr_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
             data->ssr_tex = ssr_stabilization.AddTextureInput(gi_specular3_tex, Stg::ComputeShader);
@@ -920,14 +919,14 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             data->ssr_hist_tex = ssr_stabilization.AddHistoryTextureInput(gi_specular4_tex, Stg::ComputeShader);
 
-            ssr_stabilization.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-                RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-                RpAllocTex &gi_tex = builder.GetReadTexture(data->ssr_tex);
-                RpAllocTex &gi_hist_tex = builder.GetReadTexture(data->ssr_hist_tex);
-                RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            ssr_stabilization.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+                FgAllocTex &gi_tex = builder.GetReadTexture(data->ssr_tex);
+                FgAllocTex &gi_hist_tex = builder.GetReadTexture(data->ssr_hist_tex);
+                FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
 
-                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_ssr_tex);
+                FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_ssr_tex);
 
                 const Ren::Binding bindings[] = {
                     {Trg::Tex2DSampled, SSRStabilization::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
@@ -960,125 +959,103 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
     }
 
-    if (!deferred_shading) {
-        auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE");
+    assert(deferred_shading);
 
-        auto *data = ssr_compose.AllocPassData<RpSSRCompose2Data>();
+    auto &ssr_compose = fg_builder_.AddNode("SSR COMPOSE NEW");
 
-        data->shared_data =
-            ssr_compose.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
-        data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
-        data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
-        data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Stg::FragmentShader);
+    struct PassData {
+        FgResRef shared_data;
+        FgResRef depth_tex;
+        FgResRef normal_tex;
+        FgResRef albedo_tex;
+        FgResRef spec_tex;
+        FgResRef refl_tex;
+        FgResRef ltc_luts;
 
-        if (debug_denoise) {
-            data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Stg::FragmentShader);
-        } else {
-            data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Stg::FragmentShader);
-        }
-        data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Stg::FragmentShader);
-        frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
+        FgResRef output_tex;
+    };
 
-        rp_ssr_compose2_.Setup(&view_state_, probe_storage, data);
-        ssr_compose.set_executor(&rp_ssr_compose2_);
+    auto *data = ssr_compose.AllocNodeData<PassData>();
+
+    data->shared_data =
+        ssr_compose.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+    data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
+    data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
+    data->albedo_tex = ssr_compose.AddTextureInput(frame_textures.albedo, Stg::FragmentShader);
+    data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Stg::FragmentShader);
+
+    if (debug_denoise) {
+        data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Stg::FragmentShader);
     } else {
-        auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE NEW");
-
-        struct PassData {
-            RpResRef shared_data;
-            RpResRef depth_tex;
-            RpResRef normal_tex;
-            RpResRef albedo_tex;
-            RpResRef spec_tex;
-            RpResRef refl_tex;
-            RpResRef ltc_luts;
-
-            RpResRef output_tex;
-        };
-
-        auto *data = ssr_compose.AllocPassData<PassData>();
-
-        data->shared_data =
-            ssr_compose.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
-        data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
-        data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
-        data->albedo_tex = ssr_compose.AddTextureInput(frame_textures.albedo, Stg::FragmentShader);
-        data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Stg::FragmentShader);
-
-        if (debug_denoise) {
-            data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Stg::FragmentShader);
-        } else {
-            data->refl_tex = ssr_compose.AddTextureInput(refl_final, Stg::FragmentShader);
-        }
-        data->ltc_luts = ssr_compose.AddTextureInput(ltc_luts_, Stg::FragmentShader);
-        frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
-
-        ssr_compose.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
-            RpAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
-            RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
-            RpAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
-            RpAllocTex &ltc_luts = builder.GetReadTexture(data->ltc_luts);
-
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-
-            Ren::RastState rast_state;
-            rast_state.depth.test_enabled = false;
-            rast_state.depth.write_enabled = false;
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-
-            rast_state.blend.enabled = true;
-            rast_state.blend.src_color = unsigned(Ren::eBlendFactor::One);
-            rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::One);
-            rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
-            rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
-
-            rast_state.viewport[2] = view_state_.act_res[0];
-            rast_state.viewport[3] = view_state_.act_res[1];
-
-            { // compose reflections on top of clean buffer
-                const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-
-                // TODO: get rid of global binding slots
-                const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock),
-                     *unif_sh_data_buf.ref},
-                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
-
-                SSRComposeNew::Params uniform_params;
-                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
-
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, render_targets, {}, rast_state,
-                                    builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
-            }
-        });
+        data->refl_tex = ssr_compose.AddTextureInput(refl_final, Stg::FragmentShader);
     }
+    data->ltc_luts = ssr_compose.AddTextureInput(ltc_luts_, Stg::FragmentShader);
+    frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
+
+    ssr_compose.set_execute_cb([this, data](FgBuilder &builder) {
+        FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+        FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+        FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+        FgAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
+        FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+        FgAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
+        FgAllocTex &ltc_luts = builder.GetReadTexture(data->ltc_luts);
+
+        FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+        Ren::RastState rast_state;
+        rast_state.depth.test_enabled = false;
+        rast_state.depth.write_enabled = false;
+        rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+        rast_state.blend.enabled = true;
+        rast_state.blend.src_color = unsigned(Ren::eBlendFactor::One);
+        rast_state.blend.dst_color = unsigned(Ren::eBlendFactor::One);
+        rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::Zero);
+        rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
+
+        rast_state.viewport[2] = view_state_.act_res[0];
+        rast_state.viewport[3] = view_state_.act_res[1];
+
+        { // compose reflections on top of clean buffer
+            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+
+            // TODO: get rid of global binding slots
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
+
+            SSRComposeNew::Params uniform_params;
+            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, render_targets, {}, rast_state,
+                                builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+        }
+    });
 }
 
 void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                        const RpResRef depth_down_2x, FrameTextures &frame_textures) {
+                                        const FgResRef depth_down_2x, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    RpResRef ssr_temp1;
+    FgResRef ssr_temp1;
     { // Trace
-        auto &ssr_trace = rp_builder_.AddPass("SSR TRACE");
+        auto &ssr_trace = fg_builder_.AddNode("SSR TRACE");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef normal_tex;
-            RpResRef depth_down_2x_tex;
-            RpResRef output_tex;
+            FgResRef shared_data;
+            FgResRef normal_tex;
+            FgResRef depth_down_2x_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = ssr_trace.AllocPassData<PassData>();
+        auto *data = ssr_trace.AllocNodeData<PassData>();
         data->shared_data =
             ssr_trace.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
         data->normal_tex = ssr_trace.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
@@ -1095,11 +1072,11 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
             ssr_temp1 = data->output_tex = ssr_trace.AddColorOutput("SSR Temp 1", params);
         }
 
-        ssr_trace.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
-            RpAllocTex &depth_down_2x_tex = builder.GetReadTexture(data->depth_down_2x_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        ssr_trace.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+            FgAllocTex &depth_down_2x_tex = builder.GetReadTexture(data->depth_down_2x_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = false;
@@ -1127,16 +1104,16 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
             }
         });
     }
-    RpResRef ssr_temp2;
+    FgResRef ssr_temp2;
     { // Dilate
-        auto &ssr_dilate = rp_builder_.AddPass("SSR DILATE");
+        auto &ssr_dilate = fg_builder_.AddNode("SSR DILATE");
 
         struct PassData {
-            RpResRef ssr_tex;
-            RpResRef output_tex;
+            FgResRef ssr_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = ssr_dilate.AllocPassData<PassData>();
+        auto *data = ssr_dilate.AllocNodeData<PassData>();
         data->ssr_tex = ssr_dilate.AddTextureInput(ssr_temp1, Stg::FragmentShader);
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
@@ -1150,9 +1127,9 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
             ssr_temp2 = data->output_tex = ssr_dilate.AddColorOutput("SSR Temp 2", params);
         }
 
-        ssr_dilate.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &ssr_tex = builder.GetReadTexture(data->ssr_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        ssr_dilate.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &ssr_tex = builder.GetReadTexture(data->ssr_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = false;
@@ -1179,9 +1156,9 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
         });
     }
     { // Compose
-        auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE");
+        auto &ssr_compose = fg_builder_.AddNode("SSR COMPOSE");
 
-        auto *data = ssr_compose.AllocPassData<RpSSRComposeData>();
+        auto *data = ssr_compose.AllocNodeData<ExSSRCompose::Args>();
         data->shared_data =
             ssr_compose.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
         data->cells_buf = ssr_compose.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
@@ -1197,7 +1174,7 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
 
         frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
 
-        rp_ssr_compose_.Setup(rp_builder_, &view_state_, probe_storage, data);
-        ssr_compose.set_executor(&rp_ssr_compose_);
+        ex_ssr_compose_.Setup(fg_builder_, &view_state_, probe_storage, data);
+        ssr_compose.set_executor(&ex_ssr_compose_);
     }
 }

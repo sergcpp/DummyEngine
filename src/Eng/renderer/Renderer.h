@@ -10,36 +10,31 @@ extern "C" {
 
 #include "../scene/SceneData.h"
 #include "PrimDraw.h"
-#include "passes/RpBuildAccStructures.h"
-#include "passes/RpCombine.h"
-#include "passes/RpDOF.h"
-#include "passes/RpDebugEllipsoids.h"
-#include "passes/RpDebugOIT.h"
-#include "passes/RpDebugProbes.h"
-#include "passes/RpDebugRT.h"
-#include "passes/RpDebugTextures.h"
-#include "passes/RpDepthFill.h"
-#include "passes/RpDepthHierarchy.h"
-#include "passes/RpEmissive.h"
-#include "passes/RpFXAA.h"
-#include "passes/RpGBufferFill.h"
-#include "passes/RpOITBlendLayer.h"
-#include "passes/RpOITDepthPeel.h"
-#include "passes/RpOITScheduleRays.h"
-#include "passes/RpOpaque.h"
-#include "passes/RpRTGI.h"
-#include "passes/RpRTGICache.h"
-#include "passes/RpRTReflections.h"
-#include "passes/RpRTShadows.h"
-#include "passes/RpReadExposure.h"
-#include "passes/RpSSRCompose.h"
-#include "passes/RpSSRCompose2.h"
-#include "passes/RpSampleLights.h"
-#include "passes/RpShadowMaps.h"
-#include "passes/RpSkinning.h"
-#include "passes/RpSkydome.h"
-#include "passes/RpTransparent.h"
-#include "passes/RpUpdateAccBuffers.h"
+#include "executors/ExBuildAccStructures.h"
+#include "executors/ExCombine.h"
+#include "executors/ExDebugOIT.h"
+#include "executors/ExDebugProbes.h"
+#include "executors/ExDebugRT.h"
+#include "executors/ExDepthFill.h"
+#include "executors/ExDepthHierarchy.h"
+#include "executors/ExEmissive.h"
+#include "executors/ExGBufferFill.h"
+#include "executors/ExOITBlendLayer.h"
+#include "executors/ExOITDepthPeel.h"
+#include "executors/ExOITScheduleRays.h"
+#include "executors/ExOpaque.h"
+#include "executors/ExRTGI.h"
+#include "executors/ExRTGICache.h"
+#include "executors/ExRTReflections.h"
+#include "executors/ExRTShadows.h"
+#include "executors/ExReadExposure.h"
+#include "executors/ExSSRCompose.h"
+#include "executors/ExSampleLights.h"
+#include "executors/ExShadowMaps.h"
+#include "executors/ExSkinning.h"
+#include "executors/ExSkydome.h"
+#include "executors/ExTransparent.h"
+#include "executors/ExUpdateAccBuffers.h"
 
 #include "Renderer_DrawList.h"
 
@@ -67,8 +62,8 @@ class Renderer {
     void reset_accumulation() { frame_index_ = view_state_.frame_index = accumulated_frames_ = 0; }
 
     float readback_exposure() const {
-        if (rp_read_exposure_.exposure() > 0.0f) {
-            return rp_read_exposure_.exposure();
+        if (ex_read_exposure_.exposure() > 0.0f) {
+            return ex_read_exposure_.exposure();
         }
         return std::min(std::max(1.0f, min_exposure_), max_exposure_);
     }
@@ -186,44 +181,43 @@ class Renderer {
     // Sun shadow occupies half of atlas
     static const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
 
-    RpBuilder rp_builder_;
+    FgBuilder fg_builder_;
     std::optional<render_settings_t> cached_settings_;
     int cached_rp_index_ = 0;
     Ren::WeakTex2DRef env_map_;
     Ren::WeakTex2DRef lm_direct_, lm_indir_, lm_indir_sh_[4];
     const DrawList *p_list_;
     const Ren::ProbeStorage *probe_storage_ = nullptr;
-    Ren::SmallVector<RpResRef, 8> backbuffer_sources_;
+    Ren::SmallVector<FgResRef, 8> backbuffer_sources_;
     float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
     float pre_exposure_ = 1.0f;
 
-    RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
-    RpSkydomeCube rp_skydome_cube_ = {prim_draw_};
-    RpSkydomeScreen rp_skydome_ = {prim_draw_};
-    RpDepthFill rp_depth_fill_;
-    RpDepthHierarchy rp_depth_hierarchy_;
-    RpGBufferFill rp_gbuffer_fill_;
-    RpOpaque rp_opaque_;
-    RpTransparent rp_transparent_ = {prim_draw_};
-    RpEmissive rp_emissive_;
-    RpOITDepthPeel rp_oit_depth_peel_;
-    RpOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {{prim_draw_}, {prim_draw_}, {prim_draw_}, {prim_draw_}};
-    RpOITScheduleRays rp_oit_schedule_rays_;
-    RpRTReflections rp_oit_rt_reflections_ = RpRTReflections{true};
-    RpSSRCompose rp_ssr_compose_ = {prim_draw_};
-    RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
-    RpRTGI rp_rt_gi_;
-    RpRTGICache rp_rt_gi_cache_;
-    RpRTReflections rp_rt_reflections_ = RpRTReflections{false};
-    RpRTShadows rp_rt_shadows_;
-    RpSampleLights rp_sample_lights_;
-    RpReadExposure rp_read_exposure_;
-    RpCombineData rp_combine_data_;
-    RpCombine rp_combine_ = {prim_draw_};
+    ExShadowMaps ex_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
+    ExSkydomeCube ex_skydome_cube_ = {prim_draw_};
+    ExSkydomeScreen ex_skydome_ = {prim_draw_};
+    ExDepthFill ex_depth_fill_;
+    ExDepthHierarchy ex_depth_hierarchy_;
+    ExGBufferFill ex_gbuffer_fill_;
+    ExOpaque ex_opaque_;
+    ExTransparent ex_transparent_ = {prim_draw_};
+    ExEmissive ex_emissive_;
+    ExOITDepthPeel ex_oit_depth_peel_;
+    ExOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {{prim_draw_}, {prim_draw_}, {prim_draw_}, {prim_draw_}};
+    ExOITScheduleRays ex_oit_schedule_rays_;
+    ExRTReflections ex_oit_rt_reflections_ = ExRTReflections{true};
+    ExSSRCompose ex_ssr_compose_ = {prim_draw_};
+    ExRTGI ex_rt_gi_;
+    ExRTGICache ex_rt_gi_cache_;
+    ExRTReflections ex_rt_reflections_ = ExRTReflections{false};
+    ExRTShadows ex_rt_shadows_;
+    ExSampleLights ex_sample_lights_;
+    ExReadExposure ex_read_exposure_;
+    ExCombine::Args ex_combine_args_;
+    ExCombine ex_combine_ = {prim_draw_};
 
-    RpDebugProbes rp_debug_probes_ = {prim_draw_};
-    RpDebugRT rp_debug_rt_;
-    RpDebugOIT rp_debug_oit_;
+    ExDebugProbes ex_debug_probes_ = {prim_draw_};
+    ExDebugRT ex_debug_rt_;
+    ExDebugOIT ex_debug_oit_;
 
     ViewState view_state_;
     PrimDraw prim_draw_;
@@ -261,36 +255,36 @@ class Renderer {
         blit_down_depth_prog_, blit_ssr_compose_prog_;
 
     struct CommonBuffers {
-        RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, rt_cells_res, lights_res,
+        FgResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, rt_cells_res, lights_res,
             decals_res, items_res, rt_items_res, shared_data_res, atomic_cnt_res;
     };
 
     struct FrameTextures {
         Ren::Tex2DParams color_params;
-        RpResRef color;
+        FgResRef color;
         Ren::Tex2DParams albedo_params;
-        RpResRef albedo;
+        FgResRef albedo;
         Ren::Tex2DParams specular_params;
-        RpResRef specular;
+        FgResRef specular;
         Ren::Tex2DParams normal_params;
-        RpResRef normal;
+        FgResRef normal;
         Ren::Tex2DParams depth_params;
-        RpResRef depth;
+        FgResRef depth;
         Ren::Tex2DParams velocity_params;
-        RpResRef velocity;
+        FgResRef velocity;
 
-        RpResRef envmap;
-        RpResRef shadowmap;
-        RpResRef ssao;
-        RpResRef gi;
-        RpResRef sun_shadow;
-        RpResRef exposure;
+        FgResRef envmap;
+        FgResRef shadowmap;
+        FgResRef ssao;
+        FgResRef gi;
+        FgResRef sun_shadow;
+        FgResRef exposure;
 
-        RpResRef gi_cache_irradiance;
-        RpResRef gi_cache_distance;
-        RpResRef gi_cache_offset;
+        FgResRef gi_cache_irradiance;
+        FgResRef gi_cache_distance;
+        FgResRef gi_cache_offset;
 
-        RpResRef oit_depth_buf;
+        FgResRef oit_depth_buf;
     };
 
     void InitSkyResources();
@@ -308,52 +302,52 @@ class Renderer {
                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddOITPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                       const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                      RpResRef depth_hierarchy, RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                      FgResRef depth_hierarchy, FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                       FrameTextures &frame_textures);
     void AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                    const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
-    void AddSSAOPasses(RpResRef depth_down_2x, RpResRef depth_tex, RpResRef &out_ssao);
-    RpResRef AddGTAOPasses(RpResRef depth_tex, RpResRef velocity_tex, RpResRef norm_tex);
-    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
-                                   RpResRef &inout_velocity_tex);
-    void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex);
+    void AddSSAOPasses(FgResRef depth_down_2x, FgResRef depth_tex, FgResRef &out_ssao);
+    FgResRef AddGTAOPasses(FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex);
+    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
+                                   FgResRef &inout_velocity_tex);
+    void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, FgResRef &output_tex);
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
-                    RpResRef &resolved_color);
-    void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
-    void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
+                    FgResRef &resolved_color);
+    void AddDownsampleColorPass(FgResRef input_tex, FgResRef &output_tex);
+    void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
     void AddHQSpecularPasses(bool deferred_shading, bool debug_denoise, const Ren::ProbeStorage *probe_storage,
                              const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                              const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                             RpResRef depth_hierarchy, RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                             FgResRef depth_hierarchy, FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                              FrameTextures &frame_textures);
     void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                             RpResRef depth_down_2x, FrameTextures &frame_textures);
+                             FgResRef depth_down_2x, FrameTextures &frame_textures);
 
     void AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                           const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                           const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, RpResRef depth_hierarchy, RpResRef rt_geo_instances_res,
-                          RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
+                          const BindlessTextureData &bindless, FgResRef depth_hierarchy, FgResRef rt_geo_instances_res,
+                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
     void AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, RpResRef rt_geo_instances_res,
-                          RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
+                          const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
+                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                               FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                                FrameTextures &frame_textures, bool debug_denoise);
     void AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                              const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                              bool enabled, FrameTextures &frame_textures);
 
-    RpResRef AddAutoexposurePasses(RpResRef hdr_texture);
+    FgResRef AddAutoexposurePasses(FgResRef hdr_texture);
 
-    void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
+    void AddDebugVelocityPass(FgResRef velocity, FgResRef &output_tex);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 

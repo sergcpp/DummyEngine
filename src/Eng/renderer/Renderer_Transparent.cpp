@@ -10,8 +10,8 @@
 
 void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                  const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                                 const RpResRef depth_hierarchy, RpResRef rt_geo_instances_res,
-                                 RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
+                                 const FgResRef depth_hierarchy, FgResRef rt_geo_instances_res,
+                                 FgResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -19,21 +19,21 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         return;
     }
 
-    RpResRef oit_depth_buf, oit_specular[OIT_REFLECTION_LAYERS], oit_rays_counter;
+    FgResRef oit_depth_buf, oit_specular[OIT_REFLECTION_LAYERS], oit_rays_counter;
 
     { // OIT clear
-        auto &oit_clear = rp_builder_.AddPass("OIT CLEAR");
+        auto &oit_clear = fg_builder_.AddNode("OIT CLEAR");
 
         struct PassData {
-            RpResRef oit_depth_buf;
-            RpResRef oit_specular[OIT_REFLECTION_LAYERS];
-            RpResRef oit_rays_counter;
+            FgResRef oit_depth_buf;
+            FgResRef oit_specular[OIT_REFLECTION_LAYERS];
+            FgResRef oit_rays_counter;
         };
 
-        auto *data = oit_clear.AllocPassData<PassData>();
+        auto *data = oit_clear.AllocNodeData<PassData>();
 
         { // output buffer
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Texture;
             desc.size = OIT_LAYERS_COUNT * view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
             oit_depth_buf = data->oit_depth_buf = oit_clear.AddTransferOutput("Depth Values", desc);
@@ -54,21 +54,21 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         }
 
         { // ray counter
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = 6 * sizeof(uint32_t);
 
             oit_rays_counter = data->oit_rays_counter = oit_clear.AddTransferOutput("OIT Ray Counter", desc);
         }
 
-        oit_clear.set_execute_cb([data](RpBuilder &builder) {
-            RpAllocBuf &out_depth_buf = builder.GetWriteBuffer(data->oit_depth_buf);
-            RpAllocBuf &out_rays_counter_buf = builder.GetWriteBuffer(data->oit_rays_counter);
+        oit_clear.set_execute_cb([data](FgBuilder &builder) {
+            FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(data->oit_depth_buf);
+            FgAllocBuf &out_rays_counter_buf = builder.GetWriteBuffer(data->oit_rays_counter);
             Ren::Context &ctx = builder.ctx();
             out_depth_buf.ref->Fill(0, out_depth_buf.ref->size(), 0, ctx.current_cmd_buf());
             out_rays_counter_buf.ref->Fill(0, out_rays_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                RpAllocTex &oit_specular = builder.GetWriteTexture(data->oit_specular[i]);
+                FgAllocTex &oit_specular = builder.GetWriteTexture(data->oit_specular[i]);
                 const float rgba[4] = {};
                 Ren::ClearImage(*oit_specular.ref, rgba, ctx.current_cmd_buf());
             }
@@ -76,64 +76,64 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
     }
 
     { // depth peel pass
-        auto &oit_depth_peel = rp_builder_.AddPass("OIT DEPTH PEEL");
-        const RpResRef vtx_buf1 = oit_depth_peel.AddVertexBufferInput(ctx_.default_vertex_buf1());
-        const RpResRef vtx_buf2 = oit_depth_peel.AddVertexBufferInput(ctx_.default_vertex_buf2());
-        const RpResRef ndx_buf = oit_depth_peel.AddIndexBufferInput(ctx_.default_indices_buf());
+        auto &oit_depth_peel = fg_builder_.AddNode("OIT DEPTH PEEL");
+        const FgResRef vtx_buf1 = oit_depth_peel.AddVertexBufferInput(ctx_.default_vertex_buf1());
+        const FgResRef vtx_buf2 = oit_depth_peel.AddVertexBufferInput(ctx_.default_vertex_buf2());
+        const FgResRef ndx_buf = oit_depth_peel.AddIndexBufferInput(ctx_.default_indices_buf());
 
-        const RpResRef materials_buf =
+        const FgResRef materials_buf =
             oit_depth_peel.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-        const RpResRef textures_buf = oit_depth_peel.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+        const FgResRef textures_buf = oit_depth_peel.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-        const RpResRef textures_buf = {};
+        const FgResRef textures_buf = {};
 #endif
 
-        const RpResRef noise_tex = oit_depth_peel.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-        const RpResRef white_tex =
+        const FgResRef noise_tex = oit_depth_peel.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+        const FgResRef white_tex =
             oit_depth_peel.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
-        const RpResRef instances_buf = oit_depth_peel.AddStorageReadonlyInput(
+        const FgResRef instances_buf = oit_depth_peel.AddStorageReadonlyInput(
             persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
-        const RpResRef instances_indices_buf =
+        const FgResRef instances_indices_buf =
             oit_depth_peel.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-        const RpResRef shader_data_buf = oit_depth_peel.AddUniformBufferInput(common_buffers.shared_data_res,
+        const FgResRef shader_data_buf = oit_depth_peel.AddUniformBufferInput(common_buffers.shared_data_res,
                                                                               Stg::VertexShader | Stg::FragmentShader);
 
         frame_textures.depth = oit_depth_peel.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
         oit_depth_buf = oit_depth_peel.AddStorageOutput(oit_depth_buf, Stg::FragmentShader);
 
-        rp_oit_depth_peel_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+        ex_oit_depth_peel_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                                  &bindless, noise_tex, white_tex, instances_buf, instances_indices_buf, shader_data_buf,
                                  frame_textures.depth, oit_depth_buf);
-        oit_depth_peel.set_executor(&rp_oit_depth_peel_);
+        oit_depth_peel.set_executor(&ex_oit_depth_peel_);
     }
 
-    RpResRef oit_ray_list;
+    FgResRef oit_ray_list;
 
     { // schedule reflection rays
-        auto &oit_schedule = rp_builder_.AddPass("OIT SCHEDULE");
+        auto &oit_schedule = fg_builder_.AddNode("OIT SCHEDULE");
 
-        const RpResRef vtx_buf1 = oit_schedule.AddVertexBufferInput(ctx_.default_vertex_buf1());
-        const RpResRef vtx_buf2 = oit_schedule.AddVertexBufferInput(ctx_.default_vertex_buf2());
-        const RpResRef ndx_buf = oit_schedule.AddIndexBufferInput(ctx_.default_indices_buf());
+        const FgResRef vtx_buf1 = oit_schedule.AddVertexBufferInput(ctx_.default_vertex_buf1());
+        const FgResRef vtx_buf2 = oit_schedule.AddVertexBufferInput(ctx_.default_vertex_buf2());
+        const FgResRef ndx_buf = oit_schedule.AddIndexBufferInput(ctx_.default_indices_buf());
 
-        const RpResRef materials_buf =
+        const FgResRef materials_buf =
             oit_schedule.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-        const RpResRef textures_buf = oit_schedule.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+        const FgResRef textures_buf = oit_schedule.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-        const RpResRef textures_buf = {};
+        const FgResRef textures_buf = {};
 #endif
 
-        const RpResRef noise_tex = oit_schedule.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-        const RpResRef white_tex = oit_schedule.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
-        const RpResRef instances_buf = oit_schedule.AddStorageReadonlyInput(
+        const FgResRef noise_tex = oit_schedule.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+        const FgResRef white_tex = oit_schedule.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
+        const FgResRef instances_buf = oit_schedule.AddStorageReadonlyInput(
             persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
-        const RpResRef instances_indices_buf =
+        const FgResRef instances_indices_buf =
             oit_schedule.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-        const RpResRef shader_data_buf =
+        const FgResRef shader_data_buf =
             oit_schedule.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
         frame_textures.depth = oit_schedule.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
@@ -141,7 +141,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
         oit_rays_counter = oit_schedule.AddStorageOutput(oit_rays_counter, Stg::FragmentShader);
         { // packed ray list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = OIT_REFLECTION_LAYERS * (view_state_.scr_res[0] / 2) * (view_state_.scr_res[1] / 2) * 2 *
                         sizeof(uint32_t);
@@ -149,28 +149,28 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             oit_ray_list = oit_schedule.AddStorageOutput("OIT Ray List", desc, Stg::FragmentShader);
         }
 
-        rp_oit_schedule_rays_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+        ex_oit_schedule_rays_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                                     &bindless, noise_tex, white_tex, instances_buf, instances_indices_buf,
                                     shader_data_buf, frame_textures.depth, oit_depth_buf, oit_rays_counter,
                                     oit_ray_list);
-        oit_schedule.set_executor(&rp_oit_schedule_rays_);
+        oit_schedule.set_executor(&ex_oit_schedule_rays_);
     }
 
-    RpResRef indir_disp_buf;
+    FgResRef indir_disp_buf;
 
     { // Write indirect arguments
-        auto &write_indir = rp_builder_.AddPass("OIT INDIR ARGS");
+        auto &write_indir = fg_builder_.AddNode("OIT INDIR ARGS");
 
         struct PassData {
-            RpResRef ray_counter;
-            RpResRef indir_disp_buf;
+            FgResRef ray_counter;
+            FgResRef indir_disp_buf;
         };
 
-        auto *data = write_indir.AllocPassData<PassData>();
+        auto *data = write_indir.AllocNodeData<PassData>();
         oit_rays_counter = data->ray_counter = write_indir.AddStorageOutput(oit_rays_counter, Stg::ComputeShader);
 
         { // Indirect arguments
-            RpBufDesc desc = {};
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Indirect;
             desc.size = 2 * sizeof(Ren::DispatchIndirectCommand);
 
@@ -178,9 +178,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 write_indir.AddStorageOutput("OIT Intersect Args", desc, Stg::ComputeShader);
         }
 
-        write_indir.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-            RpAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
+        write_indir.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+            FgAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
 
             const Ren::Binding bindings[] = {
                 {Trg::SBufRW, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
@@ -191,23 +191,23 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         });
     }
 
-    RpResRef ray_rt_list;
+    FgResRef ray_rt_list;
 
     if (settings.reflections_quality != eReflectionsQuality::Raytraced_High) {
-        auto &ssr_trace_hq = rp_builder_.AddPass("OIT SSR");
+        auto &ssr_trace_hq = fg_builder_.AddNode("OIT SSR");
 
         struct PassData {
-            RpResRef oit_depth_buf;
-            RpResRef shared_data;
-            RpResRef color_tex, normal_tex, depth_hierarchy;
+            FgResRef oit_depth_buf;
+            FgResRef shared_data;
+            FgResRef color_tex, normal_tex, depth_hierarchy;
 
-            RpResRef albedo_tex, specular_tex, ltc_luts_tex, irradiance_tex, distance_tex, offset_tex;
+            FgResRef albedo_tex, specular_tex, ltc_luts_tex, irradiance_tex, distance_tex, offset_tex;
 
-            RpResRef in_ray_list, indir_args, inout_ray_counter;
-            RpResRef out_ssr_tex[OIT_REFLECTION_LAYERS], out_ray_list;
+            FgResRef in_ray_list, indir_args, inout_ray_counter;
+            FgResRef out_ssr_tex[OIT_REFLECTION_LAYERS], out_ray_list;
         };
 
-        auto *data = ssr_trace_hq.AllocPassData<PassData>();
+        auto *data = ssr_trace_hq.AllocNodeData<PassData>();
         data->oit_depth_buf = ssr_trace_hq.AddStorageReadonlyInput(oit_depth_buf, Stg::ComputeShader);
         data->shared_data = ssr_trace_hq.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->color_tex = ssr_trace_hq.AddTextureInput(frame_textures.color, Stg::ComputeShader);
@@ -233,7 +233,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         }
 
         { // packed ray list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = OIT_REFLECTION_LAYERS * (view_state_.scr_res[0] / 2) * (view_state_.scr_res[1] / 2) * 2 *
                         sizeof(uint32_t);
@@ -242,16 +242,16 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 ssr_trace_hq.AddStorageOutput("OIT RT Ray List", desc, Stg::ComputeShader);
         }
 
-        ssr_trace_hq.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &oit_depth_buf = builder.GetReadBuffer(data->oit_depth_buf);
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
-            RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
-            RpAllocTex &depth_hierarchy_tex = builder.GetReadTexture(data->depth_hierarchy);
-            RpAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+        ssr_trace_hq.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &oit_depth_buf = builder.GetReadBuffer(data->oit_depth_buf);
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
+            FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+            FgAllocTex &depth_hierarchy_tex = builder.GetReadTexture(data->depth_hierarchy);
+            FgAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            RpAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
+            FgAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
                        *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
             if (data->irradiance_tex) {
                 albedo_tex = &builder.GetReadTexture(data->albedo_tex);
@@ -263,12 +263,12 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 offset_tex = &builder.GetReadTexture(data->offset_tex);
             }
 
-            RpAllocTex *out_refl_tex[OIT_REFLECTION_LAYERS] = {};
+            FgAllocTex *out_refl_tex[OIT_REFLECTION_LAYERS] = {};
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
                 out_refl_tex[i] = &builder.GetWriteTexture(data->out_ssr_tex[i]);
             }
-            RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
-            RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
+            FgAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
+            FgAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
             Ren::SmallVector<Ren::Binding, 24> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -304,21 +304,21 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
     if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && frame_textures.envmap &&
         int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
-        RpResRef indir_rt_disp_buf;
+        FgResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
-            auto &rt_disp_args = rp_builder_.AddPass("OIT RT ARGS");
+            auto &rt_disp_args = fg_builder_.AddNode("OIT RT ARGS");
 
             struct PassData {
-                RpResRef ray_counter;
-                RpResRef indir_disp_buf;
+                FgResRef ray_counter;
+                FgResRef indir_disp_buf;
             };
 
-            auto *data = rt_disp_args.AllocPassData<PassData>();
+            auto *data = rt_disp_args.AllocNodeData<PassData>();
             oit_rays_counter = data->ray_counter = rt_disp_args.AddStorageOutput(oit_rays_counter, Stg::ComputeShader);
 
             { // Indirect arguments
-                RpBufDesc desc = {};
+                FgBufDesc desc = {};
                 desc.type = Ren::eBufType::Indirect;
                 desc.size = sizeof(Ren::TraceRaysIndirectCommand) + sizeof(Ren::DispatchIndirectCommand);
 
@@ -326,9 +326,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                     rt_disp_args.AddStorageOutput("OIT RT Dispatch Args", desc, Stg::ComputeShader);
             }
 
-            rt_disp_args.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-                RpAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
+            rt_disp_args.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+                FgAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
 
                 const Ren::Binding bindings[] = {
                     {Trg::SBufRW, SSRWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
@@ -343,9 +343,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         }
 
         { // Trace reflection rays
-            auto &rt_refl = rp_builder_.AddPass("OIT RT REFL");
+            auto &rt_refl = fg_builder_.AddNode("OIT RT REFL");
 
-            auto *data = rt_refl.AllocPassData<RpRTReflectionsData>();
+            auto *data = rt_refl.AllocNodeData<ExRTReflections::Args>();
 
             const auto stage = Stg::ComputeShader;
 
@@ -402,26 +402,26 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 oit_specular[i] = data->out_refl_tex[i] = rt_refl.AddStorageImageOutput(oit_specular[i], stage);
             }
 
-            rp_oit_rt_reflections_.Setup(rp_builder_, &view_state_, &bindless, data);
-            rt_refl.set_executor(&rp_oit_rt_reflections_);
+            ex_oit_rt_reflections_.Setup(fg_builder_, &view_state_, &bindless, data);
+            rt_refl.set_executor(&ex_oit_rt_reflections_);
         }
     }
 
     for (int i = 0; i < OIT_LAYERS_COUNT; ++i) {
-        RpResRef back_color, back_depth;
+        FgResRef back_color, back_depth;
         { // copy background
             const std::string pass_name = "OIT BACK #" + std::to_string(i);
 
-            auto &oit_back = rp_builder_.AddPass(pass_name);
+            auto &oit_back = fg_builder_.AddNode(pass_name);
 
             struct PassData {
-                RpResRef in_back_color;
-                RpResRef in_back_depth;
-                RpResRef out_back_color;
-                RpResRef out_back_depth;
+                FgResRef in_back_color;
+                FgResRef in_back_depth;
+                FgResRef out_back_color;
+                FgResRef out_back_depth;
             };
 
-            auto *data = oit_back.AllocPassData<PassData>();
+            auto *data = oit_back.AllocNodeData<PassData>();
             frame_textures.color = data->in_back_color = oit_back.AddTransferImageInput(frame_textures.color);
             frame_textures.depth = data->in_back_depth = oit_back.AddTransferImageInput(frame_textures.depth);
             { // background color
@@ -435,11 +435,11 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.depth_params);
             }
 
-            oit_back.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocTex &in_back_color_tex = builder.GetReadTexture(data->in_back_color);
-                RpAllocTex &in_back_depth_tex = builder.GetReadTexture(data->in_back_depth);
-                RpAllocTex &out_back_color_tex = builder.GetWriteTexture(data->out_back_color);
-                RpAllocTex &out_back_depth_tex = builder.GetWriteTexture(data->out_back_depth);
+            oit_back.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocTex &in_back_color_tex = builder.GetReadTexture(data->in_back_color);
+                FgAllocTex &in_back_depth_tex = builder.GetReadTexture(data->in_back_depth);
+                FgAllocTex &out_back_color_tex = builder.GetWriteTexture(data->out_back_color);
+                FgAllocTex &out_back_depth_tex = builder.GetWriteTexture(data->out_back_depth);
 
                 const int w = in_back_color_tex.ref->params.w, h = in_back_color_tex.ref->params.h;
 
@@ -452,44 +452,44 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         { // blend
             const std::string pass_name = "OIT BLEND #" + std::to_string(i);
 
-            auto &oit_blend_layer = rp_builder_.AddPass(pass_name);
-            const RpResRef vtx_buf1 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            const RpResRef vtx_buf2 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            const RpResRef ndx_buf = oit_blend_layer.AddIndexBufferInput(ctx_.default_indices_buf());
+            auto &oit_blend_layer = fg_builder_.AddNode(pass_name);
+            const FgResRef vtx_buf1 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            const FgResRef vtx_buf2 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            const FgResRef ndx_buf = oit_blend_layer.AddIndexBufferInput(ctx_.default_indices_buf());
 
-            const RpResRef materials_buf =
+            const FgResRef materials_buf =
                 oit_blend_layer.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-            const RpResRef textures_buf =
+            const FgResRef textures_buf =
                 oit_blend_layer.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-            const RpResRef textures_buf = {};
+            const FgResRef textures_buf = {};
 #endif
 
-            const RpResRef noise_tex =
+            const FgResRef noise_tex =
                 oit_blend_layer.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-            const RpResRef white_tex =
+            const FgResRef white_tex =
                 oit_blend_layer.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
-            const RpResRef instances_buf = oit_blend_layer.AddStorageReadonlyInput(
+            const FgResRef instances_buf = oit_blend_layer.AddStorageReadonlyInput(
                 persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
-            const RpResRef instances_indices_buf =
+            const FgResRef instances_indices_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-            const RpResRef shader_data_buf = oit_blend_layer.AddUniformBufferInput(
+            const FgResRef shader_data_buf = oit_blend_layer.AddUniformBufferInput(
                 common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-            const RpResRef cells_buf =
+            const FgResRef cells_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-            const RpResRef items_buf =
+            const FgResRef items_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-            const RpResRef lights_buf =
+            const FgResRef lights_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
-            const RpResRef decals_buf =
+            const FgResRef decals_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
-            const RpResRef shadow_map = oit_blend_layer.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
-            const RpResRef ltc_luts_tex = oit_blend_layer.AddTextureInput(ltc_luts_, Stg::FragmentShader);
-            const RpResRef env_tex = oit_blend_layer.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
+            const FgResRef shadow_map = oit_blend_layer.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+            const FgResRef ltc_luts_tex = oit_blend_layer.AddTextureInput(ltc_luts_, Stg::FragmentShader);
+            const FgResRef env_tex = oit_blend_layer.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
 
             frame_textures.depth = oit_blend_layer.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
             frame_textures.color = oit_blend_layer.AddColorOutput(frame_textures.color);
@@ -497,12 +497,12 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
             const int layer_index = OIT_LAYERS_COUNT - 1 - i;
 
-            RpResRef specular_tex;
+            FgResRef specular_tex;
             if (layer_index < OIT_REFLECTION_LAYERS && settings.reflections_quality != eReflectionsQuality::Off) {
                 specular_tex = oit_blend_layer.AddTextureInput(oit_specular[layer_index], Stg::FragmentShader);
             }
 
-            RpResRef irradiance_tex, distance_tex, offset_tex;
+            FgResRef irradiance_tex, distance_tex, offset_tex;
             if (settings.gi_quality != eGIQuality::Off && frame_textures.gi_cache_irradiance) {
                 irradiance_tex =
                     oit_blend_layer.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::FragmentShader);

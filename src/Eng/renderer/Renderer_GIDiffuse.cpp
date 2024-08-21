@@ -22,29 +22,29 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                      const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                                      const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
-                                     const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                                     RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                                     const BindlessTextureData &bindless, const FgResRef depth_hierarchy,
+                                     FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                                      FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    RpResRef gi_fallback;
+    FgResRef gi_fallback;
 
     if (frame_textures.gi_cache_irradiance) {
-        auto &probe_sample = rp_builder_.AddPass("PROBE SAMPLE");
+        auto &probe_sample = fg_builder_.AddNode("PROBE SAMPLE");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef depth_tex;
-            RpResRef normals_tex;
-            RpResRef ssao_tex;
-            RpResRef irradiance_tex;
-            RpResRef distance_tex;
-            RpResRef offset_tex;
-            RpResRef out_tex;
+            FgResRef shared_data;
+            FgResRef depth_tex;
+            FgResRef normals_tex;
+            FgResRef ssao_tex;
+            FgResRef irradiance_tex;
+            FgResRef distance_tex;
+            FgResRef offset_tex;
+            FgResRef out_tex;
         };
 
-        auto *data = probe_sample.AllocPassData<PassData>();
+        auto *data = probe_sample.AllocNodeData<PassData>();
 
         data->shared_data = probe_sample.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->depth_tex = probe_sample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
@@ -65,15 +65,15 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             gi_fallback = data->out_tex = probe_sample.AddStorageImageOutput("GI Tex", params, Stg::ComputeShader);
         }
 
-        probe_sample.set_execute_cb([data, &persistent_data, this](RpBuilder &builder) {
-            RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &normals_tex = builder.GetReadTexture(data->normals_tex);
-            RpAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
-            RpAllocTex &irradiance_tex = builder.GetReadTexture(data->irradiance_tex);
-            RpAllocTex &distance_tex = builder.GetReadTexture(data->distance_tex);
-            RpAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
-            RpAllocTex &out_tex = builder.GetWriteTexture(data->out_tex);
+        probe_sample.set_execute_cb([data, &persistent_data, this](FgBuilder &builder) {
+            FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &normals_tex = builder.GetReadTexture(data->normals_tex);
+            FgAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
+            FgAllocTex &irradiance_tex = builder.GetReadTexture(data->irradiance_tex);
+            FgAllocTex &distance_tex = builder.GetReadTexture(data->distance_tex);
+            FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
+            FgAllocTex &out_tex = builder.GetWriteTexture(data->out_tex);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
@@ -103,7 +103,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     } else {
-        gi_fallback = rp_builder_.MakeTextureResource(dummy_black_);
+        gi_fallback = fg_builder_.MakeTextureResource(dummy_black_);
     }
 
     if (settings.gi_quality <= eGIQuality::Medium) {
@@ -117,51 +117,51 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     static const bool EnableBlur = true;
     const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
 
-    RpResRef ray_counter;
+    FgResRef ray_counter;
 
     { // Prepare atomic counter and ray length texture
-        auto &gi_prepare = rp_builder_.AddPass("GI PREPARE");
+        auto &gi_prepare = fg_builder_.AddNode("GI PREPARE");
 
         struct PassData {
-            RpResRef ray_counter;
+            FgResRef ray_counter;
         };
 
-        auto *data = gi_prepare.AllocPassData<PassData>();
+        auto *data = gi_prepare.AllocNodeData<PassData>();
 
         { // ray counter
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = 6 * sizeof(uint32_t);
 
             ray_counter = data->ray_counter = gi_prepare.AddTransferOutput("GI Ray Counter", desc);
         }
 
-        gi_prepare.set_execute_cb([data](RpBuilder &builder) {
-            RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+        gi_prepare.set_execute_cb([data](FgBuilder &builder) {
+            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
 
             Ren::Context &ctx = builder.ctx();
             ray_counter_buf.ref->Fill(0, ray_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
         });
     }
 
-    RpResRef ray_list, tile_list;
-    RpResRef gi_tex, noise_tex;
+    FgResRef ray_list, tile_list;
+    FgResRef gi_tex, noise_tex;
 
     { // Classify pixel quads
-        auto &gi_classify = rp_builder_.AddPass("GI CLASSIFY");
+        auto &gi_classify = fg_builder_.AddNode("GI CLASSIFY");
 
         struct PassData {
-            RpResRef depth;
-            RpResRef spec_tex;
-            RpResRef variance_history;
-            RpResRef sobol, scrambling_tile, ranking_tile;
-            RpResRef ray_counter;
-            RpResRef ray_list;
-            RpResRef tile_list;
-            RpResRef out_gi_tex, out_noise_tex;
+            FgResRef depth;
+            FgResRef spec_tex;
+            FgResRef variance_history;
+            FgResRef sobol, scrambling_tile, ranking_tile;
+            FgResRef ray_counter;
+            FgResRef ray_list;
+            FgResRef tile_list;
+            FgResRef out_gi_tex, out_noise_tex;
         };
 
-        auto *data = gi_classify.AllocPassData<PassData>();
+        auto *data = gi_classify.AllocNodeData<PassData>();
         data->depth = gi_classify.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->spec_tex = gi_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
         if (debug_denoise) {
@@ -175,14 +175,14 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         ray_counter = data->ray_counter = gi_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
             ray_list = data->ray_list = gi_classify.AddStorageOutput("GI Ray List", desc, Stg::ComputeShader);
         }
         { // tile list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8) * sizeof(uint32_t);
 
@@ -207,19 +207,19 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_classify.AddStorageImageOutput("GI Blue Noise Tex", params, Stg::ComputeShader);
         }
 
-        gi_classify.set_execute_cb([this, data, SamplesPerQuad](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
-            RpAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
-            RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
-            RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
+        gi_classify.set_execute_cb([this, data, SamplesPerQuad](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
+            FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+            FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
+            FgAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
+            FgAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
+            FgAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
 
-            RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-            RpAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
-            RpAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
-            RpAllocTex &gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-            RpAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
+            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+            FgAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
+            FgAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
+            FgAllocTex &gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+            FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
             // Initialize texel buffers if needed
             if (!sobol_buf.tbos[0]) {
@@ -267,21 +267,21 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    RpResRef indir_disp_buf;
+    FgResRef indir_disp_buf;
 
     { // Write indirect arguments
-        auto &write_indir = rp_builder_.AddPass("GI INDIR ARGS");
+        auto &write_indir = fg_builder_.AddNode("GI INDIR ARGS");
 
         struct PassData {
-            RpResRef ray_counter;
-            RpResRef indir_disp_buf;
+            FgResRef ray_counter;
+            FgResRef indir_disp_buf;
         };
 
-        auto *data = write_indir.AllocPassData<PassData>();
+        auto *data = write_indir.AllocNodeData<PassData>();
         ray_counter = data->ray_counter = write_indir.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // Indirect arguments
-            RpBufDesc desc = {};
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Indirect;
             desc.size = 2 * sizeof(Ren::DispatchIndirectCommand);
 
@@ -289,9 +289,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 write_indir.AddStorageOutput("GI Intersect Args", desc, Stg::ComputeShader);
         }
 
-        write_indir.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-            RpAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
+        write_indir.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+            FgAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
 
             const Ren::Binding bindings[] = {{Trg::SBufRW, GIWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                                              {Trg::SBufRW, GIWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
@@ -301,21 +301,21 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    RpResRef ray_rt_list;
+    FgResRef ray_rt_list;
 
     { // Trace screen-space rays
-        auto &gi_trace_ss = rp_builder_.AddPass("GI TRACE SS");
+        auto &gi_trace_ss = fg_builder_.AddNode("GI TRACE SS");
 
         struct PassData {
-            RpResRef noise_tex;
-            RpResRef shared_data;
-            RpResRef color_tex, normal_tex, depth_hierarchy;
+            FgResRef noise_tex;
+            FgResRef shared_data;
+            FgResRef color_tex, normal_tex, depth_hierarchy;
 
-            RpResRef in_ray_list, indir_args, inout_ray_counter;
-            RpResRef out_gi_tex, out_ray_list;
+            FgResRef in_ray_list, indir_args, inout_ray_counter;
+            FgResRef out_gi_tex, out_ray_list;
         };
 
-        auto *data = gi_trace_ss.AllocPassData<PassData>();
+        auto *data = gi_trace_ss.AllocNodeData<PassData>();
         data->noise_tex = gi_trace_ss.AddTextureInput(noise_tex, Stg::ComputeShader);
         data->shared_data = gi_trace_ss.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->color_tex = gi_trace_ss.AddHistoryTextureInput(MAIN_COLOR_TEX, Stg::ComputeShader);
@@ -328,25 +328,25 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         gi_tex = data->out_gi_tex = gi_trace_ss.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
 
         { // packed ray list
-            RpBufDesc desc;
+            FgBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
             ray_rt_list = data->out_ray_list = gi_trace_ss.AddStorageOutput("GI RT Ray List", desc, Stg::ComputeShader);
         }
 
-        gi_trace_ss.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &noise_tex = builder.GetReadTexture(data->noise_tex);
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
-            RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
-            RpAllocTex &depth_hierarchy_tex = builder.GetReadTexture(data->depth_hierarchy);
-            RpAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+        gi_trace_ss.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &noise_tex = builder.GetReadTexture(data->noise_tex);
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
+            FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+            FgAllocTex &depth_hierarchy_tex = builder.GetReadTexture(data->depth_hierarchy);
+            FgAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-            RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
-            RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
+            FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+            FgAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
+            FgAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -370,21 +370,21 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     }
 
     if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
-        RpResRef indir_rt_disp_buf;
+        FgResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
-            auto &rt_disp_args = rp_builder_.AddPass("GI RT DISP ARGS");
+            auto &rt_disp_args = fg_builder_.AddNode("GI RT DISP ARGS");
 
             struct PassData {
-                RpResRef ray_counter;
-                RpResRef indir_disp_buf;
+                FgResRef ray_counter;
+                FgResRef indir_disp_buf;
             };
 
-            auto *data = rt_disp_args.AllocPassData<PassData>();
+            auto *data = rt_disp_args.AllocNodeData<PassData>();
             ray_counter = data->ray_counter = rt_disp_args.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
             { // Indirect arguments
-                RpBufDesc desc = {};
+                FgBufDesc desc = {};
                 desc.type = Ren::eBufType::Indirect;
                 desc.size = sizeof(Ren::TraceRaysIndirectCommand) + sizeof(Ren::DispatchIndirectCommand);
 
@@ -392,9 +392,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     rt_disp_args.AddStorageOutput("GI RT Dispatch Args", desc, Stg::ComputeShader);
             }
 
-            rt_disp_args.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-                RpAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
+            rt_disp_args.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
+                FgAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
 
                 const Ren::Binding bindings[] = {
                     {Trg::SBufRW, GIWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
@@ -406,10 +406,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         }
 
         { // Trace gi rays
-            auto &rt_gi = rp_builder_.AddPass("RT GI");
+            auto &rt_gi = fg_builder_.AddNode("RT GI");
 
-            auto *data = rt_gi.AllocPassData<RpRTGIData>();
-
+            auto *data = rt_gi.AllocNodeData<ExRTGI::Args>();
             data->two_bounce = (settings.gi_quality == eGIQuality::Ultra);
 
             const auto stage = Stg::ComputeShader;
@@ -423,7 +422,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_gi.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_gi.AddTextureInput(frame_textures.normal, stage);
-            // data->flat_normal_tex = rt_gi.AddTextureInput(flat_normals_tex, stage);
             data->env_tex = rt_gi.AddTextureInput(env_map, stage);
             data->ray_counter = rt_gi.AddStorageReadonlyInput(ray_counter, stage);
             data->ray_list = rt_gi.AddStorageReadonlyInput(ray_rt_list, stage);
@@ -464,14 +462,14 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             gi_tex = data->out_gi_tex = rt_gi.AddStorageImageOutput(gi_tex, stage);
 
-            rp_rt_gi_.Setup(rp_builder_, &view_state_, &bindless, data);
-            rt_gi.set_executor(&rp_rt_gi_);
+            ex_rt_gi_.Setup(fg_builder_, &view_state_, &bindless, data);
+            rt_gi.set_executor(&ex_rt_gi_);
         }
 
         { // Direct light sampling
-            auto &sample_lights = rp_builder_.AddPass("SAMPLE LIGHTS");
+            auto &sample_lights = fg_builder_.AddNode("SAMPLE LIGHTS");
 
-            auto *data = sample_lights.AllocPassData<RpSampleLightsData>();
+            auto *data = sample_lights.AllocNodeData<ExSampleLights::Args>();
             data->shared_data = sample_lights.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
             data->random_seq = sample_lights.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
             if (persistent_data.stoch_lights_buf) {
@@ -522,8 +520,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 data->out_specular_tex = sample_lights.AddStorageImageOutput("SSR Temp 2", params, Stg::ComputeShader);
             }
 
-            rp_sample_lights_.Setup(rp_builder_, &view_state_, &bindless, data);
-            sample_lights.set_executor(&rp_sample_lights_);
+            ex_sample_lights_.Setup(fg_builder_, &view_state_, &bindless, data);
+            sample_lights.set_executor(&ex_sample_lights_);
         }
     }
 
@@ -532,26 +530,26 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         return;
     }
 
-    RpResRef reproj_gi_tex, avg_gi_tex;
-    RpResRef variance_temp_tex, sample_count_tex;
+    FgResRef reproj_gi_tex, avg_gi_tex;
+    FgResRef variance_temp_tex, sample_count_tex;
 
     { // Denoiser reprojection
-        auto &gi_reproject = rp_builder_.AddPass("GI REPROJECT");
+        auto &gi_reproject = fg_builder_.AddNode("GI REPROJECT");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef depth_tex, norm_tex, velocity_tex;
-            RpResRef depth_hist_tex, norm_hist_tex, gi_hist_tex, variance_hist_tex, sample_count_hist_tex;
-            RpResRef exposure_tex;
-            RpResRef gi_tex;
-            RpResRef tile_list;
-            RpResRef indir_args;
+            FgResRef shared_data;
+            FgResRef depth_tex, norm_tex, velocity_tex;
+            FgResRef depth_hist_tex, norm_hist_tex, gi_hist_tex, variance_hist_tex, sample_count_hist_tex;
+            FgResRef exposure_tex;
+            FgResRef gi_tex;
+            FgResRef tile_list;
+            FgResRef indir_args;
             uint32_t indir_args_offset = 0;
-            RpResRef out_reprojected_tex, out_avg_gi_tex;
-            RpResRef out_variance_tex, out_sample_count_tex;
+            FgResRef out_reprojected_tex, out_avg_gi_tex;
+            FgResRef out_variance_tex, out_sample_count_tex;
         };
 
-        auto *data = gi_reproject.AllocPassData<PassData>();
+        auto *data = gi_reproject.AllocNodeData<PassData>();
         data->shared_data = gi_reproject.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->depth_tex = gi_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = gi_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -615,24 +613,24 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             gi_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
         data->exposure_tex = gi_reproject.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
 
-        gi_reproject.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-            RpAllocTex &depth_hist_tex = builder.GetReadTexture(data->depth_hist_tex);
-            RpAllocTex &norm_hist_tex = builder.GetReadTexture(data->norm_hist_tex);
-            RpAllocTex &gi_hist_tex = builder.GetReadTexture(data->gi_hist_tex);
-            RpAllocTex &variance_hist_tex = builder.GetReadTexture(data->variance_hist_tex);
-            RpAllocTex &sample_count_hist_tex = builder.GetReadTexture(data->sample_count_hist_tex);
-            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
-            RpAllocTex &out_reprojected_tex = builder.GetWriteTexture(data->out_reprojected_tex);
-            RpAllocTex &out_avg_gi_tex = builder.GetWriteTexture(data->out_avg_gi_tex);
-            RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
-            RpAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
+        gi_reproject.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            FgAllocTex &depth_hist_tex = builder.GetReadTexture(data->depth_hist_tex);
+            FgAllocTex &norm_hist_tex = builder.GetReadTexture(data->norm_hist_tex);
+            FgAllocTex &gi_hist_tex = builder.GetReadTexture(data->gi_hist_tex);
+            FgAllocTex &variance_hist_tex = builder.GetReadTexture(data->variance_hist_tex);
+            FgAllocTex &sample_count_hist_tex = builder.GetReadTexture(data->sample_count_hist_tex);
+            FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+            FgAllocTex &out_reprojected_tex = builder.GetWriteTexture(data->out_reprojected_tex);
+            FgAllocTex &out_avg_gi_tex = builder.GetWriteTexture(data->out_avg_gi_tex);
+            FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
+            FgAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
@@ -661,22 +659,22 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    RpResRef prefiltered_gi, variance_temp2_tex;
+    FgResRef prefiltered_gi, variance_temp2_tex;
 
     { // Denoiser prefilter
-        auto &gi_prefilter = rp_builder_.AddPass("GI PREFILTER");
+        auto &gi_prefilter = fg_builder_.AddNode("GI PREFILTER");
 
         struct PassData {
-            RpResRef depth_tex, norm_tex;
-            RpResRef avg_gi_tex, gi_tex;
-            RpResRef variance_tex, sample_count_tex;
-            RpResRef exposure_tex;
-            RpResRef tile_list, indir_args;
+            FgResRef depth_tex, norm_tex;
+            FgResRef avg_gi_tex, gi_tex;
+            FgResRef variance_tex, sample_count_tex;
+            FgResRef exposure_tex;
+            FgResRef tile_list, indir_args;
             uint32_t indir_args_offset = 0;
-            RpResRef out_gi_tex, out_variance_tex;
+            FgResRef out_gi_tex, out_variance_tex;
         };
 
-        auto *data = gi_prefilter.AllocPassData<PassData>();
+        auto *data = gi_prefilter.AllocNodeData<PassData>();
         data->depth_tex = gi_prefilter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = gi_prefilter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->avg_gi_tex = gi_prefilter.AddTextureInput(avg_gi_tex, Stg::ComputeShader);
@@ -711,19 +709,19 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_prefilter.AddStorageImageOutput("GI Variance Temp 2", params, Stg::ComputeShader);
         }
 
-        gi_prefilter.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &avg_gi_tex = builder.GetReadTexture(data->avg_gi_tex);
-            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+        gi_prefilter.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            FgAllocTex &avg_gi_tex = builder.GetReadTexture(data->avg_gi_tex);
+            FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+            FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+            FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-            RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
+            FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+            FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DSampled, GIPrefilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
@@ -746,22 +744,22 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    RpResRef gi_diffuse_tex, gi_variance_tex;
+    FgResRef gi_diffuse_tex, gi_variance_tex;
 
     { // Denoiser accumulation
-        auto &gi_temporal = rp_builder_.AddPass("GI TEMPORAL");
+        auto &gi_temporal = fg_builder_.AddNode("GI TEMPORAL");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef norm_tex, avg_gi_tex, fallback_gi_tex, gi_tex, reproj_gi_tex;
-            RpResRef variance_tex, sample_count_tex, tile_list;
-            RpResRef exposure_tex;
-            RpResRef indir_args;
+            FgResRef shared_data;
+            FgResRef norm_tex, avg_gi_tex, fallback_gi_tex, gi_tex, reproj_gi_tex;
+            FgResRef variance_tex, sample_count_tex, tile_list;
+            FgResRef exposure_tex;
+            FgResRef indir_args;
             uint32_t indir_args_offset = 0;
-            RpResRef out_gi_tex, out_variance_tex;
+            FgResRef out_gi_tex, out_variance_tex;
         };
 
-        auto *data = gi_temporal.AllocPassData<PassData>();
+        auto *data = gi_temporal.AllocNodeData<PassData>();
         data->shared_data = gi_temporal.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->norm_tex = gi_temporal.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->avg_gi_tex = gi_temporal.AddTextureInput(avg_gi_tex, Stg::ComputeShader);
@@ -801,21 +799,21 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_temporal.AddStorageImageOutput("GI Variance", params, Stg::ComputeShader);
         }
 
-        gi_temporal.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-            RpAllocTex &avg_gi_tex = builder.GetReadTexture(data->avg_gi_tex);
-            RpAllocTex &fallback_gi_tex = builder.GetReadTexture(data->fallback_gi_tex);
-            RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-            RpAllocTex &reproj_gi_tex = builder.GetReadTexture(data->reproj_gi_tex);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-            RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-            RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+        gi_temporal.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+            FgAllocTex &avg_gi_tex = builder.GetReadTexture(data->avg_gi_tex);
+            FgAllocTex &fallback_gi_tex = builder.GetReadTexture(data->fallback_gi_tex);
+            FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+            FgAllocTex &reproj_gi_tex = builder.GetReadTexture(data->reproj_gi_tex);
+            FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+            FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+            FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-            RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
+            FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+            FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -841,21 +839,21 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     }
 
     if (EnableBlur) {
-        RpResRef gi_diffuse2_tex;
+        FgResRef gi_diffuse2_tex;
 
         { // Denoiser blur
-            auto &gi_blur = rp_builder_.AddPass("GI BLUR");
+            auto &gi_blur = fg_builder_.AddNode("GI BLUR");
 
             struct PassData {
-                RpResRef shared_data;
-                RpResRef depth_tex, spec_tex, norm_tex, gi_tex;
-                RpResRef sample_count_tex, variance_tex, tile_list;
-                RpResRef indir_args;
+                FgResRef shared_data;
+                FgResRef depth_tex, spec_tex, norm_tex, gi_tex;
+                FgResRef sample_count_tex, variance_tex, tile_list;
+                FgResRef indir_args;
                 uint32_t indir_args_offset = 0;
-                RpResRef out_gi_tex;
+                FgResRef out_gi_tex;
             };
 
-            auto *data = gi_blur.AllocPassData<PassData>();
+            auto *data = gi_blur.AllocNodeData<PassData>();
             data->shared_data = gi_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
             data->spec_tex = gi_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
             data->depth_tex = gi_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
@@ -879,18 +877,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     gi_blur.AddStorageImageOutput("GI Diffuse 2", params, Stg::ComputeShader);
             }
 
-            gi_blur.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-                RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
-                RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-                RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-                RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-                RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-                RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+            gi_blur.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+                FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+                FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+                FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+                FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+                FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+                FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+                FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -915,21 +913,21 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             });
         }
 
-        RpResRef gi_diffuse3_tex;
+        FgResRef gi_diffuse3_tex;
 
         { // Denoiser blur 2
-            auto &gi_post_blur = rp_builder_.AddPass("GI POST BLUR");
+            auto &gi_post_blur = fg_builder_.AddNode("GI POST BLUR");
 
             struct PassData {
-                RpResRef shared_data;
-                RpResRef depth_tex, spec_tex, norm_tex, gi_tex, raylen_tex;
-                RpResRef sample_count_tex, variance_tex, tile_list;
-                RpResRef indir_args;
+                FgResRef shared_data;
+                FgResRef depth_tex, spec_tex, norm_tex, gi_tex, raylen_tex;
+                FgResRef sample_count_tex, variance_tex, tile_list;
+                FgResRef indir_args;
                 uint32_t indir_args_offset = 0;
-                RpResRef out_gi_tex;
+                FgResRef out_gi_tex;
             };
 
-            auto *data = gi_post_blur.AllocPassData<PassData>();
+            auto *data = gi_post_blur.AllocNodeData<PassData>();
             data->shared_data = gi_post_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
             data->depth_tex = gi_post_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->spec_tex = gi_post_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
@@ -943,18 +941,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             gi_diffuse3_tex = data->out_gi_tex = gi_post_blur.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
 
-            gi_post_blur.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-                RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
-                RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
-                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-                RpAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-                RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
-                RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
-                RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
+            gi_post_blur.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+                FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+                FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+                FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
+                FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
+                FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
+                FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+                FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -979,18 +977,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             });
         }
 
-        RpResRef gi_diffuse4_tex;
+        FgResRef gi_diffuse4_tex;
 
         { // Denoiser stabilization
-            auto &gi_stabilization = rp_builder_.AddPass("GI STABILIZATION");
+            auto &gi_stabilization = fg_builder_.AddNode("GI STABILIZATION");
 
             struct PassData {
-                RpResRef depth_tex, velocity_tex, gi_tex, gi_hist_tex;
-                RpResRef exposure_tex;
-                RpResRef out_gi_tex;
+                FgResRef depth_tex, velocity_tex, gi_tex, gi_hist_tex;
+                FgResRef exposure_tex;
+                FgResRef out_gi_tex;
             };
 
-            auto *data = gi_stabilization.AllocPassData<PassData>();
+            auto *data = gi_stabilization.AllocNodeData<PassData>();
             data->depth_tex = gi_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->velocity_tex = gi_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
             data->gi_tex = gi_stabilization.AddTextureInput(gi_diffuse3_tex, Stg::ComputeShader);
@@ -1010,14 +1008,14 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             data->gi_hist_tex = gi_stabilization.AddHistoryTextureInput(gi_diffuse4_tex, Stg::ComputeShader);
 
-            gi_stabilization.set_execute_cb([this, data](RpBuilder &builder) {
-                RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-                RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-                RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-                RpAllocTex &gi_hist_tex = builder.GetReadTexture(data->gi_hist_tex);
-                RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            gi_stabilization.set_execute_cb([this, data](FgBuilder &builder) {
+                FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+                FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+                FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+                FgAllocTex &gi_hist_tex = builder.GetReadTexture(data->gi_hist_tex);
+                FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
 
-                RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+                FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
                 const Ren::Binding bindings[] = {
                     {Trg::Tex2DSampled, GIStabilization::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},

@@ -203,48 +203,48 @@ bool Eng::Renderer::InitPipelines() {
 }
 
 void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const PersistentGpuData &persistent_data) {
-    auto &update_bufs = rp_builder_.AddPass("UPDATE BUFFERS");
+    auto &update_bufs = fg_builder_.AddNode("UPDATE BUFFERS");
 
     { // create skin transforms buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = SkinTransformsBufChunkSize;
         common_buffers.skin_transforms_res = update_bufs.AddTransferOutput("Skin Transforms Buf", desc);
     }
     { // create shape keys buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = ShapeKeysBufChunkSize;
         common_buffers.shape_keys_res = update_bufs.AddTransferOutput("Shape Keys Buf", desc);
     }
     { // create instance indices buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
         common_buffers.instance_indices_res = update_bufs.AddTransferOutput("Instance Indices Buf", desc);
     }
-    RpResRef shared_data_res;
+    FgResRef shared_data_res;
     { // create uniform buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Uniform;
         desc.size = SharedDataBlockSize;
         shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput(SHARED_DATA_BUF, desc);
     }
     { // create atomic counter buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Storage;
         desc.size = sizeof(uint32_t);
         common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter Buf", desc);
     }
 
-    update_bufs.set_execute_cb([this, &common_buffers, &persistent_data, shared_data_res](RpBuilder &builder) {
+    update_bufs.set_execute_cb([this, &common_buffers, &persistent_data, shared_data_res](FgBuilder &builder) {
         Ren::Context &ctx = builder.ctx();
-        RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms_res);
-        RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
-        // RpAllocBuf &instances_buf = builder.GetWriteBuffer(common_buffers.instances_res);
-        RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(common_buffers.instance_indices_res);
-        RpAllocBuf &shared_data_buf = builder.GetWriteBuffer(shared_data_res);
-        RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
+        FgAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms_res);
+        FgAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
+        // FgAllocBuf &instances_buf = builder.GetWriteBuffer(common_buffers.instances_res);
+        FgAllocBuf &instance_indices_buf = builder.GetWriteBuffer(common_buffers.instance_indices_res);
+        FgAllocBuf &shared_data_buf = builder.GetWriteBuffer(shared_data_res);
+        FgAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
 
         Ren::UpdateBuffer(
             *skin_transforms_buf.ref, 0, uint32_t(p_list_->skin_transforms.size() * sizeof(SkinTransform)),
@@ -461,53 +461,53 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
 }
 
 void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
-    auto &update_light_bufs = rp_builder_.AddPass("UPDATE LBUFFERS");
+    auto &update_light_bufs = fg_builder_.AddNode("UPDATE LBUFFERS");
 
     { // create cells buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
         common_buffers.cells_res = update_light_bufs.AddTransferOutput(CELLS_BUF, desc);
     }
     { // create RT cells buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
         common_buffers.rt_cells_res = update_light_bufs.AddTransferOutput("RT Cells Buffer", desc);
     }
     { // create lights buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
         common_buffers.lights_res = update_light_bufs.AddTransferOutput(LIGHTS_BUF, desc);
     }
     { // create decals buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = DecalsBufChunkSize;
         common_buffers.decals_res = update_light_bufs.AddTransferOutput(DECALS_BUF, desc);
     }
     { // create items buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
         common_buffers.items_res = update_light_bufs.AddTransferOutput(ITEMS_BUF, desc);
     }
     { // create RT items buffer
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
         common_buffers.rt_items_res = update_light_bufs.AddTransferOutput("RT Items Buffer", desc);
     }
 
-    update_light_bufs.set_execute_cb([this, &common_buffers](RpBuilder &builder) {
+    update_light_bufs.set_execute_cb([this, &common_buffers](FgBuilder &builder) {
         Ren::Context &ctx = builder.ctx();
-        RpAllocBuf &cells_buf = builder.GetWriteBuffer(common_buffers.cells_res);
-        RpAllocBuf &rt_cells_buf = builder.GetWriteBuffer(common_buffers.rt_cells_res);
-        RpAllocBuf &lights_buf = builder.GetWriteBuffer(common_buffers.lights_res);
-        RpAllocBuf &decals_buf = builder.GetWriteBuffer(common_buffers.decals_res);
-        RpAllocBuf &items_buf = builder.GetWriteBuffer(common_buffers.items_res);
-        RpAllocBuf &rt_items_buf = builder.GetWriteBuffer(common_buffers.rt_items_res);
+        FgAllocBuf &cells_buf = builder.GetWriteBuffer(common_buffers.cells_res);
+        FgAllocBuf &rt_cells_buf = builder.GetWriteBuffer(common_buffers.rt_cells_res);
+        FgAllocBuf &lights_buf = builder.GetWriteBuffer(common_buffers.lights_res);
+        FgAllocBuf &decals_buf = builder.GetWriteBuffer(common_buffers.decals_res);
+        FgAllocBuf &items_buf = builder.GetWriteBuffer(common_buffers.items_res);
+        FgAllocBuf &rt_items_buf = builder.GetWriteBuffer(common_buffers.rt_items_res);
 
         if (!cells_buf.tbos[0]) {
             cells_buf.tbos[0] =
@@ -781,9 +781,9 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
     }
 
     if (p_list_->env.env_map_name == "physical_sky") {
-        auto &skydome_cube = rp_builder_.AddPass("SKYDOME CUBE");
+        auto &skydome_cube = fg_builder_.AddNode("SKYDOME CUBE");
 
-        auto *data = skydome_cube.AllocPassData<RpSkydomeCubeData>();
+        auto *data = skydome_cube.AllocNodeData<ExSkydomeCube::Args>();
 
         data->shared_data = skydome_cube.AddUniformBufferInput(
             common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
@@ -797,15 +797,15 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
         frame_textures.envmap = data->color_tex = skydome_cube.AddColorOutput(p_list_->env.env_map);
 
-        rp_skydome_cube_.Setup(&view_state_, data);
-        skydome_cube.set_executor(&rp_skydome_cube_);
+        ex_skydome_cube_.Setup(&view_state_, data);
+        skydome_cube.set_executor(&ex_skydome_cube_);
     }
 
-    RpResRef sky_temp;
+    FgResRef sky_temp;
     { // Main pass
-        auto &skymap = rp_builder_.AddPass("SKYDOME");
+        auto &skymap = fg_builder_.AddNode("SKYDOME");
 
-        auto *data = skymap.AllocPassData<RpSkydomeScreenData>();
+        auto *data = skymap.AllocNodeData<ExSkydomeScreen::Args>();
         data->shared_data = skymap.AddUniformBufferInput(
             common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
         if (p_list_->env.env_map_name != "physical_sky") {
@@ -847,8 +847,8 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             }
         }
 
-        rp_skydome_.Setup(&view_state_, data);
-        skymap.set_executor(&rp_skydome_);
+        ex_skydome_.Setup(&view_state_, data);
+        skymap.set_executor(&ex_skydome_);
     }
 
     if (p_list_->env.env_map_name != "physical_sky") {
@@ -856,19 +856,19 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
     }
 
     if (settings.sky_quality == eSkyQuality::High) {
-        auto &sky_upsample = rp_builder_.AddPass("SKY UPSAMPLE");
+        auto &sky_upsample = fg_builder_.AddNode("SKY UPSAMPLE");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef depth_tex;
-            RpResRef env_map;
-            RpResRef sky_temp_tex;
-            RpResRef sky_hist_tex;
-            RpResRef output_tex;
-            RpResRef output_hist_tex;
+            FgResRef shared_data;
+            FgResRef depth_tex;
+            FgResRef env_map;
+            FgResRef sky_temp_tex;
+            FgResRef sky_hist_tex;
+            FgResRef output_tex;
+            FgResRef output_hist_tex;
         };
 
-        auto *data = sky_upsample.AllocPassData<PassData>();
+        auto *data = sky_upsample.AllocNodeData<PassData>();
         data->shared_data =
             sky_upsample.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
         frame_textures.depth = data->depth_tex =
@@ -877,7 +877,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             sky_upsample.AddTextureInput(frame_textures.envmap, Ren::eStageBits::ComputeShader);
         data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Ren::eStageBits::ComputeShader);
 
-        RpResRef sky_upsampled;
+        FgResRef sky_upsampled;
         {
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
@@ -894,14 +894,14 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         frame_textures.color = data->output_tex = sky_upsample.AddStorageImageOutput(
             MAIN_COLOR_TEX, frame_textures.color_params, Ren::eStageBits::ComputeShader);
 
-        sky_upsample.set_execute_cb([data, this](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &env_map_tex = builder.GetReadTexture(data->env_map);
-            RpAllocTex &sky_temp_tex = builder.GetReadTexture(data->sky_temp_tex);
-            RpAllocTex &sky_hist_tex = builder.GetReadTexture(data->sky_hist_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-            RpAllocTex &output_hist_tex = builder.GetWriteTexture(data->output_hist_tex);
+        sky_upsample.set_execute_cb([data, this](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &env_map_tex = builder.GetReadTexture(data->env_map);
+            FgAllocTex &sky_temp_tex = builder.GetReadTexture(data->sky_temp_tex);
+            FgAllocTex &sky_hist_tex = builder.GetReadTexture(data->sky_hist_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            FgAllocTex &output_hist_tex = builder.GetWriteTexture(data->output_hist_tex);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -918,7 +918,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
             Skydome::Params uniform_params;
             uniform_params.img_size = view_state_.scr_res;
-            uniform_params.sample_coord = RpSkydomeScreen::sample_pos(view_state_.frame_index);
+            uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
 
             Ren::DispatchCompute(pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -933,22 +933,22 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         return;
     }
 
-    RpResRef output;
+    FgResRef output;
     { // Sample sun color
-        auto &sun_color = rp_builder_.AddPass("SUN COLOR SAMPLE");
+        auto &sun_color = fg_builder_.AddNode("SUN COLOR SAMPLE");
 
         struct PassData {
-            RpResRef shared_data;
-            RpResRef transmittance_lut;
-            RpResRef multiscatter_lut;
-            RpResRef moon_tex;
-            RpResRef weather_tex;
-            RpResRef cirrus_tex;
-            RpResRef noise3d_tex;
-            RpResRef output_buf;
+            FgResRef shared_data;
+            FgResRef transmittance_lut;
+            FgResRef multiscatter_lut;
+            FgResRef moon_tex;
+            FgResRef weather_tex;
+            FgResRef cirrus_tex;
+            FgResRef noise3d_tex;
+            FgResRef output_buf;
         };
 
-        auto *data = sun_color.AllocPassData<PassData>();
+        auto *data = sun_color.AllocNodeData<PassData>();
 
         data->shared_data = sun_color.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->transmittance_lut = sun_color.AddTextureInput(sky_transmittance_lut_, Stg::ComputeShader);
@@ -958,20 +958,20 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         data->cirrus_tex = sun_color.AddTextureInput(sky_cirrus_tex_, Stg::ComputeShader);
         data->noise3d_tex = sun_color.AddTextureInput(sky_noise3d_tex_.get(), Stg::ComputeShader);
 
-        RpBufDesc desc;
+        FgBufDesc desc;
         desc.type = Ren::eBufType::Storage;
         desc.size = 4 * sizeof(float);
         output = data->output_buf = sun_color.AddStorageOutput("Sun brightness debug", desc, Stg::ComputeShader);
 
-        sun_color.set_execute_cb([data, this](RpBuilder &builder) {
-            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            RpAllocTex &transmittance_lut = builder.GetReadTexture(data->transmittance_lut);
-            RpAllocTex &multiscatter_lut = builder.GetReadTexture(data->multiscatter_lut);
-            RpAllocTex &moon_tex = builder.GetReadTexture(data->moon_tex);
-            RpAllocTex &weather_tex = builder.GetReadTexture(data->weather_tex);
-            RpAllocTex &cirrus_tex = builder.GetReadTexture(data->cirrus_tex);
-            RpAllocTex &noise3d_tex = builder.GetReadTexture(data->noise3d_tex);
-            RpAllocBuf &output_buf = builder.GetWriteBuffer(data->output_buf);
+        sun_color.set_execute_cb([data, this](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &transmittance_lut = builder.GetReadTexture(data->transmittance_lut);
+            FgAllocTex &multiscatter_lut = builder.GetReadTexture(data->multiscatter_lut);
+            FgAllocTex &moon_tex = builder.GetReadTexture(data->moon_tex);
+            FgAllocTex &weather_tex = builder.GetReadTexture(data->weather_tex);
+            FgAllocTex &cirrus_tex = builder.GetReadTexture(data->cirrus_tex);
+            FgAllocTex &noise3d_tex = builder.GetReadTexture(data->noise3d_tex);
+            FgAllocBuf &output_buf = builder.GetWriteBuffer(data->output_buf);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
@@ -988,22 +988,22 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         });
     }
     { // Update sun color
-        auto &sun_color = rp_builder_.AddPass("SUN COLOR UPDATE");
+        auto &sun_color = fg_builder_.AddNode("SUN COLOR UPDATE");
 
         struct PassData {
-            RpResRef sample_buf;
-            RpResRef shared_data;
+            FgResRef sample_buf;
+            FgResRef shared_data;
         };
 
-        auto *data = sun_color.AllocPassData<PassData>();
+        auto *data = sun_color.AllocNodeData<PassData>();
 
         data->sample_buf = sun_color.AddTransferInput(output);
         common_buffers.shared_data_res = data->shared_data =
             sun_color.AddTransferOutput(common_buffers.shared_data_res);
 
-        sun_color.set_execute_cb([data](RpBuilder &builder) {
-            RpAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
-            RpAllocBuf &unif_sh_data_buf = builder.GetWriteBuffer(data->shared_data);
+        sun_color.set_execute_cb([data](FgBuilder &builder) {
+            FgAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
+            FgAllocBuf &unif_sh_data_buf = builder.GetWriteBuffer(data->shared_data);
 
             Ren::CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(SharedDataBlock, sun_col),
                                     3 * sizeof(float), builder.ctx().current_cmd_buf());
@@ -1015,84 +1015,84 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
                                        const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
 
-    auto &gbuf_fill = rp_builder_.AddPass("GBUFFER FILL");
-    const RpResRef vtx_buf1 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const RpResRef vtx_buf2 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const RpResRef ndx_buf = gbuf_fill.AddIndexBufferInput(ctx_.default_indices_buf());
+    auto &gbuf_fill = fg_builder_.AddNode("GBUFFER FILL");
+    const FgResRef vtx_buf1 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const FgResRef vtx_buf2 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const FgResRef ndx_buf = gbuf_fill.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResRef materials_buf = gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
+    const FgResRef materials_buf = gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf = gbuf_fill.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+    const FgResRef textures_buf = gbuf_fill.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-    const RpResRef textures_buf = {};
+    const FgResRef textures_buf = {};
 #endif
 
-    const RpResRef noise_tex = gbuf_fill.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-    const RpResRef dummy_white = gbuf_fill.AddTextureInput(dummy_white_, Stg::FragmentShader);
-    const RpResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Stg::FragmentShader);
+    const FgResRef noise_tex = gbuf_fill.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const FgResRef dummy_white = gbuf_fill.AddTextureInput(dummy_white_, Stg::FragmentShader);
+    const FgResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const RpResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(
+    const FgResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(
         persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
-    const RpResRef instances_indices_buf =
+    const FgResRef instances_indices_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-    const RpResRef shared_data_buf =
+    const FgResRef shared_data_buf =
         gbuf_fill.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-    const RpResRef cells_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-    const RpResRef items_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-    const RpResRef decals_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
+    const FgResRef cells_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+    const FgResRef items_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
+    const FgResRef decals_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
     frame_textures.albedo = gbuf_fill.AddColorOutput(MAIN_ALBEDO_TEX, frame_textures.albedo_params);
     frame_textures.normal = gbuf_fill.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_params);
     frame_textures.specular = gbuf_fill.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = gbuf_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    rp_gbuffer_fill_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
+    ex_gbuffer_fill_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
                            noise_tex, dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf,
                            cells_buf, items_buf, decals_buf, frame_textures.albedo, frame_textures.normal,
                            frame_textures.specular, frame_textures.depth);
-    gbuf_fill.set_executor(&rp_gbuffer_fill_);
+    gbuf_fill.set_executor(&ex_gbuffer_fill_);
 }
 
 void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                          const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
 
-    auto &opaque = rp_builder_.AddPass("OPAQUE");
-    const RpResRef vtx_buf1 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const RpResRef vtx_buf2 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const RpResRef ndx_buf = opaque.AddIndexBufferInput(ctx_.default_indices_buf());
+    auto &opaque = fg_builder_.AddNode("OPAQUE");
+    const FgResRef vtx_buf1 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const FgResRef vtx_buf2 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const FgResRef ndx_buf = opaque.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResRef materials_buf = opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
+    const FgResRef materials_buf = opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf = opaque.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+    const FgResRef textures_buf = opaque.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-    const RpResRef textures_buf = {};
+    const FgResRef textures_buf = {};
 #endif
-    const RpResRef brdf_lut = opaque.AddTextureInput(brdf_lut_, Stg::FragmentShader);
-    const RpResRef noise_tex = opaque.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-    const RpResRef cone_rt_lut = opaque.AddTextureInput(cone_rt_lut_, Stg::FragmentShader);
+    const FgResRef brdf_lut = opaque.AddTextureInput(brdf_lut_, Stg::FragmentShader);
+    const FgResRef noise_tex = opaque.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const FgResRef cone_rt_lut = opaque.AddTextureInput(cone_rt_lut_, Stg::FragmentShader);
 
-    const RpResRef dummy_black = opaque.AddTextureInput(dummy_black_, Stg::FragmentShader);
+    const FgResRef dummy_black = opaque.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const RpResRef instances_buf = opaque.AddStorageReadonlyInput(persistent_data.instance_buf,
+    const FgResRef instances_buf = opaque.AddStorageReadonlyInput(persistent_data.instance_buf,
                                                                   persistent_data.instance_buf_tbo, Stg::VertexShader);
-    const RpResRef instances_indices_buf =
+    const FgResRef instances_indices_buf =
         opaque.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-    const RpResRef shader_data_buf =
+    const FgResRef shader_data_buf =
         opaque.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-    const RpResRef cells_buf = opaque.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-    const RpResRef items_buf = opaque.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-    const RpResRef lights_buf = opaque.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
-    const RpResRef decals_buf = opaque.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
+    const FgResRef cells_buf = opaque.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+    const FgResRef items_buf = opaque.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
+    const FgResRef lights_buf = opaque.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
+    const FgResRef decals_buf = opaque.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
-    const RpResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
-    const RpResRef ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
+    const FgResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+    const FgResRef ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
 
-    RpResRef lmap_tex[4];
+    FgResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (p_list_->env.lm_indir_sh[i]) {
             lmap_tex[i] = opaque.AddTextureInput(p_list_->env.lm_indir_sh[i], Stg::FragmentShader);
@@ -1104,12 +1104,12 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     frame_textures.specular = opaque.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = opaque.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    rp_opaque_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+    ex_opaque_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                      persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
                      instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf,
                      decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color, frame_textures.normal,
                      frame_textures.specular, frame_textures.depth);
-    opaque.set_executor(&rp_opaque_);
+    opaque.set_executor(&ex_opaque_);
 }
 
 void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers,
@@ -1117,41 +1117,41 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
                                               const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
 
-    auto &transparent = rp_builder_.AddPass("TRANSPARENT");
-    const RpResRef vtx_buf1 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const RpResRef vtx_buf2 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const RpResRef ndx_buf = transparent.AddIndexBufferInput(ctx_.default_indices_buf());
+    auto &transparent = fg_builder_.AddNode("TRANSPARENT");
+    const FgResRef vtx_buf1 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const FgResRef vtx_buf2 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const FgResRef ndx_buf = transparent.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResRef materials_buf =
+    const FgResRef materials_buf =
         transparent.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf = transparent.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+    const FgResRef textures_buf = transparent.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-    const RpResRef textures_buf = {};
+    const FgResRef textures_buf = {};
 #endif
-    const RpResRef brdf_lut = transparent.AddTextureInput(brdf_lut_, Stg::FragmentShader);
-    const RpResRef noise_tex = transparent.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-    const RpResRef cone_rt_lut = transparent.AddTextureInput(cone_rt_lut_, Stg::FragmentShader);
+    const FgResRef brdf_lut = transparent.AddTextureInput(brdf_lut_, Stg::FragmentShader);
+    const FgResRef noise_tex = transparent.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const FgResRef cone_rt_lut = transparent.AddTextureInput(cone_rt_lut_, Stg::FragmentShader);
 
-    const RpResRef dummy_black = transparent.AddTextureInput(dummy_black_, Stg::FragmentShader);
+    const FgResRef dummy_black = transparent.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const RpResRef instances_buf = transparent.AddStorageReadonlyInput(
+    const FgResRef instances_buf = transparent.AddStorageReadonlyInput(
         persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
-    const RpResRef instances_indices_buf =
+    const FgResRef instances_indices_buf =
         transparent.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-    const RpResRef shader_data_buf =
+    const FgResRef shader_data_buf =
         transparent.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-    const RpResRef cells_buf = transparent.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-    const RpResRef items_buf = transparent.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-    const RpResRef lights_buf = transparent.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
-    const RpResRef decals_buf = transparent.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
+    const FgResRef cells_buf = transparent.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+    const FgResRef items_buf = transparent.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
+    const FgResRef lights_buf = transparent.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
+    const FgResRef decals_buf = transparent.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
-    const RpResRef shadowmap_tex = transparent.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
-    const RpResRef ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
+    const FgResRef shadowmap_tex = transparent.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+    const FgResRef ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
 
-    RpResRef lmap_tex[4];
+    FgResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (p_list_->env.lm_indir_sh[i]) {
             lmap_tex[i] = transparent.AddTextureInput(p_list_->env.lm_indir_sh[i], Stg::FragmentShader);
@@ -1163,12 +1163,12 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
     frame_textures.specular = transparent.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = transparent.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    rp_transparent_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+    ex_transparent_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                           persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
                           instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf,
                           decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color, frame_textures.normal,
                           frame_textures.specular, frame_textures.depth);
-    transparent.set_executor(&rp_transparent_);
+    transparent.set_executor(&ex_transparent_);
 }
 
 void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
@@ -1179,18 +1179,18 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
 
     using Stg = Ren::eStageBits;
 
-    auto &gbuf_shade = rp_builder_.AddPass("GBUFFER SHADE");
+    auto &gbuf_shade = fg_builder_.AddNode("GBUFFER SHADE");
 
     struct PassData {
-        RpResRef shared_data;
-        RpResRef cells_buf, items_buf, lights_buf, decals_buf;
-        RpResRef shadowmap_tex, ssao_tex, gi_tex, sun_shadow_tex;
-        RpResRef depth_tex, albedo_tex, normal_tex, spec_tex;
-        RpResRef ltc_luts_tex, env_tex;
-        RpResRef output_tex;
+        FgResRef shared_data;
+        FgResRef cells_buf, items_buf, lights_buf, decals_buf;
+        FgResRef shadowmap_tex, ssao_tex, gi_tex, sun_shadow_tex;
+        FgResRef depth_tex, albedo_tex, normal_tex, spec_tex;
+        FgResRef ltc_luts_tex, env_tex;
+        FgResRef output_tex;
     };
 
-    auto *data = gbuf_shade.AllocPassData<PassData>();
+    auto *data = gbuf_shade.AllocNodeData<PassData>();
     data->shared_data = gbuf_shade.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
 
     data->cells_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.cells_res, Stg::ComputeShader);
@@ -1218,27 +1218,27 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     frame_textures.color = data->output_tex =
         gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
 
-    gbuf_shade.set_execute_cb([this, data](RpBuilder &builder) {
-        RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
-        RpAllocBuf &cells_buf = builder.GetReadBuffer(data->cells_buf);
-        RpAllocBuf &items_buf = builder.GetReadBuffer(data->items_buf);
-        RpAllocBuf &lights_buf = builder.GetReadBuffer(data->lights_buf);
-        RpAllocBuf &decals_buf = builder.GetReadBuffer(data->decals_buf);
+    gbuf_shade.set_execute_cb([this, data](FgBuilder &builder) {
+        FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+        FgAllocBuf &cells_buf = builder.GetReadBuffer(data->cells_buf);
+        FgAllocBuf &items_buf = builder.GetReadBuffer(data->items_buf);
+        FgAllocBuf &lights_buf = builder.GetReadBuffer(data->lights_buf);
+        FgAllocBuf &decals_buf = builder.GetReadBuffer(data->decals_buf);
 
-        RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-        RpAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
-        RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
-        RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+        FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+        FgAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
+        FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+        FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
 
-        RpAllocTex &shad_tex = builder.GetReadTexture(data->shadowmap_tex);
-        RpAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
-        RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-        RpAllocTex &sun_shadow_tex = builder.GetReadTexture(data->sun_shadow_tex);
+        FgAllocTex &shad_tex = builder.GetReadTexture(data->shadowmap_tex);
+        FgAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
+        FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+        FgAllocTex &sun_shadow_tex = builder.GetReadTexture(data->sun_shadow_tex);
 
-        RpAllocTex &ltc_luts = builder.GetReadTexture(data->ltc_luts_tex);
-        RpAllocTex &env_tex = builder.GetReadTexture(data->env_tex);
+        FgAllocTex &ltc_luts = builder.GetReadTexture(data->ltc_luts_tex);
+        FgAllocTex &env_tex = builder.GetReadTexture(data->env_tex);
 
-        RpAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
+        FgAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
@@ -1276,55 +1276,55 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
                                      const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
 
-    auto &emissive = rp_builder_.AddPass("EMISSIVE");
-    const RpResRef vtx_buf1 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const RpResRef vtx_buf2 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const RpResRef ndx_buf = emissive.AddIndexBufferInput(ctx_.default_indices_buf());
+    auto &emissive = fg_builder_.AddNode("EMISSIVE");
+    const FgResRef vtx_buf1 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const FgResRef vtx_buf2 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const FgResRef ndx_buf = emissive.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResRef materials_buf = emissive.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
+    const FgResRef materials_buf = emissive.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf = emissive.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
+    const FgResRef textures_buf = emissive.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
-    const RpResRef textures_buf = {};
+    const FgResRef textures_buf = {};
 #endif
 
-    const RpResRef noise_tex = emissive.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-    const RpResRef dummy_white = emissive.AddTextureInput(dummy_white_, Stg::FragmentShader);
-    const RpResRef dummy_black = emissive.AddTextureInput(dummy_black_, Stg::FragmentShader);
+    const FgResRef noise_tex = emissive.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const FgResRef dummy_white = emissive.AddTextureInput(dummy_white_, Stg::FragmentShader);
+    const FgResRef dummy_black = emissive.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const RpResRef instances_buf = emissive.AddStorageReadonlyInput(
+    const FgResRef instances_buf = emissive.AddStorageReadonlyInput(
         persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
-    const RpResRef instances_indices_buf =
+    const FgResRef instances_indices_buf =
         emissive.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-    const RpResRef shared_data_buf =
+    const FgResRef shared_data_buf =
         emissive.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
     frame_textures.color = emissive.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
     frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    rp_emissive_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
+    ex_emissive_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
                        noise_tex, dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf,
                        frame_textures.color, frame_textures.depth);
-    emissive.set_executor(&rp_emissive_);
+    emissive.set_executor(&ex_emissive_);
 }
 
-void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth_tex, RpResRef &out_ssao) {
+void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _depth_tex, FgResRef &out_ssao) {
     const Ren::Vec4i cur_res =
         Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1], view_state_.scr_res[0], view_state_.scr_res[1]};
 
-    RpResRef ssao_raw;
+    FgResRef ssao_raw;
     { // Main SSAO pass
-        auto &ssao = rp_builder_.AddPass("SSAO");
+        auto &ssao = fg_builder_.AddNode("SSAO");
 
         struct PassData {
-            RpResRef rand_tex;
-            RpResRef depth_tex;
+            FgResRef rand_tex;
+            FgResRef depth_tex;
 
-            RpResRef output_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = ssao.AllocPassData<PassData>();
+        auto *data = ssao.AllocNodeData<PassData>();
         data->rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Ren::eStageBits::FragmentShader);
         data->depth_tex = ssao.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
 
@@ -1339,10 +1339,10 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
             ssao_raw = data->output_tex = ssao.AddColorOutput("SSAO RAW", params);
         }
 
-        ssao.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &rand_tex = builder.GetReadTexture(data->rand_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        ssao.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &rand_tex = builder.GetReadTexture(data->rand_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1369,18 +1369,18 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
         });
     }
 
-    RpResRef ssao_blurred1;
+    FgResRef ssao_blurred1;
     { // Horizontal SSAO blur
-        auto &ssao_blur_h = rp_builder_.AddPass("SSAO BLUR H");
+        auto &ssao_blur_h = fg_builder_.AddNode("SSAO BLUR H");
 
         struct PassData {
-            RpResRef depth_tex;
-            RpResRef input_tex;
+            FgResRef depth_tex;
+            FgResRef input_tex;
 
-            RpResRef output_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = ssao_blur_h.AllocPassData<PassData>();
+        auto *data = ssao_blur_h.AllocNodeData<PassData>();
         data->depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
         data->input_tex = ssao_blur_h.AddTextureInput(ssao_raw, Ren::eStageBits::FragmentShader);
 
@@ -1395,10 +1395,10 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
             ssao_blurred1 = data->output_tex = ssao_blur_h.AddColorOutput("SSAO BLUR TEMP1", params);
         }
 
-        ssao_blur_h.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        ssao_blur_h.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1425,18 +1425,18 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
         });
     }
 
-    RpResRef ssao_blurred2;
+    FgResRef ssao_blurred2;
     { // Vertical SSAO blur
-        auto &ssao_blur_v = rp_builder_.AddPass("SSAO BLUR V");
+        auto &ssao_blur_v = fg_builder_.AddNode("SSAO BLUR V");
 
         struct PassData {
-            RpResRef depth_tex;
-            RpResRef input_tex;
+            FgResRef depth_tex;
+            FgResRef input_tex;
 
-            RpResRef output_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = ssao_blur_v.AllocPassData<PassData>();
+        auto *data = ssao_blur_v.AllocNodeData<PassData>();
         data->depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
         data->input_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Ren::eStageBits::FragmentShader);
 
@@ -1451,10 +1451,10 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
             ssao_blurred2 = data->output_tex = ssao_blur_v.AddColorOutput("SSAO BLUR TEMP2", params);
         }
 
-        ssao_blur_v.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        ssao_blur_v.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1482,17 +1482,17 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
     }
 
     { // Upscale SSAO pass
-        auto &ssao_upscale = rp_builder_.AddPass("UPSCALE");
+        auto &ssao_upscale = fg_builder_.AddNode("UPSCALE");
 
         struct PassData {
-            RpResRef depth_down_2x_tex;
-            RpResRef depth_tex;
-            RpResRef input_tex;
+            FgResRef depth_down_2x_tex;
+            FgResRef depth_tex;
+            FgResRef input_tex;
 
-            RpResRef output_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = ssao_upscale.AllocPassData<PassData>();
+        auto *data = ssao_upscale.AllocNodeData<PassData>();
         data->depth_down_2x_tex = ssao_upscale.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
         data->depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Ren::eStageBits::FragmentShader);
         data->input_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Ren::eStageBits::FragmentShader);
@@ -1508,11 +1508,11 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
             out_ssao = data->output_tex = ssao_upscale.AddColorOutput(SSAO_RES, params);
         }
 
-        ssao_upscale.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_down_2x_tex);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        ssao_upscale.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_down_2x_tex);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1537,21 +1537,21 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
     }
 }
 
-Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity_tex, RpResRef norm_tex) {
+Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    RpResRef gtao_result;
+    FgResRef gtao_result;
     { // main pass
-        auto &gtao_main = rp_builder_.AddPass("GTAO MAIN");
+        auto &gtao_main = fg_builder_.AddNode("GTAO MAIN");
 
         struct PassData {
-            RpResRef depth_tex;
-            RpResRef norm_tex;
-            RpResRef output_tex;
+            FgResRef depth_tex;
+            FgResRef norm_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = gtao_main.AllocPassData<PassData>();
+        auto *data = gtao_main.AllocNodeData<PassData>();
         data->depth_tex = gtao_main.AddTextureInput(depth_tex, Stg::ComputeShader);
         data->norm_tex = gtao_main.AddTextureInput(norm_tex, Stg::ComputeShader);
 
@@ -1566,11 +1566,11 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
             gtao_result = data->output_tex = gtao_main.AddStorageImageOutput("GTAO RAW", params, Stg::ComputeShader);
         }
 
-        gtao_main.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+        gtao_main.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
 
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::NORM_TEX_SLOT, *norm_tex.ref},
@@ -1593,15 +1593,15 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
         });
     }
     { // filter pass
-        auto &gtao_filter = rp_builder_.AddPass("GTAO FILTER");
+        auto &gtao_filter = fg_builder_.AddNode("GTAO FILTER");
 
         struct PassData {
-            RpResRef depth_tex;
-            RpResRef ao_tex;
-            RpResRef out_ao_tex;
+            FgResRef depth_tex;
+            FgResRef ao_tex;
+            FgResRef out_ao_tex;
         };
 
-        auto *data = gtao_filter.AllocPassData<PassData>();
+        auto *data = gtao_filter.AllocNodeData<PassData>();
         data->depth_tex = gtao_filter.AddTextureInput(depth_tex, Stg::ComputeShader);
         data->ao_tex = gtao_filter.AddTextureInput(gtao_result, Stg::ComputeShader);
 
@@ -1617,11 +1617,11 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
                 gtao_filter.AddStorageImageOutput("GTAO FILTERED", params, Stg::ComputeShader);
         }
 
-        gtao_filter.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
+        gtao_filter.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
 
-            RpAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
+            FgAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
@@ -1636,14 +1636,14 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
         });
     }
     { // accumulation pass
-        auto &gtao_accumulation = rp_builder_.AddPass("GTAO ACCUMULATE");
+        auto &gtao_accumulation = fg_builder_.AddNode("GTAO ACCUMULATE");
 
         struct PassData {
-            RpResRef depth_tex, velocity_tex, ao_tex, ao_hist_tex;
-            RpResRef out_ao_tex;
+            FgResRef depth_tex, velocity_tex, ao_tex, ao_hist_tex;
+            FgResRef out_ao_tex;
         };
 
-        auto *data = gtao_accumulation.AllocPassData<PassData>();
+        auto *data = gtao_accumulation.AllocNodeData<PassData>();
         data->depth_tex = gtao_accumulation.AddTextureInput(depth_tex, Stg::ComputeShader);
         data->velocity_tex = gtao_accumulation.AddTextureInput(velocity_tex, Stg::ComputeShader);
         data->ao_tex = gtao_accumulation.AddTextureInput(gtao_result, Stg::ComputeShader);
@@ -1662,13 +1662,13 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
 
         data->ao_hist_tex = gtao_accumulation.AddHistoryTextureInput(gtao_result, Stg::ComputeShader);
 
-        gtao_accumulation.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-            RpAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
-            RpAllocTex &ao_hist_tex = builder.GetReadTexture(data->ao_hist_tex);
+        gtao_accumulation.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
+            FgAllocTex &ao_hist_tex = builder.GetReadTexture(data->ao_hist_tex);
 
-            RpAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
+            FgAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::VELOCITY_TEX_SLOT, *velocity_tex.ref},
@@ -1690,18 +1690,18 @@ Eng::RpResRef Eng::Renderer::AddGTAOPasses(RpResRef depth_tex, RpResRef velocity
     return gtao_result;
 }
 
-void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
-                                              RpResRef &inout_velocity_tex) {
+void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
+                                              FgResRef &inout_velocity_tex) {
     assert(!view_state_.is_multisampled);
-    auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
+    auto &static_vel = fg_builder_.AddNode("FILL STATIC VEL");
 
     struct PassData {
-        RpResRef shared_data;
-        RpResRef depth_tex;
-        RpResRef velocity_tex;
+        FgResRef shared_data;
+        FgResRef depth_tex;
+        FgResRef velocity_tex;
     };
 
-    auto *data = static_vel.AllocPassData<PassData>();
+    auto *data = static_vel.AllocNodeData<PassData>();
 
     data->shared_data = static_vel.AddUniformBufferInput(
         common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
@@ -1710,11 +1710,11 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
                                          Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
     inout_velocity_tex = data->velocity_tex = static_vel.AddColorOutput(inout_velocity_tex);
 
-    static_vel.set_execute_cb([this, data](RpBuilder &builder) {
-        RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+    static_vel.set_execute_cb([this, data](FgBuilder &builder) {
+        FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
 
-        RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-        RpAllocTex &velocity_tex = builder.GetWriteTexture(data->velocity_tex);
+        FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+        FgAllocTex &velocity_tex = builder.GetWriteTexture(data->velocity_tex);
 
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1741,17 +1741,17 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     });
 }
 
-void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex) {
-    RpResRef blur_temp;
+void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, FgResRef &output_tex) {
+    FgResRef blur_temp;
     { // Blur frame horizontally
-        auto &blur_h = rp_builder_.AddPass("BLUR H");
+        auto &blur_h = fg_builder_.AddNode("BLUR H");
 
         struct PassData {
-            RpResRef input_tex;
-            RpResRef output_tex;
+            FgResRef input_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = blur_h.AllocPassData<PassData>();
+        auto *data = blur_h.AllocNodeData<PassData>();
         data->input_tex = blur_h.AddTextureInput(input_tex, Ren::eStageBits::FragmentShader);
 
         { //
@@ -1765,9 +1765,9 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpRes
             blur_temp = data->output_tex = blur_h.AddColorOutput("Blur temp", params);
         }
 
-        blur_h.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        blur_h.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1789,14 +1789,14 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpRes
         });
     }
     { // Blur frame vertically
-        auto &blur_v = rp_builder_.AddPass("BLUR V");
+        auto &blur_v = fg_builder_.AddNode("BLUR V");
 
         struct PassData {
-            RpResRef input_tex;
-            RpResRef output_tex;
+            FgResRef input_tex;
+            FgResRef output_tex;
         };
 
-        auto *data = blur_v.AllocPassData<PassData>();
+        auto *data = blur_v.AllocNodeData<PassData>();
         data->input_tex = blur_v.AddTextureInput(blur_temp, Ren::eStageBits::FragmentShader);
 
         { //
@@ -1810,9 +1810,9 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpRes
             output_tex = data->output_tex = blur_v.AddColorOutput(BLUR_RES_TEX, params);
         }
 
-        blur_v.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        blur_v.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1836,23 +1836,23 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpRes
 }
 
 void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                               const bool static_accumulation, RpResRef &resolved_color) {
+                               const bool static_accumulation, FgResRef &resolved_color) {
     assert(!view_state_.is_multisampled);
     { // TAA
-        auto &taa = rp_builder_.AddPass("TAA");
+        auto &taa = fg_builder_.AddNode("TAA");
 
         struct PassData {
-            RpResRef clean_tex;
-            RpResRef depth_tex;
-            RpResRef velocity_tex;
-            RpResRef history_tex;
-            RpResRef exposure_tex;
+            FgResRef clean_tex;
+            FgResRef depth_tex;
+            FgResRef velocity_tex;
+            FgResRef history_tex;
+            FgResRef exposure_tex;
 
-            RpResRef output_tex;
-            RpResRef output_history_tex;
+            FgResRef output_tex;
+            FgResRef output_history_tex;
         };
 
-        auto *data = taa.AllocPassData<PassData>();
+        auto *data = taa.AllocNodeData<PassData>();
         data->clean_tex = taa.AddTextureInput(frame_textures.color, Ren::eStageBits::FragmentShader);
         data->depth_tex = taa.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
         data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Ren::eStageBits::FragmentShader);
@@ -1871,14 +1871,14 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
         }
         data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
 
-        taa.set_execute_cb([this, data, static_accumulation](RpBuilder &builder) {
-            RpAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
-            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-            RpAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
-            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-            RpAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
+        taa.set_execute_cb([this, data, static_accumulation](FgBuilder &builder) {
+            FgAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            FgAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            FgAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -1921,21 +1921,21 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
     }
 }
 
-void Eng::Renderer::AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex) {
-    auto &down_color = rp_builder_.AddPass("DOWNSAMPLE COLOR");
+void Eng::Renderer::AddDownsampleColorPass(FgResRef input_tex, FgResRef &output_tex) {
+    auto &down_color = fg_builder_.AddNode("DOWNSAMPLE COLOR");
 
     struct PassData {
-        RpResRef input_tex;
-        RpResRef output_tex;
+        FgResRef input_tex;
+        FgResRef output_tex;
     };
 
-    auto *data = down_color.AllocPassData<PassData>();
+    auto *data = down_color.AllocNodeData<PassData>();
     data->input_tex = down_color.AddTextureInput(input_tex, Ren::eStageBits::FragmentShader);
     output_tex = data->output_tex = down_color.AddColorOutput(output_tex);
 
-    down_color.set_execute_cb([this, data](RpBuilder &builder) {
-        RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-        RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+    down_color.set_execute_cb([this, data](FgBuilder &builder) {
+        FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+        FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
         Ren::RastState rast_state;
 
@@ -1957,18 +1957,18 @@ void Eng::Renderer::AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_
     });
 }
 
-void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
-                                           RpResRef &out_depth_down_2x) {
-    auto &downsample_depth = rp_builder_.AddPass("DOWN DEPTH");
+void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
+                                           FgResRef &out_depth_down_2x) {
+    auto &downsample_depth = fg_builder_.AddNode("DOWN DEPTH");
 
     struct PassData {
-        RpResRef shared_data;
-        RpResRef in_depth_tex;
+        FgResRef shared_data;
+        FgResRef in_depth_tex;
 
-        RpResRef out_depth_tex;
+        FgResRef out_depth_tex;
     };
 
-    auto *data = downsample_depth.AllocPassData<PassData>();
+    auto *data = downsample_depth.AllocNodeData<PassData>();
     data->shared_data = downsample_depth.AddUniformBufferInput(
         common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
     data->in_depth_tex = downsample_depth.AddTextureInput(depth_tex, Ren::eStageBits::FragmentShader);
@@ -1983,10 +1983,10 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
         out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput(DEPTH_DOWN_2X_TEX, params);
     }
 
-    downsample_depth.set_execute_cb([this, data](RpBuilder &builder) {
-        RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
-        RpAllocTex &depth_tex = builder.GetReadTexture(data->in_depth_tex);
-        RpAllocTex &output_tex = builder.GetWriteTexture(data->out_depth_tex);
+    downsample_depth.set_execute_cb([this, data](FgBuilder &builder) {
+        FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+        FgAllocTex &depth_tex = builder.GetReadTexture(data->in_depth_tex);
+        FgAllocTex &output_tex = builder.GetWriteTexture(data->out_depth_tex);
 
         Ren::RastState rast_state;
 
@@ -2008,10 +2008,10 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
     });
 }
 
-Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
-    RpResRef histogram;
+Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
+    FgResRef histogram;
     { // Clear histogram image
-        auto &histogram_clear = rp_builder_.AddPass("HISTOGRAM CLEAR");
+        auto &histogram_clear = fg_builder_.AddNode("HISTOGRAM CLEAR");
 
         Ren::Tex2DParams params;
         params.w = EXPOSURE_HISTOGRAM_RES + 1;
@@ -2021,22 +2021,22 @@ Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
 
         histogram = histogram_clear.AddTransferImageOutput("Exposure Histogram", params);
 
-        histogram_clear.set_execute_cb([histogram](RpBuilder &builder) {
-            RpAllocTex &histogram_tex = builder.GetWriteTexture(histogram);
+        histogram_clear.set_execute_cb([histogram](FgBuilder &builder) {
+            FgAllocTex &histogram_tex = builder.GetWriteTexture(histogram);
 
             const float zero[4] = {};
             Ren::ClearImage(*histogram_tex.ref, zero, builder.ctx().current_cmd_buf());
         });
     }
     { // Sample histogram
-        auto &histogram_sample = rp_builder_.AddPass("HISTOGRAM SAMPLE");
+        auto &histogram_sample = fg_builder_.AddNode("HISTOGRAM SAMPLE");
 
-        RpResRef input = histogram_sample.AddTextureInput(hdr_texture, Ren::eStageBits::ComputeShader);
+        FgResRef input = histogram_sample.AddTextureInput(hdr_texture, Ren::eStageBits::ComputeShader);
         histogram = histogram_sample.AddStorageImageOutput(histogram, Ren::eStageBits::ComputeShader);
 
-        histogram_sample.set_execute_cb([this, input, histogram](RpBuilder &builder) {
-            RpAllocTex &input_tex = builder.GetReadTexture(input);
-            RpAllocTex &output_tex = builder.GetWriteTexture(histogram);
+        histogram_sample.set_execute_cb([this, input, histogram](FgBuilder &builder) {
+            FgAllocTex &input_tex = builder.GetReadTexture(input);
+            FgAllocTex &output_tex = builder.GetWriteTexture(histogram);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2DSampled, HistogramSample::HDR_TEX_SLOT, *input_tex.ref},
@@ -2051,17 +2051,17 @@ Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
                                  sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
-    RpResRef exposure;
+    FgResRef exposure;
     { // Calc exposure
-        auto &histogram_exposure = rp_builder_.AddPass("HISTOGRAM EXPOSURE");
+        auto &histogram_exposure = fg_builder_.AddNode("HISTOGRAM EXPOSURE");
 
         struct PassData {
-            RpResRef histogram;
-            RpResRef exposure_prev;
-            RpResRef exposure;
+            FgResRef histogram;
+            FgResRef exposure_prev;
+            FgResRef exposure;
         };
 
-        auto *data = histogram_exposure.AllocPassData<PassData>();
+        auto *data = histogram_exposure.AllocNodeData<PassData>();
 
         data->histogram = histogram_exposure.AddTextureInput(histogram, Ren::eStageBits::ComputeShader);
 
@@ -2074,10 +2074,10 @@ Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
             histogram_exposure.AddStorageImageOutput("Exposure", params, Ren::eStageBits::ComputeShader);
         data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStageBits::ComputeShader);
 
-        histogram_exposure.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &histogram_tex = builder.GetReadTexture(data->histogram);
-            RpAllocTex &exposure_prev_tex = builder.GetReadTexture(data->exposure_prev);
-            RpAllocTex &exposure_tex = builder.GetWriteTexture(data->exposure);
+        histogram_exposure.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &histogram_tex = builder.GetReadTexture(data->histogram);
+            FgAllocTex &exposure_prev_tex = builder.GetReadTexture(data->exposure_prev);
+            FgAllocTex &exposure_tex = builder.GetWriteTexture(data->exposure);
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2DSampled, HistogramExposure::HISTOGRAM_TEX_SLOT, *histogram_tex.ref},
@@ -2095,15 +2095,15 @@ Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
     return exposure;
 }
 
-void Eng::Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &output_tex) {
-    auto &debug_motion = rp_builder_.AddPass("DEBUG MOTION");
+void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &output_tex) {
+    auto &debug_motion = fg_builder_.AddNode("DEBUG MOTION");
 
     struct PassData {
-        RpResRef in_velocity_tex;
-        RpResRef out_color_tex;
+        FgResRef in_velocity_tex;
+        FgResRef out_color_tex;
     };
 
-    auto *data = debug_motion.AllocPassData<PassData>();
+    auto *data = debug_motion.AllocNodeData<PassData>();
     data->in_velocity_tex = debug_motion.AddTextureInput(velocity, Ren::eStageBits::ComputeShader);
 
     { // Output texture
@@ -2117,9 +2117,9 @@ void Eng::Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &outp
             debug_motion.AddStorageImageOutput("Velocity Debug", params, Ren::eStageBits::ComputeShader);
     }
 
-    debug_motion.set_execute_cb([this, data](RpBuilder &builder) {
-        RpAllocTex &velocity_tex = builder.GetReadTexture(data->in_velocity_tex);
-        RpAllocTex &output_tex = builder.GetWriteTexture(data->out_color_tex);
+    debug_motion.set_execute_cb([this, data](FgBuilder &builder) {
+        FgAllocTex &velocity_tex = builder.GetReadTexture(data->in_velocity_tex);
+        FgAllocTex &output_tex = builder.GetWriteTexture(data->out_color_tex);
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::Tex2DSampled, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
