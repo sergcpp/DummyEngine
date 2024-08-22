@@ -208,8 +208,9 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     }
 
     void insert(iterator pos, const T &el) {
+        const bool is_end = (pos == end_);
         ensure_reserved(size_t(end_ - begin_) + 1);
-        if (pos == end_) {
+        if (is_end) {
             new (end_++) T(el);
         } else {
             iterator move_dst = end_;
@@ -230,8 +231,9 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     }
 
     void insert(iterator pos, T &&el) {
+        const bool is_end = (pos == end_);
         ensure_reserved(size_t(end_ - begin_) + 1);
-        if (pos == end_) {
+        if (is_end) {
             new (end_++) T(std::move(el));
         } else {
             iterator move_dst = end_;
