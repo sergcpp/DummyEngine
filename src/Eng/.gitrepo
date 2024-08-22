@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = shadow_jitter
-	commit = 64ccfa683f0275da66b52058d45b17146d367630
+	branch = graph_sort
+	commit = 34ebbd878ec4fdda2ede8675809d19bf8558e844
 	method = merge
 	cmdver = 0.4.6
-	parent = fc5f58ff4fb478ff7f5d288324543c8e7167c510
+	parent = 4ad43b8480096c39e4351ba6c32d5041a4c4dbd8
