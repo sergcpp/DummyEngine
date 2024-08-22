@@ -1156,6 +1156,45 @@ void Eng::SceneManager::RebuildLightTree() {
         const uint32_t root_node = FlattenBVH_r(light_nodes, 0, 0xffffffff, light_wnodes);
         assert(root_node == 0);
         (void)root_node;
+
+        // Collapse leaf level (all nodes have only 1 child)
+        std::vector<bool> should_remove(light_wnodes.size(), false);
+        for (uint32_t i = 0; i < light_wnodes.size(); ++i) {
+            if ((light_wnodes[i].child[0] & LEAF_NODE_BIT) == 0) {
+                for (int j = 0; j < 8; ++j) {
+                    if (light_wnodes[i].child[j] == 0x7fffffff) {
+                        continue;
+                    }
+                    if ((light_wnodes[light_wnodes[i].child[j]].child[0] & LEAF_NODE_BIT) != 0) {
+                        assert(light_wnodes[light_wnodes[i].child[j]].child[1] == 1);
+                        should_remove[light_wnodes[i].child[j]] = true;
+                        light_wnodes[i].child[j] = light_wnodes[light_wnodes[i].child[j]].child[0];
+                    }
+                }
+            }
+        }
+        std::vector<uint32_t> compacted_indices;
+        uint32_t cur_index = 0;
+        for (const bool b : should_remove) {
+            compacted_indices.push_back(cur_index);
+            if (!b) {
+                ++cur_index;
+            }
+        }
+        for (int i = int(light_wnodes.size() - 1); i >= 0; --i) {
+            if (should_remove[i]) {
+                light_wnodes.erase(begin(light_wnodes) + i);
+            } else {
+                for (int j = 0; j < 8; ++j) {
+                    if (light_wnodes[i].child[j] == 0x7fffffff) {
+                        continue;
+                    }
+                    if ((light_wnodes[i].child[j] & LEAF_NODE_BIT) == 0) {
+                        light_wnodes[i].child[j] = compacted_indices[light_wnodes[i].child[j] & PRIM_INDEX_BITS];
+                    }
+                }
+            }
+        }
     }
 
     { // Init GPU data

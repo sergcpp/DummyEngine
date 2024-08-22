@@ -155,13 +155,16 @@ light_wbvh_node_t FetchLightNode(samplerBuffer nodes_buf, const int li) {
 int PickLightSource(const vec3 P, samplerBuffer nodes_buf, const uint lights_count, float light_pick_rand, out float pdf_factor) {
 #if USE_HIERARCHICAL_NEE
     pdf_factor = 1.0;
-    light_wbvh_node_t n = FetchLightNode(nodes_buf, 0); // start from root
-    while ((n.child[0] & LEAF_NODE_BIT) == 0) {
+
+    uint cur = 0; // start from root
+    while ((cur & LEAF_NODE_BIT) == 0) {
+        light_wbvh_node_t n = FetchLightNode(nodes_buf, int(cur));
+
         float importance[8];
         const float total_importance = calc_lnode_importance(n, P, importance);
         [[dont_flatten]] if (total_importance == 0.0) {
             // failed to find lightsource for sampling
-            return -1;
+            break;
         }
 
         // normalize
@@ -189,15 +192,14 @@ int PickLightSource(const vec3 P, samplerBuffer nodes_buf, const uint lights_cou
         }
 
         light_pick_rand = fract((light_pick_rand - importance_cdf[next]) / importance[next]);
-        n = FetchLightNode(nodes_buf, int(n.child[next]));
         pdf_factor *= importance[next];
+        cur = n.child[next];
     }
-    const int li = int(n.child[0] & PRIM_INDEX_BITS);
+    return int(cur & PRIM_INDEX_BITS);
 #else // USE_HIERARCHICAL_NEE
-    const int li = clamp(int(light_pick_rand * lights_count), 0, int(lights_count - 1));
     pdf_factor = 1.0 / float(lights_count);
+    return clamp(int(light_pick_rand * lights_count), 0, int(lights_count - 1));
 #endif // USE_HIERARCHICAL_NEE
-    return li;
 }
 
 shared float g_stack_factors[64][48];
@@ -212,9 +214,9 @@ float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, samplerBuffer li
         const uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
         const float cur_factor = g_stack_factors[gl_LocalInvocationIndex][stack_size];
 
-        light_wbvh_node_t n = FetchLightNode(nodes_buf, int(cur));
+        if ((cur & LEAF_NODE_BIT) == 0) {
+            light_wbvh_node_t n = FetchLightNode(nodes_buf, int(cur));
 
-        if ((n.child[0] & LEAF_NODE_BIT) == 0) {
             float importance[8];
             const float total_importance = calc_lnode_importance(n, ro, importance);
 
@@ -226,7 +228,7 @@ float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, samplerBuffer li
                 }
             }
         } else {
-            const int light_index = int(n.child[0] & PRIM_INDEX_BITS);
+            const int light_index = int(cur & PRIM_INDEX_BITS);
 
             const light_item_t litem = FetchLightItem(lights_buf, light_index);
             const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;

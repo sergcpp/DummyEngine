@@ -9,7 +9,6 @@
 #include "principled_common.glsl"
 #include "gi_cache_common.glsl"
 #include "ssr_common.glsl"
-#include "light_bvh_common.glsl"
 
 #include "ssr_trace_hq_interface.h"
 

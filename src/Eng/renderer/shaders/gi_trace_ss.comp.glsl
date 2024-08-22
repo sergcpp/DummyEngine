@@ -7,7 +7,6 @@
 #include "rt_common.glsl"
 #include "gi_common.glsl"
 #include "principled_common.glsl"
-#include "light_bvh_common.glsl"
 
 #include "gi_trace_ss_interface.h"
 
