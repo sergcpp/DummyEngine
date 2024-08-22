@@ -97,7 +97,8 @@ class FgBuilder {
 
     bool DependsOn_r(int16_t dst_node, int16_t src_node);
     int16_t FindPreviousWrittenInNode(FgResRef handle);
-    void TraverseNodeDependencies_r(const FgNode *node, int recursion_depth, std::vector<FgNode *> &out_node_stack);
+    void FindPreviousReadInNodes(FgResRef handle, Ren::SmallVectorImpl<int16_t> &out_nodes);
+    void TraverseNodeDependencies_r(FgNode *node, int recursion_depth, std::vector<FgNode *> &out_node_stack);
 
     void PrepareAllocResources();
     void BuildAliases();

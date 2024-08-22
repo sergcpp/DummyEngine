@@ -22,7 +22,6 @@ class FgNode {
     FgBuilder &builder_;
     Ren::SmallVector<FgResource, 16> input_;
     Ren::SmallVector<FgResource, 16> output_;
-    uint32_t ref_count_ = 0;
 
     std::unique_ptr<FgExecutor> executor_;
     FgExecutor *p_executor_ = nullptr;

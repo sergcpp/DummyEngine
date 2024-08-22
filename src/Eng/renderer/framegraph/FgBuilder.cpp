@@ -7,9 +7,17 @@
 
 #include "FgNode.h"
 
-namespace GraphBuilderInternal {
+namespace FgBuilderInternal {
 const bool EnableTextureAliasing = true;
+const bool EnableNodesReordering = true;
+
+void insert_sorted(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
+    const auto it = std::lower_bound(std::begin(vec), std::end(vec), val);
+    if (it == std::end(vec) || val < (*it)) {
+        vec.insert(it, val);
+    }
 }
+} // namespace FgBuilderInternal
 
 Ren::ILog *Eng::FgBuilder::log() { return ctx_.log(); }
 
@@ -80,7 +88,6 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
 
     buf.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
     ++buf.read_count;
-    ++node.ref_count_;
 
     if (slot_index == -1) {
 #ifndef NDEBUG
@@ -93,7 +100,6 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
         // Replace existing input
         FgAllocBuf &prev_buf = buffers_[node.input_[slot_index].index];
         --prev_buf.write_count;
-        --node.ref_count_;
         for (size_t i = 0; i < prev_buf.written_in_nodes.size();) {
             if (prev_buf.written_in_nodes[i].node_index == node.index_) {
                 prev_buf.written_in_nodes.erase(prev_buf.written_in_nodes.begin() + i);
@@ -141,7 +147,6 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
 
     buf.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
     ++buf.read_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.input_.size(); i++) {
@@ -225,10 +230,9 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Re
 
     tex.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
     ++tex.read_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
+    for (size_t i = 0; i < node.input_.size(); i++) {
         assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
     }
 #endif
@@ -266,10 +270,9 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture2DArray *ref, Ren::e
 
     tex.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
     ++tex.read_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
+    for (size_t i = 0; i < node.input_.size(); i++) {
         assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
     }
 #endif
@@ -307,10 +310,9 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture3D *ref, Ren::eResSt
 
     tex.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
     ++tex.read_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
+    for (size_t i = 0; i < node.input_.size(); i++) {
         assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
     }
 #endif
@@ -394,7 +396,6 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const FgResRef handle, const Ren::eRes
     buf.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     assert(buf.write_count == handle.write_count);
     ++buf.write_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.output_.size(); i++) {
@@ -436,7 +437,6 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(std::string_view name, const FgBufDesc
 
     buf.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++buf.write_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.output_.size(); i++) {
@@ -478,7 +478,6 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const R
 
     buf.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++buf.write_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.output_.size(); i++) {
@@ -501,7 +500,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const FgResRef handle, const Ren::eRe
     assert(tex.write_count == handle.write_count);
     tex.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++tex.write_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.output_.size(); i++) {
@@ -524,7 +522,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::eRe
 
     tex.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++tex.write_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.output_.size(); i++) {
@@ -568,7 +565,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex
 
     tex.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++tex.write_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.output_.size(); i++) {
@@ -611,7 +607,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const R
 
     tex.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++tex.write_count;
-    ++node.ref_count_;
 
     if (slot_index == -1) {
 #ifndef NDEBUG
@@ -625,7 +620,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const R
         // Replace existing output
         FgAllocTex &prev_tex = textures_[node.output_[slot_index].index];
         --prev_tex.write_count;
-        --node.ref_count_;
         for (size_t i = 0; i < prev_tex.written_in_nodes.size();) {
             if (prev_tex.written_in_nodes[i].node_index == node.index_) {
                 prev_tex.written_in_nodes.erase(prev_tex.written_in_nodes.begin() + i);
@@ -673,7 +667,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::Texture2DArray *ref, const
 
     tex.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++tex.write_count;
-    ++node.ref_count_;
 
 #ifndef NDEBUG
     for (size_t i = 0; i < node.output_.size(); i++) {
@@ -906,13 +899,33 @@ int16_t Eng::FgBuilder::FindPreviousWrittenInNode(const FgResRef handle) {
     }
 
     for (const fg_write_node_t i : *written_in_nodes) {
-        FgNode *node = nodes_[i.node_index];
+        const FgNode *node = nodes_[i.node_index];
         assert(node->output_[i.slot_index].type == handle.type && node->output_[i.slot_index].index == handle.index);
         if (node->output_[i.slot_index].write_count == handle.write_count - 1) {
             return i.node_index;
         }
     }
     return -1;
+}
+
+void Eng::FgBuilder::FindPreviousReadInNodes(const FgResRef handle, Ren::SmallVectorImpl<int16_t> &out_nodes) {
+    Ren::SmallVectorImpl<fg_write_node_t> *read_in_nodes = nullptr;
+    if (handle.type == eFgResType::Buffer) {
+        read_in_nodes = &buffers_[handle.index].read_in_nodes;
+    } else if (handle.type == eFgResType::Texture) {
+        read_in_nodes = &textures_[handle.index].read_in_nodes;
+    }
+
+    for (const fg_write_node_t i : *read_in_nodes) {
+        const FgNode *node = nodes_[i.node_index];
+        assert(node->input_[i.slot_index].type == handle.type && node->input_[i.slot_index].index == handle.index);
+        if (node->input_[i.slot_index].write_count == handle.write_count) {
+            const auto it = std::lower_bound(std::begin(out_nodes), std::end(out_nodes), i.node_index);
+            if (it == std::end(out_nodes) || i.node_index < (*it)) {
+                out_nodes.insert(it, i.node_index);
+            }
+        }
+    }
 }
 
 bool Eng::FgBuilder::DependsOn_r(const int16_t dst_node, const int16_t src_node) {
@@ -927,48 +940,59 @@ bool Eng::FgBuilder::DependsOn_r(const int16_t dst_node, const int16_t src_node)
     return false;
 }
 
-void Eng::FgBuilder::TraverseNodeDependencies_r(const FgNode *node, const int recursion_depth,
+void Eng::FgBuilder::TraverseNodeDependencies_r(FgNode *node, const int recursion_depth,
                                                 std::vector<FgNode *> &out_node_stack) {
+    using namespace FgBuilderInternal;
     assert(recursion_depth <= nodes_.size());
-    Ren::SmallVector<int16_t, 32> written_in_nodes;
-    for (size_t i = 0; i < node->input_.size(); i++) {
+    node->visited_ = true;
+
+    Ren::SmallVector<int16_t, 32> previous_nodes;
+    for (size_t i = 0; i < node->input_.size(); ++i) {
+        // Resource reads are unordered, so we only interesed in write here
         const int16_t prev_node = FindPreviousWrittenInNode(node->input_[i]);
         if (prev_node != -1) {
-            const auto it = std::lower_bound(std::begin(written_in_nodes), std::end(written_in_nodes), prev_node);
-            if (it == std::end(written_in_nodes) || prev_node < (*it)) {
-                written_in_nodes.insert(it, prev_node);
+            const auto it = std::lower_bound(std::begin(previous_nodes), std::end(previous_nodes), prev_node);
+            if (it == std::end(previous_nodes) || prev_node < (*it)) {
+                previous_nodes.insert(it, prev_node);
             }
+            insert_sorted(node->depends_on_nodes_, prev_node);
         }
     }
 
-    for (size_t i = 0; i < node->output_.size(); i++) {
+    for (size_t i = 0; i < node->output_.size(); ++i) {
         if (node->output_[i].desired_state != Ren::eResState::RenderTarget &&
             node->output_[i].desired_state != Ren::eResState::DepthWrite &&
             node->output_[i].desired_state != Ren::eResState::UnorderedAccess &&
             node->output_[i].desired_state != Ren::eResState::CopyDst) {
             continue;
         }
-        const int16_t prev_node = FindPreviousWrittenInNode(node->output_[i]);
-        if (prev_node != -1) {
-            const auto it = std::lower_bound(std::begin(written_in_nodes), std::end(written_in_nodes), prev_node);
-            if (it == std::end(written_in_nodes) || prev_node < (*it)) {
-                written_in_nodes.insert(it, prev_node);
+
+        const size_t before = previous_nodes.size();
+        FindPreviousReadInNodes(node->output_[i], previous_nodes);
+
+        // Reads have priority over writes
+        if (previous_nodes.size() == before) {
+            const int16_t prev_node = FindPreviousWrittenInNode(node->output_[i]);
+            if (prev_node != -1) {
+                const auto it = std::lower_bound(std::begin(previous_nodes), std::end(previous_nodes), prev_node);
+                if (it == std::end(previous_nodes) || prev_node < (*it)) {
+                    previous_nodes.insert(it, prev_node);
+                }
+                insert_sorted(node->depends_on_nodes_, prev_node);
             }
         }
     }
 
-    for (const int16_t i : written_in_nodes) {
+    for (const int16_t i : previous_nodes) {
         FgNode *_node = nodes_[i];
         assert(_node != node);
 
-        const auto it =
-            std::lower_bound(std::begin(node->depends_on_nodes_), std::end(node->depends_on_nodes_), _node->index_);
-        if (it == std::end(node->depends_on_nodes_) || _node->index_ < (*it)) {
-            node->depends_on_nodes_.insert(it, _node->index_);
+        if (!_node->visited_) {
+            TraverseNodeDependencies_r(_node, recursion_depth + 1, out_node_stack);
         }
-        out_node_stack.push_back(_node);
-        TraverseNodeDependencies_r(_node, recursion_depth + 1, out_node_stack);
     }
+
+    out_node_stack.push_back(node);
 }
 
 void Eng::FgBuilder::PrepareAllocResources() {
@@ -1233,24 +1257,11 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
             }
         }
 
-        reordered_nodes_.assign(std::begin(written_in_nodes), std::end(written_in_nodes));
-
-        for (const FgNode *node : written_in_nodes) {
+        for (FgNode *node : written_in_nodes) {
             TraverseNodeDependencies_r(node, 0, reordered_nodes_);
         }
 
-        std::reverse(begin(reordered_nodes_), end(reordered_nodes_));
-
-        int out_index = 0;
-        for (int in_index = 0; in_index < int(reordered_nodes_.size()); ++in_index) {
-            if (!reordered_nodes_[in_index]->visited_) {
-                reordered_nodes_[out_index++] = reordered_nodes_[in_index];
-                reordered_nodes_[in_index]->visited_ = true;
-            }
-        }
-        reordered_nodes_.resize(out_index);
-
-        if (!reordered_nodes_.empty()) {
+        if (FgBuilderInternal::EnableNodesReordering && !reordered_nodes_.empty()) {
             std::vector<FgNode *> scheduled_nodes;
             scheduled_nodes.reserve(reordered_nodes_.size());
 
@@ -1320,7 +1331,7 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
     }
 
     PrepareAllocResources();
-    if (GraphBuilderInternal::EnableTextureAliasing) {
+    if (FgBuilderInternal::EnableTextureAliasing) {
         BuildAliases();
     }
 
