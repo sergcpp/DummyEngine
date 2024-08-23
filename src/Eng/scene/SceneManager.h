@@ -160,8 +160,8 @@ class SceneManager {
                                  Ren::Span<const TexEntry> desired_textures);
     void TexturesGCIteration(Ren::Span<const TexEntry> visible_textures, Ren::Span<const TexEntry> desired_textures);
 
-    void StartTextureLoader();
-    void StopTextureLoader();
+    void StartTextureLoaderThread(int requests_count = 4, int mip_levels_per_request = 1);
+    void StopTextureLoaderThread();
     void ForceTextureReload();
 
     bool Serve(int texture_budget = 1);
@@ -230,10 +230,7 @@ class SceneManager {
     Snd::Context *snd_ctx_ = nullptr;
     Ren::MeshRef cam_rig_;
     Ren::Tex2DRef white_tex_, error_tex_;
-    // Ray::RendererBase &ray_renderer_;
     Sys::ThreadPool &threads_;
-    // std::vector<Ray::RegionContext> ray_reg_ctx_;
-    // std::unique_ptr<Ray::SceneBase> ray_scene_;
     path_config_t paths_;
 
     Ren::Camera cam_, ext_cam_;
@@ -276,8 +273,6 @@ class SceneManager {
     uint32_t finished_index_ = 0;
     Ren::RingBuffer<TextureRequest> gc_textures_;
 
-    static const int MaxSimultaneousRequests = 4;
-
     std::mutex tex_requests_lock_;
     std::thread tex_loader_thread_;
     std::condition_variable tex_loader_cnd_;
@@ -285,7 +280,8 @@ class SceneManager {
 
     Sys::AsyncFileReader tex_reader_;
 
-    TextureRequestPending io_pending_tex_[MaxSimultaneousRequests];
+    Ren::SmallVector<TextureRequestPending, 16> io_pending_tex_;
+    int mip_levels_per_request_ = 1;
 
     void TextureLoaderProc();
 

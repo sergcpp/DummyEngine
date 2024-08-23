@@ -96,8 +96,8 @@ void Eng::SceneManager::TextureLoaderProc() {
                     return false;
                 }
 
-                for (int i = 0; i < MaxSimultaneousRequests; i++) {
-                    if (io_pending_tex_[i].state == eRequestState::Idle) {
+                for (TextureRequestPending &r : io_pending_tex_) {
+                    if (r.state == eRequestState::Idle) {
                         return true;
                     }
                 }
@@ -110,9 +110,9 @@ void Eng::SceneManager::TextureLoaderProc() {
 
             OPTICK_EVENT("Texture Request");
 
-            for (int i = 0; i < MaxSimultaneousRequests; i++) {
-                if (io_pending_tex_[i].state == eRequestState::Idle) {
-                    req = &io_pending_tex_[i];
+            for (TextureRequestPending &r : io_pending_tex_) {
+                if (r.state == eRequestState::Idle) {
+                    req = &r;
                     break;
                 }
             }
@@ -219,8 +219,8 @@ void Eng::SceneManager::TextureLoaderProc() {
         if (read_success) {
             const Ren::Tex2DParams &cur_p = req->ref->params;
 
-            const int max_load_w = std::max(cur_p.w * 2, 256);
-            const int max_load_h = std::max(cur_p.h * 2, 256);
+            const int max_load_w = std::max(cur_p.w * (1 << mip_levels_per_request_), 256);
+            const int max_load_h = std::max(cur_p.h * (1 << mip_levels_per_request_), 256);
 
             int w = int(req->orig_w), h = int(req->orig_h);
             for (int i = 0; i < req->orig_mip_count; i++) {
@@ -322,7 +322,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
         {
             std::lock_guard<std::mutex> _(tex_requests_lock_);
             finished &= requested_textures_.empty();
-            for (int i = 0; i < MaxSimultaneousRequests; i++) {
+            for (int i = 0; i < int(io_pending_tex_.size()); i++) {
                 finished &= io_pending_tex_[i].state == eRequestState::Idle;
                 if (io_pending_tex_[i].state == eRequestState::PendingIO) {
                     res = io_pending_tex_[i].ev.GetResult(false /* block */, &bytes_read);
@@ -389,8 +389,8 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                 // stage_buf->fence.ClientWaitSync();
                 ren_ctx_.BegSingleTimeCommands(stage_buf->cmd_buf);
 
-                const int new_mip_count =
-                    (p.w != 1 || p.h != 1) ? (last_initialized_mip + 1 + req->mip_count_to_init) : req->mip_count_to_init;
+                const int new_mip_count = (p.w != 1 || p.h != 1) ? (last_initialized_mip + 1 + req->mip_count_to_init)
+                                                                 : req->mip_count_to_init;
                 req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format, req->orig_block,
                                   bool(p.flags & Ren::eTexFlagBits::SRGB), stage_buf->cmd_buf,
                                   ren_ctx_.default_mem_allocs(), ren_ctx_.log());
@@ -637,12 +637,17 @@ void Eng::SceneManager::InvalidateTexture(const Ren::Tex2DRef &ref) {
     SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, ref);
 }
 
-void Eng::SceneManager::StartTextureLoader() {
+void Eng::SceneManager::StartTextureLoaderThread(int requests_count, int mip_levels_per_request) {
+    for (int i = 0; i < requests_count; i++) {
+        TextureRequestPending &req = io_pending_tex_.emplace_back();
+        req.buf = std::make_unique<TextureUpdateFileBuf>(ren_ctx_.api_ctx());
+    }
+    mip_levels_per_request_ = mip_levels_per_request;
     tex_loader_stop_ = false;
     tex_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
 }
 
-void Eng::SceneManager::StopTextureLoader() {
+void Eng::SceneManager::StopTextureLoaderThread() {
     { // stop texture loading thread
         std::unique_lock<std::mutex> lock(tex_requests_lock_);
         tex_loader_stop_ = true;
@@ -651,12 +656,13 @@ void Eng::SceneManager::StopTextureLoader() {
 
     assert(tex_loader_thread_.joinable());
     tex_loader_thread_.join();
-    for (int i = 0; i < MaxSimultaneousRequests; i++) {
+    for (int i = 0; i < int(io_pending_tex_.size()); i++) {
         size_t bytes_read = 0;
         io_pending_tex_[i].ev.GetResult(true /* block */, &bytes_read);
         io_pending_tex_[i].state = eRequestState::Idle;
         io_pending_tex_[i].ref = {};
     }
+    io_pending_tex_.clear();
     requested_textures_.clear();
     {
         std::unique_lock<std::mutex> lock(gc_textures_mtx_);
@@ -666,7 +672,7 @@ void Eng::SceneManager::StopTextureLoader() {
 }
 
 void Eng::SceneManager::ForceTextureReload() {
-    StopTextureLoader();
+    StopTextureLoaderThread();
 
     std::vector<Ren::TransitionInfo> img_transitions;
     img_transitions.reserve(scene_data_.textures.size());
@@ -710,7 +716,7 @@ void Eng::SceneManager::ForceTextureReload() {
     scene_data_.tex_mem_bucket_index = 0;
     scene_data_.estimated_texture_mem = 0;
 
-    StartTextureLoader();
+    StartTextureLoaderThread();
 }
 
 #undef NEXT_REQ_NDX

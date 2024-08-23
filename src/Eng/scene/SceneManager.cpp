@@ -256,10 +256,6 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     requested_textures_.reserve(16384);
     finished_textures_.reserve(16384);
 
-    for (int i = 0; i < MaxSimultaneousRequests; i++) {
-        io_pending_tex_[i].buf = std::make_unique<TextureUpdateFileBuf>(ren_ctx_.api_ctx());
-    }
-
     if (snd_ctx_) {
         const float pos[] = {0.0f, 0.0f, 0.0f};
         amb_sound_.Init(1.0f, pos);
@@ -269,11 +265,11 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
     }
 
-    StartTextureLoader();
+    StartTextureLoaderThread();
 }
 
 Eng::SceneManager::~SceneManager() {
-    StopTextureLoader();
+    StopTextureLoaderThread();
     ClearScene();
 }
 
@@ -292,9 +288,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
     log->Info("SceneManager: Loading scene!");
     if (!scene_data_.objects.empty()) {
-        StopTextureLoader();
+        StopTextureLoaderThread();
         ClearScene();
-        StartTextureLoader();
+        StartTextureLoaderThread();
     }
 
     std::map<std::string, Ren::Vec4f> decals_textures;

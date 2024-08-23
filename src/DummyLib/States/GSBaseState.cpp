@@ -627,7 +627,13 @@ bool GSBaseState::LoadScene(std::string_view name) {
     return true;
 }
 
-void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {}
+void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {
+    if (!viewer_->app_params.ref_name.empty()) {
+        // Incread texture streaming speed if we are capturing
+        scene_manager_->StopTextureLoaderThread();
+        scene_manager_->StartTextureLoaderThread(24 /* requests */, 16 /* mips */);
+    }
+}
 
 void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     // trigger probes update
@@ -834,7 +840,7 @@ void GSBaseState::Draw() {
                 thr_done_.wait(lock);
             }
 
-            streaming_finished_ = scene_manager_->Serve(4);
+            streaming_finished_ = scene_manager_->Serve(16);
             renderer_->InitBackendInfo();
 
             if (use_pt_) {
@@ -874,7 +880,7 @@ void GSBaseState::Draw() {
             notified_ = true;
             thr_notify_.notify_one();
         } else {
-            streaming_finished_ = scene_manager_->Serve(4);
+            streaming_finished_ = scene_manager_->Serve(16);
             renderer_->InitBackendInfo();
 
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
