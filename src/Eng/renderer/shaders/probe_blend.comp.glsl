@@ -114,6 +114,8 @@ void main() {
         const vec4 probe_irradiance_mean = imageLoad(g_out_img, ivec3(gl_GlobalInvocationID.xy, g_params.output_offset + gl_GlobalInvocationID.z + g_params.volume_index * PROBE_VOLUME_RES));
 
 #if defined(RADIANCE)
+        result.rgb = pow(result.rgb, vec3(1.0 / PROBE_RADIANCE_EXP));
+
         // Stable 2-sample accumulation (approximate)
         float lum_curr = lum(result.rgb);
         float lum_prev = probe_irradiance_mean.w;

@@ -346,11 +346,8 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
         probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_IRRADIANCE_RES - 2);
 
         // Sample the probe's irradiance
-        const vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).rgb;
-
-        // Decode the tone curve, but leave a gamma = 2 curve to approximate sRGB blending
-        //vec3 exponent = volume.probeIrradianceEncodingGamma * 0.5;
-        //probe_irradiance = pow(probe_irradiance, exponent);
+        vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).rgb;
+        probe_irradiance = pow(probe_irradiance, vec3(0.5 * PROBE_RADIANCE_EXP));
 
         // Accumulate the weighted irradiance
         irradiance += (weight * probe_irradiance);
@@ -361,9 +358,9 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
         return vec3(0.0);
     }
 
-    irradiance *= (1.0 / total_weight);   // Normalize by the accumulated weights
-    //irradiance *= irradiance;                   // Go back to linear irradiance
-    irradiance *= 2.0 * M_PI;                   // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
+    irradiance *= (1.0 / total_weight);     // Normalize by the accumulated weights
+    irradiance *= irradiance;               // Go back to linear irradiance
+    irradiance *= 2.0 * M_PI;               // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
 
     // Adjust for energy loss due to reduced precision in the R10G10B10A2 irradiance texture format
     //if (volume.probeIrradianceFormat == RTXGI_DDGI_VOLUME_TEXTURE_FORMAT_U32) {
@@ -488,11 +485,8 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         }
 
         // Sample the probe's irradiance
-        const vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).rgb;
-
-        // Decode the tone curve, but leave a gamma = 2 curve to approximate sRGB blending
-        //vec3 exponent = volume.probeIrradianceEncodingGamma * 0.5;
-        //probe_irradiance = pow(probe_irradiance, exponent);
+        vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).rgb;
+        probe_irradiance = pow(probe_irradiance, vec3(0.5 * PROBE_RADIANCE_EXP));
 
         // Accumulate the weighted irradiance
         if (probe_state < 1.5) {
@@ -509,7 +503,7 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
     }
 
     vec3 irradiance = (0.5 * outdoor_weight > indoor_weight) ? (outdoor_irradiance / outdoor_weight) : (indoor_irradiance / indoor_weight);
-
+    irradiance *= irradiance;   // Go back to linear irradiance
     irradiance *= 2.0 * M_PI;   // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
 
     return irradiance;

@@ -613,22 +613,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
 
-    Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
-
-    const Ren::TransitionInfo transitions[] = {
-        {scene_data_.persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
-        {scene_data_.persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
-        {scene_data_.persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
-        {scene_data_.persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
-    Ren::TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
-
-    const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    scene_data_.persistent_data.probe_ray_data->Clear(rgba, cmd_buf);
-    scene_data_.persistent_data.probe_irradiance->Clear(rgba, cmd_buf);
-    scene_data_.persistent_data.probe_distance->Clear(rgba, cmd_buf);
-    scene_data_.persistent_data.probe_offset->Clear(rgba, cmd_buf);
-
-    ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+    ClearGICache();
 
     float probe_volume_spacing = 0.5f;
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
@@ -1667,4 +1652,32 @@ void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj
 
     scene_data_.persistent_data.instance_buf->UpdateSubRegion(obj_beg * sizeof(InstanceData), total_data_to_update,
                                                               *temp_stage_buf, 0, ren_ctx_.current_cmd_buf());
+}
+
+void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
+    Ren::CommandBuffer cmd_buf = _cmd_buf;
+    if (!cmd_buf) {
+        cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
+    }
+
+    const Ren::TransitionInfo transitions[] = {
+        {scene_data_.persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
+        {scene_data_.persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
+        {scene_data_.persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
+        {scene_data_.persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
+    Ren::TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+
+    const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    scene_data_.persistent_data.probe_ray_data->Clear(rgba, cmd_buf);
+    scene_data_.persistent_data.probe_irradiance->Clear(rgba, cmd_buf);
+    scene_data_.persistent_data.probe_distance->Clear(rgba, cmd_buf);
+    scene_data_.persistent_data.probe_offset->Clear(rgba, cmd_buf);
+
+    if (!_cmd_buf) {
+        ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+    }
+
+    for (ProbeVolume &volume : scene_data_.persistent_data.probe_volumes) {
+        volume.updates_count = 0;
+    }
 }

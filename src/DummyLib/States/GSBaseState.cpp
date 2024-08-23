@@ -711,25 +711,11 @@ void GSBaseState::Draw() {
             use_pt_ = true;
             invalidate_view_ = true;
             viewer_->app_params.pt = false;
-        } else {
-            if (!viewer_->app_params.ref_name.empty() && capture_state_ == eCaptureState::None) {
-                if (USE_TWO_THREADS) {
-                    std::unique_lock<std::mutex> lock(mtx_);
-                    while (notified_) {
-                        thr_done_.wait(lock);
-                    }
-                }
-                main_view_lists_[0].Clear();
-                main_view_lists_[1].Clear();
-                random_->Reset(0);
-                renderer_->settings.taa_mode = Eng::eTAAMode::Static;
-                renderer_->settings.enable_shadow_jitter = true;
-                main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
-                renderer_->reset_accumulation();
-            }
         }
         if (!viewer_->app_params.ref_name.empty() && capture_state_ == eCaptureState::None) {
-            capture_state_ = eCaptureState::Warmup;
+            renderer_->reset_accumulation();
+            scene_manager_->ClearGICache(ren_ctx_->current_cmd_buf());
+            capture_state_ = eCaptureState::UpdateGICache;
             log_->Info("Starting capture!");
         }
     }
@@ -749,7 +735,25 @@ void GSBaseState::Draw() {
             }
         } else {
             render_target = capture_result_;
-            if (capture_state_ == eCaptureState::Warmup) {
+            if (capture_state_ == eCaptureState::UpdateGICache) {
+                log_->Info("UpdateGICache iteration #%i", renderer_->accumulated_frames());
+                if (renderer_->accumulated_frames() >= 256) {
+                    capture_state_ = eCaptureState::Warmup;
+                    if (USE_TWO_THREADS) {
+                        std::unique_lock<std::mutex> lock(mtx_);
+                        while (notified_) {
+                            thr_done_.wait(lock);
+                        }
+                    }
+                    main_view_lists_[0].Clear();
+                    main_view_lists_[1].Clear();
+                    random_->Reset(0);
+                    renderer_->settings.taa_mode = Eng::eTAAMode::Static;
+                    renderer_->settings.enable_shadow_jitter = true;
+                    main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
+                    renderer_->reset_accumulation();
+                }
+            } else if (capture_state_ == eCaptureState::Warmup) {
                 log_->Info("Warmup iteration #%i", renderer_->accumulated_frames());
                 if (renderer_->accumulated_frames() >= 64) {
                     capture_state_ = eCaptureState::Started;

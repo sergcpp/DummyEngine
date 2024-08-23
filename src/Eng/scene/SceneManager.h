@@ -154,6 +154,8 @@ class SceneManager {
 
     void UpdateObjects();
 
+    void ClearGICache(Ren::CommandBuffer cmd_buf = {});
+
     void UpdateTexturePriorities(Ren::Span<const TexEntry> visible_textures,
                                  Ren::Span<const TexEntry> desired_textures);
     void TexturesGCIteration(Ren::Span<const TexEntry> visible_textures, Ren::Span<const TexEntry> desired_textures);

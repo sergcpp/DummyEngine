@@ -118,7 +118,7 @@ class GSBaseState : public Eng::ViewerState {
     bool shift_down_ = false;
 
     bool streaming_finished_ = false;
-    enum class eCaptureState { None, Warmup, Started } capture_state_ = eCaptureState::None;
+    enum class eCaptureState { None, UpdateGICache, Warmup, Started } capture_state_ = eCaptureState::None;
     Ren::Tex2DRef capture_result_;
 
     bool LoadScene(std::string_view name);
