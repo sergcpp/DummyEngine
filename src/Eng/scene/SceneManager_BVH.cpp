@@ -1157,7 +1157,12 @@ void Eng::SceneManager::RebuildLightTree() {
         assert(root_node == 0);
         (void)root_node;
 
-        // Collapse leaf level (all nodes have only 1 child)
+        // Collapse leaf level (all leaves have only 1 light)
+        if ((light_wnodes[0].child[0] & LEAF_NODE_BIT) != 0) {
+            for (int j = 1; j < 8; ++j) {
+                light_wnodes[0].child[j] = 0x7fffffff;
+            }
+        }
         std::vector<bool> should_remove(light_wnodes.size(), false);
         for (uint32_t i = 0; i < light_wnodes.size(); ++i) {
             if ((light_wnodes[i].child[0] & LEAF_NODE_BIT) == 0) {
