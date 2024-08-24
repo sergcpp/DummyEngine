@@ -45,6 +45,18 @@ FileReadEvent::~FileReadEvent() {
     ::CloseHandle(ev_);
 }
 
+FileReadEvent &FileReadEvent::operator=(FileReadEvent &&rhs) noexcept {
+    if (&rhs == this) {
+        return *this;
+    }
+
+    h_file_ = std::exchange(rhs.h_file_, nullptr);
+    ev_ = std::exchange(rhs.ev_, nullptr);
+    memcpy(ov_, rhs.ov_, sizeof(ov_));
+
+    return *this;
+}
+
 bool FileReadEvent::ReadFile(void *h_file, const size_t read_offset, const size_t read_size, uint8_t *out_buf) {
     assert(!h_file_);
     h_file_ = h_file;

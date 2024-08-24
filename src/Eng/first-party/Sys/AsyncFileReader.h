@@ -83,7 +83,12 @@ class FileReadEvent {
 
   public:
     FileReadEvent();
+    FileReadEvent(const FileReadEvent &rhs) = delete;
+    FileReadEvent(FileReadEvent &&rhs) noexcept { (*this) = std::move(rhs); }
     ~FileReadEvent();
+
+    FileReadEvent &operator=(const FileReadEvent &rhs) = delete;
+    FileReadEvent &operator=(FileReadEvent &&rhs) noexcept;
 
 #if defined(_WIN32)
     bool ReadFile(void *h_file, size_t read_offset, size_t read_size, uint8_t *out_buf);

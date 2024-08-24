@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <utility>
 
 #include <fcntl.h>
 #include <linux/aio_abi.h>
@@ -51,6 +52,18 @@ FileReadEvent::FileReadEvent() {
 
 FileReadEvent::~FileReadEvent() {
     io_destroy(ctx_);
+}
+
+FileReadEvent &FileReadEvent::operator=(FileReadEvent &&rhs) noexcept {
+    if (&rhs == this) {
+        return *this;
+    }
+
+    ctx_ = std::exchange(rhs.ctx_, 0);
+    fd_ = std::exchange(rhs.fd_, 0);
+    memcpy(cb_buf_, rhs.cb_buf_, sizeof(cb_buf_));
+
+    return *this;
 }
 
 bool FileReadEvent::ReadFile(int fd, size_t read_offset, size_t read_size, uint8_t *out_buf) {
