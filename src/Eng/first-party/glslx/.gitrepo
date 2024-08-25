@@ -7,6 +7,6 @@
 	remote = glslx
 	branch = version_fixup
 	commit = a4cb2a1754bb376a18195f7d2d1cbbacd2d41dbb
-	parent = a631a44a81df76cf9625e9a02f7b1717136c445f
+	parent = 911f91cd5d84711e6665a084cf2ae52c00328fd3
 	method = merge
 	cmdver = 0.4.6
