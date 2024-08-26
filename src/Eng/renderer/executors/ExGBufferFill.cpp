@@ -36,14 +36,14 @@ void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
 #endif
 
         Ren::ProgramRef gbuf_simple_prog = sh.LoadProgram(
-            ctx, bindless ? "internal/gbuffer_fill.vert.glsl" : "internal/gbuffer_fill.vert.glsl@NO_BINDLESS",
-            bindless ? "internal/gbuffer_fill.frag.glsl" : "internal/gbuffer_fill.frag.glsl@NO_BINDLESS");
+            ctx, bindless ? "internal/gbuffer_fill.vert.glsl" : "internal/gbuffer_fill@NO_BINDLESS.vert.glsl",
+            bindless ? "internal/gbuffer_fill.frag.glsl" : "internal/gbuffer_fill@NO_BINDLESS.frag.glsl");
         assert(gbuf_simple_prog->ready());
         Ren::ProgramRef gbuf_vegetation_prog = sh.LoadProgram(
             ctx,
-            bindless ? "internal/gbuffer_fill.vert.glsl@VEGETATION"
-                     : "internal/gbuffer_fill.vert.glsl@VEGETATION;NO_BINDLESS",
-            bindless ? "internal/gbuffer_fill.frag.glsl" : "internal/gbuffer_fill.frag.glsl@NO_BINDLESS");
+            bindless ? "internal/gbuffer_fill@VEGETATION.vert.glsl"
+                     : "internal/gbuffer_fill@VEGETATION;NO_BINDLESS.vert.glsl",
+            bindless ? "internal/gbuffer_fill.frag.glsl" : "internal/gbuffer_fill@NO_BINDLESS.frag.glsl");
         assert(gbuf_vegetation_prog->ready());
 
         const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());

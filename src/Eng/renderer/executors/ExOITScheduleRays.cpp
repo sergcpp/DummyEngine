@@ -27,14 +27,14 @@ void Eng::ExOITScheduleRays::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, 
 #endif
 
         Ren::ProgramRef oit_blend_simple_prog = sh.LoadProgram(
-            ctx, bindless ? "internal/oit_schedule_rays.vert.glsl" : "internal/oit_schedule_rays.vert.glsl@NO_BINDLESS",
-            bindless ? "internal/oit_schedule_rays.frag.glsl" : "internal/oit_schedule_rays.frag.glsl@NO_BINDLESS");
+            ctx, bindless ? "internal/oit_schedule_rays.vert.glsl" : "internal/oit_schedule_rays@NO_BINDLESS.vert.glsl",
+            bindless ? "internal/oit_schedule_rays.frag.glsl" : "internal/oit_schedule_rays@NO_BINDLESS.frag.glsl");
         assert(oit_blend_simple_prog->ready());
         Ren::ProgramRef oit_blend_vegetation_prog = sh.LoadProgram(
             ctx,
-            bindless ? "internal/oit_schedule_rays.vert.glsl@VEGETATION"
-                     : "internal/oit_schedule_rays.vert.glsl@VEGETATION;NO_BINDLESS",
-            bindless ? "internal/oit_schedule_rays.frag.glsl" : "internal/oit_schedule_rays.frag.glsl@NO_BINDLESS");
+            bindless ? "internal/oit_schedule_rays@VEGETATION.vert.glsl"
+                     : "internal/oit_schedule_rays@VEGETATION;NO_BINDLESS.vert.glsl",
+            bindless ? "internal/oit_schedule_rays.frag.glsl" : "internal/oit_schedule_rays@NO_BINDLESS.frag.glsl");
         assert(oit_blend_vegetation_prog->ready());
 
         if (!rp_oit_schedule_rays_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {

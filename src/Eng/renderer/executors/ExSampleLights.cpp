@@ -19,7 +19,7 @@ void Eng::ExSampleLights::Execute(FgBuilder &builder) {
 void Eng::ExSampleLights::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized_) {
         if (ctx.capabilities.hwrt) {
-            Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights.comp.glsl@HWRT");
+            Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights@HWRT.comp.glsl");
             assert(prog->ready());
 
             if (!pi_sample_lights_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {

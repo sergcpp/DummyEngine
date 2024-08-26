@@ -19,24 +19,24 @@ void Eng::ExRTGI::Execute(FgBuilder &builder) {
 void Eng::ExRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized_) {
         Ren::ProgramRef rt_gi_prog =
-            sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_hwrt.comp.glsl@GI_CACHE"
-                                                      : "internal/rt_gi_swrt.comp.glsl@GI_CACHE");
+            sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_hwrt@GI_CACHE.comp.glsl"
+                                                      : "internal/rt_gi_swrt@GI_CACHE.comp.glsl");
         assert(rt_gi_prog->ready());
 
         if (!pi_rt_gi_[0].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
             ctx.log()->Error("ExRTGI: Failed to initialize pipeline!");
         }
 
-        rt_gi_prog = sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_hwrt.comp.glsl@GI_CACHE;STOCH_LIGHTS"
-                                                               : "internal/rt_gi_swrt.comp.glsl@GI_CACHE;STOCH_LIGHTS");
+        rt_gi_prog = sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_hwrt@GI_CACHE;STOCH_LIGHTS.comp.glsl"
+                                                               : "internal/rt_gi_swrt@GI_CACHE;STOCH_LIGHTS.comp.glsl");
         assert(rt_gi_prog->ready());
 
         if (!pi_rt_gi_[1].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
             ctx.log()->Error("ExRTGI: Failed to initialize pipeline!");
         }
 
-        rt_gi_prog = sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES;GI_CACHE"
-                                                               : "internal/rt_gi_swrt.comp.glsl@TWO_BOUNCES;GI_CACHE");
+        rt_gi_prog = sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE.comp.glsl"
+                                                               : "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE.comp.glsl");
         assert(rt_gi_prog->ready());
 
         if (!pi_rt_gi_2bounce_[0].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
@@ -44,8 +44,8 @@ void Eng::ExRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         }
 
         rt_gi_prog = sh.LoadProgram(ctx, ctx.capabilities.hwrt
-                                             ? "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS"
-                                             : "internal/rt_gi_swrt.comp.glsl@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS");
+                                             ? "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl"
+                                             : "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl");
         assert(rt_gi_prog->ready());
 
         if (!pi_rt_gi_2bounce_[1].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {

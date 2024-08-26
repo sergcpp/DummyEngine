@@ -62,26 +62,26 @@ void Eng::ExCombine::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl");
         assert(blit_combine_prog_[0][0][0]->ready());
         blit_combine_prog_[0][0][1] =
-            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl@TWO_TARGETS");
+            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine@TWO_TARGETS.frag.glsl");
         assert(blit_combine_prog_[0][0][1]->ready());
         blit_combine_prog_[0][1][0] =
-            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl@LUT");
+            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine@LUT.frag.glsl");
         assert(blit_combine_prog_[0][1][0]->ready());
         blit_combine_prog_[0][1][1] =
-            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl@LUT;TWO_TARGETS");
+            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine@LUT;TWO_TARGETS.frag.glsl");
         assert(blit_combine_prog_[0][1][1]->ready());
 
         blit_combine_prog_[1][0][0] =
-            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl@COMPRESSED");
+            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine@COMPRESSED.frag.glsl");
         assert(blit_combine_prog_[1][0][0]->ready());
         blit_combine_prog_[1][0][1] = sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl",
-                                                     "internal/blit_combine.frag.glsl@COMPRESSED;TWO_TARGETS");
+                                                     "internal/blit_combine@COMPRESSED;TWO_TARGETS.frag.glsl");
         assert(blit_combine_prog_[1][0][1]->ready());
         blit_combine_prog_[1][1][0] =
-            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl@COMPRESSED;LUT");
+            sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl", "internal/blit_combine@COMPRESSED;LUT.frag.glsl");
         assert(blit_combine_prog_[1][1][0]->ready());
         blit_combine_prog_[1][1][1] = sh.LoadProgram(ctx, "internal/blit_combine.vert.glsl",
-                                                     "internal/blit_combine.frag.glsl@COMPRESSED;LUT;TWO_TARGETS");
+                                                     "internal/blit_combine@COMPRESSED;LUT;TWO_TARGETS.frag.glsl");
         assert(blit_combine_prog_[1][1][1]->ready());
 
         initialized = true;

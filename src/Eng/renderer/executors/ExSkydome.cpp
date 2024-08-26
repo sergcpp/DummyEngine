@@ -252,10 +252,10 @@ void Eng::ExSkydomeScreen::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         assert(prog_skydome_simple_->ready());
 
         prog_skydome_phys_[0] =
-            sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl@SCREEN");
+            sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys@SCREEN.frag.glsl");
         assert(prog_skydome_phys_[0]->ready());
         prog_skydome_phys_[1] =
-            sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl@SCREEN;SUBSAMPLE");
+            sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys@SCREEN;SUBSAMPLE.frag.glsl");
         assert(prog_skydome_phys_[1]->ready());
 
         initialized = true;

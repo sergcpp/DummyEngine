@@ -11,7 +11,7 @@ extern const char *SHADERS_PATH;
 extern const char *SHADERS_PATH;
 #endif
 
-Ren::eShaderType ShaderTypeFromName(std::string_view name, int len);
+Ren::eShaderType ShaderTypeFromName(std::string_view name);
 } // namespace ShaderLoaderInternal
 
 std::string Eng::ShaderLoader::ReadGLSLContent(std::string_view name, Ren::ILog *log) {
@@ -47,7 +47,7 @@ Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, std::string_view n
         return {};
     }
 
-    const Ren::eShaderType type = ShaderTypeFromName(temp_param_str_, name_len);
+    const Ren::eShaderType type = ShaderTypeFromName(temp_param_str_);
     if (type == Ren::eShaderType::_Count) {
         ctx.log()->Error("Shader name is not correct (%s)", name);
     }

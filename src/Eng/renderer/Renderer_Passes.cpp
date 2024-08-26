@@ -56,25 +56,25 @@ bool Eng::Renderer::InitPipelines() {
     bool success = true;
 
     success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
-    success &= init_pipeline(pi_gbuf_shade_[0], "internal/gbuffer_shade.comp.glsl@SS_SHADOW");
-    success &= init_pipeline(pi_gbuf_shade_[1], "internal/gbuffer_shade.comp.glsl@SHADOW_JITTER;SS_SHADOW");
+    success &= init_pipeline(pi_gbuf_shade_[0], "internal/gbuffer_shade@SS_SHADOW.comp.glsl");
+    success &= init_pipeline(pi_gbuf_shade_[1], "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW.comp.glsl");
     success &=
         init_pipeline(pi_ssr_classify_, ctx_.capabilities.subgroup ? "internal/ssr_classify.comp.glsl"
-                                                                   : "internal/ssr_classify.comp.glsl@NO_SUBGROUP");
+                                                                   : "internal/ssr_classify@NO_SUBGROUP.comp.glsl");
     success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
     success &= init_pipeline(pi_ssr_trace_hq_[0][0], ctx_.capabilities.subgroup
                                                          ? "internal/ssr_trace_hq.comp.glsl"
-                                                         : "internal/ssr_trace_hq.comp.glsl@NO_SUBGROUP");
+                                                         : "internal/ssr_trace_hq@NO_SUBGROUP.comp.glsl");
     success &= init_pipeline(pi_ssr_trace_hq_[0][1], ctx_.capabilities.subgroup
-                                                         ? "internal/ssr_trace_hq.comp.glsl@GI_CACHE"
-                                                         : "internal/ssr_trace_hq.comp.glsl@GI_CACHE;NO_SUBGROUP");
+                                                         ? "internal/ssr_trace_hq@GI_CACHE.comp.glsl"
+                                                         : "internal/ssr_trace_hq@GI_CACHE;NO_SUBGROUP.comp.glsl");
     success &= init_pipeline(pi_ssr_trace_hq_[1][0], ctx_.capabilities.subgroup
-                                                         ? "internal/ssr_trace_hq.comp.glsl@LAYERED"
-                                                         : "internal/ssr_trace_hq.comp.glsl@LAYERED;NO_SUBGROUP");
+                                                         ? "internal/ssr_trace_hq@LAYERED.comp.glsl"
+                                                         : "internal/ssr_trace_hq@LAYERED;NO_SUBGROUP.comp.glsl");
     success &=
         init_pipeline(pi_ssr_trace_hq_[1][1], ctx_.capabilities.subgroup
-                                                  ? "internal/ssr_trace_hq.comp.glsl@LAYERED;GI_CACHE"
-                                                  : "internal/ssr_trace_hq.comp.glsl@LAYERED;GI_CACHE;NO_SUBGROUP");
+                                                  ? "internal/ssr_trace_hq@LAYERED;GI_CACHE.comp.glsl"
+                                                  : "internal/ssr_trace_hq@LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl");
 
     success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
 
@@ -83,17 +83,17 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_ssr_prefilter_, "internal/ssr_prefilter.comp.glsl");
     success &= init_pipeline(pi_ssr_temporal_, "internal/ssr_temporal.comp.glsl");
     success &= init_pipeline(pi_ssr_blur_[0], "internal/ssr_blur.comp.glsl");
-    success &= init_pipeline(pi_ssr_blur_[1], "internal/ssr_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
+    success &= init_pipeline(pi_ssr_blur_[1], "internal/ssr_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
     success &= init_pipeline(pi_ssr_stabilization_, "internal/ssr_stabilization.comp.glsl");
 
     // GI Cache
-    success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend.comp.glsl@RADIANCE");
-    success &= init_pipeline(pi_probe_blend_[1], "internal/probe_blend.comp.glsl@RADIANCE;STOCH_LIGHTS");
-    success &= init_pipeline(pi_probe_blend_[2], "internal/probe_blend.comp.glsl@DISTANCE");
+    success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend@RADIANCE.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[1], "internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[2], "internal/probe_blend@DISTANCE.comp.glsl");
     success &= init_pipeline(pi_probe_relocate_[0], "internal/probe_relocate.comp.glsl");
-    success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate.comp.glsl@RESET");
+    success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate@RESET.comp.glsl");
     success &= init_pipeline(pi_probe_classify_[0], "internal/probe_classify.comp.glsl");
-    success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify.comp.glsl@RESET");
+    success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify@RESET.comp.glsl");
     success &= init_pipeline(pi_probe_sample_, "internal/probe_sample.comp.glsl");
 
     // Flat normals reconstruction
@@ -107,36 +107,36 @@ bool Eng::Renderer::InitPipelines() {
     // GI
     success &=
         init_pipeline(pi_gi_classify_, ctx_.capabilities.subgroup ? "internal/gi_classify.comp.glsl"
-                                                                  : "internal/gi_classify.comp.glsl@NO_SUBGROUP");
+                                                                  : "internal/gi_classify@NO_SUBGROUP.comp.glsl");
     success &= init_pipeline(pi_gi_write_indirect_, "internal/gi_write_indirect_args.comp.glsl");
     success &=
         init_pipeline(pi_gi_trace_ss_, ctx_.capabilities.subgroup ? "internal/gi_trace_ss.comp.glsl"
-                                                                  : "internal/gi_trace_ss.comp.glsl@NO_SUBGROUP");
+                                                                  : "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl");
     success &= init_pipeline(pi_gi_rt_write_indirect_, "internal/gi_write_indir_rt_dispatch.comp.glsl");
     success &= init_pipeline(pi_gi_reproject_, "internal/gi_reproject.comp.glsl");
     success &= init_pipeline(pi_gi_prefilter_, "internal/gi_prefilter.comp.glsl");
     success &= init_pipeline(pi_gi_temporal_, "internal/gi_temporal.comp.glsl");
     success &= init_pipeline(pi_gi_blur_[0], "internal/gi_blur.comp.glsl");
-    success &= init_pipeline(pi_gi_blur_[1], "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
+    success &= init_pipeline(pi_gi_blur_[1], "internal/gi_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
     success &= init_pipeline(pi_gi_stabilization_, "internal/gi_stabilization.comp.glsl");
 
     // Sun Shadow
-    success &= init_pipeline(pi_sun_shadows_, "internal/sun_shadows.comp.glsl@SS_SHADOW");
+    success &= init_pipeline(pi_sun_shadows_, "internal/sun_shadows@SS_SHADOW.comp.glsl");
     success &= init_pipeline(pi_sun_brightness_, "internal/sun_brightness.comp.glsl");
     success &= init_pipeline(pi_shadow_classify_,
                              ctx_.capabilities.subgroup ? "internal/rt_shadow_classify.comp.glsl"
-                                                        : "internal/rt_shadow_classify.comp.glsl@NO_SUBGROUP",
+                                                        : "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl",
                              32);
     success &= init_pipeline(pi_shadow_prepare_mask_,
                              ctx_.capabilities.subgroup ? "internal/rt_shadow_prepare_mask.comp.glsl"
-                                                        : "internal/rt_shadow_prepare_mask.comp.glsl@NO_SUBGROUP",
+                                                        : "internal/rt_shadow_prepare_mask@NO_SUBGROUP.comp.glsl",
                              32);
     success &= init_pipeline(pi_shadow_classify_tiles_,
                              ctx_.capabilities.subgroup ? "internal/rt_shadow_classify_tiles.comp.glsl"
-                                                        : "internal/rt_shadow_classify_tiles.comp.glsl@NO_SUBGROUP",
+                                                        : "internal/rt_shadow_classify_tiles@NO_SUBGROUP.comp.glsl",
                              32);
-    success &= init_pipeline(pi_shadow_filter_[0], "internal/rt_shadow_filter.comp.glsl@PASS_0");
-    success &= init_pipeline(pi_shadow_filter_[1], "internal/rt_shadow_filter.comp.glsl@PASS_1");
+    success &= init_pipeline(pi_shadow_filter_[0], "internal/rt_shadow_filter@PASS_0.comp.glsl");
+    success &= init_pipeline(pi_shadow_filter_[1], "internal/rt_shadow_filter@PASS_1.comp.glsl");
     success &= init_pipeline(pi_shadow_filter_[2], "internal/rt_shadow_filter.comp.glsl");
     success &= init_pipeline(pi_shadow_debug_, "internal/rt_shadow_debug.comp.glsl");
 
@@ -167,15 +167,15 @@ bool Eng::Renderer::InitPipelines() {
     success &= blit_bilateral_prog_->ready();
 
     blit_taa_prog_[0] = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
-                                        "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg");
+                                              "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg.frag.glsl");
     success &= blit_taa_prog_[0]->ready();
     blit_taa_prog_[1] =
         sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
-                        "internal/blit_taa.frag.glsl@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR");
+                              "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR.frag.glsl");
     success &= blit_taa_prog_[1]->ready();
 
     blit_taa_static_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl", "internal/blit_taa.frag.glsl@STATIC_ACCUMULATION");
+        sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl", "internal/blit_taa@STATIC_ACCUMULATION.frag.glsl");
     success &= blit_taa_static_prog_->ready();
 
     blit_ssr_prog_ = sh_.LoadProgram(ctx_, "internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");

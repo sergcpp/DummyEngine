@@ -162,13 +162,17 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
 
     enum class eShaderOutput { GLSL, VK_SPIRV };
 
+    const size_t ext_pos = std::string_view(out_file).find(".");
+    assert(ext_pos != std::string::npos);
+
     for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::VK_SPIRV}) {
         for (const bool EnableOptimization : {false, true}) {
             if (EnableOptimization && sh_output != eShaderOutput::VK_SPIRV) {
                 continue;
             }
             for (const std::string &perm : permutations) {
-                const std::string prep_glsl_file = out_file + perm;
+                std::string prep_glsl_file = out_file;//+perm;
+                prep_glsl_file.insert(ext_pos, perm);
 
                 Ren::Bitmask<eAssetFlags> flags;
                 if (sh_output == eShaderOutput::GLSL) {
@@ -177,7 +181,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     flags |= eAssetFlags::VKOnly;
                 }
 
-                std::string output_file = out_file + perm;
+                std::string output_file = prep_glsl_file;
                 if (sh_output != eShaderOutput::GLSL) { // replace extension
                     const size_t n = output_file.rfind(".glsl");
                     assert(n != std::string::npos);

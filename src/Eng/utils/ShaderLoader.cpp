@@ -11,29 +11,29 @@ const char *SHADERS_PATH = "./assets/shaders/";
 const char *SHADERS_PATH = "./assets_pc/shaders/";
 #endif
 
-Ren::eShaderType ShaderTypeFromName(std::string_view name, const int len) {
+Ren::eShaderType ShaderTypeFromName(std::string_view name) {
     Ren::eShaderType type;
-    if (std::strncmp(name.data() + len - 10, ".vert.glsl", 10) == 0) {
+    if (std::strncmp(name.data() + name.length() - 10, ".vert.glsl", 10) == 0) {
         type = Ren::eShaderType::Vertex;
-    } else if (std::strncmp(name.data() + len - 10, ".frag.glsl", 10) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 10, ".frag.glsl", 10) == 0) {
         type = Ren::eShaderType::Fragment;
-    } else if (std::strncmp(name.data() + len - 10, ".tesc.glsl", 10) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 10, ".tesc.glsl", 10) == 0) {
         type = Ren::eShaderType::TesselationControl;
-    } else if (std::strncmp(name.data() + len - 10, ".tese.glsl", 10) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 10, ".tese.glsl", 10) == 0) {
         type = Ren::eShaderType::TesselationEvaluation;
-    } else if (std::strncmp(name.data() + len - 10, ".geom.glsl", 10) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 10, ".geom.glsl", 10) == 0) {
         type = Ren::eShaderType::Geometry;
-    } else if (std::strncmp(name.data() + len - 10, ".comp.glsl", 10) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 10, ".comp.glsl", 10) == 0) {
         type = Ren::eShaderType::Compute;
-    } else if (std::strncmp(name.data() + len - 10, ".rgen.glsl", 10) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 10, ".rgen.glsl", 10) == 0) {
         type = Ren::eShaderType::RayGen;
-    } else if (std::strncmp(name.data() + len - 11, ".rchit.glsl", 11) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 11, ".rchit.glsl", 11) == 0) {
         type = Ren::eShaderType::ClosestHit;
-    } else if (std::strncmp(name.data() + len - 11, ".rahit.glsl", 11) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 11, ".rahit.glsl", 11) == 0) {
         type = Ren::eShaderType::AnyHit;
-    } else if (std::strncmp(name.data() + len - 11, ".rmiss.glsl", 11) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 11, ".rmiss.glsl", 11) == 0) {
         type = Ren::eShaderType::Miss;
-    } else if (std::strncmp(name.data() + len - 10, ".rint.glsl", 10) == 0) {
+    } else if (std::strncmp(name.data() + name.length() - 10, ".rint.glsl", 10) == 0) {
         type = Ren::eShaderType::Intersection;
     } else {
         type = Ren::eShaderType::_Count;
@@ -231,14 +231,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram2(Ren::Context &ctx, std::string_v
 Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view name) {
     using namespace ShaderLoaderInternal;
 
-    const char *params = strchr(name.data(), '@');
-    const int name_len = params ? int(params - name.data()) : int(name.length());
-    if (name_len < 10) { // len of ".vert/.frag.glsl"
-        ctx.log()->Error("Shader name is not correct (%s)", name.data());
-        return {};
-    }
-
-    const Ren::eShaderType type = ShaderTypeFromName(name, name_len);
+    const Ren::eShaderType type = ShaderTypeFromName(name);
     if (type == Ren::eShaderType::_Count) {
         ctx.log()->Error("Shader name is not correct (%s)", name.data());
         return {};
@@ -276,9 +269,6 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
             }
         }
 #endif
-
-        const int params_cnt = ParamsStringToDef(params, temp_param_def_);
-        assert(params_cnt != -1);
 
         const std::string shader_src = ReadGLSLContent(name, ctx.log());
         if (!shader_src.empty()) {

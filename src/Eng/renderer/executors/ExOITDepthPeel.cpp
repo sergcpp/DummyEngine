@@ -28,14 +28,14 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
 #endif
 
         Ren::ProgramRef depth_peel_simple_prog = sh.LoadProgram(
-            ctx, bindless ? "internal/depth_peel.vert.glsl" : "internal/depth_peel.vert.glsl@NO_BINDLESS",
-            bindless ? "internal/depth_peel.frag.glsl" : "internal/depth_peel.frag.glsl@NO_BINDLESS");
+            ctx, bindless ? "internal/depth_peel.vert.glsl" : "internal/depth_peel@NO_BINDLESS.vert.glsl",
+            bindless ? "internal/depth_peel.frag.glsl" : "internal/depth_peel@NO_BINDLESS.frag.glsl");
         assert(depth_peel_simple_prog->ready());
         Ren::ProgramRef depth_peel_vegetation_prog =
             sh.LoadProgram(ctx,
-                           bindless ? "internal/depth_peel.vert.glsl@VEGETATION"
-                                    : "internal/depth_peel.vert.glsl@VEGETATION;NO_BINDLESS",
-                           bindless ? "internal/depth_peel.frag.glsl" : "internal/depth_peel.frag.glsl@NO_BINDLESS");
+                           bindless ? "internal/depth_peel@VEGETATION.vert.glsl"
+                                    : "internal/depth_peel@VEGETATION;NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/depth_peel.frag.glsl" : "internal/depth_peel@NO_BINDLESS.frag.glsl");
         assert(depth_peel_vegetation_prog->ready());
 
         if (!rp_depth_peel_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {

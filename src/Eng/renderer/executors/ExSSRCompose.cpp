@@ -82,10 +82,10 @@ void Eng::ExSSRCompose::Execute(FgBuilder &builder) {
 void Eng::ExSSRCompose::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocTex &output_tex) {
     if (!initialized) {
         blit_ssr_compose_prog_ =
-            sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose.frag.glsl@HALFRES");
+            sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose@HALFRES.frag.glsl");
         assert(blit_ssr_compose_prog_->ready());
         blit_ssr_compose_ms_prog_ =
-            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_ssr_compose.frag.glsl@HALFRES;MSAA_4");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_ssr_compose@HALFRES;MSAA_4.frag.glsl");
         assert(blit_ssr_compose_ms_prog_->ready());
 
         blit_ssr_compose_hq_prog_ =

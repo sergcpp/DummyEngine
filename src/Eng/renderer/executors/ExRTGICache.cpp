@@ -25,8 +25,8 @@ void Eng::ExRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         }
 
         rt_gi_cache_prog =
-            sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_cache_hwrt.comp.glsl@STOCH_LIGHTS"
-                                                      : "internal/rt_gi_cache_swrt.comp.glsl@STOCH_LIGHTS");
+            sh.LoadProgram(ctx, ctx.capabilities.hwrt ? "internal/rt_gi_cache_hwrt@STOCH_LIGHTS.comp.glsl"
+                                                      : "internal/rt_gi_cache_swrt@STOCH_LIGHTS.comp.glsl");
         assert(rt_gi_cache_prog->ready());
 
         if (!pi_rt_gi_cache_[1].Init(ctx.api_ctx(), std::move(rt_gi_cache_prog), ctx.log())) {
