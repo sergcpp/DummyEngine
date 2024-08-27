@@ -1153,9 +1153,8 @@ void Eng::SceneManager::RebuildLightTree() {
         }
 
         // Flatten to 8-wide BVH
-        const uint32_t root_node = FlattenBVH_r(light_nodes, 0, 0xffffffff, light_wnodes);
+        [[maybe_unused]] const uint32_t root_node = FlattenBVH_r(light_nodes, 0, 0xffffffff, light_wnodes);
         assert(root_node == 0);
-        (void)root_node;
 
         // Collapse leaf level (all leaves have only 1 light)
         if ((light_wnodes[0].child[0] & LEAF_NODE_BIT) != 0) {

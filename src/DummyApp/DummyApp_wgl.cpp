@@ -179,8 +179,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 }
 
 int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
-    const BOOL dpi_result = SetProcessDPIAware();
-    (void)dpi_result;
+    [[maybe_unused]] const BOOL dpi_result = SetProcessDPIAware();
 
     WNDCLASSEX window_class = {};
     window_class.cbSize = sizeof(WNDCLASSEX);

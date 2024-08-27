@@ -190,7 +190,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
 
     const float paragraph_height = main_font_height * 2.0f;
 
-    float x_offset = x_start, y_offset = y_start;
+    [[maybe_unused]] float x_offset = x_start, y_offset = y_start;
 
     const char *input_src_data = chapters_[1][cur_chapter_].text_data.c_str();
     char portion_buf[4096];
@@ -434,8 +434,6 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
         x_offset += main_font_->DrawText(r, portion_buf, Gui::Vec2f{x_offset, y_offset},
                                          /*text_color_stack[text_color_stack_size - 1]*/ color_white, parent_);
     }
-
-    (void)x_offset;
 }
 
 void PagedReader::UpdatePages() {
