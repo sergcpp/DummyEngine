@@ -68,7 +68,21 @@ struct light_wbvh_node_t {
     uint axis[8];
     uint cos_omega_ne[8];
 };
-const int LIGHT_NODES_BUF_STRIDE = 20;
+
+struct light_cwbvh_node_t {
+    float bbox_min[3];
+    float _unused0;
+    float bbox_max[3];
+    float _unused1;
+    uint ch_bbox_min[3][2];
+    uint ch_bbox_max[3][2];
+    uint child[8];
+    float flux[8];
+    uint axis[8];
+    uint cos_omega_ne[8];
+};
+
+const int LIGHT_NODES_BUF_STRIDE = 13;
 
 INTERFACE_END
 

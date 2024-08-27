@@ -204,7 +204,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex =
-                gi_classify.AddStorageImageOutput("GI Blue Noise Tex", params, Stg::ComputeShader);
+                gi_classify.AddStorageImageOutput("GI BN Tex", params, Stg::ComputeShader);
         }
 
         gi_classify.set_execute_cb([this, data, SamplesPerQuad](FgBuilder &builder) {

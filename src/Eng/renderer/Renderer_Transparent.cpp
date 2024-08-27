@@ -425,12 +425,12 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             frame_textures.color = data->in_back_color = oit_back.AddTransferImageInput(frame_textures.color);
             frame_textures.depth = data->in_back_depth = oit_back.AddTransferImageInput(frame_textures.depth);
             { // background color
-                const std::string tex_name = "OIT Background Color #" + std::to_string(i);
+                const std::string tex_name = "OIT Back Color #" + std::to_string(i);
                 back_color = data->out_back_color =
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.color_params);
             }
             { // background depth
-                const std::string tex_name = "OIT Background Depth #" + std::to_string(i);
+                const std::string tex_name = "OIT Back Depth #" + std::to_string(i);
                 back_depth = data->out_back_depth =
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.depth_params);
             }

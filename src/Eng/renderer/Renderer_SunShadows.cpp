@@ -100,7 +100,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex =
-                rt_shadows.AddStorageImageOutput("SH Blue Noise Tex", params, Ren::eStageBits::ComputeShader);
+                rt_shadows.AddStorageImageOutput("SH BN Tex", params, Ren::eStageBits::ComputeShader);
         }
 
         rt_shadows.set_execute_cb([this, data](FgBuilder &builder) {

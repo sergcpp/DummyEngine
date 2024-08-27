@@ -477,6 +477,24 @@ struct gpu_light_wbvh_node_t : public gpu_wbvh_node_t {
 };
 static_assert(sizeof(gpu_light_wbvh_node_t) == 320, "!");
 
+struct gpu_cwbvh_node_t {
+    float bbox_min[3];
+    float _unused0;
+    float bbox_max[3];
+    float _unused1;
+    uint8_t ch_bbox_min[3][8];
+    uint8_t ch_bbox_max[3][8];
+    uint32_t child[8];
+};
+static_assert(sizeof(gpu_cwbvh_node_t) == 112, "!");
+
+struct gpu_light_cwbvh_node_t : public gpu_cwbvh_node_t {
+    float flux[8];
+    uint32_t axis[8];
+    uint32_t cos_omega_ne[8];
+};
+static_assert(sizeof(gpu_light_cwbvh_node_t) == 208, "!");
+
 struct gpu_mesh_t {
     uint32_t node_index, node_count;
     uint32_t tris_index, tris_count;

@@ -118,7 +118,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex =
-                ssr_classify.AddStorageImageOutput("Blue Noise Tex", params, Stg::ComputeShader);
+                ssr_classify.AddStorageImageOutput("BN Tex", params, Stg::ComputeShader);
         }
 
         ssr_classify.set_execute_cb([this, data, SamplesPerQuad](FgBuilder &builder) {

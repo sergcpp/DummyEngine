@@ -35,15 +35,14 @@ vec3 decode_oct_dir(const uint oct) {
 
 vec2 decode_cosines(const uint val) {
     const uvec2 ab = uvec2((val >> 16) & 0x0000ffff, (val & 0x0000ffff));
-    return 2.0 * (vec2(ab) / 65535.0) - 1.0;
+    return 2.0 * (vec2(ab) / 65534.0) - 1.0;
 }
 
 float calc_lnode_importance(const light_wbvh_node_t n, const vec3 P, out float importance[8]) {
     float total_importance = 0.0;
     for (int i = 0; i < 8; ++i) {
-        float mul = 1.0, v_len2 = 1.0;
-        if (n.bbox_min[0][i] > -MAX_DIST) {
-            const vec3 axis = decode_oct_dir(n.axis[i]);
+        importance[i] = n.flux[i];
+        /*if (n.bbox_min[0][i] > -MAX_DIST)*/ {
             const vec3 ext = vec3(n.bbox_max[0][i] - n.bbox_min[0][i],
                                   n.bbox_max[1][i] - n.bbox_min[1][i],
                                   n.bbox_max[2][i] - n.bbox_min[2][i]);
@@ -57,8 +56,9 @@ float calc_lnode_importance(const light_wbvh_node_t n, const vec3 P, out float i
             const float dist = sqrt(dist2);
             wi /= dist;
 
-            v_len2 = max(dist2, extent);
+            const float v_len2 = max(dist2, extent);
 
+            const vec3 axis = decode_oct_dir(n.axis[i]);
             const float cos_omega_w = dot(axis, wi);
             const float sin_omega_w = sqrt(1.0 - cos_omega_w * cos_omega_w);
 
@@ -75,80 +75,294 @@ float calc_lnode_importance(const light_wbvh_node_t n, const vec3 P, out float i
             const float sin_omega_x = sin_sub_clamped(sin_omega_w, cos_omega_w, sin_omega_n, cos_omega_ne[0]);
             const float cos_omega = cos_sub_clamped(sin_omega_x, cos_omega_x, sin_omega_b, cos_omega_b);
 
-            mul = cos_omega > cos_omega_ne[1] ? cos_omega : 0.0;
+            importance[i] *= (cos_omega > cos_omega_ne[1]) ? (cos_omega / v_len2) : 0.0;
         }
-        importance[i] = n.flux[i] * mul / v_len2;
         total_importance += importance[i];
     }
     return total_importance;
 }
 
-light_wbvh_node_t FetchLightNode(samplerBuffer nodes_buf, const int li) {
+float calc_lnode_importance(const light_cwbvh_node_t n, const vec3 P, out float importance[8]) {
+    const vec3 decode_ext = vec3(n.bbox_max[0] - n.bbox_min[0],
+                                 n.bbox_max[1] - n.bbox_min[1],
+                                 n.bbox_max[2] - n.bbox_min[2]) / 255.0;
+
+    float total_importance = 0.0;
+    for (uint i = 0; i < 8; ++i) {
+        importance[i] = n.flux[i];
+        /*if (n.ch_bbox_min[0][i] != 0xff || n.ch_bbox_max[0][i] != 0)*/ {
+            const vec3 bbox_min = vec3(n.bbox_min[0] + float((n.ch_bbox_min[0][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[0],
+                                       n.bbox_min[1] + float((n.ch_bbox_min[1][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[1],
+                                       n.bbox_min[2] + float((n.ch_bbox_min[2][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[2]);
+            const vec3 bbox_max = vec3(n.bbox_min[0] + float((n.ch_bbox_max[0][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[0],
+                                       n.bbox_min[1] + float((n.ch_bbox_max[1][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[1],
+                                       n.bbox_min[2] + float((n.ch_bbox_max[2][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[2]);
+            const float extent = 0.5 * length(bbox_max - bbox_min);
+
+            const vec3 pc = 0.5 * (bbox_min + bbox_max);
+            vec3 wi = P - pc;
+            const float dist2 = dot(wi, wi);
+            const float dist = sqrt(dist2);
+            wi /= dist;
+
+            const float v_len2 = max(dist2, extent);
+
+            const vec3 axis = decode_oct_dir(n.axis[i]);
+            const float cos_omega_w = dot(axis, wi);
+            const float sin_omega_w = sqrt(1.0 - cos_omega_w * cos_omega_w);
+
+            float cos_omega_b = -1.0;
+            if (dist2 >= extent * extent) {
+                cos_omega_b = sqrt(1.0 - (extent * extent) / dist2);
+            }
+            const float sin_omega_b = sqrt(1.0 - cos_omega_b * cos_omega_b);
+
+            const vec2 cos_omega_ne = decode_cosines(n.cos_omega_ne[i]);
+            const float sin_omega_n = sqrt(1.0 - cos_omega_ne[0] * cos_omega_ne[0]);
+
+            const float cos_omega_x = cos_sub_clamped(sin_omega_w, cos_omega_w, sin_omega_n, cos_omega_ne[0]);
+            const float sin_omega_x = sin_sub_clamped(sin_omega_w, cos_omega_w, sin_omega_n, cos_omega_ne[0]);
+            const float cos_omega = cos_sub_clamped(sin_omega_x, cos_omega_x, sin_omega_b, cos_omega_b);
+
+            importance[i] *= (cos_omega > cos_omega_ne[1]) ? (cos_omega / v_len2) : 0.0;
+        }
+        total_importance += importance[i];
+    }
+    return total_importance;
+}
+
+float calc_lnode_importance(const light_cwbvh_node_t n, const vec3 P, const vec3 P_test, out float importance[8]) {
+    const vec3 decode_ext = vec3(n.bbox_max[0] - n.bbox_min[0],
+                                 n.bbox_max[1] - n.bbox_min[1],
+                                 n.bbox_max[2] - n.bbox_min[2]) / 255.0;
+
+    float total_importance = 0.0;
+    for (uint i = 0; i < 8; ++i) {
+        float imp = n.flux[i];
+        importance[i] = imp;
+        /*if (n.ch_bbox_min[0][i] != 0xff || n.ch_bbox_max[0][i] != 0)*/ {
+            const vec3 bbox_min = vec3(n.bbox_min[0] + float((n.ch_bbox_min[0][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[0],
+                                       n.bbox_min[1] + float((n.ch_bbox_min[1][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[1],
+                                       n.bbox_min[2] + float((n.ch_bbox_min[2][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[2]);
+            const vec3 bbox_max = vec3(n.bbox_min[0] + float((n.ch_bbox_max[0][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[0],
+                                       n.bbox_min[1] + float((n.ch_bbox_max[1][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[1],
+                                       n.bbox_min[2] + float((n.ch_bbox_max[2][i / 4] >> (8u * (i % 4u))) & 0xffu) * decode_ext[2]);
+            const float extent = 0.5 * length(bbox_max - bbox_min);
+
+            const vec3 pc = 0.5 * (bbox_min + bbox_max);
+            vec3 wi = P - pc;
+            const float dist2 = dot(wi, wi);
+            const float dist = sqrt(dist2);
+            wi /= dist;
+
+            const float v_len2 = max(dist2, extent);
+
+            const vec3 axis = decode_oct_dir(n.axis[i]);
+            const float cos_omega_w = dot(axis, wi);
+            const float sin_omega_w = sqrt(1.0 - cos_omega_w * cos_omega_w);
+
+            float cos_omega_b = -1.0;
+            if (dist2 >= extent * extent) {
+                cos_omega_b = sqrt(1.0 - (extent * extent) / dist2);
+            }
+            const float sin_omega_b = sqrt(1.0 - cos_omega_b * cos_omega_b);
+
+            const vec2 cos_omega_ne = decode_cosines(n.cos_omega_ne[i]);
+            const float sin_omega_n = sqrt(1.0 - cos_omega_ne[0] * cos_omega_ne[0]);
+
+            const float cos_omega_x = cos_sub_clamped(sin_omega_w, cos_omega_w, sin_omega_n, cos_omega_ne[0]);
+            const float sin_omega_x = sin_sub_clamped(sin_omega_w, cos_omega_w, sin_omega_n, cos_omega_ne[0]);
+            const float cos_omega = cos_sub_clamped(sin_omega_x, cos_omega_x, sin_omega_b, cos_omega_b);
+
+            const float mul = (cos_omega > cos_omega_ne[1]) ? (cos_omega / v_len2) : 0.0;
+            importance[i] = imp = (imp * mul);
+            if (!bbox_test(P_test, bbox_min, bbox_max)) {
+                // NOTE: total_importance must not account for this!
+                importance[i] = 0.0;
+            }
+        }
+        total_importance += imp;
+    }
+    return total_importance;
+}
+
+light_wbvh_node_t FetchLightWBVHNode(samplerBuffer nodes_buf, const int li) {
     light_wbvh_node_t ret;
-    for (int i = 0; i < 3; ++i) {
-        const vec4 data0 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + i * 2 + 0);
-        ret.bbox_min[i][0] = data0.x;
-        ret.bbox_min[i][1] = data0.y;
-        ret.bbox_min[i][2] = data0.z;
-        ret.bbox_min[i][3] = data0.w;
-        const vec4 data1 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + i * 2 + 1);
-        ret.bbox_min[i][4] = data1.x;
-        ret.bbox_min[i][5] = data1.y;
-        ret.bbox_min[i][6] = data1.z;
-        ret.bbox_min[i][7] = data1.w;
+    const vec3 bbox_min = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 0).xyz;
+    const vec3 bbox_max = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 1).xyz;
+    const vec3 ext = (bbox_max - bbox_min) / 255.0;
+    { // unpack child bounds
+        const uvec4 data2 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 2));
+        ret.bbox_min[0][0] = bbox_min[0] + float((data2.x >> 0u) & 0xffu) * ext[0];
+        ret.bbox_min[0][1] = bbox_min[0] + float((data2.x >> 8u) & 0xffu) * ext[0];
+        ret.bbox_min[0][2] = bbox_min[0] + float((data2.x >> 16u) & 0xffu) * ext[0];
+        ret.bbox_min[0][3] = bbox_min[0] + float((data2.x >> 24u) & 0xffu) * ext[0];
+
+        ret.bbox_min[0][4] = bbox_min[0] + float((data2.y >> 0u) & 0xffu) * ext[0];
+        ret.bbox_min[0][5] = bbox_min[0] + float((data2.y >> 8u) & 0xffu) * ext[0];
+        ret.bbox_min[0][6] = bbox_min[0] + float((data2.y >> 16u) & 0xffu) * ext[0];
+        ret.bbox_min[0][7] = bbox_min[0] + float((data2.y >> 24u) & 0xffu) * ext[0];
+
+        ret.bbox_min[1][0] = bbox_min[1] + float((data2.z >> 0u) & 0xffu) * ext[1];
+        ret.bbox_min[1][1] = bbox_min[1] + float((data2.z >> 8u) & 0xffu) * ext[1];
+        ret.bbox_min[1][2] = bbox_min[1] + float((data2.z >> 16u) & 0xffu) * ext[1];
+        ret.bbox_min[1][3] = bbox_min[1] + float((data2.z >> 24u) & 0xffu) * ext[1];
+
+        ret.bbox_min[1][4] = bbox_min[1] + float((data2.w >> 0u) & 0xffu) * ext[1];
+        ret.bbox_min[1][5] = bbox_min[1] + float((data2.w >> 8u) & 0xffu) * ext[1];
+        ret.bbox_min[1][6] = bbox_min[1] + float((data2.w >> 16u) & 0xffu) * ext[1];
+        ret.bbox_min[1][7] = bbox_min[1] + float((data2.w >> 24u) & 0xffu) * ext[1];
+
+        const uvec4 data3 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 3));
+        ret.bbox_min[2][0] = bbox_min[2] + float((data3.x >> 0u) & 0xffu) * ext[2];
+        ret.bbox_min[2][1] = bbox_min[2] + float((data3.x >> 8u) & 0xffu) * ext[2];
+        ret.bbox_min[2][2] = bbox_min[2] + float((data3.x >> 16u) & 0xffu) * ext[2];
+        ret.bbox_min[2][3] = bbox_min[2] + float((data3.x >> 24u) & 0xffu) * ext[2];
+
+        ret.bbox_min[2][4] = bbox_min[2] + float((data3.y >> 0u) & 0xffu) * ext[2];
+        ret.bbox_min[2][5] = bbox_min[2] + float((data3.y >> 8u) & 0xffu) * ext[2];
+        ret.bbox_min[2][6] = bbox_min[2] + float((data3.y >> 16u) & 0xffu) * ext[2];
+        ret.bbox_min[2][7] = bbox_min[2] + float((data3.y >> 24u) & 0xffu) * ext[2];
+
+        ret.bbox_max[0][0] = bbox_min[0] + float((data3.z >> 0u) & 0xffu) * ext[0];
+        ret.bbox_max[0][1] = bbox_min[0] + float((data3.z >> 8u) & 0xffu) * ext[0];
+        ret.bbox_max[0][2] = bbox_min[0] + float((data3.z >> 16u) & 0xffu) * ext[0];
+        ret.bbox_max[0][3] = bbox_min[0] + float((data3.z >> 24u) & 0xffu) * ext[0];
+
+        ret.bbox_max[0][4] = bbox_min[0] + float((data3.w >> 0u) & 0xffu) * ext[0];
+        ret.bbox_max[0][5] = bbox_min[0] + float((data3.w >> 8u) & 0xffu) * ext[0];
+        ret.bbox_max[0][6] = bbox_min[0] + float((data3.w >> 16u) & 0xffu) * ext[0];
+        ret.bbox_max[0][7] = bbox_min[0] + float((data3.w >> 24u) & 0xffu) * ext[0];
+
+        const uvec4 data4 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 4));
+        ret.bbox_max[1][0] = bbox_min[1] + float((data4.x >> 0u) & 0xffu) * ext[1];
+        ret.bbox_max[1][1] = bbox_min[1] + float((data4.x >> 8u) & 0xffu) * ext[1];
+        ret.bbox_max[1][2] = bbox_min[1] + float((data4.x >> 16u) & 0xffu) * ext[1];
+        ret.bbox_max[1][3] = bbox_min[1] + float((data4.x >> 24u) & 0xffu) * ext[1];
+
+        ret.bbox_max[1][4] = bbox_min[1] + float((data4.y >> 0u) & 0xffu) * ext[1];
+        ret.bbox_max[1][5] = bbox_min[1] + float((data4.y >> 8u) & 0xffu) * ext[1];
+        ret.bbox_max[1][6] = bbox_min[1] + float((data4.y >> 16u) & 0xffu) * ext[1];
+        ret.bbox_max[1][7] = bbox_min[1] + float((data4.y >> 24u) & 0xffu) * ext[1];
+
+        ret.bbox_max[2][0] = bbox_min[2] + float((data4.z >> 0u) & 0xffu) * ext[2];
+        ret.bbox_max[2][1] = bbox_min[2] + float((data4.z >> 8u) & 0xffu) * ext[2];
+        ret.bbox_max[2][2] = bbox_min[2] + float((data4.z >> 16u) & 0xffu) * ext[2];
+        ret.bbox_max[2][3] = bbox_min[2] + float((data4.z >> 24u) & 0xffu) * ext[2];
+
+        ret.bbox_max[2][4] = bbox_min[2] + float((data4.w >> 0u) & 0xffu) * ext[2];
+        ret.bbox_max[2][5] = bbox_min[2] + float((data4.w >> 8u) & 0xffu) * ext[2];
+        ret.bbox_max[2][6] = bbox_min[2] + float((data4.w >> 16u) & 0xffu) * ext[2];
+        ret.bbox_max[2][7] = bbox_min[2] + float((data4.w >> 24u) & 0xffu) * ext[2];
     }
-    for (int i = 0; i < 3; ++i) {
-        const vec4 data2 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 6 + i * 2 + 0);
-        ret.bbox_max[i][0] = data2.x;
-        ret.bbox_max[i][1] = data2.y;
-        ret.bbox_max[i][2] = data2.z;
-        ret.bbox_max[i][3] = data2.w;
-        const vec4 data3 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 6 + i * 2 + 1);
-        ret.bbox_max[i][4] = data3.x;
-        ret.bbox_max[i][5] = data3.y;
-        ret.bbox_max[i][6] = data3.z;
-        ret.bbox_max[i][7] = data3.w;
-    }
-    const uvec4 data4 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 12));
-    ret.child[0] = data4.x;
-    ret.child[1] = data4.y;
-    ret.child[2] = data4.z;
-    ret.child[3] = data4.w;
-    const uvec4 data5 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 13));
-    ret.child[4] = data5.x;
-    ret.child[5] = data5.y;
-    ret.child[6] = data5.z;
-    ret.child[7] = data5.w;
-    const vec4 data6 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 14);
-    ret.flux[0] = data6.x;
-    ret.flux[1] = data6.y;
-    ret.flux[2] = data6.z;
-    ret.flux[3] = data6.w;
-    const vec4 data7 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 15);
-    ret.flux[4] = data7.x;
-    ret.flux[5] = data7.y;
-    ret.flux[6] = data7.z;
-    ret.flux[7] = data7.w;
-    const uvec4 data8 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 16));
-    ret.axis[0] = data8.x;
-    ret.axis[1] = data8.y;
-    ret.axis[2] = data8.z;
-    ret.axis[3] = data8.w;
-    const uvec4 data9 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 17));
-    ret.axis[4] = data9.x;
-    ret.axis[5] = data9.y;
-    ret.axis[6] = data9.z;
-    ret.axis[7] = data9.w;
-    const uvec4 data10 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 18));
-    ret.cos_omega_ne[0] = data10.x;
-    ret.cos_omega_ne[1] = data10.y;
-    ret.cos_omega_ne[2] = data10.z;
-    ret.cos_omega_ne[3] = data10.w;
-    const uvec4 data11 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 19));
-    ret.cos_omega_ne[4] = data11.x;
-    ret.cos_omega_ne[5] = data11.y;
-    ret.cos_omega_ne[6] = data11.z;
-    ret.cos_omega_ne[7] = data11.w;
+    const uvec4 data5 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 5));
+    ret.child[0] = data5.x;
+    ret.child[1] = data5.y;
+    ret.child[2] = data5.z;
+    ret.child[3] = data5.w;
+    const uvec4 data6 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 6));
+    ret.child[4] = data6.x;
+    ret.child[5] = data6.y;
+    ret.child[6] = data6.z;
+    ret.child[7] = data6.w;
+    const vec4 data7 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 7);
+    ret.flux[0] = data7.x;
+    ret.flux[1] = data7.y;
+    ret.flux[2] = data7.z;
+    ret.flux[3] = data7.w;
+    const vec4 data8 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 8);
+    ret.flux[4] = data8.x;
+    ret.flux[5] = data8.y;
+    ret.flux[6] = data8.z;
+    ret.flux[7] = data8.w;
+    const uvec4 data9 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 9));
+    ret.axis[0] = data9.x;
+    ret.axis[1] = data9.y;
+    ret.axis[2] = data9.z;
+    ret.axis[3] = data9.w;
+    const uvec4 data10 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 10));
+    ret.axis[4] = data10.x;
+    ret.axis[5] = data10.y;
+    ret.axis[6] = data10.z;
+    ret.axis[7] = data10.w;
+    const uvec4 data11 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 11));
+    ret.cos_omega_ne[0] = data11.x;
+    ret.cos_omega_ne[1] = data11.y;
+    ret.cos_omega_ne[2] = data11.z;
+    ret.cos_omega_ne[3] = data11.w;
+    const uvec4 data12 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 12));
+    ret.cos_omega_ne[4] = data12.x;
+    ret.cos_omega_ne[5] = data12.y;
+    ret.cos_omega_ne[6] = data12.z;
+    ret.cos_omega_ne[7] = data12.w;
+    return ret;
+}
+
+light_cwbvh_node_t FetchLightCWBVHNode(samplerBuffer nodes_buf, const int li) {
+    light_cwbvh_node_t ret;
+    const vec3 data0 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 0).xyz;
+    ret.bbox_min[0] = data0[0];
+    ret.bbox_min[1] = data0[1];
+    ret.bbox_min[2] = data0[2];
+    const vec3 data1 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 1).xyz;
+    ret.bbox_max[0] = data1[0];
+    ret.bbox_max[1] = data1[1];
+    ret.bbox_max[2] = data1[2];
+    const uvec4 data2 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 2));
+    ret.ch_bbox_min[0][0] = data2[0];
+    ret.ch_bbox_min[0][1] = data2[1];
+    ret.ch_bbox_min[1][0] = data2[2];
+    ret.ch_bbox_min[1][1] = data2[3];
+    const uvec4 data3 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 3));
+    ret.ch_bbox_min[2][0] = data3[0];
+    ret.ch_bbox_min[2][1] = data3[1];
+    ret.ch_bbox_max[0][0] = data3[2];
+    ret.ch_bbox_max[0][1] = data3[3];
+    const uvec4 data4 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 4));
+    ret.ch_bbox_max[1][0] = data4[0];
+    ret.ch_bbox_max[1][1] = data4[1];
+    ret.ch_bbox_max[2][0] = data4[2];
+    ret.ch_bbox_max[2][1] = data4[3];
+    const uvec4 data5 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 5));
+    ret.child[0] = data5.x;
+    ret.child[1] = data5.y;
+    ret.child[2] = data5.z;
+    ret.child[3] = data5.w;
+    const uvec4 data6 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 6));
+    ret.child[4] = data6.x;
+    ret.child[5] = data6.y;
+    ret.child[6] = data6.z;
+    ret.child[7] = data6.w;
+    const vec4 data7 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 7);
+    ret.flux[0] = data7.x;
+    ret.flux[1] = data7.y;
+    ret.flux[2] = data7.z;
+    ret.flux[3] = data7.w;
+    const vec4 data8 = texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 8);
+    ret.flux[4] = data8.x;
+    ret.flux[5] = data8.y;
+    ret.flux[6] = data8.z;
+    ret.flux[7] = data8.w;
+    const uvec4 data9 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 9));
+    ret.axis[0] = data9.x;
+    ret.axis[1] = data9.y;
+    ret.axis[2] = data9.z;
+    ret.axis[3] = data9.w;
+    const uvec4 data10 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 10));
+    ret.axis[4] = data10.x;
+    ret.axis[5] = data10.y;
+    ret.axis[6] = data10.z;
+    ret.axis[7] = data10.w;
+    const uvec4 data11 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 11));
+    ret.cos_omega_ne[0] = data11.x;
+    ret.cos_omega_ne[1] = data11.y;
+    ret.cos_omega_ne[2] = data11.z;
+    ret.cos_omega_ne[3] = data11.w;
+    const uvec4 data12 = floatBitsToUint(texelFetch(nodes_buf, li * LIGHT_NODES_BUF_STRIDE + 12));
+    ret.cos_omega_ne[4] = data12.x;
+    ret.cos_omega_ne[5] = data12.y;
+    ret.cos_omega_ne[6] = data12.z;
+    ret.cos_omega_ne[7] = data12.w;
     return ret;
 }
 
@@ -158,13 +372,13 @@ int PickLightSource(const vec3 P, samplerBuffer nodes_buf, const uint lights_cou
 
     uint cur = 0; // start from root
     while ((cur & LEAF_NODE_BIT) == 0) {
-        light_wbvh_node_t n = FetchLightNode(nodes_buf, int(cur));
+        const light_cwbvh_node_t n = FetchLightCWBVHNode(nodes_buf, int(cur));
 
         float importance[8];
         const float total_importance = calc_lnode_importance(n, P, importance);
-        [[dont_flatten]] if (total_importance == 0.0) {
+        if (total_importance == 0.0) {
             // failed to find lightsource for sampling
-            break;
+            return -1;
         }
 
         // normalize
@@ -193,6 +407,7 @@ int PickLightSource(const vec3 P, samplerBuffer nodes_buf, const uint lights_cou
 
         light_pick_rand = fract((light_pick_rand - importance_cdf[next]) / importance[next]);
         pdf_factor *= importance[next];
+
         cur = n.child[next];
     }
     return int(cur & PRIM_INDEX_BITS);
@@ -215,14 +430,13 @@ float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, samplerBuffer li
         const float cur_factor = g_stack_factors[gl_LocalInvocationIndex][stack_size];
 
         if ((cur & LEAF_NODE_BIT) == 0) {
-            light_wbvh_node_t n = FetchLightNode(nodes_buf, int(cur));
+            const light_cwbvh_node_t n = FetchLightCWBVHNode(nodes_buf, int(cur));
 
             float importance[8];
-            const float total_importance = calc_lnode_importance(n, ro, importance);
+            const float total_importance = calc_lnode_importance(n, ro, P, importance);
 
             for (int j = 0; j < 8; ++j) {
-                if (importance[j] > 0.0 && bbox_test(P, vec3(n.bbox_min[0][j], n.bbox_min[1][j], n.bbox_min[2][j]),
-                                                        vec3(n.bbox_max[0][j], n.bbox_max[1][j], n.bbox_max[2][j]))) {
+                if (importance[j] > 0.0) {
                     g_stack_factors[gl_LocalInvocationIndex][stack_size] = cur_factor * importance[j] / total_importance;
                     g_stack[gl_LocalInvocationIndex][stack_size++] = n.child[j];
                 }
