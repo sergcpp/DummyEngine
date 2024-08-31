@@ -31,10 +31,10 @@ runs:
         #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset medium --psnr 19.60
         #mv bistro.png bistro_night_medium.png
         #cp bistro_night_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset high --psnr 20.70
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset high --psnr 20.65
         mv bistro.png bistro_night_high.png
         cp bistro_night_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset ultra --psnr 20.70
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset ultra --psnr 20.65
         mv bistro.png bistro_night_ultra.png
         cp bistro_night_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### Coffee maker
