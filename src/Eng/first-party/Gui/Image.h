@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Ren/Texture.h>
-#include <Ren/TextureRegion.h>
+#include "../Ren/Texture.h"
+#include "../Ren/TextureRegion.h"
 
 #include "BaseElement.h"
 

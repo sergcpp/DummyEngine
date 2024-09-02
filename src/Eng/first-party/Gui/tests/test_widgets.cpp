@@ -1,17 +1,16 @@
 #include "test_common.h"
 
-#include "../gui/BaseElement.h"
+#include "../BaseElement.h"
 
 void test_widgets() {
     printf("Test widgets            | ");
 
-    using Ren::Vec2f;
-    using Ren::Vec2i;
+    using namespace Gui;
 
     {   // BaseElement tests
         {   // Simple element
-            Gui::RootElement root(Vec2i{ 1000, 1000 });
-            Gui::BaseElement el(Vec2f{ -0.5f, -0.5f }, Vec2f{ 1, 1 }, &root);
+            RootElement root(Vec2i{ 1000, 1000 });
+            BaseElement el(Vec2f{ -0.5f, -0.5f }, Vec2f{ 1, 1 }, &root);
 
             require(el.pos() == Vec2f(-0.5f, -0.5f));
             require(el.size() == Vec2f(1, 1));
@@ -47,9 +46,9 @@ void test_widgets() {
         }
 
         {   // Parenting
-            Gui::RootElement root(Vec2i{ 1000, 1000 });
-            Gui::BaseElement par_el(Vec2f{ 0, 0 }, Vec2f{ 1, 1 }, &root);
-            Gui::BaseElement child_el(Vec2f{ 0, 0 }, Vec2f{ 1, 1 }, &par_el);
+            RootElement root(Vec2i{ 1000, 1000 });
+            BaseElement par_el(Vec2f{ 0, 0 }, Vec2f{ 1, 1 }, &root);
+            BaseElement child_el(Vec2f{ 0, 0 }, Vec2f{ 1, 1 }, &par_el);
 
             require(child_el.pos() == Vec2f(0.5f, 0.5f));
             require(child_el.size() == Vec2f(0.5f, 0.5f));

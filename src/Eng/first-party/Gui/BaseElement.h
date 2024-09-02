@@ -2,7 +2,7 @@
 
 #include <bitset>
 
-#include <Ren/MVec.h>
+#include "MVec.h"
 
 namespace Gui {
 // forward declare everything
@@ -17,9 +17,6 @@ class Image9Patch;
 class LinearLayout;
 class Renderer;
 class TypeMesh;
-
-using Ren::Vec2f;
-using Ren::Vec2i;
 
 enum class eFlags { Visible, Resizable };
 
@@ -55,7 +52,7 @@ class BaseElement {
     const Vec2i &pos_px() const { return dims_px_[0]; }
     const Vec2i &size_px() const { return dims_px_[1]; }
 
-    Ren::Vec2f ToLocal(const Ren::Vec2f &p) const { return 2.0f * (p - dims_[0]) / dims_[1] - Ren::Vec2f{1.0f, 1.0f}; }
+    Vec2f ToLocal(const Vec2f &p) const { return 2.0f * (p - dims_[0]) / dims_[1] - Vec2f{1.0f, 1.0f}; }
 
     virtual void Resize(const BaseElement *parent);
     virtual void Resize(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);

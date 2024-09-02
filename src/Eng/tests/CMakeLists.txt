@@ -18,10 +18,7 @@ endif()
 add_executable(test_Eng main.cpp
                         test_common.h
                         test_cmdline.cpp
-                        test_materials.cpp
-                        #test_object_pool.cpp
-                        test_unicode.cpp
-                        test_widgets.cpp)
+                        test_materials.cpp)
 
 target_link_libraries(test_Eng ${LIBS} Eng)
 

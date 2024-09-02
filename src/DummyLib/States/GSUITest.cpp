@@ -5,11 +5,11 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
-#include <Eng/gui/Image.h>
-#include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Renderer.h>
-#include <Eng/gui/Utils.h>
 #include <Eng/scene/SceneManager.h>
+#include <Gui/Image.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Renderer.h>
+#include <Gui/Utils.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/MemBuf.h>
@@ -32,7 +32,7 @@ GSUITest::GSUITest(Viewer *viewer) : GSBaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("dialog_font");
     // dialog_font_->set_scale(1.5f);
 
-    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{1.99f, 1.1f},
+    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Gui::Vec2f{-0.995f, -0.995f}, Gui::Vec2f{1.99f, 1.1f},
                                                   ui_root_, *dialog_font_);
 }
 
@@ -223,24 +223,24 @@ bool GSUITest::HandleInput(const Eng::InputManager::Event &evt) {
 
     switch (evt.type) {
     case Eng::RawInputEv::P1Down: {
-        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                             Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                             Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, true);
     } break;
     case Eng::RawInputEv::P2Down: {
 
     } break;
     case Eng::RawInputEv::P1Up: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, false);
     } break;
     case Eng::RawInputEv::P2Up: {
 
     } break;
     case Eng::RawInputEv::P1Move: {
-        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                             Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                             Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Hover(p);
     } break;
     case Eng::RawInputEv::P2Move: {

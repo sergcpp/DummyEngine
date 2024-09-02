@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eng/gui/BaseElement.h>
+#include <Gui/BaseElement.h>
 
 #include "SeqCanvasUI.h"
 #include "TimelineUI.h"
@@ -29,8 +29,8 @@ class SeqEditUI : public Gui::BaseElement {
 
     void Resize(const BaseElement *parent) override;
 
-    void Press(const Ren::Vec2f &p, bool push) override;
-    void Hover(const Ren::Vec2f &p) override;
+    void Press(const Gui::Vec2f &p, bool push) override;
+    void Hover(const Gui::Vec2f &p) override;
 
-    void PressRMB(const Ren::Vec2f &p, bool push);
+    void PressRMB(const Gui::Vec2f &p, bool push);
 };

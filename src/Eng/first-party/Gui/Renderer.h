@@ -2,22 +2,17 @@
 
 #include <vector>
 
-#include <Ren/Context.h>
-#include <Ren/Framebuffer.h>
-#include <Ren/MVec.h>
-#include <Ren/Pipeline.h>
-#include <Ren/Program.h>
-#include <Ren/RenderPass.h>
-#include <Ren/Texture.h>
-#include <Ren/TextureAtlas.h>
-#include <Ren/VertexInput.h>
+#include "../Ren/Context.h"
+#include "../Ren/Framebuffer.h"
+#include "../Ren/MVec.h"
+#include "../Ren/Pipeline.h"
+#include "../Ren/Program.h"
+#include "../Ren/RenderPass.h"
+#include "../Ren/Texture.h"
+#include "../Ren/TextureAtlas.h"
+#include "../Ren/VertexInput.h"
 
-#ifdef __GNUC__
-#define force_inline __attribute__((always_inline)) inline
-#endif
-#ifdef _MSC_VER
-#define force_inline __forceinline
-#endif
+#include "MVec.h"
 
 namespace Sys {
 template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
@@ -30,11 +25,6 @@ namespace Gui {
 enum class eBlendMode { Alpha, Color };
 enum class eDrawMode { Passthrough, DistanceField, BlitDistanceField };
 
-using Ren::Vec2f;
-using Ren::Vec2i;
-using Ren::Vec3f;
-using Ren::Vec4f;
-
 struct vertex_t {
     float pos[3];
     uint8_t col[4];
@@ -42,8 +32,8 @@ struct vertex_t {
 };
 static_assert(sizeof(vertex_t) == 24, "!");
 
-force_inline uint8_t f32_to_u8(float value) { return uint8_t(value * 255); }
-force_inline uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); }
+inline uint8_t f32_to_u8(float value) { return uint8_t(value * 255); }
+inline uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); }
 
 extern const uint8_t ColorWhite[4];
 extern const uint8_t ColorGrey[4];
@@ -66,7 +56,7 @@ class Renderer {
     bool Init();
     void Draw(int w, int h);
 
-    void PushClipArea(const Ren::Vec2f dims[2]);
+    void PushClipArea(const Vec2f dims[2]);
     void PopClipArea();
     const Vec2f *GetClipArea() const;
 
@@ -115,7 +105,7 @@ class Renderer {
     Ren::SyncFence buf_range_fences_[Ren::MaxFramesInFlight];
 #endif
 
-    Ren::Vec2f clip_area_stack_[MaxClipStackSize][2];
+    Vec2f clip_area_stack_[MaxClipStackSize][2];
     int clip_area_stack_size_ = 0;
 };
 } // namespace Gui

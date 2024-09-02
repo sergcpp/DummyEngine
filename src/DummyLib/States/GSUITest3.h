@@ -7,8 +7,8 @@
 
 #include <Eng/ViewerBase.h>
 #include <Eng/ViewerState.h>
-#include <Eng/gui/BaseElement.h>
-#include <Eng/gui/BitmapFont.h>
+#include <Gui/BaseElement.h>
+#include <Gui/BitmapFont.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>
@@ -47,8 +47,8 @@ class GSUITest3 : public GSBaseState {
     Ren::Tex2DRef page_tex_;
     Ren::MaterialRef orig_page_mat_, page_mat_;
 
-    std::optional<Ren::Vec2f> hit_point_screen_, hit_point_ndc_;
-    std::optional<Ren::Vec2f> hint_pos_;
+    std::optional<Gui::Vec2f> hit_point_screen_, hit_point_ndc_;
+    std::optional<Gui::Vec2f> hint_pos_;
 
     enum class eBookState {
         BkClosed,
@@ -67,7 +67,7 @@ class GSUITest3 : public GSBaseState {
     void Draw() override;
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
-    std::optional<Ren::Vec2f> MapPointToPageFramebuf(const Ren::Vec2f &p);
+    std::optional<Gui::Vec2f> MapPointToPageFramebuf(const Gui::Vec2f &p);
 
     void InitBookMaterials();
     void RedrawPages(Gui::Renderer *r);

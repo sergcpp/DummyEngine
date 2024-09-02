@@ -5,11 +5,11 @@
 #include <cassert>
 #include <fstream>
 
-#include <Ren/Context.h>
-#include <Ren/DebugMarker.h>
-#include <Ren/DescriptorPool.h>
-#include <Ren/VKCtx.h>
-#include <Sys/Json.h>
+#include "../Ren/Context.h"
+#include "../Ren/DebugMarker.h"
+#include "../Ren/DescriptorPool.h"
+#include "../Ren/VKCtx.h"
+#include "../Sys/Json.h"
 
 namespace UIRendererConstants {
 const int MaxVerticesPerRange = 64 * 1024;

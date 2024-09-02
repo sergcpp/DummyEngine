@@ -1,7 +1,7 @@
 #include "SeqCanvasUI.h"
 
-#include <Eng/gui/BitmapFont.h>
-#include <Eng/gui/Image.h>
+#include <Gui/BitmapFont.h>
+#include <Gui/Image.h>
 
 namespace SeqCanvasUIInternal {
 const int TrackCount = 8;
@@ -14,24 +14,24 @@ SeqCanvasUI::SeqCanvasUI(Ren::Context &ctx, const Gui::BitmapFont &font, const G
                          const Gui::BaseElement *parent)
     : Gui::BaseElement(pos, size, parent), font_(font), back_{ctx,
                                                               "assets_pc/textures/editor/canvas_back.uncompressed.tga",
-                                                              Ren::Vec2f{1.0f, 1.5f},
+                                                              Gui::Vec2f{1.0f, 1.5f},
                                                               1.0f,
-                                                              Ren::Vec2f{-1.0f, -1.0f},
-                                                              Ren::Vec2f{2.0f, 2.0f},
+                                                              Gui::Vec2f{-1.0f, -1.0f},
+                                                              Gui::Vec2f{2.0f, 2.0f},
                                                               this},
       time_cursor_{ctx,
                    "assets_pc/textures/editor/line_pointer.uncompressed.tga",
-                   Ren::Vec2f{1.0f, 1.5f},
+                   Gui::Vec2f{1.0f, 1.5f},
                    1.0f,
-                   Ren::Vec2f{-1.0f, -1.0f},
-                   Ren::Vec2f{2.0f, 2.0f},
+                   Gui::Vec2f{-1.0f, -1.0f},
+                   Gui::Vec2f{2.0f, 2.0f},
                    this},
-      element_normal_(ctx, "assets_pc/textures/editor/seq_el.uncompressed.tga", Ren::Vec2f{12.5f, 1.5f}, 1.0f,
-                      Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, this),
+      element_normal_(ctx, "assets_pc/textures/editor/seq_el.uncompressed.tga", Gui::Vec2f{12.5f, 1.5f}, 1.0f,
+                      Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, this),
       element_highlighted_(ctx, "assets_pc/textures/editor/seq_el_highlighted.uncompressed.tga",
-                           Ren::Vec2f{12.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, this),
-      end_(ctx, "assets_pc/textures/editor/canvas_end.uncompressed.tga", Ren::Vec2f{1.0f, 1.5f}, 1.0f,
-           Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, this) {
+                           Gui::Vec2f{12.5f, 1.5f}, 1.0f, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, this),
+      end_(ctx, "assets_pc/textures/editor/canvas_end.uncompressed.tga", Gui::Vec2f{1.0f, 1.5f}, 1.0f,
+           Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, this) {
     SeqCanvasUI::Resize(parent);
 }
 
@@ -48,7 +48,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
         const float y_coord = 1.0f - float(track + 1) * track_height;
 
         // draw background
-        back_.Resize(Ren::Vec2f{-1.0f, y_coord}, Ren::Vec2f{2.0f, track_height}, this);
+        back_.Resize(Gui::Vec2f{-1.0f, y_coord}, Gui::Vec2f{2.0f, track_height}, this);
         back_.Draw(r);
 
         // draw elements
@@ -59,7 +59,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
             std::string_view target = sequence_->GetTrackTarget(track);
             if (!name.empty() && !target.empty()) {
                 snprintf(str_buf, sizeof(str_buf), "%s|%s", name.data(), target.data());
-                font_.DrawText(r, str_buf, Ren::Vec2f{-1.0f + border_width, y_coord + font_height}, Gui::ColorBlack,
+                font_.DrawText(r, str_buf, Gui::Vec2f{-1.0f + border_width, y_coord + font_height}, Gui::ColorBlack,
                                this);
             }
 
@@ -71,11 +71,11 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                 const float x_end = GetPointFromTime(float(seq_action->time_end));
 
                 // text clip area in relative coordinates
-                Ren::Vec2f text_clip[2] = {
-                    SnapToPixels(Ren::Vec2f{x_beg + crop_region_width, y_coord + border_height}),
-                    Ren::Vec2f{x_end - x_beg - 2.0f * crop_region_width, track_height - 2.0f * border_height}};
+                Gui::Vec2f text_clip[2] = {
+                    SnapToPixels(Gui::Vec2f{x_beg + crop_region_width, y_coord + border_height}),
+                    Gui::Vec2f{x_end - x_beg - 2.0f * crop_region_width, track_height - 2.0f * border_height}};
                 // convert to absolute coordinates
-                text_clip[0] = pos() + 0.5f * (text_clip[0] + Ren::Vec2f(1, 1)) * size();
+                text_clip[0] = pos() + 0.5f * (text_clip[0] + Gui::Vec2f(1, 1)) * size();
                 text_clip[1] = 0.5f * text_clip[1] * size();
 
                 r->PushClipArea(text_clip);
@@ -88,17 +88,17 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                     const Ren::TextureRegionRef &t = seq_action->sound_wave_tex;
 
                     const Ren::Tex2DParams &p = t->params();
-                    const Ren::Vec2f uvs_px[] = {Ren::Vec2f{float(t->pos(0)), float(t->pos(1))},
-                                                 Ren::Vec2f{float(t->pos(0) + p.w), float(t->pos(1) + p.h)}};
+                    const Gui::Vec2f uvs_px[] = {Gui::Vec2f{float(t->pos(0)), float(t->pos(1))},
+                                                 Gui::Vec2f{float(t->pos(0) + p.w), float(t->pos(1) + p.h)}};
                     const int tex_layer = t->pos(2);
 
                     const float x_beg_sound = GetPointFromTime(float(seq_action->time_beg + seq_action->sound_offset));
                     const float x_end_sound = GetPointFromTime(float(seq_action->time_beg + seq_action->sound_offset) +
                                                                Eng::SeqAction::SoundWaveStepS * float(p.w));
-                    el->Resize(SnapToPixels(Ren::Vec2f{x_beg_sound, y_coord + border_height}),
-                               Ren::Vec2f{x_end_sound - x_beg_sound, track_height - 2.0f * border_height}, this);
+                    el->Resize(SnapToPixels(Gui::Vec2f{x_beg_sound, y_coord + border_height}),
+                               Gui::Vec2f{x_end_sound - x_beg_sound, track_height - 2.0f * border_height}, this);
 
-                    const Ren::Vec2f pos[2] = {el->dims()[0], el->dims()[0] + el->dims()[1]};
+                    const Gui::Vec2f pos[2] = {el->dims()[0], el->dims()[0] + el->dims()[1]};
 
                     r->PushImageQuad(Gui::eDrawMode::Passthrough, tex_layer, pos, uvs_px);
                 }
@@ -108,21 +108,21 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
 
                 float y_text_pos = y_coord + track_height - 2.0f * border_height - font_height;
 
-                font_.DrawText(r, str_buf, SnapToPixels(Ren::Vec2f{x_beg + 1.25f * crop_region_width, y_text_pos}),
+                font_.DrawText(r, str_buf, SnapToPixels(Gui::Vec2f{x_beg + 1.25f * crop_region_width, y_text_pos}),
                                Gui::ColorCyan, this);
                 y_text_pos -= font_height;
 
                 if (seq_action->anim_ref) {
                     const char *anim_name = seq_action->anim_ref->name().c_str();
                     font_.DrawText(r, anim_name,
-                                   SnapToPixels(Ren::Vec2f{x_beg + 1.25f * crop_region_width, y_text_pos}),
+                                   SnapToPixels(Gui::Vec2f{x_beg + 1.25f * crop_region_width, y_text_pos}),
                                    Gui::ColorWhite, this);
                 }
 
                 r->PopClipArea();
 
-                el->Resize(SnapToPixels(Ren::Vec2f{x_beg, y_coord + border_height}),
-                           Ren::Vec2f{x_end - x_beg, track_height - 2.0f * border_height}, this);
+                el->Resize(SnapToPixels(Gui::Vec2f{x_beg, y_coord + border_height}),
+                           Gui::Vec2f{x_end - x_beg, track_height - 2.0f * border_height}, this);
                 el->Draw(r);
             }
         }
@@ -130,14 +130,14 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
 
     if (time_cur_ >= time_range_[0] && time_cur_ <= time_range_[1]) {
         // draw line pointer
-        const Ren::Vec2f time_pos = SnapToPixels(Ren::Vec2f{
+        const Gui::Vec2f time_pos = SnapToPixels(Gui::Vec2f{
             -1.0f + 2.0f * (time_cur_ - time_range_[0]) / (time_range_[1] - time_range_[0]) - 10.0f / dims_px_[1][0],
             -1.0f});
 
         time_cursor_.ResizeToContent(time_pos, this);
 
         const float width = 2.0f * float(time_cursor_.size_px()[0]) / float(size_px()[0]);
-        time_cursor_.Resize(time_pos, Ren::Vec2f{width, 2.0f}, this);
+        time_cursor_.Resize(time_pos, Gui::Vec2f{width, 2.0f}, this);
 
         time_cursor_.Draw(r);
     }
@@ -147,14 +147,14 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
         if (end_time >= time_range_[0] && end_time <= time_range_[1]) {
             const float xpos = GetPointFromTime(end_time) - 10.0f / dims_px_[1][0];
 
-            end_.Resize(Ren::Vec2f{xpos, -1.0f}, Ren::Vec2f{20.0f / dims_px_[1][0], 2.0f}, this);
+            end_.Resize(Gui::Vec2f{xpos, -1.0f}, Gui::Vec2f{20.0f / dims_px_[1][0], 2.0f}, this);
             end_.Draw(r);
         }
 
         std::string_view lookup_name = sequence_->lookup_name();
         if (!lookup_name.empty()) {
             const float width = font_.GetWidth(lookup_name, this);
-            font_.DrawText(r, lookup_name, Ren::Vec2f{1.0f - width, -1.0f + font_height}, Gui::ColorWhite, this);
+            font_.DrawText(r, lookup_name, Gui::Vec2f{1.0f - width, -1.0f + font_height}, Gui::ColorWhite, this);
         }
     }
 }
@@ -165,7 +165,7 @@ void SeqCanvasUI::Resize(const Gui::BaseElement *parent) {
     back_.Resize(this);
 }
 
-void SeqCanvasUI::Press(const Ren::Vec2f &p, const bool push) {
+void SeqCanvasUI::Press(const Gui::Vec2f &p, const bool push) {
     if (push) {
         const Eng::SeqAction *sel_action = GetActionAtPoint(p, selected_index_, selected_drag_flags_);
         if (sel_action) {
@@ -174,14 +174,14 @@ void SeqCanvasUI::Press(const Ren::Vec2f &p, const bool push) {
             selected_time_end_ = float(sel_action->time_end);
         }
     } else {
-        selected_index_ = Ren::Vec2i{-1, -1};
+        selected_index_ = Gui::Vec2i{-1, -1};
     }
 }
 
-void SeqCanvasUI::Hover(const Ren::Vec2f &p) {
+void SeqCanvasUI::Hover(const Gui::Vec2f &p) {
     using namespace SeqCanvasUIInternal;
 
-    if (selected_index_ != Ren::Vec2i{-1, -1}) {
+    if (selected_index_ != Gui::Vec2i{-1, -1}) {
         Eng::SeqAction *action = sequence_->GetAction(selected_index_[0], selected_index_[1]);
         if (action) {
             const float time_prev = GetTimeFromPoint(selected_pos_[0]);
@@ -221,7 +221,7 @@ float SeqCanvasUI::GetPointFromTime(const float t) {
     return -1.0f + param * 2.0f;
 }
 
-Eng::SeqAction *SeqCanvasUI::GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &out_index, uint32_t &flags) {
+Eng::SeqAction *SeqCanvasUI::GetActionAtPoint(const Gui::Vec2f &p, Gui::Vec2i &out_index, uint32_t &flags) {
     using namespace SeqCanvasUIInternal;
 
     // check elements
@@ -262,11 +262,11 @@ Eng::SeqAction *SeqCanvasUI::GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &o
             }
         }
     }
-    out_index = Ren::Vec2i{-1, -1};
+    out_index = Gui::Vec2i{-1, -1};
     return nullptr;
 }
 
-Ren::Vec2f SeqCanvasUI::SnapToPixels(const Ren::Vec2f &p) {
-    return Ren::Vec2f{std::round(0.5f * p[0] * dims_px_[1][0]) / (0.5f * float(dims_px_[1][0])),
+Gui::Vec2f SeqCanvasUI::SnapToPixels(const Gui::Vec2f &p) {
+    return Gui::Vec2f{std::round(0.5f * p[0] * dims_px_[1][0]) / (0.5f * float(dims_px_[1][0])),
                       std::round(0.5f * p[1] * dims_px_[1][1]) / (0.5f * float(dims_px_[1][1]))};
 }

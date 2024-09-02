@@ -13,7 +13,7 @@
 #define force_inline __forceinline
 #endif
 
-namespace Ren {
+namespace Gui {
 enum eUninitialized { Uninitialize };
 
 template <typename T> force_inline T Pi() { return T(3.1415926535897932384626433832795); }
@@ -294,6 +294,6 @@ using Vec4f = Vec<float, 4>;
 using Vec2d = Vec<double, 2>;
 using Vec3d = Vec<double, 3>;
 using Vec4d = Vec<double, 4>;
-} // namespace Ren
+} // namespace Gui
 
 #undef force_inline

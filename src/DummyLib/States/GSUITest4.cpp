@@ -5,16 +5,16 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
-#include <Eng/gui/EditBox.h>
-#include <Eng/gui/Image.h>
-#include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Renderer.h>
-#include <Eng/gui/Utils.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/FreeCamController.h>
 #include <Eng/utils/ScriptedDialog.h>
 #include <Eng/utils/ScriptedSequence.h>
+#include <Gui/EditBox.h>
+#include <Gui/Image.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Renderer.h>
+#include <Gui/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 #include <Sys/MemBuf.h>
@@ -70,13 +70,13 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
     dialog_edit_ui_->edit_cur_seq_signal.Connect<GSUITest4, &GSUITest4::OnEditSequence>(this);
 
     seq_cap_ui_ =
-        std::make_unique<CaptionsUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
+        std::make_unique<CaptionsUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
     dial_ctrl_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(seq_cap_ui_.get());
     dial_ctrl_->push_choice_signal.Connect<DialogUI, &DialogUI::OnPushChoice>(dialog_ui_.get());
     dial_ctrl_->switch_sequence_signal.Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
     dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
 
-    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_,
+    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_,
                                                   *dialog_font_);
     word_puzzle_->puzzle_solved_signal.Connect<DialogController, &DialogController::ContinueChoice>(dial_ctrl_.get());
 }
@@ -350,8 +350,8 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
 
     switch (evt.type) {
     case Eng::RawInputEv::P1Down: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && dialog_edit_ui_->Check(p)) {
             dialog_edit_ui_->Press(p, true);
             input_processed = true;
@@ -364,8 +364,8 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
         word_puzzle_->Press(p, true);
     } break;
     case Eng::RawInputEv::P2Down: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && dialog_edit_ui_->Check(p)) {
             dialog_edit_ui_->PressRMB(p, true);
             input_processed = true;
@@ -377,8 +377,8 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::P1Up: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             dialog_edit_ui_->Press(p, false);
             input_processed = dialog_edit_ui_->Check(p);
@@ -391,8 +391,8 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
         cam_ctrl_->HandleInput(evt);
     } break;
     case Eng::RawInputEv::P2Up: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             dialog_edit_ui_->PressRMB(p, false);
             input_processed = dialog_edit_ui_->Check(p);
@@ -402,8 +402,8 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::P1Move: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             dialog_edit_ui_->Hover(p);
         } else if (dial_edit_mode_ == 1) {

@@ -3,6 +3,8 @@
 #include <random>
 #include <thread>
 
+#include <Gui/BaseElement.h>
+#include <Gui/Renderer.h>
 #include <Ren/Context.h>
 #include <Snd/Context.h>
 #include <Sys/AssetFileIO.h>
@@ -13,8 +15,6 @@
 
 #include "Log.h"
 #include "ViewerStateManager.h"
-#include "gui/BaseElement.h"
-#include "gui/Renderer.h"
 #include "renderer/Renderer.h"
 #include "scene/PhysicsManager.h"
 #include "scene/SceneManager.h"
@@ -85,7 +85,7 @@ void Eng::ViewerBase::Resize(const int w, const int h) {
 
     ren_ctx_->Resize(width, height);
 
-    ui_root_->set_zone(Ren::Vec2i{width, height});
+    ui_root_->set_zone(Gui::Vec2i{width, height});
     ui_root_->Resize(nullptr);
 }
 

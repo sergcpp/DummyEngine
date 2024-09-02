@@ -3,14 +3,9 @@
 #include <cstdint>
 #include <utility>
 
-#include <Ren/MVec.h>
+#include "MVec.h"
 
 namespace Gui {
-using Ren::Vec2d;
-using Ren::Vec2f;
-using Ren::Vec2i;
-using Ren::Vec4f;
-
 Vec2f MapPointToScreen(const Vec2i &p, const Vec2i &res);
 bool ClipQuadToArea(Vec4f pos[2], const Vec2f clip[2]);
 int ClipPolyToArea(Vec4f *vertices, int vertex_count, const Vec2f clip[2]);

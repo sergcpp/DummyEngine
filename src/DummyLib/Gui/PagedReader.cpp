@@ -1,8 +1,8 @@
 #include "PagedReader.h"
 
-#include <Eng/gui/BitmapFont.h>
-#include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Utils.h>
+#include <Gui/BitmapFont.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Utils.h>
 #include <Ren/Context.h>
 #include <Sys/Json.h>
 
@@ -24,8 +24,8 @@ PagedReader::PagedReader(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Ve
     : BaseElement(pos, size, parent), parent_(parent), log_(ctx.log()), main_font_(std::move(main_font)),
       emph_font_(std::move(emph_font)), caption_font_(std::move(caption_font)), cur_chapter_(0), cur_page_(0) {
     using namespace PagedReaderInternal;
-    background_small_ = std::make_unique<Gui::Image9Patch>(ctx, Frame01, Ren::Vec2f{3.0f, 3.0f}, 1.0f,
-                                                           Ren::Vec2f{0.0f, 0.0f}, Ren::Vec2f{1.0f, 1.0f}, parent);
+    background_small_ = std::make_unique<Gui::Image9Patch>(ctx, Frame01, Gui::Vec2f{3.0f, 3.0f}, 1.0f,
+                                                           Gui::Vec2f{0.0f, 0.0f}, Gui::Vec2f{1.0f, 1.0f}, parent);
 }
 
 void PagedReader::Clear() {
@@ -128,7 +128,7 @@ void PagedReader::Draw(Gui::Renderer *r) {
     DrawCurrentPage(r);
 }
 
-void PagedReader::DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos, const Gui::BaseElement *parent) {
+void PagedReader::DrawHint(Gui::Renderer *r, const Gui::Vec2f &pos, const Gui::BaseElement *parent) {
     char portion_buf[1024];
     int portion_buf_size = 0;
 
@@ -169,7 +169,7 @@ void PagedReader::DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos, const Gui::B
 
         const float width = main_font_->GetWidth(portion_buf, parent), height = main_font_->height(parent);
 
-        background_small_->Resize(pos - Ren::Vec2f{0.025f, 0.025f}, Ren::Vec2f{width + 0.05f, height + 0.05f}, parent);
+        background_small_->Resize(pos - Gui::Vec2f{0.025f, 0.025f}, Gui::Vec2f{width + 0.05f, height + 0.05f}, parent);
         background_small_->Draw(r);
 
         main_font_->DrawText(r, portion_buf, pos, color_white, parent);
@@ -203,7 +203,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
     const PageData &page = chapter.pages[cur_page_];
 
     if (cur_page_ == 0) {
-        caption_font_->DrawText(r, chapter.caption.c_str(), Ren::Vec2f{x_offset, y_offset}, color_white, parent_);
+        caption_font_->DrawText(r, chapter.caption.c_str(), Gui::Vec2f{x_offset, y_offset}, color_white, parent_);
         y_offset -= paragraph_height;
     }
 
@@ -588,8 +588,8 @@ void PagedReader::UpdatePages() {
 
                         const float text_width = main_font_->GetWidth(portion_buf, parent_);
 
-                        const rect_t text_rect = {Ren::Vec2f{x_offset, y_offset},
-                                                  Ren::Vec2f{text_width, main_font_height}};
+                        const rect_t text_rect = {Gui::Vec2f{x_offset, y_offset},
+                                                  Gui::Vec2f{text_width, main_font_height}};
 
                         chapter.sentence_rects.push_back(text_rect);
 

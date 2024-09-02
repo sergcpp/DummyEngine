@@ -1,8 +1,8 @@
 #include "CaptionsUI.h"
 
-#include <Eng/gui/BitmapFont.h>
+#include <Gui/BitmapFont.h>
 
-CaptionsUI::CaptionsUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, Gui::BaseElement *parent,
+CaptionsUI::CaptionsUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, Gui::BaseElement *parent,
                        const Gui::BitmapFont &font)
     : Gui::BaseElement(pos, size, parent), font_(font) {}
 
@@ -15,7 +15,7 @@ void CaptionsUI::Draw(Gui::Renderer *r) {
 
         const float width = font_.GetWidth(cap.text, this);
 
-        font_.DrawText(r, cap.text, Ren::Vec2f{-0.5f * width, y_coord}, cap.color, this);
+        font_.DrawText(r, cap.text, Gui::Vec2f{-0.5f * width, y_coord}, cap.color, this);
         y_coord += font_height;
     }
 }

@@ -5,16 +5,16 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
-#include <Eng/gui/EditBox.h>
-#include <Eng/gui/Image.h>
-#include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Renderer.h>
-#include <Eng/gui/Utils.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/FreeCamController.h>
 #include <Eng/utils/ScriptedDialog.h>
 #include <Eng/utils/ScriptedSequence.h>
+#include <Gui/EditBox.h>
+#include <Gui/Image.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Renderer.h>
+#include <Gui/Utils.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/MemBuf.h>
@@ -59,7 +59,7 @@ GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
     dialog_edit_ui_->set_cur_sequence_signal.Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
 
     seq_cap_ui_ =
-        std::make_unique<CaptionsUI>(Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
+        std::make_unique<CaptionsUI>(Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
     // test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
     //    seq_cap_ui_.get());
 
@@ -310,8 +310,8 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
 
     switch (evt.type) {
     case Eng::RawInputEv::P1Down: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->Press(p, true);
             input_processed = true;
@@ -321,8 +321,8 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::P2Down: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->PressRMB(p, true);
             input_processed = true;
@@ -332,8 +332,8 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::P1Up: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Press(p, false);
             input_processed = seq_edit_ui_->Check(p);
@@ -343,8 +343,8 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::P2Up: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->PressRMB(p, false);
             input_processed = seq_edit_ui_->Check(p);
@@ -354,8 +354,8 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::P1Move: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->Hover(p);
         } else if (dial_edit_mode_ == 1) {

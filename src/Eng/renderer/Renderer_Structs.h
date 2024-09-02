@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <Ren/MMat.h>
+#include <Ren/MQuat.h>
 #include <Ren/SmallVector.h>
 
 #include <Ren/Buffer.h>

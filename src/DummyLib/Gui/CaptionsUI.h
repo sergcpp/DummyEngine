@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-#include <Eng/gui/BaseElement.h>
+#include <Gui/BaseElement.h>
 
 namespace Gui {
 class BitmapFont;
@@ -19,7 +19,7 @@ class CaptionsUI : public Gui::BaseElement {
     int captions_count_ = 0;
 
   public:
-    CaptionsUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, Gui::BaseElement *parent, const Gui::BitmapFont &font);
+    CaptionsUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, Gui::BaseElement *parent, const Gui::BitmapFont &font);
 
     void Draw(Gui::Renderer *r) override;
 

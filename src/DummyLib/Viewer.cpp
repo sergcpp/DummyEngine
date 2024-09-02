@@ -84,7 +84,7 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
     }
 
     // create UI for performance debugging
-    debug_ui_ = std::make_unique<DebugInfoUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_.get(),
+    debug_ui_ = std::make_unique<DebugInfoUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(),
                                               font_storage_->FindFont("main_font"));
 
 #if defined(__ANDROID__)

@@ -17,14 +17,14 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
-#include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Renderer.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/PhysicsManager.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/Load.h>
 #include <Eng/utils/Random.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Renderer.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -76,7 +76,7 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
 
     cmdline_back_ = std::make_unique<Gui::Image9Patch>(
         *ren_ctx_, (std::string(ASSETS_BASE_PATH) + "/textures/editor/dial_edit_back.uncompressed.tga").c_str(),
-        Ren::Vec2f{1.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_);
+        Gui::Vec2f{1.5f, 1.5f}, 1.0f, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_);
 
     random_ = viewer->random();
 
@@ -918,16 +918,16 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
         const float total_height = (float(MAX_CMD_LINES) + 0.4f) * font_height;
 
-        cmdline_back_->Resize(Ren::Vec2f{-1.0f, 1.0f - total_height}, Ren::Vec2f{2.0f, total_height}, root);
+        cmdline_back_->Resize(Gui::Vec2f{-1.0f, 1.0f - total_height}, Gui::Vec2f{2.0f, total_height}, root);
         cmdline_back_->Draw(r);
 
         for (size_t i = 0; i < cmdline_history_.size(); i++) {
             const std::string &cmd = cmdline_history_[i];
 
-            const float width = font_->DrawText(r, cmd.c_str(), Ren::Vec2f{-1, cur_y}, text_color, root);
+            const float width = font_->DrawText(r, cmd.c_str(), Gui::Vec2f{-1, cur_y}, text_color, root);
             if (i == cmdline_history_.size() - 1 && cmdline_cursor_blink_us_ < 500000) {
                 // draw cursor
-                font_->DrawText(r, "_", Ren::Vec2f{-1.0f + width, cur_y}, text_color, root);
+                font_->DrawText(r, "_", Gui::Vec2f{-1.0f + width, cur_y}, text_color, root);
             }
             cur_y -= font_height;
         }
@@ -937,7 +937,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
             Ren::String hint_str;
             int index = cmdline_->NextHint(cmd, -1, hint_str);
             while (index != -1) {
-                font_->DrawText(r, hint_str.c_str(), Ren::Vec2f{-1.0f, cur_y}, text_color, root);
+                font_->DrawText(r, hint_str.c_str(), Gui::Vec2f{-1.0f, cur_y}, text_color, root);
                 cur_y -= font_height;
                 index = cmdline_->NextHint(cmd, index, hint_str);
             }

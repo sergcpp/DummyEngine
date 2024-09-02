@@ -4,9 +4,9 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
-#include <Eng/gui/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
+#include <Gui/Renderer.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Sys/Time_.h>

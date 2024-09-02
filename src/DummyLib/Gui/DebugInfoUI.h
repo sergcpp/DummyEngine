@@ -3,7 +3,7 @@
 #include <memory>
 
 #include <Eng/ViewerBase.h>
-#include <Eng/gui/BaseElement.h>
+#include <Gui/BaseElement.h>
 
 namespace Eng {
 struct BackendInfo;
@@ -51,7 +51,7 @@ class DebugInfoUI : public Gui::BaseElement {
     } prev_timing_info_, cur_timing_info_;
 
   public:
-    DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const BaseElement *parent, const Gui::BitmapFont *font);
+    DebugInfoUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent, const Gui::BitmapFont *font);
 
     void UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
                     const Eng::ItemsInfo &items_info, bool debug_items);

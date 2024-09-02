@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include <Eng/gui/BaseElement.h>
+#include <Gui/BaseElement.h>
 #include <Ren/Fwd.h>
 
 namespace Gui {
@@ -52,7 +52,7 @@ class PagedReader : public Gui::BaseElement {
     // std::string                         cur_text_data_;
 
     int sentence_to_translate_ = -1;
-    Ren::Vec2f debug_point_;
+    Gui::Vec2f debug_point_;
 
     void UpdatePages();
     void DrawCurrentPage(Gui::Renderer *r) const;
@@ -75,7 +75,7 @@ class PagedReader : public Gui::BaseElement {
     void Resize(const BaseElement *parent) override;
 
     void Draw(Gui::Renderer *r) override;
-    void DrawHint(Gui::Renderer *r, const Ren::Vec2f &pos, const Gui::BaseElement *parent);
+    void DrawHint(Gui::Renderer *r, const Gui::Vec2f &pos, const Gui::BaseElement *parent);
 
     void Press(const Gui::Vec2f &p, bool push) override;
 };

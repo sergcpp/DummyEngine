@@ -1,10 +1,10 @@
 #include "Utils.h"
 
 #include <cassert>
-#include <memory>
 #include <limits>
+#include <memory>
 
-#include <Ren/MMat.h>
+#include "MVec.h"
 
 #define _abs(x) (((x) < 0.0) ? -(x) : (x))
 
@@ -46,7 +46,7 @@ static int solve_cubic(double a, double b, double c, double x[3]) {
     using namespace GuiInternal;
 
     const double eps = std::numeric_limits<double>::epsilon();
-    const double TwoPi = 2.0 * Ren::Pi<double>();
+    const double TwoPi = 2.0 * Gui::Pi<double>();
 
     const double a2 = a * a;
     double q = (a2 - 3.0 * b) / 9.0;
@@ -345,7 +345,6 @@ void Gui::DrawBezier3ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
 
 Gui::dist_result_t Gui::Bezier1Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p) {
     using namespace GuiInternal;
-    using namespace Ren;
 
     const Vec2d pp0 = p - p0, p10 = p1 - p0;
     const double t_unclumped = Dot(pp0, p10) / Dot(p10, p10);
@@ -378,7 +377,6 @@ Gui::dist_result_t Gui::Bezier1Distance(const Vec2d &p0, const Vec2d &p1, const 
 
 Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, const Vec2d &p) {
     using namespace GuiInternal;
-    using namespace Ren;
 
     const Vec2d _p = p - p0, _p1 = p1 - p0, _p2 = p0 - 2 * p1 + p2;
 
@@ -449,9 +447,9 @@ Gui::dist_result_t Gui::Bezier3Distance(const Vec2d &p0, const Vec2d &p1, const 
 }
 
 void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_soft_angle_rad) {
-    using namespace Ren;
-    if (count == 1)
+    if (count == 1) {
         return;
+    }
 
     if (Distance(segs[0].p0, segs[count - 1].p1) < std::numeric_limits<double>::epsilon()) {
         segs[0].is_closed = true;

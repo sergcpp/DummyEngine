@@ -2,7 +2,7 @@
 
 #include <Eng/ViewerBase.h>
 #include <Eng/ViewerState.h>
-#include <Eng/gui/BaseElement.h>
+#include <Gui/BaseElement.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>

@@ -3,7 +3,7 @@
 #include <functional>
 #include <string_view>
 
-#include <Eng/gui/BaseElement.h>
+#include <Gui/BaseElement.h>
 #include <Sys/Signal_.h>
 
 class DialogUI : public Gui::BaseElement {
@@ -19,7 +19,7 @@ class DialogUI : public Gui::BaseElement {
 
     int hovered_choice_ = -1, clicked_choice_ = -1;
 
-    void IterateChoices(const std::function<bool(int i, const Ren::Vec2f &pos, const Ren::Vec2f &size)> &callback);
+    void IterateChoices(const std::function<bool(int i, const Gui::Vec2f &pos, const Gui::Vec2f &size)> &callback);
 
   public:
     DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent, const Gui::BitmapFont &font,
@@ -32,8 +32,8 @@ class DialogUI : public Gui::BaseElement {
     void Resize(const Gui::BaseElement *parent) override;
     using BaseElement::Resize;
 
-    void Press(const Ren::Vec2f &p, bool push) override;
-    void Hover(const Ren::Vec2f &p) override;
+    void Press(const Gui::Vec2f &p, bool push) override;
+    void Hover(const Gui::Vec2f &p) override;
 
     void OnPushChoice(std::string_view key, std::string_view text, int off);
 

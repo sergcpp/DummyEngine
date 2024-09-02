@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Eng/gui/Image9Patch.h>
-#include <Sys/Signal_.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Signal.h>
 
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
@@ -58,7 +58,7 @@ class WordPuzzleUI : public Gui::BaseElement {
     void UpdateTextBuffer();
     void UpdateState(double cur_time_s);
 
-    Ren::Vec2f DrawTextBuffer(Gui::Renderer *r, const char *text_data, int len, Ren::Vec2f draw_offset,
+    Gui::Vec2f DrawTextBuffer(Gui::Renderer *r, const char *text_data, int len, Gui::Vec2f draw_offset,
                               std::vector<rect_t> &out_options_rects, int option_start,
                               std::vector<rect_t> &out_hint_rects, int hint_start);
 
@@ -80,5 +80,5 @@ class WordPuzzleUI : public Gui::BaseElement {
     void Hover(const Gui::Vec2f &p) override;
     void Press(const Gui::Vec2f &p, bool push) override;
 
-    Sys::SignalN<void()> puzzle_solved_signal;
+    Gui::SignalN<void()> puzzle_solved_signal;
 };

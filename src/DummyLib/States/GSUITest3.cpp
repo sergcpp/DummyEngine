@@ -5,11 +5,11 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
-#include <Eng/gui/Image.h>
-#include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Utils.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
+#include <Gui/Image.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
@@ -254,7 +254,7 @@ void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSUITest3Internal;
 
     if (hit_point_screen_.has_value()) {
-        paged_reader_->DrawHint(r, hit_point_screen_.value() + Ren::Vec2f{0.0f, 0.05f}, root);
+        paged_reader_->DrawHint(r, hit_point_screen_.value() + Gui::Vec2f{0.0f, 0.05f}, root);
     }
 
     GSBaseState::DrawUI(r, root);
@@ -326,8 +326,8 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
 
     switch (evt.type) {
     case Eng::RawInputEv::P1Down: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (book_state_ == eBookState::BkOpened) {
         }
     } break;
@@ -335,8 +335,8 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
 
     } break;
     case Eng::RawInputEv::P1Up: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
 
         bool blocked = false;
 
@@ -394,8 +394,8 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
     case Eng::RawInputEv::P2Up: {
     } break;
     case Eng::RawInputEv::P1Move: {
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         paged_reader_->Hover(p);
 
         hit_point_screen_ = {};
@@ -428,7 +428,7 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
     return true;
 }
 
-std::optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p) {
+std::optional<Gui::Vec2f> GSUITest3::MapPointToPageFramebuf(const Gui::Vec2f &p) {
     using namespace GSUITest3Internal;
     using namespace Ren;
 
@@ -451,7 +451,7 @@ std::optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p)
     const float t = -(page_plane[3] + ray_origin_ws[1]) / ray_dir_ws[1];
     const Vec3f inter_point = ray_origin_ws + t * ray_dir_ws;
 
-    std::optional<Ren::Vec2f> ret;
+    std::optional<Gui::Vec2f> ret;
 
     if (inter_point[0] < page_corners_pos[0][0] && inter_point[0] > page_corners_pos[1][0] &&
         inter_point[2] < page_corners_pos[0][2] && inter_point[2] > page_corners_pos[1][2]) {
@@ -471,7 +471,7 @@ std::optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p)
         // std::swap(inter_point_ndc[0], inter_point_ndc[1]);
 
         log_->Info("Hit point NDC: %f %f", inter_point_ndc[0], inter_point_ndc[1]);
-        ret = inter_point_ndc;
+        ret = Gui::Vec2f{inter_point_ndc[0], inter_point_ndc[1]};
     } else {
         log_->Info("No hit!");
     }

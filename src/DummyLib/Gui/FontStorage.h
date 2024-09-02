@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include <Eng/gui/BitmapFont.h>
+#include <Gui/BitmapFont.h>
 
 class FontStorage {
     std::vector<std::pair<std::string, std::unique_ptr<Gui::BitmapFont>>> fonts_;

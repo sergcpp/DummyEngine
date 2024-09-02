@@ -10,8 +10,6 @@
 #endif
 
 namespace Ren {
-template <typename T> force_inline T Pi() { return T(3.1415926535897932384626433832795); }
-
 template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
   public:
     force_inline explicit Mat(eUninitialized) noexcept {}

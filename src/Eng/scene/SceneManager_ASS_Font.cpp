@@ -9,13 +9,11 @@
 
 #include <Ren/TextureSplitter.h>
 
-#include "../gui/BitmapFont.h"
-#include "../gui/Utils.h"
+#include <Gui/BitmapFont.h>
+#include <Gui/Utils.h>
 
 bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file,
                                        Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &) {
-    using namespace Ren;
-
     ctx.log->Info("Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
@@ -141,17 +139,18 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
                 const int vertex_count = stbtt_GetGlyphShape(&font, glyph_index, &vertices);
 
                 { // transform input data
-                    const auto pos_offset = Vec2d{double(padding + sdf_radius_px), double(padding + sdf_radius_px)};
+                    const auto pos_offset =
+                        Gui::Vec2d{double(padding + sdf_radius_px), double(padding + sdf_radius_px)};
 
-                    Vec2i cur_p;
+                    Gui::Vec2i cur_p;
 
                     for (int j = 0; j < vertex_count; j++) {
                         const stbtt_vertex &v = vertices[j];
 
-                        const Vec2d p0 = pos_offset + Vec2d{cur_p - Vec2i{x0, y0}} * scale,
-                                    c0 = pos_offset + Vec2d{double(v.cx - x0), double(v.cy - y0)} * scale,
-                                    c1 = pos_offset + Vec2d{double(v.cx1 - x0), double(v.cy1 - y0)} * scale,
-                                    p1 = pos_offset + Vec2d{double(v.x - x0), double(v.y - y0)} * scale;
+                        const Gui::Vec2d p0 = pos_offset + Gui::Vec2d{cur_p - Gui::Vec2i{x0, y0}} * scale,
+                                         c0 = pos_offset + Gui::Vec2d{double(v.cx - x0), double(v.cy - y0)} * scale,
+                                         c1 = pos_offset + Gui::Vec2d{double(v.cx1 - x0), double(v.cy1 - y0)} * scale,
+                                         p1 = pos_offset + Gui::Vec2d{double(v.x - x0), double(v.y - y0)} * scale;
 
                         if (v.type == STBTT_vmove) {
                             if (shapes.empty() || !shapes.back().empty()) {
@@ -166,7 +165,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
                                 {order, false /* is_closed */, false /* is_hard */, p0, p1, c0, c1});
                         }
 
-                        cur_p = Vec2i{v.x, v.y};
+                        cur_p = Gui::Vec2i{v.x, v.y};
                     }
                 }
 
@@ -186,8 +185,8 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
 
                         for (int dy = 0; dy < samples; dy++) {
                             for (int dx = 0; dx < samples; dx++) {
-                                const auto p = Vec2d{double(x) + (0.5 + double(dx)) / samples,
-                                                     double(y) + (0.5 + double(dy)) / samples};
+                                const auto p = Gui::Vec2d{double(x) + (0.5 + double(dx)) / samples,
+                                                          double(y) + (0.5 + double(dy)) / samples};
 
                                 double min_sdist = std::numeric_limits<double>::max(),
                                        min_dot = std::numeric_limits<double>::lowest();
@@ -230,7 +229,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
                 // Loop through image pixels
                 for (int y = 0; y < glyph_res[1]; y++) {
                     for (int x = 0; x < glyph_res[0]; x++) {
-                        const auto p = Vec2d{double(x) + 0.5, double(y) + 0.5};
+                        const auto p = Gui::Vec2d{double(x) + 0.5, double(y) + 0.5};
 
                         // Per channel distances (used for multi-channel sdf)
                         Gui::dist_result_t min_result[3];
@@ -245,8 +244,8 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
 
                         for (const bezier_shape &sh : shapes) {
                             int edge_color_index = 0;
-                            static const Vec3i edge_colors[] = {Vec3i{255, 0, 255}, Vec3i{255, 255, 0},
-                                                                Vec3i{0, 255, 255}};
+                            static const Gui::Vec3i edge_colors[] = {Gui::Vec3i{255, 0, 255}, Gui::Vec3i{255, 255, 0},
+                                                                     Gui::Vec3i{0, 255, 255}};
 
                             for (int i = 0; i < int(sh.size()); i++) {
                                 const Gui::bezier_seg_t &seg = sh[i];
@@ -263,7 +262,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
                                         }
                                     }
                                 }
-                                const Vec3i &edge_color = edge_colors[edge_color_index];
+                                const Gui::Vec3i &edge_color = edge_colors[edge_color_index];
 
                                 for (int j = 0; j < 3; j++) {
                                     if (edge_color[j]) {
@@ -291,13 +290,13 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
                             uint8_t out_val = 0;
                             if (min_result[j].sdist != std::numeric_limits<double>::max()) {
                                 min_result[j].pseudodist =
-                                    Clamp(0.5 + (min_result[j].pseudodist / (2.0 * sdf_radius_px)), 0.0, 1.0);
+                                    Gui::Clamp(0.5 + (min_result[j].pseudodist / (2.0 * sdf_radius_px)), 0.0, 1.0);
                                 out_val = (uint8_t)std::max(std::min(int(255 * min_result[j].pseudodist), 255), 0);
                             }
                             out_pixel[j] = out_val;
                         }
 
-                        min_sdf_sdist = Clamp(0.5 + (min_sdf_sdist / (2.0 * sdf_radius_px)), 0.0, 1.0);
+                        min_sdf_sdist = Gui::Clamp(0.5 + (min_sdf_sdist / (2.0 * sdf_radius_px)), 0.0, 1.0);
                         out_pixel[3] = (uint8_t)std::max(std::min(int(255 * min_sdf_sdist), 255), 0);
                     }
                 }

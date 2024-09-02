@@ -5,12 +5,12 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
-#include <Eng/gui/EditBox.h>
-#include <Eng/gui/Image.h>
-#include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Utils.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
+#include <Gui/EditBox.h>
+#include <Gui/Image.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Utils.h>
 #include <Sys/Time_.h>
 
 #include "../Gui/FontStorage.h"
@@ -36,18 +36,18 @@ GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
 
     Gui::Image9Patch edit_box_frame{*ren_ctx_,
                                     "assets_pc/textures/ui/frame_01.uncompressed.png",
-                                    Ren::Vec2f{8.0f, 8.0f},
+                                    Gui::Vec2f{8.0f, 8.0f},
                                     1.0f,
-                                    Ren::Vec2f{-1.0f, -1.0f},
-                                    Ren::Vec2f{2.0f, 2.0f},
+                                    Gui::Vec2f{-1.0f, -1.0f},
+                                    Gui::Vec2f{2.0f, 2.0f},
                                     ui_root_};
-    edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_, Ren::Vec2f{-0.5f, 0.75f},
-                                               Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_);
+    edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_, Gui::Vec2f{-0.5f, 0.75f},
+                                               Gui::Vec2f{1.0f, 0.75f * font_height}, ui_root_);
     edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
 
     results_frame_ = std::make_unique<Gui::Image9Patch>(*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
-                                                        Ren::Vec2f{8.0f, 8.0f}, 1.0f, Ren::Vec2f{-0.5f, -0.75f},
-                                                        Ren::Vec2f{1.0f, 1.5f}, ui_root_);
+                                                        Gui::Vec2f{8.0f, 8.0f}, 1.0f, Gui::Vec2f{-0.5f, -0.75f},
+                                                        Gui::Vec2f{1.0f, 1.5f}, ui_root_);
 }
 
 GSUITest2::~GSUITest2() = default;
@@ -189,7 +189,7 @@ void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         float cur_y = 0.75f - font_height;
 
         for (const std::string &result_line : results_lines_) {
-            dialog_font_->DrawText(r, result_line.c_str(), Ren::Vec2f{-0.49f, cur_y}, color_white, root);
+            dialog_font_->DrawText(r, result_line.c_str(), Gui::Vec2f{-0.49f, cur_y}, color_white, root);
             cur_y -= font_height;
         }
     }
@@ -350,8 +350,8 @@ bool GSUITest2::HandleInput(const Eng::InputManager::Event &evt) {
 
     switch (evt.type) {
     case Eng::RawInputEv::P1Down: {
-        Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                             Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                             Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, true);
         edit_box_->Press(p, true);
     } break;
@@ -361,8 +361,8 @@ bool GSUITest2::HandleInput(const Eng::InputManager::Event &evt) {
     case Eng::RawInputEv::P1Up: {
         // text_printer_->skip();
 
-        const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
-                                                   Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, false);
         edit_box_->Press(p, false);
 

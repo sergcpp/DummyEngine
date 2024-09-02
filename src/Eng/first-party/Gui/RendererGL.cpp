@@ -4,11 +4,11 @@
 
 #include <cassert>
 
-#include <Ren/Context.h>
-#include <Ren/DebugMarker.h>
-#include <Ren/GL.h>
-#include <Ren/GLCtx.h>
-#include <Sys/Json.h>
+#include "../Ren/Context.h"
+#include "../Ren/DebugMarker.h"
+#include "../Ren/GL.h"
+#include "../Ren/GLCtx.h"
+#include "../Sys/Json.h"
 
 namespace UIRendererConstants {
 extern const int TexAtlasSlot;

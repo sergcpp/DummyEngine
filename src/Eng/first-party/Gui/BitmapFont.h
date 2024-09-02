@@ -2,19 +2,17 @@
 
 #include <vector>
 
-#include <Ren/Context.h>
-#include <Ren/Texture.h>
+#include "../Ren/Context.h"
+#include "../Ren/Texture.h"
 
 #include "Renderer.h"
-#include <Ren/MVec.h>
+#include "MVec.h"
 
 #undef DrawText
 
 namespace Gui {
 class BaseElement;
 class Renderer;
-
-using Ren::Vec2f;
 
 struct typgraph_info_t {
     uint32_t line_height;

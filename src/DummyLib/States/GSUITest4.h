@@ -2,7 +2,7 @@
 
 #include <Eng/ViewerBase.h>
 #include <Eng/ViewerState.h>
-#include <Eng/gui/BaseElement.h>
+#include <Gui/BaseElement.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>
@@ -21,7 +21,7 @@ class Dictionary;
 namespace Eng {
 class FreeCamController;
 class ScriptedDialog;
-}
+} // namespace Eng
 class ViewerStateManager;
 class FontStorage;
 class SceneManager;

@@ -80,47 +80,6 @@ set(SOURCE_FILES Config.h
                  ViewerStateManager.h
                  ViewerStateManager.cpp)
 
-set(GUI_SOURCE_FILES    gui/BaseElement.h
-                        gui/BaseElement.cpp
-                        gui/BitmapFont.h
-                        gui/BitmapFont.cpp
-                        gui/ButtonBase.h
-                        gui/ButtonBase.cpp
-                        gui/ButtonImage.h
-                        gui/ButtonImage.cpp
-                        gui/ButtonText.h
-                        gui/ButtonText.cpp
-                        gui/Cursor.h
-                        gui/Cursor.cpp
-                        gui/EditBox.h
-                        gui/EditBox.cpp
-                        gui/Image.h
-                        gui/Image.cpp
-                        gui/Image9Patch.h
-                        gui/Image9Patch.cpp
-                        gui/LinearLayout.h
-                        gui/LinearLayout.cpp
-                        gui/Renderer.h
-                        gui/Renderer.cpp
-                        gui/shaders.inl
-                        gui/TypeMesh.h
-                        gui/TypeMesh.cpp
-                        gui/Utils.h
-                        gui/Utils.cpp)
-
-if(${RENDERER} STREQUAL "GL")
-    set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}
-                            gui/RendererGL.cpp
-                            )
-elseif(${RENDERER} STREQUAL "SW")
-    set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}
-                            gui/RendererSW.cpp
-                            )
-elseif(${RENDERER} STREQUAL "VK")
-    set(GUI_SOURCE_FILES    ${GUI_SOURCE_FILES}
-                            gui/RendererVK.cpp)
-endif()
-
 set(INPUT_SOURCE_FILES input/InputManager.h
                        input/InputManager.cpp
                        input/Keycode.h)
@@ -327,9 +286,6 @@ set(UTILS_SOURCES utils/Cmdline.h
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES ${GUI_SOURCE_FILES})
-source_group("src\\Gui" FILES ${GUI_SOURCE_FILES})
-
 list(APPEND ALL_SOURCE_FILES ${INPUT_SOURCE_FILES})
 source_group("src\\input" FILES ${INPUT_SOURCE_FILES})
 
@@ -388,9 +344,10 @@ else(WIN32)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/linux/x64)
     endif(APPLE)
 endif(WIN32)
-target_link_libraries(Eng Net Phy Ren Snd Sys astc optick glslx_lib ${GLSLANG_LIBS} ${ITT_LIB})
+target_link_libraries(Eng Gui Net Phy Ren Snd Sys astc optick glslx_lib ${GLSLANG_LIBS} ${ITT_LIB})
 
 add_subdirectory(tests)
+add_subdirectory(first-party/Gui)
 add_subdirectory(first-party/Net)
 add_subdirectory(first-party/Phy)
 add_subdirectory(first-party/Ren)

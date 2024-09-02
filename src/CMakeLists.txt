@@ -78,6 +78,7 @@ if(${RENDERER} STREQUAL "GL")
 endif()
 
 set_target_properties(Eng
+                      Gui
                       Net
                       Phy
                       Ray
@@ -96,6 +97,7 @@ set_target_properties(00_basic
 
 set_target_properties(test_DummyLib
                       test_Eng
+                      test_Gui
                       test_Net
                       test_Phy
                       test_Ray

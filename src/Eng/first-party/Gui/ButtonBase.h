@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Sys/Signal_.h>
-
 #include "BaseElement.h"
+#include "Signal.h"
 
 namespace Gui {
 class ButtonBase : public BaseElement {
@@ -18,6 +17,6 @@ class ButtonBase : public BaseElement {
     void Press(const Vec2i &p, bool push) override;
     void Press(const Vec2f &p, bool push) override;
 
-    Sys::Signal<void()> pressed_signal;
+    Signal<void()> pressed_signal;
 };
 } // namespace Gui

@@ -35,11 +35,12 @@ runs:
         cd build
         cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=${{ inputs.config }} ${{ inputs.cmake-args }}
         cd ..
-        cmake --build build --target DummyApp test_Eng test_glslx test_Ray test_Ren test_SW test_Sys test_Net test_Phy test_Snd --config ${{ inputs.config }} --parallel 16
+        cmake --build build --target DummyApp test_Eng test_Gui test_glslx test_Ray test_Ren test_SW test_Sys test_Net test_Phy test_Snd --config ${{ inputs.config }} --parallel 16
         if ("${{ inputs.bin-dir }}" -ne "") {
           mkdir $WORK_DIR/${{ inputs.bin-dir }}
-          copy build/src/Eng/tests/test_Eng.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Ray/tests/test_Ray.exe $WORK_DIR/${{ inputs.bin-dir }}
+          copy build/src/Eng/tests/test_Eng.exe $WORK_DIR/${{ inputs.bin-dir }}
+          copy build/src/Eng/first-party/Gui/tests/test_Gui.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Ren/tests/test_Ren.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Ren/SW/tests/test_SW.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Sys/tests/test_Sys.exe $WORK_DIR/${{ inputs.bin-dir }}

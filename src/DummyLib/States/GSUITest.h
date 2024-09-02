@@ -6,8 +6,8 @@
 
 #include <Eng/ViewerBase.h>
 #include <Eng/ViewerState.h>
-#include <Eng/gui/BaseElement.h>
-#include <Eng/gui/BitmapFont.h>
+#include <Gui/BaseElement.h>
+#include <Gui/BitmapFont.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>

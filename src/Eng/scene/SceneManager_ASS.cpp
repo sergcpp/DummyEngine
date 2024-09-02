@@ -17,8 +17,8 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
-#include "../gui/Renderer.h"
-#include "../gui/Utils.h"
+#include <Gui/Renderer.h>
+#include <Gui/Utils.h>
 
 #include <glslang/Include/glslang_c_interface.h>
 

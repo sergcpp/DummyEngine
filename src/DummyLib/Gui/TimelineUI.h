@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Eng/gui/Image9Patch.h>
-#include <Sys/Signal_.h>
+#include <Gui/Image9Patch.h>
+#include <Gui/Signal.h>
 
 class TimelineUI : public Gui::BaseElement {
     const Gui::BitmapFont &font_;
@@ -16,15 +16,15 @@ class TimelineUI : public Gui::BaseElement {
     bool grabbed_, snap_to_grid_;
     bool grabbed_rmb_;
     float rmb_time_offset_;
-    Ren::Vec2f rmb_point_;
+    Gui::Vec2f rmb_point_;
 
     float GetTimeFromPoint(float px) const;
     float GetPointFromTime(float t) const;
     void SetCurTimeFromPoint(float px);
-    Ren::Vec2f SnapToPixels(const Ren::Vec2f &p);
+    Gui::Vec2f SnapToPixels(const Gui::Vec2f &p);
 
   public:
-    TimelineUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Ren::Vec2f &pos, const Ren::Vec2f &size,
+    TimelineUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos, const Gui::Vec2f &size,
                const Gui::BaseElement *parent);
 
     bool grabbed() const { return grabbed_; }
@@ -32,7 +32,7 @@ class TimelineUI : public Gui::BaseElement {
     float time_cur() const { return time_cur_; }
     void set_time_cur(float time_s);
 
-    Ren::Vec2f time_range() const;
+    Gui::Vec2f time_range() const;
 
     void ZoomIn();
     void ZoomOut();
@@ -42,10 +42,10 @@ class TimelineUI : public Gui::BaseElement {
     void Resize(const Gui::BaseElement *parent) override;
     using BaseElement::Resize;
 
-    void Press(const Ren::Vec2f &p, bool push) override;
-    void Hover(const Ren::Vec2f &p) override;
+    void Press(const Gui::Vec2f &p, bool push) override;
+    void Hover(const Gui::Vec2f &p) override;
 
-    void PressRMB(const Ren::Vec2f &p, bool push);
+    void PressRMB(const Gui::Vec2f &p, bool push);
 
-    Sys::SignalN<void(float, float, float)> time_changed_signal;
+    Gui::SignalN<void(float, float, float)> time_changed_signal;
 };
