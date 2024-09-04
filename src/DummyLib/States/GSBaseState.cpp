@@ -873,6 +873,7 @@ void GSBaseState::Draw() {
                 if (renderer_->settings.taa_mode == Eng::eTAAMode::Static) {
                     renderer_->reset_accumulation();
                 }
+                scene_manager_->ClearGICache(ren_ctx_->current_cmd_buf());
                 ++scene_manager_->scene_data().env.generation;
                 prev_sun_dir_ = scene_manager_->scene_data().env.sun_dir;
             }
