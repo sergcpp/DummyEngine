@@ -72,7 +72,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     FgAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
     FgAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
 
-    if (!(*p_list_)->probe_storage || (*p_list_)->alpha_blend_start_index == -1) {
+    if (/*!(*p_list_)->probe_storage ||*/ (*p_list_)->alpha_blend_start_index == -1) {
         return;
     }
 
@@ -98,8 +98,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         }
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
-                               (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
+    //ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
+    //                           (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.tbos[0]->id()));
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.tbos[0]->id()));

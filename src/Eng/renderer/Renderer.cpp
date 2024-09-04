@@ -720,10 +720,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     const bool lm_tex_changed =
         lm_direct_ != list.env.lm_direct || lm_indir_ != list.env.lm_indir ||
         !std::equal(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
-    const bool probe_storage_changed = (list.probe_storage != probe_storage_);
     const bool rebuild_renderpasses = !cached_settings_.has_value() ||
-                                      (cached_settings_.value() != list.render_settings) || probe_storage_changed ||
-                                      !fg_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
+                                      (cached_settings_.value() != list.render_settings) || !fg_builder_.ready() ||
+                                      rendertarget_changed || env_map_changed || lm_tex_changed;
 
     cached_settings_ = list.render_settings;
     cached_rp_index_ = 0;
@@ -732,7 +731,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     lm_indir_ = list.env.lm_indir;
     std::copy(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
     p_list_ = &list;
-    probe_storage_ = list.probe_storage;
     min_exposure_ = std::pow(2.0f, list.draw_cam.min_exposure);
     max_exposure_ = std::pow(2.0f, list.draw_cam.max_exposure);
 
@@ -1127,9 +1125,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             // GI
             AddDiffusePasses(list.env.env_map, lm_direct_, lm_indir_sh_,
-                             list.render_settings.debug_denoise == eDebugDenoise::GI, list.probe_storage,
-                             common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
-                             rt_geo_instances_res, rt_obj_instances_res, frame_textures);
+                             list.render_settings.debug_denoise == eDebugDenoise::GI, common_buffers, persistent_data,
+                             acc_struct_data, bindless_tex, depth_hierarchy_tex, rt_geo_instances_res,
+                             rt_obj_instances_res, frame_textures);
 
             // GBuffer shading pass
             AddDeferredShadingPass(common_buffers, frame_textures, list.render_settings.gi_quality != eGIQuality::Off);
@@ -1159,10 +1157,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
             if (cur_hq_ssr_enabled) {
                 AddHQSpecularPasses(deferred_shading, list.render_settings.debug_denoise == eDebugDenoise::Reflection,
-                                    list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                                    common_buffers, persistent_data, acc_struct_data, bindless_tex,
                                     depth_hierarchy_tex, rt_geo_instances_res, rt_obj_instances_res, frame_textures);
             } else {
-                AddLQSpecularPasses(list.probe_storage, common_buffers, depth_down_2x, frame_textures);
+                AddLQSpecularPasses(common_buffers, depth_down_2x, frame_textures);
             }
         }
 

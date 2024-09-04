@@ -187,7 +187,6 @@ class Renderer {
     Ren::WeakTex2DRef env_map_;
     Ren::WeakTex2DRef lm_direct_, lm_indir_, lm_indir_sh_[4];
     const DrawList *p_list_;
-    const Ren::ProbeStorage *probe_storage_ = nullptr;
     Ren::SmallVector<FgResRef, 8> backbuffer_sources_;
     float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
     float pre_exposure_ = 1.0f;
@@ -317,20 +316,20 @@ class Renderer {
     void AddDownsampleColorPass(FgResRef input_tex, FgResRef &output_tex);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
-    void AddHQSpecularPasses(bool deferred_shading, bool debug_denoise, const Ren::ProbeStorage *probe_storage,
-                             const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                             const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                             FgResRef depth_hierarchy, FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
+    void AddHQSpecularPasses(bool deferred_shading, bool debug_denoise, const CommonBuffers &common_buffers,
+                             const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                             const BindlessTextureData &bindless, FgResRef depth_hierarchy,
+                             FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                              FrameTextures &frame_textures);
-    void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                             FgResRef depth_down_2x, FrameTextures &frame_textures);
+    void AddLQSpecularPasses(const CommonBuffers &common_buffers, FgResRef depth_down_2x,
+                             FrameTextures &frame_textures);
 
     void AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                           const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
-                          const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, FgResRef depth_hierarchy, FgResRef rt_geo_instances_res,
-                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
+                          const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                          const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                          FgResRef depth_hierarchy, FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
+                          FrameTextures &frame_textures);
 
     void AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,

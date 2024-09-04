@@ -30,7 +30,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         }
     }
 
-    if (!(*p_list_)->probe_storage || (*p_list_)->alpha_blend_start_index == -1) {
+    if (/*!(*p_list_)->probe_storage ||*/ (*p_list_)->alpha_blend_start_index == -1) {
         return;
     }
 
@@ -59,9 +59,9 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         const VkDescriptorImageInfo ssao_info = ssao_tex.ref->vk_desc_image_info();
 
         const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
+        /*const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
                                                 (*p_list_)->probe_storage->handle().views[0],
-                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};*/
         const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
         const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
 
@@ -129,7 +129,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
             descr_write.descriptorCount = 1;
             descr_write.pImageInfo = &noise_info;
         }
-        { // env tex
+        /*{ // env tex
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
@@ -138,7 +138,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
             descr_write.pImageInfo = &env_info;
-        }
+        }*/
         /*{ // cone rt lut
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};

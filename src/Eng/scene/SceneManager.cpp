@@ -143,12 +143,12 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
                                                        SceneManagerConstants::LIGHTMAP_ATLAS_RESY);
     }
 
-    { // Allocate cubemap array
+    /*{ // Allocate cubemap array
         const bool res =
             scene_data_.probe_storage.Resize(ren_ctx.api_ctx(), ren_ctx.default_mem_allocs(),
                                              Ren::DefaultCompressedRGBA, PROBE_RES, PROBE_COUNT, ren_ctx_.log());
         assert(res);
-    }
+    }*/
 
     { // Register default components
         using namespace std::placeholders;
@@ -564,7 +564,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         scene_data_.env = {};
     }
 
-    scene_data_.probe_storage.Finalize();
+    // scene_data_.probe_storage.Finalize();
     LoadProbeCache();
 
     log->Info("SceneManager: RebuildSceneBVH!");
@@ -741,7 +741,7 @@ void Eng::SceneManager::ClearScene() {
     scene_data_.objects.clear();
     scene_data_.name_to_object.clear();
     scene_data_.lm_splitter.Clear();
-    scene_data_.probe_storage.Clear();
+    // scene_data_.probe_storage.Clear();
     scene_data_.nodes.clear();
     scene_data_.free_nodes.clear();
     scene_data_.update_counter = 0;
@@ -762,6 +762,7 @@ void Eng::SceneManager::ClearScene() {
 }
 
 void Eng::SceneManager::LoadProbeCache() {
+#if 0
     const int res = scene_data_.probe_storage.res(), capacity = scene_data_.probe_storage.capacity();
 
     if (scene_data_.probe_storage.format() != Ren::DefaultCompressedRGBA) {
@@ -871,6 +872,7 @@ void Eng::SceneManager::LoadProbeCache() {
     }
 
     scene_data_.probe_storage.Finalize();
+#endif
 }
 
 void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up,
@@ -1181,7 +1183,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
 void Eng::SceneManager::PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     auto *pr = (LightProbe *)comp;
 
-    pr->layer_index = scene_data_.probe_storage.Allocate();
+    // pr->layer_index = scene_data_.probe_storage.Allocate();
 
     // Combine probe's bounding box with object's
     obj_bbox[0] = Min(obj_bbox[0], pr->offset - Ren::Vec3f{pr->radius});

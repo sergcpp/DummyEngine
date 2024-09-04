@@ -194,7 +194,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     list.materials = &scene.materials;
     list.decals_atlas = &scene.decals_atlas;
-    list.probe_storage = &scene.probe_storage;
+    //list.probe_storage = &scene.probe_storage;
 
     // mask render settings with what renderer itself is capable of
     list.render_settings &= settings;

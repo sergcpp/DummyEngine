@@ -19,8 +19,7 @@
 
 void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                                      const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
-                                     const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                     const PersistentGpuData &persistent_data,
+                                     const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, const FgResRef depth_hierarchy,
                                      FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,

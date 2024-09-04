@@ -259,7 +259,6 @@ struct SceneData {
     Ren::HashMap32<Ren::String, Ren::Vec4f> decals_textures;
     Ren::TextureAtlas decals_atlas;
     Ren::TextureSplitter lm_splitter;
-    Ren::ProbeStorage probe_storage;
 
     CompStorage *comp_store[MAX_COMPONENT_TYPES] = {};
 

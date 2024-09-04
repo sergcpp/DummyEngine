@@ -72,7 +72,7 @@ void Eng::DrawList::Clear() {
 
     materials = nullptr;
     decals_atlas = nullptr;
-    probe_storage = nullptr;
+    //probe_storage = nullptr;
 
     cached_shadow_regions.count = 0;
 }

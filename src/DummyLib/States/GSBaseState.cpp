@@ -323,7 +323,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_updateProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+    /*cmdline_->RegisterCommand("r_updateProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         Eng::SceneData &scene_data = scene_manager_->scene_data();
 
         const int res = scene_data.probe_storage.res(), capacity = scene_data.probe_storage.capacity();
@@ -335,9 +335,9 @@ void GSBaseState::Enter() {
         update_all_probes_ = true;
 
         return true;
-    });
+    });*/
 
-    cmdline_->RegisterCommand("r_cacheProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+    /*cmdline_->RegisterCommand("r_cacheProbes", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         const Eng::SceneData &scene_data = scene_manager_->scene_data();
 
         const Eng::CompStorage *lprobes = scene_data.comp_store[Eng::CompProbe];
@@ -348,7 +348,7 @@ void GSBaseState::Enter() {
         Viewer::PrepareAssets("pc");
 
         return true;
-    });
+    });*/
 
     cmdline_->RegisterCommand("map", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         if (args.size() != 2 || args[1].type != Eng::Cmdline::eArgType::String) {
@@ -758,6 +758,9 @@ void GSBaseState::Draw() {
                     renderer_->settings.enable_shadow_jitter = true;
                     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
                     renderer_->reset_accumulation();
+
+                    notified_ = true;
+                    thr_notify_.notify_one();
                 }
             } else if (capture_state_ == eCaptureState::Warmup) {
                 log_->Info("Warmup iteration #%i", renderer_->accumulated_frames());

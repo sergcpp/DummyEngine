@@ -16,8 +16,7 @@
 #include "shaders/ssr_write_indirect_args_interface.h"
 
 void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool debug_denoise,
-                                        const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                        const PersistentGpuData &persistent_data,
+                                        const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                         const AccelerationStructureData &acc_struct_data,
                                         const BindlessTextureData &bindless, const FgResRef depth_hierarchy,
                                         FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
@@ -117,8 +116,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.format = Ren::eTexFormat::RawRGBA8888;
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
-            noise_tex = data->out_noise_tex =
-                ssr_classify.AddStorageImageOutput("BN Tex", params, Stg::ComputeShader);
+            noise_tex = data->out_noise_tex = ssr_classify.AddStorageImageOutput("BN Tex", params, Stg::ComputeShader);
         }
 
         ssr_classify.set_execute_cb([this, data, SamplesPerQuad](FgBuilder &builder) {
@@ -1039,8 +1037,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     });
 }
 
-void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                        const FgResRef depth_down_2x, FrameTextures &frame_textures) {
+void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, const FgResRef depth_down_2x,
+                                        FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -1155,7 +1153,7 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
             }
         });
     }
-    { // Compose
+    /*{ // Compose
         auto &ssr_compose = fg_builder_.AddNode("SSR COMPOSE");
 
         auto *data = ssr_compose.AllocNodeData<ExSSRCompose::Args>();
@@ -1176,5 +1174,5 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
 
         ex_ssr_compose_.Setup(fg_builder_, &view_state_, probe_storage, data);
         ssr_compose.set_executor(&ex_ssr_compose_);
-    }
+    }*/
 }
