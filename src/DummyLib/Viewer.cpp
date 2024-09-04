@@ -10,6 +10,7 @@
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Random.h>
+#include <Eng/widgets/DebugInfoUI.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
@@ -31,7 +32,6 @@ extern bool ignore_optick_errors;
 #include <Sys/Json.h>
 #include <Sys/Time_.h>
 
-#include "Gui/DebugInfoUI.h"
 #include "Gui/FontStorage.h"
 #include "States/GSDrawTest.h"
 #include "Utils/Dictionary.h"

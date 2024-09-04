@@ -23,6 +23,7 @@
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/Load.h>
 #include <Eng/utils/Random.h>
+#include <Eng/widgets/DebugInfoUI.h>
 #include <Gui/Image9Patch.h>
 #include <Gui/Renderer.h>
 #include <Ren/Context.h>
@@ -34,7 +35,6 @@
 #include <Sys/Time_.h>
 #undef GetObject
 
-#include "../Gui/DebugInfoUI.h"
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
 

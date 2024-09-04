@@ -6,8 +6,6 @@ set(SOURCE_FILES    Viewer.h
 
 set(GUI_SOURCES Gui/CaptionsUI.h
                 Gui/CaptionsUI.cpp
-                Gui/DebugInfoUI.h
-                Gui/DebugInfoUI.cpp
                 Gui/DialogEditUI.h
                 Gui/DialogEditUI.cpp
 				Gui/DialogUI.h

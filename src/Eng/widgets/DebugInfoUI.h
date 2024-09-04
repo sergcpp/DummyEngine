@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include <Eng/ViewerBase.h>
 #include <Gui/BaseElement.h>
 
 namespace Eng {

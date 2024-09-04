@@ -283,6 +283,9 @@ set(UTILS_SOURCES utils/Cmdline.h
                   #utils/VideoPlayer.cpp
     )
 
+set(WIDGETS_SOURCES widgets/DebugInfoUI.h
+                    widgets/DebugInfoUI.cpp)
+
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
@@ -309,6 +312,9 @@ source_group("src\\scene\\components" FILES ${SCENE_COMP_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
 source_group("src\\utils" FILES ${UTILS_SOURCES})
+
+list(APPEND ALL_SOURCE_FILES ${WIDGETS_SOURCES})
+source_group("src\\widgets" FILES ${WIDGETS_SOURCES})
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
 target_include_directories(Eng PUBLIC first-party)

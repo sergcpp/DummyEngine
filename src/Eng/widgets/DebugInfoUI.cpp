@@ -1,9 +1,10 @@
 #include "DebugInfoUI.h"
 
-#include <Eng/renderer/Renderer_Structs.h>
-#include <Eng/scene/SceneData.h>
 #include <Gui/BitmapFont.h>
 #include <Sys/Time_.h>
+
+#include "../renderer/Renderer_Structs.h"
+#include "../scene/SceneData.h"
 
 DebugInfoUI::DebugInfoUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
                          const Gui::BitmapFont *font)
