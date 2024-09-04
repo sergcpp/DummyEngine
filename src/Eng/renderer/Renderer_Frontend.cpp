@@ -252,7 +252,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const bool decals_enabled = list.render_settings.enable_decals;
     const bool shadows_enabled = (list.render_settings.shadows_quality != eShadowsQuality::Off);
     const bool shadows_jitter_enabled = list.render_settings.enable_shadow_jitter;
-    const bool rt_shadows_enabled = (list.render_settings.shadows_quality != eShadowsQuality::Raytraced);
+    const bool rt_shadows_enabled = (list.render_settings.shadows_quality == eShadowsQuality::Raytraced);
 
     if (!lighting_enabled) {
         list.env.sun_col = {};
