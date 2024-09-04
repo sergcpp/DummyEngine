@@ -1157,8 +1157,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
             if (cur_hq_ssr_enabled) {
                 AddHQSpecularPasses(deferred_shading, list.render_settings.debug_denoise == eDebugDenoise::Reflection,
-                                    common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                                    depth_hierarchy_tex, rt_geo_instances_res, rt_obj_instances_res, frame_textures);
+                                    common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
+                                    rt_geo_instances_res, rt_obj_instances_res, frame_textures);
             } else {
                 AddLQSpecularPasses(common_buffers, depth_down_2x, frame_textures);
             }
@@ -1232,7 +1232,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             auto *data = debug_rt.AllocNodeData<ExDebugRT::Args>();
             data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data_res, stages);
-            data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_geo_instances_res, stages);
+            if (list.render_settings.debug_rt == eDebugRT::Main) {
+                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_geo_instances_res, stages);
+            } else if (list.render_settings.debug_rt == eDebugRT::Shadow) {
+                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_sh_geo_instances_res, stages);
+            }
             data->materials_buf = debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, stages);
             data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stages);
             data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stages);
