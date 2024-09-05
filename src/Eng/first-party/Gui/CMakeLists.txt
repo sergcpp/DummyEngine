@@ -42,8 +42,6 @@ set(SOURCE_FILES    BaseElement.h
                     ButtonBase.cpp
                     ButtonImage.h
                     ButtonImage.cpp
-                    ButtonText.h
-                    ButtonText.cpp
                     Delegate.h
                     EditBox.h
                     EditBox.cpp
@@ -60,8 +58,6 @@ set(SOURCE_FILES    BaseElement.h
                     Renderer.cpp
                     shaders.inl
                     Signal.h
-                    TypeMesh.h
-                    TypeMesh.cpp
                     Utils.h
                     Utils.cpp)
 

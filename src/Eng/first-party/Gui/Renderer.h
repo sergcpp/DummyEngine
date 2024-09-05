@@ -4,7 +4,6 @@
 
 #include "../Ren/Context.h"
 #include "../Ren/Framebuffer.h"
-#include "../Ren/MVec.h"
 #include "../Ren/Pipeline.h"
 #include "../Ren/Program.h"
 #include "../Ren/RenderPass.h"
@@ -13,13 +12,6 @@
 #include "../Ren/VertexInput.h"
 
 #include "MVec.h"
-
-namespace Sys {
-template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
-}
-template <typename Alloc> struct JsObjectT;
-using JsObject = JsObjectT<std::allocator<char>>;
-using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 
 namespace Gui {
 enum class eBlendMode { Alpha, Color };

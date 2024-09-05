@@ -4,7 +4,6 @@
 
 #include "Image9Patch.h"
 #include "LinearLayout.h"
-#include "TypeMesh.h"
 
 namespace Gui {
 enum class eEditBoxFlags { Integers, Chars, Floats, Signed, Multiline };
