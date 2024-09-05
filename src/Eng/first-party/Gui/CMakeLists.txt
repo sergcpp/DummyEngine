@@ -44,8 +44,6 @@ set(SOURCE_FILES    BaseElement.h
                     ButtonImage.cpp
                     ButtonText.h
                     ButtonText.cpp
-                    Cursor.h
-                    Cursor.cpp
                     Delegate.h
                     EditBox.h
                     EditBox.cpp

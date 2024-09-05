@@ -16,7 +16,6 @@ class Image : public BaseElement {
     Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
     Ren::TextureRegionRef &tex() { return tex_; }
-
     const Ren::TextureRegionRef &tex() const { return tex_; }
 
     const Vec2f *uvs_px() const { return uvs_px_; }
