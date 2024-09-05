@@ -15,9 +15,9 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/FontStorage.h"
-#include "../Gui/WordPuzzleUI.h"
 #include "../Viewer.h"
+#include "../widgets/FontStorage.h"
+#include "../widgets/WordPuzzleUI.h"
 
 namespace GSUITestInternal {
 #if defined(__ANDROID__)

@@ -13,9 +13,9 @@
 #include <Gui/Utils.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/FontStorage.h"
-#include "../Utils/Dictionary.h"
+#include "../utils/Dictionary.h"
 #include "../Viewer.h"
+#include "../widgets/FontStorage.h"
 
 namespace GSUITest2Internal {
 #if defined(__ANDROID__)

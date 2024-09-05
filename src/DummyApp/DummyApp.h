@@ -6,7 +6,7 @@
 
 #include <Eng/input/InputManager.h>
 
-#include <DummyLib/Utils/Log.h>
+#include <DummyLib/utils/Log.h>
 
 #if !defined(__ANDROID__)
 #if defined(_WIN32)

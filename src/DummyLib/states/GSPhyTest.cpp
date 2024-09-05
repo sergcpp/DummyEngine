@@ -9,8 +9,8 @@
 #include <Ren/Context.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/FontStorage.h"
 #include "../Viewer.h"
+#include "../widgets/FontStorage.h"
 
 namespace GSPhyTestInternal {
 #if defined(__ANDROID__)

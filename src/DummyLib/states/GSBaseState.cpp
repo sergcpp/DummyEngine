@@ -35,8 +35,8 @@
 #include <Sys/Time_.h>
 #undef GetObject
 
-#include "../Gui/FontStorage.h"
 #include "../Viewer.h"
+#include "../widgets/FontStorage.h"
 
 namespace Ray {
 extern const int LUT_DIMS;

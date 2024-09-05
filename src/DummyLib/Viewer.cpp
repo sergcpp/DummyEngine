@@ -32,10 +32,10 @@ extern bool ignore_optick_errors;
 #include <Sys/Json.h>
 #include <Sys/Time_.h>
 
-#include "Gui/FontStorage.h"
-#include "States/GSDrawTest.h"
-#include "Utils/Dictionary.h"
-#include "Utils/Log.h"
+#include "states/GSDrawTest.h"
+#include "utils/Dictionary.h"
+#include "utils/Log.h"
+#include "widgets/FontStorage.h"
 
 Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log)
     : ViewerBase(w, h, _app_params.validation_level, _app_params.nohwrt, log, _app_params.device_name.c_str()),
@@ -84,8 +84,8 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
     }
 
     // create UI for performance debugging
-    debug_ui_ = std::make_unique<DebugInfoUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(),
-                                              font_storage_->FindFont("main_font"));
+    debug_ui_ = std::make_unique<Eng::DebugInfoUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(),
+                                                   font_storage_->FindFont("main_font"));
 
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);

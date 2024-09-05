@@ -8,7 +8,6 @@ namespace Eng {
 struct BackendInfo;
 struct FrontendInfo;
 struct ItemsInfo;
-}; // namespace Eng
 
 class DebugInfoUI : public Gui::BaseElement {
     const Gui::BaseElement *parent_;
@@ -57,3 +56,4 @@ class DebugInfoUI : public Gui::BaseElement {
 
     void Draw(Gui::Renderer *r) override;
 };
+}; // namespace Eng

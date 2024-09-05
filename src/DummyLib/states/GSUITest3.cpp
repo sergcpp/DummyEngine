@@ -14,9 +14,9 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/FontStorage.h"
-#include "../Gui/PagedReader.h"
 #include "../Viewer.h"
+#include "../widgets/FontStorage.h"
+#include "../widgets/PagedReader.h"
 
 namespace GSUITest3Internal {
 #if defined(__ANDROID__)

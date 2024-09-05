@@ -6,12 +6,12 @@
 #include "../renderer/Renderer_Structs.h"
 #include "../scene/SceneData.h"
 
-DebugInfoUI::DebugInfoUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
-                         const Gui::BitmapFont *font)
+Eng::DebugInfoUI::DebugInfoUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
+                              const Gui::BitmapFont *font)
     : BaseElement(pos, size, parent), parent_(parent), font_(font) {}
 
-void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
-                             const Eng::ItemsInfo &items_info, const bool debug_items) {
+void Eng::DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
+                                  const Eng::ItemsInfo &items_info, const bool debug_items) {
     const float alpha = 0.98f;
     const float k = (1.0f - alpha);
 
@@ -68,7 +68,7 @@ void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::
     cur_timing_info_.gpu_cpu_time_diff_us = backend_info.gpu_cpu_time_diff_us;
 }
 
-void DebugInfoUI::Draw(Gui::Renderer *r) {
+void Eng::DebugInfoUI::Draw(Gui::Renderer *r) {
     const float font_height = font_->height(parent_);
 
     const char delimiter[] = "-------------------------------";
@@ -167,7 +167,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "      LIGHTS DATA: %.3f kb",
-                 items_info_smooth_.lights_count * sizeof(Eng::LightItem) / 1024.0f);
+                 items_info_smooth_.lights_count * sizeof(LightItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
@@ -176,21 +176,21 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "      DECALS DATA: %.3f kb",
-                 items_info_smooth_.decals_count * sizeof(Eng::DecalItem) / 1024.0f);
+                 items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "       CELLS DATA: %.3f kb",
-                 Eng::ITEM_CELLS_COUNT * sizeof(Eng::CellData) / 1024.0f);
+                 ITEM_CELLS_COUNT * sizeof(CellData) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "       ITEMS DATA: %.3f kb",
-                 items_info_smooth_.items_total * sizeof(Eng::ItemData) / 1024.0f);
+                 items_info_smooth_.items_total * sizeof(ItemData) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
-    /*if (render_flags_ & Eng::DebugTimings) {
+    /*if (render_flags_ & DebugTimings) {
         if (prev_timing_info_.front_end_timepoint_us) {
             auto prev_front_start = double(prev_timing_info_.front_start_timepoint_us),
                  prev_front_end = double(prev_timing_info_.front_end_timepoint_us),

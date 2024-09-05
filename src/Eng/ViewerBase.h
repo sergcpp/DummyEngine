@@ -12,7 +12,7 @@
 namespace Gui {
 class Renderer;
 class RootElement;
-}
+} // namespace Gui
 
 namespace Ren {
 class Context;

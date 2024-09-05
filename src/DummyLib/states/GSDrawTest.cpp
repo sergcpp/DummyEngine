@@ -11,7 +11,7 @@
 #include <Ren/Context.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/FontStorage.h"
+#include "../widgets/FontStorage.h"
 #include "../Viewer.h"
 
 #define TINYEXR_IMPLEMENTATION

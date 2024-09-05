@@ -4,61 +4,61 @@ project(DummyLib)
 set(SOURCE_FILES    Viewer.h
                     Viewer.cpp)
 
-set(GUI_SOURCES Gui/CaptionsUI.h
-                Gui/CaptionsUI.cpp
-                Gui/DialogEditUI.h
-                Gui/DialogEditUI.cpp
-				Gui/DialogUI.h
-				Gui/DialogUI.cpp
-                Gui/FontStorage.h
-                Gui/PagedReader.h
-                Gui/PagedReader.cpp
-                Gui/SeqCanvasUI.h
-                Gui/SeqCanvasUI.cpp
-				Gui/SeqEditUI.h
-				Gui/SeqEditUI.cpp
-                Gui/TimelineUI.h
-                Gui/TimelineUI.cpp
-                Gui/WordPuzzleUI.h
-                Gui/WordPuzzleUI.cpp)
+set(WIDGETS_SOURCES widgets/CaptionsUI.h
+                    widgets/CaptionsUI.cpp
+                    widgets/DialogEditUI.h
+                    widgets/DialogEditUI.cpp
+				    widgets/DialogUI.h
+				    widgets/DialogUI.cpp
+                    widgets/FontStorage.h
+                    widgets/PagedReader.h
+                    widgets/PagedReader.cpp
+                    widgets/SeqCanvasUI.h
+                    widgets/SeqCanvasUI.cpp
+				    widgets/SeqEditUI.h
+				    widgets/SeqEditUI.cpp
+                    widgets/TimelineUI.h
+                    widgets/TimelineUI.cpp
+                    widgets/WordPuzzleUI.h
+                    widgets/WordPuzzleUI.cpp)
 
-set(STATES_SOURCES  States/GSBaseState.h
-                    States/GSBaseState.cpp
-                    States/GSDrawTest.h
-                    States/GSDrawTest.cpp
-                    States/GSPhyTest.h
-                    States/GSPhyTest.cpp
-                    States/GSPlayTest.h
-                    States/GSPlayTest.cpp
-                    States/GSUITest.h
-                    States/GSUITest.cpp
-                    States/GSUITest2.h
-                    States/GSUITest2.cpp
-                    States/GSUITest3.h
-                    States/GSUITest3.cpp
-                    States/GSUITest4.h
-                    States/GSUITest4.cpp
-                    #States/GSVideoTest.h
-                    #States/GSVideoTest.cpp
+set(STATES_SOURCES  states/GSBaseState.h
+                    states/GSBaseState.cpp
+                    states/GSDrawTest.h
+                    states/GSDrawTest.cpp
+                    states/GSPhyTest.h
+                    states/GSPhyTest.cpp
+                    states/GSPlayTest.h
+                    states/GSPlayTest.cpp
+                    states/GSUITest.h
+                    states/GSUITest.cpp
+                    states/GSUITest2.h
+                    states/GSUITest2.cpp
+                    states/GSUITest3.h
+                    states/GSUITest3.cpp
+                    states/GSUITest4.h
+                    states/GSUITest4.cpp
+                    #states/GSVideoTest.h
+                    #states/GSVideoTest.cpp
     )
 
-set(UTILS_SOURCES   Utils/DialogController.h
-                    Utils/DialogController.cpp
-                    Utils/Dictionary.h
-                    Utils/Dictionary.cpp
-                    Utils/Log.h
-                    Utils/Log.cpp)
+set(UTILS_SOURCES   utils/DialogController.h
+                    utils/DialogController.cpp
+                    utils/Dictionary.h
+                    utils/Dictionary.cpp
+                    utils/Log.h
+                    utils/Log.cpp)
 
 
 if(${RENDERER} STREQUAL "GL")
     set(STATES_SOURCES ${STATES_SOURCES}
-                        States/GSUITest3GL.cpp
-                        #States/GSVideoTestGL.cpp
+                        states/GSUITest3GL.cpp
+                        #states/GSVideoTestGL.cpp
         )
 elseif(${RENDERER} STREQUAL "VK")
     set(STATES_SOURCES ${STATES_SOURCES}
-                        States/GSUITest3VK.cpp
-                        #States/GSVideoTestVK.cpp
+                        states/GSUITest3VK.cpp
+                        #states/GSVideoTestVK.cpp
         )
 elseif(${RENDERER} STREQUAL "SW")
 
@@ -68,9 +68,9 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES UNITY_GROUP "common")
 source_group("src" FILES ${SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES ${GUI_SOURCES})
-set_source_files_properties(${GUI_SOURCES} PROPERTIES UNITY_GROUP "gui")
-source_group("src\\Gui" FILES ${GUI_SOURCES})
+list(APPEND ALL_SOURCE_FILES ${WIDGETS_SOURCES})
+set_source_files_properties(${WIDGETS_SOURCES} PROPERTIES UNITY_GROUP "widgets")
+source_group("src\\widgets" FILES ${WIDGETS_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
 set_source_files_properties(${STATES_SOURCES} PROPERTIES UNITY_GROUP "states")

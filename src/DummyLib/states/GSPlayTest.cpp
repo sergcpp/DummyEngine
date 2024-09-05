@@ -20,14 +20,14 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/CaptionsUI.h"
-#include "../Gui/DialogEditUI.h"
-#include "../Gui/DialogUI.h"
-#include "../Gui/FontStorage.h"
-#include "../Gui/SeqEditUI.h"
-#include "../Gui/WordPuzzleUI.h"
-#include "../Utils/Dictionary.h"
+#include "../utils/Dictionary.h"
 #include "../Viewer.h"
+#include "../widgets/CaptionsUI.h"
+#include "../widgets/DialogEditUI.h"
+#include "../widgets/DialogUI.h"
+#include "../widgets/FontStorage.h"
+#include "../widgets/SeqEditUI.h"
+#include "../widgets/WordPuzzleUI.h"
 
 namespace GSPlayTestInternal {
 #if defined(__ANDROID__)

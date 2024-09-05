@@ -17,7 +17,6 @@
 #include <Ren/Texture.h>
 #include <Sys/SmallVector.h>
 
-class DebugInfoUI;
 class FontStorage;
 class Viewer;
 namespace Eng {
@@ -27,6 +26,7 @@ class ILog;
 class PhysicsManager;
 class SceneManager;
 class ShaderLoader;
+class DebugInfoUI;
 } // namespace Eng
 
 namespace Gui {
@@ -73,7 +73,7 @@ class GSBaseState : public Eng::ViewerState {
     Gui::Renderer *ui_renderer_ = nullptr;
     Gui::BaseElement *ui_root_ = nullptr;
     const Gui::BitmapFont *font_ = {};
-    DebugInfoUI *debug_ui_ = nullptr;
+    Eng::DebugInfoUI *debug_ui_ = nullptr;
     std::unique_ptr<Gui::Image9Patch> cmdline_back_;
 
     std::mutex mtx_;

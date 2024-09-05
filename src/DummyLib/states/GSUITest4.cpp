@@ -20,13 +20,13 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
-#include "../Gui/CaptionsUI.h"
-#include "../Gui/DialogEditUI.h"
-#include "../Gui/DialogUI.h"
-#include "../Gui/FontStorage.h"
-#include "../Gui/SeqEditUI.h"
-#include "../Gui/WordPuzzleUI.h"
-#include "../Utils/DialogController.h"
+#include "../widgets/CaptionsUI.h"
+#include "../widgets/DialogEditUI.h"
+#include "../widgets/DialogUI.h"
+#include "../widgets/FontStorage.h"
+#include "../widgets/SeqEditUI.h"
+#include "../widgets/WordPuzzleUI.h"
+#include "../utils/DialogController.h"
 #include "../Viewer.h"
 
 namespace GSUITest4Internal {
