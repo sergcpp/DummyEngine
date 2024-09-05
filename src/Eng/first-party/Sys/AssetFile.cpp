@@ -12,17 +12,6 @@
 #include <iostream>
 #endif
 
-#include "Pack.h"
-
-namespace Sys {
-//struct Package {
-//    std::string name;
-//    std::vector<Sys::FileDesc> file_list;
-//};
-
-//std::vector<Package> added_packages;
-} // namespace Sys
-
 #ifdef __ANDROID__
 AAssetManager *Sys::AssetFile::asset_manager_ = nullptr;
 #endif

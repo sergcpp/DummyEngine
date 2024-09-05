@@ -4,7 +4,7 @@
 
 #include <string_view>
 
-#include <Sys/Signal_.h>
+#include <Gui/Signal.h>
 
 namespace Eng {
 class ScriptedDialog;
@@ -34,11 +34,11 @@ class DialogController {
     void MakeChoice(std::string_view key);
     void ContinueChoice();
 
-    Sys::SignalN<void(std::string_view text, const uint8_t color[4])> push_caption_signal;
-    Sys::SignalN<void(std::string_view key, std::string_view text, int off)> push_choice_signal;
+    Gui::SignalN<void(std::string_view text, const uint8_t color[4])> push_caption_signal;
+    Gui::SignalN<void(std::string_view key, std::string_view text, int off)> push_choice_signal;
 
-    Sys::SignalN<void(int id)> switch_sequence_signal;
-    Sys::SignalN<void(std::string_view puzzle)> start_puzzle_signal;
+    Gui::SignalN<void(int id)> switch_sequence_signal;
+    Gui::SignalN<void(std::string_view puzzle)> start_puzzle_signal;
 
   private:
     Eng::ScriptedDialog *dialog_ = nullptr;

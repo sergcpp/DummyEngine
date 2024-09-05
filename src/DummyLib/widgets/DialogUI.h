@@ -4,7 +4,7 @@
 #include <string_view>
 
 #include <Gui/BaseElement.h>
-#include <Sys/Signal_.h>
+#include <Gui/Signal.h>
 
 class DialogUI : public Gui::BaseElement {
     const Gui::BitmapFont &font_;
@@ -37,5 +37,5 @@ class DialogUI : public Gui::BaseElement {
 
     void OnPushChoice(std::string_view key, std::string_view text, int off);
 
-    Sys::SignalN<void(std::string_view key)> make_choice_signal;
+    Gui::SignalN<void(std::string_view key)> make_choice_signal;
 };

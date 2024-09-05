@@ -40,7 +40,6 @@ set(SOURCE_FILES AssetFile.h
                  AssetFileIO.cpp
                  AsyncFileReader.h
                  BinaryTree.h
-                 Delegate.h
                  DynLib.h
                  DynLib.cpp
                  InplaceFunction.h
@@ -48,11 +47,8 @@ set(SOURCE_FILES AssetFile.h
                  Json.cpp
                  MemBuf.h
                  MonoAlloc.h
-                 Pack.h
-                 Pack.cpp
                  PoolAlloc.h
                  ScopeExit.h
-                 Signal_.h
                  SmallVector.h
                  SpinLock.h
                  Sys.h
