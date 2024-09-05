@@ -203,7 +203,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
     const PageData &page = chapter.pages[cur_page_];
 
     if (cur_page_ == 0) {
-        caption_font_->DrawText(r, chapter.caption.c_str(), Gui::Vec2f{x_offset, y_offset}, color_white, parent_);
+        caption_font_->DrawText(r, chapter.caption, Gui::Vec2f{x_offset, y_offset}, color_white, parent_);
         y_offset -= paragraph_height;
     }
 
@@ -288,7 +288,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                         expanded_y = y_offset;
                     }
 
-                    const float width = font_->GetWidth(portion_string.c_str(), parent_);
+                    const float width = font_->GetWidth(portion_string, parent_);
 
                     rect_t &rect = options_rects_.back();
                     rect.dims[1] = Ren::Vec2f{ width, font_height };
@@ -317,7 +317,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                         expanded_hint_y = y_offset;
                     }
 
-                    const float width = font_->GetWidth(portion_string.c_str(), parent_);
+                    const float width = font_->GetWidth(portion_string, parent_);
 
                     rect_t &rect = hint_rects_.back();
                     rect.dims[1] = Gui::Vec2f{ width, font_height };

@@ -35,14 +35,14 @@ void Eng::ExShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAll
         assert(shadow_vege_solid_prog->ready());
         Ren::ProgramRef shadow_transp_prog = sh.LoadProgram(
             ctx,
-            bindless ? "internal/shadow@TRANSPARENT.vert.glsl" : "internal/shadow@TRANSPARENT;NO_BINDLESS.vert.glsl",
-            bindless ? "internal/shadow@TRANSPARENT.frag.glsl" : "internal/shadow@TRANSPARENT;NO_BINDLESS.frag.glsl");
+            bindless ? "internal/shadow@ALPHATEST.vert.glsl" : "internal/shadow@ALPHATEST;NO_BINDLESS.vert.glsl",
+            bindless ? "internal/shadow@ALPHATEST.frag.glsl" : "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(shadow_transp_prog->ready());
         Ren::ProgramRef shadow_vege_transp_prog = sh.LoadProgram(
             ctx,
-            bindless ? "internal/shadow_vege@TRANSPARENT.vert.glsl"
-                     : "internal/shadow_vege@TRANSPARENT;NO_BINDLESS.vert.glsl",
-            bindless ? "internal/shadow@TRANSPARENT.frag.glsl" : "internal/shadow@TRANSPARENT;NO_BINDLESS.frag.glsl");
+            bindless ? "internal/shadow_vege@ALPHATEST.vert.glsl"
+                     : "internal/shadow_vege@ALPHATEST;NO_BINDLESS.vert.glsl",
+            bindless ? "internal/shadow@ALPHATEST.frag.glsl" : "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(shadow_vege_transp_prog->ready());
 
         if (!rp_depth_only_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {

@@ -242,7 +242,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                         _p = _q + 1;
                     }
 
-                    textures.emplace_back(on_tex_load(texture_name.c_str(), texture_color, texture_flags));
+                    textures.emplace_back(on_tex_load(texture_name, texture_color, texture_flags));
                     samplers.emplace_back(on_sampler_load(sampler_params));
                 } else {
                     textures.emplace_back();

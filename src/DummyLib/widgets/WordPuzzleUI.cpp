@@ -222,8 +222,8 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
                 rect_t &rect = split_rects_.emplace_back();
                 rect.dims[0] = Gui::Vec2f{draw_offset[0], draw_offset[1] - 0.125f * font_height};
 
-                draw_offset = DrawTextBuffer(r, &text_data_[sd.pos], sd.len, draw_offset, options_rects_,
-                                             sd.option_start, hint_rects_, sd.hint_start);
+                draw_offset = DrawTextBuffer(r, std::string_view(&text_data_[sd.pos], sd.len), draw_offset,
+                                             options_rects_, sd.option_start, hint_rects_, sd.hint_start);
 
                 rect.dims[1] = Gui::Vec2f{draw_offset[0] - rect.dims[0][0], 1.25f * font_height};
             }
@@ -255,8 +255,8 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
 
                 int expanded_option = -1;
                 const Gui::Vec2f new_draw_offset =
-                    DrawTextBuffer(r, &text_data_[sd.pos], sd.len, draw_offset, options_rects_, sd.option_start,
-                                   hint_rects_, sd.hint_start);
+                    DrawTextBuffer(r, std::string_view(&text_data_[sd.pos], sd.len), draw_offset, options_rects_,
+                                   sd.option_start, hint_rects_, sd.hint_start);
 
                 rect.dims[1] = Gui::Vec2f{new_draw_offset[0] - rect.dims[0][0], 1.25f * font_height};
             }
@@ -266,8 +266,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
 
         auto draw_offset = Gui::Vec2f{-1.0f + side_margin, 1.0f - top_margin - font_height + anim_y_off};
 
-        DrawTextBuffer(r, preprocessed_text_data_.c_str(), (int)preprocessed_text_data_.size(), draw_offset,
-                       options_rects_, 0, hint_rects_, 0);
+        DrawTextBuffer(r, preprocessed_text_data_, draw_offset, options_rects_, 0, hint_rects_, 0);
 
         // ignore splits when sentence is already constructed
         split_rects_.clear();
@@ -300,7 +299,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
             const std::string &var = option_variants_[opt.var_start + i];
 
             const float width =
-                font_.DrawText(r, var.c_str(), opt_pos, (i == hover_var_) ? Gui::ColorRed : Gui::ColorWhite, this);
+                font_.DrawText(r, var, opt_pos, (i == hover_var_) ? Gui::ColorRed : Gui::ColorWhite, this);
 
             rect_t &rect = expanded_rects_.emplace_back();
             rect.dims[0] = opt_pos;
@@ -321,7 +320,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
                                  Gui::Vec2f{width + 0.2f * font_height, 1.25 * font_height}, this);
         background_small_.Draw(r);
 
-        font_.DrawText(r, hint_strings_[hint_data.str_index].c_str(), hint_pos, Gui::ColorWhite, this);
+        font_.DrawText(r, hint_strings_[hint_data.str_index], hint_pos, Gui::ColorWhite, this);
     }
 }
 
@@ -507,7 +506,7 @@ void WordPuzzleUI::UpdateState(const double cur_time_s) {
     }
 }
 
-Gui::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data, const int len, Gui::Vec2f draw_offset,
+Gui::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, std::string_view text_data, Gui::Vec2f draw_offset,
                                         std::vector<rect_t> &out_options_rects, const int option_start,
                                         std::vector<rect_t> &out_hint_rects, const int hint_start) {
     using namespace WordPuzzleUIInternal;
@@ -524,7 +523,7 @@ Gui::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data,
     int option_count = 0, hint_count = 0;
 
     int char_pos = 0;
-    while (char_pos < len) {
+    while (char_pos < text_data.size()) {
         if (!text_data[char_pos]) {
             break;
         }
@@ -651,7 +650,7 @@ Gui::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data,
             const int len_before = portion_buf_len;
 
             int next_pos = char_pos;
-            while (text_data[next_pos] && next_pos < len) {
+            while (text_data[next_pos] && next_pos < text_data.size()) {
                 const int next_start = next_pos;
 
                 uint32_t unicode;

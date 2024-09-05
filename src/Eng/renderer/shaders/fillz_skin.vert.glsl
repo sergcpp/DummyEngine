@@ -1,5 +1,5 @@
 #version 430 core
-#if !defined(VULKAN) && !defined(NO_BINDLESS) && defined(TRANSPARENT)
+#if !defined(VULKAN) && !defined(NO_BINDLESS) && defined(ALPHATEST)
 #extension GL_ARB_bindless_texture : enable
 #endif
 
@@ -9,18 +9,18 @@
 
 #pragma multi_compile _ MOVING
 #pragma multi_compile _ OUTPUT_VELOCITY
-#pragma multi_compile _ TRANSPARENT
+#pragma multi_compile _ ALPHATEST
 #pragma multi_compile _ NO_BINDLESS
 
 #if defined(NO_BINDLESS) && defined(VULKAN)
     #pragma dont_compile
 #endif
-#if defined(NO_BINDLESS) && !defined(TRANSPARENT)
+#if defined(NO_BINDLESS) && !defined(ALPHATEST)
     #pragma dont_compile
 #endif
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos_curr;
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 #ifdef OUTPUT_VELOCITY
@@ -47,14 +47,14 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     layout(location = 2) out vec2 g_vtx_z_vs_curr;
     layout(location = 3) out vec2 g_vtx_z_vs_prev;
 #endif // OUTPUT_VELOCITY
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     layout(location = 4) out vec2 g_vtx_uvs0;
     layout(location = 5) out vec3 g_vtx_pos_ls;
     layout(location = 6) out flat float g_alpha;
     #if !defined(NO_BINDLESS)
         layout(location = 7) out flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
 invariant gl_Position;
 
@@ -66,7 +66,7 @@ void main() {
     const mat4 model_matrix_prev = FetchPrevModelMatrix(g_instances_buf, instance.x);
 #endif
 
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
     const MaterialData mat = g_materials[instance.y];
@@ -75,7 +75,7 @@ void main() {
     g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
 #endif // !NO_BINDLESS
     g_vtx_pos_ls = g_in_vtx_pos_curr;
-#endif
+#endif // ALPHATEST
 
     const vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos_curr, 1.0)).xyz;
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws_curr, 1.0);

@@ -70,7 +70,7 @@ void DialogController::Update(const double cur_time_s) {
         const int choices_count = cur_seq_->GetChoicesCount();
         for (int i = 0; i < choices_count; i++) {
             const Eng::SeqChoice *ch = cur_seq_->GetChoice(i);
-            push_choice_signal.FireN(ch->key.c_str(), ch->text.c_str(), off);
+            push_choice_signal.FireN(ch->key, ch->text, off);
         }
 
         const double end_time_s = cur_seq_->duration();
@@ -120,7 +120,7 @@ void DialogController::MakeChoice(std::string_view key) {
         Eng::SeqChoice *ch = cur_seq_->GetChoice(key);
         next_seq_id_ = ch->seq_id;
         if (!ch->puzzle_name.empty()) {
-            start_puzzle_signal.FireN(ch->puzzle_name.c_str());
+            start_puzzle_signal.FireN(ch->puzzle_name);
         } else {
             ContinueChoice();
         }

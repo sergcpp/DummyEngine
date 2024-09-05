@@ -83,8 +83,8 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     return (*this);
 }
 
-Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf, void *,
-                                               const uint32_t init_off) {
+Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, std::string_view tag, const Buffer *init_buf,
+                                               void *, const uint32_t init_off) {
     FreelistAlloc::Allocation alloc = alloc_->Alloc(suballoc_align_, req_size);
     while (alloc.pool == 0xffff) {
         Resize(uint32_t(size_ * 1.5f));

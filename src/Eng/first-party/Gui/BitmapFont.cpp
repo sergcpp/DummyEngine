@@ -9,8 +9,6 @@
 #include "Renderer.h"
 #include "Utils.h"
 
-namespace BitmapFontInternal {}
-
 Gui::BitmapFont::BitmapFont(std::string_view name, Ren::Context *ctx) : info_{}, scale_(1.0f), tex_res_{} {
     if (!name.empty() && ctx) {
         this->Load(name, *ctx);
@@ -162,8 +160,6 @@ float Gui::BitmapFont::GetWidth(std::string_view text, const BaseElement *parent
 
 float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f &pos, const uint8_t col[4],
                                 const BaseElement *parent) const {
-    using namespace BitmapFontInternal;
-
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
     const glyph_info_t *glyphs = glyphs_.get();
 
@@ -293,8 +289,6 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
 
 int Gui::BitmapFont::CheckText(std::string_view text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
                                const BaseElement *parent) const {
-    using namespace BitmapFontInternal;
-
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
     const glyph_info_t *glyphs = glyphs_.get();
 

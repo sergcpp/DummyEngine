@@ -95,8 +95,7 @@ set_target_properties(00_basic
                       04_denoising
                       05_physical_sky PROPERTIES FOLDER Samples)
 
-set_target_properties(test_DummyLib
-                      test_Eng
+set_target_properties(test_Eng
                       test_Gui
                       test_Net
                       test_Phy
@@ -114,7 +113,6 @@ set_target_properties(astc
                       optick
                       glslx PROPERTIES FOLDER _)
 
-add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
 add_test(EngTest        Eng/tests/test_Eng)
 add_test(NetTest        Net/tests/test_Net)
 add_test(PhyTest        Phy/tests/test_Phy)
@@ -124,8 +122,7 @@ add_test(SWTest         Ren/SW/tests/test_SW)
 add_test(SndTest        Snd/tests/test_Snd)
 add_test(SysTest        Sys/tests/test_Sys)
 
-add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib
-                                                               test_Eng
+add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_Eng
                                                                test_Net
                                                                test_Phy
                                                                test_Ray

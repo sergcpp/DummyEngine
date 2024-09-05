@@ -58,6 +58,8 @@ set(SOURCE_FILES    BaseElement.h
                     Renderer.cpp
                     shaders.inl
                     Signal.h
+                    SmallVector.h
+                    Span.h
                     Utils.h
                     Utils.cpp)
 

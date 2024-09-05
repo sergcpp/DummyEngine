@@ -136,7 +136,7 @@ jobs:
           bin-name: "DummyAppVK"
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-nv-img-output"
-          test-args: "--device NV -vl 0"
+          test-args: "-d NV -vl 0"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -205,7 +205,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-nv-output"
-          test-args: "--device NV --nocpu"
+          test-args: "-d NV --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -228,7 +228,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-amd-output"
-          test-args: "--device AMD --nocpu"
+          test-args: "-d AMD --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -251,7 +251,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-arc-output"
-          test-args: "--device Arc --nocpu"
+          test-args: "-d Arc --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -274,7 +274,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-xe-output"
-          test-args: "--device Xe --nocpu"
+          test-args: "-d Xe --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -297,7 +297,7 @@ jobs:
 #        with:
 #          bin-dir: "linux-x86_64-vk"
 #          out-dir: "linux-x86_64-vk-amd-output"
-#          test-args: "--device AMD --nocpu --nohwrt"
+#          test-args: "-d AMD --nocpu --nohwrt"
 #      - name: Upload artifacts
 #        uses: actions/upload-artifact@v3
 #        if: always()
@@ -320,7 +320,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-nv-output"
-          test-args: "--device NV --nocpu"
+          test-args: "-d NV --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -343,7 +343,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-gl"
           out-dir: "linux-x86_64-gl-nv-output"
-          test-args: "-j2 --device NV --nocpu"
+          test-args: "-j2 -d NV --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()

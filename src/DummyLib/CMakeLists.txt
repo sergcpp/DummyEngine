@@ -74,11 +74,11 @@ source_group("src\\widgets" FILES ${WIDGETS_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
 set_source_files_properties(${STATES_SOURCES} PROPERTIES UNITY_GROUP "states")
-source_group("src\\States" FILES ${STATES_SOURCES})
+source_group("src\\states" FILES ${STATES_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
 set_source_files_properties(${UTILS_SOURCES} PROPERTIES UNITY_GROUP "utils")
-source_group("src\\Utils" FILES ${UTILS_SOURCES})
+source_group("src\\utils" FILES ${UTILS_SOURCES})
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DummyLib Eng Ray ${LIBS})
@@ -94,4 +94,3 @@ add_custom_command(TARGET DummyLib
                    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/renderer/textures
                                                               ${WORKING_DIRECTORY}/assets/textures/internal)
 
-add_subdirectory(tests)

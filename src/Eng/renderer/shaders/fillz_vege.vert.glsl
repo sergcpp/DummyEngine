@@ -10,7 +10,7 @@
 
 #pragma multi_compile _ MOVING
 #pragma multi_compile _ OUTPUT_VELOCITY
-#pragma multi_compile _ TRANSPARENT
+#pragma multi_compile _ ALPHATEST
 #pragma multi_compile _ NO_BINDLESS
 
 #if defined(NO_BINDLESS) && defined(VULKAN)
@@ -18,7 +18,7 @@
 #endif
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
@@ -50,14 +50,14 @@ layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
     layout(location = 2) out vec2 g_vtx_z_vs_curr;
     layout(location = 3) out vec2 g_vtx_z_vs_prev;
 #endif // OUTPUT_VELOCITY
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     layout(location = 4) out vec2 g_vtx_uvs0;
     layout(location = 5) out vec3 g_vtx_pos_ls;
     layout(location = 6) out flat float g_alpha;
     #if !defined(NO_BINDLESS)
         layout(location = 7) out flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
 invariant gl_Position;
 
@@ -88,13 +88,13 @@ void main() {
     vec3 _unused = vec3(0.0);
     const vec3 vtx_pos_ls_curr = TransformVegetation(g_in_vtx_pos, _unused, _unused, g_noise_tex, wind_scroll, wind_params, wind_vec_ls, hdata_curr);
 
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     g_vtx_uvs0 = g_in_vtx_uvs0;
     g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
 #endif // !NO_BINDLESS
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
     const vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(vtx_pos_ls_curr, 1.0)).xyz;
     gl_Position = g_shrd_data.clip_from_world * vec4(vtx_pos_ws_curr, 1.0);

@@ -24,8 +24,8 @@ struct vertex_t {
 };
 static_assert(sizeof(vertex_t) == 24, "!");
 
-inline uint8_t f32_to_u8(float value) { return uint8_t(value * 255); }
-inline uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); }
+inline uint8_t f32_to_u8(const float value) { return uint8_t(value * 255); }
+inline uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
 
 extern const uint8_t ColorWhite[4];
 extern const uint8_t ColorGrey[4];

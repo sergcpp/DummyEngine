@@ -1,5 +1,5 @@
 #version 430 core
-#if !defined(VULKAN) && !defined(NO_BINDLESS) && defined(TRANSPARENT)
+#if !defined(VULKAN) && !defined(NO_BINDLESS) && defined(ALPHATEST)
 #extension GL_ARB_bindless_texture : enable
 #endif
 
@@ -7,13 +7,13 @@
 #include "texturing_common.glsl"
 
 #pragma multi_compile _ OUTPUT_VELOCITY
-#pragma multi_compile _ TRANSPARENT
+#pragma multi_compile _ ALPHATEST
 #pragma multi_compile _ NO_BINDLESS
 
 #if defined(NO_BINDLESS) && defined(VULKAN)
     #pragma dont_compile
 #endif
-#if defined(NO_BINDLESS) && !defined(TRANSPARENT)
+#if defined(NO_BINDLESS) && !defined(ALPHATEST)
     #pragma dont_compile
 #endif
 
@@ -21,9 +21,9 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#if defined(TRANSPARENT) && defined(NO_BINDLESS)
+#if defined(ALPHATEST) && defined(NO_BINDLESS)
     layout(binding = BIND_MAT_TEX4) uniform sampler2D g_alpha_tex;
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
 #ifdef OUTPUT_VELOCITY
     layout(location = 0) in vec3 g_vtx_pos_cs_curr;
@@ -31,21 +31,21 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     layout(location = 2) in vec2 g_vtx_z_vs_curr;
     layout(location = 3) in vec2 g_vtx_z_vs_prev;
 #endif // OUTPUT_VELOCITY
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     layout(location = 4) in vec2 g_vtx_uvs0;
     layout(location = 5) in vec3 g_vtx_pos_ls;
     layout(location = 6) in flat float g_alpha;
     #if !defined(NO_BINDLESS)
         layout(location = 7) in flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
 #ifdef OUTPUT_VELOCITY
 layout(location = 0) out vec4 g_out_velocity;
 #endif
 
 void main() {
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     const float tx_alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
     const float max_deriv = max(length(dFdx(g_vtx_pos_ls)), length(dFdy(g_vtx_pos_ls)));
     const float HashScale = 0.1;
@@ -70,7 +70,7 @@ void main() {
     comp_a = clamp(comp_a, 1.0e-6, 1.0);
 
     if (tx_alpha < comp_a) discard;
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
 #ifdef OUTPUT_VELOCITY
     vec2 unjitter = g_shrd_data.taa_info.xy;

@@ -4,6 +4,7 @@
 #include "../Gui.h"
 
 void test_signal();
+void test_span();
 void test_unicode();
 void test_widgets();
 
@@ -12,6 +13,7 @@ int main() {
     puts(" ---------------");
 
     test_signal();
+    test_span();
     test_unicode();
     test_widgets();
 }

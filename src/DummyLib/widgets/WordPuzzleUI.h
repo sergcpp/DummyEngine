@@ -58,7 +58,7 @@ class WordPuzzleUI : public Gui::BaseElement {
     void UpdateTextBuffer();
     void UpdateState(double cur_time_s);
 
-    Gui::Vec2f DrawTextBuffer(Gui::Renderer *r, const char *text_data, int len, Gui::Vec2f draw_offset,
+    Gui::Vec2f DrawTextBuffer(Gui::Renderer *r, std::string_view text_data, Gui::Vec2f draw_offset,
                               std::vector<rect_t> &out_options_rects, int option_start,
                               std::vector<rect_t> &out_hint_rects, int hint_start);
 

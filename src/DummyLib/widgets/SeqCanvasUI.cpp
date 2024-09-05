@@ -113,8 +113,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                 y_text_pos -= font_height;
 
                 if (seq_action->anim_ref) {
-                    const char *anim_name = seq_action->anim_ref->name().c_str();
-                    font_.DrawText(r, anim_name,
+                    font_.DrawText(r, seq_action->anim_ref->name(),
                                    SnapToPixels(Gui::Vec2f{x_beg + 1.25f * crop_region_width, y_text_pos}),
                                    Gui::ColorWhite, this);
                 }

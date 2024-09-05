@@ -1119,7 +1119,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
 
         const Ren::Vec4f *mask_tr = scene_data_.decals_textures.Find(js_mask.val.c_str());
         if (!mask_tr) {
-            de->mask = LoadDecalTexture(js_mask.val.c_str());
+            de->mask = LoadDecalTexture(js_mask.val);
             scene_data_.decals_textures.Insert(Ren::String{js_mask.val.c_str()}, de->mask);
         } else {
             de->mask = *mask_tr;
@@ -1131,7 +1131,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
 
         const Ren::Vec4f *diff_tr = scene_data_.decals_textures.Find(js_diff.val.c_str());
         if (!diff_tr) {
-            de->diff = LoadDecalTexture(js_diff.val.c_str());
+            de->diff = LoadDecalTexture(js_diff.val);
             scene_data_.decals_textures.Insert(Ren::String{js_diff.val.c_str()}, de->diff);
         } else {
             de->diff = *diff_tr;
@@ -1143,7 +1143,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
 
         const Ren::Vec4f *norm_tr = scene_data_.decals_textures.Find(js_norm.val.c_str());
         if (!norm_tr) {
-            de->norm = LoadDecalTexture(js_norm.val.c_str());
+            de->norm = LoadDecalTexture(js_norm.val);
             scene_data_.decals_textures.Insert(Ren::String{js_norm.val.c_str()}, de->norm);
         } else {
             de->norm = *norm_tr;
@@ -1155,7 +1155,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
 
         const Ren::Vec4f *spec_tr = scene_data_.decals_textures.Find(js_spec.val.c_str());
         if (!spec_tr) {
-            de->spec = LoadDecalTexture(js_spec.val.c_str());
+            de->spec = LoadDecalTexture(js_spec.val);
             scene_data_.decals_textures.Insert(Ren::String{js_spec.val.c_str()}, de->spec);
         } else {
             de->spec = *spec_tr;

@@ -12,8 +12,9 @@ class ButtonImage : public ButtonBase {
     std::unique_ptr<BaseElement> additional_element_;
 
   public:
-    ButtonImage(Ren::Context &ctx, const char *tex_normal, const Vec2f uvs_normal[2], const char *tex_focused,
-                const Vec2f uvs_focused[2], const char *tex_pressed, const Vec2f uvs_pressed[2], const Vec2f &pos,
+    ButtonImage(const Ren::TextureRegionRef &tex_normal, const Vec2f uvs_normal[2],
+                const Ren::TextureRegionRef &tex_focused, const Vec2f uvs_focused[2],
+                const Ren::TextureRegionRef &tex_pressed, const Vec2f uvs_pressed[2], const Vec2f &pos,
                 const Vec2f &size, const BaseElement *parent);
 
     BaseElement *element() const { return additional_element_.get(); }

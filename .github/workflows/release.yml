@@ -297,7 +297,7 @@ jobs:
 #          bin-name: "DummyAppVK"
 #          bin-dir: "windows-x86_64-vk"
 #          out-dir: "windows-x86_64-vk-nv-img-output"
-#          test-args: "--device NV"
+#          test-args: "-d NV"
 #      - name: Upload artifacts
 #        uses: actions/upload-artifact@v3
 #        if: always()
@@ -321,7 +321,7 @@ jobs:
           bin-name: "DummyAppVK"
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-amd-img-output"
-          test-args: "--device AMD"
+          test-args: "-d AMD"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -345,7 +345,7 @@ jobs:
           bin-name: "DummyAppVK"
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-arc-img-output"
-          test-args: "--device Arc"
+          test-args: "-d Arc"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -369,7 +369,7 @@ jobs:
   #         bin-name: "DummyAppVK"
   #         bin-dir: "linux-x86_64-vk"
   #         out-dir: "linux-x86_64-vk-nv-img-output"
-  #         test-args: "--device NV"
+  #         test-args: "-d NV"
   #     - name: Upload artifacts
   #       uses: actions/upload-artifact@v3
   #       if: always()
@@ -393,7 +393,7 @@ jobs:
   #         bin-name: "DummyAppVK"
   #         bin-dir: "linux-x86_64-vk"
   #         out-dir: "linux-x86_64-vk-amd-img-output"
-  #         test-args: "--device AMD --pt_nohwrt"
+  #         test-args: "-d AMD --pt_nohwrt"
   #     - name: Upload artifacts
   #       uses: actions/upload-artifact@v3
   #       if: always()
@@ -417,7 +417,7 @@ jobs:
           bin-name: "DummyAppGL"
           bin-dir: "windows-x86_64-gl"
           out-dir: "windows-x86_64-gl-nv-img-output"
-          test-args: "--device NV"
+          test-args: "-d NV"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()

@@ -17,7 +17,7 @@ class EditBox : public BaseElement {
     int current_line_, current_char_;
 
   public:
-    EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets, const BitmapFont *font,
+    EditBox(Ren::Context &ctx, std::string_view frame_tex_name, const Vec2f &frame_offsets, const BitmapFont *font,
             const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
     EditBox(Image9Patch frame, const BitmapFont *font, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 

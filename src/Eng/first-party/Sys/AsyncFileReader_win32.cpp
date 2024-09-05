@@ -312,7 +312,7 @@ Sys::AsyncFileReader::AsyncFileReader() noexcept : impl_(new AsyncFileReaderImpl
 
 Sys::AsyncFileReader::~AsyncFileReader() = default;
 
-bool Sys::AsyncFileReader ::ReadFileBlocking(const char *file_path, const size_t read_offset, const size_t read_size,
+bool Sys::AsyncFileReader::ReadFileBlocking(const char *file_path, const size_t read_offset, const size_t read_size,
                                              FileReadBufBase &out_buf) {
     return impl_->ReadFileBlocking(file_path, read_offset, read_size, out_buf);
 }

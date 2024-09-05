@@ -10,7 +10,7 @@
 
 #include "shadow_interface.h"
 
-#pragma multi_compile _ TRANSPARENT
+#pragma multi_compile _ ALPHATEST
 #pragma multi_compile _ NO_BINDLESS
 
 #if defined(NO_BINDLESS) && defined(VULKAN)
@@ -22,7 +22,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
@@ -51,13 +51,13 @@ layout(binding = BIND_MAT_TEX4) uniform sampler2D g_pp_pos_tex;
 layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #endif
 
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     layout(location = 0) out vec2 g_vtx_uvs0;
     layout(location = 1) out flat float g_alpha;
     #if !defined(NO_BINDLESS)
         layout(location = 2) out flat TEX_HANDLE g_alpha_tex;
     #endif // !NO_BINDLESS
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
 void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
@@ -83,14 +83,14 @@ void main() {
 
     vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
 
-#ifdef TRANSPARENT
+#ifdef ALPHATEST
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
     g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
 #endif // !NO_BINDLESS
-#endif // TRANSPARENT
+#endif // ALPHATEST
 
     gl_Position = g_shadow_view_proj_mat * vec4(vtx_pos_ws, 1.0);
 }

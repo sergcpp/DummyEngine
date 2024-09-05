@@ -75,7 +75,7 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
     debug_ui_ = viewer->debug_ui();
 
     cmdline_back_ = std::make_unique<Gui::Image9Patch>(
-        *ren_ctx_, (std::string(ASSETS_BASE_PATH) + "/textures/editor/dial_edit_back.uncompressed.tga").c_str(),
+        *ren_ctx_, std::string(ASSETS_BASE_PATH) + "/textures/editor/dial_edit_back.uncompressed.tga",
         Gui::Vec2f{1.5f, 1.5f}, 1.0f, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_);
 
     random_ = viewer->random();
@@ -341,7 +341,7 @@ void GSBaseState::Enter() {
         const Eng::SceneData &scene_data = scene_manager_->scene_data();
 
         const Eng::CompStorage *lprobes = scene_data.comp_store[Eng::CompProbe];
-        Eng::SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(),
+        Eng::SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name,
                                            scene_data.probe_storage, lprobes, ren_ctx_->log());
 
         // probe textures were written, convert them
@@ -941,7 +941,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
             Ren::String hint_str;
             int index = cmdline_->NextHint(cmd, -1, hint_str);
             while (index != -1) {
-                font_->DrawText(r, hint_str.c_str(), Gui::Vec2f{-1.0f, cur_y}, text_color, root);
+                font_->DrawText(r, hint_str, Gui::Vec2f{-1.0f, cur_y}, text_color, root);
                 cur_y -= font_height;
                 index = cmdline_->NextHint(cmd, index, hint_str);
             }
@@ -1192,7 +1192,7 @@ void GSBaseState::InitScene_PT() {
                 env_map_path.replace(env_map_path.length() - 3, 3, "hdr");
 
                 int width, height;
-                const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(env_map_path.c_str(), width, height);
+                const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(env_map_path, width, height);
 
                 Ray::tex_desc_t tex_desc;
                 tex_desc.w = width;

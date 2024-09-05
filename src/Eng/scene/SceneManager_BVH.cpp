@@ -577,7 +577,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     }
 
     const Ren::SubAllocation mesh_alloc =
-        scene_data_.persistent_data.swrt.rt_meshes_buf->AllocSubRegion(sizeof(gpu_mesh_t), nullptr);
+        scene_data_.persistent_data.swrt.rt_meshes_buf->AllocSubRegion(sizeof(gpu_mesh_t), {});
 
     //
     // Gather geometries
@@ -625,9 +625,9 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
 
     const Ren::SubAllocation nodes_alloc = scene_data_.persistent_data.swrt.rt_blas_buf->AllocSubRegion(
-        uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t), nullptr);
+        uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t), {});
     const Ren::SubAllocation prim_alloc = scene_data_.persistent_data.swrt.rt_prim_indices_buf->AllocSubRegion(
-        uint32_t(prim_indices.size()) * sizeof(uint32_t), nullptr);
+        uint32_t(prim_indices.size()) * sizeof(uint32_t), {});
 
     new_mesh.node_index = nodes_alloc.offset / sizeof(gpu_bvh_node_t);
     new_mesh.node_count = uint32_t(nodes.size());

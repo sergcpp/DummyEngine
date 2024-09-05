@@ -101,7 +101,7 @@ VkDeviceAddress Ren::Buffer::vk_device_address() const {
     return api_ctx_->vkGetBufferDeviceAddressKHR(api_ctx_->device, &addr_info);
 }
 
-Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf,
+Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, std::string_view tag, const Buffer *init_buf,
                                                CommandBuffer cmd_buf, const uint32_t init_off) {
     if (!alloc_) {
         alloc_ = std::make_unique<FreelistAlloc>(size_);

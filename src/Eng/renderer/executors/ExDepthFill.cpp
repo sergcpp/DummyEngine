@@ -69,35 +69,35 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
                            "internal/fillz@OUTPUT_VELOCITY.frag.glsl");
         assert(fillz_vege_solid_vel_mov_prog->ready());
         Ren::ProgramRef fillz_transp_prog = sh.LoadProgram(
-            ctx, bindless ? "internal/fillz@TRANSPARENT.vert.glsl" : "internal/fillz@TRANSPARENT;NO_BINDLESS.vert.glsl",
-            bindless ? "internal/fillz@TRANSPARENT.frag.glsl" : "internal/fillz@TRANSPARENT;NO_BINDLESS.frag.glsl");
+            ctx, bindless ? "internal/fillz@ALPHATEST.vert.glsl" : "internal/fillz@ALPHATEST;NO_BINDLESS.vert.glsl",
+            bindless ? "internal/fillz@ALPHATEST.frag.glsl" : "internal/fillz@ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_transp_prog->ready());
         Ren::ProgramRef fillz_transp_mov_prog =
             sh.LoadProgram(ctx,
-                           bindless ? "internal/fillz@MOVING;TRANSPARENT.vert.glsl"
-                                    : "internal/fillz@MOVING;TRANSPARENT;NO_BINDLESS.vert.glsl",
-                           bindless ? "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT.frag.glsl"
-                                    : "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.frag.glsl");
+                           bindless ? "internal/fillz@MOVING;ALPHATEST.vert.glsl"
+                                    : "internal/fillz@MOVING;ALPHATEST;NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/fillz@OUTPUT_VELOCITY;ALPHATEST.frag.glsl"
+                                    : "internal/fillz@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_transp_mov_prog->ready());
         Ren::ProgramRef fillz_vege_transp_prog = sh.LoadProgram(
             ctx,
-            bindless ? "internal/fillz_vege@TRANSPARENT.vert.glsl"
-                     : "internal/fillz_vege@TRANSPARENT;NO_BINDLESS.vert.glsl",
-            bindless ? "internal/fillz@TRANSPARENT.frag.glsl" : "internal/fillz@TRANSPARENT;NO_BINDLESS.frag.glsl");
+            bindless ? "internal/fillz_vege@ALPHATEST.vert.glsl"
+                     : "internal/fillz_vege@ALPHATEST;NO_BINDLESS.vert.glsl",
+            bindless ? "internal/fillz@ALPHATEST.frag.glsl" : "internal/fillz@ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_vege_transp_prog->ready());
         Ren::ProgramRef fillz_vege_transp_vel_prog =
             sh.LoadProgram(ctx,
-                           bindless ? "internal/fillz_vege@OUTPUT_VELOCITY;TRANSPARENT.vert.glsl"
-                                    : "internal/fillz_vege@OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.vert.glsl",
-                           bindless ? "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT.frag.glsl"
-                                    : "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.frag.glsl");
+                           bindless ? "internal/fillz_vege@OUTPUT_VELOCITY;ALPHATEST.vert.glsl"
+                                    : "internal/fillz_vege@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/fillz@OUTPUT_VELOCITY;ALPHATEST.frag.glsl"
+                                    : "internal/fillz@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_vege_transp_vel_prog->ready());
         Ren::ProgramRef fillz_vege_transp_vel_mov_prog =
             sh.LoadProgram(ctx,
-                           bindless ? "internal/fillz_vege@MOVING;OUTPUT_VELOCITY;TRANSPARENT.vert.glsl"
-                                    : "internal/fillz_vege@MOVING;OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.vert.glsl",
-                           bindless ? "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT.frag.glsl"
-                                    : "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.frag.glsl");
+                           bindless ? "internal/fillz_vege@MOVING;OUTPUT_VELOCITY;ALPHATEST.vert.glsl"
+                                    : "internal/fillz_vege@MOVING;OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/fillz@OUTPUT_VELOCITY;ALPHATEST.frag.glsl"
+                                    : "internal/fillz@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_vege_transp_vel_mov_prog->ready());
         Ren::ProgramRef fillz_skin_solid_prog =
             sh.LoadProgram(ctx, "internal/fillz_skin.vert.glsl", "internal/fillz.frag.glsl");
@@ -110,23 +110,23 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
         assert(fillz_skin_solid_vel_mov_prog->ready());
         Ren::ProgramRef fillz_skin_transp_prog = sh.LoadProgram(
             ctx,
-            bindless ? "internal/fillz_skin@TRANSPARENT.vert.glsl"
-                     : "internal/fillz_skin@TRANSPARENT;NO_BINDLESS.vert.glsl",
-            bindless ? "internal/fillz@TRANSPARENT.frag.glsl" : "internal/fillz@TRANSPARENT;NO_BINDLESS.frag.glsl");
+            bindless ? "internal/fillz_skin@ALPHATEST.vert.glsl"
+                     : "internal/fillz_skin@ALPHATEST;NO_BINDLESS.vert.glsl",
+            bindless ? "internal/fillz@ALPHATEST.frag.glsl" : "internal/fillz@ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_skin_transp_prog->ready());
         Ren::ProgramRef fillz_skin_transp_vel_prog =
             sh.LoadProgram(ctx,
-                           bindless ? "internal/fillz_skin@OUTPUT_VELOCITY;TRANSPARENT.vert.glsl"
-                                    : "internal/fillz_skin@OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.vert.glsl",
-                           bindless ? "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT.frag.glsl"
-                                    : "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.frag.glsl");
+                           bindless ? "internal/fillz_skin@OUTPUT_VELOCITY;ALPHATEST.vert.glsl"
+                                    : "internal/fillz_skin@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/fillz@OUTPUT_VELOCITY;ALPHATEST.frag.glsl"
+                                    : "internal/fillz@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_skin_transp_vel_prog->ready());
         Ren::ProgramRef fillz_skin_transp_vel_mov_prog =
             sh.LoadProgram(ctx,
-                           bindless ? "internal/fillz_skin@MOVING;OUTPUT_VELOCITY;TRANSPARENT.vert.glsl"
-                                    : "internal/fillz_skin@MOVING;OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.vert.glsl",
-                           bindless ? "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT.frag.glsl"
-                                    : "internal/fillz@OUTPUT_VELOCITY;TRANSPARENT;NO_BINDLESS.frag.glsl");
+                           bindless ? "internal/fillz_skin@MOVING;OUTPUT_VELOCITY;ALPHATEST.vert.glsl"
+                                    : "internal/fillz_skin@MOVING;OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/fillz@OUTPUT_VELOCITY;ALPHATEST.frag.glsl"
+                                    : "internal/fillz@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(fillz_skin_transp_vel_mov_prog->ready());
 
         if (!rp_depth_only_[0].Setup(ctx.api_ctx(), {}, depth_clear_target, ctx.log())) {

@@ -1,9 +1,9 @@
 #include "Image.h"
 
+#include <fstream>
 #include <memory>
 
 #include "../Ren/Context.h"
-#include "../Sys/AssetFile.h"
 
 #include "Renderer.h"
 
@@ -23,10 +23,11 @@ Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos
     Ren::eTexLoadStatus status;
     tex_ = ctx.LoadTextureRegion(tex_name, {}, ctx.default_stage_bufs(), {}, &status);
     if (status == Ren::eTexLoadStatus::CreatedDefault) {
-        Sys::AssetFile in_file(tex_name, Sys::eOpenMode::In);
-        size_t in_file_size = in_file.size();
+        std::ifstream in_file(tex_name.data(), std::ios::binary | std::ios::ate);
+        const size_t in_file_size = size_t(in_file.tellg());
+        in_file.seekg(0, std::ios::beg);
         std::vector<uint8_t> data(in_file_size);
-        in_file.Read((char *)data.data(), in_file_size);
+        in_file.read((char *)data.data(), in_file_size);
 
         tex_ = ctx.LoadTextureRegion(tex_name, data, ctx.default_stage_bufs(), {}, &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);

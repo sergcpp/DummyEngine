@@ -8,7 +8,7 @@ Gui::Image9Patch::Image9Patch(const Ren::TextureRegionRef &tex, const Vec2f &off
                               const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
     : Image(tex, pos, size, parent), offset_px_(offset_px), frame_scale_(frame_scale) {}
 
-Gui::Image9Patch::Image9Patch(Ren::Context &ctx, const char *tex_name, const Vec2f &offset_px, float frame_scale,
+Gui::Image9Patch::Image9Patch(Ren::Context &ctx, std::string_view tex_name, const Vec2f &offset_px, float frame_scale,
                               const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
     : Image(ctx, tex_name, pos, size, parent), offset_px_(offset_px), frame_scale_(frame_scale) {}
 

@@ -96,9 +96,6 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify@RESET.comp.glsl");
     success &= init_pipeline(pi_probe_sample_, "internal/probe_sample.comp.glsl");
 
-    // Flat normals reconstruction
-    success &= init_pipeline(pi_reconstruct_normals_, "internal/reconstruct_normals.comp.glsl");
-
     // GTAO
     success &= init_pipeline(pi_gtao_main_, "internal/gtao_main.comp.glsl");
     success &= init_pipeline(pi_gtao_filter_, "internal/gtao_filter.comp.glsl");

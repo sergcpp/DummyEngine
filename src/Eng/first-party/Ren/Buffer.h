@@ -126,7 +126,7 @@ class Buffer : public RefCounter {
     bool is_mapped() const { return mapped_ptr_ != nullptr; }
     uint8_t *mapped_ptr() const { return mapped_ptr_; }
 
-    SubAllocation AllocSubRegion(uint32_t size, const char *tag, const Buffer *init_buf = nullptr,
+    SubAllocation AllocSubRegion(uint32_t size, std::string_view tag, const Buffer *init_buf = nullptr,
                                  CommandBuffer cmd_buf = {}, uint32_t init_off = 0);
     void UpdateSubRegion(uint32_t offset, uint32_t size, const Buffer &init_buf, uint32_t init_off = 0,
                          CommandBuffer cmd_buf = {});
