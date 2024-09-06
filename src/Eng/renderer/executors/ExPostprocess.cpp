@@ -59,17 +59,18 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
 
 void Eng::ExPostprocess::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        blit_postprocess_prog_[0][0][0] =
-            sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl", "internal/blit_postprocess.frag.glsl");
+        blit_postprocess_prog_[0][0][0] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
+                                                         "internal/blit_postprocess@ABERRATION.frag.glsl");
         assert(blit_postprocess_prog_[0][0][0]->ready());
         blit_postprocess_prog_[0][0][1] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                                                         "internal/blit_postprocess@TWO_TARGETS.frag.glsl");
+                                                         "internal/blit_postprocess@ABERRATION;TWO_TARGETS.frag.glsl");
         assert(blit_postprocess_prog_[0][0][1]->ready());
-        blit_postprocess_prog_[0][1][0] =
-            sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl", "internal/blit_postprocess@LUT.frag.glsl");
+        blit_postprocess_prog_[0][1][0] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
+                                                         "internal/blit_postprocess@ABERRATION;LUT.frag.glsl");
         assert(blit_postprocess_prog_[0][1][0]->ready());
-        blit_postprocess_prog_[0][1][1] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                                                         "internal/blit_postprocess@LUT;TWO_TARGETS.frag.glsl");
+        blit_postprocess_prog_[0][1][1] =
+            sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
+                           "internal/blit_postprocess@ABERRATION;LUT;TWO_TARGETS.frag.glsl");
         assert(blit_postprocess_prog_[0][1][1]->ready());
 
         blit_postprocess_prog_[1][0][0] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",

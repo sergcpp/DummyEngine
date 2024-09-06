@@ -11,7 +11,7 @@ bool Dictionary::Lookup(std::string_view key, dict_entry_res_t &result) {
             result.gen = eGramGrpGen(entry.gen);
 
             result.orth = &comb_str_buf_[entry.orth_str_off];
-            result.pron = entry.pron_str_off != 0xffffffff ? &comb_str_buf_[entry.pron_str_off] : nullptr;
+            result.pron = entry.pron_str_off != 0xffffffff ? &comb_str_buf_[entry.pron_str_off] : std::string_view{};
 
             uint32_t j = 0, str_off = entry.trans_str_off;
             while (j < entry.trans_count && j < (sizeof(result.trans) / sizeof(const char *))) {

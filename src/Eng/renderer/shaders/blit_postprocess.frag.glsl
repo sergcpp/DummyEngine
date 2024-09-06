@@ -47,8 +47,8 @@ void main() {
                                             vec3(0.2, 0.5, 0.2),
                                             vec3(0.1, 0.2, 0.3),
                                             vec3(0.0, 0.05, 0.4));
-        for (int i = 0; i < 5; ++i) {
-            col += AberrFactors[i] * textureLod(g_tex, uvs_centered * (1.0 - (float(i) - 5.0 * 0.5) / 5.0 * 0.0025 * g_params.aberration) + vec2(0.5), 0.0).xyz;
+        for (int i = -2; i <= 2; ++i) {
+            col += AberrFactors[2 + i] * textureLod(g_tex, vec2(0.5) + uvs_centered * (1.0 - float(i) * 0.0005 * g_params.aberration), 0.0).xyz;
         }
     } else
 #endif

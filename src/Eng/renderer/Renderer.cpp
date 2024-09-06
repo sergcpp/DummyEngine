@@ -968,6 +968,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         frame_textures.color_params.w = view_state_.scr_res[0];
         frame_textures.color_params.h = view_state_.scr_res[1];
         frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
+        frame_textures.color_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
 
@@ -1690,6 +1691,8 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             params.w = cur_scr_w;
             params.h = cur_scr_h;
             params.format = format;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
         }
 
@@ -1726,7 +1729,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         ex_postprocess_args_.tonemap_mode = int(settings.tonemap_mode);
         ex_postprocess_args_.inv_gamma = 1.0f / gamma;
         ex_postprocess_args_.fade = 0.0f;
-        ex_postprocess_args_.aberration = 0.0f;
+        ex_postprocess_args_.aberration = settings.enable_aberration ? 1.0f : 0.0f;
 
         backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 

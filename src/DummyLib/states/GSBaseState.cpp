@@ -729,6 +729,7 @@ void GSBaseState::Draw() {
     Ren::Tex2DRef render_target;
     if (capture_state_ != eCaptureState::None) {
         if (use_pt_) {
+            renderer_->settings.enable_aberration = false;
             const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0][0].iteration;
             if (iteration < viewer_->app_params.pt_max_samples) {
                 render_target = capture_result_;
