@@ -2,9 +2,10 @@
 #extension GL_ARB_texture_multisample : enable
 
 #include "_fs_common.glsl"
-#include "blit_combine_interface.h"
+#include "blit_postprocess_interface.h"
 
 #pragma multi_compile _ COMPRESSED
+#pragma multi_compile _ ABERRATION
 #pragma multi_compile _ LUT
 #pragma multi_compile _ TWO_TARGETS
 
@@ -37,7 +38,27 @@ vec3 TonemapLUT(sampler3D lut, vec3 col) {
 }
 
 void main() {
-    vec3 col = textureLod(g_tex, g_vtx_uvs, 0.0).rgb + 0.1 * textureLod(g_blured_tex, g_vtx_uvs, 0.0).xyz;
+    vec3 col = vec3(0.0);
+#ifdef ABERRATION
+    if (g_params.aberration > 0.0) {
+        vec2 uvs_centered = g_vtx_uvs - 0.5;
+        const vec3 AberrFactors[5] = vec3[](vec3(0.4, 0.05, 0.0),
+                                            vec3(0.3, 0.2, 0.1),
+                                            vec3(0.2, 0.5, 0.2),
+                                            vec3(0.1, 0.2, 0.3),
+                                            vec3(0.0, 0.05, 0.4));
+        for (int i = 0; i < 5; ++i) {
+            col += AberrFactors[i] * textureLod(g_tex, uvs_centered * (1.0 - (float(i) - 5.0 * 0.5) / 5.0 * 0.0025 * g_params.aberration) + vec2(0.5), 0.0).xyz;
+        }
+    } else
+#endif
+    {
+        col += textureLod(g_tex, g_vtx_uvs, 0.0).rgb;
+    }
+
+    // add bloom
+    col += 0.1 * textureLod(g_blured_tex, g_vtx_uvs, 0.0).xyz;
+
 #ifdef COMPRESSED
     col = decompress_hdr(col);
 #endif

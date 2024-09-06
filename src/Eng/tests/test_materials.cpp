@@ -91,6 +91,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
 
     renderer.settings.enable_bloom = false;
     renderer.settings.enable_shadow_jitter = true;
+    renderer.settings.enable_aberration = false;
     renderer.settings.taa_mode = Eng::eTAAMode::Static;
     renderer.settings.pixel_filter = Eng::ePixelFilter::Box;
 

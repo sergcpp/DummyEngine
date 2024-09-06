@@ -9,7 +9,7 @@ namespace Eng {
 class PrimDraw;
 struct ViewState;
 
-class ExCombine : public FgExecutor {
+class ExPostprocess : public FgExecutor {
   public:
     struct Args {
         FgResRef exposure_tex;
@@ -23,9 +23,10 @@ class ExCombine : public FgExecutor {
         bool compressed = true;
         int tonemap_mode = 1;
         float inv_gamma = 1.0f, fade = 0.0f;
+        float aberration = 1.0f;
     };
 
-    ExCombine(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    ExPostprocess(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(const ViewState *view_state, const Args *args) {
         view_state_ = view_state;
@@ -38,7 +39,7 @@ class ExCombine : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::ProgramRef blit_combine_prog_[2][2][2];
+    Ren::ProgramRef blit_postprocess_prog_[2][2][2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

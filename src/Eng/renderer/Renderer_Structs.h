@@ -249,6 +249,7 @@ struct render_settings_t {
             bool enable_bloom : 1;
             bool enable_timers : 1;
             bool enable_shadow_jitter : 1;
+            bool enable_aberration : 1;
         };
         uint32_t flags = 0xffffffff;
     };

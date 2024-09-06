@@ -127,8 +127,6 @@ set(FRAMEGRAPH_SOURCES  renderer/framegraph/FgBuilder.h
 
 set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExBuildAccStructures.cpp
-                        renderer/executors/ExCombine.h
-                        renderer/executors/ExCombine.cpp
                         renderer/executors/ExDebugOIT.h
                         renderer/executors/ExDebugOIT.cpp
                         renderer/executors/ExDebugProbes.h
@@ -151,6 +149,8 @@ set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExOITScheduleRays.cpp
                         renderer/executors/ExOpaque.h
                         renderer/executors/ExOpaque.cpp
+                        renderer/executors/ExPostprocess.h
+                        renderer/executors/ExPostprocess.cpp
                         renderer/executors/ExReadExposure.h
                         renderer/executors/ExReadExposure.cpp
                         renderer/executors/ExRTGI.h

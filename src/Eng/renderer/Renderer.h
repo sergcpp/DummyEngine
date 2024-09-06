@@ -11,7 +11,6 @@ extern "C" {
 #include "../scene/SceneData.h"
 #include "PrimDraw.h"
 #include "executors/ExBuildAccStructures.h"
-#include "executors/ExCombine.h"
 #include "executors/ExDebugOIT.h"
 #include "executors/ExDebugProbes.h"
 #include "executors/ExDebugRT.h"
@@ -23,6 +22,7 @@ extern "C" {
 #include "executors/ExOITDepthPeel.h"
 #include "executors/ExOITScheduleRays.h"
 #include "executors/ExOpaque.h"
+#include "executors/ExPostprocess.h"
 #include "executors/ExRTGI.h"
 #include "executors/ExRTGICache.h"
 #include "executors/ExRTReflections.h"
@@ -211,8 +211,8 @@ class Renderer {
     ExRTShadows ex_rt_shadows_;
     ExSampleLights ex_sample_lights_;
     ExReadExposure ex_read_exposure_;
-    ExCombine::Args ex_combine_args_;
-    ExCombine ex_combine_ = {prim_draw_};
+    ExPostprocess::Args ex_postprocess_args_;
+    ExPostprocess ex_postprocess_ = {prim_draw_};
 
     ExDebugProbes ex_debug_probes_ = {prim_draw_};
     ExDebugRT ex_debug_rt_;

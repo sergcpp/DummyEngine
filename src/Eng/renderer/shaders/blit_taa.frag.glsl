@@ -36,8 +36,8 @@ layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 layout(location = 1) out vec4 g_out_history;
 
-float PDnrand( vec2 n ) {
-	return fract( sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453 );
+float PDnrand(vec2 n) {
+	return fract(sin(dot(n.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
@@ -258,9 +258,9 @@ void main() {
     col_motion = YCoCg_to_RGB(col_motion);
 #endif
     col_screen = mix(col_motion, col_temporal, trust);
-#endif
+#endif // MOTION_BLUR
 
-    float variance = mix(unbiased_diff * unbiased_diff, col_hist.w, history_weight);
+    const float variance = mix(unbiased_diff * unbiased_diff, col_hist.w, history_weight);
     const float k = saturate(2.0 - length(closest_vel.xy));
 
     g_out_color = clamp(vec4(TonemapInvert(col_screen), variance * k), vec4(0.0), vec4(HALF_MAX));

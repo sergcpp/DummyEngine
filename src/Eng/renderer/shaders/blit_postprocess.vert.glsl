@@ -1,7 +1,7 @@
 #version 430 core
 
 #include "_vs_common.glsl"
-#include "blit_combine_interface.h"
+#include "blit_postprocess_interface.h"
 
 layout(location = VTX_POS_LOC) in vec2 g_in_vtx_pos;
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;

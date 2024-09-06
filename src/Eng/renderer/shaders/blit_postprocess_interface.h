@@ -10,7 +10,7 @@ struct Params {
     vec2 tex_size;
     float tonemap_mode;
     float inv_gamma;
-    float _unused;
+    float aberration;
     float fade;
 };
 

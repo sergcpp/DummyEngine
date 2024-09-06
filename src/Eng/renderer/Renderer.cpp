@@ -1392,14 +1392,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (list.env.env_map || true) {
                 auto &combine = fg_builder_.AddNode("COMBINE");
 
-                ex_combine_args_ = {};
-                ex_combine_args_.exposure_tex =
+                ex_postprocess_args_ = {};
+                ex_postprocess_args_.exposure_tex =
                     combine.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
-                ex_combine_args_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
+                ex_postprocess_args_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
                 if (false && list.render_settings.enable_bloom && blur_tex) {
-                    ex_combine_args_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+                    ex_postprocess_args_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
                 } else {
-                    ex_combine_args_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+                    ex_postprocess_args_.blur_tex =
+                        combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
                 }
                 if (output_tex) {
                     Ren::Tex2DParams params;
@@ -1409,21 +1410,22 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-                    ex_combine_args_.output_tex = combine.AddColorOutput(output_tex, params);
+                    ex_postprocess_args_.output_tex = combine.AddColorOutput(output_tex, params);
                 } else if (target) {
-                    ex_combine_args_.output_tex = combine.AddColorOutput(target);
+                    ex_postprocess_args_.output_tex = combine.AddColorOutput(target);
                 } else {
-                    ex_combine_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+                    ex_postprocess_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
                 }
-                ex_combine_args_.lut_tex = tonemap_lut_;
-                ex_combine_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
-                ex_combine_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
-                ex_combine_args_.fade = list.draw_cam.fade;
+                ex_postprocess_args_.lut_tex = tonemap_lut_;
+                ex_postprocess_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
+                ex_postprocess_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
+                ex_postprocess_args_.fade = list.draw_cam.fade;
+                ex_postprocess_args_.aberration = list.render_settings.enable_aberration ? 1.0f : 0.0f;
 
-                backbuffer_sources_.push_back(ex_combine_args_.output_tex);
+                backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 
-                ex_combine_.Setup(&view_state_, &ex_combine_args_);
-                combine.set_executor(&ex_combine_);
+                ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
+                combine.set_executor(&ex_postprocess_);
             }
         }
 
@@ -1453,18 +1455,18 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //  TODO: get rid of this
         auto &combine = *fg_builder_.FindNode("COMBINE");
         if (target) {
-            ex_combine_args_.output_tex = combine.ReplaceColorOutput(0, target);
+            ex_postprocess_args_.output_tex = combine.ReplaceColorOutput(0, target);
             if (blit_to_backbuffer) {
-                ex_combine_args_.output_tex2 = combine.ReplaceColorOutput(1, ctx_.backbuffer_ref());
+                ex_postprocess_args_.output_tex2 = combine.ReplaceColorOutput(1, ctx_.backbuffer_ref());
             }
         } else {
-            ex_combine_args_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
+            ex_postprocess_args_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
 
-        ex_combine_args_.fade = list.draw_cam.fade;
+        ex_postprocess_args_.fade = list.draw_cam.fade;
 
-        ex_combine_.Setup(&view_state_, &ex_combine_args_);
-        combine.set_executor(&ex_combine_);
+        ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
+        combine.set_executor(&ex_postprocess_);
     }
 
     fg_builder_.Execute();
@@ -1706,29 +1708,30 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         auto &combine = fg_builder_.AddNode("COMBINE");
 
-        ex_combine_args_ = {};
-        ex_combine_args_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
-        ex_combine_args_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
-        ex_combine_args_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_ = {};
+        ex_postprocess_args_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
         if (target) {
-            ex_combine_args_.output_tex = combine.AddColorOutput(target);
+            ex_postprocess_args_.output_tex = combine.AddColorOutput(target);
             if (blit_to_backbuffer) {
-                ex_combine_args_.output_tex2 = combine.AddColorOutput(ctx_.backbuffer_ref());
+                ex_postprocess_args_.output_tex2 = combine.AddColorOutput(ctx_.backbuffer_ref());
             }
         } else {
-            ex_combine_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+            ex_postprocess_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
         }
 
-        ex_combine_args_.compressed = compressed;
-        ex_combine_args_.lut_tex = tonemap_lut_;
-        ex_combine_args_.tonemap_mode = int(settings.tonemap_mode);
-        ex_combine_args_.inv_gamma = 1.0f / gamma;
-        ex_combine_args_.fade = 0.0f;
+        ex_postprocess_args_.compressed = compressed;
+        ex_postprocess_args_.lut_tex = tonemap_lut_;
+        ex_postprocess_args_.tonemap_mode = int(settings.tonemap_mode);
+        ex_postprocess_args_.inv_gamma = 1.0f / gamma;
+        ex_postprocess_args_.fade = 0.0f;
+        ex_postprocess_args_.aberration = 0.0f;
 
-        backbuffer_sources_.push_back(ex_combine_args_.output_tex);
+        backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 
-        ex_combine_.Setup(&view_state_, &ex_combine_args_);
-        combine.set_executor(&ex_combine_);
+        ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
+        combine.set_executor(&ex_postprocess_);
 
         { // Readback exposure
             auto &read_exposure = fg_builder_.AddNode("READ EXPOSURE");
@@ -1757,12 +1760,12 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         auto *combine = fg_builder_.FindNode("COMBINE");
         if (target) {
-            ex_combine_args_.output_tex = combine->ReplaceColorOutput(0, target);
+            ex_postprocess_args_.output_tex = combine->ReplaceColorOutput(0, target);
             if (blit_to_backbuffer) {
-                ex_combine_args_.output_tex2 = combine->ReplaceColorOutput(1, ctx_.backbuffer_ref());
+                ex_postprocess_args_.output_tex2 = combine->ReplaceColorOutput(1, ctx_.backbuffer_ref());
             }
         } else {
-            ex_combine_args_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
+            ex_postprocess_args_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
     }
 
