@@ -1390,45 +1390,42 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             const bool tonemap = (list.render_settings.tonemap_mode != eTonemapMode::Off);
 
-            // TODO: Remove this condition
-            if (list.env.env_map || true) {
-                auto &combine = fg_builder_.AddNode("COMBINE");
+            auto &postprocess = fg_builder_.AddNode("POSTPROCESS");
 
-                ex_postprocess_args_ = {};
-                ex_postprocess_args_.exposure_tex =
-                    combine.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
-                ex_postprocess_args_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
-                if (false && list.render_settings.enable_bloom && blur_tex) {
-                    ex_postprocess_args_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
-                } else {
-                    ex_postprocess_args_.blur_tex =
-                        combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
-                }
-                if (output_tex) {
-                    Ren::Tex2DParams params;
-                    params.w = view_state_.scr_res[0];
-                    params.h = view_state_.scr_res[1];
-                    params.format = Ren::eTexFormat::RawRGB888;
-                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                    ex_postprocess_args_.output_tex = combine.AddColorOutput(output_tex, params);
-                } else if (target) {
-                    ex_postprocess_args_.output_tex = combine.AddColorOutput(target);
-                } else {
-                    ex_postprocess_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
-                }
-                ex_postprocess_args_.lut_tex = tonemap_lut_;
-                ex_postprocess_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
-                ex_postprocess_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
-                ex_postprocess_args_.fade = list.draw_cam.fade;
-                ex_postprocess_args_.aberration = list.render_settings.enable_aberration ? 1.0f : 0.0f;
-
-                backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
-
-                ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
-                combine.set_executor(&ex_postprocess_);
+            ex_postprocess_args_ = {};
+            ex_postprocess_args_.exposure_tex =
+                postprocess.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
+            ex_postprocess_args_.color_tex = postprocess.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
+            if (false && list.render_settings.enable_bloom && blur_tex) {
+                ex_postprocess_args_.blur_tex = postprocess.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+            } else {
+                ex_postprocess_args_.blur_tex =
+                    postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
             }
+            if (output_tex) {
+                Ren::Tex2DParams params;
+                params.w = view_state_.scr_res[0];
+                params.h = view_state_.scr_res[1];
+                params.format = Ren::eTexFormat::RawRGB888;
+                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                ex_postprocess_args_.output_tex = postprocess.AddColorOutput(output_tex, params);
+            } else if (target) {
+                ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
+            } else {
+                ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
+            }
+            ex_postprocess_args_.lut_tex = tonemap_lut_;
+            ex_postprocess_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
+            ex_postprocess_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
+            ex_postprocess_args_.fade = list.draw_cam.fade;
+            ex_postprocess_args_.aberration = list.render_settings.enable_aberration ? 1.0f : 0.0f;
+
+            backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
+
+            ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
+            postprocess.set_executor(&ex_postprocess_);
         }
 
         { // Readback exposure
@@ -1455,20 +1452,20 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // assert(!(list.render_flags & EnableFxaa));
         //  Use correct backbuffer image (assume topology is not changed)
         //  TODO: get rid of this
-        auto &combine = *fg_builder_.FindNode("COMBINE");
+        auto &postprocess = *fg_builder_.FindNode("POSTPROCESS");
         if (target) {
-            ex_postprocess_args_.output_tex = combine.ReplaceColorOutput(0, target);
+            ex_postprocess_args_.output_tex = postprocess.ReplaceColorOutput(0, target);
             if (blit_to_backbuffer) {
-                ex_postprocess_args_.output_tex2 = combine.ReplaceColorOutput(1, ctx_.backbuffer_ref());
+                ex_postprocess_args_.output_tex2 = postprocess.ReplaceColorOutput(1, ctx_.backbuffer_ref());
             }
         } else {
-            ex_postprocess_args_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
+            ex_postprocess_args_.output_tex = postprocess.ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
 
         ex_postprocess_args_.fade = list.draw_cam.fade;
 
         ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
-        combine.set_executor(&ex_postprocess_);
+        postprocess.set_executor(&ex_postprocess_);
     }
 
     fg_builder_.Execute();
