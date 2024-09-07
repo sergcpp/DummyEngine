@@ -2,16 +2,21 @@
 
 #include <cassert>
 #include <cstring>
-
-#include "../Sys/AssetFile.h"
+#include <fstream>
 
 #include "BaseElement.h"
 #include "Renderer.h"
 #include "Utils.h"
 
-Gui::BitmapFont::BitmapFont(std::string_view name, Ren::Context *ctx) : info_{}, scale_(1.0f), tex_res_{} {
-    if (!name.empty() && ctx) {
-        this->Load(name, *ctx);
+Gui::BitmapFont::BitmapFont(std::string_view name, Ren::Context &ctx) : info_{}, scale_(1.0f), tex_res_{} {
+    if (!this->Load(name, ctx)) {
+        throw std::runtime_error("Failed to load!");
+    }
+}
+
+Gui::BitmapFont::BitmapFont(std::string_view name, std::istream &data, Ren::Context &ctx) {
+    if (!this->Load(name, data, ctx)) {
+        throw std::runtime_error("Failed to load!");
     }
 }
 
@@ -19,19 +24,22 @@ float Gui::BitmapFont::height(const BaseElement *parent) const {
     return 2.0f * scale_ * float(info_.line_height) / parent->size_px()[1];
 }
 
-bool Gui::BitmapFont::Load(std::string_view fname, Ren::Context &ctx) {
-    Sys::AssetFile in_file(fname, Sys::eOpenMode::In);
+bool Gui::BitmapFont::Load(std::string_view name, Ren::Context &ctx) {
+    std::ifstream in_file(name.data(), std::ios::binary);
     if (!in_file) {
         return false;
     }
+    return Load(name, in_file, ctx);
+}
 
+bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Context &ctx) {
     char sign[4];
-    if (!in_file.Read(sign, 4) || sign[0] != 'F' || sign[1] != 'O' || sign[2] != 'N' || sign[3] != 'T') {
+    if (!data.read(sign, 4) || sign[0] != 'F' || sign[1] != 'O' || sign[2] != 'N' || sign[3] != 'T') {
         return false;
     }
 
     uint32_t header_size;
-    if (!in_file.Read((char *)&header_size, sizeof(uint32_t))) {
+    if (!data.read((char *)&header_size, sizeof(uint32_t))) {
         return false;
     }
 
@@ -43,22 +51,22 @@ bool Gui::BitmapFont::Load(std::string_view fname, Ren::Context &ctx) {
 
     for (uint32_t i = 0; i < chunks_size; i += 3 * sizeof(uint32_t)) {
         uint32_t chunk_id, chunk_off, chunk_size;
-        if (!in_file.Read((char *)&chunk_id, sizeof(uint32_t)) || !in_file.Read((char *)&chunk_off, sizeof(uint32_t)) ||
-            !in_file.Read((char *)&chunk_size, sizeof(uint32_t))) {
+        if (!data.read((char *)&chunk_id, sizeof(uint32_t)) || !data.read((char *)&chunk_off, sizeof(uint32_t)) ||
+            !data.read((char *)&chunk_size, sizeof(uint32_t))) {
             return false;
         }
 
-        const size_t old_pos = in_file.pos();
-        in_file.SeekAbsolute(chunk_off);
+        const size_t old_pos = size_t(data.tellg());
+        data.seekg(chunk_off, std::ios::beg);
 
         if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChTypoData)) {
-            if (!in_file.Read((char *)&info_, sizeof(typgraph_info_t))) {
+            if (!data.read((char *)&info_, sizeof(typgraph_info_t))) {
                 return false;
             }
         } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChImageData)) {
             uint16_t img_data_w, img_data_h;
-            if (!in_file.Read((char *)&img_data_w, sizeof(uint16_t)) ||
-                !in_file.Read((char *)&img_data_h, sizeof(uint16_t))) {
+            if (!data.read((char *)&img_data_w, sizeof(uint16_t)) ||
+                !data.read((char *)&img_data_h, sizeof(uint16_t))) {
                 return false;
             }
 
@@ -66,8 +74,7 @@ bool Gui::BitmapFont::Load(std::string_view fname, Ren::Context &ctx) {
             tex_res_[1] = img_data_h;
 
             uint16_t draw_mode, blend_mode;
-            if (!in_file.Read((char *)&draw_mode, sizeof(uint16_t)) ||
-                !in_file.Read((char *)&blend_mode, sizeof(uint16_t))) {
+            if (!data.read((char *)&draw_mode, sizeof(uint16_t)) || !data.read((char *)&blend_mode, sizeof(uint16_t))) {
                 return false;
             }
 
@@ -79,7 +86,7 @@ bool Gui::BitmapFont::Load(std::string_view fname, Ren::Context &ctx) {
             uint8_t *stage_data = sb.buf->Map();
 
             const int img_data_size = 4 * img_data_w * img_data_h;
-            if (!in_file.Read((char *)stage_data, img_data_size)) {
+            if (!data.read((char *)stage_data, img_data_size)) {
                 return false;
             }
 
@@ -94,15 +101,15 @@ bool Gui::BitmapFont::Load(std::string_view fname, Ren::Context &ctx) {
             p.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             Ren::eTexLoadStatus status;
-            tex_ = ctx.LoadTextureRegion(fname, *sb.buf, 0, img_data_size, sb.cmd_buf, p, &status);
+            tex_ = ctx.LoadTextureRegion(name, *sb.buf, 0, img_data_size, sb.cmd_buf, p, &status);
         } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChGlyphData)) {
-            if (!in_file.Read((char *)&glyph_range_count_, sizeof(uint32_t))) {
+            if (!data.read((char *)&glyph_range_count_, sizeof(uint32_t))) {
                 return false;
             }
 
             glyph_ranges_ = std::make_unique<glyph_range_t[]>(glyph_range_count_);
 
-            if (!in_file.Read((char *)glyph_ranges_.get(), glyph_range_count_ * sizeof(glyph_range_t))) {
+            if (!data.read((char *)glyph_ranges_.get(), glyph_range_count_ * sizeof(glyph_range_t))) {
                 return false;
             }
 
@@ -113,12 +120,12 @@ bool Gui::BitmapFont::Load(std::string_view fname, Ren::Context &ctx) {
 
             glyphs_ = std::make_unique<glyph_info_t[]>(glyphs_count_);
 
-            if (!in_file.Read((char *)glyphs_.get(), glyphs_count_ * sizeof(glyph_info_t))) {
+            if (!data.read((char *)glyphs_.get(), glyphs_count_ * sizeof(glyph_info_t))) {
                 return false;
             }
         }
 
-        in_file.SeekAbsolute(old_pos);
+        data.seekg(old_pos, std::ios::beg);
     }
 
     return true;

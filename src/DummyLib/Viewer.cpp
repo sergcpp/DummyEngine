@@ -38,8 +38,8 @@ extern bool ignore_optick_errors;
 #include "widgets/FontStorage.h"
 
 Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log)
-    : ViewerBase(w, h, _app_params.validation_level, _app_params.nohwrt, log, _app_params.device_name),
-      log_(log), app_params(_app_params) {
+    : ViewerBase(w, h, _app_params.validation_level, _app_params.nohwrt, log, _app_params.device_name), log_(log),
+      app_params(_app_params) {
     JsObject main_config;
 
     {
@@ -78,13 +78,12 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
 #endif
             file_name += el.second.as_str().val;
 
-            [[maybe_unused]] const Gui::BitmapFont *loaded_font =
-                font_storage_->LoadFont(name, file_name, ren_ctx_.get());
+            [[maybe_unused]] const Gui::BitmapFont *loaded_font = font_storage_->LoadFont(name, file_name, *ren_ctx_);
         }
     }
 
     // create UI for performance debugging
-    debug_ui_ = std::make_unique<Eng::DebugInfoUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(),
+    debug_ui_ = std::make_unique<Eng::DebugInfoUI>(Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f}, ui_root_.get(),
                                                    font_storage_->FindFont("main_font"));
 
 #if defined(__ANDROID__)

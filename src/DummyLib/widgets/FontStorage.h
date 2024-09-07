@@ -21,7 +21,7 @@ class FontStorage {
         return nullptr;
     }
 
-    const Gui::BitmapFont *LoadFont(std::string_view name, std::string_view file_name, Ren::Context *ctx) {
+    const Gui::BitmapFont *LoadFont(std::string_view name, std::string_view file_name, Ren::Context &ctx) {
         const Gui::BitmapFont *font = FindFont(name);
         if (!font) {
             auto new_font = std::make_unique<Gui::BitmapFont>(file_name, ctx);

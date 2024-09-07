@@ -19,7 +19,7 @@ add_executable(test_Gui main.cpp
                         test_unicode.cpp
                         test_widgets.cpp)
 
-target_link_libraries(test_Gui Gui Sys ${LIBS})
+target_link_libraries(test_Gui Gui ${LIBS})
 
 set_target_properties(test_Gui PROPERTIES OUTPUT_NAME_DEBUG test_Gui-dbg)
 set_target_properties(test_Gui PROPERTIES OUTPUT_NAME_RELWITHDEBINFO test_Gui-dev)

@@ -5,8 +5,8 @@
 #include "../Ren/Context.h"
 #include "../Ren/Texture.h"
 
-#include "Renderer.h"
 #include "MVec.h"
+#include "Renderer.h"
 
 #undef DrawText
 
@@ -36,7 +36,9 @@ enum class eFontFileChunk { FontChTypoData, FontChImageData, FontChGlyphData, Fo
 
 class BitmapFont {
   public:
-    explicit BitmapFont(std::string_view name = {}, Ren::Context *ctx = nullptr);
+    BitmapFont() {}
+    BitmapFont(std::string_view name, Ren::Context &ctx);
+    BitmapFont(std::string_view name, std::istream &data, Ren::Context &ctx);
 
     float scale() const { return scale_; }
     float height(const BaseElement *parent) const;
@@ -48,6 +50,7 @@ class BitmapFont {
     void set_draw_mode(eDrawMode mode) { draw_mode_ = mode; }
 
     bool Load(std::string_view name, Ren::Context &ctx);
+    bool Load(std::string_view name, std::istream &data, Ren::Context &ctx);
 
     float GetWidth(std::string_view text, const BaseElement *parent) const;
     float DrawText(Renderer *r, std::string_view text, const Vec2f &pos, const uint8_t col[4],
@@ -56,10 +59,10 @@ class BitmapFont {
                   const BaseElement *parent) const;
 
   private:
-    typgraph_info_t info_;
-    float scale_;
+    typgraph_info_t info_ = {};
+    float scale_ = 1.0f;
     Ren::TextureRegionRef tex_;
-    uint32_t tex_res_[2];
+    uint32_t tex_res_[2] = {};
     eDrawMode draw_mode_ = eDrawMode::Passthrough;
     eBlendMode blend_mode_ = eBlendMode::Alpha;
     std::unique_ptr<glyph_range_t[]> glyph_ranges_;
