@@ -317,5 +317,8 @@ void main() {
     }
 #endif
 
+    if (any(isinf(final_color)) || any(isnan(final_color))) {
+        final_color = vec3(0.0);
+    }
     g_out_color = vec4(compress_hdr(final_color), alpha);
 }
