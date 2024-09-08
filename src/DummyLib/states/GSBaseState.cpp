@@ -681,6 +681,8 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         sun_dir_[1] = viewer_->app_params.sun_dir[1];
         sun_dir_[2] = viewer_->app_params.sun_dir[2];
     }
+
+    renderer_->settings.enable_aberration = viewer_->app_params.postprocess;
 }
 
 void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
@@ -729,7 +731,6 @@ void GSBaseState::Draw() {
     Ren::Tex2DRef render_target;
     if (capture_state_ != eCaptureState::None) {
         if (use_pt_) {
-            renderer_->settings.enable_aberration = false;
             const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0][0].iteration;
             if (iteration < viewer_->app_params.pt_max_samples) {
                 render_target = capture_result_;
@@ -757,7 +758,6 @@ void GSBaseState::Draw() {
                     random_->Reset(0);
                     renderer_->settings.taa_mode = Eng::eTAAMode::Static;
                     renderer_->settings.enable_shadow_jitter = true;
-                    renderer_->settings.enable_aberration = false;
                     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
                     renderer_->reset_accumulation();
 

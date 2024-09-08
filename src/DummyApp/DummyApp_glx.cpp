@@ -290,6 +290,8 @@ int DummyApp::Run(int argc, char *argv[]) {
             app_params.sun_dir[0] = strtof(argv[i++], nullptr);
             app_params.sun_dir[1] = strtof(argv[i++], nullptr);
             app_params.sun_dir[2] = strtof(argv[i], nullptr);
+        } else if (strcmp(argv[i], "--no-postprocess") == 0) {
+            app_params.postprocess = false;
         }
     }
 
