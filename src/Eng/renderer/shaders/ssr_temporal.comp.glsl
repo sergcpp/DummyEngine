@@ -194,7 +194,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     /* fp16 */ float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).w;
     /* fp16 */ float new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
-    if (center_radiance.w > 0.0 && IsGlossyReflection(roughness)) {
+    if (center_radiance.w > 0.0 && IsGlossyReflection(roughness) && !IsMirrorReflection(roughness)) {
         /* fp16 */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         /* fp16 */ vec3 avg_radiance = Tonemap(textureLod(g_avg_refl_tex, uv8, 0.0).rgb, exposure);
@@ -221,10 +221,11 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         new_signal.rgb = mix(new_signal.rgb, clipped_old_signal.rgb, weight);
         new_signal.w = mix(new_signal.w, old_signal.w, weight);
         new_variance = mix(ComputeTemporalVariance(new_signal.xyz, clipped_old_signal), new_variance, weight);
-        if (any(isinf(new_signal)) || any(isnan(new_signal)) || isinf(new_variance) || isnan(new_variance)) {
-            new_signal = vec4(0.0);
-            new_variance = 0.0;
-        }
+    }
+
+    if (any(isinf(new_signal)) || any(isnan(new_signal)) || isinf(new_variance) || isnan(new_variance)) {
+        new_signal = vec4(0.0);
+        new_variance = 0.0;
     }
 
     imageStore(g_out_refl_img, dispatch_thread_id, TonemapInvert(new_signal, exposure));
