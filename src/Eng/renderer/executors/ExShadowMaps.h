@@ -6,7 +6,7 @@
 #include <Ren/VertexInput.h>
 
 namespace Eng {
-class ExShadowMaps : public FgExecutor {
+class ExShadowMaps final : public FgExecutor {
     bool initialized = false;
     int w_, h_;
 

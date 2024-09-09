@@ -36,21 +36,21 @@ std::unique_ptr<std::istream> default_include_callback(const char *path, bool is
 }
 } // namespace glslx
 
-glslx::Preprocessor::Preprocessor(std::unique_ptr<std::istream> stream, const preprocessor_config_t &config)
-    : config_(config), directives_table_{{"define", eTokenType::Define},
-                                         {"ifdef", eTokenType::Ifdef},
-                                         {"ifndef", eTokenType::Ifndef},
-                                         {"if", eTokenType::If},
-                                         {"else", eTokenType::Else},
-                                         {"elif", eTokenType::Elif},
-                                         {"undef", eTokenType::Undef},
-                                         {"endif", eTokenType::Endif},
-                                         {"include", eTokenType::Include},
-                                         {"defined", eTokenType::Defined},
-                                         {"extension", eTokenType::Extension},
-                                         {"line", eTokenType::PassthroughDirective},
-                                         {"version", eTokenType::PassthroughDirective},
-                                         {"pragma", eTokenType::PassthroughDirective}},
+glslx::Preprocessor::Preprocessor(std::unique_ptr<std::istream> stream, preprocessor_config_t config)
+    : config_(std::move(config)), directives_table_{{"define", eTokenType::Define},
+                                                    {"ifdef", eTokenType::Ifdef},
+                                                    {"ifndef", eTokenType::Ifndef},
+                                                    {"if", eTokenType::If},
+                                                    {"else", eTokenType::Else},
+                                                    {"elif", eTokenType::Elif},
+                                                    {"undef", eTokenType::Undef},
+                                                    {"endif", eTokenType::Endif},
+                                                    {"include", eTokenType::Include},
+                                                    {"defined", eTokenType::Defined},
+                                                    {"extension", eTokenType::Extension},
+                                                    {"line", eTokenType::PassthroughDirective},
+                                                    {"version", eTokenType::PassthroughDirective},
+                                                    {"pragma", eTokenType::PassthroughDirective}},
       macros_{{"__LINE__"}} {
     streams_.push_back(std::move(stream));
     for (const macro_def_t &m : config_.default_macros) {
@@ -61,8 +61,8 @@ glslx::Preprocessor::Preprocessor(std::unique_ptr<std::istream> stream, const pr
     }
 }
 
-glslx::Preprocessor::Preprocessor(std::string_view source, const preprocessor_config_t &config)
-    : Preprocessor(std::make_unique<std::istringstream>(source.data()), config) {}
+glslx::Preprocessor::Preprocessor(std::string_view source, preprocessor_config_t config)
+    : Preprocessor(std::make_unique<std::istringstream>(source.data()), std::move(config)) {}
 
 glslx::Preprocessor::~Preprocessor() = default;
 
@@ -457,7 +457,7 @@ void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, std::st
         out_tok = {eTokenType::Bracket_Begin, "(", source_line_, curr_pos_};
         return;
     case ')':
-        out_tok= {eTokenType::Bracket_End, ")", source_line_, curr_pos_};
+        out_tok = {eTokenType::Bracket_End, ")", source_line_, curr_pos_};
         return;
     case '<':
         if (!inout_line.empty()) {

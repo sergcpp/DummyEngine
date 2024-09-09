@@ -49,7 +49,8 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
         }
 
         { // Allocate quad indices
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, 6 * sizeof(uint16_t), 192);
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, 6 * sizeof(uint16_t),
+                                       192);
 
             { // copy quad indices
                 uint8_t *mapped_ptr = temp_stage_buf.Map();
@@ -161,7 +162,7 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
     int w = -1, h = -1;
 
     for (const auto &rt : color_targets) {
-        if (w == -1 && rt.ref) {
+        if (rt.ref) {
             w = rt.ref->params.w;
             h = rt.ref->params.h;
             break;

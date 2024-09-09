@@ -24,7 +24,7 @@ struct ast_memory {
 
     ast_memory() noexcept = default;
     template <typename T> ast_memory(T *_data, size_t _size) : data(_data), size(_size), dtor(&ast_destroy<T>) {}
-    void destroy(MultiPoolAllocator<char> &alloc) { dtor(alloc, data, size); }
+    void destroy(MultiPoolAllocator<char> &alloc) const { dtor(alloc, data, size); }
 };
 
 struct ast_allocator {
@@ -44,9 +44,8 @@ template <typename T> struct ast_node : public ast_node_base {
     }
     void operator delete(void *, ast_allocator *) {}
 
-  private:
-    void *operator new(size_t);
-    void operator delete(void *) {}
+    void *operator new(size_t) = delete;
+    void operator delete(void *) = delete;
 };
 
 // https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#storage-qualifiers
@@ -187,27 +186,27 @@ struct TrUnit {
     mutable ast_allocator alloc;
     std::vector<char *> str;
 
-    TrUnit(eTrUnitType _type) : type(_type) {}
+    explicit TrUnit(eTrUnitType _type) : type(_type) {}
     ~TrUnit();
 };
 
 struct ast_type : ast_node<ast_type> {
     bool builtin;
 
-    ast_type(const bool _builtin) noexcept : builtin(_builtin) {}
+    explicit ast_type(const bool _builtin) noexcept : builtin(_builtin) {}
 };
 
 struct ast_builtin : ast_type {
     eKeyword type;
 
-    ast_builtin(eKeyword _type) noexcept : ast_type(true), type(_type) {}
+    explicit ast_builtin(eKeyword _type) noexcept : ast_type(true), type(_type) {}
 };
 
 struct ast_struct : ast_type {
     const char *name = nullptr;
     vector<ast_variable *> fields;
 
-    ast_struct(MultiPoolAllocator<char> &_alloc) noexcept : ast_type(false), fields(_alloc) {}
+    explicit ast_struct(MultiPoolAllocator<char> &_alloc) noexcept : ast_type(false), fields(_alloc) {}
 };
 
 struct ast_interface_block : ast_struct {
@@ -215,7 +214,8 @@ struct ast_interface_block : ast_struct {
     Bitmask<eMemory> memory_flags;
     vector<ast_layout_qualifier *> layout_qualifiers;
 
-    ast_interface_block(MultiPoolAllocator<char> &_alloc) noexcept : ast_struct(_alloc), layout_qualifiers(_alloc) {}
+    explicit ast_interface_block(MultiPoolAllocator<char> &_alloc) noexcept
+        : ast_struct(_alloc), layout_qualifiers(_alloc) {}
 };
 
 struct ast_version_directive : ast_type {
@@ -257,13 +257,14 @@ struct ast_function_variable : ast_variable {
     ast_expression *initial_value = nullptr;
     bool is_const = false;
 
-    ast_function_variable(MultiPoolAllocator<char> &_alloc) noexcept : ast_variable(eVariableType::Function, _alloc) {}
+    explicit ast_function_variable(MultiPoolAllocator<char> &_alloc) noexcept
+        : ast_variable(eVariableType::Function, _alloc) {}
 };
 
 struct ast_function_parameter : ast_variable {
     Bitmask<eParamQualifier> qualifiers = eParamQualifier::None;
 
-    ast_function_parameter(MultiPoolAllocator<char> &_alloc) noexcept
+    explicit ast_function_parameter(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_variable(eVariableType::Parameter, _alloc) {}
 };
 
@@ -278,7 +279,7 @@ struct ast_global_variable : ast_variable {
     ast_constant_expression *initial_value = nullptr;
     vector<ast_layout_qualifier *> layout_qualifiers;
 
-    ast_global_variable(MultiPoolAllocator<char> &_alloc) noexcept
+    explicit ast_global_variable(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_variable(eVariableType::Global, _alloc), layout_qualifiers(_alloc) {}
 };
 
@@ -296,7 +297,7 @@ struct ast_function : ast_node<ast_function> {
     ast_function *prototype = nullptr;
     Bitmask<eFunctionAttribute> attributes;
 
-    ast_function(MultiPoolAllocator<char> &_alloc) noexcept : parameters(_alloc), statements(_alloc) {}
+    explicit ast_function(MultiPoolAllocator<char> &_alloc) noexcept : parameters(_alloc), statements(_alloc) {}
 };
 
 enum class eStatement {
@@ -321,16 +322,16 @@ enum class eStatement {
 struct ast_statement : ast_node<ast_statement> {
     eStatement type;
 
-    ast_statement(eStatement _type) noexcept : type(_type) {}
+    explicit ast_statement(eStatement _type) noexcept : type(_type) {}
 };
 
 struct ast_simple_statement : ast_statement {
-    ast_simple_statement(eStatement _type) noexcept : ast_statement(_type) {}
+    explicit ast_simple_statement(eStatement _type) noexcept : ast_statement(_type) {}
 };
 
 struct ast_compound_statement : ast_statement {
     vector<ast_statement *> statements;
-    ast_compound_statement(MultiPoolAllocator<char> &_alloc) noexcept
+    explicit ast_compound_statement(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_statement(eStatement::Compound), statements(_alloc) {}
 };
 
@@ -341,14 +342,14 @@ struct ast_empty_statement : ast_simple_statement {
 struct ast_declaration_statement : ast_simple_statement {
     vector<ast_function_variable *> variables;
 
-    ast_declaration_statement(MultiPoolAllocator<char> &_alloc) noexcept
+    explicit ast_declaration_statement(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_simple_statement(eStatement::Declaration), variables(_alloc) {}
 };
 
 struct ast_expression_statement : ast_simple_statement {
     ast_expression *expression = nullptr;
 
-    ast_expression_statement(ast_expression *_expression) noexcept
+    explicit ast_expression_statement(ast_expression *_expression) noexcept
         : ast_simple_statement(eStatement::Expression), expression(_expression) {}
 };
 
@@ -358,7 +359,7 @@ struct ast_if_statement : ast_simple_statement {
     ast_statement *else_statement = nullptr;
     Bitmask<eCtrlFlowAttribute> attributes;
 
-    ast_if_statement(Bitmask<eCtrlFlowAttribute> _attributes) noexcept
+    explicit ast_if_statement(Bitmask<eCtrlFlowAttribute> _attributes) noexcept
         : ast_simple_statement(eStatement::If), attributes(_attributes) {}
 };
 
@@ -397,7 +398,7 @@ struct ast_while_statement : ast_loop_statement {
     ast_simple_statement *condition = nullptr;
     ast_statement *body = nullptr;
 
-    ast_while_statement(ctrl_flow_params_t _flow_params) noexcept
+    explicit ast_while_statement(ctrl_flow_params_t _flow_params) noexcept
         : ast_loop_statement(eStatement::While, _flow_params) {}
 };
 
@@ -405,7 +406,8 @@ struct ast_do_statement : ast_loop_statement {
     ast_statement *body = nullptr;
     ast_expression *condition = nullptr;
 
-    ast_do_statement(ctrl_flow_params_t _flow_params) noexcept : ast_loop_statement(eStatement::Do, _flow_params) {}
+    explicit ast_do_statement(ctrl_flow_params_t _flow_params) noexcept
+        : ast_loop_statement(eStatement::Do, _flow_params) {}
 };
 
 struct ast_for_statement : ast_loop_statement {
@@ -414,11 +416,12 @@ struct ast_for_statement : ast_loop_statement {
     ast_expression *loop = nullptr;
     ast_statement *body = nullptr;
 
-    ast_for_statement(ctrl_flow_params_t _flow_params) noexcept : ast_loop_statement(eStatement::For, _flow_params) {}
+    explicit ast_for_statement(ctrl_flow_params_t _flow_params) noexcept
+        : ast_loop_statement(eStatement::For, _flow_params) {}
 };
 
 struct ast_jump_statement : ast_statement {
-    ast_jump_statement(eStatement _type) noexcept : ast_statement(_type) {}
+    explicit ast_jump_statement(eStatement _type) noexcept : ast_statement(_type) {}
 };
 
 struct ast_continue_statement : ast_jump_statement {
@@ -442,7 +445,8 @@ struct ast_discard_statement : ast_jump_statement {
 struct ast_ext_jump_statement : ast_jump_statement {
     eKeyword keyword;
 
-    ast_ext_jump_statement(eKeyword _keyword) noexcept : ast_jump_statement(eStatement::ExtJump), keyword(_keyword) {}
+    explicit ast_ext_jump_statement(eKeyword _keyword) noexcept
+        : ast_jump_statement(eStatement::ExtJump), keyword(_keyword) {}
 };
 
 enum class eExprType {
@@ -474,50 +478,50 @@ enum class eExprType {
 struct ast_expression : ast_node<ast_expression> {
     eExprType type;
 
-    ast_expression(eExprType _type) noexcept : type(_type) {}
+    explicit ast_expression(eExprType _type) noexcept : type(_type) {}
 };
 
 struct ast_int_constant : ast_expression {
     int32_t value;
 
-    ast_int_constant(int32_t _value) noexcept : ast_expression(eExprType::IntConstant), value(_value) {}
+    explicit ast_int_constant(int32_t _value) noexcept : ast_expression(eExprType::IntConstant), value(_value) {}
 };
 
 struct ast_uint_constant : ast_expression {
     uint32_t value;
 
-    ast_uint_constant(uint32_t _value) noexcept : ast_expression(eExprType::UIntConstant), value(_value) {}
+    explicit ast_uint_constant(uint32_t _value) noexcept : ast_expression(eExprType::UIntConstant), value(_value) {}
 };
 
 struct ast_float_constant : ast_expression {
     float value;
 
-    ast_float_constant(float _value) noexcept : ast_expression(eExprType::FloatConstant), value(_value) {}
+    explicit ast_float_constant(float _value) noexcept : ast_expression(eExprType::FloatConstant), value(_value) {}
 };
 
 struct ast_double_constant : ast_expression {
     double value;
 
-    ast_double_constant(double _value) noexcept : ast_expression(eExprType::DoubleConstant), value(_value) {}
+    explicit ast_double_constant(double _value) noexcept : ast_expression(eExprType::DoubleConstant), value(_value) {}
 };
 
 struct ast_bool_constant : ast_expression {
     bool value;
 
-    ast_bool_constant(bool _value) noexcept : ast_expression(eExprType::BoolConstant), value(_value) {}
+    explicit ast_bool_constant(bool _value) noexcept : ast_expression(eExprType::BoolConstant), value(_value) {}
 };
 
 struct ast_array_specifier : ast_expression {
     vector<ast_expression *> expressions;
 
-    ast_array_specifier(MultiPoolAllocator<char> &_alloc) noexcept
+    explicit ast_array_specifier(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::ArraySpecifier), expressions(_alloc) {}
 };
 
 struct ast_variable_identifier : ast_expression {
     ast_variable *variable;
 
-    ast_variable_identifier(ast_variable *_variable) noexcept
+    explicit ast_variable_identifier(ast_variable *_variable) noexcept
         : ast_expression(eExprType::VariableIdentifier), variable(_variable) {}
 };
 
@@ -540,7 +544,7 @@ struct ast_function_call : ast_expression {
     ast_function *func = nullptr;
     vector<ast_expression *> parameters;
 
-    ast_function_call(MultiPoolAllocator<char> &_alloc) noexcept
+    explicit ast_function_call(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::FunctionCall), parameters(_alloc) {}
 };
 
@@ -548,7 +552,7 @@ struct ast_constructor_call : ast_expression {
     ast_type *type = nullptr;
     vector<ast_expression *> parameters;
 
-    ast_constructor_call(MultiPoolAllocator<char> &_alloc) noexcept
+    explicit ast_constructor_call(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::ConstructorCall), parameters(_alloc) {}
 };
 
@@ -562,44 +566,46 @@ struct ast_unary_expression : ast_expression {
 struct ast_binary_expression : ast_expression {
     ast_expression *operand1 = nullptr, *operand2 = nullptr;
 
-    ast_binary_expression(eExprType _type) noexcept : ast_expression(_type) {}
+    explicit ast_binary_expression(eExprType _type) noexcept : ast_expression(_type) {}
 };
 
 struct ast_post_increment_expression : ast_unary_expression {
-    ast_post_increment_expression(ast_expression *operand) noexcept
+    explicit ast_post_increment_expression(ast_expression *operand) noexcept
         : ast_unary_expression(eExprType::PostIncrement, operand) {}
 };
 
 struct ast_post_decrement_expression : ast_unary_expression {
-    ast_post_decrement_expression(ast_expression *operand) noexcept
+    explicit ast_post_decrement_expression(ast_expression *operand) noexcept
         : ast_unary_expression(eExprType::PostDecrement, operand) {}
 };
 
 struct ast_unary_plus_expression : ast_unary_expression {
-    ast_unary_plus_expression(ast_expression *operand) noexcept : ast_unary_expression(eExprType::UnaryPlus, operand) {}
+    explicit ast_unary_plus_expression(ast_expression *operand) noexcept
+        : ast_unary_expression(eExprType::UnaryPlus, operand) {}
 };
 
 struct ast_unary_minus_expression : ast_unary_expression {
-    ast_unary_minus_expression(ast_expression *operand) noexcept
+    explicit ast_unary_minus_expression(ast_expression *operand) noexcept
         : ast_unary_expression(eExprType::UnaryMinus, operand) {}
 };
 
 struct ast_unary_bit_not_expression : ast_unary_expression {
-    ast_unary_bit_not_expression(ast_expression *operand) noexcept : ast_unary_expression(eExprType::BitNot, operand) {}
+    explicit ast_unary_bit_not_expression(ast_expression *operand) noexcept
+        : ast_unary_expression(eExprType::BitNot, operand) {}
 };
 
 struct ast_unary_logical_not_expression : ast_unary_expression {
-    ast_unary_logical_not_expression(ast_expression *operand) noexcept
+    explicit ast_unary_logical_not_expression(ast_expression *operand) noexcept
         : ast_unary_expression(eExprType::LogicalNot, operand) {}
 };
 
 struct ast_prefix_increment_expression : ast_unary_expression {
-    ast_prefix_increment_expression(ast_expression *operand) noexcept
+    explicit ast_prefix_increment_expression(ast_expression *operand) noexcept
         : ast_unary_expression(eExprType::PrefixIncrement, operand) {}
 };
 
 struct ast_prefix_decrement_expression : ast_unary_expression {
-    ast_prefix_decrement_expression(ast_expression *operand) noexcept
+    explicit ast_prefix_decrement_expression(ast_expression *operand) noexcept
         : ast_unary_expression(eExprType::PrefixDecrement, operand) {}
 };
 
@@ -610,13 +616,15 @@ struct ast_sequence_expression : ast_binary_expression {
 struct ast_assignment_expression : ast_binary_expression {
     eOperator oper;
 
-    ast_assignment_expression(eOperator _oper) noexcept : ast_binary_expression(eExprType::Assign), oper(_oper) {}
+    explicit ast_assignment_expression(eOperator _oper) noexcept
+        : ast_binary_expression(eExprType::Assign), oper(_oper) {}
 };
 
 struct ast_operation_expression : ast_binary_expression {
     eOperator oper;
 
-    ast_operation_expression(eOperator _oper) noexcept : ast_binary_expression(eExprType::Operation), oper(_oper) {}
+    explicit ast_operation_expression(eOperator _oper) noexcept
+        : ast_binary_expression(eExprType::Operation), oper(_oper) {}
 };
 
 struct ast_ternary_expression : ast_expression {

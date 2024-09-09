@@ -10,7 +10,7 @@ struct ViewState;
 
 namespace Eng {
 class PrimDraw;
-class ExRTShadows : public FgExecutor {
+class ExRTShadows final : public FgExecutor {
   public:
     struct Args {
         FgResRef geo_data;
@@ -28,7 +28,7 @@ class ExRTShadows : public FgExecutor {
         Ren::IAccStructure *tlas = nullptr;
 
         struct {
-            uint32_t root_node;
+            uint32_t root_node = 0xffffffff;
             FgResRef blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef meshes_buf;
@@ -58,7 +58,7 @@ class ExRTShadows : public FgExecutor {
     const ViewState *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const Args *args_;
+    const Args *args_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 

@@ -9,7 +9,7 @@
 namespace Ren {
 extern const VkFormat g_vk_formats[];
 
-VkFormat ToSRGBFormat(const VkFormat format);
+VkFormat ToSRGBFormat(VkFormat format);
 } // namespace Ren
 
 Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res,

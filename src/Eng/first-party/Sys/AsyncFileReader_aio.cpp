@@ -78,7 +78,7 @@ bool FileReadEvent::ReadFile(int fd, size_t read_offset, size_t read_size, uint8
 
     cb->aio_offset = int64_t(read_offset);
     cb->aio_nbytes = read_size;
-    cb->aio_buf = reinterpret_cast<const uintptr_t &>(out_buf);
+    cb->aio_buf = reinterpret_cast<uintptr_t &>(out_buf);
 
     const long ret = io_submit(ctx_, 1, &cb);
     return ret == 1;

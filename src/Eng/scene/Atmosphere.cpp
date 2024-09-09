@@ -8,7 +8,7 @@ float fast_exp(float x) {
     union {
         float f;
         int32_t i;
-    } reinterpreter;
+    } reinterpreter = {};
     reinterpreter.i = (int32_t)(12102203.0f * x) + 127 * (1 << 23);
     int32_t m = (reinterpreter.i >> 7) & 0xFFFF; // copy mantissa
     // empirical values for small maximum relative error (1.21e-5):
@@ -314,7 +314,7 @@ Eng::IntegrateScatteringMain(const AtmosphereParams &params, const Ren::Vec4f &r
                     light_transmittance * light_color;
     }
 
-    return std::pair(radiance, multiscat_as_1);
+    return {radiance, multiscat_as_1};
 }
 
 template std::pair<Ren::Vec4f, Ren::Vec4f> Eng::IntegrateScatteringMain<false>(

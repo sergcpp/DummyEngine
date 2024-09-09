@@ -25,7 +25,7 @@ void Net::ReliabilitySystem::Reset() {
 void Net::ReliabilitySystem::PacketSent(void *data, int size) {
     if (sent_queue_.exists(local_sequence_)) {
         printf("local sequence %d exists\n", local_sequence_);
-        for (PacketQueue::iterator it = sent_queue_.begin(); it != sent_queue_.end(); ++it) {
+        for (auto it = sent_queue_.begin(); it != sent_queue_.end(); ++it) {
             printf(" + %d\n", it->sequence);
         }
     }

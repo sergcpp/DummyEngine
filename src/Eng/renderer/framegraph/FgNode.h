@@ -31,7 +31,7 @@ class FgNode {
     mutable bool visited_ = false;
 
   public:
-    FgNode(const int index, std::string_view name, FgBuilder &builder)
+    FgNode(const int16_t index, std::string_view name, FgBuilder &builder)
         : index_(index), name_(name), builder_(builder) {}
 
     template <typename T, class... Args> T *AllocNodeData(Args &&...args) {

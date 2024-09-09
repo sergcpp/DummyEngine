@@ -16,12 +16,15 @@ std::string Net::HTTPResponse::str() const {
     ret += "HTTP/1.1 " + std::to_string(resp_code_) + " " + status_line_ + "\r\n";
 
     for (auto &f: fields_) {
-        ret += f->key() + ": " + f->str() + "\r\n";
+        ret += f->key();
+        ret += ": " + f->str() + "\r\n";
     }
 
     if (content_len_.len) {
-        ret += content_len_.key() + ":" + content_len_.str() + "\r\n";
-        ret += content_type_.key() + ":" + content_type_.str() + "\r\n";
+        ret += content_len_.key();
+        ret += ":" + content_len_.str() + "\r\n";
+        ret += content_type_.key();
+        ret += ":" + content_type_.str() + "\r\n";
     }
     ret += "\r\n";
     ret += body_.str();

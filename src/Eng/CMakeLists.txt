@@ -169,8 +169,6 @@ set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExSkinning.cpp
                         renderer/executors/ExSkydome.h
                         renderer/executors/ExSkydome.cpp
-                        renderer/executors/ExSSRCompose.h
-                        renderer/executors/ExSSRCompose.cpp
                         renderer/executors/ExTransparent.h
                         renderer/executors/ExTransparent.cpp
                         renderer/executors/ExUpdateAccBuffers.h

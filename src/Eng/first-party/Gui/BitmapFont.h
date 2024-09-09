@@ -36,15 +36,15 @@ enum class eFontFileChunk { FontChTypoData, FontChImageData, FontChGlyphData, Fo
 
 class BitmapFont {
   public:
-    BitmapFont() {}
+    BitmapFont() = default;
     BitmapFont(std::string_view name, Ren::Context &ctx);
     BitmapFont(std::string_view name, std::istream &data, Ren::Context &ctx);
 
-    float scale() const { return scale_; }
-    float height(const BaseElement *parent) const;
-    eDrawMode draw_mode() const { return draw_mode_; }
-    eBlendMode blend_mode() const { return blend_mode_; }
-    Ren::TextureRegionRef tex() const { return tex_; }
+    [[nodiscard]] float scale() const { return scale_; }
+    [[nodiscard]] float height(const BaseElement *parent) const;
+    [[nodiscard]] eDrawMode draw_mode() const { return draw_mode_; }
+    [[nodiscard]] eBlendMode blend_mode() const { return blend_mode_; }
+    [[nodiscard]] Ren::TextureRegionRef tex() const { return tex_; }
 
     void set_scale(float scale) { scale_ = scale; }
     void set_draw_mode(eDrawMode mode) { draw_mode_ = mode; }

@@ -73,8 +73,8 @@ struct token_t {
     };
     vector<char> string_mem;
 
-    token_t(MultiPoolAllocator<char> &_alloc) : string_mem(_alloc) {}
-    int precedence() const;
+    explicit token_t(MultiPoolAllocator<char> &_alloc) : string_mem(_alloc) {}
+    [[nodiscard]] int precedence() const;
 };
 
 struct location_t {
@@ -117,19 +117,19 @@ class Lexer {
     void ReadNumeric(bool octal, bool hex, std::string &out_digits);
 
   public:
-    Lexer(MultiPoolAllocator<char> &alloc) : temp_tok_(alloc) {}
+    explicit Lexer(MultiPoolAllocator<char> &alloc) : temp_tok_(alloc) {}
     Lexer(MultiPoolAllocator<char> &alloc, std::string_view source);
 
-    location_t location() const { return loc_; }
-    size_t position() const { return loc_.pos; }
-    size_t line() const { return loc_.line; }
-    size_t column() const { return loc_.col; }
+    [[nodiscard]] location_t location() const { return loc_; }
+    [[nodiscard]] size_t position() const { return loc_.pos; }
+    [[nodiscard]] size_t line() const { return loc_.line; }
+    [[nodiscard]] size_t column() const { return loc_.col; }
 
     void set_location(const location_t &loc) { loc_ = loc; }
 
-    int at(int offset = 0) const;
+    [[nodiscard]] int at(int offset = 0) const;
 
-    const char *error() const { return error_; }
+    [[nodiscard]] const char *error() const { return error_; }
 
     void ReadSingle(token_t &out);
     void Read(token_t &out, const bool skip_whitespace) {

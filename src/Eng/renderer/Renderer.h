@@ -28,7 +28,6 @@ extern "C" {
 #include "executors/ExRTReflections.h"
 #include "executors/ExRTShadows.h"
 #include "executors/ExReadExposure.h"
-#include "executors/ExSSRCompose.h"
 #include "executors/ExSampleLights.h"
 #include "executors/ExShadowMaps.h"
 #include "executors/ExSkinning.h"
@@ -192,19 +191,19 @@ class Renderer {
     float pre_exposure_ = 1.0f;
 
     ExShadowMaps ex_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
-    ExSkydomeCube ex_skydome_cube_ = {prim_draw_};
-    ExSkydomeScreen ex_skydome_ = {prim_draw_};
+    ExSkydomeCube ex_skydome_cube_ = ExSkydomeCube{prim_draw_};
+    ExSkydomeScreen ex_skydome_ = ExSkydomeScreen{prim_draw_};
     ExDepthFill ex_depth_fill_;
     ExDepthHierarchy ex_depth_hierarchy_;
     ExGBufferFill ex_gbuffer_fill_;
     ExOpaque ex_opaque_;
-    ExTransparent ex_transparent_ = {prim_draw_};
+    ExTransparent ex_transparent_ = ExTransparent{prim_draw_};
     ExEmissive ex_emissive_;
     ExOITDepthPeel ex_oit_depth_peel_;
-    ExOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {{prim_draw_}, {prim_draw_}, {prim_draw_}, {prim_draw_}};
+    ExOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {ExOITBlendLayer{prim_draw_}, ExOITBlendLayer{prim_draw_},
+                                                             ExOITBlendLayer{prim_draw_}, ExOITBlendLayer{prim_draw_}};
     ExOITScheduleRays ex_oit_schedule_rays_;
     ExRTReflections ex_oit_rt_reflections_ = ExRTReflections{true};
-    ExSSRCompose ex_ssr_compose_ = {prim_draw_};
     ExRTGI ex_rt_gi_;
     ExRTGICache ex_rt_gi_cache_;
     ExRTReflections ex_rt_reflections_ = ExRTReflections{false};
@@ -212,7 +211,7 @@ class Renderer {
     ExSampleLights ex_sample_lights_;
     ExReadExposure ex_read_exposure_;
     ExPostprocess::Args ex_postprocess_args_;
-    ExPostprocess ex_postprocess_ = {prim_draw_};
+    ExPostprocess ex_postprocess_ = ExPostprocess{prim_draw_};
 
     ExDebugProbes ex_debug_probes_ = {prim_draw_};
     ExDebugRT ex_debug_rt_;
@@ -360,9 +359,9 @@ class Renderer {
                                            ProcessedObjData proc_objects[],
                                            Ren::HashMap32<uint32_t, VisObjStorage> &out_visible_objects2);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
-                                          const LightSource *const light_sources,
-                                          Ren::Span<const uint32_t> litem_to_lsource, const DrawList &list,
-                                          CellData out_cells[], ItemData out_items[], std::atomic_int &items_count);
+                                          const LightSource *light_sources, Ren::Span<const uint32_t> litem_to_lsource,
+                                          const DrawList &list, CellData out_cells[], ItemData out_items[],
+                                          std::atomic_int &items_count);
 
     // Generate auxiliary textures
     static std::unique_ptr<uint16_t[]> Generate_BRDF_LUT(int res, std::string &out_c_header);

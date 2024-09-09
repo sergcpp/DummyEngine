@@ -124,9 +124,9 @@ class FreelistAlloc {
         // Create null block
         all_blocks_.emplace_back();
     }
-    FreelistAlloc(const uint32_t size) : FreelistAlloc() { AddPool(size); }
+    explicit FreelistAlloc(const uint32_t size) : FreelistAlloc() { AddPool(size); }
 
-    int pools_count() const { return int(pools_.size() - unused_pools_.size()); }
+    [[nodiscard]] int pools_count() const { return int(pools_.size() - unused_pools_.size()); }
 
     struct Allocation {
         uint32_t offset = 0xffffffff;
@@ -148,13 +148,13 @@ class FreelistAlloc {
         uint32_t size = 0;
     };
 
-    Range GetFirstOccupiedBlock(uint16_t pool) const;
-    Range GetNextOccupiedBlock(uint32_t block) const;
-    Range GetBlockRange(const uint32_t block) const {
+    [[nodiscard]] Range GetFirstOccupiedBlock(uint16_t pool) const;
+    [[nodiscard]] Range GetNextOccupiedBlock(uint32_t block) const;
+    [[nodiscard]] Range GetBlockRange(const uint32_t block) const {
         return {block, all_blocks_[block].offset, all_blocks_[block].size};
     }
 
-    bool IntegrityCheck() const;
+    [[nodiscard]] bool IntegrityCheck() const;
 
     static uint32_t rounded_size(const uint32_t size) { return tlsf_index_t<uint32_t, false>::rounded_size(size); }
 };

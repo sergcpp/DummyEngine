@@ -124,7 +124,7 @@ struct Skeleton {
     std::vector<AnimLink> anims;
     // std::vector<BoneGroup>  bone_groups;
 
-    const Bone *find_bone(std::string_view name) const {
+    [[nodiscard]] const Bone *find_bone(std::string_view name) const {
         for (int i = 0; i < int(bones.size()); i++) {
             if (name == bones[i].name) {
                 return &bones[i];
@@ -133,11 +133,11 @@ struct Skeleton {
         return nullptr;
     }
 
-    Vec3f bone_pos(std::string_view name);
-    Vec3f bone_pos(int i);
+    [[nodiscard]] Vec3f bone_pos(std::string_view name) const;
+    [[nodiscard]] Vec3f bone_pos(int i) const;
 
-    void bone_matrix(std::string_view name, Mat4f &mat);
-    void bone_matrix(int i, Mat4f &mat);
+    void bone_matrix(std::string_view name, Mat4f &mat) const;
+    void bone_matrix(int i, Mat4f &mat) const;
 
     int AddAnimSequence(AnimSeqRef ref);
 

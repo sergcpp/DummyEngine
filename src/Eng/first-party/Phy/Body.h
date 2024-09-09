@@ -22,7 +22,7 @@ class Body {
     Vec3 GetCenterOfMassWs() const;
     Bounds GetBounds() const;
 
-    Vec3 WorldSpaceToBodySpace(const Vec3 &point_ws) const;
+    [[nodiscard]] Vec3 WorldSpaceToBodySpace(const Vec3 &point_ws) const;
 
     void ApplyImpulse(const Vec3 &point, const Vec3 &impulse);
     void ApplyImpulseLinear(const Vec3 &impulse);
@@ -31,7 +31,7 @@ class Body {
     void Update(real dt_s);
 
     static void SupportOfMinkowskiSum(const Body &a, const Body &b, Vec3 dir,
-                                      const real bias, point_t &out_point);
+                                      real bias, point_t &out_point);
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////

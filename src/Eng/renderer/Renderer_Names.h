@@ -10,8 +10,6 @@ const char SHARED_DATA_BUF[] = "Shared Data Buffer";
 
 //
 
-const char SHADOWMAP_TEX[] = "Shadow Map";
-
 const char MAIN_COLOR_TEX[] = "Main Color";
 const char MAIN_NORMAL_TEX[] = "Main Normals";
 const char MAIN_SPEC_TEX[] = "Main Specular";

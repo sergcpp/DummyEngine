@@ -6,7 +6,7 @@
 #include "../framegraph/FgNode.h"
 
 namespace Eng {
-class ExUpdateAccBuffers : public FgExecutor {
+class ExUpdateAccBuffers final : public FgExecutor {
     const DrawList *&p_list_;
     int rt_index_;
 

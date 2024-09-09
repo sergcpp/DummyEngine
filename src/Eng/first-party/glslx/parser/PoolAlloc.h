@@ -202,7 +202,7 @@ template <typename T, typename FallBackAllocator = std::allocator<T>> class Mult
 
     const T *address(const T &s) const { return &s; }
 
-    std::size_t max_size() const {
+    [[nodiscard]] size_t max_size() const {
         // The following has been carefully written to be independent of
         // the definition of size_t and to avoid signed/unsigned warnings.
         return (static_cast<std::size_t>(0) - static_cast<std::size_t>(1)) / sizeof(T);

@@ -24,15 +24,9 @@ namespace Net {
 
         std::map<std::string, std::string> header_fields_;
     public:
-        Method method() const {
-            return method_;
-        }
-
-        Address host_addr() const {
-            return host_addr_;
-        }
-
-        std::string field(const std::string &name) const;
+        [[nodiscard]] Method method() const { return method_; }
+        [[nodiscard]] Address host_addr() const { return host_addr_; }
+        [[nodiscard]] std::string field(const std::string &name) const;
 
         bool Parse(const char *buf);
     };

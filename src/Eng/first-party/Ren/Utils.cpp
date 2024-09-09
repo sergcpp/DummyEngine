@@ -334,8 +334,7 @@ float ClampRange_for_rgb9e5(float x) {
 }
 
 int FloorLog2(float x) {
-    float754 f;
-
+    float754 f = {};
     f.value = x;
     return (f.field.biasedexponent - 127);
 }
@@ -372,7 +371,7 @@ rgb9e5 float3_to_rgb9e5(const float rgb[3]) {
     assert(gm >= 0);
     assert(bm >= 0);
 
-    rgb9e5 retval;
+    rgb9e5 retval = {};
     retval.field.r = rm;
     retval.field.g = gm;
     retval.field.b = bm;
@@ -382,8 +381,8 @@ rgb9e5 float3_to_rgb9e5(const float rgb[3]) {
 }
 
 void rgb9e5_to_float3(rgb9e5 v, float retval[3]) {
-    int exponent = v.field.biasedexponent - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS;
-    float scale = (float)pow(2, exponent);
+    const int exponent = v.field.biasedexponent - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS;
+    const auto scale = float(pow(2, exponent));
 
     retval[0] = v.field.r * scale;
     retval[1] = v.field.g * scale;
@@ -1020,7 +1019,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
         }
 
         if (tri.score > next_next_best_score) {
-            next_next_best_index = i / 3;
+            next_next_best_index = i / 3u;
             next_next_best_score = tri.score;
         }
     }

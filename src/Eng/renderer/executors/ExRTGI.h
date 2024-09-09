@@ -9,7 +9,7 @@
 struct ViewState;
 
 namespace Eng {
-class ExRTGI : public FgExecutor {
+class ExRTGI final : public FgExecutor {
   public:
     struct Args {
         FgResRef noise_tex;
@@ -43,7 +43,7 @@ class ExRTGI : public FgExecutor {
         Ren::IAccStructure *tlas = nullptr;
 
         struct {
-            uint32_t root_node;
+            uint32_t root_node = 0xffffff;
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef meshes_buf;

@@ -133,13 +133,13 @@ Snd::BufferRef Snd::Source::UnqueueProcessedBuffer() {
     }
 }
 
-void Snd::Source::Play() { alSourcePlay(ALuint(source_)); }
+void Snd::Source::Play() const { alSourcePlay(ALuint(source_)); }
 
-void Snd::Source::Pause() { alSourcePause(ALuint(source_)); }
+void Snd::Source::Pause() const { alSourcePause(ALuint(source_)); }
 
-void Snd::Source::Stop() { alSourceStop(ALuint(source_)); }
+void Snd::Source::Stop() const { alSourceStop(ALuint(source_)); }
 
-float Snd::Source::GetOffset() {
+float Snd::Source::GetOffset() const {
     float ret;
     alGetSourcef(ALuint(source_), AL_SEC_OFFSET, &ret);
     return ret;

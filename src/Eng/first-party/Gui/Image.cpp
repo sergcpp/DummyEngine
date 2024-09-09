@@ -27,7 +27,7 @@ Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos
         const size_t in_file_size = size_t(in_file.tellg());
         in_file.seekg(0, std::ios::beg);
         std::vector<uint8_t> data(in_file_size);
-        in_file.read((char *)data.data(), in_file_size);
+        in_file.read((char *)data.data(), std::streamsize(in_file_size));
 
         tex_ = ctx.LoadTextureRegion(tex_name, data, ctx.default_stage_bufs(), {}, &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);

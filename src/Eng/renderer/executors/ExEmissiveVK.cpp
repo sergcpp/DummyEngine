@@ -13,7 +13,7 @@
 namespace ExSharedInternal {
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
-                         uint32_t i, uint64_t mask, const uint32_t materials_per_descriptor,
+                         uint32_t i, uint64_t mask, uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 } // namespace ExSharedInternal
 

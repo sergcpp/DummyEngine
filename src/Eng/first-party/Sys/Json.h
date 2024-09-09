@@ -57,7 +57,7 @@ struct JsNumber {
     bool operator==(const JsNumber &rhs) const { return val == rhs.val; }
     bool operator==(const double &rhs) const { return val == rhs; }
 
-    bool Equals(const JsNumber &rhs, const double eps) const {
+    [[nodiscard]] bool Equals(const JsNumber &rhs, const double eps) const {
         return std::abs(val - rhs.val) < eps;
     }
 
@@ -117,7 +117,7 @@ template <typename Alloc> struct JsArrayT {
     bool operator==(const JsArrayT &rhs) const;
     bool operator!=(const JsArrayT &rhs) const { return !operator==(rhs); }
 
-    bool Equals(const JsArrayT &rhs, double eps) const;
+    [[nodiscard]] bool Equals(const JsArrayT &rhs, double eps) const;
 
     [[nodiscard]] size_t Size() const { return elements.size(); }
 
@@ -151,7 +151,7 @@ template <typename Alloc> struct JsObjectT {
     bool operator==(const JsObjectT<Alloc> &rhs) const;
     bool operator!=(const JsObjectT<Alloc> &rhs) const { return !operator==(rhs); }
 
-    bool Equals(const JsObjectT &rhs, double eps) const;
+    [[nodiscard]] bool Equals(const JsObjectT &rhs, double eps) const;
 
     [[nodiscard]] bool Has(std::string_view s) const { return IndexOf(s) < Size(); }
 
@@ -199,9 +199,10 @@ template <typename Alloc> struct JsElementT {
     JsElementT(const JsLiteral &rhs);        // NOLINT
     JsElementT(const JsElementT &rhs);
 
-    explicit JsElementT(JsStringT<Alloc> &&rhs);
-    explicit JsElementT(JsArrayT<Alloc> &&rhs);
-    explicit JsElementT(JsObjectT<Alloc> &&rhs);
+    // these must not be explicit!
+    JsElementT(JsStringT<Alloc> &&rhs);
+    JsElementT(JsArrayT<Alloc> &&rhs);
+    JsElementT(JsObjectT<Alloc> &&rhs);
     JsElementT(JsElementT &&rhs) noexcept;
 
     ~JsElementT();
@@ -226,7 +227,7 @@ template <typename Alloc> struct JsElementT {
     bool operator==(const JsElementT &rhs) const;
     bool operator!=(const JsElementT &rhs) const { return !operator==(rhs); }
 
-    bool Equals(const JsElementT &rhs, double eps) const;
+    [[nodiscard]] bool Equals(const JsElementT &rhs, double eps) const;
 
     bool Read(std::istream &in, const Alloc &alloc = Alloc());
     void Write(std::ostream &out, JsFlags flags = {}) const;

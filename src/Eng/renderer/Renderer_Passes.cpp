@@ -164,11 +164,11 @@ bool Eng::Renderer::InitPipelines() {
     success &= blit_bilateral_prog_->ready();
 
     blit_taa_prog_[0] = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
-                                              "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg.frag.glsl");
+                                        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg.frag.glsl");
     success &= blit_taa_prog_[0]->ready();
     blit_taa_prog_[1] =
         sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
-                              "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR.frag.glsl");
+                        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR.frag.glsl");
     success &= blit_taa_prog_[1]->ready();
 
     blit_taa_static_prog_ =
@@ -183,7 +183,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= blit_ssr_dilate_prog_->ready();
 
     blit_ssr_compose_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_ssr_compose_new.vert.glsl", "internal/blit_ssr_compose_new.frag.glsl");
+        sh_.LoadProgram(ctx_, "internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose.frag.glsl");
     success &= blit_ssr_compose_prog_->ready();
 
     blit_upscale_prog_ = sh_.LoadProgram(ctx_, "internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
@@ -203,32 +203,32 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
     auto &update_bufs = fg_builder_.AddNode("UPDATE BUFFERS");
 
     { // create skin transforms buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = SkinTransformsBufChunkSize;
         common_buffers.skin_transforms_res = update_bufs.AddTransferOutput("Skin Transforms Buf", desc);
     }
     { // create shape keys buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ShapeKeysBufChunkSize;
         common_buffers.shape_keys_res = update_bufs.AddTransferOutput("Shape Keys Buf", desc);
     }
     { // create instance indices buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
         common_buffers.instance_indices_res = update_bufs.AddTransferOutput("Instance Indices Buf", desc);
     }
     FgResRef shared_data_res;
     { // create uniform buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Uniform;
         desc.size = SharedDataBlockSize;
         shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput(SHARED_DATA_BUF, desc);
     }
     { // create atomic counter buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Storage;
         desc.size = sizeof(uint32_t);
         common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter Buf", desc);
@@ -357,7 +357,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                                                   view_state_.scr_res[0], view_state_.scr_res[1]};
             { // main cam
                 const float near = p_list_->draw_cam.near(), far = p_list_->draw_cam.far();
-                const float time_s = 0.001f * Sys::GetTimeMs();
+                const float time_s = 0.001f * float(Sys::GetTimeMs());
                 const float transparent_near = near;
                 const float transparent_far = 16.0f;
                 const int transparent_mode = 0;
@@ -461,37 +461,37 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
     auto &update_light_bufs = fg_builder_.AddNode("UPDATE LBUFFERS");
 
     { // create cells buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
         common_buffers.cells_res = update_light_bufs.AddTransferOutput(CELLS_BUF, desc);
     }
     { // create RT cells buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
         common_buffers.rt_cells_res = update_light_bufs.AddTransferOutput("RT Cells Buffer", desc);
     }
     { // create lights buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
         common_buffers.lights_res = update_light_bufs.AddTransferOutput(LIGHTS_BUF, desc);
     }
     { // create decals buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = DecalsBufChunkSize;
         common_buffers.decals_res = update_light_bufs.AddTransferOutput(DECALS_BUF, desc);
     }
     { // create items buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
         common_buffers.items_res = update_light_bufs.AddTransferOutput(ITEMS_BUF, desc);
     }
     { // create RT items buffer
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
         common_buffers.rt_items_res = update_light_bufs.AddTransferOutput("RT Items Buffer", desc);
@@ -764,8 +764,9 @@ void Eng::Renderer::InitSkyResources() {
                 memcpy(mapped_ptr, &data[0] + sizeof(Ren::DDSHeader), data_len);
                 stage_buf.Unmap();
 
-                sky_noise3d_tex_->SetSubImage(0, 0, 0, header.dwWidth, header.dwHeight, header.dwDepth,
-                                              Ren::eTexFormat::RawR8, stage_buf, ctx_.current_cmd_buf(), 0, data_len);
+                sky_noise3d_tex_->SetSubImage(0, 0, 0, int(header.dwWidth), int(header.dwHeight), int(header.dwDepth),
+                                              Ren::eTexFormat::RawR8, stage_buf, ctx_.current_cmd_buf(), 0,
+                                              int(data_len));
             }
         }
     }
@@ -955,7 +956,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         data->cirrus_tex = sun_color.AddTextureInput(sky_cirrus_tex_, Stg::ComputeShader);
         data->noise3d_tex = sun_color.AddTextureInput(sky_noise3d_tex_.get(), Stg::ComputeShader);
 
-        FgBufDesc desc;
+        FgBufDesc desc = {};
         desc.type = Ren::eBufType::Storage;
         desc.size = 4 * sizeof(float);
         output = data->output_buf = sun_color.AddStorageOutput("Sun brightness debug", desc, Stg::ComputeShader);

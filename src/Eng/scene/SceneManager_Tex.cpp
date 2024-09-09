@@ -162,7 +162,7 @@ void Eng::SceneManager::TextureLoaderProc() {
 
         if (req->ref->name().EndsWith(".dds") || req->ref->name().EndsWith(".DDS")) {
             if (req->orig_format == Ren::eTexFormat::Undefined) {
-                Ren::DDSHeader header;
+                Ren::DDSHeader header = {};
 
                 size_t data_size = sizeof(Ren::DDSHeader);
                 read_success = tex_reader_.ReadFileBlocking(path_buf.c_str(), 0 /* file_offset */,
@@ -182,7 +182,7 @@ void Eng::SceneManager::TextureLoaderProc() {
 
                     if (header.sPixelFormat.dwFourCC == ((unsigned('D') << 0u) | (unsigned('X') << 8u) |
                                                          (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
-                        Ren::DDS_HEADER_DXT10 dx10_header;
+                        Ren::DDS_HEADER_DXT10 dx10_header = {};
                         tex_reader_.ReadFileBlocking(path_buf.c_str(), sizeof(Ren::DDSHeader),
                                                      sizeof(Ren::DDS_HEADER_DXT10), &dx10_header, data_size);
 

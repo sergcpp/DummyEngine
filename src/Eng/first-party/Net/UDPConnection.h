@@ -14,7 +14,7 @@ class UDPConnection : public IConnection {
 
     ~UDPConnection();
 
-    const UDPSocket &socket() const { return socket_; }
+    [[nodiscard]] const UDPSocket &socket() const { return socket_; }
 
     void Start(int port) override;
 
@@ -30,23 +30,20 @@ class UDPConnection : public IConnection {
 
     int ReceivePacket(unsigned char data[], int size) override;
 
-    bool listening() const { return state_ == eState::Listening; }
+    [[nodiscard]] bool listening() const { return state_ == eState::Listening; }
+    [[nodiscard]] bool connecting() const { return state_ == eState::Connecting; }
+    [[nodiscard]] bool connect_failed() const { return state_ == eState::ConnectFailed; }
+    [[nodiscard]] bool connected() const { return state_ == eState::Connected; }
 
-    bool connecting() const { return state_ == eState::Connecting; }
+    [[nodiscard]] eMode mode() const { return mode_; }
 
-    bool connect_failed() const { return state_ == eState::ConnectFailed; }
+    [[nodiscard]] bool running() const { return running_; }
 
-    bool connected() const { return state_ == eState::Connected; }
+    [[nodiscard]] Address address() const override { return address_; }
 
-    eMode mode() const { return mode_; }
+    [[nodiscard]] Address local_addr() const override { return socket_.local_addr(); }
 
-    bool running() const { return running_; }
-
-    Address address() const override { return address_; }
-
-    Address local_addr() const override { return socket_.local_addr(); }
-
-    float timeout_acc() const { return timeout_acc_; }
+    [[nodiscard]] float timeout_acc() const { return timeout_acc_; }
 
   private:
     void ClearData() {

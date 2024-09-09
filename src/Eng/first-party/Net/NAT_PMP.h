@@ -30,9 +30,9 @@ struct PMPRequest {
         buf[1] = uint8_t(op);
     }
 
-    uint8_t vers() const { return buf[0]; }
+    [[nodiscard]] uint8_t vers() const { return buf[0]; }
 
-    uint8_t op() const { return buf[1]; }
+    [[nodiscard]] uint8_t op() const { return buf[1]; }
 };
 
 struct PMPExternalIPRequest : public PMPRequest {
@@ -47,15 +47,15 @@ struct PMPExternalIPResponse {
         buf[1] = 128 + uint8_t(ePMPOpCode::ExternalIPRequest);
     }
 
-    uint8_t vers() const { return buf[0]; }
+    [[nodiscard]] uint8_t vers() const { return buf[0]; }
 
-    uint8_t op() const { return buf[1]; }
+    [[nodiscard]] uint8_t op() const { return buf[1]; }
 
-    ePMPResCode res_code() const { return ePMPResCode(ntohs(*(uint16_t *)(&buf[2]))); }
+    [[nodiscard]] ePMPResCode res_code() const { return ePMPResCode(ntohs(*(uint16_t *)(&buf[2]))); }
 
-    uint32_t time() const { return ntohl(*(uint32_t *)(&buf[4])); }
+    [[nodiscard]] uint32_t time() const { return ntohl(*(uint32_t *)(&buf[4])); }
 
-    uint32_t ip() const { return ntohl(*(uint32_t *)(&buf[8])); }
+    [[nodiscard]] uint32_t ip() const { return ntohl(*(uint32_t *)(&buf[8])); }
 
     void set_res_code(uint16_t code) { *(uint16_t *)(&buf[2]) = htons(code); }
 
@@ -79,17 +79,17 @@ struct PMPMappingRequest {
         set_lifetime(7200);
     }
 
-    uint8_t vers() const { return buf[0]; }
+    [[nodiscard]] uint8_t vers() const { return buf[0]; }
 
-    uint8_t op() const { return buf[1]; }
+    [[nodiscard]] uint8_t op() const { return buf[1]; }
 
-    uint16_t reserved() const { return *(uint16_t *)(&buf[2]); }
+    [[nodiscard]] uint16_t reserved() const { return *(uint16_t *)(&buf[2]); }
 
-    uint16_t internal_port() const { return ntohs(*(uint16_t *)(&buf[4])); }
+    [[nodiscard]] uint16_t internal_port() const { return ntohs(*(uint16_t *)(&buf[4])); }
 
-    uint16_t external_port() const { return ntohs(*(uint16_t *)(&buf[6])); }
+    [[nodiscard]] uint16_t external_port() const { return ntohs(*(uint16_t *)(&buf[6])); }
 
-    uint32_t lifetime() const { return ntohl(*(uint32_t *)(&buf[8])); }
+    [[nodiscard]] uint32_t lifetime() const { return ntohl(*(uint32_t *)(&buf[8])); }
 
     void set_internal_port(uint16_t port) { *(uint16_t *)(&buf[4]) = htons(port); }
 
@@ -103,25 +103,24 @@ struct PMPMappingResponse {
 
     PMPMappingResponse() {}
 
-    PMPMappingResponse(ePMPProto proto) {
+    PMPMappingResponse(const ePMPProto proto) {
         buf[0] = 0;
         buf[1] = (proto == ePMPProto::UDP) ? 128 + uint8_t(ePMPOpCode::MapUDPRequest)
                                            : 128 + uint8_t(ePMPOpCode::MapTCPRequest);
     }
 
-    uint8_t vers() const { return buf[0]; }
+    [[nodiscard]] uint8_t vers() const { return buf[0]; }
 
-    uint8_t op() const { return buf[1]; }
+    [[nodiscard]] uint8_t op() const { return buf[1]; }
 
-    ePMPResCode res_code() const { return ePMPResCode(ntohs(*(uint16_t *)(&buf[2]))); }
+    [[nodiscard]] ePMPResCode res_code() const { return ePMPResCode(ntohs(*(uint16_t *)(&buf[2]))); }
 
-    uint32_t time() const { return ntohl(*(uint32_t *)(&buf[4])); }
+    [[nodiscard]] uint32_t time() const { return ntohl(*(uint32_t *)(&buf[4])); }
 
-    uint16_t internal_port() const { return ntohs(*(uint16_t *)(&buf[8])); }
+    [[nodiscard]] uint16_t internal_port() const { return ntohs(*(uint16_t *)(&buf[8])); }
+    [[nodiscard]] uint16_t external_port() const { return ntohs(*(uint16_t *)(&buf[10])); }
 
-    uint16_t external_port() const { return ntohs(*(uint16_t *)(&buf[10])); }
-
-    uint32_t lifetime() const { return ntohl(*(uint32_t *)(&buf[12])); }
+    [[nodiscard]] uint32_t lifetime() const { return ntohl(*(uint32_t *)(&buf[12])); }
 
     void set_res_code(ePMPResCode code) { *(uint16_t *)(&buf[2]) = htons(uint16_t(code)); }
 
@@ -144,13 +143,13 @@ struct PMPUnsupportedVersionResponse {
         buf[1] = 128 + uint8_t(op);
     }
 
-    uint8_t vers() const { return buf[0]; }
+    [[nodiscard]] uint8_t vers() const { return buf[0]; }
 
-    uint8_t op() const { return buf[1]; }
+    [[nodiscard]] uint8_t op() const { return buf[1]; }
 
-    ePMPResCode res_code() const { return ePMPResCode(ntohs(*(uint16_t *)(&buf[2]))); }
+    [[nodiscard]] ePMPResCode res_code() const { return ePMPResCode(ntohs(*(uint16_t *)(&buf[2]))); }
 
-    uint32_t time() const { return ntohl(*(uint32_t *)(&buf[4])); }
+    [[nodiscard]] uint32_t time() const { return ntohl(*(uint32_t *)(&buf[4])); }
 
     void set_res_code(ePMPResCode code) { *(uint16_t *)(&buf[2]) = htons(uint16_t(code)); }
 
@@ -173,13 +172,13 @@ class PMPSession {
     PMPSession(ePMPProto proto, const Address &gateway_addr, unsigned short internal_port, unsigned short external_port,
                unsigned int lifetime = 7200);
 
-    Address local_addr() const { return sock_.local_addr(); }
+    [[nodiscard]] Address local_addr() const { return sock_.local_addr(); }
 
-    eState state() const { return state_; }
+    [[nodiscard]] eState state() const { return state_; }
 
-    unsigned int time() const { return time_; }
+    [[nodiscard]] unsigned int time() const { return time_; }
 
-    Address external_ip() const { return external_ip_; }
+    [[nodiscard]] Address external_ip() const { return external_ip_; }
 
     void Update(unsigned int dt_ms);
 

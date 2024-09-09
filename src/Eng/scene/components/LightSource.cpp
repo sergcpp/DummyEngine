@@ -6,8 +6,7 @@
 
 #include "../SceneData.h"
 
-namespace Eng {
-namespace LightSourceInternal {
+namespace Eng::LightSourceInternal {
 const char *g_type_names[] = {"sphere", "rectangle", "disk", "line"};
 static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::_Count), "!");
 
@@ -28,7 +27,6 @@ float default_angle(const eLightType type) {
     return angle_deg;
 }
 
-} // namespace LightSourceInternal
 } // namespace Eng
 
 void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {

@@ -45,7 +45,7 @@ void Net::BitMsg::WriteBits(int val, int num_bits) {
                 throw std::runtime_error("Use negative number of bits for negative number");
             }
         } else {
-            int r = 1 << (-num_bits - 1);
+            const int r = 1 << (-num_bits - 1);
             if (val > r - 1) {
                 throw std::runtime_error(
                         std::string("Value overflow: ") + std::to_string(val) + " " + std::to_string(num_bits));

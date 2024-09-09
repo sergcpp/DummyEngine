@@ -326,7 +326,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
 bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog,
                          const VertexInput *vtx_input, const RenderPass *render_pass, uint32_t subpass_index,
                          ILog *log) {
-    return Init(api_ctx, rast_state, prog, vtx_input, render_pass, render_pass->color_rts, render_pass->depth_rt,
+    return Init(api_ctx, rast_state, std::move(prog), vtx_input, render_pass, render_pass->color_rts, render_pass->depth_rt,
                 subpass_index, log);
 }
 

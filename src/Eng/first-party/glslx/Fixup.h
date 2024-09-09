@@ -24,7 +24,7 @@ class Fixup {
     void Visit_Function(ast_function *func);
 
   public:
-    Fixup(const fixup_config_t &config = {}) : config_(config) {}
+    explicit Fixup(const fixup_config_t &config = {}) : config_(config) {}
 
     void Apply(TrUnit *tu);
 };

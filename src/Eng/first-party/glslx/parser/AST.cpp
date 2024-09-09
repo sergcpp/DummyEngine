@@ -67,13 +67,13 @@ bool glslx::IsConstant(const ast_expression *expression) {
         }
         return ret;
     } else if (expression->type == eExprType::Operation) {
-        const ast_operation_expression *operation = static_cast<const ast_operation_expression *>(expression);
+        const auto *operation = static_cast<const ast_operation_expression *>(expression);
         return IsConstant(operation->operand1) && IsConstant(operation->operand2);
     } else if (expression->type == eExprType::Sequence) {
-        const ast_sequence_expression *sequence = static_cast<const ast_sequence_expression *>(expression);
+        const auto *sequence = static_cast<const ast_sequence_expression *>(expression);
         return IsConstant(sequence->operand1) && IsConstant(sequence->operand2);
     } else if (expression->type == eExprType::ArraySpecifier) {
-        const ast_array_specifier *arr_specifier = static_cast<const ast_array_specifier *>(expression);
+        const auto *arr_specifier = static_cast<const ast_array_specifier *>(expression);
         bool ret = true;
         for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
             ret &= IsConstant(arr_specifier->expressions[i]);

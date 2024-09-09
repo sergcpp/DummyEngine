@@ -31,9 +31,9 @@ struct Frustum {
 
     void UpdateFromMatrix(const Mat4f &xform);
 
-    eVisResult CheckVisibility(const Vec3f &point) const;
-    eVisResult CheckVisibility(const float bbox[8][3]) const;
-    eVisResult CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
+    [[nodiscard]] eVisResult CheckVisibility(const Vec3f &point) const;
+    [[nodiscard]] eVisResult CheckVisibility(const float bbox[8][3]) const;
+    [[nodiscard]] eVisResult CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
 };
 
 class Camera {

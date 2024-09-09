@@ -11,7 +11,7 @@ class WriterGLSL : public WriterBase {
     void Write_Builtin(const ast_builtin *builtin, std::ostream &out_stream);
     void Write_Type(const ast_type *type, std::ostream &out_stream);
     void Write_ArraySize(Span<const ast_constant_expression *const> array_sizes, std::ostream &out_stream);
-    void Write_Variable(const ast_variable *variable, std::ostream &out_stream, const bool name_only = false);
+    void Write_Variable(const ast_variable *variable, std::ostream &out_stream, bool name_only = false);
     void Write_Layout(Span<const ast_layout_qualifier *const> qualifiers, std::ostream &out_stream);
     void Write_Storage(eStorage storage, std::ostream &out_stream);
     void Write_AuxStorage(eAuxStorage aux_storage, std::ostream &out_stream);
@@ -84,7 +84,7 @@ class WriterGLSL : public WriterBase {
     void Write_DefaultPrecision(const ast_default_precision *precision, std::ostream &out_stream);
 
   public:
-    WriterGLSL(const writer_config_t &config = {}) : WriterBase(config) {}
+    explicit WriterGLSL(writer_config_t config = {}) : WriterBase(std::move(config)) {}
 
     void Write(const TrUnit *tu, std::ostream &out_stream);
 };

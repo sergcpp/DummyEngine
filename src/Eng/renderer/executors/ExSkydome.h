@@ -11,9 +11,9 @@
 
 namespace Eng {
 class PrimDraw;
-class ExSkydomeCube : public FgExecutor {
+class ExSkydomeCube final : public FgExecutor {
   public:
-    ExSkydomeCube(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    explicit ExSkydomeCube(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     struct Args {
         FgResRef shared_data;
@@ -51,9 +51,9 @@ class ExSkydomeCube : public FgExecutor {
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 };
 
-class ExSkydomeScreen : public FgExecutor {
+class ExSkydomeScreen final : public FgExecutor {
   public:
-    ExSkydomeScreen(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    explicit ExSkydomeScreen(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     struct Args {
         eSkyQuality sky_quality = eSkyQuality::Medium;

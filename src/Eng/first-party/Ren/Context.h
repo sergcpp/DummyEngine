@@ -58,8 +58,6 @@ struct StageBufs {
     }
 };
 
-const char *Version();
-
 class Context {
   protected:
     int w_ = 0, h_ = 0;
@@ -240,7 +238,7 @@ class Context {
 
     Ren::Tex2DRef backbuffer_ref() const;
 
-    int WriteTimestamp(const bool start);
+    int WriteTimestamp(bool start);
     uint64_t GetTimestampIntervalDurationUs(int query_start, int query_end) const;
 
 #if defined(USE_GL_RENDER)

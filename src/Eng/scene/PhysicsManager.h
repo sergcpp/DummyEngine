@@ -29,7 +29,7 @@ class PhysicsManager {
   public:
     void Update(SceneData &scene, float dt_s);
 
-    Ren::Span<const uint32_t> updated_objects() const {
+    [[nodiscard]] Ren::Span<const uint32_t> updated_objects() const {
         return updated_objects_;
     }
 };

@@ -33,7 +33,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         auto *data = oit_clear.AllocNodeData<PassData>();
 
         { // output buffer
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Texture;
             desc.size = OIT_LAYERS_COUNT * view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
             oit_depth_buf = data->oit_depth_buf = oit_clear.AddTransferOutput("Depth Values", desc);
@@ -54,7 +54,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         }
 
         { // ray counter
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = 6 * sizeof(uint32_t);
 
@@ -141,7 +141,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
         oit_rays_counter = oit_schedule.AddStorageOutput(oit_rays_counter, Stg::FragmentShader);
         { // packed ray list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = OIT_REFLECTION_LAYERS * (view_state_.scr_res[0] / 2) * (view_state_.scr_res[1] / 2) * 2 *
                         sizeof(uint32_t);
@@ -233,7 +233,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         }
 
         { // packed ray list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = OIT_REFLECTION_LAYERS * (view_state_.scr_res[0] / 2) * (view_state_.scr_res[1] / 2) * 2 *
                         sizeof(uint32_t);
@@ -435,7 +435,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.depth_params);
             }
 
-            oit_back.set_execute_cb([this, data](FgBuilder &builder) {
+            oit_back.set_execute_cb([data](FgBuilder &builder) {
                 FgAllocTex &in_back_color_tex = builder.GetReadTexture(data->in_back_color);
                 FgAllocTex &in_back_depth_tex = builder.GetReadTexture(data->in_back_depth);
                 FgAllocTex &out_back_color_tex = builder.GetWriteTexture(data->out_back_color);

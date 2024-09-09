@@ -176,7 +176,7 @@ void Net::UDPSocket::Close() {
     }
 }
 
-bool Net::UDPSocket::Send(const Address &destination, const void *data, int size) {
+bool Net::UDPSocket::Send(const Address &destination, const void *data, int size) const {
     assert(data);
     assert(size > 0);
 
@@ -194,7 +194,7 @@ bool Net::UDPSocket::Send(const Address &destination, const void *data, int size
     return sent_bytes == size;
 }
 
-int Net::UDPSocket::Receive(Address &sender, void *data, int size) {
+int Net::UDPSocket::Receive(Address &sender, void *data, const int size) const {
     assert(data);
     assert(size > 0);
 
@@ -205,7 +205,7 @@ int Net::UDPSocket::Receive(Address &sender, void *data, int size) {
     sockaddr_in from;   // NOLINT
     socklen_t from_len = sizeof(sockaddr_in);
 
-    int received_bytes = (int) recvfrom(handle_, (char *) data, (size_t) size, 0, (sockaddr *) &from, &from_len);
+    const int received_bytes = (int) recvfrom(handle_, (char *) data, (size_t) size, 0, (sockaddr *) &from, &from_len);
 
     if (received_bytes <= 0) {
         return 0;
@@ -233,7 +233,7 @@ bool Net::UDPSocket::DropMulticast(const Address &addr) {
     return setsockopt(handle_, IPPROTO_IP, IP_DROP_MEMBERSHIP, (const char *) &mreq, sizeof(mreq)) == 0;
 }
 
-bool Net::UDPSocket::SetBlocking(bool is_blocking) {
+bool Net::UDPSocket::SetBlocking(bool is_blocking) const {
     return Net::SetBlocking(handle_, is_blocking);
 }
 

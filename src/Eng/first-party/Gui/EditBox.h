@@ -23,7 +23,7 @@ class EditBox : public BaseElement {
 
     Image9Patch &frame() { return frame_; }
 
-    const std::string &line_text(int line) const { return lines_[line]; }
+    [[nodiscard]] std::string_view line_text(int line) const { return lines_[line]; }
 
     bool focused() const { return focused_; }
 

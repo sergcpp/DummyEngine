@@ -29,7 +29,7 @@ class WriterBase {
     void Write_Constant(const ast_bool_constant *expression, std::ostream &out_stream);
 
   public:
-    WriterBase(const writer_config_t &config) : config_(config) {}
+    explicit WriterBase(writer_config_t config) : config_(std::move(config)) {}
 
 
 };

@@ -14,10 +14,10 @@ template <class enum_type, typename = typename std::enable_if<std::is_enum<enum_
     explicit Bitmask(const underlying_type mask) : mask_(mask) {}
 
     Bitmask(const Bitmask &rhs) = default;
-    Bitmask(Bitmask &&rhs) = default;
+    Bitmask(Bitmask &&rhs) noexcept = default;
 
     Bitmask &operator=(const Bitmask &rhs) = default;
-    Bitmask &operator=(Bitmask &&rhs) = default;
+    Bitmask &operator=(Bitmask &&rhs) noexcept = default;
 
     Bitmask operator|(const Bitmask rhs) const { return Bitmask(mask_ | rhs.mask_); }
     Bitmask operator|=(const Bitmask rhs) { return (*this) = Bitmask(mask_ | rhs.mask_); }

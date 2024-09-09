@@ -45,8 +45,8 @@ template <typename T> class Span {
     Span &operator=(const Span &rhs) = default;
 
     force_inline T *data() const { return p_data_; }
-    force_inline ptrdiff_t size() const { return size_; }
-    force_inline bool empty() const { return size_ == 0; }
+    [[nodiscard]] force_inline ptrdiff_t size() const { return size_; }
+    [[nodiscard]] force_inline bool empty() const { return size_ == 0; }
 
     force_inline T &operator[](const ptrdiff_t i) const {
         assert(i >= 0 && i < size_);

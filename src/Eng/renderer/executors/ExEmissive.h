@@ -6,7 +6,7 @@
 #include <Ren/VertexInput.h>
 
 namespace Eng {
-class ExEmissive : public FgExecutor {
+class ExEmissive final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data

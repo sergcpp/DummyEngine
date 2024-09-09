@@ -111,7 +111,7 @@ uint32_t Eng::ExBuildAccStructures::PreprocessPrims_SAH(Ren::Span<const Phy::pri
         std::vector<uint32_t> indices;
         Phy::Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()},
                    max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
-        prims_coll_t() {}
+        prims_coll_t() = default;
         prims_coll_t(std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min, const Phy::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };

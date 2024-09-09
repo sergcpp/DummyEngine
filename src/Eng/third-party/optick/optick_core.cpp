@@ -837,11 +837,7 @@ void Core::DumpProgressFormatted(const char* format, ...)
 	va_list arglist;
 	char buffer[256] = { 0 };
 	va_start(arglist, format);
-#ifdef OPTICK_MSVC
-	vsprintf_s(buffer, format, arglist);
-#else
-	vsprintf(buffer, format, arglist);
-#endif
+	vsnprintf(buffer, sizeof(buffer), format, arglist);
 	va_end(arglist);
 	DumpProgress(buffer);
 }

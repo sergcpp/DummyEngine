@@ -45,7 +45,7 @@ void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int 
     }
 }
 
-std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width, int height, int channels,
+std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int width, int height, int channels,
                                               Eng::assets_context_t &ctx) {
     std::unique_ptr<uint8_t[]> _out_conemap(new uint8_t[width * height * 4]);
     // faster access in debug
@@ -225,7 +225,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
     return _out_conemap;
 }
 
-std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(unsigned char *img_data, int width, int height, int channels,
+std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(const unsigned char *img_data, int width, int height, int channels,
                                                 Ren::ILog *log) {
     std::unique_ptr<uint8_t[]> _out_normalmap(new uint8_t[width * height * 3]);
     // faster access in debug
@@ -1008,7 +1008,7 @@ bool Eng::SceneManager::HConvToDDS_old(assets_context_t &ctx, const char *in_fil
         const int height_new = is_1px_texture ? 4 : height;
         // drop unnecessary channels
         const int channels_new = is_single_channel ? 1 : channels;
-        uint8_t *const image_data_new = (uint8_t *)malloc(width_new * height_new * channels_new);
+        auto *const image_data_new = (uint8_t *)malloc(width_new * height_new * channels_new);
         for (int y = 0; y < height_new; ++y) {
             for (int x = 0; x < width_new; ++x) {
                 for (int j = 0; j < channels_new; ++j) {
@@ -1173,7 +1173,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
         if (tex.image_type == eImageType::Color && channels_new > 3) {
             channels_new = 3;
         }
-        unsigned char *image_data_new = (unsigned char *)malloc(width_new * height_new * channels_new);
+        auto *image_data_new = (unsigned char *)malloc(width_new * height_new * channels_new);
         if (!image_data_new) {
             return false;
         }
@@ -1196,7 +1196,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
 
     if (tex.image_type == eImageType::NormalMap && channels == 3) {
         // this is normal map, drop it to two channels
-        unsigned char *image_data_new = (unsigned char *)malloc(width * height * 2);
+        auto *image_data_new = (unsigned char *)malloc(width * height * 2);
         if (!image_data_new) {
             return false;
         }
@@ -1696,8 +1696,6 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
             pcdiv = 25;
             break;
         case 5:
-            pcdiv = 15;
-            break;
         case 6:
             pcdiv = 15;
             break;
@@ -1707,15 +1705,12 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         case 10:
             pcdiv = 8;
             break;
-        case 12:
-            pcdiv = 6;
-            break;
         default:
             pcdiv = 6;
             break;
         };
 
-        error_weighting_params ewp;
+        error_weighting_params ewp = {};
 
         ewp.rgb_power = 1.0f;
         ewp.alpha_power = 1.0f;
@@ -1826,17 +1821,17 @@ std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image
 
     swizzlepattern swz_decode = {0, 1, 2, 3};
 
-    imageblock pb;
+    imageblock pb = {};
     for (int z = 0; z < zblocks; z++) {
         for (int y = 0; y < yblocks; y++) {
             for (int x = 0; x < xblocks; x++) {
                 int offset = (((z * yblocks + y) * xblocks) + x) * 16;
                 const uint8_t *bp = image_data + offset;
 
-                physical_compressed_block pcb;
+                physical_compressed_block pcb = {};
                 memcpy(&pcb, bp, sizeof(physical_compressed_block));
 
-                symbolic_compressed_block scb;
+                symbolic_compressed_block scb = {};
                 physical_to_symbolic(xdim, ydim, 1, pcb, &scb);
                 decompress_symbolic_block(DECODE_LDR, xdim, ydim, 1, x * xdim, y * ydim, z * 1, &scb, &pb);
                 write_imageblock(img, &pb, xdim, ydim, 1, x * xdim, y * ydim, z * 1, swz_decode);

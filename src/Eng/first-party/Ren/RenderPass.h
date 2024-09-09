@@ -132,7 +132,7 @@ class RenderPass {
     RenderPass &operator=(RenderPass &&rhs) noexcept;
 
 #if defined(USE_VK_RENDER)
-    VkRenderPass handle() const { return handle_; }
+    [[nodiscard]] VkRenderPass handle() const { return handle_; }
 #endif
 
     bool IsCompatibleWith(Span<const RenderTarget> color_rts, RenderTarget depth_rt);

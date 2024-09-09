@@ -113,7 +113,6 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
             const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
-            const int updates_count = persistent_data.probe_volumes[volume_to_update].updates_count;
 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
@@ -173,7 +172,6 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
             const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
-            const int updates_count = persistent_data.probe_volumes[volume_to_update].updates_count;
 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;

@@ -290,14 +290,14 @@ struct render_settings_t {
 
     render_settings_t() { enable_shadow_jitter = false; }
 
-    bool operator==(const render_settings_t &rhs) {
+    bool operator==(const render_settings_t &rhs) const {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
                gi_quality == rhs.gi_quality && sky_quality == rhs.sky_quality && debug_rt == rhs.debug_rt &&
                debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
                debug_oit_layer == rhs.debug_oit_layer;
     }
-    bool operator!=(const render_settings_t &rhs) { return !operator==(rhs); }
+    bool operator!=(const render_settings_t &rhs) const { return !operator==(rhs); }
 
     render_settings_t &operator&=(const render_settings_t &rhs) {
         flags &= rhs.flags;

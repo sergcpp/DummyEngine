@@ -11,8 +11,6 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-#include "../renderer/Renderer_Structs.h"
-
 namespace SceneManagerInternal {
 const float BoundsMargin = 0.2f;
 
@@ -70,8 +68,8 @@ uint16_t encode_snorm_u16(const float f) {
 
 uint32_t encode_cosines(const float cos_a, const float cos_b) {
     // NOTE: 65534 was chosen for precise 0.0 representation
-    const uint32_t a = uint32_t(std::floor(65534.0f * ((cos_a + 1.0f) / 2.0f)));
-    const uint32_t b = uint32_t(std::floor(65534.0f * ((cos_b + 1.0f) / 2.0f)));
+    const auto a = uint32_t(std::floor(65534.0f * ((cos_a + 1.0f) / 2.0f)));
+    const auto b = uint32_t(std::floor(65534.0f * ((cos_b + 1.0f) / 2.0f)));
     return (a << 16) | b;
 }
 
@@ -150,7 +148,7 @@ void Eng::SceneManager::RebuildSceneBVH() {
                                                            prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
-        const uint32_t leaf_index = uint32_t(scene_data_.nodes.size());
+        const auto leaf_index = uint32_t(scene_data_.nodes.size());
         uint32_t parent_index = 0xffffffff;
 
         if (leaf_index) {
@@ -652,8 +650,8 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
     auto new_blas = std::make_unique<Ren::AccStructureSW>(mesh_alloc, nodes_alloc, prim_alloc);
 
-    const uint32_t total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
-    const uint32_t total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
+    const auto total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
+    const auto total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
 
     Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Upload Buf", api_ctx, Ren::eBufType::Upload, sizeof(gpu_mesh_t));
     {
@@ -709,7 +707,7 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
         std::vector<uint32_t> indices;
         Phy::Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()},
                    max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
-        prims_coll_t() {}
+        prims_coll_t() = default;
         prims_coll_t(std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min, const Phy::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };

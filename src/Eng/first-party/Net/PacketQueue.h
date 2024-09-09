@@ -22,7 +22,7 @@ namespace Net {
     class PacketQueue : public std::list<PacketData> {
     public:
         bool exists(unsigned int sequence) {
-            for (iterator it = begin(); it != end(); it++) {
+            for (auto it = begin(); it != end(); it++) {
                 if (it->sequence == sequence) {
                     return true;
                 }
@@ -39,7 +39,7 @@ namespace Net {
                 } else if (sequence_more_recent(p.sequence, back().sequence, max_sequence)) {
                     push_back(p);
                 } else {
-                    for (iterator it = begin(); it != end(); it++) {
+                    for (auto it = begin(); it != end(); it++) {
                         assert(it->sequence != p.sequence);
                         if (sequence_more_recent(it->sequence, p.sequence, max_sequence)) {
                             insert(it, p);
@@ -51,8 +51,8 @@ namespace Net {
         }
 
         bool verify_sorted(unsigned int max_sequence) {
-            iterator prev = end();
-            for (iterator it = begin(); it != end(); it++) {
+            auto prev = end();
+            for (auto it = begin(); it != end(); it++) {
                 //assert(it->sequence <= max_sequence);
                 if (it->sequence > max_sequence) {
                     return false;

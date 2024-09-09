@@ -6,8 +6,6 @@
 
 #include "MVec.h"
 
-#define _abs(x) (((x) < 0.0) ? -(x) : (x))
-
 namespace GuiInternal {
 static double _root3(double x) {
     double s = 1.0;
@@ -69,7 +67,7 @@ static int solve_cubic(double a, double b, double c, double x[3]) {
         x[2] = q * std::cos((t - TwoPi) / 3.0) - a;
         return 3;
     } else {
-        A = -root3(_abs(r) + std::sqrt(r2 - q3));
+        A = -root3(std::abs(r) + std::sqrt(r2 - q3));
         if (r < 0) {
             A = -A;
         }
@@ -79,7 +77,7 @@ static int solve_cubic(double a, double b, double c, double x[3]) {
         x[0] = (A + B) - a;
         x[1] = -0.5 * (A + B) - a;
         x[2] = 0.5 * std::sqrt(3.0) * (A - B);
-        if (_abs(x[2]) < eps) {
+        if (std::abs(x[2]) < eps) {
             x[2] = x[1];
             return 2;
         }
@@ -280,8 +278,8 @@ int Gui::CalcUTF8Length(const char *utf8) {
 void Gui::DrawBezier1ToBitmap(const Vec2d &p0, const Vec2d &p1, int stride, int channels, uint8_t *out_rgba) {
     auto p0i = Vec2i{p0}, p1i = Vec2i{p1};
 
-    const int dx = _abs(p1i[0] - p0i[0]), sx = p0i[0] < p1i[0] ? 1 : -1;
-    const int dy = _abs(p1i[1] - p0i[1]), sy = p0i[1] < p1i[1] ? 1 : -1;
+    const int dx = std::abs(p1i[0] - p0i[0]), sx = p0i[0] < p1i[0] ? 1 : -1;
+    const int dy = std::abs(p1i[1] - p0i[1]), sy = p0i[1] < p1i[1] ? 1 : -1;
     int err = (dx > dy ? dx : -dy) / 2, e2;
 
     for (;;) {
@@ -365,13 +363,13 @@ Gui::dist_result_t Gui::Bezier1Distance(const Vec2d &p0, const Vec2d &p1, const 
         const Vec2d _pp0 = p0 + t * p10, _pp1 = p0 + t_unclumped * p10;
         const double sign = cross2(p10, _pp0 - p) >= 0.0 ? 1.0 : -1.0;
         const double orthogonality = cross2(Normalize(p10), Normalize(p - _pp1));
-        return {sign * Distance(_pp0, p), sign * Distance(_pp1, p), _abs(orthogonality), t, 0.0};
+        return {sign * Distance(_pp0, p), sign * Distance(_pp1, p), std::abs(orthogonality), t, 0.0};
     } else {
         const Vec2d _pp0 = (t_unclumped < 0.5) ? p0 : p1, _pp1 = p0 + t_unclumped * p10;
         const double sign = cross2(p10, _pp0 - p) >= 0.0 ? 1.0 : -1.0;
         const double orthogonality = cross2(Normalize(p10), Normalize(p - _pp1));
-        return {sign * Distance(_pp0, p), sign * Distance(_pp1, p), _abs(orthogonality), t,
-                _abs(Dot(Normalize(p10), Normalize(_pp0 - p)))};
+        return {sign * Distance(_pp0, p), sign * Distance(_pp1, p), std::abs(orthogonality), t,
+                std::abs(Dot(Normalize(p10), Normalize(_pp0 - p)))};
     }
 }
 
@@ -401,7 +399,7 @@ Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const 
         const double sign = cross2(derivative, pp1 - p) >= 0.0 ? 1.0 : -1.0;
         const double dist = sign * Distance(pp1, p);
         const double orthogonality = cross2(Normalize(derivative), Normalize(p - pp1));
-        if (_abs(dist) < _abs(min_sdist)) {
+        if (std::abs(dist) < std::abs(min_sdist)) {
             min_sdist = dist;
             res_pseudodist = dist;
             res_orthogonality = orthogonality;
@@ -437,7 +435,7 @@ Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const 
     }
 #endif
 
-    return {min_sdist, res_pseudodist, _abs(res_orthogonality), res_t, _abs(res_dot)};
+    return {min_sdist, res_pseudodist, std::abs(res_orthogonality), res_t, std::abs(res_dot)};
 }
 
 Gui::dist_result_t Gui::Bezier3Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, const Vec2d &p3,
@@ -540,10 +538,10 @@ int Gui::FixSDFCollisions(uint8_t *img_data, int w, int h, int channels, int thr
             int ch_count = 0;
 
             for (int i = 0; i < 3; i++) {
-                if (_abs(int(p0[i]) - p0_e[i]) > threshold || _abs(int(p0[i]) - p0_w[i]) > threshold ||
-                    _abs(int(p0[i]) - p0_n[i]) > threshold || _abs(int(p0[i]) - p0_s[i]) > threshold ||
-                    _abs(int(p0[i]) - p0_se[i]) > threshold || _abs(int(p0[i]) - p0_sw[i]) > threshold ||
-                    _abs(int(p0[i]) - p0_ne[i]) > threshold || _abs(int(p0[i]) - p0_nw[i]) > threshold) {
+                if (std::abs(int(p0[i]) - p0_e[i]) > threshold || std::abs(int(p0[i]) - p0_w[i]) > threshold ||
+                    std::abs(int(p0[i]) - p0_n[i]) > threshold || std::abs(int(p0[i]) - p0_s[i]) > threshold ||
+                    std::abs(int(p0[i]) - p0_se[i]) > threshold || std::abs(int(p0[i]) - p0_sw[i]) > threshold ||
+                    std::abs(int(p0[i]) - p0_ne[i]) > threshold || std::abs(int(p0[i]) - p0_nw[i]) > threshold) {
                     ch_count++;
                 }
             }

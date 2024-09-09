@@ -118,7 +118,7 @@ void glslx::Mark_Expression(ast_expression *expression) {
         Mark_Ternary(static_cast<ast_ternary_expression *>(expression));
         break;
     case eExprType::ArraySpecifier: {
-        ast_array_specifier *arr_specifier = static_cast<ast_array_specifier *>(expression);
+        auto *arr_specifier = static_cast<ast_array_specifier *>(expression);
         for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
             Mark_Expression(arr_specifier->expressions[i]);
         }

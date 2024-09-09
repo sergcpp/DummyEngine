@@ -154,7 +154,7 @@ class Preprocessor {
     bool ProcessElse();
     bool ProcessElif();
 
-    bool ShouldTokenBeSkipped() const {
+    [[nodiscard]] bool ShouldTokenBeSkipped() const {
         for (int i = int(if_blocks_.size()) - 1; i >= 0; --i) {
             if (if_blocks_[i].should_be_skipped) {
                 return true;
@@ -168,14 +168,14 @@ class Preprocessor {
     int EvaluateExpression(Span<const token_t> tokens);
 
   public:
-    Preprocessor(std::unique_ptr<std::istream> stream, const preprocessor_config_t &config = {});
-    Preprocessor(std::string_view source, const preprocessor_config_t &config = {});
+    explicit Preprocessor(std::unique_ptr<std::istream> stream, preprocessor_config_t config = {});
+    explicit Preprocessor(std::string_view source, preprocessor_config_t config = {});
     ~Preprocessor();
 
-    std::string_view error() const { return error_; }
+    [[nodiscard]] std::string_view error() const { return error_; }
 
-    std::string Process();
+    [[nodiscard]] std::string Process();
 
-    Span<const macro_desc_t> macros() const { return Span<const macro_desc_t>{macros_.data() + 1, macros_.size() - 1}; }
+    [[nodiscard]] Span<const macro_desc_t> macros() const { return Span<const macro_desc_t>{macros_.data() + 1, macros_.size() - 1}; }
 };
 } // namespace glslx

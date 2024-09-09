@@ -3,7 +3,6 @@
 #include <Ren/Context.h>
 
 #include "../../utils/ShaderLoader.h"
-#include "../framegraph/FgBuilder.h"
 
 void Eng::ExRTGICache::Execute(FgBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());

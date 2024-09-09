@@ -6,7 +6,7 @@
 struct DrawList;
 
 namespace Eng {
-class ExSkinning : public FgExecutor {
+class ExSkinning final : public FgExecutor {
     const Ren::Pipeline &pi_skinning_;
     const DrawList *&p_list_;
 

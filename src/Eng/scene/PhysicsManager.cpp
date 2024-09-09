@@ -115,8 +115,7 @@ void Eng::PhysicsManager::Update(SceneData &scene, const float dt_s) {
         }
 
         // Update positions
-        for (uint32_t i = 0; i < uint32_t(updated_objects_.size()); i++) {
-            const uint32_t ndx = updated_objects_[i];
+        for (const uint32_t ndx : updated_objects_) {
             SceneObject &obj = scene.objects[ndx];
             Physics &ph = physes[obj.components[CompPhysics]];
 

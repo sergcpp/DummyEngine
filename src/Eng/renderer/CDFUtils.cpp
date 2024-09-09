@@ -26,7 +26,7 @@ std::vector<float> Eng::CDFInvert(const int res, const float from, const float t
                 t = 0.0f;
                 index = cdf_size - 1;
             }
-            float y = ((index + t) / (res - 1)) * 2.0f * range;
+            float y = ((float(index) + t) / float(res - 1)) * 2.0f * range;
             inv_cdf[half_size + i] = 0.5f * (1.0f + y);
             inv_cdf[half_size - i] = 0.5f * (1.0f - y);
         }

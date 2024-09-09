@@ -17,7 +17,7 @@ class ButtonImage : public ButtonBase {
                 const Ren::TextureRegionRef &tex_pressed, const Vec2f uvs_pressed[2], const Vec2f &pos,
                 const Vec2f &size, const BaseElement *parent);
 
-    BaseElement *element() const { return additional_element_.get(); }
+    [[nodiscard]] BaseElement *element() const { return additional_element_.get(); }
 
     void SetElement(std::unique_ptr<BaseElement> &&el) {
         additional_element_ = std::move(el);

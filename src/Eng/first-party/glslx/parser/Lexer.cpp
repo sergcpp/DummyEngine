@@ -132,7 +132,7 @@ void glslx::Lexer::ReadSingle(token_t &out) {
             }
         } else if (is_unsigned) {
             out.type = eTokType::Const_uint;
-            const unsigned long long value = strtoull(numeric.data(), 0, base);
+            const unsigned long long value = strtoull(numeric.data(), nullptr, base);
             if (value <= UINT_MAX) {
                 out.as_uint = uint32_t(value);
             } else {
@@ -140,11 +140,11 @@ void glslx::Lexer::ReadSingle(token_t &out) {
             }
         } else {
             out.type = eTokType::Const_int;
-            const long long value = strtoll(numeric.data(), 0, base);
+            const long long value = strtoll(numeric.data(), nullptr, base);
             if (value >= INT_MIN && value <= INT_MAX) {
                 out.as_int = int32_t(value);
             } else {
-                const unsigned long long uvalue = strtoull(numeric.data(), 0, base);
+                const unsigned long long uvalue = strtoull(numeric.data(), nullptr, base);
                 if (value <= UINT_MAX) {
                     out.as_int = int32_t(uvalue);
                 } else {
@@ -281,7 +281,7 @@ void glslx::Lexer::ReadSingle(token_t &out) {
                 return;
             }
 
-            loc_.line = strtoull(line.data(), 0, 10);
+            loc_.line = strtoull(line.data(), nullptr, 10);
         } else if (chars == "error") {
             SkipWhitespace();
 

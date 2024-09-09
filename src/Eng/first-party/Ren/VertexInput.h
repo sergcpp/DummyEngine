@@ -18,7 +18,8 @@ struct VtxAttribDesc {
         : buf(_buf->handle()), loc(_loc), size(_size), type(_type), stride(_stride), offset(_offset) {}
 };
 inline bool operator==(const VtxAttribDesc &lhs, const VtxAttribDesc &rhs) {
-    return std::memcmp(&lhs, &rhs, sizeof(VtxAttribDesc)) == 0;
+    return lhs.buf == rhs.buf && lhs.loc == rhs.loc && lhs.size == rhs.size && lhs.type == rhs.type &&
+           lhs.stride == rhs.stride && lhs.offset == rhs.offset;
 }
 
 class VertexInput {

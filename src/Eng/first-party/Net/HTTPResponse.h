@@ -15,6 +15,6 @@ namespace Net {
 
         void AddField(std::unique_ptr<HTTPField> &&field);
 
-        std::string str() const;
+        [[nodiscard]] std::string str() const;
     };
 }

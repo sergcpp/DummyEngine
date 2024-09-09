@@ -8,7 +8,7 @@
 namespace Eng {
 class PrimDraw;
 
-class ExOITScheduleRays : public FgExecutor {
+class ExOITScheduleRays final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data

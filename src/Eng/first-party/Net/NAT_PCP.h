@@ -31,9 +31,7 @@ enum class ePCPProto {
 };
 
 struct PCPNonce {
-    char _[12];
-
-    PCPNonce() { memset(_, 0, sizeof(_)); }
+    char _[12] = {};
 
     bool operator==(const PCPNonce &rhs) const { return memcmp(this, &rhs, sizeof(PCPNonce)) == 0; }
 };
@@ -52,25 +50,25 @@ class PCPRequest {
   public:
     PCPRequest() : opcode_(ePCPOpCode::None) {}
 
-    ePCPOpCode opcode() const { return opcode_; }
+    [[nodiscard]] ePCPOpCode opcode() const { return opcode_; }
 
-    uint32_t lifetime() const { return lifetime_; }
+    [[nodiscard]] uint32_t lifetime() const { return lifetime_; }
 
-    Net::Address client_address() const { return client_address_; }
+    [[nodiscard]] Net::Address client_address() const { return client_address_; }
 
-    Net::Address external_address() const { return external_address_; }
+    [[nodiscard]] Net::Address external_address() const { return external_address_; }
 
-    PCPNonce nonce() const { return nonce_; }
+    [[nodiscard]] PCPNonce nonce() const { return nonce_; }
 
-    ePCPProto proto() const { return proto_; }
+    [[nodiscard]] ePCPProto proto() const { return proto_; }
 
-    uint16_t internal_port() const { return internal_port_; }
+    [[nodiscard]] uint16_t internal_port() const { return internal_port_; }
 
-    uint16_t external_port() const { return external_port_; }
+    [[nodiscard]] uint16_t external_port() const { return external_port_; }
 
-    uint16_t remote_port() const { return remote_port_; }
+    [[nodiscard]] uint16_t remote_port() const { return remote_port_; }
 
-    Net::Address remote_address() const { return remote_address_; }
+    [[nodiscard]] Net::Address remote_address() const { return remote_address_; }
 
     void set_external_address(const Address &addr) { external_address_ = addr; }
 
@@ -123,23 +121,21 @@ class PCPResponse {
   public:
     PCPResponse() : opcode_(ePCPOpCode::None) {}
 
-    ePCPOpCode opcode() const { return opcode_; }
+    [[nodiscard]] ePCPOpCode opcode() const { return opcode_; }
+    [[nodiscard]] ePCPResCode res_code() const { return res_code_; }
 
-    ePCPResCode res_code() const { return res_code_; }
+    [[nodiscard]] uint32_t lifetime() const { return lifetime_; }
+    [[nodiscard]] uint32_t time() const { return time_; }
 
-    uint32_t lifetime() const { return lifetime_; }
+    [[nodiscard]] Address external_address() const { return external_address_; }
 
-    uint32_t time() const { return time_; }
+    [[nodiscard]] PCPNonce nonce() const { return nonce_; }
 
-    Address external_address() const { return external_address_; }
+    [[nodiscard]] ePCPProto proto() const { return proto_; }
 
-    PCPNonce nonce() const { return nonce_; }
+    [[nodiscard]] uint16_t internal_port() const { return internal_port_; }
 
-    ePCPProto proto() const { return proto_; }
-
-    uint16_t internal_port() const { return internal_port_; }
-
-    uint16_t external_port() const { return external_port_; }
+    [[nodiscard]] uint16_t external_port() const { return external_port_; }
 
     void MakeAnnounceResponse(ePCPResCode res_code) {
         opcode_ = ePCPOpCode::Announce;
@@ -200,11 +196,11 @@ class PCPSession {
         sock_.Open(0);
     }
 
-    Address local_addr() const { return sock_.local_addr(); }
+    [[nodiscard]] Address local_addr() const { return sock_.local_addr(); }
 
-    eState state() const { return state_; }
+    [[nodiscard]] eState state() const { return state_; }
 
-    ePCPResCode err_code() const { return err_code_; }
+    [[nodiscard]] ePCPResCode err_code() const { return err_code_; }
 
     void Update(unsigned int dt_ms);
 

@@ -10,7 +10,7 @@ struct ViewState;
 
 namespace Eng {
 class PrimDraw;
-class ExDebugRT : public FgExecutor {
+class ExDebugRT final : public FgExecutor {
   public:
     struct Args {
         FgResRef shared_data;

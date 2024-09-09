@@ -12,10 +12,10 @@ const float FLT_EPS = 0.0000001f;
 
 struct bbox_t {
     Vec3f min = Vec3f{FLT_MAX}, max = Vec3f{-FLT_MAX};
-    bbox_t() {}
+    bbox_t() = default;
     bbox_t(const Vec3f &_min, const Vec3f &_max) : min(_min), max(_max) {}
 
-    float surface_area() const { return surface_area(min, max); }
+    [[nodiscard]] float surface_area() const { return surface_area(min, max); }
 
     static float surface_area(const Vec3f &min, const Vec3f &max) {
         Vec3f d = max - min;
@@ -32,7 +32,7 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
 
     float res_sah = FLT_MAX;
     if (s.oversplit_threshold > 0.0f) {
-        res_sah = s.oversplit_threshold * whole_box.surface_area() * prim_count;
+        res_sah = s.oversplit_threshold * whole_box.surface_area() * float(prim_count);
     }
     int div_axis = -1;
     uint32_t div_index = 0;
@@ -86,7 +86,7 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
 
             const float scale = (bounds_max - bounds_min) / float(BinsCount);
             for (int i = 0; i < BinsCount - 1; ++i) {
-                const float sah = count_left[i] * area_left[i] + count_right[i] * area_right[i];
+                const float sah = float(count_left[i]) * area_left[i] + float(count_right[i]) * area_right[i];
                 if (sah < res_sah) {
                     res_sah = sah;
                     div_axis = axis;
@@ -156,7 +156,7 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
                     left_bounds.max = Max(left_bounds.max, primitives[prim_indices[list[i - 1]]].bbox_max);
 
                     const float sah =
-                        left_bounds.surface_area() * i + right_bounds[i - 1].surface_area() * (list.size() - i);
+                        left_bounds.surface_area() * float(i) + right_bounds[i - 1].surface_area() * float(list.size() - i);
                     if (sah < res_sah) {
                         res_sah = sah;
                         div_axis = axis;

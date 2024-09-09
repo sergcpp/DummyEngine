@@ -13,7 +13,7 @@ template <typename R, typename... Args> class Signal<R(Args... args)> {
     std::vector<Delegate<R(Args... args)>> delegates_;
 
   public:
-    size_t size() const { return delegates_.size(); }
+    [[nodiscard]] size_t size() const { return delegates_.size(); }
 
     void clear() { delegates_.clear(); }
 
@@ -65,7 +65,7 @@ template <typename R, typename... Args, int N> class SignalN<R(Args... args), N>
     int count_ = 0;
 
   public:
-    int size() const { return count_; }
+    [[nodiscard]] int size() const { return count_; }
 
     void clear() {
         fill(std::begin(delegates_), std::begin(delegates_) + count_, {});

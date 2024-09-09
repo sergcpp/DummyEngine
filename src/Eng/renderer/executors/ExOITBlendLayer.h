@@ -8,7 +8,7 @@
 namespace Eng {
 class PrimDraw;
 
-class ExOITBlendLayer : public FgExecutor {
+class ExOITBlendLayer final : public FgExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -63,7 +63,7 @@ class ExOITBlendLayer : public FgExecutor {
     void DrawTransparent(FgBuilder &builder, FgAllocTex &depth_tex);
 
   public:
-    ExOITBlendLayer(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    explicit ExOITBlendLayer(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
                const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,

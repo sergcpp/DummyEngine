@@ -143,24 +143,24 @@ static_assert(sizeof(TexEntry) == 8, "!");
 class CompStorage {
   public:
     virtual ~CompStorage() = default;
-    virtual std::string_view name() const = 0;
+    [[nodiscard]] virtual std::string_view name() const = 0;
 
-    virtual uint32_t Create() = 0;
+    [[nodiscard]] virtual uint32_t Create() = 0;
     virtual void Delete(uint32_t i) = 0;
-    virtual void *Get(uint32_t i) = 0;
-    virtual const void *Get(uint32_t i) const = 0;
+    [[nodiscard]] virtual void *Get(uint32_t i) = 0;
+    [[nodiscard]] virtual const void *Get(uint32_t i) const = 0;
 
-    virtual uint32_t First() const = 0;
-    virtual uint32_t Next(uint32_t i) const = 0;
+    [[nodiscard]] virtual uint32_t First() const = 0;
+    [[nodiscard]] virtual uint32_t Next(uint32_t i) const = 0;
 
-    virtual int Count() const = 0;
+    [[nodiscard]] virtual int Count() const = 0;
 
     virtual void ReadFromJs(const JsObjectP &js_obj, void *comp) = 0;
     virtual void WriteToJs(const void *comp, JsObjectP &js_obj) const = 0;
 
     // returns contiguous array of data or null if storage does not support it
-    virtual const void *SequentialData() const { return nullptr; }
-    virtual void *SequentialData() { return nullptr; }
+    [[nodiscard]] virtual const void *SequentialData() const { return nullptr; }
+    [[nodiscard]] virtual void *SequentialData() { return nullptr; }
 };
 } // namespace Eng
 

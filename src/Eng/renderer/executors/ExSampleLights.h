@@ -9,7 +9,7 @@
 struct ViewState;
 
 namespace Eng {
-class ExSampleLights : public FgExecutor {
+class ExSampleLights final : public FgExecutor {
   public:
     struct Args {
         FgResRef shared_data;
@@ -31,7 +31,7 @@ class ExSampleLights : public FgExecutor {
         Ren::IAccStructure *tlas = nullptr;
 
         struct {
-            uint32_t root_node;
+            uint32_t root_node = 0xffffffff;
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef meshes_buf;
@@ -62,7 +62,7 @@ class ExSampleLights : public FgExecutor {
     const ViewState *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const Args *args_;
+    const Args *args_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 

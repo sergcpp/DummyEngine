@@ -95,7 +95,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
     for (const Gui::glyph_range_t &range : glyph_ranges) {
         ctx.log->Info("Processing glyph range (%i - %i)", range.beg, range.end);
         for (uint32_t i = range.beg; i < range.end; i++) {
-            const int glyph_index = stbtt_FindGlyphIndex(&font, i);
+            const int glyph_index = stbtt_FindGlyphIndex(&font, int(i));
 
             int x0, y0, x1, y1;
             const bool is_drawable = stbtt_GetGlyphBox(&font, glyph_index, &x0, &y0, &x1, &y1) != 0;
@@ -119,13 +119,13 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
 
             Gui::glyph_info_t &out_glyph = out_glyphs[out_glyph_count++];
 
-            out_glyph.pos[0] = glyph_pos[0] + padding;
-            out_glyph.pos[1] = glyph_pos[1] + padding;
-            out_glyph.res[0] = glyph_res_act[0];
-            out_glyph.res[1] = glyph_res_act[1];
-            out_glyph.off[0] = int(std::round(scale * float(x0)));
-            out_glyph.off[1] = int(std::round(scale * float(y0)));
-            out_glyph.adv[0] = int(std::round(scale * float(advance_width)));
+            out_glyph.pos[0] = int16_t(glyph_pos[0] + padding);
+            out_glyph.pos[1] = int16_t(glyph_pos[1] + padding);
+            out_glyph.res[0] = int8_t(glyph_res_act[0]);
+            out_glyph.res[1] = int8_t(glyph_res_act[1]);
+            out_glyph.off[0] = int8_t(std::round(scale * float(x0)));
+            out_glyph.off[1] = int8_t(std::round(scale * float(y0)));
+            out_glyph.adv[0] = int8_t(std::round(scale * float(advance_width)));
             out_glyph.adv[1] = 0;
 
             if (!is_drawable)

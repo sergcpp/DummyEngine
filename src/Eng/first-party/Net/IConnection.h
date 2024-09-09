@@ -15,9 +15,9 @@ namespace Net {
 
         virtual int ReceivePacket(unsigned char data[], int size) = 0;
 
-        virtual Address address() const = 0;
+        [[nodiscard]] virtual Address address() const = 0;
 
-        virtual Address local_addr() const = 0;
+        [[nodiscard]] virtual Address local_addr() const = 0;
 
     protected:
         virtual void OnStart() {}

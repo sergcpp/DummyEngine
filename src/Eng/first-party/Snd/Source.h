@@ -34,27 +34,27 @@ class Source {
     void Init(float gain, const float pos[3]);
     void Destroy();
 
-    eSrcState GetState() const;
+    [[nodiscard]] eSrcState GetState() const;
     
-    const BufferRef &GetBuffer(int i) const;
+    [[nodiscard]] const BufferRef &GetBuffer(int i) const;
     void SetBuffer(const BufferRef& buf);
     void EnqueueBuffers(const BufferRef bufs[], int bufs_count);
 
     BufferRef UnqueueProcessedBuffer();
 
-    void Play();
-    void Pause();
-    void Stop();
+    void Play() const;
+    void Pause() const;
+    void Stop() const;
 
-    float GetOffset();
+    float GetOffset() const;
     void SetOffset(float offset_s);
     void ResetBuffers();
 
-    bool looping() const { return looping_; }
-    float pitch() const { return pitch_; }
-    float gain() const { return gain_; }
-    const float *position() const { return position_; }
-    const float *velocity() const { return velocity_; }
+    [[nodiscard]] bool looping() const { return looping_; }
+    [[nodiscard]] float pitch() const { return pitch_; }
+    [[nodiscard]] float gain() const { return gain_; }
+    [[nodiscard]] const float *position() const { return position_; }
+    [[nodiscard]] const float *velocity() const { return velocity_; }
 
     void set_looping(bool val);
     void set_pitch(float pitch);

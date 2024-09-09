@@ -85,7 +85,7 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     data.read((char *)&len_, 4);
 
     frames_.resize(file_header.p[FramesChunk].length / 4);
-    data.read((char *)&frames_[0], (size_t)file_header.p[FramesChunk].length);
+    data.read((char *)&frames_[0], file_header.p[FramesChunk].length);
 
     frame_dur_ = 1.0f / float(fps_);
     anim_dur_ = float(len_) * frame_dur_;
@@ -164,7 +164,7 @@ void Ren::AnimSequence::InterpolateFrames(const int fr_0, const int fr_1, const 
 
 // skeleton
 
-Ren::Vec3f Ren::Skeleton::bone_pos(std::string_view name) {
+Ren::Vec3f Ren::Skeleton::bone_pos(std::string_view name) const {
     const Bone *bone = find_bone(name);
     Vec3f ret;
     const float *m = ValuePtr(bone->cur_comb_matrix);
@@ -179,7 +179,7 @@ Ren::Vec3f Ren::Skeleton::bone_pos(std::string_view name) {
     return ret;
 }
 
-Ren::Vec3f Ren::Skeleton::bone_pos(const int i) {
+Ren::Vec3f Ren::Skeleton::bone_pos(const int i) const {
     auto bone_it = &bones[i];
     Vec3f ret;
     const float *m = ValuePtr(bone_it->cur_comb_matrix);
@@ -194,13 +194,13 @@ Ren::Vec3f Ren::Skeleton::bone_pos(const int i) {
     return ret;
 }
 
-void Ren::Skeleton::bone_matrix(std::string_view name, Mat4f &mat) {
+void Ren::Skeleton::bone_matrix(std::string_view name, Mat4f &mat) const {
     const Bone *bone = find_bone(name);
     assert(bone);
     mat = bone->cur_comb_matrix;
 }
 
-void Ren::Skeleton::bone_matrix(const int i, Mat4f &mat) { mat = bones[i].cur_comb_matrix; }
+void Ren::Skeleton::bone_matrix(const int i, Mat4f &mat) const { mat = bones[i].cur_comb_matrix; }
 
 void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
     for (int i = 0; i < int(bones.size()); ++i) {

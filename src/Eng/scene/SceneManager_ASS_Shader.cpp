@@ -163,7 +163,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
 
     enum class eShaderOutput { GLSL, VK_SPIRV };
 
-    const size_t ext_pos = std::string_view(out_file).find(".");
+    const size_t ext_pos = std::string_view(out_file).find('.');
     assert(ext_pos != std::string::npos);
 
     std::vector<std::future<bool>> futures;
@@ -175,7 +175,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 continue;
             }
             for (const std::string &perm : permutations) {
-                auto compile_job = [ext_pos, &orig_glsl_file_data, &ctx, &in_file, &out_file, &out_dependencies,
+                auto compile_job = [ext_pos, &orig_glsl_file_data, &ctx, &out_file,
                                     &out_outputs](const eShaderOutput sh_output, const bool EnableOptimization,
                                                   const std::string &perm) -> bool {
                     std::string prep_glsl_file = out_file;
@@ -203,13 +203,9 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         }
                     }
 
-                    const bool TestShaderRewrite = true;
-
                     std::string preamble;
-                    if (TestShaderRewrite) {
-                        if (sh_output == eShaderOutput::VK_SPIRV) {
-                            preamble += "#define VULKAN 1\n";
-                        }
+                    if (sh_output == eShaderOutput::VK_SPIRV) {
+                        preamble += "#define VULKAN 1\n";
                     }
                     if (!perm.empty()) {
                         const char *params = perm.c_str();
@@ -261,10 +257,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         }
                     }
 
-                    std::string glsl_file_data = orig_glsl_file_data;
-                    if (TestShaderRewrite) {
-                        glsl_file_data = preamble + glsl_file_data;
-                    }
+                    std::string glsl_file_data = preamble + orig_glsl_file_data;
 
                     glslx::eTrUnitType unit_type;
                     if (strstr(out_file, ".vert.glsl")) {
@@ -298,7 +291,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         unit_type == glslx::eTrUnitType::AnyHit || unit_type == glslx::eTrUnitType::ClosestHit ||
                         unit_type == glslx::eTrUnitType::Miss || unit_type == glslx::eTrUnitType::Callable;
 
-                    if (TestShaderRewrite) {
+                    { //
                         glslx::Preprocessor preprocessor(glsl_file_data);
                         std::string preprocessed = preprocessor.Process();
                         if (!preprocessor.error().empty()) {
@@ -407,6 +400,12 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         case glslx::eTrUnitType::Miss:
                             glslang_input.stage = GLSLANG_STAGE_MISS;
                             break;
+                        case glslx::eTrUnitType::Intersect:
+                            glslang_input.stage = GLSLANG_STAGE_INTERSECT;
+                            break;
+                        case glslx::eTrUnitType::Callable:
+                            glslang_input.stage = GLSLANG_STAGE_CALLABLE;
+                            break;
                         }
 
                         glslang_input.code = glsl_file_data.data();
@@ -423,10 +422,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
 
                         glslang_shader_t *shader = glslang_shader_create(&glslang_input);
                         SCOPE_EXIT(glslang_shader_delete(shader);)
-
-                        if (!TestShaderRewrite && !preamble.empty()) {
-                            glslang_shader_set_preamble(shader, preamble.c_str());
-                        }
 
                         if (!glslang_shader_preprocess(shader, &glslang_input)) {
                             ctx.log->Error("GLSL preprocessing failed %s", out_file);

@@ -20,7 +20,7 @@ bool Net::HTTPRequest::Parse(const char *buf) {
     const char *delims2 = "\r\n";
     char const *p = buf;
     char const *q = strpbrk(p + 1, delims);
-    for (; p != NULL && q != NULL; q = strpbrk(p, delims)) {
+    for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
         if (p == q) {
             p = q + 1;
             continue;

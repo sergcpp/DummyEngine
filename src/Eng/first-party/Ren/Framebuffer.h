@@ -40,16 +40,16 @@ class Framebuffer {
     Framebuffer &operator=(Framebuffer &&rhs) noexcept;
 
 #if defined(USE_VK_RENDER)
-    VkFramebuffer handle() const { return handle_; }
-    VkRenderPass renderpass() const { return renderpass_; }
+    [[nodiscard]] VkFramebuffer handle() const { return handle_; }
+    [[nodiscard]] VkRenderPass renderpass() const { return renderpass_; }
 #elif defined(USE_GL_RENDER)
     uint32_t id() const { return id_; }
 #endif
 
-    bool Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
-                 const WeakTex2DRef _stencil_attachment, Span<const WeakTex2DRef> _color_attachments) const;
-    bool Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
-                 const WeakTex2DRef _stencil_attachment, Span<const RenderTarget> _color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, WeakTex2DRef _depth_attachment,
+                               WeakTex2DRef _stencil_attachment, Span<const WeakTex2DRef> _color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, WeakTex2DRef _depth_attachment,
+                               WeakTex2DRef _stencil_attachment, Span<const RenderTarget> _color_attachments) const;
 
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTex2DRef depth_attachment,
                WeakTex2DRef stencil_attachment, Span<const WeakTex2DRef> color_attachments, bool is_multisampled,

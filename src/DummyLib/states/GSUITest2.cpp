@@ -196,11 +196,11 @@ void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 }
 
 void GSUITest2::UpdateHint() {
-    const std::string &line = edit_box_->line_text(0);
+    const std::string_view line = edit_box_->line_text(0);
 
     results_lines_.clear();
 
-    auto lookup_word = [this](const char *word, int mutation_cost) {
+    auto lookup_word = [this](std::string_view word, int mutation_cost) {
         Dictionary::dict_entry_res_t result = {};
         if (dict_->Lookup(word, result)) {
             log_->Info("Result %s", result.trans[0].data());
@@ -239,12 +239,12 @@ void GSUITest2::UpdateHint() {
         }
     };
 
-    lookup_word(line.c_str(), 0);
+    lookup_word(line, 0);
 
-    MutateWord(line.c_str(), lookup_word);
+    MutateWord(line, lookup_word);
 }
 
-void GSUITest2::MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback) {
+void GSUITest2::MutateWord(std::string_view in_word, const std::function<void(const char *, int)> &callback) {
     uint32_t unicode_word[128] = {};
     int unicode_word_len = 0;
 

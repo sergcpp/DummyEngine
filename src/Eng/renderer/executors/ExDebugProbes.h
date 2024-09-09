@@ -6,7 +6,7 @@
 namespace Eng {
 class PrimDraw;
 
-class ExDebugProbes : public FgExecutor {
+class ExDebugProbes final : public FgExecutor {
   public:
     struct Args {
         FgResRef shared_data;

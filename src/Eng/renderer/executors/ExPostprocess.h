@@ -9,7 +9,7 @@ namespace Eng {
 class PrimDraw;
 struct ViewState;
 
-class ExPostprocess : public FgExecutor {
+class ExPostprocess final : public FgExecutor {
   public:
     struct Args {
         FgResRef exposure_tex;
@@ -26,7 +26,7 @@ class ExPostprocess : public FgExecutor {
         float aberration = 1.0f;
     };
 
-    ExPostprocess(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    explicit ExPostprocess(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(const ViewState *view_state, const Args *args) {
         view_state_ = view_state;

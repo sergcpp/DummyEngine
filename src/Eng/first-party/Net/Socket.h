@@ -16,27 +16,22 @@ namespace Net {
 
         ~UDPSocket();
 
-        bool IsOpen() const {
-            return handle_ != 0;
-        }
+        [[nodiscard]] bool IsOpen() const { return handle_ != 0; }
 
-        Address local_addr() const {
-            return local_addr_;
-        }
+        [[nodiscard]] Address local_addr() const { return local_addr_; }
 
         void Open(unsigned short port, bool reuse_addr = true);
 
         void Close();
 
-        bool Send(const Address &destination, const void *data, int size);
+        bool Send(const Address &destination, const void *data, int size) const;
 
-        int Receive(Address &sender, void *data, int size);
+        int Receive(Address &sender, void *data, int size) const;
 
         bool JoinMulticast(const Address &addr);
-
         bool DropMulticast(const Address &addr);
 
-        bool SetBlocking(bool is_blocking);
+        bool SetBlocking(bool is_blocking) const;
     };
 
     class TCPSocket {
@@ -65,17 +60,11 @@ namespace Net {
             return ret;
         }
 
-        bool IsOpen() const {
-            return handle_ != 0;
-        }
+        [[nodiscard]] bool IsOpen() const { return handle_ != 0; }
 
-        bool connected() const {
-            return connection_ != 0;
-        }
+        [[nodiscard]] bool connected() const { return connection_ != 0; }
 
-        Address remote_addr() const {
-            return remote_addr_;
-        }
+        [[nodiscard]] Address remote_addr() const { return remote_addr_; }
 
         void Open(unsigned short port, bool reuse_addr = true);
 

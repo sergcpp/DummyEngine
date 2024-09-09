@@ -15,7 +15,7 @@ class Bounds {
 
     void ToPoints(Vec3 out_points[8]) const;
 
-    real width(const int i) const { return maxs[i] - mins[i]; }
+    [[nodiscard]] real width(const int i) const { return maxs[i] - mins[i]; }
 
     Vec3 mins;
     Vec3 maxs;

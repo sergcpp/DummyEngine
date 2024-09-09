@@ -50,8 +50,8 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const FgResRef handle, const Ren::eResS
 
 #ifndef NDEBUG
     // Ensure uniqueness
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Buffer || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Buffer || r.index != ret.index);
     }
 #endif
     node.input_.push_back(ret);
@@ -91,8 +91,8 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
 
     if (slot_index == -1) {
 #ifndef NDEBUG
-        for (size_t i = 0; i < node.input_.size(); i++) {
-            assert(node.input_[i].type != eFgResType::Buffer || node.input_[i].index != ret.index);
+        for (const FgResource &r : node.input_) {
+            assert(r.type != eFgResType::Buffer || r.index != ret.index);
         }
 #endif
         node.input_.push_back(ret);
@@ -149,8 +149,8 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
     ++buf.read_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Buffer || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Buffer || r.index != ret.index);
     }
 #endif
     node.input_.push_back(ret);
@@ -170,8 +170,8 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const FgResRef handle, const Ren::eRes
     ++tex.read_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
     node.input_.push_back(ret);
@@ -191,8 +191,8 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(std::string_view name, const Ren::eRes
     ++tex.read_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
     node.input_.push_back(ret);
@@ -232,8 +232,8 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Re
     ++tex.read_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
 
@@ -272,8 +272,8 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture2DArray *ref, Ren::e
     ++tex.read_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
 
@@ -312,8 +312,8 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture3D *ref, Ren::eResSt
     ++tex.read_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
 
@@ -354,8 +354,8 @@ Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(const FgResRef handle, const Re
     ++tex.read_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        assert(node.input_[i].type != eFgResType::Texture || node.input_[i].index != ret.index);
+    for (const FgResource &r : node.input_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
     node.input_.push_back(ret);
@@ -398,8 +398,8 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const FgResRef handle, const Ren::eRes
     ++buf.write_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        assert(node.output_[i].type != eFgResType::Buffer || node.output_[i].index != ret.index);
+    for (const FgResource &r : node.output_) {
+        assert(r.type != eFgResType::Buffer || r.index != ret.index);
     }
 #endif
     node.output_.push_back(ret);
@@ -439,8 +439,8 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(std::string_view name, const FgBufDesc
     ++buf.write_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        assert(node.output_[i].type != eFgResType::Buffer || node.output_[i].index != ret.index);
+    for (const FgResource &r : node.output_) {
+        assert(r.type != eFgResType::Buffer || r.index != ret.index);
     }
 #endif
     node.output_.push_back(ret);
@@ -480,8 +480,8 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const R
     ++buf.write_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        assert(node.output_[i].type != eFgResType::Buffer || node.output_[i].index != ret.index);
+    for (const FgResource &r : node.output_) {
+        assert(r.type != eFgResType::Buffer || r.index != ret.index);
     }
 #endif
     node.output_.push_back(ret);
@@ -502,8 +502,8 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const FgResRef handle, const Ren::eRe
     ++tex.write_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        assert(node.output_[i].type != eFgResType::Texture || node.output_[i].index != ret.index);
+    for (const FgResource &r : node.output_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
     node.output_.push_back(ret);
@@ -524,8 +524,8 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::eRe
     ++tex.write_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        assert(node.output_[i].type != eFgResType::Texture || node.output_[i].index != ret.index);
+    for (const FgResource &r : node.output_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
     node.output_.push_back(ret);
@@ -567,8 +567,8 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex
     ++tex.write_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        assert(node.output_[i].type != eFgResType::Texture || node.output_[i].index != ret.index);
+    for (const FgResource &r : node.output_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
     node.output_.push_back(ret);
@@ -610,8 +610,8 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const R
 
     if (slot_index == -1) {
 #ifndef NDEBUG
-        for (size_t i = 0; i < node.output_.size(); i++) {
-            assert(node.output_[i].type != eFgResType::Texture || node.output_[i].index != ret.index);
+        for (const FgResource &r : node.output_) {
+            assert(r.type != eFgResType::Texture || r.index != ret.index);
         }
 #endif
         // Add new output
@@ -669,8 +669,8 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::Texture2DArray *ref, const
     ++tex.write_count;
 
 #ifndef NDEBUG
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        assert(node.output_[i].type != eFgResType::Texture || node.output_[i].index != ret.index);
+    for (const FgResource &r : node.output_) {
+        assert(r.type != eFgResType::Texture || r.index != ret.index);
     }
 #endif
     // Add new output
@@ -745,13 +745,12 @@ Eng::FgAllocTex &Eng::FgBuilder::GetWriteTexture(const FgResRef handle) {
 void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
     std::vector<Ren::Tex2DRef> textures_to_clear;
 
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        FgResource res = node.output_[i];
+    for (const FgResource res : node.output_) {
         if (res.type == eFgResType::Buffer) {
             FgAllocBuf &buf = buffers_.at(res.index);
             if (!buf.ref || buf.desc.type != buf.ref->type() || buf.desc.size > buf.ref->size()) {
                 const uint32_t size_before = buf.ref ? buf.ref->size() : 0;
-                buf.strong_ref = ctx_.LoadBuffer(buf.name.c_str(), buf.desc.type, buf.desc.size);
+                buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size);
                 if (buf.ref) {
                     ctx_.log()->Info("Reinit buf %s (%u bytes -> %u bytes)", buf.name.c_str(), size_before,
                                      buf.ref->size());
@@ -788,7 +787,7 @@ void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
                     }
                     Ren::eTexLoadStatus status;
                     hist_tex.strong_ref =
-                        ctx_.LoadTexture2D(hist_tex.name.c_str(), hist_tex.desc, ctx_.default_mem_allocs(), &status);
+                        ctx_.LoadTexture2D(hist_tex.name, hist_tex.desc, ctx_.default_mem_allocs(), &status);
 
                     hist_tex.ref = hist_tex.strong_ref;
                     assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
@@ -819,7 +818,7 @@ void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
                                      float(Ren::EstimateMemory(tex.desc)) * 0.000001f);
                 }
                 Ren::eTexLoadStatus status;
-                tex.strong_ref = ctx_.LoadTexture2D(tex.name.c_str(), tex.desc, ctx_.default_mem_allocs(), &status);
+                tex.strong_ref = ctx_.LoadTexture2D(tex.name, tex.desc, ctx_.default_mem_allocs(), &status);
                 tex.ref = tex.strong_ref;
                 assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                        status == Ren::eTexLoadStatus::Reinitialized);
@@ -834,6 +833,7 @@ void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
         Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
 
         std::vector<Ren::TransitionInfo> transitions;
+        transitions.reserve(textures_to_clear.size());
         for (const Ren::Tex2DRef &t : textures_to_clear) {
             transitions.emplace_back(t.get(), Ren::eResState::CopyDst);
         }
@@ -1000,8 +1000,7 @@ void Eng::FgBuilder::PrepareAllocResources() {
     std::vector<bool> visited_textures(textures_.capacity(), false);
 
     for (FgNode *cur_node : reordered_nodes_) {
-        for (size_t i = 0; i < cur_node->input_.size(); ++i) {
-            const FgResource &r = cur_node->input_[i];
+        for (const FgResource &r : cur_node->input_) {
             if (r.type == eFgResType::Buffer) {
                 visited_buffers[r.index] = true;
             } else if (r.type == eFgResType::Texture) {
@@ -1010,8 +1009,7 @@ void Eng::FgBuilder::PrepareAllocResources() {
                 visited_textures[r.index] = true;
             }
         }
-        for (size_t i = 0; i < cur_node->output_.size(); ++i) {
-            const FgResource &r = cur_node->output_[i];
+        for (const FgResource &r : cur_node->output_) {
             if (r.type == eFgResType::Buffer) {
                 visited_buffers[r.index] = true;
             } else if (r.type == eFgResType::Texture) {
@@ -1323,7 +1321,7 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
                 reordered_nodes_.erase(reordered_nodes_.begin() + best_candidate);
             }
 
-            reordered_nodes_ = move(scheduled_nodes);
+            reordered_nodes_ = std::move(scheduled_nodes);
         }
     } else {
         // Use all nodes as is
@@ -1429,25 +1427,24 @@ void Eng::FgBuilder::Execute() {
     // Write timestamp at the beginning of execution
     const int query_beg = ctx_.WriteTimestamp(true);
 
-    for (int i = 0; i < int(reordered_nodes_.size()); ++i) {
-        FgNode &cur_node = *reordered_nodes_[i];
+    for (FgNode *cur_node : reordered_nodes_) {
         OPTICK_GPU_EVENT("Execute Node");
-        OPTICK_TAG("Node Name", cur_node.name().data());
+        OPTICK_TAG("Node Name", cur_node->name().data());
 
 #if !defined(NDEBUG) && defined(USE_GL_RENDER)
         Ren::ResetGLState();
 #endif
 
-        Ren::DebugMarker _(ctx_.api_ctx(), ctx_.current_cmd_buf(), cur_node.name());
+        Ren::DebugMarker _(ctx_.api_ctx(), ctx_.current_cmd_buf(), cur_node->name());
 
         // Start timestamp
         node_timing_t &node_interval = node_timings_[ctx_.backend_frame()].emplace_back();
-        node_interval.name = cur_node.name();
+        node_interval.name = cur_node->name();
         node_interval.query_beg = ctx_.WriteTimestamp(true);
 
-        InsertResourceTransitions(cur_node);
+        InsertResourceTransitions(*cur_node);
 
-        cur_node.Execute(*this);
+        cur_node->Execute(*this);
 
         // End timestamp
         node_interval.query_end = ctx_.WriteTimestamp(false);
@@ -1468,13 +1465,11 @@ void Eng::FgBuilder::InsertResourceTransitions(FgNode &node) {
     Ren::eStageBits src_stages = Ren::eStageBits::None;
     Ren::eStageBits dst_stages = Ren::eStageBits::None;
 
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        const FgResource &res = node.input_[i];
+    for (const FgResource &res : node.input_) {
         HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
     }
 
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        const FgResource &res = node.output_[i];
+    for (const FgResource &res : node.output_) {
         HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
     }
 
@@ -1482,8 +1477,7 @@ void Eng::FgBuilder::InsertResourceTransitions(FgNode &node) {
 }
 
 void Eng::FgBuilder::CheckResourceStates(FgNode &node) {
-    for (size_t i = 0; i < node.input_.size(); i++) {
-        const FgResource &res = node.input_[i];
+    for (const FgResource &res : node.input_) {
         if (res.type == eFgResType::Buffer) {
             const FgAllocBuf &buf = buffers_[res.index];
             assert(buf.ref->resource_state == res.desired_state && "Buffer is in unexpected state!");
@@ -1492,8 +1486,7 @@ void Eng::FgBuilder::CheckResourceStates(FgNode &node) {
             assert(tex.ref->resource_state == res.desired_state && "Texture is in unexpected state!");
         }
     }
-    for (size_t i = 0; i < node.output_.size(); i++) {
-        const FgResource &res = node.output_[i];
+    for (const FgResource &res : node.output_) {
         if (res.type == eFgResType::Buffer) {
             const FgAllocBuf &buf = buffers_[res.index];
             assert(buf.ref->resource_state == res.desired_state && "Buffer is in unexpected state!");

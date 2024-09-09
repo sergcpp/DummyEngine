@@ -14,8 +14,6 @@
 #include "shaders/gi_write_indir_rt_dispatch_interface.h"
 #include "shaders/gi_write_indirect_args_interface.h"
 #include "shaders/probe_sample_interface.h"
-#include "shaders/reconstruct_normals_interface.h"
-#include "shaders/sample_lights_interface.h"
 
 void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                                      const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
@@ -128,7 +126,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         auto *data = gi_prepare.AllocNodeData<PassData>();
 
         { // ray counter
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = 6 * sizeof(uint32_t);
 
@@ -174,14 +172,14 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         ray_counter = data->ray_counter = gi_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
             ray_list = data->ray_list = gi_classify.AddStorageOutput("GI Ray List", desc, Stg::ComputeShader);
         }
         { // tile list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8) * sizeof(uint32_t);
 
@@ -327,7 +325,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         gi_tex = data->out_gi_tex = gi_trace_ss.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
 
         { // packed ray list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 

@@ -177,9 +177,9 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         return *(end_ - 1);
     }
 
-    bool empty() const noexcept { return end_ == begin_; }
-    size_t size() const noexcept { return end_ - begin_; }
-    size_t capacity() const noexcept { return (capacity_ & CapacityMask); }
+    [[nodiscard]] bool empty() const noexcept { return end_ == begin_; }
+    [[nodiscard]] size_t size() const noexcept { return end_ - begin_; }
+    [[nodiscard]] size_t capacity() const noexcept { return (capacity_ & CapacityMask); }
 
     template <typename IntType> const T &operator[](const IntType i) const {
         assert(i >= 0 && begin_ + i < end_);
@@ -403,6 +403,6 @@ class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
         return (*this);
     }
 
-    bool is_on_heap() const { return uintptr_t(this->begin()) != uintptr_t(&buffer_[0]); }
+    [[nodiscard]] bool is_on_heap() const { return uintptr_t(this->begin()) != uintptr_t(&buffer_[0]); }
 };
 } // namespace Ren

@@ -7,7 +7,6 @@
 
 #include "../../utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
 #include "../shaders/rt_shadows_interface.h"
 
 void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) {

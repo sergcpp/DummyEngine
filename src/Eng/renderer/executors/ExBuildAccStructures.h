@@ -9,7 +9,7 @@ struct split_settings_t;
 } // namespace Phy
 
 namespace Eng {
-class ExBuildAccStructures : public FgExecutor {
+class ExBuildAccStructures final : public FgExecutor {
     const DrawList *&p_list_;
     int rt_index_;
     const AccelerationStructureData *acc_struct_data_;
@@ -21,8 +21,8 @@ class ExBuildAccStructures : public FgExecutor {
     void Execute_HWRT(FgBuilder &builder);
     void Execute_SWRT(FgBuilder &builder);
 
-    uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
-                                 std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
+    static uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
+                                        std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
 
   public:
     ExBuildAccStructures(const DrawList *&p_list, int rt_index, const FgResRef rt_obj_instances_buf,

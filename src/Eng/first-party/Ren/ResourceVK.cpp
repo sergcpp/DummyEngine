@@ -36,7 +36,7 @@ static_assert(uint16_t(eStageBits::Transfer) == 0b0100000000000u, "!");
 static_assert(uint16_t(eStageBits::AccStructureBuild) == 0b1000000000000u, "!");
 
 VkPipelineStageFlags to_pipeline_stage_flags_vk(const eStageBits stage_mask) {
-    uint16_t mask_u16 = uint16_t(stage_mask);
+    auto mask_u16 = uint16_t(stage_mask);
 
     VkPipelineStageFlags ret = 0;
     for (int i = 0; mask_u16; mask_u16 >>= 1, i++) {

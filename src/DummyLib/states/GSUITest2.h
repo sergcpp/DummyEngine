@@ -44,7 +44,7 @@ class GSUITest2 : public GSBaseState {
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
     void UpdateHint();
-    static void MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback);
+    static void MutateWord(std::string_view in_word, const std::function<void(const char *, int)> &callback);
 
   public:
     explicit GSUITest2(Viewer *viewer);

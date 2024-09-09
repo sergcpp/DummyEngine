@@ -41,15 +41,15 @@ class Buffer : public RefCounter {
     Buffer &operator=(const Buffer &rhs) = delete;
     Buffer &operator=(Buffer &&rhs) noexcept;
 
-    const String &name() const { return name_; }
+    [[nodiscard]] const String &name() const { return name_; }
 
-    bool ready() const { return params_.format != eBufFormat::Undefined; }
+    [[nodiscard]] bool ready() const { return params_.format != eBufFormat::Undefined; }
 
 #ifdef USE_AL_SOUND
-    uint32_t id() const { return buf_id_; }
+    [[nodiscard]] uint32_t id() const { return buf_id_; }
 #endif
 
-    float GetDurationS() const;
+    [[nodiscard]] float GetDurationS() const;
 
     void SetData(Span<const uint8_t> data, const BufParams &params);
 

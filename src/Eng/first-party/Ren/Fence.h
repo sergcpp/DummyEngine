@@ -33,7 +33,7 @@ class SyncFence {
     operator bool() const { return fence_ != VkFence{}; }
     VkFence fence() { return fence_; }
 
-    bool signaled() const;
+    [[nodiscard]] bool signaled() const;
 
     bool Reset();
 #elif defined(USE_GL_RENDER)

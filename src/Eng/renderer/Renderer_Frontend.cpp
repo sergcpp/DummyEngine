@@ -238,7 +238,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         rt.count = 0;
     }
 
-    list.volume_to_update = (frame_index_ % PROBE_VOLUMES_COUNT);
+    list.volume_to_update = int(frame_index_ % PROBE_VOLUMES_COUNT);
     if (scene.root_node != 0xffffffff) {
         list.bbox_min = scene.nodes[scene.root_node].bbox_min;
         list.bbox_max = scene.nodes[scene.root_node].bbox_max;

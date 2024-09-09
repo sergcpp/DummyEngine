@@ -46,14 +46,14 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
     size_t head_, tail_; // stored unbounded (should be masked later)
     size_t capacity_;    // required to be power of two!
 
-    size_t mask(const size_t i) const { return i & (capacity_ - 1); }
+    [[nodiscard]] size_t mask(const size_t i) const { return i & (capacity_ - 1); }
 
     T &at(const size_t i) {
         assert(is_valid(i));
         return buf_[mask(i)];
     }
 
-    bool is_valid(const size_t i) const { return i - tail_ <= head_ - tail_; }
+    [[nodiscard]] bool is_valid(const size_t i) const { return i - tail_ <= head_ - tail_; }
 
   public:
     RingBuffer() : buf_(nullptr), head_(0), tail_(0), capacity_(0) {}
@@ -106,10 +106,10 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
         head_ = tail_ = 0;
     }
 
-    bool empty() const { return (tail_ == head_); }
+    [[nodiscard]] bool empty() const { return (tail_ == head_); }
 
-    size_t capacity() const { return capacity_; }
-    size_t size() const { return head_ - tail_; }
+    [[nodiscard]] size_t capacity() const { return capacity_; }
+    [[nodiscard]] size_t size() const { return head_ - tail_; }
 
     T &front() {
         assert(tail_ != head_);
@@ -182,7 +182,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
             ++index_;
             return *this;
         }
-        const iterator operator++(int) {
+        iterator operator++(int) {
             iterator tmp(*this);
             ++(*this);
             return tmp;
@@ -192,7 +192,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
             return *this;
         }
 
-        uint32_t index() const { return index_; }
+        [[nodiscard]] uint32_t index() const { return index_; }
 
         bool operator==(const iterator &rhs) const {
             assert(container_ == rhs.container_);
@@ -303,7 +303,7 @@ template <class T> class AtomicRingBuffer {
     std::atomic_int head_, tail_;
     int size_;
 
-    int next(int cur) const { return (cur + 1) % size_; }
+    [[nodiscard]] int next(int cur) const { return (cur + 1) % size_; }
 
   public:
     explicit AtomicRingBuffer(int size) : size_(size) {
@@ -315,18 +315,18 @@ template <class T> class AtomicRingBuffer {
     AtomicRingBuffer(const AtomicRingBuffer &) = delete;
     AtomicRingBuffer &operator=(const AtomicRingBuffer &) = delete;
 
-    bool Empty() const {
+    [[nodiscard]] bool Empty() const {
         const int tail = tail_.load(std::memory_order_relaxed);
         return (tail == head_.load(std::memory_order_acquire));
     }
 
-    bool Full() const {
+    [[nodiscard]] bool Full() const {
         const int head = head_.load(std::memory_order_relaxed);
         const int next_head = next(head);
         return next_head == tail_.load(std::memory_order_acquire);
     }
 
-    int Capacity() const { return size_; }
+    [[nodiscard]] int Capacity() const { return size_; }
 
     bool Push(const T &item) {
         const int head = head_.load(std::memory_order_relaxed);

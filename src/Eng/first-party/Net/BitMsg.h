@@ -17,7 +17,7 @@ namespace Net {
 
         BitMsg(const uint8_t *p_data, size_t len);
 
-        int num_bits_written() const { return (int) (len_ * 8 + write_bit_); }
+        int num_bits_written() const { return int(len_ * 8 + write_bit_); }
 
         int num_bits_read() const { return (read_pos_ * 8) - ((8 - read_bit_) & 7); }
 

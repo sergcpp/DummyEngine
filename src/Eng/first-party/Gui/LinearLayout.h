@@ -14,7 +14,7 @@ class LinearLayout : public BaseElement {
     LinearLayout(const Vec2f &start, const Vec2f &size, const BaseElement *parent)
         : BaseElement(start, size, parent), vertical_(false) {}
 
-    bool vertical() const { return vertical_; }
+    [[nodiscard]] bool vertical() const { return vertical_; }
 
     void set_vetical(bool v) { vertical_ = v; }
 
@@ -23,12 +23,12 @@ class LinearLayout : public BaseElement {
         return el;
     }
 
-    template <class T> T *InsertElement(T *el, size_t pos) {
+    template <class T> T *InsertElement(T *el, const size_t pos) {
         elements_.insert(elements_.begin() + pos, el);
         return el;
     }
 
-    template <class T> T *ReplaceElement(T *el, size_t pos) {
+    template <class T> T *ReplaceElement(T *el, const size_t pos) {
         if (pos == elements_.size()) {
             elements_.push_back(el);
         } else {
@@ -41,8 +41,8 @@ class LinearLayout : public BaseElement {
     void Resize(const BaseElement *parent) override;
     void Resize(const Vec2f &start, const Vec2f &size, const BaseElement *parent) override;
 
-    bool Check(const Vec2i &p) const override;
-    bool Check(const Vec2f &p) const override;
+    [[nodiscard]] bool Check(const Vec2i &p) const override;
+    [[nodiscard]] bool Check(const Vec2f &p) const override;
 
     void Hover(const Vec2i &p) override;
     void Hover(const Vec2f &p) override;

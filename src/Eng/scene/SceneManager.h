@@ -127,8 +127,8 @@ class SceneManager {
     }
 
     void InvalidateObjects(Ren::Span<const uint32_t> indices, const uint32_t change_mask) {
-        for (uint32_t i = 0; i < uint32_t(indices.size()); i++) {
-            scene_data_.objects[indices[i]].change_mask |= change_mask;
+        for (const uint32_t ndx : indices) {
+            scene_data_.objects[ndx].change_mask |= change_mask;
         }
         changed_objects_.insert(changed_objects_.end(), indices.begin(), indices.end());
     }
@@ -198,7 +198,7 @@ class SceneManager {
                                   const Ren::pipelines_load_callback &on_pipes_load,
                                   const Ren::texture_load_callback &on_tex_load,
                                   const Ren::sampler_load_callback &on_sampler_load);
-    Ren::Tex2DRef LoadTexture(const std::string_view name, Ren::Span<const uint8_t> data, const Ren::Tex2DParams &p,
+    Ren::Tex2DRef LoadTexture(std::string_view name, Ren::Span<const uint8_t> data, const Ren::Tex2DParams &p,
                               Ren::eTexLoadStatus *load_status);
     Ren::Vec4f LoadDecalTexture(std::string_view name);
 

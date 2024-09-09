@@ -25,7 +25,7 @@ class WriterHLSL : public WriterBase {
     void Write_Type(const ast_type *type, std::ostream &out_stream);
     void Write_ArraySize(Span<const ast_constant_expression *const> array_sizes, std::ostream &out_stream);
     void Write_Variable(const ast_variable *variable, Span<const ast_layout_qualifier *const> qualifiers,
-                        std::ostream &out_stream, const bool name_only = false);
+                        std::ostream &out_stream, bool name_only = false);
     void Write_Register(const ast_type *base_type, Span<const ast_layout_qualifier *const> qualifiers,
                         std::ostream &out_stream);
     void Write_Storage(eStorage storage, std::ostream &out_stream);
@@ -114,7 +114,7 @@ class WriterHLSL : public WriterBase {
                                    const ast_variable *v, std::ostream &out_stream);
 
   public:
-    WriterHLSL(const writer_config_t &config = {}) : WriterBase(config) {}
+    explicit WriterHLSL(writer_config_t config = {}) : WriterBase(std::move(config)) {}
 
     void Write(const TrUnit *tu, std::ostream &out_stream);
 };

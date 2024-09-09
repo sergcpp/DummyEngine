@@ -72,7 +72,7 @@ class Parser {
 
     std::unique_ptr<TrUnit> Parse(eTrUnitType type);
 
-    const char *error() const { return error_; }
+    [[nodiscard]] const char *error() const { return error_; }
 
   protected:
     bool next();
@@ -95,16 +95,16 @@ class Parser {
     bool ParseMemoryFlags(top_level_t &current);
     bool ParseLayout(top_level_t &current);
 
-    bool is_type(const eTokType type) const { return tok_.type == type; }
-    bool is_keyword(const eKeyword keyword) const {
+    [[nodiscard]] bool is_type(const eTokType type) const { return tok_.type == type; }
+    [[nodiscard]] bool is_keyword(const eKeyword keyword) const {
         return tok_.type == eTokType::Keyword && tok_.as_keyword == keyword;
     }
     static bool is_reserved_keyword(eKeyword keyword);
     static bool is_interface_block_storage(eStorage storage);
     static bool is_generic_type(eKeyword keyword);
-    bool is_operator(const eOperator oper) const { return tok_.type == eTokType::Operator && tok_.as_operator == oper; }
-    bool is_end_condition(Bitmask<eEndCondition> condition) const;
-    bool is_builtin() const;
+    [[nodiscard]] bool is_operator(const eOperator oper) const { return tok_.type == eTokType::Operator && tok_.as_operator == oper; }
+    [[nodiscard]] bool is_end_condition(Bitmask<eEndCondition> condition) const;
+    [[nodiscard]] bool is_builtin() const;
 
     static bool is_vector_type(const ast_type *type);
 

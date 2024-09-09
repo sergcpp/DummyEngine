@@ -168,7 +168,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                     fatal("multiple version directives are not allowed");
                     return false;
                 }
-                ast_version_directive *directive = astnew<ast_version_directive>();
+                auto *directive = astnew<ast_version_directive>();
                 if (!directive) {
                     fatal("internal error");
                     return false;
@@ -177,7 +177,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                 directive->type = tok_.as_directive.as_version.type;
                 ast_->version = directive;
             } else if (tok_.as_directive.type == eDirType::Extension) {
-                ast_extension_directive *extension = astnew<ast_extension_directive>();
+                auto *extension = astnew<ast_extension_directive>();
                 if (!extension) {
                     fatal("internal error");
                     return false;
@@ -197,7 +197,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
         if (is_type(eTokType::Semicolon)) {
             for (int i = 0; i < int(items.size()); ++i) {
                 top_level_t &parse = items[i];
-                ast_global_variable *global = astnew<ast_global_variable>(ast_->alloc.allocator);
+                auto *global = astnew<ast_global_variable>(ast_->alloc.allocator);
                 if (!global) {
                     return false;
                 }
@@ -417,7 +417,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
             if (!next()) { // skip precision
                 return false;
             }
-            ast_default_precision *pre = astnew<ast_default_precision>();
+            auto *pre = astnew<ast_default_precision>();
             if (!ParsePrecision(pre->precision)) {
                 return false;
             }
@@ -515,7 +515,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
                     fatal("expected global variable");
                     return false;
                 }
-                ast_global_variable *gvar = static_cast<ast_global_variable *>(var);
+                auto *gvar = static_cast<ast_global_variable *>(var);
                 gvar->is_invariant = true;
 
                 if (!next()) { // skip identifier
@@ -811,7 +811,7 @@ bool glslx::Parser::ParseLayout(top_level_t &current) {
             return false;
         }
         while (!is_operator(eOperator::parenthesis_end)) {
-            ast_layout_qualifier *qualifier = astnew<ast_layout_qualifier>();
+            auto *qualifier = astnew<ast_layout_qualifier>();
             if (!qualifier) {
                 return false;
             }
@@ -919,7 +919,7 @@ bool glslx::Parser::is_vector_type(const ast_type *type) {
     if (!type->builtin) {
         return false;
     }
-    const ast_builtin *btype = static_cast<const ast_builtin *>(type);
+    const auto *btype = static_cast<const ast_builtin *>(type);
     return btype->type == eKeyword::K_vec2 || btype->type == eKeyword::K_vec3 || btype->type == eKeyword::K_vec4 ||
            btype->type == eKeyword::K_ivec2 || btype->type == eKeyword::K_ivec3 || btype->type == eKeyword::K_ivec4 ||
            btype->type == eKeyword::K_uvec2 || btype->type == eKeyword::K_uvec3 || btype->type == eKeyword::K_uvec4;
@@ -933,7 +933,7 @@ void glslx::Parser::fatal(const char *fmt, ...) {
         return;
     }
 
-    char *message = 0;
+    char *message = nullptr;
     va_list va;
     va_start(va, fmt);
     const int message_len = allocvfmt(&message, fmt, va);
@@ -1203,7 +1203,7 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
     } else if (expression->type == eExprType::ConstructorCall) {
         return expression;
     } else if (expression->type == eExprType::ArraySpecifier) {
-        ast_array_specifier *arr_specifier = static_cast<ast_array_specifier *>(expression);
+        auto *arr_specifier = static_cast<ast_array_specifier *>(expression);
         for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
             arr_specifier->expressions[i] = Evaluate(arr_specifier->expressions[i]);
         }
@@ -1277,7 +1277,7 @@ template <typename T> T *glslx::Parser::ParseBlock(const char *type) {
 
     for (int i = 0; i < int(items.size()); ++i) {
         top_level_t &parse = items[i];
-        ast_variable *field = astnew<ast_variable>(eVariableType::Field, ast_->alloc.allocator);
+        auto *field = astnew<ast_variable>(eVariableType::Field, ast_->alloc.allocator);
         if (!field) {
             return nullptr;
         }
@@ -1340,7 +1340,7 @@ glslx::ast_interface_block *glslx::Parser::ParseInterfaceBlock(const eStorage st
 }
 
 glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
-    ast_function *function = astnew<ast_function>(ast_->alloc.allocator);
+    auto *function = astnew<ast_function>(ast_->alloc.allocator);
     if (!function) {
         return nullptr;
     }
@@ -1352,7 +1352,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
     }
 
     while (!is_operator(eOperator::parenthesis_end)) {
-        ast_function_parameter *parameter = astnew<ast_function_parameter>(ast_->alloc.allocator);
+        auto *parameter = astnew<ast_function_parameter>(ast_->alloc.allocator);
         if (!parameter) {
             return nullptr;
         }
@@ -1384,7 +1384,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
                 if (is_builtin()) {
                     parameter->base_type = ParseBuiltin();
                     if (parameter->base_type && parameter->base_type->builtin) {
-                        ast_builtin *builtin = static_cast<ast_builtin *>(parameter->base_type);
+                        auto *builtin = static_cast<ast_builtin *>(parameter->base_type);
                         if (builtin->type == eKeyword::K_void && !strnil(parameter->name)) {
                             fatal("'void' parameter cannot be named");
                             return nullptr;
@@ -1443,7 +1443,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
     }
 
     if (function->parameters.size() == 1 && function->parameters[0]->base_type->builtin) {
-        ast_builtin *type = static_cast<ast_builtin *>(function->parameters[0]->base_type);
+        auto *type = static_cast<ast_builtin *>(function->parameters[0]->base_type);
         if (type->type == eKeyword::K_void) {
             // drop single void parameter
             function->parameters.clear();
@@ -1494,7 +1494,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
 }
 
 glslx::ast_constructor_call *glslx::Parser::ParseConstructorCall() {
-    ast_constructor_call *expression = astnew<ast_constructor_call>(ast_->alloc.allocator);
+    auto *expression = astnew<ast_constructor_call>(ast_->alloc.allocator);
     if (!expression) {
         return nullptr;
     }
@@ -1534,7 +1534,7 @@ glslx::ast_constructor_call *glslx::Parser::ParseConstructorCall() {
 }
 
 glslx::ast_function_call *glslx::Parser::ParseFunctionCall() {
-    ast_function_call *expression = astnew<ast_function_call>(ast_->alloc.allocator);
+    auto *expression = astnew<ast_function_call>(ast_->alloc.allocator);
     function_calls_.push_back(expression);
     if (!expression) {
         return nullptr;
@@ -1594,7 +1594,7 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
                 fatal("expected field identifier or swizzle after '.'");
                 return nullptr;
             }
-            ast_field_or_swizzle *expression = astnew<ast_field_or_swizzle>();
+            auto *expression = astnew<ast_field_or_swizzle>();
             if (!expression) {
                 return nullptr;
             }
@@ -1602,7 +1602,7 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
             const ast_type *type = Evaluate_ExpressionResultType(ast_.get(), operand, array_dims);
             if (type && !type->builtin) {
                 ast_variable *field = nullptr;
-                const ast_struct *kind = static_cast<const ast_struct *>(type);
+                const auto *kind = static_cast<const ast_struct *>(type);
                 for (int i = 0; i < int(kind->fields.size()); ++i) {
                     if (strcmp(kind->fields[i]->name, tok_.as_identifier) == 0) {
                         field = kind->fields[i];
@@ -1637,7 +1637,7 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
             if (!next()) { // skip '['
                 return nullptr;
             }
-            ast_array_subscript *expression = astnew<ast_array_subscript>();
+            auto *expression = astnew<ast_array_subscript>();
             if (!expression) {
                 return nullptr;
             }
@@ -1711,7 +1711,7 @@ glslx::ast_expression *glslx::Parser::ParseBinary(const int lhs_precedence, ast_
             if (!next()) { // skip '?'
                 return nullptr;
             }
-            ast_ternary_expression *expression = astnew<ast_ternary_expression>();
+            auto *expression = astnew<ast_ternary_expression>();
             if (!expression) {
                 return nullptr;
             }
@@ -1760,7 +1760,7 @@ glslx::ast_expression *glslx::Parser::ParseBinary(const int lhs_precedence, ast_
             }
             ast_variable *variable = static_cast<ast_variable_identifier *>(find)->variable;
             if (variable->type == eVariableType::Global) {
-                ast_global_variable *global = static_cast<ast_global_variable *>(variable);
+                auto *global = static_cast<ast_global_variable *>(variable);
                 if (global->storage == eStorage::In) {
                     fatal("cannot write to a variable declared as input");
                     return nullptr;
@@ -1895,7 +1895,7 @@ glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition>
         if (!next()) {
             return nullptr;
         }
-        ast_array_specifier *arr_specifier = astnew<ast_array_specifier>(ast_->alloc.allocator);
+        auto *arr_specifier = astnew<ast_array_specifier>(ast_->alloc.allocator);
         if (!arr_specifier) {
             return nullptr;
         }
@@ -2126,7 +2126,7 @@ glslx::ast_statement *glslx::Parser::ParseStatement() {
 }
 
 glslx::ast_compound_statement *glslx::Parser::ParseCompoundStatement() {
-    ast_compound_statement *statement = astnew<ast_compound_statement>(ast_->alloc.allocator);
+    auto *statement = astnew<ast_compound_statement>(ast_->alloc.allocator);
     if (!statement) {
         return nullptr;
     }
@@ -2147,7 +2147,7 @@ glslx::ast_compound_statement *glslx::Parser::ParseCompoundStatement() {
 }
 
 glslx::ast_if_statement *glslx::Parser::ParseIfStatement(const Bitmask<eCtrlFlowAttribute> attributes) {
-    ast_if_statement *statement = astnew<ast_if_statement>(attributes);
+    auto *statement = astnew<ast_if_statement>(attributes);
     if (!statement) {
         return nullptr;
     }
@@ -2184,7 +2184,7 @@ glslx::ast_if_statement *glslx::Parser::ParseIfStatement(const Bitmask<eCtrlFlow
 }
 
 glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<eCtrlFlowAttribute> attributes) {
-    ast_switch_statement *statement = astnew<ast_switch_statement>(ast_->alloc.allocator, attributes);
+    auto *statement = astnew<ast_switch_statement>(ast_->alloc.allocator, attributes);
     if (!statement) {
         return nullptr;
     }
@@ -2264,7 +2264,7 @@ glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<e
 }
 
 glslx::ast_case_label_statement *glslx::Parser::ParseCaseLabelStatement() {
-    ast_case_label_statement *statement = astnew<ast_case_label_statement>();
+    auto *statement = astnew<ast_case_label_statement>();
     if (!statement) {
         return nullptr;
     }
@@ -2338,7 +2338,7 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
         }
     }
 
-    ast_declaration_statement *statement = astnew<ast_declaration_statement>(ast_->alloc.allocator);
+    auto *statement = astnew<ast_declaration_statement>(ast_->alloc.allocator);
     if (!statement) {
         return nullptr;
     }
@@ -2370,7 +2370,7 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
             }
         }
 
-        ast_function_variable *variable = astnew<ast_function_variable>(ast_->alloc.allocator);
+        auto *variable = astnew<ast_function_variable>(ast_->alloc.allocator);
         if (!variable) {
             return nullptr;
         }
@@ -2443,7 +2443,7 @@ glslx::ast_expression_statement *glslx::Parser::ParseExpressionStatement(const B
 }
 
 glslx::ast_continue_statement *glslx::Parser::ParseContinueStatement() {
-    ast_continue_statement *statement = astnew<ast_continue_statement>();
+    auto *statement = astnew<ast_continue_statement>();
     if (!next()) { // skip 'continue'
         return nullptr;
     }
@@ -2451,7 +2451,7 @@ glslx::ast_continue_statement *glslx::Parser::ParseContinueStatement() {
 }
 
 glslx::ast_break_statement *glslx::Parser::ParseBreakStatement() {
-    ast_break_statement *statement = astnew<ast_break_statement>();
+    auto *statement = astnew<ast_break_statement>();
     if (!statement) {
         return nullptr;
     }
@@ -2466,7 +2466,7 @@ glslx::ast_break_statement *glslx::Parser::ParseBreakStatement() {
 }
 
 glslx::ast_discard_statement *glslx::Parser::ParseDiscardStatement() {
-    ast_discard_statement *statement = astnew<ast_discard_statement>();
+    auto *statement = astnew<ast_discard_statement>();
     if (!statement) {
         return nullptr;
     }
@@ -2481,7 +2481,7 @@ glslx::ast_discard_statement *glslx::Parser::ParseDiscardStatement() {
 }
 
 glslx::ast_return_statement *glslx::Parser::ParseReturnStatement() {
-    ast_return_statement *statement = astnew<ast_return_statement>();
+    auto *statement = astnew<ast_return_statement>();
     if (!statement) {
         return nullptr;
     }
@@ -2501,7 +2501,7 @@ glslx::ast_return_statement *glslx::Parser::ParseReturnStatement() {
 }
 
 glslx::ast_ext_jump_statement *glslx::Parser::ParseExtJumpStatement() {
-    ast_ext_jump_statement *statement = astnew<ast_ext_jump_statement>(tok_.as_keyword);
+    auto *statement = astnew<ast_ext_jump_statement>(tok_.as_keyword);
     if (!statement) {
         return nullptr;
     }
@@ -2516,7 +2516,7 @@ glslx::ast_ext_jump_statement *glslx::Parser::ParseExtJumpStatement() {
 }
 
 glslx::ast_for_statement *glslx::Parser::ParseForStatement(const ctrl_flow_params_t &ctrl_flow) {
-    ast_for_statement *statement = astnew<ast_for_statement>(ctrl_flow);
+    auto *statement = astnew<ast_for_statement>(ctrl_flow);
     if (!statement) {
         return nullptr;
     }
@@ -2559,7 +2559,7 @@ glslx::ast_for_statement *glslx::Parser::ParseForStatement(const ctrl_flow_param
 }
 
 glslx::ast_do_statement *glslx::Parser::ParseDoStatement(const ctrl_flow_params_t &ctrl_flow) {
-    ast_do_statement *statement = astnew<ast_do_statement>(ctrl_flow);
+    auto *statement = astnew<ast_do_statement>(ctrl_flow);
     if (!statement) {
         return nullptr;
     }
@@ -2596,7 +2596,7 @@ glslx::ast_do_statement *glslx::Parser::ParseDoStatement(const ctrl_flow_params_
 }
 
 glslx::ast_while_statement *glslx::Parser::ParseWhileStatement(const ctrl_flow_params_t &ctrl_flow) {
-    ast_while_statement *statement = astnew<ast_while_statement>(ctrl_flow);
+    auto *statement = astnew<ast_while_statement>(ctrl_flow);
     if (!statement) {
         return nullptr;
     }
@@ -2713,7 +2713,7 @@ glslx::ast_type *glslx::Parser::GetType(ast_expression *expression) {
 
 glslx::ast_global_variable *glslx::Parser::AddHiddenGlobal(ast_builtin *type, const char *name, const bool is_array,
                                                            const eStorage storage, const ePrecision precision) {
-    ast_global_variable *var = astnew<ast_global_variable>(ast_->alloc.allocator);
+    auto *var = astnew<ast_global_variable>(ast_->alloc.allocator);
     if (!var) {
         return nullptr;
     }
@@ -2729,18 +2729,18 @@ glslx::ast_global_variable *glslx::Parser::AddHiddenGlobal(ast_builtin *type, co
 }
 
 bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
-    ast_builtin *bool_type = astnew<ast_builtin>(eKeyword::K_bool);
-    ast_builtin *float_type = astnew<ast_builtin>(eKeyword::K_float);
-    ast_builtin *vec2 = astnew<ast_builtin>(eKeyword::K_vec2);
-    ast_builtin *vec3 = astnew<ast_builtin>(eKeyword::K_vec3);
-    ast_builtin *vec4 = astnew<ast_builtin>(eKeyword::K_vec4);
-    ast_builtin *int_type = astnew<ast_builtin>(eKeyword::K_int);
-    ast_builtin *uint = astnew<ast_builtin>(eKeyword::K_uint);
-    ast_builtin *uvec3 = astnew<ast_builtin>(eKeyword::K_uvec3);
-    ast_builtin *uvec4 = astnew<ast_builtin>(eKeyword::K_uvec4);
-    ast_builtin *mat3x4 = astnew<ast_builtin>(eKeyword::K_mat3x4);
-    ast_builtin *mat4x3 = astnew<ast_builtin>(eKeyword::K_mat4x3);
-    ast_builtin *mat4x4 = astnew<ast_builtin>(eKeyword::K_mat4x4);
+    auto *bool_type = astnew<ast_builtin>(eKeyword::K_bool);
+    auto *float_type = astnew<ast_builtin>(eKeyword::K_float);
+    auto *vec2 = astnew<ast_builtin>(eKeyword::K_vec2);
+    auto *vec3 = astnew<ast_builtin>(eKeyword::K_vec3);
+    auto *vec4 = astnew<ast_builtin>(eKeyword::K_vec4);
+    auto *int_type = astnew<ast_builtin>(eKeyword::K_int);
+    auto *uint = astnew<ast_builtin>(eKeyword::K_uint);
+    auto *uvec3 = astnew<ast_builtin>(eKeyword::K_uvec3);
+    auto *uvec4 = astnew<ast_builtin>(eKeyword::K_uvec4);
+    auto *mat3x4 = astnew<ast_builtin>(eKeyword::K_mat3x4);
+    auto *mat4x3 = astnew<ast_builtin>(eKeyword::K_mat4x3);
+    auto *mat4x4 = astnew<ast_builtin>(eKeyword::K_mat4x4);
     if (!bool_type || !float_type || !vec2 || !vec3 || !vec4 || !int_type || !uint || !uvec3 || !uvec4 || !mat3x4 ||
         !mat4x3 || !mat4x4) {
         return false;

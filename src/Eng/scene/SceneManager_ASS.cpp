@@ -7,9 +7,7 @@
 #include <numeric>
 #include <regex>
 
-#include <Net/hash/Crc32.h>
 #include <Net/hash/murmur.h>
-// #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -23,7 +21,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 28;
+const uint32_t AssetsBuildVersion = 29;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
@@ -425,9 +423,7 @@ void ReplaceTextureExtension(std::string_view platform, std::string &tex) {
             } else if (platform == "android") {
                 tex.replace(n + 1, 3, "ktx");
             }
-        } else if ((n = tex.find(".hdr")) != std::string::npos) {
-            tex.replace(n + 1, 3, "dds");
-        } else if ((n = tex.find(".tex")) != std::string::npos) {
+        } else if ((n = tex.find(".hdr")) != std::string::npos || (n = tex.find(".tex")) != std::string::npos) {
             tex.replace(n + 1, 3, "dds");
         }
     }
@@ -785,7 +781,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         js_output.Insert("flags", JsStringP(std::to_string(uint32_t(out_file.flags)), *ctx.mp_alloc));
                     } else {
                         JsStringP &js_flags = js_output["flags"].as_str();
-                        js_flags.val = std::to_string(uint32_t(out_file.flags)).c_str();
+                        js_flags.val = std::to_string(uint32_t(out_file.flags));
                     }
 
                     if (SkipAssetForCurrentBuild(out_file.flags)) {
@@ -797,7 +793,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         js_output.Insert("hash", JsStringP(out_hash_str, *ctx.mp_alloc));
                     } else {
                         JsStringP &js_hash = js_output["hash"].as_str();
-                        js_hash.val = out_hash_str.c_str();
+                        js_hash.val = out_hash_str;
                     }
 
                     // store new time values
@@ -1063,7 +1059,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
                     const JsObject &js_indices_accessor = js_accessors.at(indices_ndx).as_obj();
                     const JsObject &js_indices_view =
                         js_buffer_views.at(int(js_indices_accessor.at("bufferView").as_num().val)).as_obj();
-                    const eGLTFComponentType comp_type =
+                    const auto comp_type =
                         eGLTFComponentType(js_indices_accessor.at("componentType").as_num().val);
                     assert(js_indices_accessor.at("type").as_str().val == "SCALAR");
 

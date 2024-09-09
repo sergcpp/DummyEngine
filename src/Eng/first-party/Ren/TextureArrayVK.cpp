@@ -9,8 +9,8 @@
 namespace Ren {
 extern const VkFormat g_vk_formats[];
 
-VkFormat ToSRGBFormat(const VkFormat format);
-VkImageUsageFlags to_vk_image_usage(const eTexUsage usage, const eTexFormat format);
+VkFormat ToSRGBFormat(VkFormat format);
+VkImageUsageFlags to_vk_image_usage(eTexUsage usage, eTexFormat format);
 } // namespace Ren
 
 Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,

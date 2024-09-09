@@ -2,131 +2,107 @@
 #extension GL_ARB_texture_multisample : enable
 
 #include "_fs_common.glsl"
+#include "rt_common.glsl"
+#include "principled_common.glsl"
 #include "blit_ssr_compose_interface.h"
-
-#pragma multi_compile _ MSAA_4
-#pragma multi_compile _ HALFRES
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#if defined(MSAA_4)
-layout(binding = BIND_REFL_SPEC_TEX) uniform sampler2DMS g_spec_tex;
-layout(binding = BIND_REFL_DEPTH_TEX) uniform sampler2DMS g_depth_tex;
-layout(binding = BIND_REFL_NORM_TEX) uniform sampler2DMS g_norm_tex;
-#else
-layout(binding = BIND_REFL_SPEC_TEX) uniform sampler2D g_spec_tex;
-layout(binding = BIND_REFL_DEPTH_TEX) uniform sampler2D g_depth_tex;
-layout(binding = BIND_REFL_NORM_TEX) uniform sampler2D g_norm_tex;
-#endif
-layout(binding = BIND_REFL_DEPTH_LOW_TEX) uniform sampler2D g_depth_low_tex;
-layout(binding = BIND_REFL_SSR_TEX) uniform sampler2D g_ssr_tex;
-
-layout(binding = BIND_REFL_PREV_TEX) uniform sampler2D g_prev_tex;
-layout(binding = BIND_REFL_BRDF_TEX) uniform sampler2D g_brdf_lut_tex;
-layout(binding = BIND_ENV_TEX) uniform samplerCubeArray g_probe_textures;
-layout(binding = BIND_CELLS_BUF) uniform usamplerBuffer g_cells_buf;
-layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
+layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
+layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_spec_tex;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
+layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
+layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 layout(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    g_out_color = vec4(0.0);
-
     ivec2 icoord = ivec2(gl_FragCoord.xy);
+    vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-#if defined(MSAA_4)
-    vec4 specular = 0.25 * (texelFetch(g_spec_tex, icoord, 0) +
-                            texelFetch(g_spec_tex, icoord, 1) +
-                            texelFetch(g_spec_tex, icoord, 2) +
-                            texelFetch(g_spec_tex, icoord, 3));
-#else
-    vec4 specular = texelFetch(g_spec_tex, icoord, 0);
-#endif
-    if ((specular.r + specular.g + specular.b) < 0.0001) return;
+    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
 
-    float depth = texelFetch(g_depth_tex, icoord, 0).r;
-    float d0 = LinearizeDepth(depth, g_shrd_data.clip_info);
+    const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
+    const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
-#if defined(HALFRES)
-    ivec2 icoord_low = ivec2(gl_FragCoord.xy) / 2;
+    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
+    const uint packed_mat_params = texelFetch(g_spec_tex, icoord, 0).r;
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x);
 
-    float d1 = abs(d0 - texelFetch(g_depth_low_tex, icoord_low + ivec2(0, 0), 0).r);
-    float d2 = abs(d0 - texelFetch(g_depth_low_tex, icoord_low + ivec2(0, 1), 0).r);
-    float d3 = abs(d0 - texelFetch(g_depth_low_tex, icoord_low + ivec2(1, 0), 0).r);
-    float d4 = abs(d0 - texelFetch(g_depth_low_tex, icoord_low + ivec2(1, 1), 0).r);
+    const vec3 P = pos_ws;
+    const vec3 I = normalize(g_shrd_data.cam_pos_and_exp.xyz - P);
+    const vec3 N = normal.xyz;
+    const float N_dot_V = saturate(dot(N, I));
 
-    float dmin = min(min(d1, d2), min(d3, d4));
+    vec3 tint_color = vec3(0.0);
 
-    vec3 ssr_uvs;
-    if (dmin < 0.05) {
-        ssr_uvs = textureLod(g_ssr_tex, g_vtx_uvs * g_shrd_data.res_and_fres.xy / g_shrd_data.res_and_fres.zw, 0.0).rgb;
-    } else {
-        if (dmin == d1) {
-            ssr_uvs = texelFetch(g_ssr_tex, icoord_low + ivec2(0, 0), 0).rgb;
-        } else if (dmin == d2) {
-            ssr_uvs = texelFetch(g_ssr_tex, icoord_low + ivec2(0, 1), 0).rgb;
-        } else if (dmin == d3) {
-            ssr_uvs = texelFetch(g_ssr_tex, icoord_low + ivec2(1, 0), 0).rgb;
-        } else {
-            ssr_uvs = texelFetch(g_ssr_tex, icoord_low + ivec2(1, 1), 0).rgb;
-        }
-    }
-#else // HALFRES
-    vec3 ssr_uvs = texelFetch(g_ssr_tex, icoord, 0).rgb;
-#endif // HALFRES
-
-    vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
-
-    float tex_lod = 6.0 * specular.a;
-    float N_dot_V;
-
-    vec3 c0 = vec3(0.0);
-    vec2 brdf;
-
-    {   // apply cubemap contribution
-        const vec4 ray_origin_cs = vec4(2.0 * g_vtx_uvs.xy - 1.0, depth, 1.0);
-        const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);
-
-        const vec3 view_ray_ws = normalize((g_shrd_data.world_from_view * vec4(ray_origin_vs, 0.0)).xyz);
-        const vec3 refl_ray_ws = reflect(view_ray_ws, normal);
-
-        vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
-        ray_origin_ws /= ray_origin_ws.w;
-
-        float k = log2(d0 / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-        int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
-
-        int ix = icoord.x, iy = icoord.y;
-        int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * ITEM_GRID_RES_X + (ix * ITEM_GRID_RES_X / int(g_shrd_data.res_and_fres.x));
-
-        uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-        uint offset = bitfieldExtract(cell_data.x, 0, 24);
-        uint pcount = bitfieldExtract(cell_data.y, 8, 8);
-
-        float total_fade = 0.0;
-
-        for (uint i = offset; i < offset + pcount; i++) {
-            uint item_data = texelFetch(g_items_buf, int(i)).x;
-            int pi = int(bitfieldExtract(item_data, 24, 8));
-
-            float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
-            float fade = 1.0 - smoothstep(0.9, 1.0, dist / g_shrd_data.probes[pi].pos_and_radius.w);
-            c0 += fade * RGBMDecode(textureLod(g_probe_textures, vec4(refl_ray_ws, g_shrd_data.probes[pi].unused_and_layer.w), tex_lod));
-            total_fade += fade;
-        }
-
-        c0 /= max(total_fade, 1.0);
-
-        N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
-        brdf = texture(g_brdf_lut_tex, vec2(N_dot_V, specular.a)).xy;
+    const float base_color_lum = lum(base_color);
+    if (base_color_lum > 0.0) {
+        tint_color = base_color / base_color_lum;
     }
 
-    vec3 kS = FresnelSchlickRoughness(N_dot_V, specular.rgb, specular.a);
+    vec4 mat_params0, mat_params1;
+    UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
 
-    c0 = mix(c0, textureLod(g_prev_tex, ssr_uvs.rg, 0.0).xyz, ssr_uvs.b);
-    g_out_color = vec4(c0 * (kS * brdf.x + brdf.y), 1.0);
+    const float roughness = normal.w;
+    const float sheen = mat_params0.x;
+    const float sheen_tint = mat_params0.y;
+    const float specular = mat_params0.z;
+    const float specular_tint = mat_params0.w;
+    const float metallic = mat_params1.x;
+    const float transmission = mat_params1.y;
+    const float clearcoat = mat_params1.z;
+    const float clearcoat_roughness = mat_params1.w;
+
+    vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
+    spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
+
+    const float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
+    const float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
+
+    // Approximation of FH (using shading normal)
+    const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
+
+    const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+    const float spec_color_lum = lum(approx_spec_col);
+
+    const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+
+    const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+    const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
+
+    vec4 refl = texelFetch(g_refl_tex, icoord, 0);
+    //refl.w *= GetHitDistanceNormalization(linear_depth, roughness);
+
+    // Try to use specular occlusion a bit (totally adhoc and fake)
+    refl.xyz *= mix(saturate(16.0 * refl.w), 1.0, saturate(0.5 - roughness + metallic));
+
+    vec3 final_color = vec3(0.0);
+
+    if (lobe_weights.specular > 0.0) {
+        final_color += refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
+    }
+
+    /*if (lobe_weights.clearcoat > 0.0) {
+        float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
+        float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
+        float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+
+        // Approximation of FH (using shading normal)
+        float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
+
+        vec3 approx_clearcoat_col = vec3(mix(0.04, 1.0, clearcoat_FN));
+
+        vec3 kS = FresnelSchlickRoughness(N_dot_V, approx_clearcoat_col, clearcoat_roughness2);
+        vec2 brdf = texture(g_brdf_lut_tex, vec2(N_dot_V, clearcoat_roughness2)).xy;
+        final_color += 0.25 * (kS * brdf.x + brdf.y) * refl_color;
+    }*/
+
+    g_out_color = vec4(final_color /* (kS * brdf.x + brdf.y)*/, 1.0);
 }

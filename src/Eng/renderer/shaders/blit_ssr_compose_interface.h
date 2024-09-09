@@ -3,13 +3,18 @@
 
 #include "_interface_common.h"
 
-INTERFACE_START(SSRCompose)
+INTERFACE_START(SSRComposeNew)
 
 struct Params {
     vec4 transform;
 };
 
-const int SSR_TEX_SLOT = 0;
+const int ALBEDO_TEX_SLOT = 0;
+const int SPEC_TEX_SLOT = 1;
+const int DEPTH_TEX_SLOT = 2;
+const int NORM_TEX_SLOT = 3;
+const int REFL_TEX_SLOT = 4;
+const int LTC_LUTS_TEX_SLOT = 5;
 
 INTERFACE_END
 

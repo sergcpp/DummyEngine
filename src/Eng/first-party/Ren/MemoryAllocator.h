@@ -75,9 +75,9 @@ class MemoryAllocator {
     MemoryAllocator &operator=(MemoryAllocator &&rhs) = default;
 
 #if defined(USE_VK_RENDER)
-    VkDeviceMemory mem(int i) const { return pools_[i].mem; }
+    [[nodiscard]] VkDeviceMemory mem(int i) const { return pools_[i].mem; }
 #endif
-    uint32_t mem_type_index() const { return mem_type_index_; }
+    [[nodiscard]] uint32_t mem_type_index() const { return mem_type_index_; }
 
     MemAllocation Allocate(uint32_t alignment, uint32_t size);
     void Free(uint32_t block);

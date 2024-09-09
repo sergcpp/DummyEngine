@@ -50,13 +50,13 @@ namespace Net {
             SaveVar(v);
         }
 
-        Packet Pack() const;
+        [[nodiscard]] Packet Pack() const;
 
         bool UnPack(const Packet &pack);
 
         bool UnPack(const unsigned char *pack, size_t len);
 
-        size_t size() const;
+        [[nodiscard]] size_t size() const;
 
         void clear();
 
@@ -64,7 +64,7 @@ namespace Net {
         std::vector<int_type> header_;
         std::vector<unsigned char> data_bytes_;
 
-        bool CheckHashes(int_type hash) const {
+        [[nodiscard]] bool CheckHashes(int_type hash) const {
             for (unsigned int i = 0; i < header_.size(); i += 2) {
                 if (header_[i] == hash) {
                     return false;

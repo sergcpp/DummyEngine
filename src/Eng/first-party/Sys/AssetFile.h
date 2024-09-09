@@ -36,13 +36,13 @@ class AssetFile {
 
     ~AssetFile();
 
-    size_t size() const { return size_; }
+    [[nodiscard]] size_t size() const { return size_; }
 
-    eOpenMode mode() const { return mode_; }
+    [[nodiscard]] eOpenMode mode() const { return mode_; }
 
-    std::string name() { return name_; }
+    [[nodiscard]] std::string name() { return name_; }
 
-    size_t pos();
+    [[nodiscard]] size_t pos();
 
     bool Open(std::string_view file_name, eOpenMode mode = eOpenMode::In);
     void Close();

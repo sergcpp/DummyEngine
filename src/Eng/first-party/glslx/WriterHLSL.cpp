@@ -309,7 +309,7 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool 
     case eExprType::Ternary:
         return Write_Ternary(static_cast<const ast_ternary_expression *>(expression), out_stream);
     case eExprType::ArraySpecifier:
-        const ast_array_specifier *arr_specifier = static_cast<const ast_array_specifier *>(expression);
+        const auto *arr_specifier = static_cast<const ast_array_specifier *>(expression);
         out_stream << "{ ";
         for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
             Write_Expression(arr_specifier->expressions[i], false, out_stream);

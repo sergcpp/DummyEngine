@@ -4,7 +4,7 @@
 #include "../framegraph/FgNode.h"
 
 namespace Eng {
-class ExRTGICache : public FgExecutor {
+class ExRTGICache final : public FgExecutor {
   public:
     struct Args {
         FgResRef geo_data;
@@ -24,7 +24,7 @@ class ExRTGICache : public FgExecutor {
         Ren::IAccStructure *tlas = nullptr;
 
         struct {
-            uint32_t root_node;
+            uint32_t root_node = 0xffffffff;
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef meshes_buf;

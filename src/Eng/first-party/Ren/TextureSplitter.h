@@ -27,10 +27,10 @@ class TextureSplitter {
         nodes_.back().size[1] = resy;
     }
 
-    int resx() const { return nodes_[0].size[0]; }
-    int resy() const { return nodes_[0].size[1]; }
+    [[nodiscard]] int resx() const { return nodes_[0].size[0]; }
+    [[nodiscard]] int resy() const { return nodes_[0].size[1]; }
 
-    bool empty() const { return nodes_.size() == 1; }
+    [[nodiscard]] bool empty() const { return nodes_.size() == 1; }
 
     int Allocate(const int res[2], int pos[2]);
     bool Free(const int pos[2]);

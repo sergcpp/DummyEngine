@@ -6,7 +6,7 @@
 #include <Ren/VertexInput.h>
 
 namespace Eng {
-class ExGBufferFill : public FgExecutor {
+class ExGBufferFill final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data

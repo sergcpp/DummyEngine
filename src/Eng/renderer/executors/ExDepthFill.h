@@ -7,7 +7,7 @@
 #include <Ren/VertexInput.h>
 
 namespace Eng {
-class ExDepthFill : public FgExecutor {
+class ExDepthFill final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data

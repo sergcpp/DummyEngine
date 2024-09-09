@@ -30,35 +30,35 @@ class BaseElement {
 
   public:
     BaseElement(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
-    ~BaseElement() {}
+    ~BaseElement() = default;
 
-    bool visible() const { return flags_[int(eFlags::Visible)]; }
-    bool resizable() const { return flags_[int(eFlags::Resizable)]; }
+    [[nodiscard]] bool visible() const { return flags_[int(eFlags::Visible)]; }
+    [[nodiscard]] bool resizable() const { return flags_[int(eFlags::Resizable)]; }
 
     void set_visible(bool v) { flags_[int(eFlags::Visible)] = v; }
     void set_resizable(bool v) { flags_[int(eFlags::Resizable)] = v; }
 
-    const Vec2f *dims() const { return dims_; }
-    const Vec2f *rel_dims() const { return rel_dims_; }
+    [[nodiscard]] const Vec2f *dims() const { return dims_; }
+    [[nodiscard]] const Vec2f *rel_dims() const { return rel_dims_; }
 
-    const Vec2f &rel_pos() const { return rel_dims_[0]; }
-    const Vec2f &rel_size() const { return rel_dims_[1]; }
+    [[nodiscard]] const Vec2f &rel_pos() const { return rel_dims_[0]; }
+    [[nodiscard]] const Vec2f &rel_size() const { return rel_dims_[1]; }
 
-    const Vec2f &pos() const { return dims_[0]; }
-    const Vec2f &size() const { return dims_[1]; }
+    [[nodiscard]] const Vec2f &pos() const { return dims_[0]; }
+    [[nodiscard]] const Vec2f &size() const { return dims_[1]; }
 
-    const float aspect() const { return dims_[1][1] / dims_[1][0]; }
+    [[nodiscard]] float aspect() const { return dims_[1][1] / dims_[1][0]; }
 
-    const Vec2i &pos_px() const { return dims_px_[0]; }
-    const Vec2i &size_px() const { return dims_px_[1]; }
+    [[nodiscard]] const Vec2i &pos_px() const { return dims_px_[0]; }
+    [[nodiscard]] const Vec2i &size_px() const { return dims_px_[1]; }
 
-    Vec2f ToLocal(const Vec2f &p) const { return 2.0f * (p - dims_[0]) / dims_[1] - Vec2f{1.0f, 1.0f}; }
+    [[nodiscard]] Vec2f ToLocal(const Vec2f &p) const { return 2.0f * (p - dims_[0]) / dims_[1] - Vec2f{1.0f, 1.0f}; }
 
     virtual void Resize(const BaseElement *parent);
     virtual void Resize(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
-    virtual bool Check(const Vec2i &p) const;
-    virtual bool Check(const Vec2f &p) const;
+    [[nodiscard]] virtual bool Check(const Vec2i &p) const;
+    [[nodiscard]] virtual bool Check(const Vec2f &p) const;
 
     virtual void Hover(const Vec2i & /*p*/) {}
     virtual void Hover(const Vec2f & /*p*/) {}
@@ -73,7 +73,7 @@ class RootElement : public BaseElement {
   public:
     explicit RootElement(const Vec2i &zone_size) : BaseElement(Vec2f{-1, -1}, Vec2f{2, 2}, nullptr) {
         set_zone(zone_size);
-        Resize(Vec2f{-1, -1}, Vec2f{2, 2}, nullptr);
+        RootElement::Resize(Vec2f{-1}, Vec2f{2}, nullptr);
     }
 
     void set_zone(const Vec2i &zone_size) { dims_px_[1] = zone_size; }

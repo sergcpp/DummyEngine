@@ -6,7 +6,7 @@
 #include <Ren/VertexInput.h>
 
 namespace Eng {
-class ExOpaque : public FgExecutor {
+class ExOpaque final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data
@@ -60,7 +60,7 @@ class ExOpaque : public FgExecutor {
     void InitDescrSetLayout();
 #endif
   public:
-    ~ExOpaque();
+    ~ExOpaque() final;
 
     void Setup(const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
                const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,

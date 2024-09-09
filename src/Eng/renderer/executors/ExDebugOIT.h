@@ -9,7 +9,7 @@
 struct ViewState;
 
 namespace Eng {
-class ExDebugOIT : public FgExecutor {
+class ExDebugOIT final : public FgExecutor {
   public:
     struct Args {
         int layer_index = 0;

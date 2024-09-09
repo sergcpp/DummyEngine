@@ -93,7 +93,7 @@ template <class R, class... Args> struct func_table_t {
 
 template <class R, class... Args, size_t Capacity, size_t Alignment>
 class InplaceFunction<R(Args...), Capacity, Alignment> {
-    alignas(Alignment) mutable char storage_[Capacity];
+    alignas(Alignment) mutable char storage_[Capacity] = {};
     const func_table_t<R, Args...> *func_table_;
 
     InplaceFunction(const func_table_t<R, Args...> *func_table,
@@ -149,7 +149,7 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
         func_table_->copy_ptr(rhs.storage_, storage_);
     }
 
-    InplaceFunction(InplaceFunction &&rhs)
+    InplaceFunction(InplaceFunction &&rhs) noexcept
         : func_table_{std::exchange(rhs.func_table_, func_table_t<R, Args...>::empty_func_table())} {
         func_table_->move_ptr(rhs.storage_, storage_);
     }
@@ -161,6 +161,9 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
     }
 
     InplaceFunction &operator=(const InplaceFunction &rhs) noexcept {
+        if (&rhs == this) {
+            return *this;
+        }
         func_table_->destroy_ptr(storage_);
         func_table_ = rhs.func_table_;
         func_table_->copy_ptr(rhs.storage_, storage_);

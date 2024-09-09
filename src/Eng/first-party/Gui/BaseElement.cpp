@@ -1,9 +1,7 @@
 #include "BaseElement.h"
 
-namespace Gui {
-namespace BaseElementConstants {
+namespace Gui::BaseElementConstants {
 const unsigned default_flags = (1u << unsigned(eFlags::Visible)) | (1u << unsigned(eFlags::Resizable));
-}
 } // namespace Gui
 
 Gui::BaseElement::BaseElement(const Vec2f &pos, const Vec2f &size, const BaseElement *parent)

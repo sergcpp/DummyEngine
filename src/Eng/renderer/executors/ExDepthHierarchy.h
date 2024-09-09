@@ -6,7 +6,7 @@
 
 namespace Eng {
 struct ViewState;
-class ExDepthHierarchy : public FgExecutor {
+class ExDepthHierarchy final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data

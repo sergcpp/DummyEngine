@@ -12,7 +12,7 @@ template <typename T> class Storage : public SparseArray<T> {
     HashMap32<String, uint32_t> items_by_name_;
 
   public:
-    Storage() {}
+    Storage() = default;
 
     Storage(const Storage &rhs) = delete;
 

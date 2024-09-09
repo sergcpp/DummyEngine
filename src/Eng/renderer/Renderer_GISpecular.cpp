@@ -2,7 +2,7 @@
 
 #include <Ren/Context.h>
 
-#include "shaders/blit_ssr_compose_new_interface.h"
+#include "shaders/blit_ssr_compose_interface.h"
 #include "shaders/blit_ssr_dilate_interface.h"
 #include "shaders/blit_ssr_interface.h"
 #include "shaders/ssr_blur_interface.h"
@@ -43,7 +43,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         auto *data = ssr_prepare.AllocNodeData<PassData>();
 
         { // ray counter
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = 6 * sizeof(uint32_t);
 
@@ -87,14 +87,14 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
             ray_list = data->ray_list = ssr_classify.AddStorageOutput("Ray List", desc, Stg::ComputeShader);
         }
         { // tile list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8) * sizeof(uint32_t);
 
@@ -255,7 +255,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
 
         { // packed ray list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 

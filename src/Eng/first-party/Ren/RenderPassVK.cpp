@@ -38,7 +38,7 @@ static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT == 4, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT == 8, "!");
 
-VkFormat ToSRGBFormat(const VkFormat format);
+VkFormat ToSRGBFormat(VkFormat format);
 } // namespace Ren
 
 Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
@@ -69,7 +69,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
     depth_rt = {};
 
     if (_depth_rt) {
-        const uint32_t att_index = uint32_t(pass_attachments.size());
+        const auto att_index = uint32_t(pass_attachments.size());
 
         auto &att_desc = pass_attachments.emplace_back();
         att_desc.format = Ren::VKFormatFromTexFormat(_depth_rt.format);
@@ -105,7 +105,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
             continue;
         }
 
-        const uint32_t att_index = uint32_t(pass_attachments.size());
+        const auto att_index = uint32_t(pass_attachments.size());
 
         auto &att_desc = pass_attachments.emplace_back();
         att_desc.format = VKFormatFromTexFormat(_color_rts[i].format);

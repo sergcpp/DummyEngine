@@ -53,30 +53,29 @@ template <typename T> class DefaultCompStorage : public Eng::CompStorage {
     Ren::SparseArray<T> data_;
 
   public:
-    std::string_view name() const override { return T::name(); }
+    [[nodiscard]] std::string_view name() const override { return T::name(); }
 
     uint32_t Create() override { return data_.emplace(); }
     void Delete(const uint32_t i) override { data_.erase(i); }
 
-    const void *Get(uint32_t i) const override { return data_.GetOrNull(i); }
-    void *Get(uint32_t i) override { return data_.GetOrNull(i); }
+    [[nodiscard]] const void *Get(uint32_t i) const override { return data_.GetOrNull(i); }
+    [[nodiscard]] void *Get(uint32_t i) override { return data_.GetOrNull(i); }
 
-    uint32_t First() const override { return data_.empty() ? 0xffffffff : data_.cbegin().index(); }
+    [[nodiscard]] uint32_t First() const override { return data_.empty() ? 0xffffffff : data_.cbegin().index(); }
 
-    uint32_t Next(uint32_t i) const override {
+    [[nodiscard]] uint32_t Next(uint32_t i) const override {
         auto it = data_.citer_at(i);
         ++it;
         return (it == data_.cend()) ? 0xffffffff : it.index();
     }
 
-    int Count() const override { return (int)data_.size(); }
+    [[nodiscard]] int Count() const override { return (int)data_.size(); }
 
     void ReadFromJs(const JsObjectP &js_obj, void *comp) override { T::Read(js_obj, *(T *)comp); }
-
     void WriteToJs(const void *comp, JsObjectP &js_obj) const override { T::Write(*(T *)comp, js_obj); }
 
-    const void *SequentialData() const override { return data_.data(); }
-    void *SequentialData() override { return data_.data(); }
+    [[nodiscard]] const void *SequentialData() const override { return data_.data(); }
+    [[nodiscard]] void *SequentialData() override { return data_.data(); }
 };
 
 // bit scan forward
@@ -324,7 +323,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         lm_indir_tex_name += tex_ext;
 
         const uint8_t default_l0_color[] = {255, 255, 255, 255};
-        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str(), default_l0_color, Ren::eTexFlags{});
+        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name, default_l0_color, Ren::eTexFlags{});
         // scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str(), 0);
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             std::string lm_indir_sh_tex_name = lm_base_tex_name;
@@ -334,7 +333,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             const uint8_t default_l1_color[] = {0, 0, 0, 0};
             scene_data_.env.lm_indir_sh[sh_l] =
-                OnLoadTexture(lm_indir_sh_tex_name.c_str(), default_l1_color, Ren::eTexFlagBits::NoRepeat);
+                OnLoadTexture(lm_indir_sh_tex_name, default_l1_color, Ren::eTexFlagBits::NoRepeat);
         }
     }
 
@@ -1019,12 +1018,12 @@ void Eng::SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *com
     const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
     Ren::eMeshLoadStatus status;
-    occ->mesh = LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
+    occ->mesh = LoadMesh(js_mesh_file_name.val, nullptr, nullptr, &status);
 
     if (status != Ren::eMeshLoadStatus::Found) {
         const std::string mesh_path = std::string(paths_.models_path) + js_mesh_file_name.val.c_str();
 
-        Sys::AssetFile in_file(mesh_path.c_str());
+        Sys::AssetFile in_file(mesh_path);
         size_t in_file_size = in_file.size();
 
         std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
@@ -1034,7 +1033,7 @@ void Eng::SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *com
         std::istream in_file_stream(&mem);
 
         using namespace std::placeholders;
-        occ->mesh = LoadMesh(js_mesh_file_name.val.c_str(), &in_file_stream,
+        occ->mesh = LoadMesh(js_mesh_file_name.val, &in_file_stream,
                              std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
         assert(status == Ren::eMeshLoadStatus::CreatedFromData);
     }
@@ -1210,7 +1209,7 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
     if (status != Ren::eMeshLoadStatus::Found) {
         const std::string mesh_path = std::string(paths_.models_path) + js_mesh_file_name.val.c_str();
 
-        Sys::AssetFile in_file(mesh_path.c_str());
+        Sys::AssetFile in_file(mesh_path);
         size_t in_file_size = in_file.size();
 
         std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
@@ -1436,7 +1435,7 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
 
     int res[2];
 #if !defined(__ANDROID__)
-    Ren::DDSHeader header;
+    Ren::DDSHeader header = {};
     memcpy(&header, in_file_data.get(), sizeof(Ren::DDSHeader));
 
     const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';

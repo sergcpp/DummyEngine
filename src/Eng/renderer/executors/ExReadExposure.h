@@ -4,7 +4,7 @@
 #include "../framegraph/FgNode.h"
 
 namespace Eng {
-class ExReadExposure : public FgExecutor {
+class ExReadExposure final : public FgExecutor {
   public:
     struct Args {
         FgResRef input_tex;
@@ -14,7 +14,7 @@ class ExReadExposure : public FgExecutor {
     void Setup(const Args *args) { args_ = args; }
     void Execute(FgBuilder &builder) override;
 
-    float exposure() const { return exposure_; }
+    [[nodiscard]] float exposure() const { return exposure_; }
 
   private:
     bool initialized_ = false;

@@ -9,7 +9,7 @@ void Gui::LinearLayout::Resize(const BaseElement *parent) {
     float filled_space = 0.0f;
     float l;
     if (vertical_) {
-        spacing = 8.0f / parent->size_px()[1];
+        spacing = 8.0f / float(parent->size_px()[1]);
         l = _size[1] - spacing * float(elements_.size() + 1);
         for (BaseElement *el : elements_) {
             if (el->resizable()) {
@@ -19,7 +19,7 @@ void Gui::LinearLayout::Resize(const BaseElement *parent) {
             }
         }
     } else {
-        spacing = 8.0f / parent->size_px()[0];
+        spacing = 8.0f / float(parent->size_px()[0]);
         l = _size[0] - spacing * float(elements_.size() + 1);
         for (BaseElement *el : elements_) {
             if (el->resizable()) {
@@ -58,21 +58,11 @@ void Gui::LinearLayout::Resize(const Vec2f &start, const Vec2f &size, const Base
 }
 
 bool Gui::LinearLayout::Check(const Vec2i &p) const {
-    for (BaseElement *el : elements_) {
-        if (el->Check(p)) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(begin(elements_), end(elements_), [p](const BaseElement *el) { return el->Check(p); });
 }
 
 bool Gui::LinearLayout::Check(const Vec2f &p) const {
-    for (BaseElement *el : elements_) {
-        if (el->Check(p)) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(begin(elements_), end(elements_), [p](const BaseElement *el) { return el->Check(p); });
 }
 
 void Gui::LinearLayout::Hover(const Vec2i &p) {

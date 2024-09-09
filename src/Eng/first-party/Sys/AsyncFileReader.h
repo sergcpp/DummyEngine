@@ -30,8 +30,8 @@ class FileReadBufBase {
     FileReadBufBase(const FileReadBufBase &rhs) = delete;
     FileReadBufBase(FileReadBufBase &&rhs) = delete;
 
-    uint32_t chunk_size() const { return chunk_size_; }
-    uint32_t chunk_count() const { return chunk_count_; }
+    [[nodiscard]] uint32_t chunk_size() const { return chunk_size_; }
+    [[nodiscard]] uint32_t chunk_count() const { return chunk_count_; }
 
     uint8_t *chunk(const int i) { return mem_ + i * ptrdiff_t(chunk_size_); }
 
@@ -39,8 +39,8 @@ class FileReadBufBase {
     void set_data_len(const size_t len) { data_len_ = len; }
 
     uint8_t *data() { return mem_ + data_off_; }
-    size_t data_off() const { return data_off_; }
-    size_t data_len() const { return data_len_; }
+    [[nodiscard]] size_t data_off() const { return data_off_; }
+    [[nodiscard]] size_t data_len() const { return data_len_; }
 
     void Realloc(size_t new_size) {
         if (new_size <= size_t(chunk_size_) * chunk_count_) {

@@ -11,7 +11,7 @@ class Context;
 
 int GetBlockLenBytes(eTexFormat format, eTexBlock block);
 int GetBlockCount(int w, int h, eTexBlock block);
-int GetMipDataLenBytes(const int w, const int h, const eTexFormat format, const eTexBlock block);
+int GetMipDataLenBytes(int w, int h, eTexFormat format, eTexBlock block);
 uint32_t EstimateMemory(const Tex2DParams &params);
 
 eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, eTexBlock *block, bool *is_srgb);

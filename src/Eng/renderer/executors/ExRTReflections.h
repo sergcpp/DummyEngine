@@ -10,7 +10,7 @@ struct ViewState;
 
 namespace Eng {
 class PrimDraw;
-class ExRTReflections : public FgExecutor {
+class ExRTReflections final : public FgExecutor {
   public:
     explicit ExRTReflections(const bool layered) : layered_(layered) {}
 
@@ -49,7 +49,7 @@ class ExRTReflections : public FgExecutor {
         const ProbeVolume *probe_volume = nullptr;
 
         struct {
-            uint32_t root_node;
+            uint32_t root_node = 0xffffffff;
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef meshes_buf;

@@ -24,45 +24,19 @@ namespace Net {
 
         void Update(float dt_s);
 
-        unsigned int max_sequence() const {
-            return max_sequence_;
-        }
+        [[nodiscard]] unsigned int max_sequence() const { return max_sequence_; }
+        [[nodiscard]] unsigned int local_sequence() const { return local_sequence_; }
+        [[nodiscard]] unsigned int remote_sequence() const { return remote_sequence_; }
 
-        unsigned int local_sequence() const {
-            return local_sequence_;
-        }
+        [[nodiscard]] float rtt() const { return rtt_; }
 
-        unsigned int remote_sequence() const {
-            return remote_sequence_;
-        }
+        [[nodiscard]] unsigned int sent_packets() const { return sent_packets_; }
+        [[nodiscard]] unsigned int recv_packets() const { return recv_packets_; }
+        [[nodiscard]] unsigned int lost_packets() const { return lost_packets_; }
+        [[nodiscard]] unsigned int acked_packets() const { return acked_packets_; }
 
-        float rtt() const {
-            return rtt_;
-        }
-
-        unsigned int sent_packets() const {
-            return sent_packets_;
-        }
-
-        unsigned int recv_packets() const {
-            return recv_packets_;
-        }
-
-        unsigned int lost_packets() const {
-            return lost_packets_;
-        }
-
-        unsigned int acked_packets() const {
-            return acked_packets_;
-        }
-
-        float sent_bandwidth() const {
-            return sent_bandwidth_;
-        }
-
-        float acked_bandwidth() const {
-            return acked_bandwidth_;
-        }
+        [[nodiscard]] float sent_bandwidth() const { return sent_bandwidth_; }
+        [[nodiscard]] float acked_bandwidth() const { return acked_bandwidth_; }
 
         void GetAcks(unsigned int **acks, int &count);
 

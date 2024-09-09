@@ -7,7 +7,6 @@
 #include "shaders/rt_shadow_debug_interface.h"
 #include "shaders/rt_shadow_filter_interface.h"
 #include "shaders/rt_shadow_prepare_mask_interface.h"
-#include "shaders/rt_shadows_interface.h"
 #include "shaders/sun_shadows_interface.h"
 
 void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
@@ -29,7 +28,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         auto *data = rt_sh_prepare.AllocNodeData<PassData>();
 
         { // tile counter
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Indirect;
             desc.size = sizeof(Ren::DispatchIndirectCommand);
 
@@ -39,7 +38,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         rt_sh_prepare.set_execute_cb([data](FgBuilder &builder) {
             FgAllocBuf &tile_counter_buf = builder.GetWriteBuffer(data->tile_counter);
 
-            Ren::DispatchIndirectCommand indirect_cmd;
+            Ren::DispatchIndirectCommand indirect_cmd = {};
             indirect_cmd.num_groups_x = 0; // will be incremented atomically
             indirect_cmd.num_groups_y = 1;
             indirect_cmd.num_groups_z = 1;
@@ -76,7 +75,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->ranking_tile = rt_shadows.AddStorageReadonlyInput(ranking_tile_buf_, Ren::eStageBits::ComputeShader);
 
         { // tile list
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
             desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 3) / 4) * 4 * sizeof(uint32_t);
 
@@ -262,7 +261,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->hit_mask_tex = rt_prep_mask.AddTextureInput(ray_hits_tex, Ren::eStageBits::ComputeShader);
 
         { // shadow mask buffer
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
 
             const uint32_t x_tiles = (view_state_.scr_res[0] + 8u - 1u) / 8;
@@ -331,7 +330,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             rt_classify_tiles.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
 
         { // metadata buffer
-            FgBufDesc desc;
+            FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
 
             const uint32_t x_tiles = (view_state_.scr_res[0] + 8u - 1u) / 8;

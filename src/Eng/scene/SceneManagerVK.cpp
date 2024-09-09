@@ -65,11 +65,12 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         pers_data.textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
     }
 
-    const int materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
+    const int materials_per_descriptor = int(api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL);
 
     if (pers_data.textures_descr_pool->descr_count(Ren::eDescrType::CombinedImageSampler) < max_tex_count) {
         assert(materials_per_descriptor > 0);
-        const int needed_descriptors_count = (max_mat_count + materials_per_descriptor - 1) / materials_per_descriptor;
+        const int needed_descriptors_count =
+            int(max_mat_count + materials_per_descriptor - 1) / materials_per_descriptor;
 
         Ren::DescrSizes descr_sizes;
         descr_sizes.img_sampler_count =
@@ -200,7 +201,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 
     Ren::Buffer materials_upload_buf("Materials Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
                                      (update_range.second - update_range.first) * sizeof(MaterialData));
-    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_upload_buf.Map());
+    auto *material_data = reinterpret_cast<MaterialData *>(materials_upload_buf.Map());
 
     Ren::SmallVector<VkDescriptorImageInfo, 256> img_infos;
     Ren::SmallVector<Ren::TransitionInfo, 256> img_transitions;
@@ -380,8 +381,8 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
     // make sure we will not use this potentially stale pointer
     build_info.pGeometries = nullptr;
 
-    const uint32_t needed_build_scratch_size = uint32_t(size_info.buildScratchSize);
-    const uint32_t needed_total_acc_struct_size =
+    const auto needed_build_scratch_size = uint32_t(size_info.buildScratchSize);
+    const auto needed_total_acc_struct_size =
         uint32_t(align_up(size_info.accelerationStructureSize, AccStructAlignment));
 
     Ren::Buffer scratch_buf =

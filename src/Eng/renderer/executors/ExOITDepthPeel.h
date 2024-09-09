@@ -8,7 +8,7 @@
 namespace Eng {
 class PrimDraw;
 
-class ExOITDepthPeel : public FgExecutor {
+class ExOITDepthPeel final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data

@@ -22,33 +22,18 @@ namespace Net {
             port_ = port;
         }
 
-        Address(const char *str);
+        explicit Address(const char *str);
 
-        uint32_t address() const {
-            return address_;
-        }
+        [[nodiscard]] uint32_t address() const { return address_; }
 
-        uint8_t a() const {
-            return (unsigned char) (address_ >> 24);
-        }
+        [[nodiscard]] uint8_t a() const { return uint8_t(address_ >> 24); }
+        [[nodiscard]] uint8_t b() const { return uint8_t(address_ >> 16); }
+        [[nodiscard]] uint8_t c() const { return uint8_t(address_ >> 8); }
+        [[nodiscard]] uint8_t d() const { return uint8_t(address_); }
 
-        uint8_t b() const {
-            return (unsigned char) (address_ >> 16);
-        }
+        [[nodiscard]] uint16_t port() const { return port_; }
 
-        uint8_t c() const {
-            return (unsigned char) (address_ >> 8);
-        }
-
-        uint8_t d() const {
-            return (unsigned char) (address_);
-        }
-
-        uint16_t port() const {
-            return port_;
-        }
-
-        std::string str() const;
+        [[nodiscard]] std::string str() const;
 
         bool operator==(const Address &other) const {
             return address_ == other.address_ && port_ == other.port_;
