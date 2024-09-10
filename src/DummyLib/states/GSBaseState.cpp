@@ -463,11 +463,6 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showTimings", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
-        renderer_->settings.debug_timings = !renderer_->settings.debug_timings;
-        return true;
-    });
-
     cmdline_->RegisterCommand("r_showBVH", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
         renderer_->settings.debug_bvh = !renderer_->settings.debug_bvh;
         return true;

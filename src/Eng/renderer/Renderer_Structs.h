@@ -264,7 +264,6 @@ struct render_settings_t {
             bool debug_decals : 1;
             bool debug_deferred : 1;
             bool debug_blur : 1;
-            bool debug_timings : 1;
             bool debug_bvh : 1;
             bool debug_ellipsoids : 1;
             bool debug_freeze : 1;
