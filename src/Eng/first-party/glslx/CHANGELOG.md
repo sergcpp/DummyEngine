@@ -21,5 +21,5 @@
 
 
 
-[Unreleased]: http://192.168.178.42:3000/sergcpp/glslx/compare/v0.1.0...master
-[0.1.0]: http://192.168.178.42:3000/sergcpp/glslx/releases/v0.1.0
+[Unreleased]: http://github.com/sergcpp/glslx/compare/v0.1.0...master
+[0.1.0]: http://github.com/sergcpp/glslx/releases/v0.1.0
