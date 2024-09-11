@@ -87,50 +87,51 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     Eng::ShaderLoader shader_loader;
     Eng::Random rand(0);
     Sys::ThreadPool threads(1);
-    Eng::Renderer renderer(ren_ctx, shader_loader, rand, threads);
+    auto renderer = std::make_unique<Eng::Renderer>(ren_ctx, shader_loader, rand, threads);
 
-    renderer.settings.enable_bloom = false;
-    renderer.settings.enable_shadow_jitter = true;
-    renderer.settings.enable_aberration = false;
-    renderer.settings.taa_mode = Eng::eTAAMode::Static;
-    renderer.settings.pixel_filter = Eng::ePixelFilter::Box;
+    renderer->settings.enable_bloom = false;
+    renderer->settings.enable_shadow_jitter = true;
+    renderer->settings.enable_aberration = false;
+    renderer->settings.taa_mode = Eng::eTAAMode::Static;
+    renderer->settings.pixel_filter = Eng::ePixelFilter::Box;
 
     if (img_test == eImgTest::NoShadow) {
-        renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
-        renderer.settings.shadows_quality = Eng::eShadowsQuality::Off;
-        renderer.settings.gi_quality = Eng::eGIQuality::Off;
-        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Off;
+        renderer->settings.shadows_quality = Eng::eShadowsQuality::Off;
+        renderer->settings.gi_quality = Eng::eGIQuality::Off;
+        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoGI) {
-        renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
-        renderer.settings.gi_quality = Eng::eGIQuality::Off;
-        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Off;
+        renderer->settings.gi_quality = Eng::eGIQuality::Off;
+        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoGI_RTShadow) {
-        renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
-        renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-        renderer.settings.gi_quality = Eng::eGIQuality::Off;
-        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Off;
+        renderer->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+        renderer->settings.gi_quality = Eng::eGIQuality::Off;
+        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoDiffGI) {
-        renderer.settings.gi_quality = Eng::eGIQuality::Off;
-        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.gi_quality = Eng::eGIQuality::Off;
+        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
-        renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-        renderer.settings.gi_quality = Eng::eGIQuality::Off;
-        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+        renderer->settings.gi_quality = Eng::eGIQuality::Off;
+        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::MedDiffGI) {
-        renderer.settings.gi_quality = Eng::eGIQuality::Medium;
-        renderer.settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.gi_quality = Eng::eGIQuality::Medium;
+        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
     } else if (img_test == eImgTest::Full_Ultra) {
-        renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-        renderer.settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
-        renderer.settings.gi_quality = Eng::eGIQuality::Ultra;
-        renderer.settings.sky_quality = Eng::eSkyQuality::Ultra;
+        renderer->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
+        renderer->settings.gi_quality = Eng::eGIQuality::Ultra;
+        renderer->settings.sky_quality = Eng::eSkyQuality::Ultra;
     }
 
     Eng::path_config_t paths;
     Eng::SceneManager scene_manager(ren_ctx, shader_loader, nullptr, threads, paths);
 
     using namespace std::placeholders;
-    scene_manager.SetPipelineInitializer(std::bind(&Eng::Renderer::InitPipelinesForProgram, &renderer, _1, _2, _3, _4));
+    scene_manager.SetPipelineInitializer(
+        std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
 
     Sys::MultiPoolAllocator<char> alloc(32, 512);
     JsObjectP js_scene(alloc);
@@ -193,11 +194,11 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         if (js_cam.Has("view_transform")) {
             const JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
             if (js_view_transform.val == "agx") {
-                renderer.settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                renderer.SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                                       Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(__agx),
-                                                                reinterpret_cast<const uint8_t *>(__agx) +
-                                                                    4 * LUT_DIMS * LUT_DIMS * LUT_DIMS));
+                renderer->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer->SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                                        Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(__agx),
+                                                                 reinterpret_cast<const uint8_t *>(__agx) +
+                                                                     4 * LUT_DIMS * LUT_DIMS * LUT_DIMS));
             }
         }
     }
@@ -270,9 +271,9 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
                    decals_stage_buf, rt_geo_instances_stage_buf, rt_sh_geo_instances_stage_buf,
                    rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
                    rt_sh_tlas_nodes_stage_buf);
-    draw_list.render_settings = renderer.settings;
+    draw_list.render_settings = renderer->settings;
 
-    renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);
+    renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);
     scene_manager.UpdateTexturePriorities(draw_list.visible_textures, draw_list.desired_textures);
 
     //
@@ -304,8 +305,8 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
                                  UINT64_MAX);
         api_ctx->vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
 
-        Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
-        Ren::DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
+        ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
+        DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
 
         const bool reset_result = ren_ctx.default_descr_alloc()->Reset();
         require_fatal(reset_result);
@@ -324,7 +325,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
         api_ctx->in_flight_fences[api_ctx->backend_frame] = {};
 
-        Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
+        ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
 #endif
     };
 
@@ -385,36 +386,36 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     }
 
     draw_list.frame_index = 0;
-    // renderer.settings.taa_mode = Eng::eTAAMode::Static;
-    // draw_list.render_settings = renderer.settings;
-    renderer.reset_accumulation();
+    // renderer->settings.taa_mode = Eng::eTAAMode::Static;
+    // draw_list.render_settings = renderer->settings;
+    renderer->reset_accumulation();
 
     //
     // Warmup (fill diffuse/specular history buffers)
     //
     for (int i = 0; i < 64; ++i) {
         draw_list.Clear();
-        renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),
-                                 draw_list);
+        renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),
+                                  draw_list);
 
         begin_frame();
-        renderer.ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
+        renderer->ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
         end_frame();
     }
 
     draw_list.frame_index = 0;
-    renderer.reset_accumulation();
+    renderer->reset_accumulation();
 
     //
     // Main capture
     //
     for (int i = 0; i < RendererInternal::TaaSampleCountStatic; ++i) {
         draw_list.Clear();
-        renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),
-                                 draw_list);
+        renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),
+                                  draw_list);
 
         begin_frame();
-        renderer.ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
+        renderer->ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
         end_frame();
     }
 

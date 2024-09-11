@@ -72,7 +72,7 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
         }
         temp_unif_buffer =
             Ren::Buffer("Temp uniform buf", ctx_->api_ctx(), Ren::eBufType::Uniform, uniform_data_len, 16);
-        Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, uniform_data_len, nullptr);
+        CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, uniform_data_len, nullptr);
 
         glBindBufferBase(GL_UNIFORM_BUFFER, Eng::BIND_PUSH_CONSTANT_BUF, temp_unif_buffer.id());
     }

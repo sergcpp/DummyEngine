@@ -18,7 +18,6 @@
 
 #include "GSBaseState.h"
 
-class Cmdline;
 class DebugInfoUI;
 class ViewerStateManager;
 class FontStorage;
@@ -79,5 +78,5 @@ class GSUITest3 : public GSBaseState {
     void Enter() override;
     void Exit() override;
 
-    bool HandleInput(const Eng::InputManager::Event &evt) override;
+    bool HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) override;
 };

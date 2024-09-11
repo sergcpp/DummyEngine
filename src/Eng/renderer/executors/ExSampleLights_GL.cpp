@@ -126,6 +126,6 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
     uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(LightItem));
     uniform_params.frame_index = view_state_->frame_index;
 
-    Ren::DispatchCompute(pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+    DispatchCompute(pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                          ctx.default_descr_alloc(), ctx.log());
 }

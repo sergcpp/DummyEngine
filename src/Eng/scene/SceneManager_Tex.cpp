@@ -18,44 +18,6 @@ const size_t TextureMemoryLimit = 2048ull * 1024 * 1024;
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
-void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::ILog *log) {
-    params.w = uint16_t(hdr.dwWidth);
-    params.h = uint16_t(hdr.dwHeight);
-    params.mip_count = uint8_t(hdr.dwMipMapCount);
-
-    if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC1_UNORM) {
-        params.format = Ren::eTexFormat::BC1;
-        params.block = Ren::eTexBlock::_4x4;
-    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC2_UNORM) {
-        params.format = Ren::eTexFormat::BC2;
-        params.block = Ren::eTexBlock::_4x4;
-    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC3_UNORM) {
-        params.format = Ren::eTexFormat::BC3;
-        params.block = Ren::eTexBlock::_4x4;
-    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC4_UNORM) {
-        params.format = Ren::eTexFormat::BC4;
-        params.block = Ren::eTexBlock::_4x4;
-    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC5_UNORM) {
-        params.format = Ren::eTexFormat::BC5;
-        params.block = Ren::eTexBlock::_4x4;
-    } else {
-        params.block = Ren::eTexBlock::_None;
-        if (hdr.sPixelFormat.dwFlags & DDPF_RGB) {
-            // Uncompressed
-            if (hdr.sPixelFormat.dwRGBBitCount == 32) {
-                params.format = Ren::eTexFormat::RawRGBA8888;
-            } else if (hdr.sPixelFormat.dwRGBBitCount == 24) {
-                params.format = Ren::eTexFormat::RawRGB888;
-            } else {
-                params.format = Ren::eTexFormat::Undefined;
-            }
-        } else {
-            // Possibly need to read DX10 header
-            params.format = Ren::eTexFormat::Undefined;
-        }
-    }
-}
-
 void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data, const Ren::Tex2DRef &ref) {
     uint32_t tex_user = ref->first_user;
     while (tex_user != 0xffffffff) {
@@ -173,7 +135,7 @@ void Eng::SceneManager::TextureLoaderProc() {
 
                 if (read_success) {
                     Ren::Tex2DParams temp_params;
-                    ParseDDSHeader(header, temp_params, ren_ctx_.log());
+                    ParseDDSHeader(header, &temp_params);
                     req->orig_format = temp_params.format;
                     req->orig_block = temp_params.block;
                     req->orig_w = temp_params.w;
@@ -287,7 +249,7 @@ void Eng::SceneManager::EstimateTextureMemory(const int portion_size) {
         while (index != end) {
             const auto &tex = scene_data_.textures.at(index);
 
-            bucket += Ren::EstimateMemory(tex.params);
+            bucket += EstimateMemory(tex.params);
 
             index = scene_data_.textures.FindOccupiedInRange(index + 1, end);
         }
@@ -708,8 +670,8 @@ void Eng::SceneManager::ForceTextureReload() {
     }
 
     if (!img_transitions.empty()) {
-        Ren::TransitionResourceStates(ren_ctx_.api_ctx(), ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
-                                      img_transitions);
+        TransitionResourceStates(ren_ctx_.api_ctx(), ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
+                                 img_transitions);
     }
 
     fill(begin(scene_data_.texture_mem_buckets), end(scene_data_.texture_mem_buckets), 0);

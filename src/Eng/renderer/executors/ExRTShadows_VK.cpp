@@ -41,7 +41,7 @@ void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) {
                                      {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
@@ -97,7 +97,7 @@ void Eng::ExRTShadows::Execute_HWRT_Inline(FgBuilder &builder) {
                                      {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
@@ -193,7 +193,7 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 

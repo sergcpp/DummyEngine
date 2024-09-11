@@ -320,9 +320,11 @@ struct FrontendInfo {
              items_assignment_time_us = 0;
 };
 
-struct PassTiming {
+struct pass_info_t {
     std::string name;
-    uint64_t duration;
+    uint64_t duration_us;
+    Ren::SmallVector<std::string, 16> input;
+    Ren::SmallVector<std::string, 16> output;
 };
 
 struct BackendInfo {
@@ -330,10 +332,9 @@ struct BackendInfo {
     uint64_t gpu_total_duration = 0;
     int64_t gpu_cpu_time_diff_us = 0;
 
-    Ren::SmallVector<PassTiming, 256> pass_timings;
+    Ren::SmallVector<pass_info_t, 256> passes_info;
 
     uint32_t shadow_draw_calls_count = 0, depth_fill_draw_calls_count = 0, opaque_draw_calls_count = 0;
-
     uint32_t tris_rendered = 0;
 };
 

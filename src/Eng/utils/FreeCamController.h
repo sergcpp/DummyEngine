@@ -18,7 +18,7 @@ class FreeCamController {
 
     void Update(uint64_t dt_us);
 
-    bool HandleInput(const InputManager::Event &evt);
+    bool HandleInput(const input_event_t &evt);
 
     float max_fwd_speed = 1.0f;
     float fwd_speed = 0.0f, side_speed = 0.0f;

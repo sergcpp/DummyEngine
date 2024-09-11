@@ -27,10 +27,10 @@ class SeqEditUI : public Gui::BaseElement {
 
     void Draw(Gui::Renderer *r) override;
 
-    void Resize(const BaseElement *parent) override;
+    void Resize() override;
 
-    void Press(const Gui::Vec2f &p, bool push) override;
-    void Hover(const Gui::Vec2f &p) override;
+    //void Press(const Gui::Vec2f &p, bool push) override;
+    //void Hover(const Gui::Vec2f &p) override;
 
     void PressRMB(const Gui::Vec2f &p, bool push);
 };

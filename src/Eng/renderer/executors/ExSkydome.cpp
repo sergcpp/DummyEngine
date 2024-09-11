@@ -85,8 +85,8 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
     for (int face = 0; face < 6; ++face) {
         for (int mip = 1; mip < mip_count; mip += 4) {
             const Ren::TransitionInfo transitions[] = {{color_tex.ref.get(), Ren::eResState::UnorderedAccess}};
-            Ren::TransitionResourceStates(builder.ctx().api_ctx(), builder.ctx().current_cmd_buf(), Ren::AllStages,
-                                          Ren::AllStages, transitions);
+            TransitionResourceStates(builder.ctx().api_ctx(), builder.ctx().current_cmd_buf(), Ren::AllStages,
+                                     Ren::AllStages, transitions);
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled,
                                               SkydomeDownsample::INPUT_TEX_SLOT,
@@ -124,7 +124,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
                                SkydomeDownsample::LOCAL_GROUP_SIZE_Y,
                            1u};
 
-            Ren::DispatchCompute(pi_skydome_downsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(pi_skydome_downsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         }
     }

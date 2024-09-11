@@ -96,8 +96,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.img_size = Ren::Vec2u{view_state_.act_res};
 
-            Ren::DispatchCompute(pi_probe_sample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(pi_probe_sample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     } else {
         gi_fallback = fg_builder_.MakeTextureResource(dummy_black_);
@@ -259,8 +259,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
 
-            Ren::DispatchCompute(pi_gi_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(pi_gi_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -293,8 +293,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             const Ren::Binding bindings[] = {{Trg::SBufRW, GIWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                                              {Trg::SBufRW, GIWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
 
-            Ren::DispatchCompute(pi_gi_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(pi_gi_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -360,9 +360,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
 
-            Ren::DispatchComputeIndirect(pi_gi_trace_ss_, *indir_args_buf.ref, 0, bindings, &uniform_params,
-                                         sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            DispatchComputeIndirect(pi_gi_trace_ss_, *indir_args_buf.ref, 0, bindings, &uniform_params,
+                                    sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -397,8 +396,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     {Trg::SBufRW, GIWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                     {Trg::SBufRW, GIWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
 
-                Ren::DispatchCompute(pi_gi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
-                                     builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchCompute(pi_gi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                                builder.ctx().default_descr_alloc(), builder.ctx().log());
             });
         }
 
@@ -650,9 +649,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GIReproject::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchComputeIndirect(pi_gi_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            DispatchComputeIndirect(pi_gi_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -735,9 +734,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GIPrefilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchComputeIndirect(pi_gi_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            DispatchComputeIndirect(pi_gi_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -829,9 +828,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GIResolveTemporal::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchComputeIndirect(pi_gi_temporal_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            DispatchComputeIndirect(pi_gi_temporal_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -904,9 +903,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                Ren::DispatchComputeIndirect(pi_gi_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                             &uniform_params, sizeof(uniform_params),
-                                             builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchComputeIndirect(pi_gi_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
             });
         }
 
@@ -968,9 +967,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                Ren::DispatchComputeIndirect(pi_gi_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                             &uniform_params, sizeof(uniform_params),
-                                             builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchComputeIndirect(pi_gi_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
             });
         }
 
@@ -1033,8 +1032,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 uniform_params.img_size =
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-                Ren::DispatchCompute(pi_gi_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                     builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchCompute(pi_gi_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                builder.ctx().default_descr_alloc(), builder.ctx().log());
             });
         }
 

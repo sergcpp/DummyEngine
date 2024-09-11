@@ -29,11 +29,10 @@ class DialogUI : public Gui::BaseElement {
 
     void Clear();
 
-    void Resize(const Gui::BaseElement *parent) override;
-    using BaseElement::Resize;
+    void Resize() override;
 
-    void Press(const Gui::Vec2f &p, bool push) override;
-    void Hover(const Gui::Vec2f &p) override;
+    //void Press(const Gui::Vec2f &p, bool push) override;
+    //void Hover(const Gui::Vec2f &p) override;
 
     void OnPushChoice(std::string_view key, std::string_view text, int off);
 

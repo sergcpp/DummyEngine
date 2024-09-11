@@ -18,7 +18,6 @@
 #include "renderer/Renderer.h"
 #include "scene/PhysicsManager.h"
 #include "scene/SceneManager.h"
-#include "utils/Cmdline.h"
 #include "utils/FlowControl.h"
 #include "utils/Random.h"
 #include "utils/ShaderLoader.h"
@@ -51,8 +50,6 @@ Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level
     random_ = std::make_unique<Random>(std::random_device{}());
 
     renderer_ = std::make_unique<Renderer>(*ren_ctx_, *shader_loader_, *random_, *threads_);
-
-    cmdline_ = std::make_unique<Cmdline>();
 
     physics_manager_ = std::make_unique<PhysicsManager>();
 
@@ -108,9 +105,9 @@ void Eng::ViewerBase::Frame() {
     uint64_t poll_time_point = fr.cur_time_us - fr.time_acc_us;
 
     while (fr.time_acc_us >= UPDATE_DELTA) {
-        InputManager::Event evt;
+        input_event_t evt;
         while (input_manager_->PollEvent(poll_time_point, evt)) {
-            state_manager_->HandleInput(evt);
+            state_manager_->HandleInput(evt, input_manager_->keys_state());
         }
 
         state_manager_->UpdateFixed(UPDATE_DELTA);

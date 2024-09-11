@@ -412,9 +412,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
                                   float(js_rot.at(2).as_num().val) * Ren::Pi<float>() / 180.0f};
 
             Ren::Mat4f transform;
-            transform = Ren::Rotate(transform, rot[2], Ren::Vec3f{0.0f, 0.0f, 1.0f});
-            transform = Ren::Rotate(transform, rot[0], Ren::Vec3f{1.0f, 0.0f, 0.0f});
-            transform = Ren::Rotate(transform, rot[1], Ren::Vec3f{0.0f, 1.0f, 0.0f});
+            transform = Rotate(transform, rot[2], Ren::Vec3f{0.0f, 0.0f, 1.0f});
+            transform = Rotate(transform, rot[0], Ren::Vec3f{1.0f, 0.0f, 0.0f});
+            transform = Rotate(transform, rot[1], Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
             const Ren::Vec4f sun_dir = Normalize(transform * Ren::Vec4f{0.0f, -1.0f, 0.0f, 0.0f});
             scene_data_.env.sun_dir[0] = sun_dir[0];
@@ -1661,7 +1661,7 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
         {scene_data_.persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
         {scene_data_.persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
         {scene_data_.persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
-    Ren::TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+    TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
     const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     scene_data_.persistent_data.probe_ray_data->Clear(rgba, cmd_buf);

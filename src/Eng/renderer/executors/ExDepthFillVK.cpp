@@ -110,7 +110,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref}};
         simple_descr_sets[0] =
-            Ren::PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
+            PrepareDescriptorSet(api_ctx, simple_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
         simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
@@ -123,7 +123,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
                                          {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref}};
         vege_descr_sets[0] =
-            Ren::PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
+            PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
         vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 

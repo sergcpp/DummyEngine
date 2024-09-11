@@ -64,7 +64,7 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
             memcpy(&transform[0][0], inst.xform, 12 * sizeof(float));
 
             // TODO: Optimize this!
-            Ren::Mat4f inv_transform = Ren::Inverse(transform);
+            Ren::Mat4f inv_transform = Inverse(transform);
 
             memcpy(&new_mi.inv_transform[0][0], ValuePtr(inv_transform), 12 * sizeof(float));
             memcpy(&new_mi.transform[0][0], ValuePtr(transform), 12 * sizeof(float));
@@ -81,8 +81,8 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
                 builder.log()->Error("ExBuildAccStructures: Failed to map rt obj instance buffer!");
             }
 
-            Ren::CopyBufferToBuffer(*rt_obj_instances_stage_buf, ctx.backend_frame() * SWRTObjInstancesBufChunkSize,
-                                    *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.current_cmd_buf());
+            CopyBufferToBuffer(*rt_obj_instances_stage_buf, ctx.backend_frame() * SWRTObjInstancesBufChunkSize,
+                               *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.current_cmd_buf());
         }
 
         { // update nodes buf
@@ -96,8 +96,8 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
                 builder.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
             }
 
-            Ren::CopyBufferToBuffer(*rt_tlas_stage_buf, ctx.backend_frame() * SWRTTLASNodesBufChunkSize,
-                                    *rt_tlas_buf.ref, 0, rt_nodes_mem_size, ctx.current_cmd_buf());
+            CopyBufferToBuffer(*rt_tlas_stage_buf, ctx.backend_frame() * SWRTTLASNodesBufChunkSize, *rt_tlas_buf.ref, 0,
+                               rt_nodes_mem_size, ctx.current_cmd_buf());
         }
     }
 }

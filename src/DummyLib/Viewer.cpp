@@ -10,7 +10,8 @@
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Random.h>
-#include <Eng/widgets/DebugInfoUI.h>
+#include <Eng/widgets/CmdlineUI.h>
+#include <Eng/widgets/DebugFrameUI.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
@@ -82,9 +83,13 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
         }
     }
 
+    // create UI for commandline
+    cmdline_ui_ = std::make_unique<Eng::CmdlineUI>(*ren_ctx_, *font_storage_->FindFont("main_font"),
+                                                   Gui::Vec2f{-1.0f, 0.5f}, Gui::Vec2f{2.0f, 0.5f}, ui_root_.get());
+
     // create UI for performance debugging
-    debug_ui_ = std::make_unique<Eng::DebugInfoUI>(Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f}, ui_root_.get(),
-                                                   font_storage_->FindFont("main_font"));
+    debug_ui_ = std::make_unique<Eng::DebugFrameUI>(*ren_ctx_, Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f, 1.75f},
+                                                    ui_root_.get(), font_storage_->FindFont("main_font"));
 
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
@@ -116,8 +121,8 @@ void Viewer::Frame() {
                              UINT64_MAX);
     api_ctx->vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
 
-    Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
-    Ren::DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
+    ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
+    DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
 
     uint32_t next_image_index = 0;
     VkResult res = api_ctx->vkAcquireNextImageKHR(api_ctx->device, api_ctx->swapchain, UINT64_MAX,
@@ -169,7 +174,7 @@ void Viewer::Frame() {
     api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
     api_ctx->in_flight_fences[api_ctx->backend_frame] = {};
 
-    Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
+    ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
 #endif
 
         state_manager_->Draw();

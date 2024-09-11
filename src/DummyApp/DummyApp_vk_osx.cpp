@@ -183,29 +183,6 @@ void DummyApp::Destroy() {
 #endif
 }
 
-void DummyApp::Frame() { viewer_->Frame(); }
-
-void DummyApp::Resize(int w, int h) { viewer_->Resize(w, h); }
-
-void DummyApp::AddEvent(Eng::eInputEvent type, const uint32_t key_code, const float x,
-                        const float y, const float dx, const float dy) {
-    auto *input_manager = viewer_->input_manager();
-    if (!input_manager) {
-        return;
-    }
-
-    Eng::InputManager::Event evt;
-    evt.type = type;
-    evt.key_code = key_code;
-    evt.point.x = x;
-    evt.point.y = y;
-    evt.move.dx = dx;
-    evt.move.dy = dy;
-    evt.time_stamp = Sys::GetTimeUs();
-
-    input_manager->AddRawInputEvent(evt);
-}
-
 #if !defined(__ANDROID__)
 int DummyApp::Run(int argc, char *argv[]) {
     int w = 1280, h = 720;

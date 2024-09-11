@@ -20,13 +20,13 @@
 class FontStorage;
 class Viewer;
 namespace Eng {
-class Cmdline;
+class CmdlineUI;
 class ViewerStateManager;
 class ILog;
 class PhysicsManager;
 class SceneManager;
 class ShaderLoader;
-class DebugInfoUI;
+class DebugFrameUI;
 } // namespace Eng
 
 namespace Gui {
@@ -53,7 +53,7 @@ struct TaskList;
 class GSBaseState : public Eng::ViewerState {
   protected:
     Viewer *viewer_;
-    Eng::Cmdline *cmdline_ = nullptr;
+    Eng::CmdlineUI *cmdline_ui_ = nullptr;
     Ren::Context *ren_ctx_ = nullptr;
     Snd::Context *snd_ctx_ = nullptr;
     Eng::ILog *log_ = nullptr;
@@ -73,8 +73,7 @@ class GSBaseState : public Eng::ViewerState {
     Gui::Renderer *ui_renderer_ = nullptr;
     Gui::BaseElement *ui_root_ = nullptr;
     const Gui::BitmapFont *font_ = {};
-    Eng::DebugInfoUI *debug_ui_ = nullptr;
-    std::unique_ptr<Gui::Image9Patch> cmdline_back_;
+    Eng::DebugFrameUI *debug_ui_ = nullptr;
 
     std::mutex mtx_;
     std::thread background_thread_;
@@ -109,13 +108,7 @@ class GSBaseState : public Eng::ViewerState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
-    std::vector<Eng::InputManager::Event> cmdline_input_;
-    std::vector<std::string> cmdline_history_;
-    int cmdline_history_index_ = -1;
-    uint64_t cmdline_cursor_blink_us_ = 0;
-    bool cmdline_enabled_ = false;
     bool ui_enabled_ = true;
-    bool shift_down_ = false;
 
     bool streaming_finished_ = false;
     enum class eCaptureState { None, UpdateGICache, Warmup, Started } capture_state_ = eCaptureState::None;
@@ -153,5 +146,5 @@ class GSBaseState : public Eng::ViewerState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const Eng::InputManager::Event &evt) override;
+    bool HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) override;
 };

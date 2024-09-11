@@ -56,3 +56,8 @@ endif()
 
 add_executable(test_Ren ${SOURCE_FILES})
 target_link_libraries(test_Ren ${LIBS} Ren)
+
+set_target_properties(test_Ren PROPERTIES OUTPUT_NAME_DEBUG test_Ren-dbg)
+set_target_properties(test_Ren PROPERTIES OUTPUT_NAME_RELWITHDEBINFO test_Ren-dev)
+set_target_properties(test_Ren PROPERTIES OUTPUT_NAME_ASAN test_Ren-asan)
+set_target_properties(test_Ren PROPERTIES OUTPUT_NAME_RELEASE test_Ren)

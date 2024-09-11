@@ -29,7 +29,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
 
     VkDescriptorSetLayout descr_set_layout = p->descr_set_layouts()[0];
     VkDescriptorSet descr_set =
-        Ren::PrepareDescriptorSet(api_ctx, descr_set_layout, bindings, ctx_->default_descr_alloc(), ctx_->log());
+        PrepareDescriptorSet(api_ctx, descr_set_layout, bindings, ctx_->default_descr_alloc(), ctx_->log());
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 

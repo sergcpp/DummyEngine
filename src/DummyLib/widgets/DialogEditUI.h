@@ -24,7 +24,6 @@ class DialogEditUI : public Gui::BaseElement {
     int selected_element_ = -1;
     uint64_t selected_timestamp_ = 0;
 
-    Gui::Vec2f SnapToPixels(const Gui::Vec2f &p) const;
     void DrawLineLocal(Gui::Renderer *r, const Gui::Vec2f &p0, const Gui::Vec2f &p1, const Gui::Vec2f &width) const;
     void DrawCurveLocal(Gui::Renderer *r, const Gui::Vec2f &p0, const Gui::Vec2f &p1, const Gui::Vec2f &p2,
                         const Gui::Vec2f &p3, const Gui::Vec2f &width, const uint8_t color[4]) const;
@@ -42,11 +41,10 @@ class DialogEditUI : public Gui::BaseElement {
 
     void Draw(Gui::Renderer *r) override;
 
-    void Resize(const Gui::BaseElement *parent) override;
-    using BaseElement::Resize;
+    void Resize() override;
 
-    void Press(const Gui::Vec2f &p, bool push) override;
-    void Hover(const Gui::Vec2f &p) override;
+    //void Press(const Gui::Vec2f &p, bool push) override;
+    //void Hover(const Gui::Vec2f &p) override;
 
     void PressRMB(const Gui::Vec2f &p, bool push);
 

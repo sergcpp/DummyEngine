@@ -95,6 +95,6 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
-    Ren::DispatchComputeIndirect(pi_rt_shadows_, *indir_args_buf.ref, 0, bindings, &uniform_params,
+    DispatchComputeIndirect(pi_rt_shadows_, *indir_args_buf.ref, 0, bindings, &uniform_params,
                                  sizeof(uniform_params), nullptr, ctx.log());
 }

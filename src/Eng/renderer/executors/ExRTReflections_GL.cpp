@@ -187,6 +187,6 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
-    Ren::DispatchComputeIndirect(*pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
+    DispatchComputeIndirect(*pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
                                  &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
 }

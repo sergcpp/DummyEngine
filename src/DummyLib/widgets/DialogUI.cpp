@@ -26,9 +26,9 @@ void DialogUI::Draw(Gui::Renderer *r) {
 
 void DialogUI::Clear() { choices_count_ = 0; }
 
-void DialogUI::Resize(const Gui::BaseElement *parent) { BaseElement::Resize(parent); }
+void DialogUI::Resize() { BaseElement::Resize(); }
 
-void DialogUI::Press(const Gui::Vec2f &p, const bool push) {
+/*void DialogUI::Press(const Gui::Vec2f &p, const bool push) {
     clicked_choice_ = -1;
     if (Check(p)) {
         const Gui::Vec2f lp = ToLocal(p);
@@ -44,9 +44,9 @@ void DialogUI::Press(const Gui::Vec2f &p, const bool push) {
             return true;
         });
     }
-}
+}*/
 
-void DialogUI::Hover(const Gui::Vec2f &p) {
+/*void DialogUI::Hover(const Gui::Vec2f &p) {
     hovered_choice_ = -1;
     if (Check(p)) {
         const Gui::Vec2f lp = ToLocal(p);
@@ -58,7 +58,7 @@ void DialogUI::Hover(const Gui::Vec2f &p) {
             return true;
         });
     }
-}
+}*/
 
 void DialogUI::IterateChoices(
     const std::function<bool(int i, const Gui::Vec2f &pos, const Gui::Vec2f &size)> &callback) {

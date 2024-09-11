@@ -21,7 +21,6 @@ class TimelineUI : public Gui::BaseElement {
     float GetTimeFromPoint(float px) const;
     float GetPointFromTime(float t) const;
     void SetCurTimeFromPoint(float px);
-    Gui::Vec2f SnapToPixels(const Gui::Vec2f &p);
 
   public:
     TimelineUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos, const Gui::Vec2f &size,
@@ -39,11 +38,11 @@ class TimelineUI : public Gui::BaseElement {
 
     void Draw(Gui::Renderer *r) override;
 
-    void Resize(const Gui::BaseElement *parent) override;
+    void Resize() override;
     using BaseElement::Resize;
 
-    void Press(const Gui::Vec2f &p, bool push) override;
-    void Hover(const Gui::Vec2f &p) override;
+    //void Press(const Gui::Vec2f &p, bool push) override;
+    //void Hover(const Gui::Vec2f &p) override;
 
     void PressRMB(const Gui::Vec2f &p, bool push);
 

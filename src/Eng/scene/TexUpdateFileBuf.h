@@ -56,7 +56,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
 
     void Free() override {
         mem_ = nullptr;
-        if (stage_buf_.is_mapped()) {
+        if (stage_buf_.mapped_ptr()) {
             stage_buf_.Unmap();
         }
         stage_buf_.Free();

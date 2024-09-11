@@ -5,14 +5,14 @@
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/scene/SceneManager.h>
-#include <Eng/utils/Cmdline.h>
+#include <Eng/widgets/CmdlineUI.h>
 #include <Gui/Renderer.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Sys/Time_.h>
 
-#include "../widgets/FontStorage.h"
 #include "../Viewer.h"
+#include "../widgets/FontStorage.h"
 
 #define TINYEXR_IMPLEMENTATION
 #define TINYEXR_USE_MINIZ 0
@@ -43,7 +43,7 @@ void GSDrawTest::Enter() {
 
     GSBaseState::Enter();
 
-    cmdline_->RegisterCommand("r_printCam", [this](Ren::Span<const Eng::Cmdline::ArgData> args) -> bool {
+    cmdline_ui_->RegisterCommand("r_printCam", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         log_->Info("View Pos: { %f, %f, %f }", view_origin_[0], view_origin_[1], view_origin_[2]);
         log_->Info("View Dir: { %f, %f, %f }", view_dir_[0], view_dir_[1], view_dir_[2]);
         return true;
@@ -318,9 +318,9 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
             rz *= Ren::Pi<float>() / 180.0f;
 
             Ren::Mat4f transform;
-            transform = Ren::Rotate(transform, float(rz), Ren::Vec3f{0.0f, 0.0f, 1.0f});
-            transform = Ren::Rotate(transform, float(rx), Ren::Vec3f{1.0f, 0.0f, 0.0f});
-            transform = Ren::Rotate(transform, float(ry), Ren::Vec3f{0.0f, 1.0f, 0.0f});
+            transform = Rotate(transform, float(rz), Ren::Vec3f{0.0f, 0.0f, 1.0f});
+            transform = Rotate(transform, float(rx), Ren::Vec3f{1.0f, 0.0f, 0.0f});
+            transform = Rotate(transform, float(ry), Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
             auto view_vec = Ren::Vec4f{0.0f, -1.0f, 0.0f, 0.0f};
             view_vec = transform * view_vec;
@@ -648,13 +648,18 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     scene.env.wind_turbulence = 2.0f * Length(scene.env.wind_vec);
 }
 
-bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
+bool GSDrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
     using namespace GSDrawTestInternal;
 
+    const bool handled = GSBaseState::HandleInput(evt, keys_state);
+    if (handled) {
+        return true;
+    }
+
     // pt switch for touch controls
-    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+    if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
+        if (evt.point[0] > float(ren_ctx_->w()) * 0.9f && evt.point[1] < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -670,27 +675,26 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
         }
     }
 
-    bool input_processed = true;
     const Ren::Vec3f view_dir_before = view_dir_;
 
     switch (evt.type) {
-    case Eng::RawInputEv::P1Down:
-        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
+    case Eng::eInputEvent::P1Down:
+        if (evt.point[0] < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
-    case Eng::RawInputEv::P2Down:
-        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
+    case Eng::eInputEvent::P2Down:
+        if (evt.point[0] < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
-        } else if (shift_down_ && sun_pointer_ == 0) {
+        } else if ((keys_state[Eng::eKey::LeftShift] || keys_state[Eng::eKey::RightShift]) && sun_pointer_ == 0) {
             sun_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
         }
         break;
-    case Eng::RawInputEv::P1Up:
+    case Eng::eInputEvent::P1Up:
         if (move_pointer_ == 1) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -699,7 +703,7 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case Eng::RawInputEv::P2Up:
+    case Eng::eInputEvent::P2Up:
         if (move_pointer_ == 2) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -710,12 +714,12 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case Eng::RawInputEv::P1Move:
+    case Eng::eInputEvent::P1Move:
         if (move_pointer_ == 1) {
-            side_touch_speed_ += evt.move.dx * 0.002f;
+            side_touch_speed_ += evt.move[0] * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
-            fwd_touch_speed_ -= evt.move.dy * 0.002f;
+            fwd_touch_speed_ += evt.move[1] * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
             auto up = Vec3f{0, 1, 0};
@@ -723,8 +727,8 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             up = Cross(side, view_dir_);
 
             Mat4f rot;
-            rot = Rotate(rot, -0.005f * evt.move.dx, up);
-            rot = Rotate(rot, -0.005f * evt.move.dy, side);
+            rot = Rotate(rot, -0.005f * evt.move[0], up);
+            rot = Rotate(rot, 0.005f * evt.move[1], side);
 
             auto rot_m3 = Mat3f(rot);
             view_dir_ = rot_m3 * view_dir_;
@@ -736,19 +740,19 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             up = Cross(side, view_dir_);
 
             Mat4f rot;
-            rot = Rotate(rot, -0.005f * evt.move.dx, up);
-            rot = Rotate(rot, -0.005f * evt.move.dy, side);
+            rot = Rotate(rot, -0.005f * evt.move[0], up);
+            rot = Rotate(rot, 0.005f * evt.move[1], side);
 
             auto rot_m3 = Mat3f(rot);
             sun_dir_ = Normalize(rot_m3 * sun_dir_);
         }
         break;
-    case Eng::RawInputEv::P2Move:
+    case Eng::eInputEvent::P2Move:
         if (move_pointer_ == 2) {
-            side_touch_speed_ += evt.move.dx * 0.002f;
+            side_touch_speed_ += evt.move[0] * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
-            fwd_touch_speed_ -= evt.move.dy * 0.002f;
+            fwd_touch_speed_ += evt.move[1] * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
             auto up = Vec3f{0, 1, 0};
@@ -756,8 +760,8 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             up = Cross(side, view_dir_);
 
             Mat4f rot;
-            rot = Rotate(rot, 0.01f * evt.move.dx, up);
-            rot = Rotate(rot, 0.01f * evt.move.dy, side);
+            rot = Rotate(rot, 0.01f * evt.move[0], up);
+            rot = Rotate(rot, -0.01f * evt.move[1], side);
 
             auto rot_m3 = Mat3f(rot);
             view_dir_ = rot_m3 * view_dir_;
@@ -765,38 +769,32 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             invalidate_view_ = true;
         }
         break;
-    case Eng::RawInputEv::KeyDown: {
-        if ((evt.key_code == Eng::KeyUp && !cmdline_enabled_) ||
-            (evt.key_code == Eng::KeyW && (!cmdline_enabled_ || view_pointer_))) {
+    case Eng::eInputEvent::KeyDown: {
+        if ((evt.key_code == Eng::eKey::Up && !cmdline_ui_->enabled) ||
+            (evt.key_code == Eng::eKey::W && (!cmdline_ui_->enabled || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if ((evt.key_code == Eng::KeyDown && !cmdline_enabled_) ||
-                   (evt.key_code == Eng::KeyS && (!cmdline_enabled_ || view_pointer_))) {
+        } else if ((evt.key_code == Eng::eKey::Down && !cmdline_ui_->enabled) ||
+                   (evt.key_code == Eng::eKey::S && (!cmdline_ui_->enabled || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == Eng::KeyLeft ||
-                   (evt.key_code == Eng::KeyA && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == Eng::eKey::Left ||
+                   (evt.key_code == Eng::eKey::A && (!cmdline_ui_->enabled || view_pointer_))) {
             side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == Eng::KeyRight ||
-                   (evt.key_code == Eng::KeyD && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == Eng::eKey::Right ||
+                   (evt.key_code == Eng::eKey::D && (!cmdline_ui_->enabled || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
             //} else if (evt.key_code == KeySpace) {
             //    wind_vector_goal_ = Ren::Vec3f{1.0f, 0.0f, 0.0f};
-        } else {
-            input_processed = false;
         }
     } break;
-    case Eng::RawInputEv::KeyUp: {
-        if (!cmdline_enabled_ || view_pointer_) {
-            if (evt.key_code == Eng::KeyUp || evt.key_code == Eng::KeyW || evt.key_code == Eng::KeyDown ||
-                evt.key_code == Eng::KeyS) {
+    case Eng::eInputEvent::KeyUp: {
+        if (!cmdline_ui_->enabled || view_pointer_) {
+            if (evt.key_code == Eng::eKey::Up || evt.key_code == Eng::eKey::W || evt.key_code == Eng::eKey::Down ||
+                evt.key_code == Eng::eKey::S) {
                 fwd_press_speed_ = 0;
-            } else if (evt.key_code == Eng::KeyLeft || evt.key_code == Eng::KeyA || evt.key_code == Eng::KeyRight ||
-                       evt.key_code == Eng::KeyD) {
+            } else if (evt.key_code == Eng::eKey::Left || evt.key_code == Eng::eKey::A ||
+                       evt.key_code == Eng::eKey::Right || evt.key_code == Eng::eKey::D) {
                 side_press_speed_ = 0;
-            } else {
-                input_processed = false;
             }
-        } else {
-            input_processed = false;
         }
     } break;
     default:
@@ -810,14 +808,10 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
         fwd_press_speed_ = side_press_speed_ = 0;
     }
 
-    if (!input_processed) {
-        GSBaseState::HandleInput(evt);
-    }
-
     return true;
 }
 
-void GSDrawTest::UpdateAnim(uint64_t dt_us) {
+void GSDrawTest::UpdateAnim(const uint64_t dt_us) {
     OPTICK_EVENT();
     const float delta_time_s = dt_us * 0.000001f;
 
@@ -830,6 +824,8 @@ void GSDrawTest::UpdateAnim(uint64_t dt_us) {
 
     // log_->Info("%f %f %f | %f %f %f", view_origin_[0], view_origin_[1], view_origin_[2], view_dir_[0], view_dir_[1],
     //           view_dir_[2]);
+
+    GSBaseState::UpdateAnim(dt_us);
 }
 
 void GSDrawTest::SaveScene(JsObjectP &js_scene) {

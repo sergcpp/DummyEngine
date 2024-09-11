@@ -12,7 +12,6 @@
 
 #include "GSBaseState.h"
 
-class Cmdline;
 class DebugInfoUI;
 class Dictionary;
 class ViewerStateManager;
@@ -55,5 +54,5 @@ class GSUITest2 : public GSBaseState {
 
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const Eng::InputManager::Event &evt) override;
+    bool HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) override;
 };

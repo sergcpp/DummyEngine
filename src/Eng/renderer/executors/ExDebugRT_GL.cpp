@@ -121,6 +121,6 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.root_node = args_->swrt.root_node;
 
-    Ren::DispatchCompute(pi_debug_swrt_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+    DispatchCompute(pi_debug_swrt_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                          ctx.default_descr_alloc(), ctx.log());
 }

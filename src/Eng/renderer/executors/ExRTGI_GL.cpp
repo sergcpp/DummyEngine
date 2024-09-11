@@ -149,6 +149,6 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
     uniform_params.frame_index = view_state_->frame_index;
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
-    Ren::DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
+    DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
                                  &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
 }

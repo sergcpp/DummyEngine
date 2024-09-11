@@ -126,7 +126,7 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
         WORD _delta = HIWORD(wParam);
         const auto delta = reinterpret_cast<const short &>(_delta);
         const float wheel_motion = float(delta / WHEEL_DELTA);
-        g_app->AddEvent(Eng::eInputEvent::MouseWheel, 0, 0.0f, 0.0f, wheel_motion, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::MouseWheel, 0, last_p1_pos[0], last_p1_pos[1], wheel_motion, 0.0f);
         break;
     }
     case WM_SIZE: {
@@ -203,37 +203,6 @@ void DummyApp::Destroy() {
     window_handle_ = nullptr;
 
     UnregisterClass("MainWindowClass", GetModuleHandle(nullptr));
-}
-
-void DummyApp::Frame() {
-    if (!minimized_) {
-        viewer_->Frame();
-    }
-}
-
-void DummyApp::Resize(const int w, const int h) {
-    minimized_ = (w == 0 || h == 0);
-    if (viewer_ && !minimized_) {
-        viewer_->Resize(w, h);
-    }
-}
-
-void DummyApp::AddEvent(const Eng::eInputEvent type, const uint32_t key_code, const float x, const float y,
-                        const float dx, const float dy) {
-    if (!input_manager_) {
-        return;
-    }
-
-    Eng::InputManager::Event evt;
-    evt.type = type;
-    evt.key_code = key_code;
-    evt.point.x = x;
-    evt.point.y = y;
-    evt.move.dx = dx;
-    evt.move.dy = dy;
-    evt.time_stamp = Sys::GetTimeUs();
-
-    input_manager_->AddRawInputEvent(evt);
 }
 
 int DummyApp::Run(int argc, char *argv[]) {

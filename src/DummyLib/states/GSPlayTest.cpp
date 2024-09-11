@@ -6,10 +6,10 @@
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/scene/SceneManager.h>
-#include <Eng/utils/Cmdline.h>
 #include <Eng/utils/FreeCamController.h>
 #include <Eng/utils/ScriptedDialog.h>
 #include <Eng/utils/ScriptedSequence.h>
+#include <Eng/widgets/CmdlineUI.h>
 #include <Gui/EditBox.h>
 #include <Gui/Image.h>
 #include <Gui/Image9Patch.h>
@@ -20,8 +20,8 @@
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
 
-#include "../utils/Dictionary.h"
 #include "../Viewer.h"
+#include "../utils/Dictionary.h"
 #include "../widgets/CaptionsUI.h"
 #include "../widgets/DialogEditUI.h"
 #include "../widgets/DialogUI.h"
@@ -285,13 +285,13 @@ void GSPlayTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     seq_cap_ui_->Draw(r);
 }
 
-bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
+bool GSPlayTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
     using namespace GSPlayTestInternal;
 
     // pt switch for touch controls
-    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+    if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
+        if (evt.point[0] > float(ren_ctx_->w()) * 0.9f && evt.point[1] < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ms_ < 400) {
                 use_pt_ = !use_pt_;
@@ -309,19 +309,19 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
     bool input_processed = false;
 
     switch (evt.type) {
-    case Eng::RawInputEv::P1Down: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+    case Eng::eInputEvent::P1Down: {
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
-            seq_edit_ui_->Press(p, true);
+            // seq_edit_ui_->Press(p, true);
             input_processed = true;
         } else if (dial_edit_mode_ == 1 && dialog_edit_ui_->Check(p)) {
-            dialog_edit_ui_->Press(p, true);
+            // dialog_edit_ui_->Press(p, true);
             input_processed = true;
         }
     } break;
-    case Eng::RawInputEv::P2Down: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+    case Eng::eInputEvent::P2Down: {
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
             seq_edit_ui_->PressRMB(p, true);
@@ -331,19 +331,19 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
             input_processed = true;
         }
     } break;
-    case Eng::RawInputEv::P1Up: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+    case Eng::eInputEvent::P1Up: {
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
-            seq_edit_ui_->Press(p, false);
+            // seq_edit_ui_->Press(p, false);
             input_processed = seq_edit_ui_->Check(p);
         } else if (dial_edit_mode_ == 1) {
-            dialog_edit_ui_->Press(p, false);
+            // dialog_edit_ui_->Press(p, false);
             input_processed = dialog_edit_ui_->Check(p);
         }
     } break;
-    case Eng::RawInputEv::P2Up: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+    case Eng::eInputEvent::P2Up: {
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
             seq_edit_ui_->PressRMB(p, false);
@@ -353,36 +353,36 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
             input_processed = dialog_edit_ui_->Check(p);
         }
     } break;
-    case Eng::RawInputEv::P1Move: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+    case Eng::eInputEvent::P1Move: {
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
-            seq_edit_ui_->Hover(p);
+            // seq_edit_ui_->Hover(p);
         } else if (dial_edit_mode_ == 1) {
-            dialog_edit_ui_->Hover(p);
+            // dialog_edit_ui_->Hover(p);
         }
     } break;
-    case Eng::RawInputEv::P2Move: {
+    case Eng::eInputEvent::P2Move: {
 
     } break;
-    case Eng::RawInputEv::KeyDown: {
+    case Eng::eInputEvent::KeyDown: {
         input_processed = false;
 
-        if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
-        } else if (evt.key_code == Eng::KeyReturn) {
+        if (evt.key_code == Eng::eKey::LeftShift || evt.key_code == Eng::eKey::RightShift) {
+        } else if (evt.key_code == Eng::eKey::Return) {
 
-        } else if (evt.key_code == Eng::KeyLeft) {
+        } else if (evt.key_code == Eng::eKey::Left) {
 
-        } else if (evt.key_code == Eng::KeyRight) {
+        } else if (evt.key_code == Eng::eKey::Right) {
 
-        } else if (evt.key_code == Eng::KeyUp) {
+        } else if (evt.key_code == Eng::eKey::Up) {
 
-        } else if (evt.key_code == Eng::KeyDown) {
+        } else if (evt.key_code == Eng::eKey::Down) {
 
-        } else if (evt.key_code == Eng::KeyDelete) {
+        } else if (evt.key_code == Eng::eKey::Delete) {
 
-        } else if (evt.key_code == Eng::KeyDeleteForward) {
-        } else if (evt.key_code == Eng::KeyTab) {
+        } else if (evt.key_code == Eng::eKey::DeleteForward) {
+        } else if (evt.key_code == Eng::eKey::Tab) {
             if (dial_edit_mode_ == 1) {
                 dial_edit_mode_ = 0;
             } else {
@@ -390,7 +390,7 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
             }
         } else {
             char ch = Eng::InputManager::CharFromKeycode(evt.key_code);
-            if (shift_down_) {
+            if (keys_state[Eng::eKey::LeftShift] || keys_state[Eng::eKey::RightShift]) {
                 if (ch == '-') {
                     ch = '_';
                 } else {
@@ -399,32 +399,32 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
             }
         }
     } break;
-    case Eng::RawInputEv::KeyUp: {
+    case Eng::eInputEvent::KeyUp: {
         input_processed = true;
-        if (evt.key_code == Eng::KeySpace) {
+        if (evt.key_code == Eng::eKey::Space) {
             play_started_time_s_ = 0.001f * Sys::GetTimeMs() - seq_edit_ui_->GetTime();
             is_playing_ = !is_playing_;
-        } else if (evt.key_code == Eng::KeyF5) {
+        } else if (evt.key_code == Eng::eKey::F5) {
             LoadSequence(SEQ_NAME);
-        } else if (evt.key_code == Eng::KeyF6) {
+        } else if (evt.key_code == Eng::eKey::F6) {
             SaveSequence(SEQ_NAME);
         } else {
             input_processed = false;
         }
     } break;
-    case Eng::RawInputEv::MouseWheel: {
+    case Eng::eInputEvent::MouseWheel: {
         if (dial_edit_mode_ == 0) {
-            if (evt.move.dx > 0.0f) {
+            if (evt.move[0] > 0.0f) {
                 seq_edit_ui_->ZoomInTime();
             } else {
                 seq_edit_ui_->ZoomOutTime();
             }
         }
     } break;
-    case Eng::RawInputEv::Resize: {
+    case Eng::eInputEvent::Resize: {
         cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
-        dialog_edit_ui_->Resize(ui_root_);
-        seq_edit_ui_->Resize(ui_root_);
+        // dialog_edit_ui_->Resize(ui_root_);
+        // seq_edit_ui_->Resize(ui_root_);
     } break;
     default:
         break;
@@ -435,7 +435,7 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt);
+        GSBaseState::HandleInput(evt, keys_state);
     }
 
     return true;

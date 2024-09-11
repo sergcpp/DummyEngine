@@ -38,7 +38,7 @@ runs:
         cd $WORK_DIR/../../builds/$REPO_NAME/tests/test_data/assets/shaders
         ln -s ../../../../renderer/shaders internal
         cd $WORK_DIR/../../builds/$REPO_NAME/tests/test_data/assets/textures
-        ln -s ../../../../renderer/textures internal
+        ln -s ../../../../textures internal
         cd $WORK_DIR/../../builds/$REPO_NAME/tests/test_data
         $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }} | tee $WORK_DIR/${{ inputs.out-dir }}/test_Eng_output.txt
         cd ../../..

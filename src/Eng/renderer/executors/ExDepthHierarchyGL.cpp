@@ -45,7 +45,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
 
         temp_stage_buffer.Unmap();
     }
-    Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(DepthHierarchy::Params), nullptr);
+    CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(DepthHierarchy::Params), nullptr);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, BIND_PUSH_CONSTANT_BUF, temp_unif_buffer.id());
 

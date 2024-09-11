@@ -37,6 +37,23 @@ Eng::FgNode *Eng::FgBuilder::FindNode(std::string_view name) {
     return nullptr;
 }
 
+std::string Eng::FgBuilder::GetResourceDebugInfo(const FgResource &res) const {
+    if (res.type == eFgResType::Texture) {
+        if (textures_[res.index].external) {
+            return "[Tex] " + textures_[res.index].name + " (ext)";
+        } else {
+            return "[Tex] " + textures_[res.index].name;
+        }
+    } else if (res.type == eFgResType::Buffer) {
+        if (buffers_[res.index].external) {
+            return "[Buf] " + buffers_[res.index].name + " (ext)";
+        } else {
+            return "[Buf] " + buffers_[res.index].name;
+        }
+    }
+    return "";
+}
+
 Eng::FgResRef Eng::FgBuilder::ReadBuffer(const FgResRef handle, const Ren::eResState desired_state,
                                          const Ren::eStageBits stages, FgNode &node) {
     assert(handle.type == eFgResType::Buffer);
@@ -72,6 +89,7 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
         new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
         new_buf.desc = FgBufDesc{ref->type(), ref->size()};
+        new_buf.external = true;
 
         ret.index = buffers_.emplace(new_buf);
         name_to_buffer_[new_buf.name] = ret.index;
@@ -130,6 +148,7 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
         new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
         new_buf.desc = FgBufDesc{ref->type(), ref->size()};
+        new_buf.external = true;
 
         ret.index = buffers_.emplace(new_buf);
         name_to_buffer_[new_buf.name] = ret.index;
@@ -462,6 +481,7 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const R
         new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
         new_buf.desc = FgBufDesc{ref->type(), ref->size()};
+        new_buf.external = true;
 
         ret.index = buffers_.emplace(new_buf);
         name_to_buffer_[new_buf.name] = ret.index;
@@ -776,14 +796,14 @@ void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
 
                 if (!hist_tex.ref || hist_tex.desc != hist_tex.ref->params) {
                     if (hist_tex.ref) {
-                        const uint32_t mem_before = Ren::EstimateMemory(hist_tex.ref->params);
-                        const uint32_t mem_after = Ren::EstimateMemory(hist_tex.desc);
+                        const uint32_t mem_before = EstimateMemory(hist_tex.ref->params);
+                        const uint32_t mem_after = EstimateMemory(hist_tex.desc);
                         ctx_.log()->Info("Reinit tex %s (%ix%i %f MB -> %ix%i %f MB)", hist_tex.name.c_str(),
                                          hist_tex.ref->params.w, hist_tex.ref->params.h, float(mem_before) * 0.000001f,
                                          hist_tex.desc.w, hist_tex.desc.h, float(mem_after) * 0.000001f);
                     } else {
                         ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", hist_tex.name.c_str(), hist_tex.desc.w,
-                                         hist_tex.desc.h, float(Ren::EstimateMemory(hist_tex.desc)) * 0.000001f);
+                                         hist_tex.desc.h, float(EstimateMemory(hist_tex.desc)) * 0.000001f);
                     }
                     Ren::eTexLoadStatus status;
                     hist_tex.strong_ref =
@@ -808,14 +828,14 @@ void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
                 ctx_.log()->Info("Tex %s will be alias of %s", tex.name.c_str(), orig_tex.name.c_str());
             } else if (!tex.ref || tex.desc != tex.ref->params) {
                 if (tex.ref) {
-                    const uint32_t mem_before = Ren::EstimateMemory(tex.ref->params);
-                    const uint32_t mem_after = Ren::EstimateMemory(tex.desc);
+                    const uint32_t mem_before = EstimateMemory(tex.ref->params);
+                    const uint32_t mem_after = EstimateMemory(tex.desc);
                     ctx_.log()->Info("Reinit tex %s (%ix%i %f MB -> %ix%i %f MB)", tex.name.c_str(), tex.ref->params.w,
                                      tex.ref->params.h, float(mem_before) * 0.000001f, tex.desc.w, tex.desc.h,
                                      float(mem_after) * 0.000001f);
                 } else {
                     ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                                     float(Ren::EstimateMemory(tex.desc)) * 0.000001f);
+                                     float(EstimateMemory(tex.desc)) * 0.000001f);
                 }
                 Ren::eTexLoadStatus status;
                 tex.strong_ref = ctx_.LoadTexture2D(tex.name, tex.desc, ctx_.default_mem_allocs(), &status);
@@ -837,7 +857,7 @@ void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
         for (const Ren::Tex2DRef &t : textures_to_clear) {
             transitions.emplace_back(t.get(), Ren::eResState::CopyDst);
         }
-        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+        TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
         for (Ren::Tex2DRef &t : textures_to_clear) {
             const float rgba[4] = {
@@ -861,6 +881,10 @@ void Eng::FgBuilder::Reset() {
     name_to_buffer_.clear();
     name_to_texture_.clear();
 
+    for (auto &t : node_timings_) {
+        t.clear();
+    }
+
     //
     // Reset resources
     //
@@ -870,7 +894,7 @@ void Eng::FgBuilder::Reset() {
         buf.read_in_nodes.clear();
         buf.written_in_nodes.clear();
         if (buf.ref) {
-            buf.used_in_stages = Ren::StageBitsForState(buf.ref->resource_state);
+            buf.used_in_stages = StageBitsForState(buf.ref->resource_state);
         }
     }
     for (FgAllocTex &tex : textures_) {
@@ -882,7 +906,7 @@ void Eng::FgBuilder::Reset() {
         tex.read_in_nodes.clear();
         tex.written_in_nodes.clear();
         if (tex.ref) {
-            tex.used_in_stages = Ren::StageBitsForState(tex.ref->resource_state);
+            tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
             // Needed to clear the texture initially
             tex.used_in_stages |= Ren::eStageBits::Transfer;
         }
@@ -1365,9 +1389,9 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
             continue;
         }
         if (tex.strong_ref) {
-            total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
+            total_texture_memory += EstimateMemory(tex.strong_ref->params);
             ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                             float(Ren::EstimateMemory(tex.ref->params)) * 0.000001f,
+                             float(EstimateMemory(tex.ref->params)) * 0.000001f,
                              float(total_texture_memory) * 0.000001f);
         } else if (tex.ref) {
             not_handled_textures.push_back(tex.ref);
@@ -1377,9 +1401,9 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
     ctx_.log()->Info("Graph owned texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
     ctx_.log()->Info("----------------------------------------------------------------------");
     for (const auto &ref : not_handled_textures) {
-        total_texture_memory += Ren::EstimateMemory(ref->params);
+        total_texture_memory += EstimateMemory(ref->params);
         ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
-                         float(Ren::EstimateMemory(ref->params)) * 0.000001f, float(total_texture_memory) * 0.000001f);
+                         float(EstimateMemory(ref->params)) * 0.000001f, float(total_texture_memory) * 0.000001f);
     }
     ctx_.log()->Info("----------------------------------------------------------------------");
     ctx_.log()->Info("Total graph texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
@@ -1402,18 +1426,18 @@ void Eng::FgBuilder::Execute() {
         buf._generation = 0;
         buf.used_in_stages = Ren::eStageBits::None;
         if (buf.ref) {
-            buf.used_in_stages = Ren::StageBitsForState(buf.ref->resource_state);
+            buf.used_in_stages = StageBitsForState(buf.ref->resource_state);
         }
     }
     for (FgAllocTex &tex : textures_) {
         tex._generation = 0;
         tex.used_in_stages = Ren::eStageBits::None;
         if (tex.ref) {
-            tex.used_in_stages = Ren::StageBitsForState(tex.ref->resource_state);
+            tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
             // Needed to clear the texture initially
             tex.used_in_stages |= Ren::eStageBits::Transfer;
         } else if (tex.arr) {
-            tex.used_in_stages = Ren::StageBitsForState(tex.arr->resource_state);
+            tex.used_in_stages = StageBitsForState(tex.arr->resource_state);
         }
     }
 
@@ -1473,7 +1497,7 @@ void Eng::FgBuilder::InsertResourceTransitions(FgNode &node) {
         HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
     }
 
-    Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, src_stages, dst_stages, res_transitions);
+    TransitionResourceStates(ctx_.api_ctx(), cmd_buf, src_stages, dst_stages, res_transitions);
 }
 
 void Eng::FgBuilder::CheckResourceStates(FgNode &node) {

@@ -7,14 +7,15 @@
 #include <Eng/ViewerStateManager.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
+#include <Eng/widgets/CmdlineUI.h>
 #include <Gui/EditBox.h>
 #include <Gui/Image.h>
 #include <Gui/Image9Patch.h>
 #include <Gui/Utils.h>
 #include <Sys/Time_.h>
 
-#include "../utils/Dictionary.h"
 #include "../Viewer.h"
+#include "../utils/Dictionary.h"
 #include "../widgets/FontStorage.h"
 
 namespace GSUITest2Internal {
@@ -189,7 +190,7 @@ void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         float cur_y = 0.75f - font_height;
 
         for (const std::string &result_line : results_lines_) {
-            dialog_font_->DrawText(r, result_line.c_str(), Gui::Vec2f{-0.49f, cur_y}, color_white, root);
+            dialog_font_->DrawText(r, result_line, Gui::Vec2f{-0.49f, cur_y}, color_white, root);
             cur_y -= font_height;
         }
     }
@@ -324,13 +325,13 @@ void GSUITest2::MutateWord(std::string_view in_word, const std::function<void(co
     ctx.mutation_chain[0](ctx, unicode_word, 0);
 }
 
-bool GSUITest2::HandleInput(const Eng::InputManager::Event &evt) {
+bool GSUITest2::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
     using namespace GSUITest2Internal;
 
     // pt switch for touch controls
-    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
-        if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
+    if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
+        if (evt.point[0] > float(ren_ctx_->w()) * 0.9f && evt.point[1] < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
@@ -349,78 +350,77 @@ bool GSUITest2::HandleInput(const Eng::InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case Eng::RawInputEv::P1Down: {
-        Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+    case Eng::eInputEvent::P1Down: {
+        Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                              Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, true);
-        edit_box_->Press(p, true);
+        //edit_box_->Press(p, true);
     } break;
-    case Eng::RawInputEv::P2Down: {
+    case Eng::eInputEvent::P2Down: {
 
     } break;
-    case Eng::RawInputEv::P1Up: {
+    case Eng::eInputEvent::P1Up: {
         // text_printer_->skip();
 
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point.x), int(evt.point.y)},
+        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, false);
-        edit_box_->Press(p, false);
+        //edit_box_->Press(p, false);
 
         is_visible_ = !is_visible_;
     } break;
-    case Eng::RawInputEv::P2Up:
-    case Eng::RawInputEv::P2Move: {
+    case Eng::eInputEvent::P2Up:
+    case Eng::eInputEvent::P2Move: {
 
     } break;
-    case Eng::RawInputEv::KeyDown: {
+    case Eng::eInputEvent::KeyDown: {
         input_processed = false;
 
-        if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
-        } else if (evt.key_code == Eng::KeyReturn) {
+        if (evt.key_code == Eng::eKey::LeftShift || evt.key_code == Eng::eKey::RightShift) {
+        } else if (evt.key_code == Eng::eKey::Return) {
             edit_box_->InsertLine({});
-        } else if (evt.key_code == Eng::KeyLeft) {
+        } else if (evt.key_code == Eng::eKey::Left) {
             edit_box_->MoveCursorH(-1);
-        } else if (evt.key_code == Eng::KeyRight) {
+        } else if (evt.key_code == Eng::eKey::Right) {
             edit_box_->MoveCursorH(1);
-        } else if (evt.key_code == Eng::KeyUp) {
+        } else if (evt.key_code == Eng::eKey::Up) {
             edit_box_->MoveCursorV(-1);
-        } else if (evt.key_code == Eng::KeyDown) {
+        } else if (evt.key_code == Eng::eKey::Down) {
             edit_box_->MoveCursorV(1);
-        } else if (evt.key_code == Eng::KeyDelete) {
+        } else if (evt.key_code == Eng::eKey::Delete) {
             edit_box_->DeleteBck();
-        } else if (evt.key_code == Eng::KeyDeleteForward) {
+        } else if (evt.key_code == Eng::eKey::DeleteForward) {
             edit_box_->DeleteFwd();
         } else {
             char ch = Eng::InputManager::CharFromKeycode(evt.key_code);
-            if (shift_down_) {
+            if (keys_state[Eng::eKey::LeftShift] || keys_state[Eng::eKey::RightShift]) {
                 if (ch == '-') {
                     ch = '_';
                 } else {
                     ch = char(std::toupper(ch));
                 }
             }
-
             edit_box_->AddChar(ch);
         }
 
         UpdateHint();
     } break;
-    case Eng::RawInputEv::KeyUp: {
-        if (evt.key_code == Eng::KeyUp || (evt.key_code == Eng::KeyW && !cmdline_enabled_)) {
+    case Eng::eInputEvent::KeyUp: {
+        if (evt.key_code == Eng::eKey::Up || (evt.key_code == Eng::eKey::W && !cmdline_ui_->enabled)) {
             // text_printer_->restart();
         } else {
             input_processed = false;
         }
     } break;
-    case Eng::RawInputEv::Resize:
-        edit_box_->Resize(ui_root_);
+    case Eng::eInputEvent::Resize:
+        // edit_box_->Resize(ui_root_);
         break;
     default:
         break;
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt);
+        GSBaseState::HandleInput(evt, keys_state);
     }
 
     return true;

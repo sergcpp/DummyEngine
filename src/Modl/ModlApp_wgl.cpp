@@ -22,7 +22,7 @@
 #elif defined(USE_SW_RENDER)
 #include <Ren/SW/SW.h>
 #endif
-#include <Eng/Input/Keycode.h>
+#include <Eng/Input/InputManager.h>
 #include <Ren/GL.h>
 #include <Ren/Mesh.h>
 #include <Ren/Utils.h>
@@ -183,11 +183,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             PostQuitMessage(0);
         } else {
             const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-            if (key_code == Eng::Key0) {
+            if (key_code == Eng::eKey::_0) {
                 g_app->view_mode_ = ModlApp::eViewMode(0);
-            } else if (key_code >= Eng::Key1 && key_code <= Eng::Key9) {
-                g_app->view_mode_ = ModlApp::eViewMode(key_code - Eng::Key1 + 1);
-            } else if (key_code == Eng::KeyR) {
+            } else if (key_code >= Eng::eKey::_1 && key_code <= Eng::eKey::_9) {
+                g_app->view_mode_ = ModlApp::eViewMode(key_code - Eng::eKey::_1 + 1);
+            } else if (key_code == Eng::eKey::R) {
                 g_app->angle_x_ = g_app->angle_y_ = 0.0f;
                 g_app->offset_x_ = g_app->offset_y_ = 0.0f;
             }
@@ -197,7 +197,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_KEYUP: {
         // const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
 
-        // g_app->AddEvent(RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+        // g_app->AddEvent(eInputEvent::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEWHEEL: {
@@ -216,7 +216,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
         // g_app->Resize(w, h);
-        // g_app->AddEvent(RawInputEv::Resize, 0, (float)w, (float)h, 0.0f, 0.0f);
+        // g_app->AddEvent(eInputEvent::Resize, 0, (float)w, (float)h, 0.0f, 0.0f);
     }
     default: {
         break;
@@ -379,8 +379,8 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         ifstream mesh_file(view_file_name, ios::binary);
         if (mesh_file) {
             Ren::eMeshLoadStatus load_status;
-            view_mesh_ = ctx_->LoadMesh(out_file_name.c_str(), &mesh_file,
-                                        std::bind(&ModlApp::OnMaterialNeeded, this, _1), &load_status);
+            view_mesh_ = ctx_->LoadMesh(out_file_name, &mesh_file, std::bind(&ModlApp::OnMaterialNeeded, this, _1),
+                                        &load_status);
             assert(load_status == Ren::eMeshLoadStatus::CreatedFromData);
 
             Ren::Vec3f bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
@@ -391,7 +391,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
             if (!anim_file_name.empty()) {
                 ifstream anim_file(anim_file_name, ios::binary);
                 if (anim_file) {
-                    Ren::AnimSeqRef anim_ref = ctx_->LoadAnimSequence(anim_file_name.c_str(), anim_file);
+                    Ren::AnimSeqRef anim_ref = ctx_->LoadAnimSequence(anim_file_name, anim_file);
 
                     Ren::Mesh *m = view_mesh_.get();
                     m->skel()->AddAnimSequence(anim_ref);
@@ -1936,9 +1936,9 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
         fs_file.Read((char *)fs_src.data(), fs_size);
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = ctx_->LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vertex, &sh_status);
+        Ren::ShaderRef vs_ref = ctx_->LoadShaderGLSL(vs_shader, vs_src, Ren::eShaderType::Vertex, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
-        Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Fragment, &sh_status);
+        Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src, Ren::eShaderType::Fragment, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
 
         prog = ctx_->LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, {}, &status);

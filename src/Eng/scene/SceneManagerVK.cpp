@@ -75,23 +75,24 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         Ren::DescrSizes descr_sizes;
         descr_sizes.img_sampler_count =
             Ren::MaxFramesInFlight * needed_descriptors_count * api_ctx->max_combined_image_samplers;
-        pers_data.textures_descr_pool->Init(descr_sizes,
-                                            Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
-
+        [[maybe_unused]] bool res = pers_data.textures_descr_pool->Init(
+            descr_sizes, Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
         if (ren_ctx_.capabilities.hwrt) {
             assert(needed_descriptors_count == 1); // we have to be able to bind all textures at once
             if (!pers_data.rt_textures_descr_pool) {
                 pers_data.rt_textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
             }
-            pers_data.rt_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
+            res &= pers_data.rt_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
         }
 
         if (ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) {
             if (!pers_data.rt_inline_textures_descr_pool) {
                 pers_data.rt_inline_textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
             }
-            pers_data.rt_inline_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
+            res &= pers_data.rt_inline_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
         }
+
+        assert(res);
 
         if (!pers_data.textures_descr_layout) {
             VkDescriptorSetLayoutBinding textures_binding = {};
@@ -256,8 +257,8 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     }
 
     if (!img_transitions.empty()) {
-        Ren::TransitionResourceStates(ren_ctx_.api_ctx(), ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
-                                      img_transitions);
+        TransitionResourceStates(ren_ctx_.api_ctx(), ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
+                                 img_transitions);
     }
 
     if (!img_infos.empty()) {

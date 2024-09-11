@@ -18,7 +18,6 @@ using JsObject = JsObjectT<std::allocator<char>>;
 using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 
 class PagedReader : public Gui::BaseElement {
-    const Gui::BaseElement *parent_;
     Ren::ILog *log_;
     std::shared_ptr<Gui::BitmapFont> main_font_, emph_font_, caption_font_;
     std::unique_ptr<Gui::Image9Patch> background_small_;
@@ -71,11 +70,10 @@ class PagedReader : public Gui::BaseElement {
     void Clear();
     bool LoadBook(const JsObject &js_book, const char *src_lang, const char *trg_lang);
 
-    using BaseElement::Resize;
-    void Resize(const BaseElement *parent) override;
+    void Resize() override;
 
     void Draw(Gui::Renderer *r) override;
     void DrawHint(Gui::Renderer *r, const Gui::Vec2f &pos, const Gui::BaseElement *parent);
 
-    void Press(const Gui::Vec2f &p, bool push) override;
+    //void Press(const Gui::Vec2f &p, bool push) override;
 };

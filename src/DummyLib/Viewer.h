@@ -17,10 +17,10 @@ class ILog;
 namespace Eng {
 struct assets_context_t;
 struct asset_output_t;
-class Cmdline;
+class CmdlineUI;
 class SceneManager;
 class PhysicsManager;
-class DebugInfoUI;
+class DebugFrameUI;
 } // namespace Eng
 
 namespace Ray {
@@ -64,7 +64,8 @@ struct AppParams {
 class Viewer : public Eng::ViewerBase {
     ILog *log_ = nullptr;
     std::unique_ptr<FontStorage> font_storage_;
-    std::unique_ptr<Eng::DebugInfoUI> debug_ui_;
+    std::unique_ptr<Eng::CmdlineUI> cmdline_ui_;
+    std::unique_ptr<Eng::DebugFrameUI> debug_ui_;
     std::unique_ptr<Dictionary> dictionary_;
 
   public:
@@ -74,7 +75,8 @@ class Viewer : public Eng::ViewerBase {
     ~Viewer();
 
     FontStorage *font_storage() { return font_storage_.get(); }
-    Eng::DebugInfoUI *debug_ui() { return debug_ui_.get(); }
+    Eng::CmdlineUI *cmdline_ui() { return cmdline_ui_.get(); }
+    Eng::DebugFrameUI *debug_ui() { return debug_ui_.get(); }
     Dictionary *dictionary() { return dictionary_.get(); }
     Ray::ILog *ray_log();
 

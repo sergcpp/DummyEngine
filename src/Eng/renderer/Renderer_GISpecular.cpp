@@ -177,8 +177,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.clear = (view_state_.stochastic_lights_count > 0) ? 0.0f : 1.0f;
 
-            Ren::DispatchCompute(pi_ssr_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(pi_ssr_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -212,8 +212,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::SBufRO, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Trg::SBufRW, SSRWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
 
-            Ren::DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -314,9 +314,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
 
-            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_[0][irradiance_tex != nullptr], *indir_args_buf.ref, 0,
-                                         bindings, &uniform_params, sizeof(uniform_params),
-                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchComputeIndirect(pi_ssr_trace_hq_[0][irradiance_tex != nullptr], *indir_args_buf.ref, 0, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -355,8 +355,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 SSRWriteIndirRTDispatch::Params params = {};
                 params.counter_index = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 1 : 4;
 
-                Ren::DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, &params, sizeof(params),
-                                     builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, &params, sizeof(params),
+                                builder.ctx().default_descr_alloc(), builder.ctx().log());
             });
         }
 
@@ -558,9 +558,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             SSRReproject::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchComputeIndirect(pi_ssr_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            DispatchComputeIndirect(pi_ssr_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -648,9 +648,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             SSRPrefilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchComputeIndirect(pi_ssr_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            DispatchComputeIndirect(pi_ssr_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -739,9 +739,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             SSRResolveTemporal::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchComputeIndirect(pi_ssr_temporal_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            DispatchComputeIndirect(pi_ssr_temporal_, *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -816,9 +816,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                Ren::DispatchComputeIndirect(pi_ssr_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                             &uniform_params, sizeof(uniform_params),
-                                             builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchComputeIndirect(pi_ssr_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
             });
         }
 
@@ -880,9 +880,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                Ren::DispatchComputeIndirect(pi_ssr_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                             &uniform_params, sizeof(uniform_params),
-                                             builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchComputeIndirect(pi_ssr_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
             });
         }
 
@@ -945,8 +945,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 uniform_params.img_size =
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-                Ren::DispatchCompute(pi_ssr_stabilization_, grp_count, bindings, &uniform_params,
-                                     sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchCompute(pi_ssr_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                builder.ctx().default_descr_alloc(), builder.ctx().log());
             });
 
             if (EnableStabilization) {

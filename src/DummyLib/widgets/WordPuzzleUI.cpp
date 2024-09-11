@@ -32,10 +32,10 @@ const float BottomMarginPx = 24.0f;
 WordPuzzleUI::WordPuzzleUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
                            const Gui::BitmapFont &font)
     : Gui::BaseElement(pos, size, parent), font_(font),
-      background_small_(ctx, WordPuzzleUIInternal::Frame01, Gui::Vec2f{3.0f, 3.0f}, 1.0f, Gui::Vec2f{0.0f, 0.0f},
-                        Gui::Vec2f{1.0f, 1.0f}, this),
-      background_large_(ctx, WordPuzzleUIInternal::Frame02, Gui::Vec2f{20.0f, 20.0f}, 1.0f, Gui::Vec2f{-1.0f, -1.0f},
-                        Gui::Vec2f{2.0f, 2.0f}, this) {
+      background_small_(ctx, WordPuzzleUIInternal::Frame01, Gui::Vec2f{3.0f}, 1.0f, Gui::Vec2f{0.0f}, Gui::Vec2f{1.0f},
+                        this),
+      background_large_(ctx, WordPuzzleUIInternal::Frame02, Gui::Vec2f{20.0f}, 1.0f, Gui::Vec2f{-1.0f},
+                        Gui::Vec2f{2.0f}, this) {
     log_ = ctx.log();
 }
 
@@ -170,11 +170,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
     return true;
 }
 
-void WordPuzzleUI::Resize(const BaseElement *parent) {
-    BaseElement::Resize(parent);
-
-    background_large_.Resize(this);
-}
+void WordPuzzleUI::Resize() { BaseElement::Resize(); }
 
 void WordPuzzleUI::Draw(Gui::Renderer *r) {
     using namespace WordPuzzleUIInternal;
@@ -192,7 +188,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
     }
 
     // draw backdrop
-    background_large_.Resize(Gui::Vec2f{-1.0f, -1.0f + anim_y_off}, Gui::Vec2f{2.0f, 2.0f}, this);
+    background_large_.Resize(Gui::Vec2f{-1.0f, -1.0f + anim_y_off}, Gui::Vec2f{2.0f});
     background_large_.Draw(r);
 
     const float side_margin = SideMarginPx / dims_px_[1][0];
@@ -206,7 +202,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
 
     // draw split rects from previous frame
     for (const rect_t &rect : split_rects_) {
-        background_small_.Resize(rect.dims[0], rect.dims[1], this);
+        background_small_.Resize(rect.dims[0], rect.dims[1]);
         background_small_.Draw(r);
     }
 
@@ -292,7 +288,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
 
         exp_back_size[0] += 0.2f * font_height;
 
-        background_small_.Resize(exp_back_pos, exp_back_size, this);
+        background_small_.Resize(exp_back_pos, exp_back_size);
         background_small_.Draw(r);
 
         for (int i = 0; i < opt.var_count; i++) {
@@ -317,14 +313,14 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
         const Gui::Vec2f hint_pos = hint_rect.dims[0] + Gui::Vec2f{0.0f, font_height};
 
         background_small_.Resize(Gui::Vec2f{hint_pos[0] - 0.1f * font_height, hint_pos[1] - 0.25f * font_height},
-                                 Gui::Vec2f{width + 0.2f * font_height, 1.25 * font_height}, this);
+                                 Gui::Vec2f{width + 0.2f * font_height, 1.25 * font_height});
         background_small_.Draw(r);
 
         font_.DrawText(r, hint_strings_[hint_data.str_index], hint_pos, Gui::ColorWhite, this);
     }
 }
 
-void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
+/*void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
     BaseElement::Hover(p);
 
     for (OptionData &opt : text_options_) {
@@ -373,8 +369,9 @@ void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
             opt.is_hover = true;
         }
     }
-}
+}*/
 
+#if 0
 void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
     BaseElement::Press(p, push);
 
@@ -450,6 +447,7 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
         }
     }
 }
+#endif
 
 void WordPuzzleUI::UpdateTextBuffer() {
     // replace options

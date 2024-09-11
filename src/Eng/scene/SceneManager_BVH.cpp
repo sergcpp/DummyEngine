@@ -563,15 +563,15 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
     if (!scene_data_.persistent_data.swrt.rt_meshes_buf) {
         scene_data_.persistent_data.swrt.rt_meshes_buf =
-            ren_ctx_.LoadBuffer("SWRT Meshes Buf", Ren::eBufType::Storage, 16 * sizeof(gpu_mesh_t), sizeof(gpu_mesh_t));
+            ren_ctx_.LoadBuffer("SWRT Meshes", Ren::eBufType::Storage, 16 * sizeof(gpu_mesh_t), sizeof(gpu_mesh_t));
     }
     if (!scene_data_.persistent_data.swrt.rt_prim_indices_buf) {
         scene_data_.persistent_data.swrt.rt_prim_indices_buf = ren_ctx_.LoadBuffer(
-            "SWRT Prim Indices Buf", Ren::eBufType::Texture, 1024 * sizeof(uint32_t), sizeof(uint32_t));
+            "SWRT Prim Indices", Ren::eBufType::Texture, 1024 * sizeof(uint32_t), sizeof(uint32_t));
     }
     if (!scene_data_.persistent_data.swrt.rt_blas_buf) {
         scene_data_.persistent_data.swrt.rt_blas_buf = ren_ctx_.LoadBuffer(
-            "SWRT BLAS Buf", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh_node_t), sizeof(gpu_bvh_node_t));
+            "SWRT BLAS", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh_node_t), sizeof(gpu_bvh_node_t));
     }
 
     const Ren::SubAllocation mesh_alloc =
@@ -653,21 +653,21 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     const auto total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
     const auto total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
 
-    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Upload Buf", api_ctx, Ren::eBufType::Upload, sizeof(gpu_mesh_t));
+    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Upload", api_ctx, Ren::eBufType::Upload, sizeof(gpu_mesh_t));
     {
         uint8_t *rt_meshes_stage = rt_meshes_stage_buf.Map();
         memcpy(rt_meshes_stage, &new_mesh, sizeof(gpu_mesh_t));
         rt_meshes_stage_buf.Unmap();
     }
 
-    Ren::Buffer rt_blas_stage_buf("SWRT BLAS Upload Buf", api_ctx, Ren::eBufType::Upload, total_nodes_size);
+    Ren::Buffer rt_blas_stage_buf("SWRT BLAS Upload", api_ctx, Ren::eBufType::Upload, total_nodes_size);
     {
         uint8_t *rt_blas_stage = rt_blas_stage_buf.Map();
         memcpy(rt_blas_stage, nodes.data(), total_nodes_size);
         rt_blas_stage_buf.Unmap();
     }
 
-    Ren::Buffer rt_prim_indices_stage_buf("SWRT Prim Indices Upload Buf", api_ctx, Ren::eBufType::Upload,
+    Ren::Buffer rt_prim_indices_stage_buf("SWRT Prim Indices Upload", api_ctx, Ren::eBufType::Upload,
                                           total_prim_indices_size);
     {
         uint8_t *rt_prim_indices_stage = rt_prim_indices_stage_buf.Map();
@@ -677,12 +677,12 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
     Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
-    Ren::CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_meshes_buf, mesh_alloc.offset,
-                            sizeof(gpu_mesh_t), cmd_buf);
-    Ren::CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_blas_buf, nodes_alloc.offset,
-                            total_nodes_size, cmd_buf);
-    Ren::CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_prim_indices_buf,
-                            prim_alloc.offset, total_prim_indices_size, cmd_buf);
+    CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_meshes_buf, mesh_alloc.offset,
+                       sizeof(gpu_mesh_t), cmd_buf);
+    CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_blas_buf, nodes_alloc.offset,
+                       total_nodes_size, cmd_buf);
+    CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_prim_indices_buf,
+                       prim_alloc.offset, total_prim_indices_size, cmd_buf);
 
     ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 
@@ -695,9 +695,9 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
 void Eng::SceneManager::Alloc_SWRT_TLAS() {
     scene_data_.persistent_data.rt_tlas_buf =
-        ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
+        ren_ctx_.LoadBuffer("TLAS", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
     scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(
-        "TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
+        "TLAS Shadow", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
 }
 
 uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
@@ -1382,12 +1382,12 @@ void Eng::SceneManager::RebuildLightTree() {
 
     { // Init GPU data
         scene_data_.persistent_data.stoch_lights_buf = ren_ctx_.LoadBuffer(
-            "Stochastic Lights Buf", Ren::eBufType::Texture, uint32_t(stochastic_lights.size() * sizeof(LightItem)));
+            "Stochastic Lights", Ren::eBufType::Texture, uint32_t(stochastic_lights.size() * sizeof(LightItem)));
         scene_data_.persistent_data.stoch_lights_nodes_buf =
-            ren_ctx_.LoadBuffer("Stochastic Light Nodes Buf", Ren::eBufType::Texture,
+            ren_ctx_.LoadBuffer("Stochastic Light Nodes", Ren::eBufType::Texture,
                                 uint32_t(light_wnodes.size() * sizeof(gpu_light_cwbvh_node_t)));
 
-        Ren::Buffer lights_buf_stage("Stochastic Lights Stage Buf", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
+        Ren::Buffer lights_buf_stage("Stochastic Lights Stage", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
                                      scene_data_.persistent_data.stoch_lights_buf->size());
         { // init stage buf
             uint8_t *mapped_ptr = lights_buf_stage.Map();
@@ -1395,7 +1395,7 @@ void Eng::SceneManager::RebuildLightTree() {
             lights_buf_stage.Unmap();
         }
 
-        Ren::Buffer nodes_buf_stage("Stochastic Light Nodes Stage Buf", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
+        Ren::Buffer nodes_buf_stage("Stochastic Light Nodes Stage", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
                                     scene_data_.persistent_data.stoch_lights_nodes_buf->size());
         { // init stage buf
             uint8_t *mapped_ptr = nodes_buf_stage.Map();
@@ -1404,10 +1404,10 @@ void Eng::SceneManager::RebuildLightTree() {
         }
 
         Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
-        Ren::CopyBufferToBuffer(lights_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_buf, 0,
-                                uint32_t(stochastic_lights.size() * sizeof(LightItem)), cmd_buf);
-        Ren::CopyBufferToBuffer(nodes_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_nodes_buf, 0,
-                                uint32_t(light_wnodes.size() * sizeof(gpu_light_cwbvh_node_t)), cmd_buf);
+        CopyBufferToBuffer(lights_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_buf, 0,
+                           uint32_t(stochastic_lights.size() * sizeof(LightItem)), cmd_buf);
+        CopyBufferToBuffer(nodes_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_nodes_buf, 0,
+                           uint32_t(light_wnodes.size() * sizeof(gpu_light_cwbvh_node_t)), cmd_buf);
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 
         lights_buf_stage.FreeImmediate();

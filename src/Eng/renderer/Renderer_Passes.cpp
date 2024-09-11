@@ -206,32 +206,32 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = SkinTransformsBufChunkSize;
-        common_buffers.skin_transforms_res = update_bufs.AddTransferOutput("Skin Transforms Buf", desc);
+        common_buffers.skin_transforms_res = update_bufs.AddTransferOutput("Skin Transforms", desc);
     }
     { // create shape keys buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ShapeKeysBufChunkSize;
-        common_buffers.shape_keys_res = update_bufs.AddTransferOutput("Shape Keys Buf", desc);
+        common_buffers.shape_keys_res = update_bufs.AddTransferOutput("Shape Keys", desc);
     }
     { // create instance indices buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
-        common_buffers.instance_indices_res = update_bufs.AddTransferOutput("Instance Indices Buf", desc);
+        common_buffers.instance_indices_res = update_bufs.AddTransferOutput("Instance Indices", desc);
     }
     FgResRef shared_data_res;
     { // create uniform buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Uniform;
         desc.size = SharedDataBlockSize;
-        shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput("Shared Data Buf", desc);
+        shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput("Shared Data", desc);
     }
     { // create atomic counter buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Storage;
         desc.size = sizeof(uint32_t);
-        common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter Buf", desc);
+        common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter", desc);
     }
 
     update_bufs.set_execute_cb([this, &common_buffers, &persistent_data, shared_data_res](FgBuilder &builder) {
@@ -918,7 +918,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             uniform_params.img_size = view_state_.scr_res;
             uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
 
-            Ren::DispatchCompute(pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -981,7 +981,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
                 {Ren::eBindTarget::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d},
                 {Ren::eBindTarget::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
 
-            Ren::DispatchCompute(pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+            DispatchCompute(pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -1003,8 +1003,8 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
             FgAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
             FgAllocBuf &unif_sh_data_buf = builder.GetWriteBuffer(data->shared_data);
 
-            Ren::CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(SharedDataBlock, sun_col),
-                                    3 * sizeof(float), builder.ctx().current_cmd_buf());
+            CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(SharedDataBlock, sun_col),
+                               3 * sizeof(float), builder.ctx().current_cmd_buf());
         });
     }
 }
@@ -1265,7 +1265,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
-        Ren::DispatchCompute(pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
+        DispatchCompute(pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
                              sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 }
@@ -1586,7 +1586,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             uniform_params.frustum_info = view_state_.frustum_info;
             uniform_params.view_from_world = view_state_.view_from_world;
 
-            Ren::DispatchCompute(pi_gtao_main_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(pi_gtao_main_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  ctx_.default_descr_alloc(), ctx_.log());
         });
     }
@@ -1629,7 +1629,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
                 Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
                            (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
-            Ren::DispatchCompute(pi_gtao_filter_, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(),
+            DispatchCompute(pi_gtao_filter_, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(),
                                  ctx_.log());
         });
     }
@@ -1681,7 +1681,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             GTAO::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            Ren::DispatchCompute(pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -2045,7 +2045,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             HistogramSample::Params uniform_params = {};
             uniform_params.scale = compressed ? HDR_FACTOR : (1.0f / pre_exposure_);
 
-            Ren::DispatchCompute(pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
+            DispatchCompute(pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
                                  sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
@@ -2086,7 +2086,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             uniform_params.min_exposure = min_exposure_;
             uniform_params.max_exposure = max_exposure_;
 
-            Ren::DispatchCompute(pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params,
+            DispatchCompute(pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params,
                                  sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
@@ -2131,7 +2131,7 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
         uniform_params.img_size[0] = view_state_.act_res[0];
         uniform_params.img_size[1] = view_state_.act_res[1];
 
-        Ren::DispatchCompute(pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+        DispatchCompute(pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                              ctx_.default_descr_alloc(), ctx_.log());
     });
 }

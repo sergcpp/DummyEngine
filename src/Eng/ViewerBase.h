@@ -27,7 +27,6 @@ class ThreadPool;
 }
 
 namespace Eng {
-class Cmdline;
 class FlowControl;
 class ViewerStateManager;
 class ILog;
@@ -51,7 +50,6 @@ class ViewerBase {
     std::unique_ptr<FlowControl> flow_control_;
     std::unique_ptr<Random> random_;
     std::unique_ptr<Renderer> renderer_;
-    std::unique_ptr<Cmdline> cmdline_;
     std::unique_ptr<PhysicsManager> physics_manager_;
     std::unique_ptr<SceneManager> scene_manager_;
     std::unique_ptr<ViewerStateManager> state_manager_;
@@ -74,7 +72,6 @@ class ViewerBase {
     FlowControl *flow_control() { return flow_control_.get(); }
     Random *random() { return random_.get(); }
     Renderer *renderer() { return renderer_.get(); }
-    Cmdline *cmdline() { return cmdline_.get(); }
     PhysicsManager *physics_manager() { return physics_manager_.get(); }
     SceneManager *scene_manager() { return scene_manager_.get(); }
     ViewerStateManager *state_manager() { return state_manager_.get(); }

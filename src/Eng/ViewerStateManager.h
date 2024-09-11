@@ -32,7 +32,7 @@ class ViewerStateManager {
 
     void Draw();
 
-    void HandleInput(Eng::InputManager::Event &);
+    void HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state);
 };
 
 } // namespace Eng

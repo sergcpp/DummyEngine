@@ -59,14 +59,10 @@ void Eng::ViewerStateManager::UpdateFixed(uint64_t dt_us) {
     states_.back()->UpdateFixed(dt_us);
 }
 
-void Eng::ViewerStateManager::UpdateAnim(uint64_t dt_us) {
-    states_.back()->UpdateAnim(dt_us);
-}
+void Eng::ViewerStateManager::UpdateAnim(uint64_t dt_us) { states_.back()->UpdateAnim(dt_us); }
 
-void Eng::ViewerStateManager::Draw() {
-    states_.back()->Draw();
-}
+void Eng::ViewerStateManager::Draw() { states_.back()->Draw(); }
 
-void Eng::ViewerStateManager::HandleInput(Eng::InputManager::Event &evt) {
-    states_.back()->HandleInput(evt);
+void Eng::ViewerStateManager::HandleInput(const input_event_t &evt, const std::vector<bool> &keys_state) {
+    states_.back()->HandleInput(evt, keys_state);
 }

@@ -122,7 +122,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_vegetation_[pi_index][0].prog()->descr_set_layouts()[0],
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[pi_index][0].prog()->descr_set_layouts()[0],
                                               bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->textures_descr_sets[0];
 

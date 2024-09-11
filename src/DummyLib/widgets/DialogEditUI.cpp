@@ -15,13 +15,13 @@ const uint8_t ColorOrange[4] = {251, 126, 20, 255};
 DialogEditUI::DialogEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos,
                            const Gui::Vec2f &size, Gui::BaseElement *parent)
     : Gui::BaseElement(pos, size, parent), font_(font),
-      back_(ctx, "assets_pc/textures/editor/dial_edit_back.uncompressed.tga", Gui::Vec2f{1.5f, 1.5f}, 1.0f,
-            Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, this),
-      element_(ctx, "assets_pc/textures/editor/square.uncompressed.tga", Gui::Vec2f{1.5f, 1.5f}, 1.0f,
-               Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, this),
-      element_highlighted_(ctx, "assets_pc/textures/editor/square_highlighted.uncompressed.tga", Gui::Vec2f{1.5f, 1.5f},
-                           1.0f, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, this),
-      line_img_(ctx, "assets_pc/textures/editor/line.uncompressed.tga", Gui::Vec2f{}, Gui::Vec2f{}, this) {}
+      back_(ctx, "assets_pc/textures/internal/back.dds", Gui::Vec2f{1.5f}, 1.0f, Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f},
+            this),
+      element_(ctx, "assets_pc/textures/internal/square.dds", Gui::Vec2f{1.5f}, 1.0f, Gui::Vec2f{-1.0f},
+               Gui::Vec2f{2.0f}, this),
+      element_highlighted_(ctx, "assets_pc/textures/internal/square_highlighted.dds", Gui::Vec2f{1.5f}, 1.0f,
+                           Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f}, this),
+      line_img_(ctx, "assets_pc/textures/internal/line.dds", Gui::Vec2f{}, Gui::Vec2f{}, this) {}
 
 void DialogEditUI::Draw(Gui::Renderer *r) {
     using namespace DialogEditUIInternal;
@@ -78,7 +78,7 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                 Gui::Image9Patch *el = elem_index == selected_element_ ? &element_highlighted_ : &element_;
                 const uint8_t *col = (elem_index == selected_element_) ? Gui::ColorCyan : Gui::ColorWhite;
 
-                el->Resize(elem_pos, elem_size, this);
+                el->Resize(elem_pos, elem_size);
                 el->Draw(r);
 
                 { // draw info
@@ -108,16 +108,7 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
     }
 }
 
-void DialogEditUI::Resize(const Gui::BaseElement *parent) {
-    BaseElement::Resize(parent);
-
-    back_.Resize(this);
-}
-
-Gui::Vec2f DialogEditUI::SnapToPixels(const Gui::Vec2f &p) const {
-    return Gui::Vec2f{std::round(0.5f * p[0] * dims_px_[1][0]) / (0.5f * float(dims_px_[1][0])),
-                      std::round(0.5f * p[1] * dims_px_[1][1]) / (0.5f * float(dims_px_[1][1]))};
-}
+void DialogEditUI::Resize() { BaseElement::Resize(); }
 
 void DialogEditUI::DrawLineLocal(Gui::Renderer *r, const Gui::Vec2f &_p0, const Gui::Vec2f &_p1,
                                  const Gui::Vec2f &width) const {
@@ -210,7 +201,7 @@ void DialogEditUI::IterateElements(const IterationCallback &callback) {
     }
 }
 
-void DialogEditUI::Press(const Gui::Vec2f &p, const bool push) {
+/*void DialogEditUI::Press(const Gui::Vec2f &p, const bool push) {
     using namespace DialogEditUIInternal;
 
     if (push && Check(p)) {
@@ -227,7 +218,7 @@ void DialogEditUI::Press(const Gui::Vec2f &p, const bool push) {
             const Gui::Vec2f elem_pos =
                 SnapToPixels(view_offset_ + Gui::Vec2f{spacing[0] * float(depth), -spacing[1] * float(ndx)});
 
-            element_.Resize(elem_pos, elem_size, this);
+            element_.Resize(elem_pos, elem_size);
 
             if (element_.Check(p)) {
                 selected_element_ = int(seq - dialog_->GetSequence(0));
@@ -241,14 +232,14 @@ void DialogEditUI::Press(const Gui::Vec2f &p, const bool push) {
             return true;
         });
     }
-}
+}*/
 
-void DialogEditUI::Hover(const Gui::Vec2f &p) {
+/*void DialogEditUI::Hover(const Gui::Vec2f &p) {
     if (grabbed_rmb_) {
         view_offset_ += 2.0f * (p - rmb_point_) / size();
         rmb_point_ = p;
     }
-}
+}*/
 
 void DialogEditUI::PressRMB(const Gui::Vec2f &p, const bool push) {
     if (push && Check(p)) {

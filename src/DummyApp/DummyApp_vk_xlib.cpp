@@ -122,28 +122,6 @@ void DummyApp::Destroy() {
 #endif
 }
 
-void DummyApp::Frame() { viewer_->Frame(); }
-
-void DummyApp::Resize(int w, int h) { viewer_->Resize(w, h); }
-
-void DummyApp::AddEvent(Eng::eInputEvent type, const uint32_t key_code, const float x,
-                        const float y, const float dx, const float dy) {
-    if (!input_manager_) {
-        return;
-    }
-
-    Eng::InputManager::Event evt;
-    evt.type = type;
-    evt.key_code = key_code;
-    evt.point.x = x;
-    evt.point.y = y;
-    evt.move.dx = dx;
-    evt.move.dy = dy;
-    evt.time_stamp = Sys::GetTimeUs();
-
-    input_manager_->AddRawInputEvent(evt);
-}
-
 #if !defined(__ANDROID__)
 int DummyApp::Run(int argc, char *argv[]) {
     int w = 1024, h = 576;
@@ -252,13 +230,13 @@ void DummyApp::PollEvents() {
                               KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
                               PointerMotionMask),
                              &xev)) {
-        Eng::InputManager::Event evt;
+        Eng::input_event_t evt;
 
         if (xev.type == KeyPress) {
             const uint32_t scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
                            key_code = ScancodeToHID(scan_code);
 
-            if (key_code == Eng::KeyEscape) {
+            if (key_code == Eng::eKey::Escape) {
                 quit_ = true;
             } else {
                 evt.type = Eng::eInputEvent::KeyDown;
@@ -278,10 +256,10 @@ void DummyApp::PollEvents() {
                 evt.type = Eng::eInputEvent::P2Down;
             } else if (xev.xbutton.button == Button4 || xev.xbutton.button == Button5) {
                 evt.type = Eng::eInputEvent::MouseWheel;
-                evt.move.dx = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
+                evt.move[0] = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
             }
-            evt.point.x = float(xev.xbutton.x);
-            evt.point.y = float(xev.xbutton.y);
+            evt.point[0] = float(xev.xbutton.x);
+            evt.point[1] = float(xev.xbutton.y);
         } else if (xev.type == ButtonRelease &&
                    (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
             if (xev.xbutton.button == Button1) {
@@ -289,17 +267,17 @@ void DummyApp::PollEvents() {
             } else if (xev.xbutton.button == Button3) {
                 evt.type = Eng::eInputEvent::P2Up;
             }
-            evt.point.x = float(xev.xbutton.x);
-            evt.point.y = float(xev.xbutton.y);
+            evt.point[0] = float(xev.xbutton.x);
+            evt.point[1] = float(xev.xbutton.y);
         } else if (xev.type == MotionNotify) {
             evt.type = Eng::eInputEvent::P1Move;
-            evt.point.x = float(xev.xmotion.x);
-            evt.point.y = float(xev.xmotion.y);
-            evt.move.dx = evt.point.x - last_p1_pos[0];
-            evt.move.dy = evt.point.y - last_p1_pos[1];
+            evt.point[0] = float(xev.xmotion.x);
+            evt.point[1] = float(xev.xmotion.y);
+            evt.move[0] = evt.point[0] - last_p1_pos[0];
+            evt.move[1] = evt.point[1] - last_p1_pos[1];
 
-            last_p1_pos[0] = evt.point.x;
-            last_p1_pos[1] = evt.point.y;
+            last_p1_pos[0] = evt.point[0];
+            last_p1_pos[1] = evt.point[1];
         } else if (xev.type == ConfigureNotify) {
             if (xev.xconfigure.width != last_window_size[0] ||
                 xev.xconfigure.height != last_window_size[1]) {
@@ -307,8 +285,8 @@ void DummyApp::PollEvents() {
                 Resize(xev.xconfigure.width, xev.xconfigure.height);
 
                 evt.type = Eng::eInputEvent::Resize;
-                evt.point.x = (float)xev.xconfigure.width;
-                evt.point.y = (float)xev.xconfigure.height;
+                evt.point[0] = float(xev.xconfigure.width);
+                evt.point[1] = float(xev.xconfigure.height);
 
                 last_window_size[0] = xev.xconfigure.width;
                 last_window_size[1] = xev.xconfigure.height;

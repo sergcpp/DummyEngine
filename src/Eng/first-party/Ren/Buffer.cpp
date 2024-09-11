@@ -14,7 +14,7 @@ bool Ren::UpdateBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t da
         return false;
     }
 
-    Ren::CopyBufferToBuffer(stage, map_offset, dst, dst_offset, data_size, cmd_buf);
+    CopyBufferToBuffer(stage, map_offset, dst, dst_offset, data_size, cmd_buf);
 
     return true;
 }

@@ -17,7 +17,6 @@
 
 #include "GSBaseState.h"
 
-class Cmdline;
 class DebugInfoUI;
 class ViewerStateManager;
 class FontStorage;
@@ -114,5 +113,5 @@ class GSVideoTest final : public GSBaseState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const Eng::InputManager::Event &evt) override;
+    bool HandleInput(const Eng::input_event_t &evt) override;
 };

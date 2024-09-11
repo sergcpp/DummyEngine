@@ -186,8 +186,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 {Trg::SBufRW, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Trg::SBufRW, SSRWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
 
-            Ren::DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -296,9 +296,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
 
-            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_[1][irradiance_tex != nullptr], *indir_args_buf.ref, 0,
-                                         bindings, &uniform_params, sizeof(uniform_params),
-                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchComputeIndirect(pi_ssr_trace_hq_[1][irradiance_tex != nullptr], *indir_args_buf.ref, 0, bindings,
+                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                    builder.ctx().log());
         });
     }
 
@@ -337,8 +337,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 SSRWriteIndirRTDispatch::Params params = {};
                 params.counter_index = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 1 : 4;
 
-                Ren::DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, &params, sizeof(params),
-                                     builder.ctx().default_descr_alloc(), builder.ctx().log());
+                DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, &params, sizeof(params),
+                                builder.ctx().default_descr_alloc(), builder.ctx().log());
             });
         }
 
@@ -443,10 +443,10 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
                 const int w = in_back_color_tex.ref->params.w, h = in_back_color_tex.ref->params.h;
 
-                Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0,
-                                      *out_back_color_tex.ref, 0, 0, 0, 0, w, h);
-                Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0,
-                                      *out_back_depth_tex.ref, 0, 0, 0, 0, w, h);
+                CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0,
+                                 *out_back_color_tex.ref, 0, 0, 0, 0, w, h);
+                CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0,
+                                 *out_back_depth_tex.ref, 0, 0, 0, 0, w, h);
             });
         }
         { // blend

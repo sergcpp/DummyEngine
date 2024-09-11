@@ -73,12 +73,12 @@ class WordPuzzleUI : public Gui::BaseElement {
 
     bool Load(const JsObject &js_puzzle);
 
-    void Resize(const BaseElement *parent) override;
+    void Resize() override;
 
     void Draw(Gui::Renderer *r) override;
 
-    void Hover(const Gui::Vec2f &p) override;
-    void Press(const Gui::Vec2f &p, bool push) override;
+    //void Hover(const Gui::Vec2f &p) override;
+    //void Press(const Gui::Vec2f &p, bool push) override;
 
     Gui::SignalN<void()> puzzle_solved_signal;
 };

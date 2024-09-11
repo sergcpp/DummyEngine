@@ -36,5 +36,5 @@ add_custom_command(TARGET test_Eng
                                                               ${CMAKE_CURRENT_SOURCE_DIR}/test_data/assets/shaders/internal)
 add_custom_command(TARGET test_Eng
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../renderer/textures
+                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../textures
                                                               ${CMAKE_CURRENT_SOURCE_DIR}/test_data/assets/textures/internal)

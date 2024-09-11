@@ -50,7 +50,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
             {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref},
             {Ren::eBindTarget::STBufRW, DepthPeel::OUT_IMG_BUF_SLOT, *out_depth_buf.tbos[0]}};
-        descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_vegetation_[0].prog()->descr_set_layouts()[0], bindings,
+        descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0].prog()->descr_set_layouts()[0], bindings,
                                                   ctx.default_descr_alloc(), ctx.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }

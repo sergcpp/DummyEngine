@@ -20,8 +20,8 @@ void Eng::ExUpdateAccBuffers::Execute_HWRT(FgBuilder &builder) {
         memcpy(stage_mem, rt_geo_instances.data, rt_geo_instances_mem_size);
         rt_geo_instances_stage_buf->Unmap();
 
-        Ren::CopyBufferToBuffer(*rt_geo_instances_stage_buf, ctx.backend_frame() * RTGeoInstancesBufChunkSize,
-                                *rt_geo_instances_buf.ref, 0, rt_geo_instances_mem_size, ctx.current_cmd_buf());
+        CopyBufferToBuffer(*rt_geo_instances_stage_buf, ctx.backend_frame() * RTGeoInstancesBufChunkSize,
+                           *rt_geo_instances_buf.ref, 0, rt_geo_instances_mem_size, ctx.current_cmd_buf());
     }
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
@@ -51,7 +51,7 @@ void Eng::ExUpdateAccBuffers::Execute_HWRT(FgBuilder &builder) {
             builder.log()->Error("ExUpdateAccBuffers: Failed to map rt obj instance buffer!");
         }
 
-        Ren::CopyBufferToBuffer(*rt_obj_instances_stage_buf, ctx.backend_frame() * HWRTObjInstancesBufChunkSize,
-                                *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.current_cmd_buf());
+        CopyBufferToBuffer(*rt_obj_instances_stage_buf, ctx.backend_frame() * HWRTObjInstancesBufChunkSize,
+                           *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.current_cmd_buf());
     }
 }

@@ -217,12 +217,12 @@ void GSVideoTest::UpdateFixed(const uint64_t dt_us) {
     }
 }
 
-bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
+bool GSVideoTest::HandleInput(const Eng::input_event_t &evt) {
     using namespace Ren;
     using namespace GSVideoTestInternal;
 
     // pt switch for touch controls
-    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
+    if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -241,21 +241,21 @@ bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case Eng::RawInputEv::P1Down:
+    case Eng::eInputEvent::P1Down:
         if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
-    case Eng::RawInputEv::P2Down:
+    case Eng::eInputEvent::P2Down:
         if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
         }
         break;
-    case Eng::RawInputEv::P1Up:
+    case Eng::eInputEvent::P1Up:
         if (move_pointer_ == 1) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -264,7 +264,7 @@ bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case Eng::RawInputEv::P2Up:
+    case Eng::eInputEvent::P2Up:
         if (move_pointer_ == 2) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -273,7 +273,7 @@ bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case Eng::RawInputEv::P1Move:
+    case Eng::eInputEvent::P1Move:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
@@ -295,7 +295,7 @@ bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
             invalidate_view_ = true;
         }
         break;
-    case Eng::RawInputEv::P2Move:
+    case Eng::eInputEvent::P2Move:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
@@ -317,7 +317,7 @@ bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
             invalidate_view_ = true;
         }
         break;
-    case Eng::RawInputEv::KeyDown: {
+    case Eng::eInputEvent::KeyDown: {
         if (evt.key_code == Eng::KeyUp || (evt.key_code == Eng::KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
         } else if (evt.key_code == Eng::KeyDown ||
@@ -337,7 +337,7 @@ bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
             input_processed = false;
         }
     } break;
-    case Eng::RawInputEv::KeyUp: {
+    case Eng::eInputEvent::KeyUp: {
         if (!cmdline_enabled_ || view_pointer_) {
             if (evt.key_code == Eng::KeyUp || evt.key_code == Eng::KeyW || evt.key_code == Eng::KeyDown ||
                 evt.key_code == Eng::KeyS) {

@@ -34,11 +34,11 @@ class SeqCanvasUI : public Gui::BaseElement {
 
     void Draw(Gui::Renderer *r) override;
 
-    void Resize(const Gui::BaseElement *parent) override;
+    void Resize() override;
     using BaseElement::Resize;
 
-    void Press(const Gui::Vec2f &p, bool push) override;
-    void Hover(const Gui::Vec2f &p) override;
+    //void Press(const Gui::Vec2f &p, bool push) override;
+    //void Hover(const Gui::Vec2f &p) override;
 
     void OnCurTimeChange(float time_cur, float time_range_beg, float time_range_end);
 };

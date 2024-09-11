@@ -26,8 +26,8 @@ void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
     uniform_params.img_size[1] = view_state_->act_res[1];
     uniform_params.layer_index = args_->layer_index;
 
-    Ren::DispatchCompute(pi_debug_oit_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                         builder.ctx().default_descr_alloc(), builder.ctx().log());
+    DispatchCompute(pi_debug_oit_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                    builder.ctx().default_descr_alloc(), builder.ctx().log());
 }
 
 void Eng::ExDebugOIT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {

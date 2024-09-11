@@ -50,6 +50,9 @@ class FgNode {
         p_executor_ = executor_.get();
     }
 
+    Ren::Span<const FgResource> input() const { return input_; }
+    Ren::Span<const FgResource> output() const { return output_; }
+
     // Non-owning version
     void set_executor(FgExecutor *exec) { p_executor_ = exec; }
 

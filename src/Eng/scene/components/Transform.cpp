@@ -49,7 +49,7 @@ void Eng::Transform::Read(const JsObjectP &js_in, Transform &tr) {
                                           Ren::Vec3f{0.0f, 0.0f, 1.0f}};
 
         for (const int i : {2, 0, 1}) {
-            tr.world_from_object = Ren::Rotate(tr.world_from_object, tr.euler_angles_rad[i], axes[i]);
+            tr.world_from_object = Rotate(tr.world_from_object, tr.euler_angles_rad[i], axes[i]);
         }
     }
 

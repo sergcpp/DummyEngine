@@ -62,7 +62,7 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_debug_hwrt_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_hwrt_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
@@ -194,7 +194,7 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_debug_swrt_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_swrt_.prog()->descr_set_layouts()[0], bindings,
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 

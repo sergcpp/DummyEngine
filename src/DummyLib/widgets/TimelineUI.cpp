@@ -11,14 +11,14 @@ const float TimeStepSmall = 0.1f;
 
 TimelineUI::TimelineUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos, const Gui::Vec2f &size,
                        const Gui::BaseElement *parent)
-    : Gui::BaseElement{pos, size, parent},
-      font_(font), back_{ctx,
-                         "assets_pc/textures/editor/timeline_back.uncompressed.tga",
+    : Gui::BaseElement{pos, size, parent}, font_(font),
+      back_{ctx,
+            "assets_pc/textures/editor/timeline_back.uncompressed.tga",
             Gui::Vec2f{1.0f, 1.5f},
-                         1.0f,
+            1.0f,
             Gui::Vec2f{-1.0f, -1.0f},
             Gui::Vec2f{2.0f, 2.0f},
-                         this},
+            this},
       ruler_small_{ctx, "assets_pc/textures/editor/ruler_small.uncompressed.tga", Gui::Vec2f{}, Gui::Vec2f{}, parent},
       ruler_medium_{ctx, "assets_pc/textures/editor/ruler_medium.uncompressed.tga", Gui::Vec2f{}, Gui::Vec2f{}, parent},
       ruler_big_{ctx, "assets_pc/textures/editor/ruler_big.uncompressed.tga", Gui::Vec2f{}, Gui::Vec2f{}, parent},
@@ -107,17 +107,17 @@ void TimelineUI::Draw(Gui::Renderer *r) {
                            Gui::ColorWhite, this);
 
             ruler_big_.ResizeToContent(
-                SnapToPixels(Gui::Vec2f{px - 8.0f / dims_px_[1][0], -1.0f + 2.0f / dims_px_[1][1]}), this);
+                SnapToPixels(Gui::Vec2f{px - 8.0f / dims_px_[1][0], -1.0f + 2.0f / dims_px_[1][1]}));
             ruler_big_.Draw(r);
         } else if (std::abs(2.0f * t - std::round(2.0f * t)) < RoundingThres) {
             // medium tick
             ruler_medium_.ResizeToContent(
-                SnapToPixels(Gui::Vec2f{px - 8.0f / dims_px_[1][0], -1.0f + 2.0f / dims_px_[1][1]}), this);
+                SnapToPixels(Gui::Vec2f{px - 8.0f / dims_px_[1][0], -1.0f + 2.0f / dims_px_[1][1]}));
             ruler_medium_.Draw(r);
         } else if (std::abs(10.0f * t - std::round(10.0f * t)) < RoundingThres) {
             // small tick
             ruler_small_.ResizeToContent(
-                SnapToPixels(Gui::Vec2f{px - 8.0f / dims_px_[1][0], -1.0f + 2.0f / dims_px_[1][1]}), this);
+                SnapToPixels(Gui::Vec2f{px - 8.0f / dims_px_[1][0], -1.0f + 2.0f / dims_px_[1][1]}));
             ruler_small_.Draw(r);
         }
     }
@@ -129,21 +129,19 @@ void TimelineUI::Draw(Gui::Renderer *r) {
                            10.0f / dims_px_[1][0],
                        -1.0f});
 
-        time_pos_.ResizeToContent(time_pos, this);
+        time_pos_.ResizeToContent(time_pos);
         time_pos_.Draw(r);
     }
 }
 
-void TimelineUI::Resize(const Gui::BaseElement *parent) {
-    BaseElement::Resize(parent);
-
-    back_.Resize(this);
+void TimelineUI::Resize() {
+    BaseElement::Resize();
 
     // force time range update
     set_time_cur(time_cur_);
 }
 
-void TimelineUI::Press(const Gui::Vec2f &p, const bool push) {
+/*void TimelineUI::Press(const Gui::Vec2f &p, const bool push) {
     if (push && Check(p)) {
         SetCurTimeFromPoint(p[0]);
         grabbed_ = true;
@@ -154,8 +152,9 @@ void TimelineUI::Press(const Gui::Vec2f &p, const bool push) {
     if (!push) {
         grabbed_ = false;
     }
-}
+}*/
 
+#if 0
 void TimelineUI::Hover(const Gui::Vec2f &p) {
     if (grabbed_ /*&& Check(p)*/) {
         SetCurTimeFromPoint(p[0]);
@@ -171,6 +170,7 @@ void TimelineUI::Hover(const Gui::Vec2f &p) {
         time_changed_signal.FireN(time_cur_, time_range_new[0], time_range_new[1]);
     }
 }
+#endif
 
 void TimelineUI::PressRMB(const Gui::Vec2f &p, const bool push) {
     if (push && Check(p)) {
@@ -215,9 +215,4 @@ void TimelineUI::SetCurTimeFromPoint(const float px) {
     time_cur_ = std::min(std::max(time_cur_, time_range_cur[0]), time_range_cur[1]);
 
     time_changed_signal.FireN(time_cur_, time_range_cur[0], time_range_cur[1]);
-}
-
-Gui::Vec2f TimelineUI::SnapToPixels(const Gui::Vec2f &p) {
-    return Gui::Vec2f{std::round(0.5f * p[0] * dims_px_[1][0]) / (0.5f * float(dims_px_[1][0])),
-                      std::round(0.5f * p[1] * dims_px_[1][1]) / (0.5f * float(dims_px_[1][1]))};
 }

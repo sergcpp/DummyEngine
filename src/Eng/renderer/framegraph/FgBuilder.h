@@ -43,6 +43,7 @@ struct FgAllocBuf {
     Ren::SmallVector<fg_write_node_t, 32> read_in_nodes;
 
     std::string name;
+    bool external = false;
     FgBufDesc desc;
     Ren::WeakBufferRef ref;
     Ren::BufferRef strong_ref;
@@ -133,6 +134,9 @@ class FgBuilder {
 
     FgNode &AddNode(std::string_view name);
     FgNode *FindNode(std::string_view name);
+    FgNode *GetReorderedNode(const int i) { return reordered_nodes_[i]; }
+
+    std::string GetResourceDebugInfo(const FgResource &res) const;
 
     template <typename T, class... Args> T *AllocNodeData(Args &&...args) {
         char *mem = alloc_.allocate(sizeof(T) + alignof(T));
@@ -190,7 +194,7 @@ class FgBuilder {
     Ren::SmallVector<Ren::SamplerRef, 64> temp_samplers;
 
     struct node_timing_t {
-        std::string name;
+        std::string_view name;
         int query_beg, query_end;
     };
 

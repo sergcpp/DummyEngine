@@ -81,8 +81,7 @@ set(SOURCE_FILES Config.h
                  ViewerStateManager.cpp)
 
 set(INPUT_SOURCE_FILES input/InputManager.h
-                       input/InputManager.cpp
-                       input/Keycode.h)
+                       input/InputManager.cpp)
 
 set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/CDFUtils.cpp
@@ -259,9 +258,7 @@ set(SCENE_COMP_SOURCES  scene/components/Common.h
                         scene/components/VegState.h
                         scene/components/VegState.cpp)
 
-set(UTILS_SOURCES utils/Cmdline.h
-                  utils/Cmdline.cpp
-                  utils/FlowControl.h
+set(UTILS_SOURCES utils/FlowControl.h
                   utils/FlowControl.cpp
                   utils/FreeCamController.h
                   utils/FreeCamController.cpp
@@ -281,8 +278,10 @@ set(UTILS_SOURCES utils/Cmdline.h
                   #utils/VideoPlayer.cpp
     )
 
-set(WIDGETS_SOURCES widgets/DebugInfoUI.h
-                    widgets/DebugInfoUI.cpp)
+set(WIDGETS_SOURCES widgets/CmdlineUI.h
+                    widgets/CmdlineUI.cpp
+                    widgets/DebugFrameUI.h
+                    widgets/DebugFrameUI.cpp)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})

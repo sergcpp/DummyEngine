@@ -82,7 +82,7 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] =
-        Ren::PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
+        PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
                                   bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
@@ -239,7 +239,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] =
-        Ren::PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
+        PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
                                   bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 

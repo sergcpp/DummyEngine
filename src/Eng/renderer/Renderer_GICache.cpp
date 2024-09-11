@@ -127,16 +127,16 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             // total irradiance
             uniform_params.input_offset = 0;
             uniform_params.output_offset = 0;
-            Ren::DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)],
-                                 Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES}, bindings,
-                                 &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)],
+                            Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES}, bindings, &uniform_params,
+                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
 
             // diffuse-only irradiance
             uniform_params.input_offset = PROBE_VOLUME_RES;
             uniform_params.output_offset = PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES;
-            Ren::DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)],
-                                 Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES}, bindings,
-                                 &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)],
+                            Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES}, bindings, &uniform_params,
+                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
 
@@ -183,9 +183,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
-            Ren::DispatchCompute(pi_probe_blend_[2], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
-                                 bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(),
-                                 ctx_.log());
+            DispatchCompute(pi_probe_blend_[2], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
+                            bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
 
@@ -228,8 +227,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
-            Ren::DispatchCompute(pi_probe_relocate_[persistent_data.reset_probe_relocation], grp_count, bindings,
-                                 &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(pi_probe_relocate_[persistent_data.reset_probe_relocation], grp_count, bindings,
+                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
             if (volume_to_update == PROBE_VOLUMES_COUNT - 1) {
                 persistent_data.reset_probe_relocation = false;
             }
@@ -275,8 +274,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
-            Ren::DispatchCompute(pi_probe_classify_[persistent_data.reset_probe_classification], grp_count, bindings,
-                                 &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(pi_probe_classify_[persistent_data.reset_probe_classification], grp_count, bindings,
+                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
             if (volume_to_update == PROBE_VOLUMES_COUNT - 1) {
                 persistent_data.reset_probe_classification = false;
             }

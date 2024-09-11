@@ -21,7 +21,7 @@ const char Frame01[] =
 PagedReader::PagedReader(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
                          std::shared_ptr<Gui::BitmapFont> main_font, std::shared_ptr<Gui::BitmapFont> emph_font,
                          std::shared_ptr<Gui::BitmapFont> caption_font)
-    : BaseElement(pos, size, parent), parent_(parent), log_(ctx.log()), main_font_(std::move(main_font)),
+    : BaseElement(pos, size, parent), log_(ctx.log()), main_font_(std::move(main_font)),
       emph_font_(std::move(emph_font)), caption_font_(std::move(caption_font)), cur_chapter_(0), cur_page_(0) {
     using namespace PagedReaderInternal;
     background_small_ = std::make_unique<Gui::Image9Patch>(ctx, Frame01, Gui::Vec2f{3.0f, 3.0f}, 1.0f,
@@ -111,9 +111,8 @@ bool PagedReader::LoadBook(const JsObject &js_book, const char *src_lang, const 
     return true;
 }
 
-void PagedReader::Resize(const BaseElement *parent) {
-    BaseElement::Resize(parent);
-    parent_ = parent;
+void PagedReader::Resize() {
+    BaseElement::Resize();
 
     UpdatePages();
 }
@@ -169,7 +168,7 @@ void PagedReader::DrawHint(Gui::Renderer *r, const Gui::Vec2f &pos, const Gui::B
 
         const float width = main_font_->GetWidth(portion_buf, parent), height = main_font_->height(parent);
 
-        background_small_->Resize(pos - Gui::Vec2f{0.025f, 0.025f}, Gui::Vec2f{width + 0.05f, height + 0.05f}, parent);
+        background_small_->Resize(pos - Gui::Vec2f{0.025f, 0.025f}, Gui::Vec2f{width + 0.05f, height + 0.05f});
         background_small_->Draw(r);
 
         main_font_->DrawText(r, portion_buf, pos, color_white, parent);
@@ -621,7 +620,7 @@ void PagedReader::UpdatePages() {
     }
 }
 
-void PagedReader::Press(const Gui::Vec2f &p, bool push) {
+/*void PagedReader::Press(const Gui::Vec2f &p, bool push) {
     if (chapters_[1].empty())
         return;
 
@@ -644,4 +643,4 @@ void PagedReader::Press(const Gui::Vec2f &p, bool push) {
 
     debug_point_ = p;
     log_->Info("Selected sentence %i (%i)", sentence_to_translate_, cur_page_);
-}
+}*/

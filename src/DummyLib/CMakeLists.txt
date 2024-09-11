@@ -91,6 +91,6 @@ add_custom_command(TARGET DummyLib
                                                               ${WORKING_DIRECTORY}/assets/shaders/internal)
 add_custom_command(TARGET DummyLib
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/renderer/textures
+                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/textures
                                                               ${WORKING_DIRECTORY}/assets/textures/internal)
 

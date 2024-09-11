@@ -290,7 +290,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             sobol_seq_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(sobol_seq_buf_stage, 0, *sobol_seq_buf_, 0, 256 * 256 * sizeof(int), cmd_buf);
+        CopyBufferToBuffer(sobol_seq_buf_stage, 0, *sobol_seq_buf_, 0, 256 * 256 * sizeof(int), cmd_buf);
 
         // Scrambling tile
         scrambling_tile_buf_ =
@@ -304,8 +304,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             scrambling_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_buf_, 0, 128 * 128 * 8 * sizeof(int),
-                                cmd_buf);
+        CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_buf_, 0, 128 * 128 * 8 * sizeof(int),
+                           cmd_buf);
 
         // Ranking tile
         ranking_tile_buf_ = ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
@@ -318,7 +318,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             ranking_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_buf_, 0, 128 * 128 * 8 * sizeof(int), cmd_buf);
+        CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_buf_, 0, 128 * 128 * 8 * sizeof(int), cmd_buf);
 
         ctx_.EndTempSingleTimeCommands(cmd_buf);
 
@@ -340,8 +340,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         }
 
         Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
-        Ren::CopyBufferToBuffer(pmj_samples_stage, 0, *pmj_samples_buf_, 0,
-                                __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t), cmd_buf);
+        CopyBufferToBuffer(pmj_samples_stage, 0, *pmj_samples_buf_, 0,
+                           __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t), cmd_buf);
         ctx_.EndTempSingleTimeCommands(cmd_buf);
 
         pmj_samples_stage.FreeImmediate();
@@ -514,7 +514,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                                                    {persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
                                                    {persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
                                                    {persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
-        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+        TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
         const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         persistent_data.probe_ray_data->Clear(rgba, cmd_buf);
@@ -1431,7 +1431,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgBufDesc desc;
             desc.type = Ren::eBufType::Readback;
             desc.size = Ren::MaxFramesInFlight * sizeof(float);
-            data->output_buf = read_exposure.AddTransferOutput("Exposure Readback Buf", desc);
+            data->output_buf = read_exposure.AddTransferOutput("Exposure Readback", desc);
 
             backbuffer_sources_.push_back(data->output_buf);
 
@@ -1519,13 +1519,13 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
     { // update texture
         const Ren::TransitionInfo res_transitions1[] = {{&temp_upload_buf, Ren::eResState::CopySrc},
                                                         {tonemap_lut_.get(), Ren::eResState::CopyDst}};
-        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
+        TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
 
         tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RawRGB10_A2, temp_upload_buf, cmd_buf, 0,
                                   data_len);
 
         const Ren::TransitionInfo res_transitions2[] = {{tonemap_lut_.get(), Ren::eResState::ShaderResource}};
-        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions2);
+        TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions2);
 
         ctx_.EndTempSingleTimeCommands(cmd_buf);
     }
@@ -1564,11 +1564,23 @@ void Eng::Renderer::InitBackendInfo() {
         return;
     }
 
-    backend_info_.pass_timings.clear();
-    for (auto &t : fg_builder_.node_timings_[ctx_.backend_frame()]) {
-        PassTiming &new_t = backend_info_.pass_timings.emplace_back();
-        new_t.name = t.name;
-        new_t.duration = ctx_.GetTimestampIntervalDurationUs(t.query_beg, t.query_end);
+    backend_info_.passes_info.clear();
+    for (int i = 0; i < int(fg_builder_.node_timings_[ctx_.backend_frame()].size()) - 1; ++i) {
+        const auto &t = fg_builder_.node_timings_[ctx_.backend_frame()][i];
+
+        pass_info_t &info = backend_info_.passes_info.emplace_back();
+        info.name = t.name;
+        info.duration_us = ctx_.GetTimestampIntervalDurationUs(t.query_beg, t.query_end);
+
+        const FgNode *node = fg_builder_.GetReorderedNode(i);
+        for (const FgResource &res : node->input()) {
+            info.input.push_back(fg_builder_.GetResourceDebugInfo(res));
+        }
+        std::sort(begin(info.input), end(info.input));
+        for (const FgResource &res : node->output()) {
+            info.output.push_back(fg_builder_.GetResourceDebugInfo(res));
+        }
+        std::sort(begin(info.output), end(info.output));
     }
 
     backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
@@ -1737,7 +1749,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             FgBufDesc desc;
             desc.type = Ren::eBufType::Readback;
             desc.size = Ren::MaxFramesInFlight * sizeof(float);
-            data->output_buf = read_exposure.AddTransferOutput("Exposure Readback Buf", desc);
+            data->output_buf = read_exposure.AddTransferOutput("Exposure Readback", desc);
 
             backbuffer_sources_.push_back(data->output_buf);
 

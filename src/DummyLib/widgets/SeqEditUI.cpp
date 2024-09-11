@@ -11,7 +11,7 @@ SeqEditUI::SeqEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::
                      const Gui::BaseElement *parent)
     : Gui::BaseElement(pos, size, parent), parent_(parent), font_(font),
       timeline_{ctx, font, Gui::Vec2f{}, Gui::Vec2f{}, this}, canvas_{ctx, font, Gui::Vec2f{}, Gui::Vec2f{}, this} {
-    SeqEditUI::Resize(parent);
+    SeqEditUI::Resize();
 
     timeline_.time_changed_signal.Connect<SeqCanvasUI, &SeqCanvasUI::OnCurTimeChange>(&canvas_);
     timeline_.set_time_cur(0.0f);
@@ -22,23 +22,23 @@ void SeqEditUI::Draw(Gui::Renderer *r) {
     canvas_.Draw(r);
 }
 
-void SeqEditUI::Resize(const BaseElement *parent) {
-    BaseElement::Resize(parent);
+void SeqEditUI::Resize() {
+    BaseElement::Resize();
 
     const float timeline_height = 2.0f * 48.0f / float(dims_px_[1][1]);
-    timeline_.Resize(Gui::Vec2f{-1.0f, 1.0f - timeline_height}, Gui::Vec2f{2.0f, timeline_height}, this);
+    timeline_.Resize(Gui::Vec2f{-1.0f, 1.0f - timeline_height}, Gui::Vec2f{2.0f, timeline_height});
 
-    canvas_.Resize(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f - timeline_height}, this);
+    canvas_.Resize(Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f, 2.0f - timeline_height});
 }
 
-void SeqEditUI::Press(const Gui::Vec2f &p, const bool push) {
+/*void SeqEditUI::Press(const Gui::Vec2f &p, const bool push) {
     timeline_.Press(p, push);
     canvas_.Press(p, push);
-}
+}*/
 
-void SeqEditUI::Hover(const Gui::Vec2f &p) {
+/*void SeqEditUI::Hover(const Gui::Vec2f &p) {
     timeline_.Hover(p);
     canvas_.Hover(p);
-}
+}*/
 
 void SeqEditUI::PressRMB(const Gui::Vec2f &p, const bool push) { timeline_.PressRMB(p, push); }

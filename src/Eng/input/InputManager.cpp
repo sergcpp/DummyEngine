@@ -4,37 +4,53 @@
 
 namespace Eng {
 struct InputManagerImp {
-    std::function<void(InputManager::Event &)> input_converters[int(eInputEvent::Count)];
-    std::queue<InputManager::Event> input_buffer;
+    std::function<input_event_t(const input_event_t &)> input_converters[int(eInputEvent::_Count)];
+    std::queue<input_event_t> input_buffer;
+    std::vector<bool> keys_state;
 };
 } // namespace Eng
 
-Eng::InputManager::InputManager() { imp_ = std::make_unique<InputManagerImp>(); }
+Eng::InputManager::InputManager() {
+    imp_ = std::make_unique<InputManagerImp>();
+    imp_->keys_state.resize(256, false);
+}
 
 Eng::InputManager::~InputManager() = default;
 
-void Eng::InputManager::SetConverter(eInputEvent evt_type, const std::function<void(Event &)> &conv) {
+const std::vector<bool> &Eng::InputManager::keys_state() const { return imp_->keys_state; }
+
+void Eng::InputManager::SetConverter(const eInputEvent evt_type,
+                                     const std::function<input_event_t(const input_event_t &)> &conv) {
     imp_->input_converters[int(evt_type)] = conv;
 }
 
-void Eng::InputManager::AddRawInputEvent(Event &evt) {
+void Eng::InputManager::AddRawInputEvent(input_event_t evt) {
     if (imp_->input_buffer.size() > 100) {
         return;
     }
-    auto conv = imp_->input_converters[(int)evt.type];
+    auto conv = imp_->input_converters[int(evt.type)];
     if (conv) {
-        conv(evt);
+        evt = conv(evt);
     }
     imp_->input_buffer.push(evt);
 }
 
-bool Eng::InputManager::PollEvent(uint64_t time_us, Event &evt) {
+bool Eng::InputManager::PollEvent(uint64_t time_us, input_event_t &evt) {
     if (imp_->input_buffer.empty()) {
         return false;
     } else {
         evt = imp_->input_buffer.front();
         if (evt.time_stamp <= time_us) {
             imp_->input_buffer.pop();
+            if (evt.type == eInputEvent::KeyDown) {
+                if (evt.key_code < imp_->keys_state.size()) {
+                    imp_->keys_state[evt.key_code] = true;
+                }
+            } else if (evt.type == eInputEvent::KeyUp) {
+                if (evt.key_code < imp_->keys_state.size()) {
+                    imp_->keys_state[evt.key_code] = false;
+                }
+            }
             return true;
         } else {
             return false;
@@ -49,17 +65,17 @@ void Eng::InputManager::ClearBuffer() {
 }
 
 char Eng::InputManager::CharFromKeycode(uint32_t key_code) {
-    if (key_code >= KeyA && key_code <= KeyZ) {
-        return 'a' + char(key_code - KeyA);
-    } else if (key_code >= Key1 && key_code <= Key9) {
-        return '1' + char(key_code - Key1);
-    } else if (key_code == Key0) {
+    if (key_code >= Eng::eKey::A && key_code <= Eng::eKey::Z) {
+        return 'a' + char(key_code - Eng::eKey::A);
+    } else if (key_code >= Eng::eKey::_1 && key_code <= Eng::eKey::_9) {
+        return '1' + char(key_code - Eng::eKey::_1);
+    } else if (key_code == Eng::eKey::_0) {
         return '0';
-    } else if (key_code == KeyMinus) {
+    } else if (key_code == Eng::eKey::Minus) {
         return '-';
-    } else if (key_code == KeySpace) {
+    } else if (key_code == Eng::eKey::Space) {
         return ' ';
-    } else if (key_code == KeyPeriod) {
+    } else if (key_code == Eng::eKey::Period) {
         return '.';
     }
     return 0;
