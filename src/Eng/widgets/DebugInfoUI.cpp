@@ -87,7 +87,7 @@ void Eng::DebugInfoUI::Draw(Gui::Renderer *r) {
         const double alpha = 0.025;
         cur_frame_dur_ = alpha * last_frame_dur + (1.0 - alpha) * cur_frame_dur_;
 
-        snprintf(text_buffer, sizeof(text_buffer), "              FPS: %.1f", (1000.0 / cur_frame_dur_));
+        snprintf(text_buffer, sizeof(text_buffer), "                FPS: %.1f", (1000.0 / cur_frame_dur_));
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
@@ -96,31 +96,31 @@ void Eng::DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "   OCCLUDERS RAST: %.3f ms", front_info_smooth_.occluders_time_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "     OCCLUDERS RAST: %.3f ms", front_info_smooth_.occluders_time_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "      MAIN GATHER: %.3f ms",
+        snprintf(text_buffer, sizeof(text_buffer), "        MAIN GATHER: %.3f ms",
                  front_info_smooth_.main_gather_time_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "    SHADOW GATHER: %.3f ms",
+        snprintf(text_buffer, sizeof(text_buffer), "      SHADOW GATHER: %.3f ms",
                  front_info_smooth_.shadow_gather_time_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "          SORTING: %.3f ms",
+        snprintf(text_buffer, sizeof(text_buffer), "            SORTING: %.3f ms",
                  front_info_smooth_.drawables_sort_time_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "      ITEM ASSIGN: %.3f ms",
+        snprintf(text_buffer, sizeof(text_buffer), "        ITEM ASSIGN: %.3f ms",
                  front_info_smooth_.items_assignment_time_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "      FRONT TOTAL: %.3f ms", front_info_smooth_.total_time_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "        FRONT TOTAL: %.3f ms", front_info_smooth_.total_time_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
@@ -140,7 +140,7 @@ void Eng::DebugInfoUI::Draw(Gui::Renderer *r) {
 
         for (int i = 0; i < back_info_smooth_.pass_timings_count; ++i) {
             vertical_offset -= font_height;
-            snprintf(text_buffer, sizeof(text_buffer), " %16s: %.3f ms", back_info_smooth_.pass_names[i].c_str(),
+            snprintf(text_buffer, sizeof(text_buffer), " %18s: %.3f ms", back_info_smooth_.pass_names[i].c_str(),
                      back_info_smooth_.pass_timings_ms[i]);
             font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
         }
@@ -149,11 +149,11 @@ void Eng::DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "   BACK CPU TOTAL: %.3f ms", back_info_smooth_.cpu_total_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "     BACK CPU TOTAL: %.3f ms", back_info_smooth_.cpu_total_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "   BACK GPU TOTAL: %.3f ms", back_info_smooth_.gpu_total_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "     BACK GPU TOTAL: %.3f ms", back_info_smooth_.gpu_total_ms);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
@@ -162,30 +162,30 @@ void Eng::DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "     LIGHTS COUNT: %.3f", items_info_smooth_.lights_count);
+        snprintf(text_buffer, sizeof(text_buffer), "       LIGHTS COUNT: %.3f", items_info_smooth_.lights_count);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "      LIGHTS DATA: %.3f kb",
+        snprintf(text_buffer, sizeof(text_buffer), "        LIGHTS DATA: %.3f kb",
                  items_info_smooth_.lights_count * sizeof(LightItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "     DECALS COUNT: %.3f", items_info_smooth_.decals_count);
+        snprintf(text_buffer, sizeof(text_buffer), "       DECALS COUNT: %.3f", items_info_smooth_.decals_count);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "      DECALS DATA: %.3f kb",
+        snprintf(text_buffer, sizeof(text_buffer), "        DECALS DATA: %.3f kb",
                  items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "       CELLS DATA: %.3f kb",
+        snprintf(text_buffer, sizeof(text_buffer), "         CELLS DATA: %.3f kb",
                  ITEM_CELLS_COUNT * sizeof(CellData) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "       ITEMS DATA: %.3f kb",
+        snprintf(text_buffer, sizeof(text_buffer), "         ITEMS DATA: %.3f kb",
                  items_info_smooth_.items_total * sizeof(ItemData) / 1024.0f);
         font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }

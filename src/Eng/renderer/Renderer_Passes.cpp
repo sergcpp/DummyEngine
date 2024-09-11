@@ -225,7 +225,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Uniform;
         desc.size = SharedDataBlockSize;
-        shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput(SHARED_DATA_BUF, desc);
+        shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput("Shared Data Buf", desc);
     }
     { // create atomic counter buffer
         FgBufDesc desc = {};
@@ -464,7 +464,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
-        common_buffers.cells_res = update_light_bufs.AddTransferOutput(CELLS_BUF, desc);
+        common_buffers.cells_res = update_light_bufs.AddTransferOutput("Cells Buffer", desc);
     }
     { // create RT cells buffer
         FgBufDesc desc = {};
@@ -476,19 +476,19 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
-        common_buffers.lights_res = update_light_bufs.AddTransferOutput(LIGHTS_BUF, desc);
+        common_buffers.lights_res = update_light_bufs.AddTransferOutput("Lights Buffer", desc);
     }
     { // create decals buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = DecalsBufChunkSize;
-        common_buffers.decals_res = update_light_bufs.AddTransferOutput(DECALS_BUF, desc);
+        common_buffers.decals_res = update_light_bufs.AddTransferOutput("Decals Buffer", desc);
     }
     { // create items buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
-        common_buffers.items_res = update_light_bufs.AddTransferOutput(ITEMS_BUF, desc);
+        common_buffers.items_res = update_light_bufs.AddTransferOutput("Items Buffer", desc);
     }
     { // create RT items buffer
         FgBufDesc desc = {};
@@ -1503,7 +1503,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            out_ssao = data->output_tex = ssao_upscale.AddColorOutput(SSAO_RES, params);
+            out_ssao = data->output_tex = ssao_upscale.AddColorOutput("SSAO Final", params);
         }
 
         ssao_upscale.set_execute_cb([this, data](FgBuilder &builder) {
@@ -1805,7 +1805,7 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, FgRes
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            output_tex = data->output_tex = blur_v.AddColorOutput(BLUR_RES_TEX, params);
+            output_tex = data->output_tex = blur_v.AddColorOutput("Blur Res", params);
         }
 
         blur_v.set_execute_cb([this, data](FgBuilder &builder) {

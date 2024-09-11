@@ -1220,12 +1220,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             debug_oit.set_executor(&ex_debug_oit_);
         }
 
-        // if (list.render_flags & DebugEllipsoids) {
-        //     rp_debug_ellipsoids_.Setup(fg_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
-        //     rp_tail->p_next = &rp_debug_ellipsoids_;
-        //     rp_tail = rp_tail->p_next;
-        // }
-
         if (list.render_settings.debug_rt != eDebugRT::Off && list.env.env_map &&
             (ctx_.capabilities.hwrt || ctx_.capabilities.swrt)) {
             auto &debug_rt = fg_builder_.AddNode("DEBUG RT");
