@@ -16,13 +16,12 @@ class TextureRegion : public Ren::RefCounter {
     Tex2DParams params_;
     bool ready_ = false;
 
-    void InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
-                         Ren::TextureAtlasArray *atlas);
-    void InitFromPNGFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
-                         Ren::TextureAtlasArray *atlas);
-
-    void InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, const Tex2DParams &p,
-                         Ren::TextureAtlasArray *atlas);
+    [[nodiscard]] bool InitFromDDSFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
+                                       Tex2DParams p, Ren::TextureAtlasArray *atlas);
+    [[nodiscard]] bool InitFromImageFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
+                                         Tex2DParams p, Ren::TextureAtlasArray *atlas);
+    [[nodiscard]] bool InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
+                                       const Tex2DParams &p, Ren::TextureAtlasArray *atlas);
 
   public:
     TextureRegion() = default;
@@ -38,11 +37,11 @@ class TextureRegion : public Ren::RefCounter {
 
     TextureRegion &operator=(TextureRegion &&rhs) noexcept;
 
-    const Ren::String &name() const { return name_; }
-    const Tex2DParams &params() const { return params_; }
-    int pos(int i) const { return texture_pos_[i]; }
+    [[nodiscard]] const Ren::String &name() const { return name_; }
+    [[nodiscard]] const Tex2DParams &params() const { return params_; }
+    [[nodiscard]] int pos(int i) const { return texture_pos_[i]; }
 
-    bool ready() const { return ready_; }
+    [[nodiscard]] bool ready() const { return ready_; }
 
     void Init(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
               Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status);

@@ -5,6 +5,7 @@
 
 #include "SamplingParams.h"
 #include "TextureParams.h"
+#include "Utils.h"
 
 namespace Ren {
 class Context;
@@ -16,6 +17,8 @@ uint32_t EstimateMemory(const Tex2DParams &params);
 
 eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, eTexBlock *block, bool *is_srgb);
 int BlockLenFromGLInternalFormat(uint32_t gl_internal_format);
+
+void ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params);
 } // namespace Ren
 
 #if defined(USE_GL_RENDER)

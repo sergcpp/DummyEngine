@@ -173,6 +173,6 @@ inline bool operator!=(const Tex3DParams &lhs, const Tex3DParams &rhs) { return 
 
 int GetColorChannelCount(eTexFormat format);
 
-enum class eTexLoadStatus { Found, Reinitialized, CreatedDefault, CreatedFromData };
+enum class eTexLoadStatus { Found, Reinitialized, CreatedDefault, CreatedFromData, Error };
 
 } // namespace Ren

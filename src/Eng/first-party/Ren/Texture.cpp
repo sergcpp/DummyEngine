@@ -315,3 +315,41 @@ int Ren::BlockLenFromGLInternalFormat(uint32_t gl_internal_format) {
 }
 
 Ren::eTexUsage Ren::TexUsageFromState(Ren::eResState state) { return g_tex_usage_per_state[int(state)]; }
+
+void Ren::ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params) {
+    params->w = uint16_t(hdr.dwWidth);
+    params->h = uint16_t(hdr.dwHeight);
+    params->mip_count = uint8_t(hdr.dwMipMapCount);
+
+    if (hdr.sPixelFormat.dwFourCC == FourCC_BC1_UNORM) {
+        params->format = eTexFormat::BC1;
+        params->block = eTexBlock::_4x4;
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC2_UNORM) {
+        params->format = eTexFormat::BC2;
+        params->block = eTexBlock::_4x4;
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC3_UNORM) {
+        params->format = eTexFormat::BC3;
+        params->block = eTexBlock::_4x4;
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC4_UNORM) {
+        params->format = eTexFormat::BC4;
+        params->block = eTexBlock::_4x4;
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC5_UNORM) {
+        params->format = eTexFormat::BC5;
+        params->block = eTexBlock::_4x4;
+    } else {
+        params->block = eTexBlock::_None;
+        if (hdr.sPixelFormat.dwFlags & DDPF_RGB) {
+            // Uncompressed
+            if (hdr.sPixelFormat.dwRGBBitCount == 32) {
+                params->format = eTexFormat::RawRGBA8888;
+            } else if (hdr.sPixelFormat.dwRGBBitCount == 24) {
+                params->format = eTexFormat::RawRGB888;
+            } else {
+                params->format = eTexFormat::Undefined;
+            }
+        } else {
+            // Possibly need to read DX10 header
+            params->format = eTexFormat::Undefined;
+        }
+    }
+}
