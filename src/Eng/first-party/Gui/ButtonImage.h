@@ -21,10 +21,10 @@ class ButtonImage : public ButtonBase {
 
     void SetElement(std::unique_ptr<BaseElement> &&el) {
         additional_element_ = std::move(el);
-        additional_element_->Resize(this);
+        additional_element_->Resize();
     }
 
-    void Resize(const BaseElement *parent) override;
+    void Resize() override;
 
     void Draw(Renderer *r) override;
 };

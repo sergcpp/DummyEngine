@@ -4,7 +4,7 @@
 
 namespace Eng {
 struct InputManagerImp {
-    std::function<void(InputManager::Event &)> input_converters[(int)RawInputEv::Count];
+    std::function<void(InputManager::Event &)> input_converters[int(eInputEvent::Count)];
     std::queue<InputManager::Event> input_buffer;
 };
 } // namespace Eng
@@ -13,7 +13,7 @@ Eng::InputManager::InputManager() { imp_ = std::make_unique<InputManagerImp>(); 
 
 Eng::InputManager::~InputManager() = default;
 
-void Eng::InputManager::SetConverter(RawInputEv evt_type, const std::function<void(Event &)> &conv) {
+void Eng::InputManager::SetConverter(eInputEvent evt_type, const std::function<void(Event &)> &conv) {
     imp_->input_converters[int(evt_type)] = conv;
 }
 

@@ -38,17 +38,11 @@ class LinearLayout : public BaseElement {
 
     void Clear() { elements_.clear(); }
 
-    void Resize(const BaseElement *parent) override;
-    void Resize(const Vec2f &start, const Vec2f &size, const BaseElement *parent) override;
+    void Resize() override;
+    void Resize(const Vec2f &start, const Vec2f &size) override;
 
     [[nodiscard]] bool Check(const Vec2i &p) const override;
     [[nodiscard]] bool Check(const Vec2f &p) const override;
-
-    void Hover(const Vec2i &p) override;
-    void Hover(const Vec2f &p) override;
-
-    void Press(const Vec2i &p, bool push) override;
-    void Press(const Vec2f &p, bool push) override;
 
     void Draw(Renderer *r) override;
 };

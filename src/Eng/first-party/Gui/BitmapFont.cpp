@@ -8,7 +8,7 @@
 #include "Renderer.h"
 #include "Utils.h"
 
-Gui::BitmapFont::BitmapFont(std::string_view name, Ren::Context &ctx) : info_{}, scale_(1.0f), tex_res_{} {
+Gui::BitmapFont::BitmapFont(std::string_view name, Ren::Context &ctx) : info_{}, tex_res_{} {
     if (!this->Load(name, ctx)) {
         throw std::runtime_error("Failed to load!");
     }
@@ -20,8 +20,8 @@ Gui::BitmapFont::BitmapFont(std::string_view name, std::istream &data, Ren::Cont
     }
 }
 
-float Gui::BitmapFont::height(const BaseElement *parent) const {
-    return 2.0f * scale_ * float(info_.line_height) / parent->size_px()[1];
+float Gui::BitmapFont::height(const float scale, const BaseElement *parent) const {
+    return 2.0f * scale * float(info_.line_height) / parent->size_px()[1];
 }
 
 bool Gui::BitmapFont::Load(std::string_view name, Ren::Context &ctx) {
@@ -43,7 +43,7 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
         return false;
     }
 
-    const uint32_t expected_chunks_size = uint32_t(Gui::eFontFileChunk::FontChCount) * 3 * sizeof(uint32_t);
+    const uint32_t expected_chunks_size = uint32_t(eFontFileChunk::FontChCount) * 3 * sizeof(uint32_t);
     const uint32_t chunks_size = header_size - 4 - sizeof(uint32_t);
     if (chunks_size != expected_chunks_size) {
         return false;
@@ -59,11 +59,11 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
         const size_t old_pos = size_t(data.tellg());
         data.seekg(chunk_off, std::ios::beg);
 
-        if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChTypoData)) {
+        if (chunk_id == uint32_t(eFontFileChunk::FontChTypoData)) {
             if (!data.read((char *)&info_, sizeof(typgraph_info_t))) {
                 return false;
             }
-        } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChImageData)) {
+        } else if (chunk_id == uint32_t(eFontFileChunk::FontChImageData)) {
             uint16_t img_data_w, img_data_h;
             if (!data.read((char *)&img_data_w, sizeof(uint16_t)) ||
                 !data.read((char *)&img_data_h, sizeof(uint16_t))) {
@@ -78,8 +78,8 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
                 return false;
             }
 
-            draw_mode_ = Gui::eDrawMode(draw_mode);
-            blend_mode_ = Gui::eBlendMode(blend_mode);
+            draw_mode_ = eDrawMode(draw_mode);
+            blend_mode_ = eBlendMode(blend_mode);
 
             Ren::StageBufRef sb = ctx.default_stage_bufs().GetNextBuffer();
 
@@ -102,7 +102,7 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
 
             Ren::eTexLoadStatus status;
             tex_ = ctx.LoadTextureRegion(name, *sb.buf, 0, img_data_size, sb.cmd_buf, p, &status);
-        } else if (chunk_id == uint32_t(Gui::eFontFileChunk::FontChGlyphData)) {
+        } else if (chunk_id == uint32_t(eFontFileChunk::FontChGlyphData)) {
             if (!data.read((char *)&glyph_range_count_, sizeof(uint32_t))) {
                 return false;
             }
@@ -131,7 +131,7 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
     return true;
 }
 
-float Gui::BitmapFont::GetWidth(std::string_view text, const BaseElement *parent) const {
+float Gui::BitmapFont::GetWidth(std::string_view text, const float scale, const BaseElement *parent) const {
     int cur_x = 0;
 
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
@@ -142,7 +142,7 @@ float Gui::BitmapFont::GetWidth(std::string_view text, const BaseElement *parent
     int char_pos = 0;
     while (text_len--) {
         uint32_t unicode;
-        char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
+        char_pos += ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
 
         uint32_t glyph_index = 0;
         for (uint32_t i = 0; i < glyph_range_count_; i++) {
@@ -161,17 +161,17 @@ float Gui::BitmapFont::GetWidth(std::string_view text, const BaseElement *parent
         cur_x += glyph.adv[0];
     }
 
-    const float mul = scale_ * parent->size()[0] / float(parent->size_px()[0]);
+    const float mul = scale * parent->size()[0] / float(parent->size_px()[0]);
     return float(cur_x) * mul;
 }
 
 float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f &pos, const uint8_t col[4],
-                                const BaseElement *parent) const {
+                                const float scale, const BaseElement *parent) const {
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
     const glyph_info_t *glyphs = glyphs_.get();
 
     const Vec2f p = parent->pos() + 0.5f * (pos + Vec2f(1, 1)) * parent->size(),
-                m = scale_ * parent->size() / (Vec2f)parent->size_px();
+                m = scale * parent->size() / (Vec2f)parent->size_px();
 
     const uint16_t uvs_offset[2] = {(uint16_t)tex_->pos(0), (uint16_t)tex_->pos(1)},
                    tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_->pos(2)));
@@ -201,7 +201,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
     int char_pos = 0;
     while (char_pos < text.size()) {
         uint32_t unicode;
-        char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
+        char_pos += ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
 
         uint32_t glyph_index = 0;
         for (uint32_t i = 0; i < glyph_range_count_; i++) {
@@ -294,13 +294,13 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
     return float(cur_x) * m[0];
 }
 
-int Gui::BitmapFont::CheckText(std::string_view text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
-                               const BaseElement *parent) const {
+int Gui::BitmapFont::CheckText(std::string_view text, const Vec2f &pos, const Vec2f &press_pos, const float scale,
+                               float &out_char_offset, const BaseElement *parent) const {
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
     const glyph_info_t *glyphs = glyphs_.get();
 
     const Vec2f p = parent->pos() + 0.5f * (pos + Vec2f(1, 1)) * parent->size(),
-                m = scale_ * parent->size() / (Vec2f)parent->size_px();
+                m = scale * parent->size() / (Vec2f)parent->size_px();
 
     int cur_x = 0;
     int char_index = 0;
@@ -308,7 +308,7 @@ int Gui::BitmapFont::CheckText(std::string_view text, const Vec2f &pos, const Ve
     int char_pos = 0;
     while (char_pos < text.size()) {
         uint32_t unicode;
-        char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
+        char_pos += ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
 
         uint32_t glyph_index = 0;
         for (uint32_t i = 0; i < glyph_range_count_; i++) {

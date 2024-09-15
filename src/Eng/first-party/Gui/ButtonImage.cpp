@@ -12,15 +12,15 @@ Gui::ButtonImage::ButtonImage(const Ren::TextureRegionRef &tex_normal, const Vec
     image_pressed_.set_uvs(uvs_pressed);
 }
 
-void Gui::ButtonImage::Resize(const BaseElement *parent) {
-    BaseElement::Resize(parent);
+void Gui::ButtonImage::Resize() {
+    BaseElement::Resize();
 
-    image_normal_.Resize(this);
-    image_focused_.Resize(this);
-    image_pressed_.Resize(this);
+    image_normal_.Resize();
+    image_focused_.Resize();
+    image_pressed_.Resize();
 
     if (additional_element_) {
-        additional_element_->Resize(this);
+        additional_element_->Resize();
     }
 }
 

@@ -27,6 +27,6 @@ class Image : public BaseElement {
 
     void Draw(Renderer *r) override;
 
-    void ResizeToContent(const Vec2f &pos, const BaseElement *parent);
+    void ResizeToContent(const Vec2f &pos);
 };
 } // namespace Gui

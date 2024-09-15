@@ -8,7 +8,7 @@
 namespace Eng {
 struct InputManagerImp;
 
-enum class RawInputEv : int16_t {
+enum class eInputEvent : int16_t {
     None = -1,
     P1Down,
     P1Up,
@@ -28,7 +28,7 @@ class InputManager {
 
   public:
     struct Event {
-        RawInputEv type = RawInputEv::None;
+        eInputEvent type = eInputEvent::None;
         uint32_t key_code;
         struct {
             float x, y;
@@ -44,7 +44,7 @@ class InputManager {
     InputManager(const InputManager &) = delete;
     InputManager &operator=(const InputManager &) = delete;
 
-    void SetConverter(RawInputEv evt_type, const std::function<void(Event &)> &conv);
+    void SetConverter(eInputEvent evt_type, const std::function<void(Event &)> &conv);
     void AddRawInputEvent(Event &evt);
     bool PollEvent(uint64_t time_us, Event &evt);
     void ClearBuffer();

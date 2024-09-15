@@ -157,7 +157,7 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                     const JsString &js_action_anim = js_action.at("anim").as_str();
                     const std::string anim_path = std::string(MODELS_PATH) + js_action_anim.val;
 
-                    Sys::AssetFile in_file(anim_path.c_str());
+                    Sys::AssetFile in_file(anim_path);
                     if (!in_file) {
                         ren_ctx_.log()->Error("Failed to load %s", anim_path.c_str());
                         return false;
@@ -170,7 +170,7 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                     Sys::MemBuf mem = {&in_file_data[0], in_file_size};
                     std::istream in_file_stream(&mem);
 
-                    action.anim_ref = ren_ctx_.LoadAnimSequence(js_action_anim.val.c_str(), in_file_stream);
+                    action.anim_ref = ren_ctx_.LoadAnimSequence(js_action_anim.val, in_file_stream);
                 }
 
                 if (js_action.Has("caption")) {
@@ -189,7 +189,7 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
 
                         // TODO: CHANGE THIS!!!
 
-                        Sys::AssetFile in_file(sound_path.c_str());
+                        Sys::AssetFile in_file(sound_path);
                         const size_t in_file_size = in_file.size();
 
                         std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);

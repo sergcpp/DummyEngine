@@ -47,10 +47,10 @@ void Gui::Image::Draw(Renderer *r) {
     r->PushImageQuad(eDrawMode::Passthrough, tex_layer, pos, uvs_px_);
 }
 
-void Gui::Image::ResizeToContent(const Vec2f &pos, const BaseElement *parent) {
+void Gui::Image::ResizeToContent(const Vec2f &pos) {
     const Ren::Tex2DParams &p = tex_->params();
-    const Vec2i parent_size_px = parent->size_px();
+    const Vec2i parent_size_px = parent_->size_px();
 
     BaseElement::Resize(
-        pos, Vec2f{2.0f * float(p.w) / float(parent_size_px[0]), 2.0f * float(p.h) / float(parent_size_px[1])}, parent);
+        pos, Vec2f{2.0f * float(p.w) / float(parent_size_px[0]), 2.0f * float(p.h) / float(parent_size_px[1])});
 }

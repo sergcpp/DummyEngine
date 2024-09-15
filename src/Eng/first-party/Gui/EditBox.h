@@ -31,9 +31,9 @@ class EditBox : public BaseElement {
 
     void set_flag(eEditBoxFlags flag, bool enabled) { edit_flags_.set(size_t(flag), enabled); }
 
-    void Resize(const BaseElement *parent) override;
+    void Resize() override;
 
-    void Press(const Vec2f &p, bool push) override;
+    //void Press(const Vec2f &p, bool push) override;
 
     void Draw(Renderer *r) override;
 

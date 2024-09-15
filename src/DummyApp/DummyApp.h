@@ -81,7 +81,7 @@ class DummyApp {
     void Frame();
     void Resize(int w, int h);
 
-    void AddEvent(Eng::RawInputEv type, uint32_t key_code, float x, float y, float dx, float dy);
+    void AddEvent(Eng::eInputEvent type, uint32_t key_code, float x, float y, float dx, float dy);
 
 #if !defined(__ANDROID__)
     int Run(int argc, char *argv[]);

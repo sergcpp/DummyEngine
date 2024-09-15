@@ -86,7 +86,7 @@ void Eng::ViewerBase::Resize(const int w, const int h) {
     ren_ctx_->Resize(width, height);
 
     ui_root_->set_zone(Gui::Vec2i{width, height});
-    ui_root_->Resize(nullptr);
+    ui_root_->Resize();
 }
 
 void Eng::ViewerBase::Start() {}

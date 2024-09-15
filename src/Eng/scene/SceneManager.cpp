@@ -324,7 +324,6 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
         const uint8_t default_l0_color[] = {255, 255, 255, 255};
         scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name, default_l0_color, Ren::eTexFlags{});
-        // scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str(), 0);
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             std::string lm_indir_sh_tex_name = lm_base_tex_name;
             lm_indir_sh_tex_name += "_lm_sh_";
@@ -981,7 +980,7 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
             Sys::MemBuf mem = {&in_file_data[0], in_file_size};
             std::istream in_file_stream(&mem);
 
-            Ren::AnimSeqRef anim_ref = ren_ctx_.LoadAnimSequence(js_anim_name.val.c_str(), in_file_stream);
+            Ren::AnimSeqRef anim_ref = ren_ctx_.LoadAnimSequence(js_anim_name.val, in_file_stream);
             skel->AddAnimSequence(anim_ref);
         }
     }

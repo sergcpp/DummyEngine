@@ -23,17 +23,17 @@ Gui::EditBox::EditBox(Image9Patch frame, const BitmapFont *font, const Vec2f &po
                       const BaseElement *parent)
     : BaseElement(pos, size, parent), frame_(std::move(frame)), font_(font),
       edit_flags_(EditBoxConstants::default_flags), focused_(false), current_line_(0), current_char_(0) {
-    frame_.Resize(this);
+    frame_.Resize();
     lines_.emplace_back();
 }
 
-void Gui::EditBox::Resize(const BaseElement *parent) {
-    BaseElement::Resize(parent);
+void Gui::EditBox::Resize() {
+    BaseElement::Resize();
 
-    frame_.Resize(this);
+    frame_.Resize();
 }
 
-void Gui::EditBox::Press(const Vec2f &p, bool push) {
+/*void Gui::EditBox::Press(const Vec2f &p, bool push) {
     if (!push)
         return;
 
@@ -49,7 +49,7 @@ void Gui::EditBox::Press(const Vec2f &p, bool push) {
 
             if (p[1] > cur_y && p[1] < cur_y + font_height) {
                 float char_offset = 0.0f;
-                const int intersected_char = font_->CheckText(line.c_str(), Vec2f{-1.0f, cur_y}, p, char_offset, this);
+                const int intersected_char = font_->CheckText(line, Vec2f{-1.0f, cur_y}, p, char_offset, this);
                 if (intersected_char != -1) {
                     current_line_ = i;
                     current_char_ = intersected_char;
@@ -62,7 +62,7 @@ void Gui::EditBox::Press(const Vec2f &p, bool push) {
     } else {
         focused_ = false;
     }
-}
+}*/
 
 void Gui::EditBox::Draw(Renderer *r) {
     frame_.Draw(r);
@@ -76,7 +76,7 @@ void Gui::EditBox::Draw(Renderer *r) {
 
     float cur_y = y_start;
     for (const std::string &line : lines_) {
-        font_->DrawText(r, line.c_str(), Vec2f{x_start, cur_y}, color_white, this);
+        font_->DrawText(r, line, Vec2f{x_start, cur_y}, color_white, this);
         cur_y -= line_spacing;
     }
 

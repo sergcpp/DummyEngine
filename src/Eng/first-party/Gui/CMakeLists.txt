@@ -38,6 +38,7 @@ set(SOURCE_FILES    BaseElement.h
                     BaseElement.cpp
                     BitmapFont.h
                     BitmapFont.cpp
+                    Bitmask.h
                     ButtonBase.h
                     ButtonBase.cpp
                     ButtonImage.h
@@ -51,6 +52,8 @@ set(SOURCE_FILES    BaseElement.h
                     Image.cpp
                     Image9Patch.h
                     Image9Patch.cpp
+                    Input.h
+                    Keycode.h
                     LinearLayout.h
                     LinearLayout.cpp
                     MVec.h

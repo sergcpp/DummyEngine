@@ -187,7 +187,7 @@ void DummyApp::Frame() { viewer_->Frame(); }
 
 void DummyApp::Resize(int w, int h) { viewer_->Resize(w, h); }
 
-void DummyApp::AddEvent(Eng::RawInputEv type, const uint32_t key_code, const float x,
+void DummyApp::AddEvent(Eng::eInputEvent type, const uint32_t key_code, const float x,
                         const float y, const float dx, const float dy) {
     auto *input_manager = viewer_->input_manager();
     if (!input_manager) {
@@ -319,23 +319,23 @@ void DummyApp::PollEvents() {
             if (key_code == KeyEscape) {
                 quit_ = true;
             } else {
-                evt.type = RawInputEv::KeyDown;
+                evt.type = eInputEvent::KeyDown;
                 evt.key_code = key_code;
             }
         } else if (xev.type == KeyRelease) {
             const uint32_t scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
                            key_code = ScancodeToHID(scan_code);
 
-            evt.type = RawInputEv::KeyUp;
+            evt.type = eInputEvent::KeyUp;
             evt.key_code = key_code;
         } else if (xev.type == ButtonPress &&
                    (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
             if (xev.xbutton.button == Button1) {
-                evt.type = RawInputEv::P1Down;
+                evt.type = eInputEvent::P1Down;
             } else if (xev.xbutton.button == Button3) {
-                evt.type = RawInputEv::P2Down;
+                evt.type = eInputEvent::P2Down;
             } else if (xev.xbutton.button == Button4 || xev.xbutton.button == Button5) {
-                evt.type = RawInputEv::MouseWheel;
+                evt.type = eInputEvent::MouseWheel;
                 evt.move.dx = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
             }
             evt.point.x = float(xev.xbutton.x);
@@ -343,14 +343,14 @@ void DummyApp::PollEvents() {
         } else if (xev.type == ButtonRelease &&
                    (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
             if (xev.xbutton.button == Button1) {
-                evt.type = RawInputEv::P1Up;
+                evt.type = eInputEvent::P1Up;
             } else if (xev.xbutton.button == Button3) {
-                evt.type = RawInputEv::P2Up;
+                evt.type = eInputEvent::P2Up;
             }
             evt.point.x = float(xev.xbutton.x);
             evt.point.y = float(xev.xbutton.y);
         } else if (xev.type == MotionNotify) {
-            evt.type = RawInputEv::P1Move;
+            evt.type = eInputEvent::P1Move;
             evt.point.x = float(xev.xmotion.x);
             evt.point.y = float(xev.xmotion.y);
             evt.move.dx = evt.point.x - last_p1_pos[0];
@@ -364,7 +364,7 @@ void DummyApp::PollEvents() {
 
                 Resize(xev.xconfigure.width, xev.xconfigure.height);
 
-                evt.type = RawInputEv::Resize;
+                evt.type = eInputEvent::Resize;
                 evt.point.x = (float)xev.xconfigure.width;
                 evt.point.y = (float)xev.xconfigure.height;
 
@@ -373,7 +373,7 @@ void DummyApp::PollEvents() {
             }
         }
 
-        if (evt.type != RawInputEv::None) {
+        if (evt.type != eInputEvent::None) {
             evt.time_stamp = Sys::GetTimeUs();
             input_manager->AddRawInputEvent(evt);
         }
