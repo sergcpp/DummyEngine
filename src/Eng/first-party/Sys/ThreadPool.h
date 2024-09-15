@@ -55,7 +55,7 @@ struct TaskList {
     SmallVector<short, 16> tasks_order, tasks_pos;
 
     template <class F, class... Args> short AddTask(F &&f, Args &&...args) {
-        using return_type = typename std::result_of<F(Args...)>::type;
+        using return_type = typename std::invoke_result_t<F, Args...>;
 
         const auto ret = short(tasks.size());
         Task &t = tasks.emplace_back();
@@ -117,7 +117,7 @@ class ThreadPool {
     ~ThreadPool();
 
     template <class F, class... Args>
-    std::future<typename std::result_of<F(Args...)>::type> Enqueue(F &&f, Args &&...args);
+    std::future<typename std::invoke_result_t<F, Args...>> Enqueue(F &&f, Args &&...args);
 
     std::future<void> Enqueue(const TaskList &task_list);
     std::future<void> Enqueue(TaskList &&task_list);
@@ -241,8 +241,8 @@ inline bool ThreadPool::SetPriority(const int i, const eThreadPriority priority)
 
 // add new work item to the pool
 template <class F, class... Args>
-std::future<typename std::result_of<F(Args...)>::type> ThreadPool::Enqueue(F &&f, Args &&...args) {
-    using return_type = typename std::result_of<F(Args...)>::type;
+std::future<typename std::invoke_result_t<F, Args...>> ThreadPool::Enqueue(F &&f, Args &&...args) {
+    using return_type = typename std::invoke_result_t<F, Args...>;
 
     auto task =
         std::make_shared<std::packaged_task<return_type()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));

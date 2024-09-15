@@ -18,7 +18,7 @@ class ThreadWorker {
 
     template <class F, class... Args>
     auto AddTask(F &&f, Args &&... args)
-        -> std::future<typename std::result_of<F(Args...)>::type>;
+        -> std::future<typename std::invoke_result_t<F, Args...>>;
 
   private:
     std::thread worker_;
@@ -65,7 +65,7 @@ inline bool ThreadWorker::Stop() {
 
 template <class F, class... Args>
 auto ThreadWorker::AddTask(F &&f, Args &&... args)
-    -> std::future<typename std::result_of<F(Args...)>::type> {
+    -> std::future<typename std::invoke_result_t<F, Args...>> {
     using return_type = typename std::invoke_result_t<F, Args...>;
 
     auto task = std::make_shared<std::packaged_task<return_type()>>(
