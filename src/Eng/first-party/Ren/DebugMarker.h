@@ -10,6 +10,7 @@ struct DebugMarker {
     explicit DebugMarker(ApiContext *api_ctx, CommandBuffer cmd_buf, std::string_view name);
     ~DebugMarker();
 
+  private:
     ApiContext *api_ctx_ = nullptr;
     CommandBuffer cmd_buf_ = {};
 };

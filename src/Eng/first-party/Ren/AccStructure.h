@@ -32,12 +32,12 @@ class AccStructureVK : public IAccStructure {
     AccStructureVK &operator=(const AccStructureVK &rhs) = delete;
     AccStructureVK &operator=(AccStructureVK &&rhs) = delete;
 
-    const VkAccelerationStructureKHR &vk_handle() const {
+    [[nodiscard]] const VkAccelerationStructureKHR &vk_handle() const {
         return handle_;
     } // needs to be reference as we take it's address later
-    VkDeviceAddress vk_device_address() const;
+    [[nodiscard]] VkDeviceAddress vk_device_address() const;
 
-    bool Init(ApiContext *api_ctx, VkAccelerationStructureKHR handle);
+    [[nodiscard]] bool Init(ApiContext *api_ctx, VkAccelerationStructureKHR handle);
 
     void Free();
     void FreeImmediate();

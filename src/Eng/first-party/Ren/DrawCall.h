@@ -86,8 +86,9 @@ struct Binding {
 static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *), "!");
 
 #if defined(USE_VK_RENDER)
-VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, Span<const Binding> bindings,
-                                     DescrMultiPoolAlloc *descr_alloc, ILog *log);
+[[nodiscard]] VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
+                                                   Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc,
+                                                   ILog *log);
 #endif
 
 void DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,

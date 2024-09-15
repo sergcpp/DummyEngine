@@ -59,19 +59,19 @@ class AnimSequence : public RefCounter {
     AnimSequence() = default;
     AnimSequence(std::string_view name, std::istream &data);
 
-    const String &name() const { return name_; }
-    const String &act_name() const { return act_name_; }
-    int fps() const { return fps_; }
-    int len() const { return len_; }
-    int frame_size() const { return frame_size_; }
-    float frame_dur() const { return frame_dur_; }
-    float anim_dur() const { return anim_dur_; }
-    size_t num_bones() const { return bones_.size(); }
-    bool ready() const { return ready_; }
+    [[nodiscard]] const String &name() const { return name_; }
+    [[nodiscard]] const String &act_name() const { return act_name_; }
+    [[nodiscard]] int fps() const { return fps_; }
+    [[nodiscard]] int len() const { return len_; }
+    [[nodiscard]] int frame_size() const { return frame_size_; }
+    [[nodiscard]] float frame_dur() const { return frame_dur_; }
+    [[nodiscard]] float anim_dur() const { return anim_dur_; }
+    [[nodiscard]] size_t num_bones() const { return bones_.size(); }
+    [[nodiscard]] bool ready() const { return ready_; }
 
-    const float *frames() const { return &frames_[0]; }
-    const AnimBone *bone(const int i) { return &bones_[i]; }
-    const AnimShape *shape(const int i) { return &shapes_[i]; }
+    [[nodiscard]] const float *frames() const { return &frames_[0]; }
+    [[nodiscard]] const AnimBone *bone(const int i) const { return &bones_[i]; }
+    [[nodiscard]] const AnimShape *shape(const int i) const { return &shapes_[i]; }
 
     void Init(std::istream &data);
     void InitAnimBones(std::istream &data);

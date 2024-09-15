@@ -108,23 +108,22 @@ class Buffer : public RefCounter {
     Buffer &operator=(const Buffer &rhs) = delete;
     Buffer &operator=(Buffer &&rhs) noexcept;
 
-    const String &name() const { return name_; }
-    eBufType type() const { return type_; }
-    uint32_t size() const { return size_; }
+    [[nodiscard]] const String &name() const { return name_; }
+    [[nodiscard]] eBufType type() const { return type_; }
+    [[nodiscard]] uint32_t size() const { return size_; }
 
-    BufHandle handle() const { return handle_; }
-    ApiContext *api_ctx() const { return api_ctx_; }
+    [[nodiscard]] BufHandle handle() const { return handle_; }
+    [[nodiscard]] ApiContext *api_ctx() const { return api_ctx_; }
 #if defined(USE_VK_RENDER)
-    VkBuffer vk_handle() const { return handle_.buf; }
-    VkDeviceMemory mem() const { return mem_; }
-    VkDeviceAddress vk_device_address() const;
+    [[nodiscard]] VkBuffer vk_handle() const { return handle_.buf; }
+    [[nodiscard]] VkDeviceMemory mem() const { return mem_; }
+    [[nodiscard]] VkDeviceAddress vk_device_address() const;
 #elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-    uint32_t id() const { return handle_.id; }
+    [[nodiscard]] uint32_t id() const { return handle_.id; }
 #endif
-    uint32_t generation() const { return handle_.generation; }
+    [[nodiscard]] uint32_t generation() const { return handle_.generation; }
 
-    bool is_mapped() const { return mapped_ptr_ != nullptr; }
-    uint8_t *mapped_ptr() const { return mapped_ptr_; }
+    [[nodiscard]] uint8_t *mapped_ptr() const { return mapped_ptr_; }
 
     SubAllocation AllocSubRegion(uint32_t size, std::string_view tag, const Buffer *init_buf = nullptr,
                                  CommandBuffer cmd_buf = {}, uint32_t init_off = 0);

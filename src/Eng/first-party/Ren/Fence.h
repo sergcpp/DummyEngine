@@ -31,7 +31,7 @@ class SyncFence {
 
 #if defined(USE_VK_RENDER)
     operator bool() const { return fence_ != VkFence{}; }
-    VkFence fence() { return fence_; }
+    [[nodiscard]] VkFence fence() const { return fence_; }
 
     [[nodiscard]] bool signaled() const;
 

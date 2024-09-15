@@ -48,16 +48,16 @@ class DescrPool {
     DescrPool &operator=(const DescrPool &rhs) = delete;
     DescrPool &operator=(DescrPool &&rhs) noexcept;
 
-    ApiContext *api_ctx() { return api_ctx_; }
+    [[nodiscard]] ApiContext *api_ctx() { return api_ctx_; }
 
-    uint32_t free_count() const { return sets_count_ - next_free_; }
-    uint32_t descr_count(const eDescrType type) const { return descr_counts_[int(type)]; }
+    [[nodiscard]] uint32_t free_count() const { return sets_count_ - next_free_; }
+    [[nodiscard]] uint32_t descr_count(const eDescrType type) const { return descr_counts_[int(type)]; }
 
-    bool Init(const DescrSizes &sizes, uint32_t sets_count);
+    [[nodiscard]] bool Init(const DescrSizes &sizes, uint32_t sets_count);
     void Destroy();
 
-    VkDescriptorSet Alloc(VkDescriptorSetLayout layout);
-    bool Reset();
+    [[nodiscard]] VkDescriptorSet Alloc(VkDescriptorSetLayout layout);
+    [[nodiscard]] bool Reset();
 };
 
 //
@@ -75,10 +75,10 @@ class DescrPoolAlloc {
     DescrPoolAlloc(ApiContext *api_ctx, const DescrSizes &sizes, const uint32_t initial_sets_count)
         : api_ctx_(api_ctx), sizes_(sizes), initial_sets_count_(initial_sets_count) {}
 
-    ApiContext *api_ctx() { return api_ctx_; }
+    [[nodiscard]] ApiContext *api_ctx() { return api_ctx_; }
 
-    VkDescriptorSet Alloc(VkDescriptorSetLayout layout);
-    bool Reset();
+    [[nodiscard]] VkDescriptorSet Alloc(VkDescriptorSetLayout layout);
+    [[nodiscard]] bool Reset();
 };
 
 //
@@ -98,9 +98,9 @@ class DescrMultiPoolAlloc {
                         uint32_t max_sbuf_count, uint32_t max_stbuf_count, uint32_t max_acc_count,
                         uint32_t initial_sets_count);
 
-    ApiContext *api_ctx() { return pools_.front().api_ctx(); }
+    [[nodiscard]] ApiContext *api_ctx() { return pools_.front().api_ctx(); }
 
-    VkDescriptorSet Alloc(const DescrSizes &sizes, VkDescriptorSetLayout layout);
-    bool Reset();
+    [[nodiscard]] VkDescriptorSet Alloc(const DescrSizes &sizes, VkDescriptorSetLayout layout);
+    [[nodiscard]] bool Reset();
 };
 } // namespace Ren
