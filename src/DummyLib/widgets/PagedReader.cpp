@@ -197,7 +197,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
     int portion_buf_size = 0;
 
     const ChapterData &chapter = chapters_[1][cur_chapter_];
-    if (cur_page_ < 0 || cur_page_ >= (int)chapter.pages.size())
+    if (cur_page_ < 0 || cur_page_ >= int(chapter.pages.size()))
         return;
 
     const PageData &page = chapter.pages[cur_page_];
@@ -260,7 +260,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                 || strcmp(tag_str, "/violet") == 0 || strcmp(tag_str, "/white") == 0 ||
                 strcmp(tag_str, "/yellow") == 0) { pop_color = true; draw = true; } else
                 if (strcmp(tag_str, "option") == 0) { const int option_index =
-                (int)options_rects_.size(); const OptionData &opt =
+                int(options_rects_.size()); const OptionData &opt =
                 text_options_[data_pos_][option_index];
 
                     if (opt.is_expanded) {
@@ -279,7 +279,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                     pop_color = true;
                     draw = true;
 
-                    const int option_index = (int)options_rects_.size() - 1;
+                    const int option_index = int(options_rects_.size()) - 1;
                     const OptionData &opt = text_options_[data_pos_][option_index];
 
                     if (opt.is_expanded) {
@@ -293,7 +293,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                     rect_t &rect = options_rects_.back();
                     rect.dims[1] = Ren::Vec2f{ width, font_height };
                 } else if (strcmp(tag_str, "hint") == 0) {
-                    const int hint_index = (int)hint_rects_.size();
+                    const int hint_index = int(hint_rects_.size());
                     const HintData &hint = text_hints_[data_pos_][hint_index];
 
                     if (hint.is_hover) {
@@ -308,7 +308,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                     pop_color = true;
                     draw = true;
 
-                    const int hint_index = (int)hint_rects_.size() - 1;
+                    const int hint_index = int(hint_rects_.size()) - 1;
                     const HintData &hint = text_hints_[data_pos_][hint_index];
 
                     if (hint.is_hover) {
@@ -475,7 +475,7 @@ void PagedReader::UpdatePages() {
                 }
 
                 page.start_pos = char_pos;
-                page.sentence_beg = (int)chapter.sentences.size() - 1;
+                page.sentence_beg = int(chapter.sentences.size()) - 1;
 
                 while (input_src_data[char_pos]) {
                     int char_start = char_pos;
@@ -532,12 +532,12 @@ void PagedReader::UpdatePages() {
                         { // finish current sentence
                             SentenceData &sentence = chapter.sentences.back();
                             sentence.end_pos = char_pos;
-                            sentence.rect_end = (int)chapter.sentence_rects.size();
+                            sentence.rect_end = int(chapter.sentence_rects.size());
                         }
 
                         SentenceData &next_sentence = chapter.sentences.emplace_back();
                         next_sentence.start_pos = char_pos;
-                        next_sentence.rect_beg = (int)chapter.sentence_rects.size();
+                        next_sentence.rect_beg = int(chapter.sentence_rects.size());
                     }
 
                     for (int j = char_start; j < char_pos; j++) {
@@ -613,7 +613,7 @@ void PagedReader::UpdatePages() {
                 }
 
                 page.end_pos = char_pos;
-                page.sentence_end = (int)chapter.sentences.size() + 1;
+                page.sentence_end = int(chapter.sentences.size()) + 1;
             }
 
             chapter.sentences.back().end_pos = char_pos;

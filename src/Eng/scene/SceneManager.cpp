@@ -69,7 +69,7 @@ template <typename T> class DefaultCompStorage : public Eng::CompStorage {
         return (it == data_.cend()) ? 0xffffffff : it.index();
     }
 
-    [[nodiscard]] int Count() const override { return (int)data_.size(); }
+    [[nodiscard]] int Count() const override { return int(data_.size()); }
 
     void ReadFromJs(const JsObjectP &js_obj, void *comp) override { T::Read(js_obj, *(T *)comp); }
     void WriteToJs(const void *comp, JsObjectP &js_obj) const override { T::Write(*(T *)comp, js_obj); }
@@ -847,7 +847,7 @@ void Eng::SceneManager::LoadProbeCache() {
                     data_offset += sizeof(uint32_t);
                     data_len -= sizeof(uint32_t);
 
-                    if ((int)len > data_len || !self->scene_data_.probe_storage.SetPixelData(
+                    if (int(len) > data_len || !self->scene_data_.probe_storage.SetPixelData(
                                                    level, lprobe->layer_index, face_index, Ren::eTexFormat::Compressed,
                                                    &p_data[data_offset], len, self->ren_ctx_.log())) {
                         log->Error("Failed to load probe texture!");

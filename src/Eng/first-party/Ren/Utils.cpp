@@ -351,7 +351,7 @@ rgb9e5 float3_to_rgb9e5(const float rgb[3]) {
     // This pow function could be replaced by a table.
     double denom = pow(2, exp_shared - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS);
 
-    int maxm = (int)floor(maxrgb / denom + 0.5);
+    int maxm = int(floor(maxrgb / denom + 0.5));
     if (maxm == MAX_RGB9E5_MANTISSA + 1) {
         denom *= 2;
         exp_shared += 1;
@@ -360,9 +360,9 @@ rgb9e5 float3_to_rgb9e5(const float rgb[3]) {
         assert(maxm <= MAX_RGB9E5_MANTISSA);
     }
 
-    int rm = (int)floor(rc / denom + 0.5);
-    int gm = (int)floor(gc / denom + 0.5);
-    int bm = (int)floor(bc / denom + 0.5);
+    const int rm = int(floor(rc / denom + 0.5));
+    const int gm = int(floor(gc / denom + 0.5));
+    const int bm = int(floor(bc / denom + 0.5));
 
     assert(rm <= MAX_RGB9E5_MANTISSA);
     assert(gm <= MAX_RGB9E5_MANTISSA);

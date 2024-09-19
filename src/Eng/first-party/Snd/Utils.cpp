@@ -82,9 +82,9 @@ int Snd::LoadWAV(std::istream &in_data, int &channels, int &samples_per_second,
         return 0;
     }
 
-    channels = (int)chunk.channels_count;
-    samples_per_second = (int)chunk.samples_per_second;
-    bits_per_sample = (int)chunk.bits_per_sample;
+    channels = int(chunk.channels_count);
+    samples_per_second = int(chunk.samples_per_second);
+    bits_per_sample = int(chunk.bits_per_sample);
 
-    return (int)chunk_size;
+    return int(chunk_size);
 }

@@ -16,7 +16,7 @@ bool Eng::ScriptedDialog::Load(const std::string_view lookup_name, const JsObjec
                                bool (*read_sequence)(const std::string_view name, JsObject &js_seq)) {
     sequences_.emplace_back(ren_ctx_, snd_ctx_, scene_manager_);
     if (sequences_.back().Load(lookup_name, js_seq)) {
-        const int cur_seq_index = (int)sequences_.size() - 1;
+        const int cur_seq_index = int(sequences_.size()) - 1;
 
         const JsObject &js_ending = js_seq.at("ending").as_obj();
         if (js_ending.Has("choices")) {
@@ -29,7 +29,7 @@ bool Eng::ScriptedDialog::Load(const std::string_view lookup_name, const JsObjec
                 const JsString &js_seq_name = js_choice.at("sequence").as_str();
 
                 int choice_seq_index = -1;
-                for (int i = 0; i < (int)sequences_.size(); i++) {
+                for (int i = 0; i < int(sequences_.size()); i++) {
                     const ScriptedSequence &seq = sequences_[i];
                     if (js_seq_name.val == seq.lookup_name()) {
                         choice_seq_index = i;

@@ -14,12 +14,12 @@ inline int fls(const uint32_t word) {
 }
 
 inline int fls(const uint64_t size) {
-    int high = (int)(size >> 32);
+    int high = int(size >> 32);
     int bits = 0;
     if (high) {
         bits = 32 + fls(uint32_t(high));
     } else {
-        bits = fls((int)size & 0xffffffff);
+        bits = fls(uint32_t(size & 0xffffffff));
     }
     return bits;
 }

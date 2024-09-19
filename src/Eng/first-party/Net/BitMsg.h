@@ -21,9 +21,9 @@ namespace Net {
 
         int num_bits_read() const { return (read_pos_ * 8) - ((8 - read_bit_) & 7); }
 
-        int remaining_write_bits() const { return (int) (cap_ * 8 - num_bits_written()); }
+        int remaining_write_bits() const { return int(cap_ * 8 - num_bits_written()); }
 
-        int remaining_read_bits() const { return (int) (len_ * 8 - num_bits_read()); }
+        int remaining_read_bits() const { return int(len_ * 8 - num_bits_read()); }
 
         /*uint8_t *write_data(size_t &size) {
             size = len_;
@@ -64,8 +64,8 @@ namespace Net {
 
     template<>
     inline void BitMsg::Write<int64_t>(int64_t v) {
-        int a = (int) v;
-        int b = (int) (v >> 32);
+        const int a = int(v);
+        const int b = int(v >> 32);
         WriteBits(a, 32);
         WriteBits(b, 32);
     }

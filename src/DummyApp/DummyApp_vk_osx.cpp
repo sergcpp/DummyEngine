@@ -365,8 +365,8 @@ void DummyApp::PollEvents() {
                 Resize(xev.xconfigure.width, xev.xconfigure.height);
 
                 evt.type = eInputEvent::Resize;
-                evt.point.x = (float)xev.xconfigure.width;
-                evt.point.y = (float)xev.xconfigure.height;
+                evt.point.x = float(xev.xconfigure.width);
+                evt.point.y = float(xev.xconfigure.height);
 
                 last_window_size[0] = xev.xconfigure.width;
                 last_window_size[1] = xev.xconfigure.height;

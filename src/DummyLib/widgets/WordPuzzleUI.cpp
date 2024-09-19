@@ -69,7 +69,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
             const JsObject &js_opt = js_opt_el.as_obj();
 
             OptionData &opt_data = text_options_.emplace_back();
-            opt_data.var_start = (int)option_variants_.size();
+            opt_data.var_start = int(option_variants_.size());
             opt_data.var_count = 0;
             opt_data.var_correct = opt_data.var_start;
             opt_data.var_selected = -1;
@@ -91,7 +91,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
                                 option_variants_.begin() + opt_data.var_start + opt_data.var_count, right_answer);
             assert(it != option_variants_.begin() + opt_data.var_start + opt_data.var_count);
 
-            opt_data.var_correct = (int)std::distance(option_variants_.begin(), it);
+            opt_data.var_correct = int(std::distance(option_variants_.begin(), it));
         }
     }
 
@@ -101,7 +101,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
             const JsObject &js_hint = js_hint_el.as_obj();
 
             HintData &hint_data = text_hints_.emplace_back();
-            hint_data.str_index = (int)hint_strings_.size();
+            hint_data.str_index = int(hint_strings_.size());
             hint_data.is_hover = false;
 
             const JsString &js_hint_en = js_hint.at("en").as_str();
@@ -156,7 +156,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
     avail_splits_.clear();
     chosen_splits_.clear();
 
-    for (int i = 0; i < (int)text_splits_.size(); i++) {
+    for (int i = 0; i < int(text_splits_.size()); i++) {
         avail_splits_.push_back(i);
     }
 
@@ -339,7 +339,7 @@ void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
 
     hover_var_ = -1;
     if (expanded_option_ != -1) {
-        for (int i = 0; i < (int)expanded_rects_.size(); i++) {
+        for (int i = 0; i < int(expanded_rects_.size()); i++) {
             const rect_t &rect = expanded_rects_[i];
 
             if (lp[0] >= rect.dims[0][0] && lp[1] >= rect.dims[0][1] && lp[0] <= rect.dims[0][0] + rect.dims[1][0] &&
@@ -351,7 +351,7 @@ void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
         return;
     }
 
-    for (int i = 0; i < (int)options_rects_.size() && state_ == eState::Correcting; i++) {
+    for (int i = 0; i < int(options_rects_.size()) && state_ == eState::Correcting; i++) {
         const rect_t &rect = options_rects_[i];
         OptionData &opt = text_options_[rect.data];
 
@@ -363,7 +363,7 @@ void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
 
     expanded_hint_ = -1;
 
-    for (int i = 0; i < (int)hint_rects_.size() && state_ > eState::AnimIntro; i++) {
+    for (int i = 0; i < int(hint_rects_.size()) && state_ > eState::AnimIntro; i++) {
         const rect_t &rect = hint_rects_[i];
         HintData &opt = text_hints_[rect.data];
 
@@ -473,7 +473,7 @@ void WordPuzzleUI::UpdateState(const double cur_time_s) {
         if (avail_splits_.empty()) {
             bool is_order_correct = true;
 
-            for (int i = 0; i < (int)chosen_splits_.size(); i++) {
+            for (int i = 0; i < int(chosen_splits_.size()); i++) {
                 if (i != chosen_splits_[i]) {
                     is_order_correct = false;
                     break;

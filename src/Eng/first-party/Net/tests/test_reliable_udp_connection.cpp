@@ -372,12 +372,12 @@ void test_reliable_udp_connection() {
             for (unsigned int i = 0; i < sent_packet.size(); ++i) {
                 sent_packet[i] = (unsigned char)i;
             }
-            server.SendPacket(&sent_packet[0], (int)sent_packet.size());
-            client.SendPacket(&sent_packet[0], (int)sent_packet.size());
+            server.SendPacket(&sent_packet[0], int(sent_packet.size()));
+            client.SendPacket(&sent_packet[0], int(sent_packet.size()));
 
             static std::vector<unsigned char> rcv_packet(32);
             while (true) {
-                int bytes_read = client.ReceivePacket(&rcv_packet[0], (int)rcv_packet.size());
+                int bytes_read = client.ReceivePacket(&rcv_packet[0], int(rcv_packet.size()));
                 if (bytes_read == 0) {
                     break;
                 }
@@ -386,7 +386,7 @@ void test_reliable_udp_connection() {
             }
 
             while (true) {
-                int bytes_read = server.ReceivePacket(&rcv_packet[0], (int)rcv_packet.size());
+                int bytes_read = server.ReceivePacket(&rcv_packet[0], int(rcv_packet.size()));
                 if (bytes_read == 0) {
                     break;
                 }

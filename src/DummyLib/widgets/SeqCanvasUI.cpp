@@ -103,7 +103,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                     r->PushImageQuad(Gui::eDrawMode::Passthrough, tex_layer, pos, uvs_px);
                 }
 
-                const char *type_name = Eng::ScriptedSequence::ActionTypeNames[(int)seq_action->type];
+                const char *type_name = Eng::ScriptedSequence::ActionTypeNames[int(seq_action->type)];
                 snprintf(str_buf, sizeof(str_buf), "[%s]", type_name);
 
                 float y_text_pos = y_coord + track_height - 2.0f * border_height - font_height;

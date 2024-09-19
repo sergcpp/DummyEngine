@@ -43,7 +43,7 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     bones_.resize(bones_count);
     int offset = 0;
     for (size_t i = 0; i < bones_count; i++) {
-        bones_[i].id = (int)i;
+        bones_[i].id = int(i);
         bones_[i].flags = 0;
         data.read(bones_[i].name, 64);
         data.read(bones_[i].parent_name, 64);

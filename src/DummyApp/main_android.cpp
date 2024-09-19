@@ -20,13 +20,13 @@ unsigned int g_android_local_ip_address = 0;
 extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Init(JNIEnv *env, jclass, jint w, jint h, jobject am) {
     AAssetManager *asset_mgr = AAssetManager_fromJava(env, am);
     Sys::AssetFile::InitAssetManager(asset_mgr);
-    
+
     g_app = new DummyApp();
-    g_app->Init((int)w, (int)h);
+    g_app->Init(int(w), int(h));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Destroy(JNIEnv *, jclass) {
-    
+
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Frame(JNIEnv *, jclass) {
@@ -38,6 +38,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_Resize(JNIEnv *,
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_serg_dummyapp_LibJNI_AddEvent(JNIEnv *, jclass, jint type, jint key, jfloat x, jfloat y, jfloat dx, jfloat dy) {
-    g_app->AddEvent((int)type, (uint32_t)key, (float)x, (float)y, (float)dx, (float)dy);
+    g_app->AddEvent(int(type), uint32_t(key), float(x), float(y), float(dx), float(dy));
 }
 

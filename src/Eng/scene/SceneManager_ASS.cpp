@@ -24,7 +24,7 @@ namespace SceneManagerInternal {
 const uint32_t AssetsBuildVersion = 29;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
-    auto in_file_size = (size_t)in_file.size();
+    auto in_file_size = size_t(in_file.size());
 
     std::vector<uint8_t> in_file_data(in_file_size);
     in_file.Read((char *)&in_file_data[0], in_file_size);
@@ -478,7 +478,7 @@ void LoadDB(const char *out_folder, JsObjectP &out_js_assets_db) {
     }
 }
 
-bool WriteDB(const JsObjectP &js_db, const char *out_folder) {
+bool WriteDB(const JsObjectP &js_db, const char *out_folder, Ren::ILog *log) {
     const std::string name1 = std::string(out_folder) + "/assets_db.json";
     const std::string name2 = std::string(out_folder) + "/assets_db.json1";
     const std::string name3 = std::string(out_folder) + "/assets_db.json2";
@@ -495,10 +495,16 @@ bool WriteDB(const JsObjectP &js_db, const char *out_folder) {
     }
 
     if (write_successful) {
-        std::remove(name3.c_str());
-        std::rename(name2.c_str(), name3.c_str());
-        std::rename(name1.c_str(), name2.c_str());
-        std::rename(temp.c_str(), name1.c_str());
+        remove(name3.c_str());
+        if (rename(name2.c_str(), name3.c_str()) != 0) {
+            log->Error("Failed to rename %s -> %s", name2.c_str(), name3.c_str());
+        }
+        if (rename(name1.c_str(), name2.c_str()) != 0) {
+            log->Error("Failed to rename %s -> %s", name1.c_str(), name2.c_str());
+        }
+        if (rename(temp.c_str(), name1.c_str()) != 0) {
+            log->Error("Failed to rename %s -> %s", temp.c_str(), name1.c_str());
+        }
     }
 
     return write_successful;
@@ -857,7 +863,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                 }
             }
 
-            if (Sys::GetTimeS() - last_db_write > 5.0 && WriteDB(ctx.cache->js_db, out_folder)) {
+            if (Sys::GetTimeS() - last_db_write > 5.0 && WriteDB(ctx.cache->js_db, out_folder, ctx.log)) {
                 last_db_write = Sys::GetTimeS();
             }
         }
@@ -895,7 +901,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         ReadAllFiles_r(ctx, in_folder, convert_file);
     }
 
-    WriteDB(ctx.cache->js_db, out_folder);
+    WriteDB(ctx.cache->js_db, out_folder, ctx.log);
 
     glslang_finalize_process();
 
@@ -1059,8 +1065,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
                     const JsObject &js_indices_accessor = js_accessors.at(indices_ndx).as_obj();
                     const JsObject &js_indices_view =
                         js_buffer_views.at(int(js_indices_accessor.at("bufferView").as_num().val)).as_obj();
-                    const auto comp_type =
-                        eGLTFComponentType(js_indices_accessor.at("componentType").as_num().val);
+                    const auto comp_type = eGLTFComponentType(js_indices_accessor.at("componentType").as_num().val);
                     assert(js_indices_accessor.at("type").as_str().val == "SCALAR");
 
                     const auto &indices_buf = buffers[int(js_indices_view.at("buffer").as_num().val)];
@@ -1413,7 +1418,7 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
                     // remove spaces
                     if (!caption.empty()) {
                         int n = 0;
-                        while (n < (int)caption.length() && caption[n] == ' ') {
+                        while (n < int(caption.length()) && caption[n] == ' ') {
                             n++;
                         }
                         caption.erase(0, n);
@@ -1424,7 +1429,7 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
 
                     if (!html_body.empty()) {
                         int n = 0;
-                        while (n < (int)html_body.length() && html_body[n] == ' ') {
+                        while (n < int(html_body.length()) && html_body[n] == ' ') {
                             n++;
                         }
                         html_body.erase(0, n);

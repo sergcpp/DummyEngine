@@ -54,7 +54,7 @@ private:
 
     std::streampos seekpos(std::streampos sp,
                            std::ios_base::openmode which = std::ios_base::in | std::ios_base::out) {
-        cur_ = beg_ + (int)sp;
+        cur_ = beg_ + int(sp);
 
         if (cur_ < beg_ || cur_ > end_) {
             return -1;

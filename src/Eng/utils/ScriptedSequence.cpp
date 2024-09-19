@@ -242,8 +242,8 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 }
 
                 if (js_action.Has("fade_beg")) {
-                    action.fade_beg = (float)js_action.at("fade_beg").as_num().val;
-                    action.fade_end = (float)js_action.at("fade_end").as_num().val;
+                    action.fade_beg = float(js_action.at("fade_beg").as_num().val);
+                    action.fade_end = float(js_action.at("fade_end").as_num().val);
                 } else {
                     action.fade_beg = action.fade_end = 0.0f;
                 }
@@ -669,7 +669,7 @@ Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(std::string_view na
 
     const float duration_s = float(samples_count) / params.samples_per_sec;
 
-    const int tex_w = (int)std::ceil(duration_s / SeqAction::SoundWaveStepS);
+    const int tex_w = int(std::ceil(duration_s / SeqAction::SoundWaveStepS));
     const int tex_h = 16;
     const int tex_data_size = tex_w * tex_h * 4;
 

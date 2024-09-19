@@ -16,8 +16,8 @@ void test_compress() {
         test_buf[i] = 0;
     }
 
-    for (int i = 768; i < (int)test_buf.size(); i++) {
-        test_buf[i] = (uint8_t)(i % 255);
+    for (int i = 768; i < int(test_buf.size()); i++) {
+        test_buf[i] = uint8_t(i % 255);
     }
 
     Net::Packet compr = Net::CompressLZO(test_buf);

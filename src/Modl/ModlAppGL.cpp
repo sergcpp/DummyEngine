@@ -164,7 +164,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     const Ren::Program *p = diag_skinned_prog_.get();
     glUseProgram(p->prog_id());
 
-    glUniform1f(U_MODE, (float)view_mode_);
+    glUniform1f(U_MODE, float(view_mode_));
 
     Mat4f world_from_object = Mat4f{ 1.0f };
 
@@ -190,7 +190,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     const Ren::TriGroup *s = &m->group(0);
     while (s->offset != -1) {
         const Ren::Material *mat = s->mat.get();
-        
+
         if (view_mode_ == DiagUVs1 || view_mode_ == DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->tex_id());
         } else {
@@ -290,7 +290,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     const Ren::Program *p = diag_prog_.get();
     glUseProgram(p->id());
 
-    glUniform1f(U_MODE, (float)view_mode_);
+    glUniform1f(U_MODE, float(view_mode_));
 
     Mat4f world_from_object = Mat4f{1.0f};
 

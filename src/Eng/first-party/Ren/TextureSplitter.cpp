@@ -77,9 +77,9 @@ int Ren::TextureSplitter::Insert_Recursive(const int i, const int res[2]) {
             return i;
         }
 
-        nodes_[i].child[0] = ch0 = (int)nodes_.size();
+        nodes_[i].child[0] = ch0 = int(nodes_.size());
         nodes_.emplace_back();
-        nodes_[i].child[1] = ch1 = (int)nodes_.size();
+        nodes_[i].child[1] = ch1 = int(nodes_.size());
         nodes_.emplace_back();
 
         node_t &n = nodes_[i];
@@ -136,7 +136,7 @@ int Ren::TextureSplitter::Find_r(const int i, const int pos[2]) const {
 }
 
 void Ren::TextureSplitter::SafeErase(const int i, int *indices, const int num) {
-    const int last = (int)nodes_.size() - 1;
+    const int last = int(nodes_.size()) - 1;
 
     if (last != i) {
         int ch0 = nodes_[last].child[0], ch1 = nodes_[last].child[1];

@@ -74,9 +74,9 @@ int Ren::Buffer::Alloc_Recursive(int i, uint32_t req_size) {
             return i;
         }
 
-        nodes_[i].child[0] = ch0 = (int)nodes_.size();
+        nodes_[i].child[0] = ch0 = int(nodes_.size());
         nodes_.emplace_back();
-        nodes_[i].child[1] = ch1 = (int)nodes_.size();
+        nodes_[i].child[1] = ch1 = int(nodes_.size());
         nodes_.emplace_back();
 
         Node &n = nodes_[i];
@@ -113,7 +113,7 @@ int Ren::Buffer::Find_Recursive(int i, uint32_t offset) const {
 }
 
 void Ren::Buffer::SafeErase(int i, int *indices, int num) {
-    int last = (int)nodes_.size() - 1;
+    int last = int(nodes_.size()) - 1;
 
     if (last != i) {
         int ch0 = nodes_[last].child[0],

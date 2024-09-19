@@ -222,7 +222,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
 
                 // find hard edges, mark if closed etc.
                 for (bezier_shape &sh : shapes) {
-                    Gui::PreprocessBezierShape(sh.data(), (int)sh.size(),
+                    Gui::PreprocessBezierShape(sh.data(), int(sh.size()),
                                                30.0 * Ren::Pi<double>() / 180.0 /* angle threshold */);
                 }
 

@@ -66,7 +66,7 @@ float Snd::Buffer::GetDurationS() const {
 void Snd::Buffer::SetData(Span<const uint8_t> data, const BufParams &params) {
     assert(buf_id_ != 0xffffffff);
 
-    alBufferData(ALuint(buf_id_), g_al_formats[(int)params.format], data.data(), ALsizei(data.size()),
+    alBufferData(ALuint(buf_id_), g_al_formats[int(params.format)], data.data(), ALsizei(data.size()),
                  params.samples_per_sec);
     size_ = uint32_t(data.size());
     params_ = params;

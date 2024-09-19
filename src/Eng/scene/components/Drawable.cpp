@@ -59,7 +59,7 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
             }
             dr.ellipsoids[i].bone_index = -1;
         }
-        dr.ellipsoids_count = (int)js_ellipsoids.elements.size();
+        dr.ellipsoids_count = int(js_ellipsoids.elements.size());
     }*/
 }
 

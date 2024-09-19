@@ -30,7 +30,7 @@ std::vector<uint8_t> Eng::LoadHDR(std::string_view name, int &out_w, int &out_h)
         if (!line.compare(0, 6, "FORMAT")) {
             format = line.substr(7);
         } else if (!line.compare(0, 8, "EXPOSURE")) {
-            exposure = (float)atof(line.substr(9).c_str());
+            exposure = float(atof(line.substr(9).c_str()));
         }
     }
 

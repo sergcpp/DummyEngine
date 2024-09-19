@@ -416,7 +416,7 @@ class AsyncFileReaderImpl {
             return false;
         }
 
-        const int chunks_count = (int)((out_size + chunk_size_ - 1) / chunk_size_);
+        const int chunks_count = int((out_size + chunk_size_ - 1) / chunk_size_);
         int chunks_requested = std::min(chunks_count, SimultaniousFileRequestsCount);
 
         for (int i = 0; i < chunks_requested; i++) {

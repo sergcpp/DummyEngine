@@ -29,6 +29,6 @@ Net::Address::Address(const char *str) : address_(0), port_(0) {
 
 std::string Net::Address::str() const {
     char buf[128];
-    snprintf(buf, sizeof(buf), "%i.%i.%i.%i:%i", (int) a(), (int) b(), (int) c(), (int) d(), (int) port());
+    snprintf(buf, sizeof(buf), "%i.%i.%i.%i:%i", int(a()), int(b()), int(c()), int(d()), int(port()));
     return {buf};
 }

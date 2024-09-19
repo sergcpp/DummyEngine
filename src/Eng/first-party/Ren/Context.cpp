@@ -86,7 +86,7 @@ Ren::MaterialRef Ren::Context::LoadMaterial(std::string_view name, std::string_v
 }
 
 int Ren::Context::NumMaterialsNotReady() {
-    return (int)std::count_if(materials_.begin(), materials_.end(), [](const Material &m) { return !m.ready(); });
+    return int(std::count_if(materials_.begin(), materials_.end(), [](const Material &m) { return !m.ready(); }));
 }
 
 void Ren::Context::ReleaseMaterials() {
@@ -199,7 +199,7 @@ Ren::ProgramRef Ren::Context::LoadProgram2(std::string_view name, ShaderRef rayg
 Ren::ProgramRef Ren::Context::GetProgram(const uint32_t index) { return {&programs_, index}; }
 
 int Ren::Context::NumProgramsNotReady() {
-    return (int)std::count_if(programs_.begin(), programs_.end(), [](const Program &p) { return !p.ready(); });
+    return int(std::count_if(programs_.begin(), programs_.end(), [](const Program &p) { return !p.ready(); }));
 }
 
 void Ren::Context::ReleasePrograms() {
@@ -209,7 +209,7 @@ void Ren::Context::ReleasePrograms() {
     log_->Error("---------REMAINING PROGRAMS--------");
     for (const Program &p : programs_) {
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
-        log_->Error("%s %i", p.name().c_str(), (int)p.id());
+        log_->Error("%s %i", p.name().c_str(), int(p.id()));
 #endif
     }
     log_->Error("-----------------------------------");
@@ -292,7 +292,7 @@ void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Textur
 }
 
 int Ren::Context::NumTexturesNotReady() {
-    return (int)std::count_if(textures_2D_.begin(), textures_2D_.end(), [](const Texture2D &t) { return !t.ready(); });
+    return int(std::count_if(textures_2D_.begin(), textures_2D_.end(), [](const Texture2D &t) { return !t.ready(); }));
 }
 
 void Ren::Context::Release2DTextures() {
@@ -418,7 +418,7 @@ Ren::AnimSeqRef Ren::Context::LoadAnimSequence(std::string_view name, std::istre
 }
 
 int Ren::Context::NumAnimsNotReady() {
-    return (int)std::count_if(anims_.begin(), anims_.end(), [](const AnimSequence &a) { return !a.ready(); });
+    return int(std::count_if(anims_.begin(), anims_.end(), [](const AnimSequence &a) { return !a.ready(); }));
 }
 
 void Ren::Context::ReleaseAnims() {

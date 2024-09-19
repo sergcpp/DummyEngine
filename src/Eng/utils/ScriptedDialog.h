@@ -27,7 +27,7 @@ class ScriptedDialog {
 
     bool empty() const { return sequences_.empty(); }
 
-    int GetSequencesCount() const { return (int)sequences_.size(); }
+    int GetSequencesCount() const { return int(sequences_.size()); }
 
     ScriptedSequence *GetSequence(int i) { return &sequences_[i]; }
 

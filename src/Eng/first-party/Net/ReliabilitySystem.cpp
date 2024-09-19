@@ -133,7 +133,7 @@ void Net::ReliabilitySystem::GetAcks(unsigned int **acks, int &count) {
     if (!acks_.empty()) {
         *acks = &acks_[0];
     }
-    count = (int) acks_.size();
+    count = int(acks_.size());
 }
 
 unsigned int

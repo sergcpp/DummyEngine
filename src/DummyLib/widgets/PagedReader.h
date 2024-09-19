@@ -66,7 +66,7 @@ class PagedReader : public Gui::BaseElement {
     void set_cur_page(int page) { cur_page_ = page; }
     int selected_sentence() const { return sentence_to_translate_; }
 
-    int page_count() const { return (int)chapters_[0][cur_chapter_].pages.size(); }
+    int page_count() const { return int(chapters_[0][cur_chapter_].pages.size()); }
 
     void Clear();
     bool LoadBook(const JsObject &js_book, const char *src_lang, const char *trg_lang);

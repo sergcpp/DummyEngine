@@ -189,7 +189,7 @@ bool Net::UDPSocket::Send(const Address &destination, const void *data, int size
     address.sin_addr.s_addr = htonl(destination.address());
     address.sin_port = htons((unsigned short) destination.port());
 
-    int sent_bytes = (int) sendto(handle_, (const char *) data, size, 0, (sockaddr *) &address, sizeof(sockaddr_in));
+    const int sent_bytes = int(sendto(handle_, (const char *) data, size, 0, (sockaddr *) &address, sizeof(sockaddr_in)));
 
     return sent_bytes == size;
 }
@@ -205,7 +205,7 @@ int Net::UDPSocket::Receive(Address &sender, void *data, const int size) const {
     sockaddr_in from;   // NOLINT
     socklen_t from_len = sizeof(sockaddr_in);
 
-    const int received_bytes = (int) recvfrom(handle_, (char *) data, (size_t) size, 0, (sockaddr *) &from, &from_len);
+    const int received_bytes = int(recvfrom(handle_, (char *) data, (size_t) size, 0, (sockaddr *) &from, &from_len));
 
     if (received_bytes <= 0) {
         return 0;
@@ -410,7 +410,7 @@ bool Net::TCPSocket::Send(const void *data, int size) {
     }
 #endif
 
-    int sent_bytes = (int) send(dst, (char *) data, (size_t) size, 0);
+    int sent_bytes = int(send(dst, (char *) data, (size_t) size, 0));
 
     return sent_bytes == size;
 }
@@ -430,7 +430,7 @@ int Net::TCPSocket::Receive(void *data, int size) {
     }
 #endif
 
-    int received_bytes = (int) recv(src, (char *) data, (size_t) size, 0);
+    const int received_bytes = int(recv(src, (char *) data, (size_t) size, 0));
 
     if (received_bytes <= 0) {
         //printf("Error recv %d - %s\n", errno, strerror(errno));

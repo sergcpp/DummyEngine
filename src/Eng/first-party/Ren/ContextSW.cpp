@@ -33,8 +33,8 @@ void Ren::Context::Init(int w, int h) {
     printf("Capabilities:\n");
 
     printf("\tCPU Model\t\t: %s\n", swGetString(SW_CPU_MODEL));
-    printf("\tNum CPUs\t\t: %i\n", (int)swGetInteger(SW_NUM_CPUS));
-    printf("\tPhysical memory\t: %f GB\n", (float)swGetFloat(SW_PHYSICAL_MEMORY));
+    printf("\tNum CPUs\t\t: %i\n", swGetInteger(SW_NUM_CPUS));
+    printf("\tPhysical memory\t: %f GB\n", swGetFloat(SW_PHYSICAL_MEMORY));
 
     // how many uniform vec4 vectors can be used
     max_uniform_vec4 = swGetInteger(SW_MAX_VERTEX_UNIFORM_VECTORS);

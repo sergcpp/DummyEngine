@@ -1082,7 +1082,7 @@ void GSBaseState::UpdateFrame(int list_index) {
 
         if (update_all_probes_) {
             if (probes_to_update_.empty()) {
-                const int obj_count = (int)scene_manager_->scene_data().objects.size();
+                const int obj_count = int(scene_manager_->scene_data().objects.size());
                 for (int i = 0; i < obj_count; i++) {
                     const Eng::SceneObject *obj = scene_manager_->GetObject(i);
                     if (obj->comp_mask & Eng::CompProbeBit) {

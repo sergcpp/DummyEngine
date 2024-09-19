@@ -70,7 +70,7 @@ Net::WsConnection::WsConnection(TCPSocket &&conn, const HTTPRequest &upgrade_req
     resp.AddField(_make_unique<SimpleField>("Sec-WebSocket-Protocol", "binary"));
 
     std::string answer = resp.str();
-    conn_.Send(answer.c_str(), (int)answer.length());
+    conn_.Send(answer.c_str(), int(answer.length()));
 }
 
 Net::WsConnection::WsConnection(WsConnection &&rhs) noexcept
@@ -157,7 +157,7 @@ bool Net::WsConnection::Send(const void *data, int size) {
     memcpy(payload, data, (size_t)size);
     ApplyMask(mask, payload, size);
 
-    return conn_.Send(buf, (int)(uintptr_t(payload - buf) + size));
+    return conn_.Send(buf, int(uintptr_t(payload - buf) + size));
 }
 
 void Net::WsConnection::ApplyMask(uint32_t mask, uint8_t *data, int size) {

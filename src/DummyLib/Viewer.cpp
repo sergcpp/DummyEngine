@@ -460,7 +460,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
         std::vector<Dictionary::dict_entry_compact_t> entries_compact;
 
         int translations_processed = 0;
-        const int translations_count = (int)translations.size();
+        const int translations_count = int(translations.size());
 
         int links_count = 0;
 

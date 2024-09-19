@@ -43,11 +43,11 @@ int Net::CalcLZOOutSize(const int in_size) {
 int Net::CompressLZO(const uint8_t *in_buf, int in_size, uint8_t *out_buf) {
     lzo_uint compressed_size;
     lzo1x_1_compress(in_buf, (lzo_uint) in_size, out_buf, &compressed_size, lzo_ctx.working_mem);
-    return (int) compressed_size;
+    return int(compressed_size);
 }
 
 int Net::DecompressLZO(const uint8_t *in_buf, int in_size, uint8_t *out_buf, int out_size) {
     lzo_uint decompressed_size = out_size;
     lzo1x_decompress_safe(in_buf, in_size, out_buf, &decompressed_size, nullptr);
-    return (int) decompressed_size;
+    return int(decompressed_size);
 }

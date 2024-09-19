@@ -44,10 +44,10 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
     using Ren::Vec2f;
 
     /*for (int i = 0; i < 4; i++) {
-        Vec2f uvs_px = page_corners[i] * Vec2f{ (float)page_buf_.w, (float)page_buf_.h };
+        Vec2f uvs_px = page_corners[i] * Vec2f{ float(page_buf_.w), float(page_buf_.h) };
         uvs_px[0] = std::floor(uvs_px[0]) + 0.5f;
         uvs_px[1] = std::floor(uvs_px[1]) + 0.5f;
-        page_corners[i] = uvs_px / Vec2f{ (float)page_buf_.w, (float)page_buf_.h };
+        page_corners[i] = uvs_px / Vec2f{ float(page_buf_.w), float(page_buf_.h) };
     }*/
 
 #ifndef DISABLE_MARKERS
@@ -61,7 +61,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    book_main_font_->set_scale(/*std::max((float)ctx_->w() / 4096.0f, 1.0f)*/ 1.0f);
+    book_main_font_->set_scale(/*std::max(float(ctx_->w()) / 4096.0f, 1.0f)*/ 1.0f);
     assert(book_main_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
            book_emph_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
            book_caption_font_->draw_mode() == Gui::eDrawMode::DistanceField);

@@ -44,7 +44,7 @@ void Gui::EditBox::Resize() {
 
         float cur_y = 1.0f - font_height;
 
-        for (int i = 0; i < (int)lines_.size(); i++) {
+        for (int i = 0; i < int(lines_.size()); i++) {
             const std::string &line = lines_[i];
 
             if (p[1] > cur_y && p[1] < cur_y + font_height) {
@@ -96,7 +96,7 @@ int Gui::EditBox::AddLine(std::string text) {
 
     lines_.emplace_back(std::move(text));
 
-    return (int)lines_.size() - 1;
+    return int(lines_.size()) - 1;
 }
 
 int Gui::EditBox::InsertLine(std::string text) {
@@ -113,15 +113,16 @@ int Gui::EditBox::InsertLine(std::string text) {
 void Gui::EditBox::DeleteLine(int line) { lines_.erase(lines_.begin() + line); }
 
 void Gui::EditBox::AddChar(int ch) {
-    if (current_line_ >= (int)lines_.size())
+    if (current_line_ >= int(lines_.size())) {
         return;
+    }
 
     std::string &cur_line = lines_[current_line_];
     cur_line.insert(cur_line.begin() + current_char_, ch);
 
     current_char_++;
 
-    /*if (current_line_ >= (int)lines_.size()) return;
+    /*if (current_line_ >= int(lines_.size())) return;
 
     switch (c) {
     case 191:
@@ -139,7 +140,7 @@ void Gui::EditBox::AddChar(int ch) {
         if (((c == ' ' || (c >= 'A' && c <= 'z') || (c >= 160 && c <= 255)) && (edit_flags_[Chars])) ||
                 ((c == '.' || c == '-' || c == '=' || c == '+' || c == '/' || c == '{' || c == '}' || (c >= '0' && c <=
     '9')) && (edit_flags_[Integers] || edit_flags_[Floats]))) { } else {
-            //LOGE("No %i", (int)s);
+            //LOGE("No %i", int(s));
             return;
         }
     }
@@ -152,26 +153,30 @@ void Gui::EditBox::AddChar(int ch) {
 }
 
 void Gui::EditBox::DeleteBck() {
-    if (current_line_ >= (int)lines_.size())
+    if (current_line_ >= int(lines_.size())) {
         return;
+    }
 
     std::string &line = lines_[current_line_];
     const int ch = current_char_ - 1;
-    if (ch < 0 || ch >= (int)line.length())
+    if (ch < 0 || ch >= int(line.length())) {
         return;
+    }
 
     line.erase(ch, 1);
     current_char_--;
 }
 
 void Gui::EditBox::DeleteFwd() {
-    if (current_line_ >= (int)lines_.size())
+    if (current_line_ >= int(lines_.size())) {
         return;
+    }
 
     std::string &line = lines_[current_line_];
     const int ch = current_char_;
-    if (ch < 0 || ch >= (int)line.length())
+    if (ch < 0 || ch >= int(line.length())) {
         return;
+    }
 
     line.erase(ch, 1);
 }
@@ -182,7 +187,7 @@ void Gui::EditBox::MoveCursorH(const int m) {
 }
 
 void Gui::EditBox::MoveCursorV(int m) {
-    current_line_ = std::max(std::min(current_line_ + m, (int)lines_.size() - 1), 0);
+    current_line_ = std::max(std::min(current_line_ + m, int(lines_.size()) - 1), 0);
 
     const int line_len = Gui::CalcUTF8Length(lines_[current_line_].c_str());
     current_char_ = std::max(std::min(current_char_, line_len), 0);

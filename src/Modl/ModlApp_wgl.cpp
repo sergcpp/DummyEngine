@@ -240,7 +240,7 @@ int Tokenize(const std::string &str, const char *delims, std::string out_toks[32
 
     int tok_count = 0;
 
-    while (strchr(delims, (int)*p)) {
+    while (strchr(delims, int(*p))) {
         p++;
     }
 
@@ -821,7 +821,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
 
                 // parse joint indices and weights (limited to four bones)
                 int bones_count = (toks_count - tok_off) / 2;
-                int start_index = (int)weights.size();
+                int start_index = int(weights.size());
 
                 std::pair<int32_t, float> parsed_bones[16];
                 int parsed_bones_count = 0;
@@ -1015,7 +1015,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
             memcpy(&tangents[i * 3], &vertices[i].b[0], sizeof(float) * 3);
         }
 
-        for (int i = num_vertices; i < (int)vertices.size(); i++) {
+        for (int i = num_vertices; i < int(vertices.size()); i++) {
             positions.push_back(vertices[i].p[0]);
             positions.push_back(vertices[i].p[1]);
             positions.push_back(vertices[i].p[2]);
@@ -1052,7 +1052,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
             }
         }
 
-        num_vertices = (int)vertices.size();
+        num_vertices = int(vertices.size());
     }
 
     std::cout << "Done" << std::endl;
@@ -1082,7 +1082,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
 
         for (ShapeKey &sh_key : shape_keys) {
             map<int, int> index_to_key;
-            for (int i = 0; i < (int)sh_key.data.size(); i++) {
+            for (int i = 0; i < int(sh_key.data.size()); ++i) {
                 const ShapeKeyElement &key = sh_key.data[i];
                 index_to_key[key.index] = i;
             }
@@ -1216,7 +1216,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
     vector<MeshChunk> total_chunks, alpha_chunks;
     vector<int> alpha_mats;
 
-    for (int i = 0; i < (int)reordered_indices.size(); i++) {
+    for (int i = 0; i < int(reordered_indices.size()); ++i) {
         bool alpha_test = false;
         { // check if material has transparency
             ifstream mat_file("assets_pc/materials/" + materials[i] + ".txt");
@@ -1257,7 +1257,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
         materials.push_back(materials[mat_ndx]);
     }
     sort(alpha_mats.begin(), alpha_mats.end());
-    for (int i = (int)alpha_mats.size() - 1; i >= 0; i--) {
+    for (int i = int(alpha_mats.size()) - 1; i >= 0; i--) {
         materials.erase(materials.begin() + alpha_mats[i]);
     }
 
