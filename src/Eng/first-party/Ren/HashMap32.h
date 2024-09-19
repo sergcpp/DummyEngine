@@ -57,6 +57,14 @@ template <> class Hash<const char *> {
     uint32_t operator()(const std::string_view &s) const { return _str_hash_len(s.data(), s.size()); }
 };
 
+template <> class Hash<std::string_view> {
+  public:
+    uint32_t operator()(const String &s) const { return _str_hash_len(s.c_str(), s.length()); }
+    uint32_t operator()(const std::string &s) const { return _str_hash_len(s.c_str(), s.length()); }
+    uint32_t operator()(const std::string_view &s) const { return _str_hash_len(s.data(), s.size()); }
+    uint32_t operator()(const char *s) const { return _str_hash(s); }
+};
+
 template <> class Hash<std::string> {
   public:
     uint32_t operator()(const String &s) const { return _str_hash_len(s.c_str(), s.length()); }
