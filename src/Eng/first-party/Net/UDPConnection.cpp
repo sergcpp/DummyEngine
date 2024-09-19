@@ -83,7 +83,7 @@ bool Net::UDPConnection::SendPacket(const unsigned char data[], int size) {
     if (address_.address() == 0) {
         return false;
     }
-#ifndef __EMSCRIPTEN__
+
     unsigned char packet[MAX_PACKET_SIZE];
     packet[0] = (unsigned char)(protocol_id_ >> 24u);
     packet[1] = (unsigned char)((protocol_id_ >> 16u) & 0xFFu);
@@ -100,15 +100,12 @@ bool Net::UDPConnection::SendPacket(const unsigned char data[], int size) {
     }
 
     return socket_.Send(address_, packet, size + 4);
-#else
-    return socket_.Send(address_, data, size);
-#endif
 }
 
 int Net::UDPConnection::ReceivePacket(unsigned char data[], int size) {
     Address sender;
     assert(running_);
-#ifndef __EMSCRIPTEN__
+
     assert(size + 4 <= MAX_PACKET_SIZE);
     unsigned char packet[MAX_PACKET_SIZE];
     int bytes_read = socket_.Receive(sender, packet, size + 4);
@@ -132,9 +129,6 @@ int Net::UDPConnection::ReceivePacket(unsigned char data[], int size) {
         }
     }
 
-#else
-    int bytes_read = socket_.Receive(sender, data, size);
-#endif
     if (mode_ == eMode::Server && !connected()) {
         state_ = eState::Connected;
         address_ = sender;
@@ -146,12 +140,9 @@ int Net::UDPConnection::ReceivePacket(unsigned char data[], int size) {
             OnConnect();
         }
         timeout_acc_ = 0.0f;
-#ifndef __EMSCRIPTEN__
+
         memcpy(data, &packet[4], bytes_read - 4);
         return bytes_read - 4;
-#else
-        return bytes_read;
-#endif
     }
     return 0;
 }

@@ -39,10 +39,8 @@ Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level
     snd_ctx_ = std::make_unique<Snd::Context>();
     snd_ctx_->Init(log_);
 
-#if !defined(__EMSCRIPTEN__)
     unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1u);
     threads_ = std::make_unique<Sys::ThreadPool>(num_threads, Sys::eThreadPriority::Normal, "worker");
-#endif
 
     input_manager_ = std::make_unique<InputManager>();
 

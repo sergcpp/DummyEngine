@@ -28,7 +28,7 @@ inline unsigned long long _xgetbv(unsigned int index) {
 
 #else
 
-#if !defined(__arm__) && !defined(__aarch64__) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) &&                 \
+#if !defined(__arm__) && !defined(__aarch64__) && !defined(__ANDROID__) &&                 \
     !defined(_M_ARM) && !defined(_M_ARM64)
 //  GCC Intrinsics
 #include <cpuid.h>

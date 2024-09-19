@@ -14,7 +14,7 @@
 #include <ws2ipdef.h>
 #include <Ws2tcpip.h>
 #endif
-#if defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
+#if defined(__linux__) || defined(__APPLE__)
 
 #include <fcntl.h>
 #include <netdb.h>
@@ -24,9 +24,6 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
-#endif
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
 #endif
 
 #ifdef _WIN32
@@ -125,23 +122,16 @@ void Net::UDPSocket::Open(unsigned short port, bool reuse_addr) {
         throw std::runtime_error("Cannot create socket.");
     }
 
-#ifndef __EMSCRIPTEN__
     if (reuse_addr) {
         int one = 1;
         setsockopt(handle_, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(int));
     }
-#endif
 
     sockaddr_in address;    // NOLINT
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
 
-#ifdef __EMSCRIPTEN__
-    if (!port) {
-        port = 20000 + rand()%10000;
-    }
-#endif
     address.sin_port = htons(port);
 
     if (::bind(handle_, (const sockaddr *) &address, sizeof(sockaddr_in)) < 0) {
@@ -277,12 +267,10 @@ void Net::TCPSocket::Open(unsigned short port, bool reuse_addr) {
         throw std::runtime_error("Cannot create socket.");
     }
 
-#ifndef __EMSCRIPTEN__
     if (reuse_addr) {
         int one = 1;
         setsockopt(handle_, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(int));
     }
-#endif
 
     sockaddr_in address;    // NOLINT
     address.sin_family = AF_INET;

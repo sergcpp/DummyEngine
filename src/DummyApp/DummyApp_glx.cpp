@@ -2,11 +2,6 @@
 
 #include <cstring>
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#include <html5.h>
-#endif
-
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global"); // NOLINT
 

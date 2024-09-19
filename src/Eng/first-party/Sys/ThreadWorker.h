@@ -1,6 +1,5 @@
 #pragma once
 
-#ifndef __EMSCRIPTEN__
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -17,8 +16,7 @@ class ThreadWorker {
     bool Stop();
 
     template <class F, class... Args>
-    auto AddTask(F &&f, Args &&... args)
-        -> std::future<typename std::invoke_result_t<F, Args...>>;
+    auto AddTask(F &&f, Args &&...args) -> std::future<typename std::invoke_result_t<F, Args...>>;
 
   private:
     std::thread worker_;
@@ -37,8 +35,7 @@ inline ThreadWorker::ThreadWorker() : stop_(false), stopped_(false) {
 
             {
                 std::unique_lock<std::mutex> lock(this->queue_mtx_);
-                this->cnd_.wait(lock,
-                                [this] { return this->stop_ || !this->tasks_.empty(); });
+                this->cnd_.wait(lock, [this] { return this->stop_ || !this->tasks_.empty(); });
                 if (this->stop_ && this->tasks_.empty()) {
                     this->stopped_ = true;
                     return;
@@ -64,12 +61,11 @@ inline bool ThreadWorker::Stop() {
 }
 
 template <class F, class... Args>
-auto ThreadWorker::AddTask(F &&f, Args &&... args)
-    -> std::future<typename std::invoke_result_t<F, Args...>> {
+auto ThreadWorker::AddTask(F &&f, Args &&...args) -> std::future<typename std::invoke_result_t<F, Args...>> {
     using return_type = typename std::invoke_result_t<F, Args...>;
 
-    auto task = std::make_shared<std::packaged_task<return_type()>>(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+    auto task =
+        std::make_shared<std::packaged_task<return_type()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
     std::future<return_type> res = task->get_future();
     {
@@ -95,15 +91,3 @@ inline ThreadWorker::~ThreadWorker() {
     worker_.join();
 }
 } // namespace Sys
-#else
-namespace Sys {
-class ThreadWorker {
-  public:
-    ThreadWorker() {}
-
-    virtual ~ThreadWorker() {}
-
-    template <class F, class... Args> void AddTask(F &&f, Args &&... args) { f(args...); }
-};
-} // namespace Sys
-#endif // __EMSCRIPTEN__

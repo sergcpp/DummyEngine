@@ -14,7 +14,6 @@ Net::ReliableUDPConnection::~ReliableUDPConnection() {
 }
 
 bool Net::ReliableUDPConnection::SendPacket(const unsigned char data[], int size) {
-#ifndef __EMSCRIPTEN__
     if (reliability_system_.local_sequence() & packet_loss_mask_) {
         reliability_system_.PacketSent(nullptr, size);
         return true;
@@ -33,13 +32,9 @@ bool Net::ReliableUDPConnection::SendPacket(const unsigned char data[], int size
     }
     reliability_system_.PacketSent((void *) data, size);
     return true;
-#else
-    return UDPConnection::SendPacket(data, size);
-#endif
 }
 
 int Net::ReliableUDPConnection::ReceivePacket(unsigned char data[], int size) {
-#ifndef __EMSCRIPTEN__
     const int header_size = 12;
     if (size <= header_size) {
         return 0;
@@ -58,9 +53,6 @@ int Net::ReliableUDPConnection::ReceivePacket(unsigned char data[], int size) {
     memcpy(data, packet + header_size, (size_t) received_bytes - header_size);
 
     return received_bytes - header_size;
-#else
-    return UDPConnection::ReceivePacket(data, size);
-#endif
 }
 
 void Net::ReliableUDPConnection::Update(float dt_s) {

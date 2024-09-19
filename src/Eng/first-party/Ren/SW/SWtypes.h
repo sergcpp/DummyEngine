@@ -41,7 +41,7 @@ typedef struct SWuniform {
 #ifdef __GNUC__
 //#define sw_inline __attribute__((always_inline))
 //#define sw_inline __attribute__((inline))
-#if !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
+#if !defined(__ANDROID__)
 //#define sw_inline __always_inline
 #else
 #define sw_inline __inline__

@@ -3,7 +3,7 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
-#if defined(__linux__) || defined(__EMSCRIPTEN__)
+#if defined(__linux__)
 
 #include <netinet/in.h>
 
