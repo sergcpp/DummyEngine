@@ -89,11 +89,9 @@ bool Gui::Renderer::Init() {
         }
     }
 
-    // TODO: refactor this
-    snprintf(name_, sizeof(name_), "UI_Render [%i]", instance_index_);
+    name_ = "UI_Render [" + std::to_string(instance_index_) + "]";
 
     char name_buf[32];
-
     snprintf(name_buf, sizeof(name_buf), "UI_VertexBuffer [%i]", instance_index_);
     vertex_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::VertexAttribs, MaxVerticesPerRange * sizeof(vertex_t));
 
@@ -121,8 +119,7 @@ bool Gui::Renderer::Init() {
     }
 
     for (int i = 0; i < Ren::MaxFramesInFlight; i++) {
-        vtx_count_[i] = 0;
-        ndx_count_[i] = 0;
+        vtx_count_[i] = ndx_count_[i] = 0;
     }
 
     Ren::ApiContext *api_ctx = ctx_.api_ctx();
@@ -169,24 +166,23 @@ bool Gui::Renderer::Init() {
 }
 
 void Gui::Renderer::PushClipArea(const Vec2f dims[2]) {
-    clip_area_stack_[clip_area_stack_size_][0] = dims[0];
-    clip_area_stack_[clip_area_stack_size_][1] = dims[0] + dims[1];
-    if (clip_area_stack_size_) {
-        clip_area_stack_[clip_area_stack_size_][0] =
-            Max(clip_area_stack_[clip_area_stack_size_ - 1][0], clip_area_stack_[clip_area_stack_size_][0]);
-        clip_area_stack_[clip_area_stack_size_][1] =
-            Min(clip_area_stack_[clip_area_stack_size_ - 1][1], clip_area_stack_[clip_area_stack_size_][1]);
+    auto new_clip = Vec4f{dims[0][0], dims[0][1], dims[0][0] + dims[1][0], dims[0][1] + dims[1][1]};
+    if (!clip_area_stack_.empty()) {
+        new_clip[0] = fmaxf(new_clip[0], clip_area_stack_.back()[0]);
+        new_clip[1] = fmaxf(new_clip[1], clip_area_stack_.back()[1]);
+        new_clip[2] = fminf(new_clip[2], clip_area_stack_.back()[2]);
+        new_clip[3] = fminf(new_clip[3], clip_area_stack_.back()[3]);
     }
-    ++clip_area_stack_size_;
+    clip_area_stack_.emplace_back(new_clip);
 }
 
-void Gui::Renderer::PopClipArea() { --clip_area_stack_size_; }
+void Gui::Renderer::PopClipArea() { clip_area_stack_.pop_back(); }
 
-const Gui::Vec2f *Gui::Renderer::GetClipArea() const {
-    if (clip_area_stack_size_) {
-        return clip_area_stack_[clip_area_stack_size_ - 1];
+std::optional<Gui::Vec4f> Gui::Renderer::GetClipArea() const {
+    if (!clip_area_stack_.empty()) {
+        return clip_area_stack_.back();
     }
-    return nullptr;
+    return {};
 }
 
 int Gui::Renderer::AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, uint16_t **index_data,
@@ -230,7 +226,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
     static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
 
-    if (clip_area_stack_size_ && !ClipQuadToArea(pos_uvs, clip_area_stack_[clip_area_stack_size_ - 1])) {
+    if (!clip_area_stack_.empty() && !ClipQuadToArea(pos_uvs, clip_area_stack_.back())) {
         return;
     }
 
@@ -304,8 +300,7 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
         pos_uvs[i][3] *= uvs_scale[1];
     }
 
-    if (clip_area_stack_size_ &&
-        !(vertex_count = ClipPolyToArea(pos_uvs, vertex_count, clip_area_stack_[clip_area_stack_size_ - 1]))) {
+    if (!clip_area_stack_.empty() && !(vertex_count = ClipPolyToArea(pos_uvs, vertex_count, clip_area_stack_.back()))) {
         return;
     }
     assert(vertex_count < 8);

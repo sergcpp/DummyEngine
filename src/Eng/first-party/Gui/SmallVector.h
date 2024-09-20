@@ -64,7 +64,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         }
 
         if (capacity_ & OwnerBit) {
-            aligned_free(begin_);
+            Gui::aligned_free(begin_);
         }
     }
 
@@ -277,7 +277,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         }
 
         if (capacity_ & OwnerBit) {
-            aligned_free(begin_);
+            Gui::aligned_free(begin_);
         }
 
         begin_ = new_begin;

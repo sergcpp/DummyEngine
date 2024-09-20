@@ -140,13 +140,13 @@ Gui::Vec2f Gui::MapPointToScreen(const Vec2i &p, const Vec2i &res) {
     return (2.0f * Vec2f(float(p[0]), float(res[1] - p[1]))) / Vec2f{res} + Vec2f(-1);
 }
 
-bool Gui::ClipQuadToArea(Vec4f pos[2], const Vec2f clip[2]) {
-    if (pos[1][0] < clip[0][0] || pos[1][1] < clip[0][1] || pos[0][0] > clip[1][0] || pos[0][1] > clip[1][1]) {
+bool Gui::ClipQuadToArea(Vec4f pos[2], const Vec4f &clip) {
+    if (pos[1][0] < clip[0] || pos[1][1] < clip[1] || pos[0][0] > clip[2] || pos[0][1] > clip[3]) {
         return false;
     }
 
-    const Vec2f clipped_p0 = Max(Vec2f{pos[0]}, clip[0]);
-    const Vec2f clipped_p1 = Min(Vec2f{pos[1]}, clip[1]);
+    const Vec2f clipped_p0 = Max(Vec2f{pos[0]}, Vec2f{clip[0], clip[1]});
+    const Vec2f clipped_p1 = Min(Vec2f{pos[1]}, Vec2f{clip[2], clip[3]});
 
     const Vec4f delta = pos[1] - pos[0];
     const Vec2f t0 = (clipped_p0 - Vec2f{pos[0]}) / Vec2f{delta};
@@ -158,14 +158,14 @@ bool Gui::ClipQuadToArea(Vec4f pos[2], const Vec2f clip[2]) {
     return true;
 }
 
-int Gui::ClipPolyToArea(Vec4f *vertices, int vertex_count, const Vec2f clip[2]) {
+int Gui::ClipPolyToArea(Vec4f *vertices, int vertex_count, const Vec4f &clip) {
     using namespace GuiInternal;
 
     Vec4f temp[16];
 
     for (int axis = 0; axis < 2; axis++) {
-        vertex_count = sutherland_hodgman(vertices, vertex_count, temp, axis, clip[0][axis], true);
-        vertex_count = sutherland_hodgman(temp, vertex_count, vertices, axis, clip[1][axis], false);
+        vertex_count = sutherland_hodgman(vertices, vertex_count, temp, axis, clip[axis], true);
+        vertex_count = sutherland_hodgman(temp, vertex_count, vertices, axis, clip[2 + axis], false);
     }
 
     return vertex_count;
@@ -389,8 +389,9 @@ Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const 
     double res_pseudodist, res_orthogonality, res_t;
 
     for (int i = 0; i < 2 + count; i++) {
-        if (roots[i] < 0.0 || roots[i] > 1.0)
+        if (roots[i] < 0.0 || roots[i] > 1.0) {
             continue;
+        }
 
         const double t1 = roots[i];
 

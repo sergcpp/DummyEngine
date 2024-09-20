@@ -5,7 +5,6 @@
 #include <cassert>
 
 #include "../Ren/Context.h"
-#include "../Ren/DebugMarker.h"
 #include "../Ren/GL.h"
 #include "../Ren/GLCtx.h"
 #include "../Sys/Json.h"
@@ -22,7 +21,7 @@ Gui::Renderer::~Renderer() {
 }
 
 void Gui::Renderer::Draw(const int w, const int h) {
-    Ren::DebugMarker _(ctx_.api_ctx(), ctx_.current_cmd_buf(), name_);
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name_.c_str());
 
 #ifndef NDEBUG
     if (buf_range_fences_[ctx_.backend_frame()]) {
@@ -124,13 +123,14 @@ void Gui::Renderer::Draw(const int w, const int h) {
     glBindVertexArray(0);
     glUseProgram(0);
 
-    vtx_count_[ctx_.backend_frame()] = 0;
-    ndx_count_[ctx_.backend_frame()] = 0;
+    vtx_count_[ctx_.backend_frame()] = ndx_count_[ctx_.backend_frame()] = 0;
 
 #ifndef NDEBUG
     assert(!buf_range_fences_[ctx_.backend_frame()]);
     buf_range_fences_[ctx_.backend_frame()] = Ren::MakeFence();
 #endif
+
+    glPopDebugGroup();
 }
 
 #undef VTX_POS_LOC

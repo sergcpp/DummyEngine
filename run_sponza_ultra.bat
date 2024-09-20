@@ -1,1 +1,1 @@
-DummyAppVK.exe -s scenes/sponza.json -w 1920 -h 1080 --exposure -8 --preset ultra
+DummyAppVK.exe -s scenes/sponza.json -w 1920 -h 1080 --preset ultra

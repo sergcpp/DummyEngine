@@ -196,7 +196,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
 
     const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
 
-    const Vec2f *clip = r->GetClipArea();
+    const std::optional<Vec4f> clip = r->GetClipArea();
 
     int char_pos = 0;
     while (char_pos < text.size()) {
@@ -226,7 +226,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
                                       p[1] + float(glyph.off[1] + glyph.res[1] + 1) * m[1],
                                       uvs_scale[0] * float(uvs_offset[0] + glyph.pos[0] + glyph.res[0] + 1),
                                       uvs_scale[1] * float(uvs_offset[1] + glyph.pos[1] - 1)}};
-            if (clip && !ClipQuadToArea(pos_uvs, clip)) {
+            if (clip && !ClipQuadToArea(pos_uvs, *clip)) {
                 cur_x += glyph.adv[0];
                 continue;
             }

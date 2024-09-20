@@ -6,7 +6,6 @@
 #include <fstream>
 
 #include "../Ren/Context.h"
-#include "../Ren/DebugMarker.h"
 #include "../Ren/DescriptorPool.h"
 #include "../Ren/VKCtx.h"
 
@@ -22,7 +21,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
 
     Ren::ApiContext *api_ctx = ctx_.api_ctx();
 
-#if !defined(NDEBUG) && defined(USE_VK_RENDER)
+#if !defined(NDEBUG)
     for (int i = 0; i < Ren::MaxFramesInFlight; ++i) {
         VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -57,7 +56,11 @@ void Gui::Renderer::Draw(const int w, const int h) {
         return;
     }
 
-    Ren::DebugMarker _(api_ctx, cmd_buf, name_);
+    VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+    label.pLabelName = name_.c_str();
+    label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1.0f;
+
+    api_ctx->vkCmdBeginDebugUtilsLabelEXT(cmd_buf, &label);
 
     //
     // Update buffers
@@ -74,7 +77,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         index_stage_buf_->resource_state = Ren::eResState::CopySrc;
 
         VkPipelineStageFlags src_stages = 0, dst_stages = 0;
-        Ren::SmallVector<VkBufferMemoryBarrier, 4> buf_barriers;
+        SmallVector<VkBufferMemoryBarrier, 4> buf_barriers;
 
         if (vertex_buf_->resource_state != Ren::eResState::Undefined &&
             vertex_buf_->resource_state != Ren::eResState::CopyDst) {
@@ -151,8 +154,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
-    Ren::SmallVector<VkBufferMemoryBarrier, 4> buf_barriers;
-    Ren::SmallVector<VkImageMemoryBarrier, 4> img_barriers;
+    SmallVector<VkBufferMemoryBarrier, 4> buf_barriers;
+    SmallVector<VkImageMemoryBarrier, 4> img_barriers;
 
     { // vertex buffer barrier [CopyDst -> VertexBuffer]
         auto &new_barrier = buf_barriers.emplace_back();
@@ -295,6 +298,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     api_ctx->vkCmdEndRenderPass(cmd_buf);
 
-    vtx_count_[api_ctx->backend_frame] = 0;
-    ndx_count_[api_ctx->backend_frame] = 0;
+    api_ctx->vkCmdEndDebugUtilsLabelEXT(cmd_buf);
+
+    vtx_count_[api_ctx->backend_frame] = ndx_count_[api_ctx->backend_frame] = 0;
 }

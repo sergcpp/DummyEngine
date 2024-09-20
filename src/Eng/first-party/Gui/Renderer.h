@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "../Ren/Context.h"
@@ -12,6 +13,7 @@
 #include "../Ren/VertexInput.h"
 
 #include "MVec.h"
+#include "SmallVector.h"
 
 namespace Gui {
 enum class eBlendMode { Alpha, Color };
@@ -50,7 +52,7 @@ class Renderer {
 
     void PushClipArea(const Vec2f dims[2]);
     void PopClipArea();
-    const Vec2f *GetClipArea() const;
+    std::optional<Vec4f> GetClipArea() const;
 
     // Returns pointers to mapped vertex buffer. Do NOT read from it, it is write-combined
     // memory and will result in terrible latency!
@@ -68,12 +70,11 @@ class Renderer {
     static const int MaxVerticesPerRange = 64 * 1024;
     static const int MaxIndicesPerRange = 128 * 1024;
 
-    static const int MaxClipStackSize = 8;
     static int g_instance_count;
 
     Ren::Context &ctx_;
     int instance_index_ = -1;
-    char name_[32];
+    std::string name_;
 
     int vtx_count_[Ren::MaxFramesInFlight];
     int ndx_count_[Ren::MaxFramesInFlight];
@@ -81,7 +82,7 @@ class Renderer {
     Ren::RenderPass render_pass_;
     Ren::VertexInput vtx_input_;
     Ren::Pipeline pipeline_;
-    Ren::SmallVector<Ren::Framebuffer, Ren::MaxFramesInFlight> framebuffers_;
+    SmallVector<Ren::Framebuffer, Ren::MaxFramesInFlight> framebuffers_;
 
     // buffers for the case if persistent mapping is not available
     std::unique_ptr<vertex_t[]> stage_vtx_data_;
@@ -97,7 +98,6 @@ class Renderer {
     Ren::SyncFence buf_range_fences_[Ren::MaxFramesInFlight];
 #endif
 
-    Vec2f clip_area_stack_[MaxClipStackSize][2];
-    int clip_area_stack_size_ = 0;
+    SmallVector<Vec4f, 16> clip_area_stack_;
 };
 } // namespace Gui

@@ -14,7 +14,7 @@
 
 namespace Eng::DebugFrameUIInternal {
 const Gui::Vec2f ElementSizePx = Gui::Vec2f{256.0f, 384.0f};
-const Gui::Vec2f ElementSpacingPx = Gui::Vec2f{512.0f, 448.0f};
+const Gui::Vec2f ElementSpacingPx = Gui::Vec2f{384.0f, 400.0f};
 
 void insert_sorted(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
     const auto it = std::lower_bound(std::begin(vec), std::end(vec), val);

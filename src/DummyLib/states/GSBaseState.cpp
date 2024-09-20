@@ -843,10 +843,10 @@ void GSBaseState::Draw() {
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
             // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
-            // Gather drawables for list 0
-            UpdateFrame(0);
             // Target frontend to current frame
             ren_ctx_->frontend_frame = ren_ctx_->backend_frame();
+            // Gather drawables for list 0
+            UpdateFrame(0);
             back_list = 0;
         }
 
