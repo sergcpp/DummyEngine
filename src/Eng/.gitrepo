@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = fb1ae4b65bd165afbba4f40d715a72d73a1e8eae
+	branch = detailed_debug
+	commit = 97907ba8904320e70ad87f1fa7fb455b7c4f7c9a
 	method = merge
 	cmdver = 0.4.6
-	parent = ed599ad05480e2838125ac048d26a88663f1e790
+	parent = 4a0305f3a5dcdcaafd1644c9c206196dad84b30a
