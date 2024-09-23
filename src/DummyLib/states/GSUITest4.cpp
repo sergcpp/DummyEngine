@@ -125,7 +125,7 @@ void GSUITest4::LoadDialog(const std::string_view seq_name) {
 
     JsObject js_seq;
     if (!read_sequence(seq_name, js_seq)) {
-        log_->Error("Failed to read sequence %s", seq_name);
+        log_->Error("Failed to read sequence %s", seq_name.data());
         return;
     }
 

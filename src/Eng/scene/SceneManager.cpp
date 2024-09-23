@@ -1264,7 +1264,7 @@ std::pair<Ren::MaterialRef, Ren::MaterialRef> Eng::SceneManager::OnLoadMaterial(
     if (!ret.first->ready()) {
         Sys::AssetFile in_file(std::string(paths_.materials_path).append(name));
         if (!in_file) {
-            ren_ctx_.log()->Error("Error loading material %s", name);
+            ren_ctx_.log()->Error("Error loading material %s", name.data());
             return ret;
         }
 

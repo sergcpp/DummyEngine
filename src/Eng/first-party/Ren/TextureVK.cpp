@@ -1035,15 +1035,15 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, Com
 
     for (int i = 0; i < int(header.mipmap_levels_count); i++) {
         if (data_offset + int(sizeof(uint32_t)) > data.size()) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", data.size() - data_offset,
-                       sizeof(uint32_t));
+            log->Error("Insufficient data length, bytes left %i, expected %i", int(data.size() - data_offset),
+                       int(sizeof(uint32_t)));
             break;
         }
 
         uint32_t img_size;
         memcpy(&img_size, &data[data_offset], sizeof(uint32_t));
         if (data_offset + int(img_size) > data.size()) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", data.size() - data_offset, img_size);
+            log->Error("Insufficient data length, bytes left %i, expected %i", int(data.size() - data_offset), img_size);
             break;
         }
 
