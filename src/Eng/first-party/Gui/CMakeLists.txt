@@ -80,9 +80,9 @@ endif()
 list(APPEND GUI_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
-#if(MSVC)
-#    list(APPEND GUI_SOURCE_FILES _CustomTypes.natvis)
-#endif(MSVC)
+if(MSVC)
+    list(APPEND GUI_SOURCE_FILES _CustomTypes.natvis)
+endif(MSVC)
 
 add_library(Gui STATIC ${GUI_SOURCE_FILES})
 target_link_libraries(Gui Ren Sys ${LIBS})

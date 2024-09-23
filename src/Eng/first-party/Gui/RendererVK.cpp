@@ -9,31 +9,12 @@
 #include "../Ren/DescriptorPool.h"
 #include "../Ren/VKCtx.h"
 
-namespace UIRendererConstants {
-const int MaxVerticesPerRange = 64 * 1024;
-const int MaxIndicesPerRange = 128 * 1024;
-
+namespace Gui {
 extern const int TexAtlasSlot;
-} // namespace UIRendererConstants
+} // namespace Gui
 
 Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
     instance_index_ = g_instance_count++;
-
-    Ren::ApiContext *api_ctx = ctx_.api_ctx();
-
-#if !defined(NDEBUG)
-    for (int i = 0; i < Ren::MaxFramesInFlight; ++i) {
-        VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        VkFence new_fence;
-        const VkResult res = api_ctx->vkCreateFence(api_ctx->device, &fence_info, nullptr, &new_fence);
-        if (res != VK_SUCCESS) {
-            ctx_.log()->Error("Failed to create fence!");
-        }
-
-        buf_range_fences_[i] = Ren::SyncFence{api_ctx, new_fence};
-    }
-#endif
 }
 
 Gui::Renderer::~Renderer() {
@@ -46,14 +27,22 @@ Gui::Renderer::~Renderer() {
 }
 
 void Gui::Renderer::Draw(const int w, const int h) {
-    using namespace UIRendererConstants;
-
     Ren::ApiContext *api_ctx = ctx_.api_ctx();
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    if (!ndx_count_[api_ctx->backend_frame]) {
+    const int stage_frame = ctx_.in_flight_frontend_frame[api_ctx->backend_frame];
+    if (!ndx_count_[stage_frame]) {
         // nothing to draw
         return;
+    }
+
+    { // insert memory barrier
+        VkMemoryBarrier mem_barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+        mem_barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        mem_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        api_ctx->vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1,
+                                      &mem_barrier, 0, nullptr, 0, nullptr);
     }
 
     VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
@@ -65,19 +54,18 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
     // Update buffers
     //
-    const uint32_t vtx_data_offset = uint32_t(api_ctx->backend_frame) * MaxVerticesPerRange * sizeof(vertex_t);
-    const uint32_t vtx_data_size = uint32_t(vtx_count_[api_ctx->backend_frame]) * sizeof(vertex_t);
+    const uint32_t vtx_data_offset = uint32_t(stage_frame * MaxVerticesPerRange * sizeof(vertex_t));
+    const uint32_t vtx_data_size = uint32_t(vtx_count_[stage_frame]) * sizeof(vertex_t);
 
-    const uint32_t ndx_data_offset = uint32_t(api_ctx->backend_frame) * MaxIndicesPerRange * sizeof(uint16_t);
-    const uint32_t ndx_data_size = uint32_t(ndx_count_[api_ctx->backend_frame]) * sizeof(uint16_t);
+    const uint32_t ndx_data_offset = uint32_t(stage_frame * MaxIndicesPerRange * sizeof(uint16_t));
+    const uint32_t ndx_data_size = uint32_t(ndx_count_[stage_frame]) * sizeof(uint16_t);
 
     { // insert needed barriers before copying
-        // NOTE: stage buffer barriers are not needed as we know all operations for used region have finished
+        VkPipelineStageFlags src_stages = 0, dst_stages = 0;
+        SmallVector<VkBufferMemoryBarrier, 2> buf_barriers;
+
         vertex_stage_buf_->resource_state = Ren::eResState::CopySrc;
         index_stage_buf_->resource_state = Ren::eResState::CopySrc;
-
-        VkPipelineStageFlags src_stages = 0, dst_stages = 0;
-        SmallVector<VkBufferMemoryBarrier, 4> buf_barriers;
 
         if (vertex_buf_->resource_state != Ren::eResState::Undefined &&
             vertex_buf_->resource_state != Ren::eResState::CopyDst) {
@@ -111,12 +99,12 @@ void Gui::Renderer::Draw(const int w, const int h) {
             dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::CopyDst);
         }
 
-        src_stages &= ctx_.api_ctx()->supported_stages_mask;
-        dst_stages &= ctx_.api_ctx()->supported_stages_mask;
+        src_stages &= api_ctx->supported_stages_mask;
+        dst_stages &= api_ctx->supported_stages_mask;
 
         if (!buf_barriers.empty()) {
-            ctx_.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,
-                                                 uint32_t(buf_barriers.size()), buf_barriers.cdata(), 0, nullptr);
+            api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
+                                          buf_barriers.cdata(), 0, nullptr);
         }
 
         vertex_buf_->resource_state = Ren::eResState::CopyDst;
@@ -207,13 +195,12 @@ void Gui::Renderer::Draw(const int w, const int h) {
         dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::ShaderResource);
     }
 
-    src_stages &= ctx_.api_ctx()->supported_stages_mask;
-    dst_stages &= ctx_.api_ctx()->supported_stages_mask;
+    src_stages &= api_ctx->supported_stages_mask;
+    dst_stages &= api_ctx->supported_stages_mask;
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        ctx_.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,
-                                             uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
+                                      buf_barriers.cdata(), uint32_t(img_barriers.size()), img_barriers.cdata());
 
         vertex_buf_->resource_state = Ren::eResState::VertexBuffer;
         index_buf_->resource_state = Ren::eResState::IndexBuffer;
@@ -247,7 +234,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     VkWriteDescriptorSet descr_write;
     descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
     descr_write.dstSet = descr_set;
-    descr_write.dstBinding = UIRendererConstants::TexAtlasSlot;
+    descr_write.dstBinding = TexAtlasSlot;
     descr_write.dstArrayElement = 0;
     descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     descr_write.descriptorCount = 1;
@@ -290,15 +277,15 @@ void Gui::Renderer::Draw(const int w, const int h) {
     api_ctx->vkCmdBindIndexBuffer(cmd_buf, index_buf_->vk_handle(), 0, VK_INDEX_TYPE_UINT16);
 
     api_ctx->vkCmdDrawIndexed(cmd_buf,
-                              ndx_count_[api_ctx->backend_frame], // index count
-                              1,                                  // instance count
-                              0,                                  // first index
-                              0,                                  // vertex offset
-                              0);                                 // first instance
+                              ndx_count_[stage_frame], // index count
+                              1,                       // instance count
+                              0,                       // first index
+                              0,                       // vertex offset
+                              0);                      // first instance
 
     api_ctx->vkCmdEndRenderPass(cmd_buf);
 
     api_ctx->vkCmdEndDebugUtilsLabelEXT(cmd_buf);
 
-    vtx_count_[api_ctx->backend_frame] = ndx_count_[api_ctx->backend_frame] = 0;
+    vtx_count_[stage_frame] = ndx_count_[stage_frame] = 0;
 }

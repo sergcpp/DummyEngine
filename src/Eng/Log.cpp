@@ -11,6 +11,8 @@
 #include <android/log.h>
 #endif
 
+#pragma warning(disable : 4996) // localtime is not thread-safe, but called under mutex so we don't care
+
 namespace EngInternal {
 std::mutex g_log_mtx;
 } // namespace EngInternal

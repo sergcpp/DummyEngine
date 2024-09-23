@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <string>
 #include <optional>
+#include <string>
 
 #include <Gui/Image9Patch.h>
 
@@ -18,7 +18,7 @@ struct ItemsInfo;
 class DebugFrameUI final : public Gui::BaseElement {
   public:
     DebugFrameUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
-                 const Gui::BitmapFont *font);
+                 const Gui::BitmapFont *font_small);
 
     void UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info, const ItemsInfo &items_info,
                     bool debug_items);
@@ -33,7 +33,7 @@ class DebugFrameUI final : public Gui::BaseElement {
     void Draw(Gui::Renderer *r) override;
 
   private:
-    const Gui::BitmapFont *font_;
+    const Gui::BitmapFont *font_small_;
 
     Gui::Image9Patch back_, element_, element_highlighted_;
     Gui::Image line_;

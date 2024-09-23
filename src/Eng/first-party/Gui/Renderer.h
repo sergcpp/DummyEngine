@@ -67,7 +67,7 @@ class Renderer {
                    const Vec4f &p2, const Vec4f &p3, const Vec4f &thickness);
 
   private:
-    static const int MaxVerticesPerRange = 64 * 1024;
+    static const int MaxVerticesPerRange = 64 * 1024; // limited by 16-bit indices
     static const int MaxIndicesPerRange = 128 * 1024;
 
     static int g_instance_count;
@@ -76,8 +76,8 @@ class Renderer {
     int instance_index_ = -1;
     std::string name_;
 
-    int vtx_count_[Ren::MaxFramesInFlight] = {};
-    int ndx_count_[Ren::MaxFramesInFlight] = {};
+    int vtx_count_[Ren::MaxFramesInFlight + 1] = {};
+    int ndx_count_[Ren::MaxFramesInFlight + 1] = {};
 
     Ren::RenderPass render_pass_;
     Ren::VertexInput vtx_input_;
@@ -93,10 +93,6 @@ class Renderer {
 
     vertex_t *vtx_stage_data_ = nullptr;
     uint16_t *ndx_stage_data_ = nullptr;
-
-#ifndef NDEBUG
-    Ren::SyncFence buf_range_fences_[Ren::MaxFramesInFlight];
-#endif
 
     SmallVector<Vec4f, 16> clip_area_stack_;
 };

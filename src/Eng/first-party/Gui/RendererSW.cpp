@@ -7,7 +7,7 @@
 #include <Ren/SW/SW.h>
 #include <Sys/Json.h>
 
-namespace UIRendererConstants {
+namespace Gui {
 enum {
     A_POS,
     A_UV
@@ -28,7 +28,6 @@ inline void BindTexture(int slot, uint32_t tex) {
 extern "C" {
     VSHADER ui_program_vs(VS_IN, VS_OUT) {
         using namespace Ren;
-        using namespace UIRendererConstants;
 
         Vec2f uv = MakeVec2(V_FATTR(A_UV));
         V_FVARYING(V_UV)[0] = uv[0];
@@ -45,7 +44,6 @@ extern "C" {
 
     FSHADER ui_program_fs(FS_IN, FS_OUT) {
         using namespace Ren;
-        using namespace UIRendererConstants;
 
         float rgba[4];
         TEXTURE(DIFFUSEMAP_SLOT, F_FVARYING_IN(V_UV), rgba);
@@ -62,8 +60,6 @@ extern "C" {
 }
 
 Gui::Renderer::Renderer(Ren::Context &ctx, const JsObject &/*config*/) : ctx_(ctx) {
-    using namespace UIRendererConstants;
-
     Ren::Attribute attrs[] = { { "pos", A_POS, SW_VEC3, 1 }, { "uvs", A_UV, SW_VEC2, 1 }, {} };
     Ren::Uniform unifs[] = { { "col", U_COL, SW_VEC3, 1 }, {} };
     ui_program_ = ctx.LoadProgramSW(UI_PROGRAM_NAME, (void *)ui_program_vs, (void *)ui_program_fs, 2,
@@ -75,8 +71,6 @@ Gui::Renderer::~Renderer() {
 }
 
 void Gui::Renderer::BeginDraw() {
-    using namespace UIRendererConstants;
-
     Ren::Program *p = ui_program_.get();
 
     swUseProgram(p->prog_id());
@@ -104,8 +98,6 @@ void Gui::Renderer::EndDraw() {
 }
 
 void Gui::Renderer::PushImageQuad(const Ren::Tex2DRef &tex, const Ren::Vec2f dims[2], const Ren::Vec2f uvs[2]) {
-    using namespace UIRendererConstants;
-
     const float vertices[] = { dims[0][0], dims[0][1], 0,
                                uvs[0][0], uvs[0][1],
 
@@ -133,8 +125,6 @@ void Gui::Renderer::PushImageQuad(const Ren::Tex2DRef &tex, const Ren::Vec2f dim
 void Gui::Renderer::DrawUIElement(const Ren::Tex2DRef &tex, ePrimitiveType prim_type,
                                   const std::vector<float> &pos, const std::vector<float> &uvs,
                                   const std::vector<unsigned char> &indices) {
-    using namespace UIRendererConstants;
-
     if (pos.empty()) return;
 
     assert(pos.size() / 5 < 0xff);
@@ -153,8 +143,6 @@ void Gui::Renderer::DrawUIElement(const Ren::Tex2DRef &tex, ePrimitiveType prim_
 }
 
 void Gui::Renderer::ApplyParams(Ren::ProgramRef &, const DrawParams &params) {
-    using namespace UIRendererConstants;
-
     swSetUniform(U_COL, SW_VEC3, Ren::ValuePtr(params.col()));
 }
 

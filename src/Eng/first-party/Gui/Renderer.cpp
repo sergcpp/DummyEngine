@@ -16,9 +16,10 @@ const uint8_t Gui::ColorCyan[4] = {0, 255, 255, 255};
 const uint8_t Gui::ColorMagenta[4] = {255, 0, 255, 255};
 const uint8_t Gui::ColorYellow[4] = {255, 255, 0, 255};
 
-namespace UIRendererConstants {
+namespace Gui {
 extern const int TexAtlasSlot = TEX_ATLAS_SLOT;
-}
+static const uint16_t g_draw_mode_u16[] = {0, 32767, 65535};
+} // namespace Gui
 
 bool Gui::Renderer::Init() {
     Ren::ProgramRef ui_program;
@@ -97,14 +98,14 @@ bool Gui::Renderer::Init() {
 
     snprintf(name_buf, sizeof(name_buf), "UI_VertexStageBuffer [%i]", instance_index_);
     vertex_stage_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::Upload,
-                                        Ren::MaxFramesInFlight * MaxVerticesPerRange * sizeof(vertex_t));
+                                        (Ren::MaxFramesInFlight + 1) * MaxVerticesPerRange * sizeof(vertex_t));
 
     snprintf(name_buf, sizeof(name_buf), "UI_IndexBuffer [%i]", instance_index_);
     index_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::VertexIndices, MaxIndicesPerRange * sizeof(uint16_t));
 
     snprintf(name_buf, sizeof(name_buf), "UI_IndexStageBuffer [%i]", instance_index_);
     index_stage_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::Upload,
-                                       Ren::MaxFramesInFlight * MaxIndicesPerRange * sizeof(uint16_t));
+                                       (Ren::MaxFramesInFlight + 1) * MaxIndicesPerRange * sizeof(uint16_t));
 
     if (ctx_.capabilities.persistent_buf_mapping) {
         // map stage buffers directly
@@ -112,13 +113,13 @@ bool Gui::Renderer::Init() {
         ndx_stage_data_ = reinterpret_cast<uint16_t *>(index_stage_buf_->Map(true /* persistent */));
     } else {
         // use temporary storage
-        stage_vtx_data_ = std::make_unique<vertex_t[]>(MaxVerticesPerRange * Ren::MaxFramesInFlight);
-        stage_ndx_data_ = std::make_unique<uint16_t[]>(MaxIndicesPerRange * Ren::MaxFramesInFlight);
+        stage_vtx_data_ = std::make_unique<vertex_t[]>(MaxVerticesPerRange);
+        stage_ndx_data_ = std::make_unique<uint16_t[]>(MaxIndicesPerRange);
         vtx_stage_data_ = stage_vtx_data_.get();
         ndx_stage_data_ = stage_ndx_data_.get();
     }
 
-    for (int i = 0; i < Ren::MaxFramesInFlight; i++) {
+    for (int i = 0; i < Ren::MaxFramesInFlight + 1; i++) {
         vtx_count_[i] = ndx_count_[i] = 0;
     }
 
@@ -187,23 +188,25 @@ std::optional<Gui::Vec4f> Gui::Renderer::GetClipArea() const {
 
 int Gui::Renderer::AcquireVertexData(vertex_t **vertex_data, int *vertex_avail, uint16_t **index_data,
                                      int *index_avail) {
-    (*vertex_data) =
-        vtx_stage_data_ + size_t(ctx_.frontend_frame) * MaxVerticesPerRange + vtx_count_[ctx_.frontend_frame];
-    (*vertex_avail) = MaxVerticesPerRange - vtx_count_[ctx_.frontend_frame];
+    (*vertex_data) = vtx_stage_data_ + vtx_count_[ctx_.next_frontend_frame];
+    (*vertex_avail) = MaxVerticesPerRange - vtx_count_[ctx_.next_frontend_frame];
 
-    (*index_data) =
-        ndx_stage_data_ + size_t(ctx_.frontend_frame) * MaxIndicesPerRange + ndx_count_[ctx_.frontend_frame];
-    (*index_avail) = MaxIndicesPerRange - ndx_count_[ctx_.frontend_frame];
+    (*index_data) = ndx_stage_data_ + ndx_count_[ctx_.next_frontend_frame];
+    (*index_avail) = MaxIndicesPerRange - ndx_count_[ctx_.next_frontend_frame];
 
-    return vtx_count_[ctx_.frontend_frame];
+    if (ctx_.capabilities.persistent_buf_mapping) {
+        (*vertex_data) += size_t(ctx_.next_frontend_frame) * MaxVerticesPerRange;
+        (*index_data) += size_t(ctx_.next_frontend_frame) * MaxIndicesPerRange;
+    }
+
+    return vtx_count_[ctx_.next_frontend_frame];
 }
 
 void Gui::Renderer::SubmitVertexData(const int vertex_count, const int index_count) {
-    assert((vtx_count_[ctx_.frontend_frame] + vertex_count) <= MaxVerticesPerRange &&
-           (ndx_count_[ctx_.frontend_frame] + index_count) <= MaxIndicesPerRange);
-
-    vtx_count_[ctx_.frontend_frame] += vertex_count;
-    ndx_count_[ctx_.frontend_frame] += index_count;
+    vtx_count_[ctx_.next_frontend_frame] += vertex_count;
+    ndx_count_[ctx_.next_frontend_frame] += index_count;
+    assert(vtx_count_[ctx_.next_frontend_frame] <= MaxVerticesPerRange &&
+           ndx_count_[ctx_.next_frontend_frame] <= MaxIndicesPerRange);
 }
 
 void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer, const Vec2f pos[2],
@@ -211,6 +214,11 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
     Vec4f pos_uvs[2] = {Vec4f{pos[0][0], pos[0][1], uvs_px[0][0] * uvs_scale[0], uvs_px[0][1] * uvs_scale[1]},
                         Vec4f{pos[1][0], pos[1][1], uvs_px[1][0] * uvs_scale[0], uvs_px[1][1] * uvs_scale[1]}};
+
+    const std::optional<Vec4f> clip = GetClipArea();
+    if (clip && !ClipQuadToArea(pos_uvs, *clip)) {
+        return;
+    }
 
     vertex_t *vtx_data;
     int vtx_avail;
@@ -224,12 +232,6 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
     const uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
 
-    static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
-
-    if (!clip_area_stack_.empty() && !ClipQuadToArea(pos_uvs, clip_area_stack_.back())) {
-        return;
-    }
-
     cur_vtx->pos[0] = pos_uvs[0][0];
     cur_vtx->pos[1] = pos_uvs[0][1];
     cur_vtx->pos[2] = 0.0f;
@@ -237,7 +239,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
+    cur_vtx->uvs[3] = g_draw_mode_u16[int(draw_mode)];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos_uvs[1][0];
@@ -247,7 +249,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
+    cur_vtx->uvs[3] = g_draw_mode_u16[int(draw_mode)];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos_uvs[1][0];
@@ -257,7 +259,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
+    cur_vtx->uvs[3] = g_draw_mode_u16[int(draw_mode)];
     ++cur_vtx;
 
     cur_vtx->pos[0] = pos_uvs[0][0];
@@ -267,7 +269,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
-    cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
+    cur_vtx->uvs[3] = g_draw_mode_u16[int(draw_mode)];
     ++cur_vtx;
 
     (*cur_ndx++) = ndx_offset + 0;
@@ -287,8 +289,6 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
 
     const uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
 
-    static const uint16_t u16_draw_mode[] = {0, 32767, 65535};
-
     const Vec4f perp[2] = {Vec4f{thickness} * Vec4f{-d0[1], d0[0], 1.0f, 0.0f},
                            Vec4f{thickness} * Vec4f{-d1[1], d1[0], 1.0f, 0.0f}};
 
@@ -300,7 +300,8 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
         pos_uvs[i][3] *= uvs_scale[1];
     }
 
-    if (!clip_area_stack_.empty() && !(vertex_count = ClipPolyToArea(pos_uvs, vertex_count, clip_area_stack_.back()))) {
+    const std::optional<Vec4f> clip = GetClipArea();
+    if (clip && !(vertex_count = ClipPolyToArea(pos_uvs, vertex_count, *clip))) {
         return;
     }
     assert(vertex_count < 8);
@@ -323,7 +324,7 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
         cur_vtx->uvs[0] = f32_to_u16(pos_uvs[i][2]);
         cur_vtx->uvs[1] = f32_to_u16(pos_uvs[i][3]);
         cur_vtx->uvs[2] = u16_tex_layer;
-        cur_vtx->uvs[3] = u16_draw_mode[int(draw_mode)];
+        cur_vtx->uvs[3] = g_draw_mode_u16[int(draw_mode)];
         ++cur_vtx;
     }
 

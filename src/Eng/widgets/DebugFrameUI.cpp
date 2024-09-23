@@ -14,7 +14,7 @@
 
 namespace Eng::DebugFrameUIInternal {
 const Gui::Vec2f ElementSizePx = Gui::Vec2f{256.0f, 384.0f};
-const Gui::Vec2f ElementSpacingPx = Gui::Vec2f{384.0f, 400.0f};
+const Gui::Vec2f ElementSpacingPx = Gui::Vec2f{384.0f, 200.0f};
 
 void insert_sorted(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
     const auto it = std::lower_bound(std::begin(vec), std::end(vec), val);
@@ -39,9 +39,10 @@ void remove_sorted_rev(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
 } // namespace Eng::DebugFrameUIInternal
 
 Eng::DebugFrameUI::DebugFrameUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size,
-                                const BaseElement *parent, const Gui::BitmapFont *font)
-    : BaseElement(pos, size, parent), font_(font), back_(ctx, "assets_pc/textures/internal/back.dds", Gui::Vec2f{1.5f},
-                                                         1.0f, Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f}, this),
+                                const BaseElement *parent, const Gui::BitmapFont *font_small)
+    : BaseElement(pos, size, parent), font_small_(font_small),
+      back_(ctx, "assets_pc/textures/internal/back.dds", Gui::Vec2f{1.5f}, 1.0f, Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f},
+            this),
       element_(ctx, "assets_pc/textures/internal/square.dds", Gui::Vec2f{1.5f}, 1.0f, Gui::Vec2f{-1.0f},
                Gui::Vec2f{2.0f}, nullptr),
       element_highlighted_(ctx, "assets_pc/textures/internal/square_highlighted.dds", Gui::Vec2f{1.5f}, 1.0f,
@@ -159,7 +160,7 @@ void Eng::DebugFrameUI::Draw(Gui::Renderer *r) {
 }
 
 void Eng::DebugFrameUI::DrawCompact(Gui::Renderer *r) {
-    const float font_height = font_->height(parent_);
+    const float font_height = font_small_->height(parent_);
 
     const char delimiter[] = "-------------------------------";
     char text_buffer[256];
@@ -178,107 +179,107 @@ void Eng::DebugFrameUI::DrawCompact(Gui::Renderer *r) {
         cur_frame_dur_ = alpha * last_frame_dur + (1.0 - alpha) * cur_frame_dur_;
 
         snprintf(text_buffer, sizeof(text_buffer), "                FPS: %.1f", (1000.0 / cur_frame_dur_));
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
     { // renderer frontend performance
         vertical_offset -= font_height;
-        font_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "     OCCLUDERS RAST: %.3f ms",
                  front_info_smooth_.occluders_time_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "        MAIN GATHER: %.3f ms",
                  front_info_smooth_.main_gather_time_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "      SHADOW GATHER: %.3f ms",
                  front_info_smooth_.shadow_gather_time_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "            SORTING: %.3f ms",
                  front_info_smooth_.drawables_sort_time_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "        ITEM ASSIGN: %.3f ms",
                  front_info_smooth_.items_assignment_time_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "        FRONT TOTAL: %.3f ms", front_info_smooth_.total_time_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
     { // renderer backend performance
         vertical_offset -= font_height;
-        font_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         /*vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "           DRAW CALLS: [%.1f, %.1f, %.1f]",
         back_info_smooth_.shadow_draw_calls_count, back_info_smooth_.depth_fill_draw_calls_count,
-        back_info_smooth_.opaque_draw_calls_count); font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset},
-        text_color, parent_);
+        back_info_smooth_.opaque_draw_calls_count); font_small_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f,
+        vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "            TRIANGLES: %.2f M", back_info_smooth_.tris_rendered);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);*/
+        font_small_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);*/
 
         for (int i = 0; i < back_info_smooth_.pass_count; ++i) {
             vertical_offset -= font_height;
             snprintf(text_buffer, sizeof(text_buffer), " %18s: %.3f ms", back_info_smooth_.passes[i].name.c_str(),
                      back_info_smooth_.passes[i].duration_ms);
-            font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+            font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
         }
 
         vertical_offset -= font_height;
-        font_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "     BACK CPU TOTAL: %.3f ms", back_info_smooth_.cpu_total_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "     BACK GPU TOTAL: %.3f ms", back_info_smooth_.gpu_total_ms);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
     if (debug_items_) {
         vertical_offset -= font_height;
-        font_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, delimiter, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "       LIGHTS COUNT: %.3f", items_info_smooth_.lights_count);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "        LIGHTS DATA: %.3f kb",
                  items_info_smooth_.lights_count * sizeof(LightItem) / 1024.0f);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "       DECALS COUNT: %.3f", items_info_smooth_.decals_count);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "        DECALS DATA: %.3f kb",
                  items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "         CELLS DATA: %.3f kb",
                  ITEM_CELLS_COUNT * sizeof(CellData) / 1024.0f);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "         ITEMS DATA: %.3f kb",
                  items_info_smooth_.items_total * sizeof(ItemData) / 1024.0f);
-        font_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 }
 
@@ -363,13 +364,15 @@ void Eng::DebugFrameUI::DrawDetailed(Gui::Renderer *r) {
 
         const float font_scale = view_scale_;
         // std::max(std::floor(view_scale_), 1.0f);
-        const float font_height = font_->height(font_scale, this);
+        const float font_height = font_small_->height(font_scale, this);
 
         const Gui::Vec2f line_width = Gui::Vec2f{1.0f, aspect()} * 4.0f / Gui::Vec2f{size_px()};
 
         if (deferred_select_pos_) {
             selected_index_ = -1;
         }
+
+        Gui::Vec2f bbox_min = {FLT_MAX}, bbox_max = {-FLT_MAX};
 
         std::vector<std::bitset<256>> is_occupied(chains.size());
         for (int ndx = 0; ndx < int(chains.size()); ++ndx) {
@@ -394,6 +397,8 @@ void Eng::DebugFrameUI::DrawDetailed(Gui::Renderer *r) {
             for (const int16_t i : chain) {
                 const Gui::Vec2f elem_pos =
                     SnapToPixels(view_offset_ + Gui::Vec2f{spacing[0] * float(i), spacing[1] * float(-row)});
+                bbox_min = Min(bbox_min, elem_pos);
+                bbox_max = Max(bbox_max, elem_pos);
                 DrawPassInfo(r, i, elem_pos, font_scale);
                 back_info_smooth_.passes[i].position = elem_pos;
             }
@@ -404,6 +409,15 @@ void Eng::DebugFrameUI::DrawDetailed(Gui::Renderer *r) {
         for (int i = 0; i < back_info_smooth_.pass_count; ++i) {
             DrawConnectionCurves(r, i, font_scale, i == selected_index_);
         }
+
+        bbox_min -= 2.0f * view_scale_ * ElementSizePx / Gui::Vec2f(dims_px_[1]);
+        bbox_max += 4.0f * view_scale_ * ElementSizePx / Gui::Vec2f(dims_px_[1]);
+
+        // draw bounds
+        DrawLine(r, bbox_min, Gui::Vec2f{bbox_min[0], bbox_max[1]}, line_width);
+        DrawLine(r, bbox_min, Gui::Vec2f{bbox_max[0], bbox_min[1]}, line_width);
+        DrawLine(r, Gui::Vec2f{bbox_min[0], bbox_max[1]}, bbox_max, line_width);
+        DrawLine(r, Gui::Vec2f{bbox_max[0], bbox_min[1]}, bbox_max, line_width);
     }
 }
 
@@ -411,7 +425,7 @@ void Eng::DebugFrameUI::DrawPassInfo(Gui::Renderer *r, const int pass_index, con
                                      const float font_scale) {
     using namespace DebugFrameUIInternal;
 
-    const float font_height = font_->height(font_scale, this);
+    const float font_height = font_small_->height(font_scale, this);
 
     Gui::Vec2f elem_size = view_scale_ * 2.0f * ElementSizePx / Gui::Vec2f{size_px()};
     const Gui::Vec2f elem_border = 8.0f / Gui::Vec2f{size_px()};
@@ -445,7 +459,7 @@ void Eng::DebugFrameUI::DrawPassInfo(Gui::Renderer *r, const int pass_index, con
         selected_index_ = pass_index;
     }
 
-    { // resources
+    if (font_scale > 0.25f) { // resources
         el->Resize(Gui::Vec2f{elem_pos[0], elem_pos[1] - elem_size[1]}, elem_size);
         r->PushClipArea(el->dims());
         SCOPE_EXIT({ r->PopClipArea(); })
@@ -455,12 +469,12 @@ void Eng::DebugFrameUI::DrawPassInfo(Gui::Renderer *r, const int pass_index, con
         char text_buffer[256];
         snprintf(text_buffer, sizeof(text_buffer), "%s (%.3f ms)", pass.name.c_str(), pass.duration_ms);
 
-        font_->DrawText(r, text_buffer, text_pos, Gui::ColorWhite, font_scale, this);
+        font_small_->DrawText(r, text_buffer, text_pos, Gui::ColorWhite, font_scale, this);
 
         if (!pass.input.empty()) {
             text_pos[1] -= 2.0f * font_height;
             for (int i = 0; i < int(pass.input.size()); ++i) {
-                font_->DrawText(r, pass.input[i], text_pos, Gui::ColorCyan, font_scale, this);
+                font_small_->DrawText(r, pass.input[i], text_pos, Gui::ColorCyan, font_scale, this);
                 text_pos[1] -= font_height;
             }
         }
@@ -469,11 +483,11 @@ void Eng::DebugFrameUI::DrawPassInfo(Gui::Renderer *r, const int pass_index, con
             text_pos[1] -= 2.0f * font_height;
             for (int i = 0; i < int(pass.output.size()); ++i) {
                 const std::string full_name = "------------------------------- " + pass.output[i];
-                const float width = font_->GetWidth(full_name, font_scale, this);
+                const float width = font_small_->GetWidth(full_name, font_scale, this);
 
-                font_->DrawText(r, full_name,
-                                Gui::Vec2f{text_pos[0] + elem_size[0] - 2.0f * elem_border[0] - width, text_pos[1]},
-                                Gui::ColorRed, font_scale, this);
+                font_small_->DrawText(
+                    r, full_name, Gui::Vec2f{text_pos[0] + elem_size[0] - 2.0f * elem_border[0] - width, text_pos[1]},
+                    Gui::ColorRed, font_scale, this);
                 text_pos[1] -= font_height;
             }
         }
@@ -484,7 +498,7 @@ void Eng::DebugFrameUI::DrawConnectionCurves(Gui::Renderer *r, const int pass_in
                                              const bool detailed_outputs) {
     using namespace DebugFrameUIInternal;
 
-    const float font_height = font_->height(font_scale, this);
+    const float font_height = font_small_->height(font_scale, this);
     const Gui::Vec2f line_thin = Gui::Vec2f{1.0f, aspect()} * 2.0f / Gui::Vec2f{size_px()};
     const Gui::Vec2f line_thick = Gui::Vec2f{1.0f, aspect()} * 4.0f / Gui::Vec2f{size_px()};
 

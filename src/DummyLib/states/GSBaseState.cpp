@@ -820,8 +820,11 @@ void GSBaseState::Draw() {
                 }
             }
 
-            // Target frontend to next frame
-            ren_ctx_->frontend_frame = (ren_ctx_->backend_frame() + 1) % Ren::MaxFramesInFlight;
+            ren_ctx_->in_flight_frontend_frame[ren_ctx_->backend_frame()] = ren_ctx_->next_frontend_frame;
+            ren_ctx_->next_frontend_frame = (ren_ctx_->next_frontend_frame + 1) % (Ren::MaxFramesInFlight + 1);
+            for (int i = 0; i < Ren::MaxFramesInFlight; ++i) {
+                assert(ren_ctx_->in_flight_frontend_frame[ren_ctx_->backend_frame()] != ren_ctx_->next_frontend_frame);
+            }
 
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
             if (!use_pt_ && (prev_sun_dir_[0] != sun_dir_[0] || prev_sun_dir_[1] != sun_dir_[1] ||
@@ -844,7 +847,8 @@ void GSBaseState::Draw() {
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
             // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
             // Target frontend to current frame
-            ren_ctx_->frontend_frame = ren_ctx_->backend_frame();
+            ren_ctx_->in_flight_frontend_frame[ren_ctx_->backend_frame()] = ren_ctx_->next_frontend_frame =
+                ren_ctx_->backend_frame();
             // Gather drawables for list 0
             UpdateFrame(0);
             back_list = 0;
