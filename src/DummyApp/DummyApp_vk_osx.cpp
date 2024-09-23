@@ -293,12 +293,8 @@ void DummyApp::PollEvents() {
             const uint32_t scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
                            key_code = ScancodeToHID(scan_code);
 
-            if (key_code == KeyEscape) {
-                quit_ = true;
-            } else {
-                evt.type = eInputEvent::KeyDown;
-                evt.key_code = key_code;
-            }
+            evt.type = eInputEvent::KeyDown;
+            evt.key_code = key_code;
         } else if (xev.type == KeyRelease) {
             const uint32_t scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
                            key_code = ScancodeToHID(scan_code);

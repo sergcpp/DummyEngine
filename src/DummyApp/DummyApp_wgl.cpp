@@ -138,13 +138,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         break;
     }
     case WM_KEYDOWN: {
-        if (wParam == VK_ESCAPE) {
-            PostQuitMessage(0);
-        } else {
-            const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-
-            g_app->AddEvent(Eng::eInputEvent::KeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
-        }
+        const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
+        g_app->AddEvent(Eng::eInputEvent::KeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
     case WM_KEYUP: {
@@ -421,14 +416,13 @@ int DummyApp::Run(int argc, char *argv[]) {
 
     __itt_thread_set_name("Main Thread");
 
-    bool done = false;
-    while (!done && !viewer_->terminated) {
+    while (!viewer_->terminated) {
         __itt_frame_begin_v3(__g_itt_domain, nullptr);
 
         MSG msg;
         while (PeekMessage(&msg, nullptr, NULL, NULL, PM_REMOVE)) {
             if (msg.message == WM_QUIT) {
-                done = true;
+                viewer_->terminated = true;
             } else {
                 DispatchMessage(&msg);
             }

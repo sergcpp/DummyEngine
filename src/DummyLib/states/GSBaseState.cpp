@@ -924,6 +924,8 @@ bool GSBaseState::HandleInput(const Eng::input_event_t &evt, const std::vector<b
     case Eng::eInputEvent::KeyDown: {
         if (evt.key_code == Eng::eKey::Grave) {
             cmdline_ui_->enabled = !cmdline_ui_->enabled;
+        } else if (evt.key_code == Eng::eKey::Escape) {
+            viewer_->Quit();
         }
     } break;
     case Eng::eInputEvent::KeyUp: {
@@ -948,7 +950,9 @@ void GSBaseState::BackgroundProc() {
         }
 
         // Gather drawables for list 1
-        UpdateFrame(front_list_);
+        if (!shutdown_) {
+            UpdateFrame(front_list_);
+        }
 
         notified_ = false;
         thr_done_.notify_one();
