@@ -81,7 +81,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             }
         }
 
-        const float anisotropy = 4.0f;
+        const float anisotropy = 4;
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[size_t(filter_)]);

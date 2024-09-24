@@ -34,7 +34,7 @@ void test_svol() {
     { // origin is in center
         Vec3 pts[4];
         for (int i = 0; i < 4; i++) {
-            pts[i] = org_pts[i] + Vec3(-1, -1, -1) * real(0.25);
+            pts[i] = org_pts[i] + Vec3(-1) * real(0.25);
         }
 
         const Vec4 lambdas = SignedVolume3D(pts[0], pts[1], pts[2], pts[3]);
@@ -56,7 +56,7 @@ void test_svol() {
     { // origin is on the surface
         Vec3 pts[4];
         for (int i = 0; i < 4; i++) {
-            pts[i] = org_pts[i] + Vec3(-1, -1, -1);
+            pts[i] = org_pts[i] + Vec3(-1);
         }
 
         const Vec4 lambdas = SignedVolume3D(pts[0], pts[1], pts[2], pts[3]);

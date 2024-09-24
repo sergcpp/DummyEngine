@@ -24,18 +24,18 @@ const char Frame02[] =
 #endif
     "textures/ui/frame_02.uncompressed.png";
 
-const float SideMarginPx = 16.0f;
-const float TopMarginPx = 24.0f;
-const float BottomMarginPx = 24.0f;
+const float SideMarginPx = 16;
+const float TopMarginPx = 24;
+const float BottomMarginPx = 24;
 } // namespace WordPuzzleUIInternal
 
 WordPuzzleUI::WordPuzzleUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
                            const Gui::BitmapFont &font)
     : Gui::BaseElement(pos, size, parent), font_(font),
-      background_small_(ctx, WordPuzzleUIInternal::Frame01, Gui::Vec2f{3.0f}, 1.0f, Gui::Vec2f{0.0f}, Gui::Vec2f{1.0f},
+      background_small_(ctx, WordPuzzleUIInternal::Frame01, Gui::Vec2f{3}, 1, Gui::Vec2f{0}, Gui::Vec2f{1},
                         this),
-      background_large_(ctx, WordPuzzleUIInternal::Frame02, Gui::Vec2f{20.0f}, 1.0f, Gui::Vec2f{-1.0f},
-                        Gui::Vec2f{2.0f}, this) {
+      background_large_(ctx, WordPuzzleUIInternal::Frame02, Gui::Vec2f{20}, 1, Gui::Vec2f{-1},
+                        Gui::Vec2f{2}, this) {
     log_ = ctx.log();
 }
 
@@ -184,11 +184,11 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
     const double anim_param = std::min(cur_time_s - anim_started_time_s_, 1.0);
     float anim_y_off = -2.0f + 2.0f * float(anim_param);
     if (state_ >= eState::AnimOutro) {
-        anim_y_off = -4.0f * float(std::max(anim_param - 0.5, 0.0));
+        anim_y_off = -4 * float(std::max(anim_param - 0.5, 0.0));
     }
 
     // draw backdrop
-    background_large_.Resize(Gui::Vec2f{-1.0f, -1.0f + anim_y_off}, Gui::Vec2f{2.0f});
+    background_large_.Resize(Gui::Vec2f{-1, -1 + anim_y_off}, Gui::Vec2f{2});
     background_large_.Draw(r);
 
     const float side_margin = SideMarginPx / dims_px_[1][0];

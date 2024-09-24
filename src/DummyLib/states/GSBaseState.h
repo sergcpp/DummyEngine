@@ -92,7 +92,7 @@ class GSBaseState : public Eng::ViewerState {
 
     std::atomic_bool update_all_probes_{false};
 
-    Ren::Vec3f sun_dir_ = Ren::Vec3f{0.0f, -1.0f, 0.0f}, prev_sun_dir_;
+    Ren::Vec3f sun_dir_ = Ren::Vec3f{0, -1, 0}, prev_sun_dir_;
     Ray::LightHandle pt_sun_light_ = Ray::InvalidLightHandle;
 
     bool use_pt_ = false, use_lm_ = false;

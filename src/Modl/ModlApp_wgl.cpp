@@ -757,12 +757,12 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
 
         getline(in_file, str);
         num_vertices = stoi(str);
-        positions.reserve((size_t)num_vertices * 3);
-        normals.reserve((size_t)num_vertices * 3);
-        uvs.reserve((size_t)num_vertices * 2);
-        uvs2.reserve((size_t)num_vertices * 2);
-        vtx_colors.reserve((size_t)num_vertices * 4);
-        weights.reserve((size_t)num_vertices * 4 * 2);
+        positions.reserve(size_t(num_vertices * 3));
+        normals.reserve(size_t(num_vertices * 3));
+        uvs.reserve(size_t(num_vertices * 2));
+        uvs2.reserve(size_t(num_vertices * 2));
+        vtx_colors.reserve(size_t(num_vertices * 4));
+        weights.reserve(size_t(num_vertices * 4 * 2));
 
         getline(in_file, str);
         num_indices = stoi(str);
@@ -1516,7 +1516,7 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, co
         string str;
         for (int i = 0; i < anim_info.len; i++) {
             getline(in_file, str);
-            for (int j = 0; j < (int)out_bones.size(); j++) {
+            for (int j = 0; j < int(out_bones.size()); j++) {
                 getline(in_file, str);
                 const int toks_count = Tokenize(str, " ", toks);
                 if ((out_bones[j].anim_type == int32_t(eAnimType::RotationTranslation) && toks_count != 8) ||
@@ -1527,7 +1527,7 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, co
                     frames.push_back(stof(toks[k]));
                 }
             }
-            for (int j = 0; j < (int)out_shapes.size(); j++) {
+            for (int j = 0; j < int(out_shapes.size()); j++) {
                 getline(in_file, str);
                 const int toks_count = Tokenize(str, " ", toks);
                 if (toks_count != 2) {

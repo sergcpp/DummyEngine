@@ -28,7 +28,7 @@ extern const uint32_t g_gl_wrap_mode[] = {
 };
 static_assert(std::size(g_gl_wrap_mode) == size_t(eTexWrap::_Count), "!");
 
-extern const float AnisotropyLevel = 4.0f;
+extern const float AnisotropyLevel = 4;
 } // namespace Ren
 
 Ren::Sampler &Ren::Sampler::operator=(Sampler &&rhs) {

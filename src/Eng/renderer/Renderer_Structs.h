@@ -327,12 +327,19 @@ struct pass_info_t {
     Ren::SmallVector<std::string, 16> output;
 };
 
+struct resource_info_t {
+    std::string name;
+    int first_use, last_use;
+    uint32_t heap, offset, size;
+};
+
 struct BackendInfo {
     uint64_t cpu_start_timepoint_us = 0, cpu_end_timepoint_us = 0;
     uint64_t gpu_total_duration = 0;
     int64_t gpu_cpu_time_diff_us = 0;
 
     Ren::SmallVector<pass_info_t, 256> passes_info;
+    Ren::SmallVector<resource_info_t, 256> resources_info;
 
     uint32_t shadow_draw_calls_count = 0, depth_fill_draw_calls_count = 0, opaque_draw_calls_count = 0;
     uint32_t tris_rendered = 0;

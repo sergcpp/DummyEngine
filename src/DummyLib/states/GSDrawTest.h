@@ -29,17 +29,17 @@ class GSDrawTest final : public GSBaseState {
 
     Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
 
-    Ren::Vec3f view_origin_ = Ren::Vec3f{0.0f}, view_dir_ = Ren::Vec3f{0.0f, 0.0f, -1.0f};
+    Ren::Vec3f view_origin_ = Ren::Vec3f{0}, view_dir_ = Ren::Vec3f{0, 0, -1};
 
     float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 
-    float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
-    float gamma_ = 1.0f, min_exposure_ = -14.0f, max_exposure_ = 8.0f;
+    float max_fwd_speed_ = 0.5f, view_fov_ = 60;
+    float gamma_ = 1, min_exposure_ = -14, max_exposure_ = 8;
 
     uint64_t click_time_ = 0;
 
     uint64_t wind_update_time_ = 0;
-    Ren::Vec3f wind_vector_goal_ = Ren::Vec3f{128.0f, 0.0f, 0.0f};
+    Ren::Vec3f wind_vector_goal_ = Ren::Vec3f{128, 0, 0};
 
     // test test
     uint32_t wolf_indices_[32] = {0xffffffff};
@@ -48,11 +48,11 @@ class GSDrawTest final : public GSBaseState {
     uint32_t zenith_index_ = 0xffffffff;
     uint32_t palm_index_ = 0xffffffff;
     uint32_t leaf_tree_index_ = 0xffffffff;
-    float scooters_angle_ = 0.0f;
+    float scooters_angle_ = 0;
 
     std::vector<Ren::Vec3f> cam_follow_path_;
     int cam_follow_point_ = -1;
-    float cam_follow_param_ = 0.0f;
+    float cam_follow_param_ = 0;
 
     void OnPreloadScene(JsObjectP &js_scene) override;
     void OnPostloadScene(JsObjectP &js_scene) override;

@@ -97,5 +97,5 @@ Gui::Vec2f Gui::BaseElement::SnapToPixels(const Gui::Vec2f &p, const eSnapMode m
         x = std::round((0.5f + 0.5f * p[0]) * dims_px_[1][0]);
         y = std::round((0.5f + 0.5f * p[1]) * dims_px_[1][1]);
     }
-    return 2.0f * Gui::Vec2f{x / float(dims_px_[1][0]), y / float(dims_px_[1][1])} - 1.0f;
+    return 2 * Gui::Vec2f{x / float(dims_px_[1][0]), y / float(dims_px_[1][1])} - 1;
 }

@@ -82,8 +82,8 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0.0f, 0.0f, 1.0f};
-    float view_fov = 45.0f, min_exposure = -1000.0f, max_exposure = 1000.0f;
+    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0, 0, 1};
+    float view_fov = 45, min_exposure = -1000, max_exposure = 1000;
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -122,7 +122,7 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, 1.0f,
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0, 1, 0}, view_fov, 1,
                               min_exposure, max_exposure);
 
     {
@@ -193,7 +193,7 @@ void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
     GSBaseState::DrawUI(r, root);
 
-    // dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
+    // dialog_font_->set_scale(std::max(root->size_px()[0] / 1024, 1));
 
     word_puzzle_->Draw(r);
 }

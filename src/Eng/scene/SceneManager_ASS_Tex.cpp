@@ -1131,7 +1131,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     if (!src_image) {
         return false;
     }
-    auto src_size = (size_t)src_image.tellg();
+    const auto src_size = size_t(src_image.tellg());
     src_image.seekg(0, std::ios::beg);
 
     std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
@@ -1250,7 +1250,7 @@ bool Eng::SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, 
     if (!src_stream) {
         return false;
     }
-    auto src_size = (size_t)src_stream.tellg();
+    const auto src_size = size_t(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
 
     std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);

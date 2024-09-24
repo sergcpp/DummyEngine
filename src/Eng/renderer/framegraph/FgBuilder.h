@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <climits>
 
 #include <unordered_set>
 #include <vector>
@@ -29,6 +30,46 @@ struct fg_write_node_t {
 };
 static_assert(sizeof(fg_write_node_t) == 4, "!");
 
+struct fg_range_t {
+    int first_write_node = INT_MAX;
+    int last_write_node = -1;
+    int first_read_node = INT_MAX;
+    int last_read_node = -1;
+
+    bool has_writer() const { return first_write_node <= last_write_node; }
+    bool has_reader() const { return first_read_node <= last_read_node; }
+    bool is_used() const { return has_writer() || has_reader(); }
+
+    bool can_alias() const {
+        if (has_reader() && has_writer() && first_read_node <= first_write_node) {
+            return false;
+        }
+        return true;
+    }
+
+    int last_used_node() const {
+        int last_node = 0;
+        if (has_writer()) {
+            last_node = std::max(last_node, last_write_node);
+        }
+        if (has_reader()) {
+            last_node = std::max(last_node, last_read_node);
+        }
+        return last_node;
+    }
+
+    int first_used_node() const {
+        int first_node = std::numeric_limits<int>::max();
+        if (has_writer()) {
+            first_node = std::min(first_node, first_write_node);
+        }
+        if (has_reader()) {
+            first_node = std::min(first_node, first_read_node);
+        }
+        return first_node;
+    }
+};
+
 struct FgAllocBuf {
     union {
         struct {
@@ -41,6 +82,7 @@ struct FgAllocBuf {
     Ren::eStageBits used_in_stages;
     Ren::SmallVector<fg_write_node_t, 32> written_in_nodes;
     Ren::SmallVector<fg_write_node_t, 32> read_in_nodes;
+    fg_range_t lifetime;
 
     std::string name;
     bool external = false;
@@ -62,6 +104,7 @@ struct FgAllocTex {
     Ren::eStageBits used_in_stages;
     Ren::SmallVector<fg_write_node_t, 32> written_in_nodes;
     Ren::SmallVector<fg_write_node_t, 32> read_in_nodes;
+    fg_range_t lifetime;
 
     std::string name;
     bool transient = false; // unused for now
@@ -137,6 +180,9 @@ class FgBuilder {
     FgNode *GetReorderedNode(const int i) { return reordered_nodes_[i]; }
 
     std::string GetResourceDebugInfo(const FgResource &res) const;
+
+    const Ren::SparseArray<FgAllocBuf> &buffers() const { return buffers_; }
+    const Ren::SparseArray<FgAllocTex> &textures() const { return textures_; }
 
     template <typename T, class... Args> T *AllocNodeData(Args &&...args) {
         char *mem = alloc_.allocate(sizeof(T) + alignof(T));

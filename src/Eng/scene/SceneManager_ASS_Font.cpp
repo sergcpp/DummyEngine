@@ -3,8 +3,6 @@
 #include <fstream>
 #include <numeric>
 
-#define STB_TRUETYPE_IMPLEMENTATION
-#define STBTT_STATIC
 #include <Gui/third-party/stb_truetype.h>
 
 #include <Ren/TextureSplitter.h>
@@ -20,7 +18,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
     if (!src_stream) {
         return false;
     }
-    auto src_size = (size_t)src_stream.tellg();
+    const auto src_size = size_t(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
 
     std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
@@ -34,28 +32,26 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
     }
 
     const bool is_sdf_font = strstr(in_file, "_sdf") != nullptr, is_inv_wind = strstr(in_file, "_inv") != nullptr;
-    float line_height = 48.0f;
+    float line_height = 48;
 
     int temp_bitmap_res[2] = {512, 256};
 
     if (strstr(in_file, "_9px")) {
-        line_height = 9.0f;
+        line_height = 9;
     } else if (strstr(in_file, "_12px")) {
-        line_height = 12.0f;
-        // temp_bitmap_res[0] = 256;
-        // temp_bitmap_res[1] = 128;
+        line_height = 12;
     } else if (strstr(in_file, "_16px")) {
-        line_height = 16.0f;
-        // temp_bitmap_res[0] = 256;
-        // temp_bitmap_res[1] = 128;
+        line_height = 16;
+    } else if (strstr(in_file, "_18px")) {
+        line_height = 18;
     } else if (strstr(in_file, "_24px")) {
-        line_height = 24.0f;
+        line_height = 24;
     } else if (strstr(in_file, "_32px")) {
-        line_height = 32.0f;
+        line_height = 32;
     } else if (strstr(in_file, "_36px")) {
-        line_height = 36.0f;
+        line_height = 36;
     } else if (strstr(in_file, "_48px")) {
-        line_height = 48.0f;
+        line_height = 48;
         temp_bitmap_res[0] = 512;
         temp_bitmap_res[1] = 512;
     }

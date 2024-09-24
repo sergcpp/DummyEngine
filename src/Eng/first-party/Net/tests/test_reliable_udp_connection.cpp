@@ -57,7 +57,7 @@ void test_reliable_udp_connection() {
         }
         Net::PacketQueue acked_queue;
         std::vector<unsigned int> acks;
-        float rtt = 0.0f;
+        float rtt = 0;
         unsigned int acked_packets = 0;
         Net::ReliabilitySystem::process_ack(32, 0xFFFFFFFF, packet_queue, acked_queue, acks, acked_packets, rtt,
                                             maximum_sequence);
@@ -83,7 +83,7 @@ void test_reliable_udp_connection() {
         }
         Net::PacketQueue acked_queue;
         std::vector<unsigned int> acks;
-        float rtt = 0.0f;
+        float rtt = 0;
         unsigned int acked_packets = 0;
         Net::ReliabilitySystem::process_ack(32, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
                                             maximum_sequence);
@@ -113,7 +113,7 @@ void test_reliable_udp_connection() {
         }
         Net::PacketQueue acked_queue;
         std::vector<unsigned int> acks;
-        float rtt = 0.0f;
+        float rtt = 0;
         unsigned int acked_packets = 0;
         Net::ReliabilitySystem::process_ack(48, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
                                             maximum_sequence);
@@ -145,7 +145,7 @@ void test_reliable_udp_connection() {
         require(pending_ack_queue.size() == 33);
         Net::PacketQueue acked_queue;
         std::vector<unsigned int> acks;
-        float rtt = 0.0f;
+        float rtt = 0;
         unsigned int acked_packets = 0;
         Net::ReliabilitySystem::process_ack(0, 0xFFFFFFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
                                             maximum_sequence);
@@ -172,7 +172,7 @@ void test_reliable_udp_connection() {
         require(pending_ack_queue.size() == 33);
         Net::PacketQueue acked_queue;
         std::vector<unsigned int> acks;
-        float rtt = 0.0f;
+        float rtt = 0;
         unsigned int acked_packets = 0;
         Net::ReliabilitySystem::process_ack(0, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
                                             maximum_sequence);
@@ -203,7 +203,7 @@ void test_reliable_udp_connection() {
         require(pending_ack_queue.size() == 32);
         Net::PacketQueue acked_queue;
         std::vector<unsigned int> acks;
-        float rtt = 0.0f;
+        float rtt = 0;
         unsigned int acked_packets = 0;
         Net::ReliabilitySystem::process_ack(16, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
                                             maximum_sequence);
@@ -230,7 +230,7 @@ void test_reliable_udp_connection() {
         const int client_port = 30001;
         const int protocol_id = 0x11112222;
         const float dt_s = 0.001f;
-        const float timeout_s_s = 1.0f;
+        const float timeout_s_s = 1;
 
         Net::ReliableUDPConnection client(protocol_id, timeout_s_s);
         Net::ReliableUDPConnection server(protocol_id, timeout_s_s);
@@ -672,7 +672,7 @@ void test_reliable_udp_connection() {
         const int client_port = 30001;
         const int protocol_id = 0x11112222;
         const float dt_s = 0.05f;
-        const float timeout_s = 1000.0f;
+        const float timeout_s = 1000;
         const unsigned int packet_count = 256;
         const unsigned int max_sequence = 31; // [0,31]
 

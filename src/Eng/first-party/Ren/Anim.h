@@ -33,7 +33,7 @@ struct AnimBone {
 struct AnimShape {
     char name[64];
     int offset = 0;
-    float cur_weight = 0.0f;
+    float cur_weight = 0;
 
     AnimShape() { // NOLINT
         name[0] = '\0';

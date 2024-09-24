@@ -17,7 +17,7 @@ const int cursor_offset = 12;
 
 Gui::EditBox::EditBox(Ren::Context &ctx, std::string_view frame_tex_name, const Vec2f &frame_offsets,
                       const BitmapFont *font, const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
-    : EditBox({ctx, frame_tex_name, frame_offsets, 1.0f, Vec2f{-1}, Vec2f{2}, this}, font, pos, size, parent) {}
+    : EditBox({ctx, frame_tex_name, frame_offsets, 1, Vec2f{-1}, Vec2f{2}, this}, font, pos, size, parent) {}
 
 Gui::EditBox::EditBox(Image9Patch frame, const BitmapFont *font, const Vec2f &pos, const Vec2f &size,
                       const BaseElement *parent)
@@ -48,8 +48,8 @@ void Gui::EditBox::Resize() {
             const std::string &line = lines_[i];
 
             if (p[1] > cur_y && p[1] < cur_y + font_height) {
-                float char_offset = 0.0f;
-                const int intersected_char = font_->CheckText(line, Vec2f{-1.0f, cur_y}, p, char_offset, this);
+                float char_offset = 0;
+                const int intersected_char = font_->CheckText(line, Vec2f{-1, cur_y}, p, char_offset, this);
                 if (intersected_char != -1) {
                     current_line_ = i;
                     current_char_ = intersected_char;
@@ -82,7 +82,7 @@ void Gui::EditBox::Draw(Renderer *r) {
 
     if (focused_) {
         const float width_until_cursor =
-                        2.0f * font_->GetWidth({lines_[current_line_].c_str(), size_t(current_char_)}, this),
+                        2 * font_->GetWidth({lines_[current_line_].c_str(), size_t(current_char_)}, this),
                     y_offset = y_start - float(current_line_) * line_spacing;
 
         // draw cursor
@@ -148,7 +148,7 @@ void Gui::EditBox::AddChar(int ch) {
     std::string text = lines_[current_line_].text();
     text.insert(text.begin() + current_char_, (char)c);
 
-    lines_[current_line_] = TypeMesh(text, font_, Vec2f{ 0.0f, 0.0f }, this);
+    lines_[current_line_] = TypeMesh(text, font_, Vec2f{ 0 }, this);
     current_char_++;*/
 }
 

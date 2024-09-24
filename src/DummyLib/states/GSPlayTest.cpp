@@ -47,25 +47,25 @@ GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
 
     test_dialog_ = std::make_unique<Eng::ScriptedDialog>(*ren_ctx_, *snd_ctx_, *scene_manager_);
 
-    dialog_ui_ = std::make_unique<DialogUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_, *dialog_font_);
+    dialog_ui_ = std::make_unique<DialogUI>(Gui::Vec2f{-1}, Gui::Vec2f{2}, ui_root_, *dialog_font_);
 
     seq_edit_ui_ =
-        std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
+        std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
 
     dialog_edit_ui_ =
-        std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
+        std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
 
     seq_cap_ui_ =
-        std::make_unique<CaptionsUI>(Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
+        std::make_unique<CaptionsUI>(Gui::Vec2f{-1, 0}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_);
     // test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
     //    seq_cap_ui_.get());
 
     /*Gui::Image9Patch edit_box_frame {
             *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
-    Ren::Vec2f{ 8.0f, 8.0f }, 1.0f, Ren::Vec2f{ -1.0f, -1.0f }, Ren::Vec2f{ 2.0f, 2.0f
+    Ren::Vec2f{ 8, 8 }, 1, Ren::Vec2f{ -1 }, Ren::Vec2f{ 2
     }, ui_root_.get()
     };
     edit_box_ = std::make_unique<Gui::EditBox>(
@@ -75,8 +75,8 @@ GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
 
     results_frame_ = std::make_unique<Gui::Image9Patch>(
         *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
-    Ren::Vec2f{ 8.0f, 8.0f
-    }, 1.0f, Ren::Vec2f{ -0.5f, -0.75f }, Ren::Vec2f{ 1.0f, 1.5f }, ui_root_.get()
+    Ren::Vec2f{ 8, 8
+    }, 1, Ren::Vec2f{ -0.5f, -0.75f }, Ren::Vec2f{ 1.0f, 1.5f }, ui_root_.get()
         );*/
 }
 
@@ -226,7 +226,7 @@ void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
     GSBaseState::UpdateAnim(dt_us);
 
     scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, 1.0f, cam_ctrl_->min_exposure,
+                              Ren::Vec3f{0, 1, 0}, cam_ctrl_->view_fov, 1, cam_ctrl_->min_exposure,
                               cam_ctrl_->max_exposure);
 
     const Eng::SceneData &scene = scene_manager_->scene_data();
@@ -414,7 +414,7 @@ bool GSPlayTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bo
     } break;
     case Eng::eInputEvent::MouseWheel: {
         if (dial_edit_mode_ == 0) {
-            if (evt.move[0] > 0.0f) {
+            if (evt.move[0] > 0) {
                 seq_edit_ui_->ZoomInTime();
             } else {
                 seq_edit_ui_->ZoomOutTime();

@@ -16,10 +16,10 @@ void Net::ReliabilitySystem::Reset() {
     acked_queue_.clear();
     sent_packets_ = recv_packets_ = 0;
     lost_packets_ = acked_packets_ = 0;
-    sent_bandwidth_ = 0.0f;
-    acked_bandwidth_ = 1.0f;
-    rtt_ = 0.0f;
-    rtt_maximum_ = 1.0f;
+    sent_bandwidth_ = 0;
+    acked_bandwidth_ = 1;
+    rtt_ = 0;
+    rtt_maximum_ = 1;
 }
 
 void Net::ReliabilitySystem::PacketSent(void *data, int size) {

@@ -63,8 +63,8 @@ void GSUITest3::Enter() {
     );
 
     test_frame_ = std::make_unique<Gui::Image9Patch>(
-        *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 2.0f, 2.0f
-    }, 1.0f, Ren::Vec2f{ 0.0f, 0.1f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
+        *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 2, 2
+    }, 1, Ren::Vec2f{ 0.0f, 0.1f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
     );*/
 
 #if defined(__ANDROID__)
@@ -98,7 +98,7 @@ void GSUITest3::Enter() {
         /*{
             const auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
             paged_reader_ = std::make_unique<PagedReader>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f},
-        Ren::Vec2f{2.0f, 2.0f}, &page_root, book_main_font_, book_emph_font_, book_caption_font_);
+        Ren::Vec2f{2, 2}, &page_root, book_main_font_, book_emph_font_, book_caption_font_);
 
             paged_reader_->LoadBook(js_book, "en", "de");
         }*/
@@ -150,8 +150,8 @@ void GSUITest3::OnPostloadScene(JsObjectP &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    view_dir_ = Ren::Vec3f{0.0f, 0.0f, 1.0f};
-    view_fov_ = 45.0f;
+    view_dir_ = Ren::Vec3f{0, 0, 1};
+    view_fov_ = 45;
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -212,7 +212,7 @@ void GSUITest3::UpdateAnim(const uint64_t dt_us) {
                 view_offset_ = 0.5f;
             } else if (book_state_ == eBookState::BkOpening) {
                 if (as->anim_time_s > 1.925f) {
-                    view_offset_ = 0.0f;
+                    view_offset_ = 0;
                     book_state_ = eBookState::BkOpened;
                 } else {
                     view_offset_ = 0.5f - 0.25f * as->anim_time_s;
@@ -273,8 +273,8 @@ void GSUITest3::Draw() {
                 for (int i = 0; i < 2; i++) {
                     paged_reader_->set_cur_page(page_base + page_order_indices[size_t(book_state_)][i]);
 
-                    paged_reader_->Resize(2.0f * page_corners_uvs[i * 2] - Ren::Vec2f{1.0f},
-                                          2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
+                    paged_reader_->Resize(2 * page_corners_uvs[i * 2] - Ren::Vec2f{1},
+                                          2 * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
                     paged_reader_->Press(hit_point_ndc_.GetValue(), true);
                     if (paged_reader_->selected_sentence() != -1) {
                         break;
@@ -288,14 +288,14 @@ void GSUITest3::Draw() {
         RedrawPages(page_renderer_.get());
     }*/
 
-    auto up_vector = Ren::Vec3f{0.0f, 1.0f, 0.0f};
+    auto up_vector = Ren::Vec3f{0, 1, 0};
     if (Length2(Cross(view_dir_, up_vector)) < 0.001f) {
-        up_vector = Ren::Vec3f{-1.0f, 0.0f, 0.0f};
+        up_vector = Ren::Vec3f{-1, 0, 0};
     }
 
-    const Ren::Vec3f view_origin = view_origin_ + Ren::Vec3f{0.0f, view_offset_, 0.0f};
+    const Ren::Vec3f view_origin = view_origin_ + Ren::Vec3f{0, view_offset_, 0};
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, 1.0f, min_exposure_,
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, 1, min_exposure_,
                               max_exposure_);
 
     GSBaseState::Draw();
@@ -344,7 +344,7 @@ bool GSUITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
         if (book_state_ == eBookState::BkOpened) {
             const int cur_page = paged_reader_->cur_page(), page_count = paged_reader_->page_count();
 
-            if (p[0] < 0.0f) {
+            if (p[0] < 0) {
                 if (cur_page - 2 >= 0) {
                     // paged_reader_->set_cur_page(cur_page - 2);
                 } else {
@@ -371,7 +371,7 @@ bool GSUITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
                 book_state_ = eBookState::BkOpening;
                 reset_anim_time = true;
             } else if (book_state_ == eBookState::BkOpened) {
-                if (p[0] >= 0.0f) {
+                if (p[0] >= 0) {
                     book_state_ = eBookState::BkTurningFwd;
                 } else {
                     book_state_ = eBookState::BkTurningBck;
@@ -387,7 +387,7 @@ bool GSUITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
                 if ((book->comp_mask & mask) == mask) {
                     auto *as = (Eng::AnimState *)scene.comp_store[Eng::CompAnimState]->Get(
                         book->components[Eng::CompAnimState]);
-                    as->anim_time_s = 0.0f;
+                    as->anim_time_s = 0;
                 }
             }
         }
@@ -439,7 +439,7 @@ std::optional<Gui::Vec2f> GSUITest3::MapPointToPageFramebuf(const Gui::Vec2f &p)
 
     const Mat4f clip_from_world = clip_from_view * view_from_world, world_from_clip = Inverse(clip_from_world);
 
-    auto ray_beg_cs = Vec4f{p[0], p[1], -1.0f, 1.0f}, ray_end_cs = Vec4f{p[0], p[1], 1.0f, 1.0f};
+    auto ray_beg_cs = Vec4f{p[0], p[1], -1, 1}, ray_end_cs = Vec4f{p[0], p[1], 1, 1};
 
     Vec4f ray_beg_ws = world_from_clip * ray_beg_cs, ray_end_ws = world_from_clip * ray_end_cs;
     ray_beg_ws /= ray_beg_ws[3];
@@ -447,7 +447,7 @@ std::optional<Gui::Vec2f> GSUITest3::MapPointToPageFramebuf(const Gui::Vec2f &p)
 
     const auto ray_origin_ws = Vec3f{ray_beg_ws}, ray_dir_ws = Normalize(Vec3f{ray_end_ws - ray_beg_ws});
 
-    auto page_plane = Vec4f{0.0f, 1.0f, 0.0f, -page_corners_pos[0][1]};
+    auto page_plane = Vec4f{0, 1, 0, -page_corners_pos[0][1]};
 
     const float t = -(page_plane[3] + ray_origin_ws[1]) / ray_dir_ws[1];
     const Vec3f inter_point = ray_origin_ws + t * ray_dir_ws;
@@ -462,11 +462,11 @@ std::optional<Gui::Vec2f> GSUITest3::MapPointToPageFramebuf(const Gui::Vec2f &p)
         inter_point_norm /=
             Vec2f{page_corners_pos[0][0] - page_corners_pos[1][0], page_corners_pos[0][2] - page_corners_pos[1][2]};
 
-        inter_point_norm = Vec2f{1.0f} - inter_point_norm;
+        inter_point_norm = Vec2f{1} - inter_point_norm;
         std::swap(inter_point_norm[0], inter_point_norm[1]);
 
         Vec2f inter_point_ndc = page_corners_uvs[0] + inter_point_norm * (page_corners_uvs[1] - page_corners_uvs[0]);
-        inter_point_ndc = inter_point_ndc * 2.0f - Vec2f{1.0f};
+        inter_point_ndc = inter_point_ndc * 2 - Vec2f{1};
 
         // inter_point_ndc = -inter_point_ndc;
         // std::swap(inter_point_ndc[0], inter_point_ndc[1]);

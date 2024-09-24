@@ -47,7 +47,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
     label.pLabelName = name_.c_str();
-    label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1.0f;
+    label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
 
     api_ctx->vkCmdBeginDebugUtilsLabelEXT(cmd_buf, &label);
 
@@ -261,7 +261,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.handle());
 
-    const VkViewport viewport = {0.0f, 0.0f, float(w), float(h), 0.0f, 1.0f};
+    const VkViewport viewport = {0, 0, float(w), float(h), 0, 1};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
     const VkRect2D scissor = {0, 0, uint32_t(w), uint32_t(h)};

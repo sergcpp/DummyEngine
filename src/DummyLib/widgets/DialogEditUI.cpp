@@ -6,8 +6,8 @@
 #include <Sys/Time_.h>
 
 namespace DialogEditUIInternal {
-const Gui::Vec2f ElementSizePx = Gui::Vec2f{96.0f, 128.0f};
-const Gui::Vec2f ElementSpacingPx = Gui::Vec2f{300.0f, 160.0f};
+const Gui::Vec2f ElementSizePx = Gui::Vec2f{96, 128};
+const Gui::Vec2f ElementSpacingPx = Gui::Vec2f{300, 160};
 
 const uint8_t ColorOrange[4] = {251, 126, 20, 255};
 } // namespace DialogEditUIInternal
@@ -15,12 +15,12 @@ const uint8_t ColorOrange[4] = {251, 126, 20, 255};
 DialogEditUI::DialogEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos,
                            const Gui::Vec2f &size, Gui::BaseElement *parent)
     : Gui::BaseElement(pos, size, parent), font_(font),
-      back_(ctx, "assets_pc/textures/internal/back.dds", Gui::Vec2f{1.5f}, 1.0f, Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f},
+      back_(ctx, "assets_pc/textures/internal/back.dds", Gui::Vec2f{1.5f}, 1, Gui::Vec2f{-1}, Gui::Vec2f{2},
             this),
-      element_(ctx, "assets_pc/textures/internal/square.dds", Gui::Vec2f{1.5f}, 1.0f, Gui::Vec2f{-1.0f},
-               Gui::Vec2f{2.0f}, this),
-      element_highlighted_(ctx, "assets_pc/textures/internal/square_highlighted.dds", Gui::Vec2f{1.5f}, 1.0f,
-                           Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f}, this),
+      element_(ctx, "assets_pc/textures/internal/square.dds", Gui::Vec2f{1.5f}, 1, Gui::Vec2f{-1},
+               Gui::Vec2f{2}, this),
+      element_highlighted_(ctx, "assets_pc/textures/internal/square_highlighted.dds", Gui::Vec2f{1.5f}, 1,
+                           Gui::Vec2f{-1}, Gui::Vec2f{2}, this),
       line_img_(ctx, "assets_pc/textures/internal/line.dds", Gui::Vec2f{}, Gui::Vec2f{}, this) {}
 
 void DialogEditUI::Draw(Gui::Renderer *r) {
@@ -29,14 +29,14 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
     back_.Draw(r);
 
     if (dialog_) {
-        const Gui::Vec2f elem_size = 2.0f * ElementSizePx / Gui::Vec2f{size_px()};
-        const Gui::Vec2f spacing = 2.0f * ElementSpacingPx / Gui::Vec2f{size_px()};
+        const Gui::Vec2f elem_size = 2 * ElementSizePx / Gui::Vec2f{size_px()};
+        const Gui::Vec2f spacing = 2 * ElementSpacingPx / Gui::Vec2f{size_px()};
 
         const Ren::TextureRegionRef &line_tex = line_img_.tex();
 
-        const Gui::Vec2f line_width = Gui::Vec2f{1.0f, aspect()} * 4.0f / Gui::Vec2f{size_px()};
+        const Gui::Vec2f line_width = Gui::Vec2f{1, aspect()} * 4 / Gui::Vec2f{size_px()};
 
-        const Gui::Vec2f elem_border = 8.0f / Gui::Vec2f{size_px()};
+        const Gui::Vec2f elem_border = 8 / Gui::Vec2f{size_px()};
         const float font_height = font_.height(this);
 
         r->PushClipArea(dims_);
@@ -67,7 +67,7 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
                 const float width = font_.GetWidth(choice->key, this);
 
-                font_.DrawText(r, choice->key, SnapToPixels(p0 + Gui::Vec2f{-width - elem_border[0], 0.0f}), text_color,
+                font_.DrawText(r, choice->key, SnapToPixels(p0 + Gui::Vec2f{-width - elem_border[0], 0}), text_color,
                                this);
             }
 
@@ -116,15 +116,15 @@ void DialogEditUI::DrawLineLocal(Gui::Renderer *r, const Gui::Vec2f &_p0, const 
     const Gui::Vec2f *_uvs = line_img_.uvs_px();
 
     const auto p0 =
-        Gui::Vec4f{dims_[0][0] + 0.5f * (_p0[0] + 1.0f) * dims_[1][0],
-                   dims_[0][1] + 0.5f * (_p0[1] + 1.0f) * dims_[1][1], _uvs[0][0] + 2.0f, _uvs[0][1] + 0.5f};
+        Gui::Vec4f{dims_[0][0] + 0.5f * (_p0[0] + 1) * dims_[1][0],
+                   dims_[0][1] + 0.5f * (_p0[1] + 1) * dims_[1][1], _uvs[0][0] + 2, _uvs[0][1] + 0.5f};
     const auto p1 =
-        Gui::Vec4f{dims_[0][0] + 0.5f * (_p1[0] + 1.0f) * dims_[1][0],
-                   dims_[0][1] + 0.5f * (_p1[1] + 1.0f) * dims_[1][1], _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f};
+        Gui::Vec4f{dims_[0][0] + 0.5f * (_p1[0] + 1) * dims_[1][0],
+                   dims_[0][1] + 0.5f * (_p1[1] + 1) * dims_[1][1], _uvs[1][0] - 2, _uvs[1][1] - 0.5f};
     const auto dp = Normalize(Gui::Vec2f{p1 - p0});
 
     r->PushLine(Gui::eDrawMode::Passthrough, line_tex->pos(2), Gui::ColorBlack, p0, p1, dp, dp,
-                Gui::Vec4f{width[0], width[1], 2.0f, 0.0f});
+                Gui::Vec4f{width[0], width[1], 2, 0});
 }
 
 void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Gui::Vec2f &_p0, const Gui::Vec2f &_p1, const Gui::Vec2f &_p2,
@@ -133,20 +133,20 @@ void DialogEditUI::DrawCurveLocal(Gui::Renderer *r, const Gui::Vec2f &_p0, const
     const Gui::Vec2f *_uvs = line_img_.uvs_px();
 
     const auto p0 =
-        Gui::Vec4f{dims_[0][0] + 0.5f * (_p0[0] + 1.0f) * dims_[1][0],
-                   dims_[0][1] + 0.5f * (_p0[1] + 1.0f) * dims_[1][1], _uvs[0][0] + 2.0f, _uvs[0][1] + 0.5f};
+        Gui::Vec4f{dims_[0][0] + 0.5f * (_p0[0] + 1) * dims_[1][0],
+                   dims_[0][1] + 0.5f * (_p0[1] + 1) * dims_[1][1], _uvs[0][0] + 2, _uvs[0][1] + 0.5f};
     const auto p1 =
-        Gui::Vec4f{dims_[0][0] + 0.5f * (_p1[0] + 1.0f) * dims_[1][0],
-                   dims_[0][1] + 0.5f * (_p1[1] + 1.0f) * dims_[1][1], _uvs[0][0] + 2.0f, _uvs[0][1] + 0.0f};
+        Gui::Vec4f{dims_[0][0] + 0.5f * (_p1[0] + 1) * dims_[1][0],
+                   dims_[0][1] + 0.5f * (_p1[1] + 1) * dims_[1][1], _uvs[0][0] + 2, _uvs[0][1] + 0.0f};
     const auto p2 =
-        Gui::Vec4f{dims_[0][0] + 0.5f * (_p2[0] + 1.0f) * dims_[1][0],
-                   dims_[0][1] + 0.5f * (_p2[1] + 1.0f) * dims_[1][1], _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f};
+        Gui::Vec4f{dims_[0][0] + 0.5f * (_p2[0] + 1) * dims_[1][0],
+                   dims_[0][1] + 0.5f * (_p2[1] + 1) * dims_[1][1], _uvs[1][0] - 2, _uvs[1][1] - 0.5f};
     const auto p3 =
-        Gui::Vec4f{dims_[0][0] + 0.5f * (_p3[0] + 1.0f) * dims_[1][0],
-                   dims_[0][1] + 0.5f * (_p3[1] + 1.0f) * dims_[1][1], _uvs[1][0] - 2.0f, _uvs[1][1] - 0.5f};
+        Gui::Vec4f{dims_[0][0] + 0.5f * (_p3[0] + 1) * dims_[1][0],
+                   dims_[0][1] + 0.5f * (_p3[1] + 1) * dims_[1][1], _uvs[1][0] - 2, _uvs[1][1] - 0.5f};
 
     r->PushCurve(Gui::eDrawMode::Passthrough, line_tex->pos(2), color, p0, p1, p2, p3,
-                 Gui::Vec4f{width[0], width[1], 2.0f, 0.0f});
+                 Gui::Vec4f{width[0], width[1], 2, 0});
 }
 
 void DialogEditUI::IterateElements(const IterationCallback &callback) {
@@ -205,8 +205,8 @@ void DialogEditUI::IterateElements(const IterationCallback &callback) {
     using namespace DialogEditUIInternal;
 
     if (push && Check(p)) {
-        const Gui::Vec2f elem_size = 2.0f * ElementSizePx / Gui::Vec2f{size_px()};
-        const Gui::Vec2f spacing = 2.0f * ElementSpacingPx / Gui::Vec2f{size_px()};
+        const Gui::Vec2f elem_size = 2 * ElementSizePx / Gui::Vec2f{size_px()};
+        const Gui::Vec2f spacing = 2 * ElementSpacingPx / Gui::Vec2f{size_px()};
 
         selected_element_ = -1;
 
@@ -236,7 +236,7 @@ void DialogEditUI::IterateElements(const IterationCallback &callback) {
 
 /*void DialogEditUI::Hover(const Gui::Vec2f &p) {
     if (grabbed_rmb_) {
-        view_offset_ += 2.0f * (p - rmb_point_) / size();
+        view_offset_ += 2 * (p - rmb_point_) / size();
         rmb_point_ = p;
     }
 }*/

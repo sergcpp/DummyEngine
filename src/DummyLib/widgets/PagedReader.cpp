@@ -24,8 +24,8 @@ PagedReader::PagedReader(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Ve
     : BaseElement(pos, size, parent), log_(ctx.log()), main_font_(std::move(main_font)),
       emph_font_(std::move(emph_font)), caption_font_(std::move(caption_font)), cur_chapter_(0), cur_page_(0) {
     using namespace PagedReaderInternal;
-    background_small_ = std::make_unique<Gui::Image9Patch>(ctx, Frame01, Gui::Vec2f{3.0f, 3.0f}, 1.0f,
-                                                           Gui::Vec2f{0.0f, 0.0f}, Gui::Vec2f{1.0f, 1.0f}, parent);
+    background_small_ =
+        std::make_unique<Gui::Image9Patch>(ctx, Frame01, Gui::Vec2f{3}, 1.0f, Gui::Vec2f{0}, Gui::Vec2f{1}, parent);
 }
 
 void PagedReader::Clear() {
@@ -123,7 +123,7 @@ void PagedReader::Draw(Gui::Renderer *r) {
     // const uint8_t
     //    color_white[4] = { 255, 255, 255, 255 };
 
-    // font_->DrawText(r, "Hi!", Vec2f{ 0.0f, 0.0f }, color_white, parent_);
+    // font_->DrawText(r, "Hi!", Vec2f{ 0 }, color_white, parent_);
     DrawCurrentPage(r);
 }
 
@@ -187,7 +187,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                  y_limit = dims_[0][1] + PageMarginBottom*/
         ;
 
-    const float paragraph_height = main_font_height * 2.0f;
+    const float paragraph_height = main_font_height * 2;
 
     [[maybe_unused]] float x_offset = x_start, y_offset = y_start;
 
@@ -446,7 +446,7 @@ void PagedReader::UpdatePages() {
                 x_limit = dims_[0][0] + dims_[1][0] - ((cur_page_ % 2) ? PageMarginLeft : PageMarginRight),
                 y_start = dims_[0][1] + dims_[1][1] - PageMarginTop, y_limit = dims_[0][1] + PageMarginBottom;
 
-    const float paragraph_height = main_font_height * 2.0f;
+    const float paragraph_height = main_font_height * 2;
 
     char portion_buf[4096];
     int portion_buf_size = 0;

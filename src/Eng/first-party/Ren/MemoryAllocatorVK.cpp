@@ -35,7 +35,7 @@ Ren::MemoryAllocator::MemoryAllocator(const std::string_view name, ApiContext *a
     : name_(name), api_ctx_(api_ctx), growth_factor_(growth_factor), mem_type_index_(mem_type_index),
       max_pool_size_(max_pool_size) {
 
-    assert(growth_factor_ > 1.0f);
+    assert(growth_factor_ > 1);
     AllocateNewPool(initial_block_size);
 }
 

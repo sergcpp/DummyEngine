@@ -11,15 +11,15 @@ class SeqCanvasUI : public Gui::BaseElement {
     Gui::Image9Patch back_, time_cursor_, element_normal_, element_highlighted_;
     Gui::Image9Patch end_;
     float time_range_[2] = {0.0f, 8.0f};
-    float time_cur_ = 1.0f;
+    float time_cur_ = 1;
 
     Eng::ScriptedSequence *sequence_ = nullptr;
 
-    Gui::Vec2i selected_index_ = Gui::Vec2i{-1, -1};
+    Gui::Vec2i selected_index_ = Gui::Vec2i{-1};
     enum eDragFlags { DragBeg = (1u << 0u), DragEnd = (1u << 1u) };
     uint32_t selected_drag_flags_ = 0;
     Gui::Vec2f selected_pos_;
-    float selected_time_beg_ = 0.0f, selected_time_end_ = 0.0f;
+    float selected_time_beg_ = 0, selected_time_end_ = 0;
 
     float GetTimeFromPoint(float px);
     float GetPointFromTime(float t);

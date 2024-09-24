@@ -179,15 +179,16 @@ void Eng::CmdlineUI::Draw(Gui::Renderer *r) {
     // background
     Gui::BaseElement::Draw(r);
 
-    const float font_height = font_.height(this);
+    const float font_scale = 0.5f;
+    const float font_height = font_.height(font_scale, this);
 
     // history
     float cur_y = SnapToPixels(Gui::Vec2f{0.0f, 0.0f + 0.1f * font_height})[1];
     for (int i = int(history_.size()) - 1; i >= 0 && cur_y < 1.0f; --i) {
-        const float width = font_.DrawText(r, history_[i], Gui::Vec2f{-1, cur_y}, Gui::ColorWhite, this);
+        const float width = font_.DrawText(r, history_[i], Gui::Vec2f{-1, cur_y}, Gui::ColorWhite, font_scale, this);
         if (i == history_.size() - 1 && cursor_blink_us < 500000) {
             // draw cursor
-            font_.DrawText(r, "_", Gui::Vec2f{-1.0f + width, cur_y}, Gui::ColorWhite, this);
+            font_.DrawText(r, "_", Gui::Vec2f{-1.0f + width, cur_y}, Gui::ColorWhite, font_scale, this);
         }
         cur_y = SnapToPixels(Gui::Vec2f{0.0f, cur_y + font_height})[1];
     }
@@ -199,7 +200,7 @@ void Eng::CmdlineUI::Draw(Gui::Renderer *r) {
         Ren::String hint_str;
         int index = NextHint(cmd, -1, hint_str);
         while (index != -1 && cur_y > -1.0f) {
-            font_.DrawText(r, hint_str, Gui::Vec2f{-1.0f, cur_y}, Gui::ColorWhite, this);
+            font_.DrawText(r, hint_str, Gui::Vec2f{-1.0f, cur_y}, Gui::ColorWhite, font_scale, this);
             cur_y -= font_height;
             index = NextHint(cmd, index, hint_str);
         }

@@ -39,7 +39,7 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     data.read((char *)&file_header.num_chunks, sizeof(int));
     data.read((char *)&file_header.p[0], file_header.num_chunks * sizeof(ChunkPos));
 
-    const size_t bones_count = (size_t)file_header.p[SKELETON_CHUNK].length / (64 + 64 + 4);
+    const size_t bones_count = size_t(file_header.p[SKELETON_CHUNK].length) / (64 + 64 + 4);
     bones_.resize(bones_count);
     int offset = 0;
     for (size_t i = 0; i < bones_count; i++) {
@@ -61,12 +61,12 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     }
 
     if (file_header.num_chunks == 4) {
-        const size_t shapes_count = (size_t)file_header.p[SHAPES_CHUNK].length / 64;
+        const size_t shapes_count = size_t(file_header.p[SHAPES_CHUNK].length) / 64;
         shapes_.resize(shapes_count);
         for (size_t i = 0; i < shapes_count; i++) {
             data.read(shapes_[i].name, 64);
             shapes_[i].offset = offset;
-            shapes_[i].cur_weight = 0.0f;
+            shapes_[i].cur_weight = 0;
             offset += 1;
         }
     }
@@ -128,7 +128,7 @@ void Ren::AnimSequence::Update(float time) {
     while (time > anim_dur_) {
         time -= anim_dur_;
     }
-    while (time < 0.0f) {
+    while (time < 0) {
         time += anim_dur_;
     }
 
@@ -259,7 +259,7 @@ void Ren::Skeleton::ApplyAnim(const int id) {
         const int ndx = anims[id].anim_bones[i];
         if (ndx != -1) {
             const AnimBone *abone = anims[id].anim->bone(ndx);
-            Mat4f m = Mat4f{1.0f};
+            Mat4f m = Mat4f{1};
             if (abone->flags & uint32_t(eAnimBoneFlags::AnimHasTranslate)) {
                 m = Translate(m, abone->cur_pos);
             } else {
@@ -287,7 +287,7 @@ void Ren::Skeleton::ApplyAnim(const int anim_id1, const int anim_id2, const floa
             const int ndx1 = anims[anim_id1].anim_bones[i];
             const int ndx2 = anims[anim_id2].anim_bones[i];
 
-            Mat4f m(1.0f);
+            Mat4f m{1};
             Vec3f pos;
             Quatf orient;
             if (ndx1 != -1) {

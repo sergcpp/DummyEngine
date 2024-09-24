@@ -3,10 +3,10 @@
 void Gui::LinearLayout::Resize() {
     BaseElement::Resize();
 
-    auto _start = Vec2f{-1, -1}, _size = Vec2f{2, 2};
+    auto _start = Vec2f{-1}, _size = Vec2f{2};
 
     float spacing;
-    float filled_space = 0.0f;
+    float filled_space = 0;
     float l;
     if (vertical_) {
         spacing = 8.0f / float(parent_->size_px()[1]);

@@ -34,10 +34,10 @@ class GSPlayTest : public GSBaseState {
     uint64_t click_time_ms_ = 0;
 
     const Gui::BitmapFont *dialog_font_ = {};
-    float test_time_counter_s = 0.0f;
+    float test_time_counter_s = 0;
 
     bool is_playing_ = false;
-    float play_started_time_s_ = 0.0f;
+    float play_started_time_s_ = 0;
 
     std::unique_ptr<Eng::FreeCamController> cam_ctrl_;
 

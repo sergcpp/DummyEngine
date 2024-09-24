@@ -248,7 +248,7 @@ template <typename T, int N> force_inline Vec<T, N> Mod(const Vec<T, N> &x, cons
 template <typename T, int N> force_inline Vec<T, N> Step(const Vec<T, N> &x, const Vec<T, N> &edge) {
     Vec<T, N> ret;
     for (int i = 0; i < N; i++) {
-        ret[i] = x[i] < edge[i] ? 0.0f : 1.0f;
+        ret[i] = x[i] < edge[i] ? T(0) : T(1);
     }
     return ret;
 }

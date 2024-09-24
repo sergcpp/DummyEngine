@@ -21,7 +21,7 @@ Gui::BitmapFont::BitmapFont(std::string_view name, std::istream &data, Ren::Cont
 }
 
 float Gui::BitmapFont::height(const float scale, const BaseElement *parent) const {
-    return 2.0f * scale * float(info_.line_height) / parent->size_px()[1];
+    return 2 * scale * float(info_.line_height) / parent->size_px()[1];
 }
 
 bool Gui::BitmapFont::Load(std::string_view name, Ren::Context &ctx) {
@@ -237,7 +237,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
 
             cur_vtx->pos[0] = pos_uvs[0][0];
             cur_vtx->pos[1] = pos_uvs[0][1];
-            cur_vtx->pos[2] = 0.0f;
+            cur_vtx->pos[2] = 0;
             memcpy(cur_vtx->col, col, 4);
             cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
             cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
@@ -247,7 +247,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
 
             cur_vtx->pos[0] = pos_uvs[1][0];
             cur_vtx->pos[1] = pos_uvs[0][1];
-            cur_vtx->pos[2] = 0.0f;
+            cur_vtx->pos[2] = 0;
             memcpy(cur_vtx->col, col, 4);
             cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
             cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
@@ -257,7 +257,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
 
             cur_vtx->pos[0] = pos_uvs[1][0];
             cur_vtx->pos[1] = pos_uvs[1][1];
-            cur_vtx->pos[2] = 0.0f;
+            cur_vtx->pos[2] = 0;
             memcpy(cur_vtx->col, col, 4);
             cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
             cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
@@ -267,7 +267,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f 
 
             cur_vtx->pos[0] = pos_uvs[0][0];
             cur_vtx->pos[1] = pos_uvs[1][1];
-            cur_vtx->pos[2] = 0.0f;
+            cur_vtx->pos[2] = 0;
             memcpy(cur_vtx->col, col, 4);
             cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
             cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);

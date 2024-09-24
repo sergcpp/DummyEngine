@@ -4,9 +4,9 @@ Gui::ButtonImage::ButtonImage(const Ren::TextureRegionRef &tex_normal, const Vec
                               const Ren::TextureRegionRef &tex_focused, const Vec2f uvs_focused[2],
                               const Ren::TextureRegionRef &tex_pressed, const Vec2f uvs_pressed[2], const Vec2f &pos,
                               const Vec2f &size, const BaseElement *parent)
-    : ButtonBase(pos, size, parent), image_normal_{tex_normal, Vec2f{-1.0f}, Vec2f{2.0f}, this},
-      image_focused_{tex_focused, Vec2f{-1.0f}, Vec2f{2.0f}, this},
-      image_pressed_{tex_pressed, Vec2f{-1.0f}, Vec2f{2.0f}, this} {
+    : ButtonBase(pos, size, parent), image_normal_{tex_normal, Vec2f{-1}, Vec2f{2}, this},
+      image_focused_{tex_focused, Vec2f{-1}, Vec2f{2}, this},
+      image_pressed_{tex_pressed, Vec2f{-1}, Vec2f{2}, this} {
     image_normal_.set_uvs(uvs_normal);
     image_focused_.set_uvs(uvs_focused);
     image_pressed_.set_uvs(uvs_pressed);

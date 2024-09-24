@@ -61,7 +61,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    book_main_font_->set_scale(/*std::max(float(ctx_->w()) / 4096.0f, 1.0f)*/ 1.0f);
+    book_main_font_->set_scale(/*std::max(float(ctx_->w()) / 4096, 1)*/ 1);
     assert(book_main_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
            book_emph_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
            book_caption_font_->draw_mode() == Gui::eDrawMode::DistanceField);
@@ -73,10 +73,10 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     const int page_base = paged_reader_->cur_page();
     for (int i = 0; i < (book_state_ == eBookState::BkOpened ? 2 : 4); i++) {
-        paged_reader_->set_cur_page(page_base + page_order_indices[(size_t)book_state_][i]);
+        paged_reader_->set_cur_page(page_base + page_order_indices[size_t(book_state_)][i]);
 
-        paged_reader_->Resize(2.0f * page_corners_uvs[i * 2] - Vec2f{1.0f},
-                              2.0f * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
+        paged_reader_->Resize(2 * page_corners_uvs[i * 2] - Vec2f{1},
+                              2 * (page_corners_uvs[i * 2 + 1] - page_corners_uvs[i * 2]), &page_root);
         paged_reader_->Draw(r);
     }
 

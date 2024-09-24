@@ -195,7 +195,7 @@ int Net::UDPSocket::Receive(Address &sender, void *data, const int size) const {
     sockaddr_in from;   // NOLINT
     socklen_t from_len = sizeof(sockaddr_in);
 
-    const int received_bytes = int(recvfrom(handle_, (char *) data, (size_t) size, 0, (sockaddr *) &from, &from_len));
+    const int received_bytes = int(recvfrom(handle_, (char *) data, size, 0, (sockaddr *) &from, &from_len));
 
     if (received_bytes <= 0) {
         return 0;

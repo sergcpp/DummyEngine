@@ -279,7 +279,7 @@ force_inline Ren::Vec4f taylor_inv_sqrt(const Ren::Vec4f &r) {
 }
 
 force_inline Ren::Vec4f fade(const Ren::Vec4f &t) {
-    return t * t * t * (t * (t * 6.0f - Ren::Vec4f{15.0f}) + Ren::Vec4f{10.0f});
+    return t * t * t * (t * (t * 6.0f - Ren::Vec4f{15}) + Ren::Vec4f{10});
 }
 
 int round_up(int v, int align) { return align * ((v + align - 1) / align); }
@@ -321,7 +321,7 @@ union rgb9e5 {
 };
 
 float ClampRange_for_rgb9e5(float x) {
-    if (x > 0.0f) {
+    if (x > 0) {
         if (x >= MAX_RGB9E5) {
             return MAX_RGB9E5;
         } else {
@@ -329,7 +329,7 @@ float ClampRange_for_rgb9e5(float x) {
         }
     } else {
         // NaN gets here too since comparisons with NaN always fail!
-        return 0.0f;
+        return 0;
     }
 }
 
@@ -582,10 +582,10 @@ std::vector<uint8_t> Ren::ConvertRGB32F_to_RGBE(Span<const float> image_data, co
             auto exp = Vec3f{std::log2(val[0]), std::log2(val[1]), std::log2(val[2])};
             for (int i = 0; i < 3; i++) {
                 exp[i] = std::ceil(exp[i]);
-                if (exp[i] < -128.0f) {
-                    exp[i] = -128.0f;
-                } else if (exp[i] > 127.0f) {
-                    exp[i] = 127.0f;
+                if (exp[i] < -128) {
+                    exp[i] = -128;
+                } else if (exp[i] > 127) {
+                    exp[i] = 127;
                 }
             }
 
@@ -594,13 +594,13 @@ std::vector<uint8_t> Ren::ConvertRGB32F_to_RGBE(Span<const float> image_data, co
 
             Ren::Vec3f mantissa = val / range;
             for (int i = 0; i < 3; i++) {
-                if (mantissa[i] < 0.0f)
-                    mantissa[i] = 0.0f;
-                else if (mantissa[i] > 1.0f)
-                    mantissa[i] = 1.0f;
+                if (mantissa[i] < 0)
+                    mantissa[i] = 0;
+                else if (mantissa[i] > 1)
+                    mantissa[i] = 1;
             }
 
-            const auto res = Ren::Vec4f{mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f};
+            const auto res = Ren::Vec4f{mantissa[0], mantissa[1], mantissa[2], common_exp + 128};
 
             u8_data[(y * w + x) * 4 + 0] = (uint8_t)_CLAMP(int(res[0] * 255), 0, 255);
             u8_data[(y * w + x) * 4 + 1] = (uint8_t)_CLAMP(int(res[1] * 255), 0, 255);
@@ -916,7 +916,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
 
     struct vtx_data_t {
         int32_t cache_pos = -1;
-        float score = 0.0f;
+        float score = 0;
         uint32_t ref_count = 0;
         uint32_t active_tris_count = 0;
         std::unique_ptr<int32_t[]> tris;
@@ -935,7 +935,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
             return -1.0f;
         }
 
-        float score = 0.0f;
+        float score = 0;
 
         if (cache_pos < 0) {
             // Vertex is not in FIFO cache - no score.
@@ -964,7 +964,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
 
     struct tri_data_t {
         bool is_in_list = false;
-        float score = 0.0f;
+        float score = 0;
         uint32_t indices[3] = {};
     };
 
@@ -1185,12 +1185,12 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
                 const Vec3f plane_N = Cross(dp1, dp2);
 
                 int w = 2;
-                tangent = Vec3f{0.0f, 1.0f, 0.0f};
+                tangent = Vec3f{0, 1, 0};
                 if (fabsf(plane_N[0]) <= fabsf(plane_N[1]) && fabsf(plane_N[0]) <= fabsf(plane_N[2])) {
-                    tangent = Vec3f{1.0f, 0.0f, 0.0f};
+                    tangent = Vec3f{1, 0, 0};
                     w = 1;
                 } else if (fabsf(plane_N[2]) <= fabsf(plane_N[0]) && fabsf(plane_N[2]) <= fabsf(plane_N[1])) {
-                    tangent = Vec3f{0.0f, 0.0f, 1.0f};
+                    tangent = Vec3f{0, 0, 1};
                     w = 0;
                 }
 
@@ -1295,9 +1295,9 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
 //
 float Ren::PerlinNoise(const Ren::Vec4f &P) {
     Vec4f Pi0 = Floor(P);          // Integer part for indexing
-    Vec4f Pi1 = Pi0 + Vec4f{1.0f}; // Integer part + 1
-    Pi0 = Mod(Pi0, Vec4f{289.0f});
-    Pi1 = Mod(Pi1, Vec4f{289.0f});
+    Vec4f Pi1 = Pi0 + Vec4f{1}; // Integer part + 1
+    Pi0 = Mod(Pi0, Vec4f{289});
+    Pi1 = Mod(Pi1, Vec4f{289});
     const Vec4f Pf0 = Fract(P);         // Fractional part for interpolation
     const Vec4f Pf1 = Pf0 - Vec4f{1.0}; // Fractional part - 1.0
     const auto ix = Vec4f{Pi0[0], Pi1[0], Pi0[0], Pi1[0]};
@@ -1322,9 +1322,9 @@ float Ren::PerlinNoise(const Ren::Vec4f &P) {
     gy00 = Fract(gy00) - Vec4f{0.5f};
     gz00 = Fract(gz00) - Vec4f{0.5f};
     Vec4f gw00 = Vec4f{0.75} - Abs(gx00) - Abs(gy00) - Abs(gz00);
-    Vec4f sw00 = Step(gw00, Vec4f{0.0f});
-    gx00 -= sw00 * (Step(Vec4f{0.0f}, gx00) - Vec4f{0.5f});
-    gy00 -= sw00 * (Step(Vec4f{0.0f}, gy00) - Vec4f{0.5f});
+    Vec4f sw00 = Step(gw00, Vec4f{0});
+    gx00 -= sw00 * (Step(Vec4f{0}, gx00) - Vec4f{0.5f});
+    gy00 -= sw00 * (Step(Vec4f{0}, gy00) - Vec4f{0.5f});
 
     Vec4f gx01 = ixy01 / 7.0f;
     Vec4f gy01 = Floor(gx01) / 7.0f;

@@ -31,15 +31,15 @@ class GSUITest3 : public GSBaseState {
     uint64_t click_time_ = 0;
 
     const Gui::BitmapFont *book_main_font_ = {}, *book_emph_font_ = {}, *book_caption_font_ = {};
-    float test_time_counter_s = 0.0f;
+    float test_time_counter_s = 0;
 
     std::unique_ptr<Gui::Image> test_image_;
     std::unique_ptr<Gui::Image9Patch> test_frame_;
     std::unique_ptr<PagedReader> paged_reader_;
 
     Ren::Vec3f view_origin_, view_dir_;
-    float view_fov_ = 0.0f, view_offset_ = 0.0f;
-    float min_exposure_ = -1000.0f, max_exposure_ = 1000.0f;
+    float view_fov_ = 0, view_offset_ = 0;
+    float min_exposure_ = -1000, max_exposure_ = 1000;
 
     std::unique_ptr<Gui::Renderer> page_renderer_;
     // FrameBuf page_buf_;

@@ -41,7 +41,7 @@ extern const VkCompareOp g_vk_compare_ops[] = {
 };
 static_assert(std::size(g_vk_compare_ops) == size_t(eTexCompare::_Count), "!");
 
-extern const float AnisotropyLevel = 4.0f;
+extern const float AnisotropyLevel = 4;
 } // namespace Ren
 
 Ren::Sampler &Ren::Sampler::operator=(Sampler &&rhs) noexcept {

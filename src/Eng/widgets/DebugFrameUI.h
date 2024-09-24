@@ -14,11 +14,12 @@ namespace Eng {
 struct BackendInfo;
 struct FrontendInfo;
 struct ItemsInfo;
+struct resource_info_t;
 
 class DebugFrameUI final : public Gui::BaseElement {
   public:
     DebugFrameUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
-                 const Gui::BitmapFont *font_small);
+                 const Gui::BitmapFont *font_small, const Gui::BitmapFont *font_large);
 
     void UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info, const ItemsInfo &items_info,
                     bool debug_items);
@@ -33,23 +34,23 @@ class DebugFrameUI final : public Gui::BaseElement {
     void Draw(Gui::Renderer *r) override;
 
   private:
-    const Gui::BitmapFont *font_small_;
+    const Gui::BitmapFont *font_small_, *font_large_;
 
     Gui::Image9Patch back_, element_, element_highlighted_;
     Gui::Image line_;
 
 #if !defined(NDEBUG)
-    eViewMode view_mode_ = eViewMode::Detailed;
+    eViewMode view_mode_ = eViewMode::Compact;
 #else
     eViewMode view_mode_ = eViewMode::Off;
 #endif
 
     Gui::Vec2f view_offset_ = Gui::Vec2f{-0.9f, 0.5f};
-    float view_scale_ = 1.0f;
+    float view_scale_ = 1;
     bool view_grabbed_ = false;
     Gui::Vec2f p1_down_pos_ = Gui::Vec2f{-1};
     std::optional<Gui::Vec2i> deferred_select_pos_;
-    int selected_index_ = -1;
+    int selected_pass_index_ = -1, selected_res_index_ = -1;
 
     uint64_t last_frame_time_ = 0;
     double cur_frame_dur_ = 0.0;
@@ -57,9 +58,9 @@ class DebugFrameUI final : public Gui::BaseElement {
     bool debug_items_ = false;
 
     struct {
-        float occluders_time_ms = 0.0f, main_gather_time_ms = 0.0f, shadow_gather_time_ms = 0.0f,
-              drawables_sort_time_ms = 0.0f, items_assignment_time_ms = 0.0f;
-        float total_time_ms = 0.0f;
+        float occluders_time_ms = 0, main_gather_time_ms = 0, shadow_gather_time_ms = 0, drawables_sort_time_ms = 0,
+              items_assignment_time_ms = 0;
+        float total_time_ms = 0;
     } front_info_smooth_;
 
     struct pass_info_smooth_t {
@@ -71,19 +72,19 @@ class DebugFrameUI final : public Gui::BaseElement {
     };
 
     struct {
-        pass_info_smooth_t passes[256];
-        int pass_count = 0;
+        Ren::SmallVector<pass_info_smooth_t, 256> passes_info;
+        std::vector<resource_info_t> resources_info;
 
-        float cpu_total_ms = 0.0f, gpu_total_ms = 0.0f;
+        float cpu_total_ms = 0, gpu_total_ms = 0;
 
-        float shadow_draw_calls_count = 0.0f, depth_fill_draw_calls_count = 0.0f, opaque_draw_calls_count = 0.0f;
+        float shadow_draw_calls_count = 0, depth_fill_draw_calls_count = 0, opaque_draw_calls_count = 0;
 
-        float tris_rendered = 0.0f;
+        float tris_rendered = 0;
     } back_info_smooth_;
 
     struct {
-        float lights_count = 0.0f, decals_count = 0.0f, probes_count = 0.0f;
-        float items_total = 0.0f;
+        float lights_count = 0, decals_count = 0, probes_count = 0;
+        float items_total = 0;
     } items_info_smooth_;
 
     struct {
@@ -97,9 +98,11 @@ class DebugFrameUI final : public Gui::BaseElement {
     void DrawDetailed(Gui::Renderer *r);
 
     void DrawPassInfo(Gui::Renderer *r, int pass_index, Gui::Vec2f elem_pos, float font_scale);
+    void DrawResourceInfo(Gui::Renderer *r, int res_index, Gui::Vec2f origin, float font_scale);
     void DrawConnectionCurves(Gui::Renderer *r, int pass_index, float font_scale, bool detailed_outputs);
 
-    void DrawLine(Gui::Renderer *r, const Gui::Vec2f &p0, const Gui::Vec2f &p1, const Gui::Vec2f &width) const;
+    void DrawLine(Gui::Renderer *r, const Gui::Vec2f &p0, const Gui::Vec2f &p1, const Gui::Vec2f &width,
+                  const uint8_t color[4]) const;
     void DrawCurve(Gui::Renderer *r, const Gui::Vec2f &p0, const Gui::Vec2f &p1, const Gui::Vec2f &p2,
                    const Gui::Vec2f &p3, const Gui::Vec2f &width, const uint8_t color[4], bool backward = false) const;
 };

@@ -122,7 +122,7 @@ bool Sys::AssetFile::Open(std::string_view file_name, const eOpenMode mode) {
         if (!found_in_package) {
             file_stream_->open(file_name.data(), std::ios::in | std::ios::binary);
             file_stream_->seekg(0, std::ios::end);
-            size_ = (size_t)file_stream_->tellg();
+            size_ = size_t(file_stream_->tellg());
             file_stream_->seekg(0, std::ios::beg);
         }
 #endif

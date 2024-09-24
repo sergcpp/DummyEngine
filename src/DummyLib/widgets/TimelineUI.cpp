@@ -16,8 +16,8 @@ TimelineUI::TimelineUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui
             "assets_pc/textures/editor/timeline_back.uncompressed.tga",
             Gui::Vec2f{1.0f, 1.5f},
             1.0f,
-            Gui::Vec2f{-1.0f, -1.0f},
-            Gui::Vec2f{2.0f, 2.0f},
+            Gui::Vec2f{-1},
+            Gui::Vec2f{2},
             this},
       ruler_small_{ctx, "assets_pc/textures/editor/ruler_small.uncompressed.tga", Gui::Vec2f{}, Gui::Vec2f{}, parent},
       ruler_medium_{ctx, "assets_pc/textures/editor/ruler_medium.uncompressed.tga", Gui::Vec2f{}, Gui::Vec2f{}, parent},
@@ -91,7 +91,7 @@ void TimelineUI::Draw(Gui::Renderer *r) {
     for (float t = t_beg; t < t_end + 0.5f * TimeStepSmall; t += TimeStepSmall) { // NOLINT
         // minus zero fixup
         if (std::abs(t) < RoundingThres) {
-            t = 0.0f;
+            t = 0;
         }
 
         const float px = GetPointFromTime(t);

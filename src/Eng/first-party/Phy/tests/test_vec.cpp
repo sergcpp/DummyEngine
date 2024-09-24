@@ -8,7 +8,7 @@ void test_vec() {
     using namespace Phy;
 
     {
-        auto v1 = Vec2f{1.0f, 2.0f}, v2 = Vec2f{3.0f, 4.0f};
+        auto v1 = Vec2f{1, 2}, v2 = Vec2f{3, 4};
 
         require(v1[0] == 1.0f);
         require(v1[1] == 2.0f);
@@ -59,7 +59,7 @@ void test_vec() {
     }
 
     {
-        auto v1 = Vec3f{1.0f, 2.0f, 3.0f}, v2 = Vec3f{3.0f, 4.0f, 5.0f};
+        auto v1 = Vec3f{1, 2, 3}, v2 = Vec3f{3, 4, 5};
 
         require(v1[0] == 1.0f);
         require(v1[1] == 2.0f);
@@ -120,7 +120,7 @@ void test_vec() {
     }
 
     {
-        auto v1 = Vec4f{1.0f, 2.0f, 3.0f, 4.0f}, v2 = Vec4f{3.0f, 4.0f, 5.0f, 6.0f};
+        auto v1 = Vec4f{1, 2, 3, 4}, v2 = Vec4f{3, 4, 5, 6};
 
         require(v1[0] == 1.0f);
         require(v1[1] == 2.0f);

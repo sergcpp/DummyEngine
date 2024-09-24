@@ -31,7 +31,7 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
     const bbox_t whole_box = {bbox_min, bbox_max};
 
     float res_sah = FLT_MAX;
-    if (s.oversplit_threshold > 0.0f) {
+    if (s.oversplit_threshold > 0) {
         res_sah = s.oversplit_threshold * whole_box.surface_area() * float(prim_count);
     }
     int div_axis = -1;
@@ -39,7 +39,7 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
     bbox_t res_left_bounds, res_right_bounds;
 
     if (prim_count > BinningThreshold) {
-        float div_pos = 0.0f;
+        float div_pos = 0;
 
         for (int axis = 0; axis < 3; ++axis) {
             const float bounds_min = whole_box.min[axis];

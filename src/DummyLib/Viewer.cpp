@@ -89,7 +89,8 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
 
     // create UI for performance debugging
     debug_ui_ = std::make_unique<Eng::DebugFrameUI>(*ren_ctx_, Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f, 1.75f},
-                                                    ui_root_.get(), font_storage_->FindFont("main_font"));
+                                                    ui_root_.get(), font_storage_->FindFont("main_font"),
+                                                    font_storage_->FindFont("large_font"));
 
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);

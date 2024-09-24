@@ -26,7 +26,7 @@ bool Net::ReliableUDPConnection::SendPacket(const unsigned char data[], int size
     unsigned int ack_bits = reliability_system_.GenerateAckBits();
 
     WriteHeader(packet, seq, ack, ack_bits);
-    memcpy(packet + header_size, data, (size_t) size);
+    memcpy(packet + header_size, data, size_t(size));
     if (!UDPConnection::SendPacket(packet, size + header_size)) {
         return false;
     }
@@ -50,7 +50,7 @@ int Net::ReliableUDPConnection::ReceivePacket(unsigned char data[], int size) {
     ReadHeader(packet, packet_sequence, packet_ack, packet_ack_bits);
     reliability_system_.PacketReceived(packet_sequence, received_bytes - header_size);
     reliability_system_.ProcessAck(packet_ack, packet_ack_bits);
-    memcpy(data, packet + header_size, (size_t) received_bytes - header_size);
+    memcpy(data, packet + header_size, size_t(received_bytes) - header_size);
 
     return received_bytes - header_size;
 }

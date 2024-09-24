@@ -234,7 +234,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
     cur_vtx->pos[0] = pos_uvs[0][0];
     cur_vtx->pos[1] = pos_uvs[0][1];
-    cur_vtx->pos[2] = 0.0f;
+    cur_vtx->pos[2] = 0;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
@@ -244,7 +244,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
     cur_vtx->pos[0] = pos_uvs[1][0];
     cur_vtx->pos[1] = pos_uvs[0][1];
-    cur_vtx->pos[2] = 0.0f;
+    cur_vtx->pos[2] = 0;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
@@ -254,7 +254,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
     cur_vtx->pos[0] = pos_uvs[1][0];
     cur_vtx->pos[1] = pos_uvs[1][1];
-    cur_vtx->pos[2] = 0.0f;
+    cur_vtx->pos[2] = 0;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
@@ -264,7 +264,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
     cur_vtx->pos[0] = pos_uvs[0][0];
     cur_vtx->pos[1] = pos_uvs[1][1];
-    cur_vtx->pos[2] = 0.0f;
+    cur_vtx->pos[2] = 0;
     cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
@@ -289,8 +289,8 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
 
     const uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
 
-    const Vec4f perp[2] = {Vec4f{thickness} * Vec4f{-d0[1], d0[0], 1.0f, 0.0f},
-                           Vec4f{thickness} * Vec4f{-d1[1], d1[0], 1.0f, 0.0f}};
+    const Vec4f perp[2] = {Vec4f{thickness} * Vec4f{-d0[1], d0[0], 1, 0},
+                           Vec4f{thickness} * Vec4f{-d1[1], d1[0], 1, 0}};
 
     Vec4f pos_uvs[8] = {p0 - perp[0], p1 - perp[1], p1 + perp[1], p0 + perp[0]};
     int vertex_count = 4;
@@ -319,7 +319,7 @@ void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t c
     for (int i = 0; i < vertex_count; i++) {
         cur_vtx->pos[0] = pos_uvs[i][0];
         cur_vtx->pos[1] = pos_uvs[i][1];
-        cur_vtx->pos[2] = 0.0f;
+        cur_vtx->pos[2] = 0;
         memcpy(cur_vtx->col, color, 4);
         cur_vtx->uvs[0] = f32_to_u16(pos_uvs[i][2]);
         cur_vtx->uvs[1] = f32_to_u16(pos_uvs[i][3]);

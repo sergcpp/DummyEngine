@@ -221,7 +221,7 @@ void DummyApp::PollEvents() {
         return;
     }
 
-    static float last_p1_pos[2] = {0.0f, 0.0f};
+    static float last_p1_pos[2] = {0, 0};
     static int last_window_size[2] = {0, 0};
 
     XEvent xev;
@@ -252,7 +252,7 @@ void DummyApp::PollEvents() {
                 evt.type = Eng::eInputEvent::P2Down;
             } else if (xev.xbutton.button == Button4 || xev.xbutton.button == Button5) {
                 evt.type = Eng::eInputEvent::MouseWheel;
-                evt.move[0] = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
+                evt.move[0] = (xev.xbutton.button == Button4) ? 1 : -1;
             }
             evt.point[0] = float(xev.xbutton.x);
             evt.point[1] = float(xev.xbutton.y);

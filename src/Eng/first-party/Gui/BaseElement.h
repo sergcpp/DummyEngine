@@ -56,9 +56,9 @@ class BaseElement {
     [[nodiscard]] const Vec2i &pos_px() const { return dims_px_[0]; }
     [[nodiscard]] const Vec2i &size_px() const { return dims_px_[1]; }
 
-    [[nodiscard]] Vec2f ToLocal(const Vec2f &p) const { return 2.0f * (p - dims_[0]) / dims_[1] - 1.0f; }
+    [[nodiscard]] Vec2f ToLocal(const Vec2f &p) const { return 2 * (p - dims_[0]) / dims_[1] - 1; }
     [[nodiscard]] Vec2f ToLocal(const Vec2i &p) const {
-        return 2.0f * Vec2f(p - dims_px_[0]) / Vec2f(dims_px_[1]) - 1.0f;
+        return 2 * Vec2f(p - dims_px_[0]) / Vec2f(dims_px_[1]) - 1;
     }
 
     virtual void Resize();

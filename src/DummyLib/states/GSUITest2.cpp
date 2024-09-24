@@ -37,17 +37,17 @@ GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
 
     Gui::Image9Patch edit_box_frame{*ren_ctx_,
                                     "assets_pc/textures/ui/frame_01.uncompressed.png",
-                                    Gui::Vec2f{8.0f, 8.0f},
-                                    1.0f,
-                                    Gui::Vec2f{-1.0f, -1.0f},
-                                    Gui::Vec2f{2.0f, 2.0f},
+                                    Gui::Vec2f{8},
+                                    1,
+                                    Gui::Vec2f{-1},
+                                    Gui::Vec2f{2},
                                     ui_root_};
     edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_, Gui::Vec2f{-0.5f, 0.75f},
                                                Gui::Vec2f{1.0f, 0.75f * font_height}, ui_root_);
     edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
 
     results_frame_ = std::make_unique<Gui::Image9Patch>(*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
-                                                        Gui::Vec2f{8.0f, 8.0f}, 1.0f, Gui::Vec2f{-0.5f, -0.75f},
+                                                        Gui::Vec2f{8.0f}, 1.0f, Gui::Vec2f{-0.5f, -0.75f},
                                                         Gui::Vec2f{1.0f, 1.5f}, ui_root_);
 }
 
@@ -87,8 +87,8 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
 
     GSBaseState::OnPostloadScene(js_scene);
 
-    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0.0f, 0.0f, 1.0f};
-    float view_fov = 45.0f, min_exposure = -1000.0f, max_exposure = 1000.0f;
+    Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0, 0, 1};
+    float view_fov = 45, min_exposure = -1000, max_exposure = 1000;
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -127,7 +127,7 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, 1.0f,
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0, 1, 0}, view_fov, 1,
                               min_exposure, max_exposure);
 }
 

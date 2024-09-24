@@ -52,16 +52,16 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
 
     test_dialog_ = std::make_unique<Eng::ScriptedDialog>(*ren_ctx_, *snd_ctx_, *scene_manager_);
 
-    dialog_ui_ = std::make_unique<DialogUI>(Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_,
+    dialog_ui_ = std::make_unique<DialogUI>(Gui::Vec2f{-1, 0}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_,
                                             true /* debug */);
     dialog_ui_->make_choice_signal.Connect<DialogController, &DialogController::MakeChoice>(dial_ctrl_.get());
 
     seq_edit_ui_ =
-        std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
+        std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
     // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
     dialog_edit_ui_ =
-        std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
+        std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<DialogController, &DialogController::SetCurSequence>(
@@ -70,13 +70,13 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
     dialog_edit_ui_->edit_cur_seq_signal.Connect<GSUITest4, &GSUITest4::OnEditSequence>(this);
 
     seq_cap_ui_ =
-        std::make_unique<CaptionsUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
+        std::make_unique<CaptionsUI>(Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_);
     dial_ctrl_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(seq_cap_ui_.get());
     dial_ctrl_->push_choice_signal.Connect<DialogUI, &DialogUI::OnPushChoice>(dialog_ui_.get());
     dial_ctrl_->switch_sequence_signal.Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
     dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
 
-    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_,
+    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_,
                                                   *dialog_font_);
     word_puzzle_->puzzle_solved_signal.Connect<DialogController, &DialogController::ContinueChoice>(dial_ctrl_.get());
 }
@@ -279,7 +279,7 @@ void GSUITest4::UpdateAnim(const uint64_t dt_us) {
 
     if (use_free_cam_) {
         scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-                                  Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, 1.0f, cam_ctrl_->min_exposure,
+                                  Ren::Vec3f{0, 1, 0}, cam_ctrl_->view_fov, 1, cam_ctrl_->min_exposure,
                                   cam_ctrl_->max_exposure);
     }
 }
@@ -477,7 +477,7 @@ bool GSUITest4::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
     } break;
     case Eng::eInputEvent::MouseWheel: {
         if (dial_edit_mode_ == 1) {
-            if (evt.move[0] > 0.0f) {
+            if (evt.move[0] > 0) {
                 seq_edit_ui_->ZoomInTime();
             } else {
                 seq_edit_ui_->ZoomOutTime();

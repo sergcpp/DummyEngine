@@ -244,7 +244,7 @@ class Context {
 
 #if defined(USE_GL_RENDER)
     struct { // NOLINT
-        float max_anisotropy = 0.0f;
+        float max_anisotropy = 0;
         int max_vertex_input = 0, max_vertex_output = 0;
         bool spirv = false;
         bool persistent_buf_mapping = false;
@@ -261,7 +261,7 @@ class Context {
     static bool IsExtensionSupported(const char *ext);
 #elif defined(USE_VK_RENDER)
     struct { // NOLINT
-        float max_anisotropy = 0.0f;
+        float max_anisotropy = 0;
         int max_vertex_input = 0, max_vertex_output = 0;
         bool spirv = true;
         bool persistent_buf_mapping = true;

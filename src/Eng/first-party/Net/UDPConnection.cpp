@@ -139,7 +139,7 @@ int Net::UDPConnection::ReceivePacket(unsigned char data[], int size) {
             state_ = eState::Connected;
             OnConnect();
         }
-        timeout_acc_ = 0.0f;
+        timeout_acc_ = 0;
 
         memcpy(data, &packet[4], bytes_read - 4);
         return bytes_read - 4;

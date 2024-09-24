@@ -155,7 +155,7 @@ Ren::eVisResult Ren::Frustum::CheckVisibility(const Vec3f &bbox_min, const Vec3f
 }
 
 Ren::Camera::Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up)
-    : is_orthographic_(false), angle_(0.0f), aspect_(0.0f), near_(0.0f), far_(0.0f) {
+    : is_orthographic_(false), angle_(0), aspect_(0), near_(0), far_(0) {
     SetupView(center, target, up);
 }
 
@@ -188,10 +188,10 @@ void Ren::Camera::Perspective(const eZRange mode, const float angle, const float
     far_ = farr;
     proj_matrix_ = PerspectiveProjection(angle, aspect, nearr, farr, mode != eZRange::NegOneToOne);
     if (mode == eZRange::OneToZero) {
-        const Mat4f reverse_z = Mat4f{Vec4f{1.0f, 0.0f, 0.0f, 0.0f},  //
-                                      Vec4f{0.0f, 1.0f, 0.0f, 0.0f},  //
-                                      Vec4f{0.0f, 0.0f, -1.0f, 0.0f}, //
-                                      Vec4f{0.0f, 0.0f, 1.0f, 1.0f}};
+        const Mat4f reverse_z = Mat4f{Vec4f{1, 0, 0, 0},  //
+                                      Vec4f{0, 1, 0, 0},  //
+                                      Vec4f{0, 0, -1, 0}, //
+                                      Vec4f{0, 0, 1, 1}};
         proj_matrix_ = reverse_z * proj_matrix_;
     }
 }
@@ -203,10 +203,10 @@ void Ren::Camera::Orthographic(const eZRange mode, const float left, const float
     far_ = farr;
     proj_matrix_ = OrthographicProjection(left, right, top, down, nearr, farr, mode != eZRange::NegOneToOne);
     if (mode == eZRange::OneToZero) {
-        const Mat4f reverse_z = Mat4f{Vec4f{1.0f, 0.0f, 0.0f, 0.0f},  //
-                                      Vec4f{0.0f, 1.0f, 0.0f, 0.0f},  //
-                                      Vec4f{0.0f, 0.0f, -1.0f, 0.0f}, //
-                                      Vec4f{0.0f, 0.0f, 1.0f, 1.0f}};
+        const Mat4f reverse_z = Mat4f{Vec4f{1, 0, 0, 0},  //
+                                      Vec4f{0, 1, 0, 0},  //
+                                      Vec4f{0, 0, -1, 0}, //
+                                      Vec4f{0, 0, 1, 1}};
         proj_matrix_ = reverse_z * proj_matrix_;
     }
 }
@@ -226,7 +226,7 @@ void Ren::Camera::Rotate(const float rx, const float ry, const float delta_time)
     tr_front[1] = Dot(front, Vec3f{view_matrix_[1][0], view_matrix_[1][1], view_matrix_[1][2]});
     tr_front[2] = Dot(front, Vec3f{view_matrix_[2][0], view_matrix_[2][1], view_matrix_[2][2]});
 
-    LookAt(view_matrix_, world_position_, world_position_ + tr_front, Vec3f{0.0f, 1.0f, 0.0f});
+    LookAt(view_matrix_, world_position_, world_position_ + tr_front, Vec3f{0, 1, 0});
 }
 
 void Ren::Camera::UpdatePlanes() {

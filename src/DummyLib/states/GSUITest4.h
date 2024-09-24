@@ -35,7 +35,7 @@ class GSUITest4 final : public GSBaseState {
     uint64_t click_time_ = 0;
 
     const Gui::BitmapFont *dialog_font_ = {};
-    float test_time_counter_s = 0.0f;
+    float test_time_counter_s = 0;
 
     bool use_free_cam_ = true;
     std::unique_ptr<Eng::FreeCamController> cam_ctrl_;

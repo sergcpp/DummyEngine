@@ -72,7 +72,7 @@ class BitmapFont {
 
   private:
     typgraph_info_t info_ = {};
-    float default_scale_ = 1.0f;
+    float default_scale_ = 1;
     Ren::TextureRegionRef tex_;
     uint32_t tex_res_[2] = {};
     eDrawMode draw_mode_ = eDrawMode::Passthrough;

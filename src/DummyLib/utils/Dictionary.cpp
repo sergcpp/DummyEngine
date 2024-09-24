@@ -51,7 +51,7 @@ bool Dictionary::Load(std::istream &in_data, Ren::ILog *log) {
         in_data.read((char *)&chunk_offset, sizeof(uint32_t));
         in_data.read((char *)&chunk_size, sizeof(uint32_t));
 
-        const size_t file_offset = (size_t)in_data.tellg();
+        const size_t file_offset = size_t(in_data.tellg());
 
         in_data.seekg(chunk_offset, std::ios::beg);
 

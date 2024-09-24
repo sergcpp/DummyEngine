@@ -70,7 +70,7 @@ void Phy::Body::ApplyImpulseAngular(const Vec3 &impulse) {
 
     vel_ang += GetInverseInertiaTensorWs() * impulse;
 
-    const float MaxAngularSpeed = 30.0f;
+    const float MaxAngularSpeed = 30;
     if (Length2(vel_ang) > MaxAngularSpeed * MaxAngularSpeed) {
         vel_ang = Normalize(vel_ang);
         vel_ang *= MaxAngularSpeed;

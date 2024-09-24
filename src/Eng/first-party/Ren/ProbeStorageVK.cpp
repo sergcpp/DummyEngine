@@ -219,9 +219,9 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         sampler_info.unnormalizedCoordinates = VK_FALSE;
         sampler_info.compareEnable = VK_FALSE;
         sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        sampler_info.mipLodBias = 0.0f;
-        sampler_info.minLod = -16.0f;
-        sampler_info.maxLod = +16.0f;
+        sampler_info.mipLodBias = 0;
+        sampler_info.minLod = -16;
+        sampler_info.maxLod = +16;
 
         const VkResult res = api_ctx->vkCreateSampler(api_ctx->device, &sampler_info, nullptr, &handle_.sampler);
         if (res != VK_SUCCESS) {

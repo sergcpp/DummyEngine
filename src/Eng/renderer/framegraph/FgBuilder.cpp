@@ -885,32 +885,9 @@ void Eng::FgBuilder::Reset() {
         t.clear();
     }
 
-    //
-    // Reset resources
-    //
-    for (FgAllocBuf &buf : buffers_) {
-        buf._generation = 0;
-        buf.used_in_stages = Ren::eStageBits::None;
-        buf.read_in_nodes.clear();
-        buf.written_in_nodes.clear();
-        if (buf.ref) {
-            buf.used_in_stages = StageBitsForState(buf.ref->resource_state);
-        }
-    }
-    for (FgAllocTex &tex : textures_) {
-        tex._generation = 0;
-        tex.alias_of = -1;
-        tex.desc.format = Ren::eTexFormat::Undefined;
-        tex.desc.usage = {}; // gather usage flags again
-        tex.used_in_stages = Ren::eStageBits::None;
-        tex.read_in_nodes.clear();
-        tex.written_in_nodes.clear();
-        if (tex.ref) {
-            tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
-            // Needed to clear the texture initially
-            tex.used_in_stages |= Ren::eStageBits::Transfer;
-        }
-    }
+    buffers_.clear();
+    textures_.clear();
+
     temp_samplers.clear();
 }
 
@@ -1059,70 +1036,36 @@ void Eng::FgBuilder::PrepareAllocResources() {
 }
 
 void Eng::FgBuilder::BuildAliases() {
-    struct range_t {
-        int first_write_node = std::numeric_limits<int>::max();
-        int last_write_node = -1;
-        int first_read_node = std::numeric_limits<int>::max();
-        int last_read_node = -1;
-
-        bool has_writer() const { return first_write_node <= last_write_node; }
-        bool has_reader() const { return first_read_node <= last_read_node; }
-        bool is_used() const { return has_writer() || has_reader(); }
-
-        bool can_alias() const {
-            if (has_reader() && has_writer() && first_read_node <= first_write_node) {
-                return false;
-            }
-            return true;
-        }
-
-        int last_used_node() const {
-            int last_node = 0;
-            if (has_writer()) {
-                last_node = std::max(last_node, last_write_node);
-            }
-            if (has_reader()) {
-                last_node = std::max(last_node, last_read_node);
-            }
-            return last_node;
-        }
-
-        int first_used_node() const {
-            int first_node = std::numeric_limits<int>::max();
-            if (has_writer()) {
-                first_node = std::min(first_node, first_write_node);
-            }
-            if (has_reader()) {
-                first_node = std::min(first_node, first_read_node);
-            }
-            return first_node;
-        }
-    };
-
-    auto disjoint_lifetimes = [](const range_t &r1, const range_t &r2) -> bool {
+    auto disjoint_lifetimes = [](const fg_range_t &r1, const fg_range_t &r2) -> bool {
         if (!r1.is_used() || !r2.is_used() || !r1.can_alias() || !r2.can_alias()) {
             return false;
         }
         return r1.last_used_node() < r2.first_used_node() || r2.last_used_node() < r1.first_used_node();
     };
 
-    std::vector<range_t> ranges(textures_.size());
-
     // Gather node ranges
     for (int i = 0; i < int(reordered_nodes_.size()); ++i) {
         const FgNode *node = reordered_nodes_[i];
         for (const auto &res : node->input_) {
             if (res.type == eFgResType::Texture) {
-                range_t &range = ranges[res.index];
-                range.first_read_node = std::min(range.first_read_node, i);
-                range.last_read_node = std::max(range.last_read_node, i);
+                fg_range_t &lifetime = textures_[res.index].lifetime;
+                lifetime.first_read_node = std::min(lifetime.first_read_node, i);
+                lifetime.last_read_node = std::max(lifetime.last_read_node, i);
+            } else if (res.type == eFgResType::Buffer) {
+                fg_range_t &lifetime = buffers_[res.index].lifetime;
+                lifetime.first_read_node = std::min(lifetime.first_read_node, i);
+                lifetime.last_read_node = std::max(lifetime.last_read_node, i);
             }
         }
         for (const auto &res : node->output_) {
             if (res.type == eFgResType::Texture) {
-                range_t &range = ranges[res.index];
-                range.first_write_node = std::min(range.first_write_node, i);
-                range.last_write_node = std::max(range.last_write_node, i);
+                fg_range_t &lifetime = textures_[res.index].lifetime;
+                lifetime.first_write_node = std::min(lifetime.first_write_node, i);
+                lifetime.last_write_node = std::max(lifetime.last_write_node, i);
+            } else if (res.type == eFgResType::Buffer) {
+                fg_range_t &lifetime = buffers_[res.index].lifetime;
+                lifetime.first_write_node = std::min(lifetime.first_write_node, i);
+                lifetime.last_write_node = std::max(lifetime.last_write_node, i);
             }
         }
     }
@@ -1131,32 +1074,27 @@ void Eng::FgBuilder::BuildAliases() {
     alias_chains_.resize(textures_.size());
 
     std::vector<int> aliases(textures_.size(), -1);
-
     for (auto i = textures_.begin(); i != textures_.end(); ++i) {
-        FgAllocTex &tex1 = *i;
-        const range_t &range1 = ranges[i.index()];
-
+        const FgAllocTex &tex1 = *i;
         if (tex1.external || tex1.history_index != -1 || tex1.history_of != -1) {
             continue;
         }
 
         for (auto j = textures_.begin(); j < i; ++j) {
-            FgAllocTex &tex2 = *j;
-            const range_t &range2 = ranges[j.index()];
-
+            const FgAllocTex &tex2 = *j;
             if (tex2.external || tex2.history_index != -1 || tex2.history_of != -1 || aliases[j.index()] != -1) {
                 continue;
             }
 
             if (tex1.desc.format == tex2.desc.format && tex1.desc.w == tex2.desc.w && tex1.desc.h == tex2.desc.h &&
                 tex1.desc.mip_count == tex2.desc.mip_count) {
-                bool disjoint = disjoint_lifetimes(range1, range2);
+                bool disjoint = disjoint_lifetimes(tex1.lifetime, tex2.lifetime);
                 for (const int alias : alias_chains_[j.index()]) {
                     if (alias == i.index()) {
                         continue;
                     }
-                    const range_t &range = ranges[alias];
-                    disjoint &= disjoint_lifetimes(range, range2);
+                    const fg_range_t &range = textures_[alias].lifetime;
+                    disjoint &= disjoint_lifetimes(range, tex2.lifetime);
                 }
                 if (disjoint) {
                     aliases[i.index()] = j.index();
@@ -1176,8 +1114,8 @@ void Eng::FgBuilder::BuildAliases() {
             continue;
         }
 
-        std::sort(begin(chain), end(chain), [&](const int lhs, const int rhs) {
-            return ranges[lhs].last_used_node() < ranges[rhs].first_used_node();
+        std::sort(begin(chain), end(chain), [this](const int lhs, const int rhs) {
+            return textures_[lhs].lifetime.last_used_node() < textures_[rhs].lifetime.first_used_node();
         });
 
         FgAllocTex &first_tex = textures_[chain[0]];

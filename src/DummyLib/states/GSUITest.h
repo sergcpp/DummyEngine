@@ -30,7 +30,7 @@ class GSUITest final : public GSBaseState {
     uint64_t click_time_ = 0;
 
     const Gui::BitmapFont *dialog_font_ = {};
-    float test_time_counter_s = 0.0f;
+    float test_time_counter_s = 0;
 
     std::unique_ptr<Gui::Image> test_image_;
     std::unique_ptr<Gui::Image9Patch> test_frame_;

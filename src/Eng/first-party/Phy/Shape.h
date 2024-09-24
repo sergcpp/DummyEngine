@@ -30,7 +30,7 @@ class Shape {
 
 class ShapeSphere : public Shape {
   public:
-    explicit ShapeSphere(const real _radius) : radius(_radius) { center_of_mass_ = Vec3{0.0f}; }
+    explicit ShapeSphere(const real _radius) : radius(_radius) { center_of_mass_ = Vec3{0}; }
     [[nodiscard]] eShapeType type() const override { return eShapeType::Sphere; }
 
     [[nodiscard]] Mat3 GetInverseInertiaTensor() const override {

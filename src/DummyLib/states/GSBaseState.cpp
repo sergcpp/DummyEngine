@@ -675,8 +675,8 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 
     sun_dir_ = scene_manager_->scene_data().env.sun_dir;
-    if (std::abs(viewer_->app_params.sun_dir[0]) > 0.0f || std::abs(viewer_->app_params.sun_dir[1]) > 0.0f ||
-        std::abs(viewer_->app_params.sun_dir[2]) > 0.0f) {
+    if (std::abs(viewer_->app_params.sun_dir[0]) > 0 || std::abs(viewer_->app_params.sun_dir[1]) > 0 ||
+        std::abs(viewer_->app_params.sun_dir[2]) > 0) {
         sun_dir_[0] = viewer_->app_params.sun_dir[0];
         sun_dir_[1] = viewer_->app_params.sun_dir[1];
         sun_dir_[2] = viewer_->app_params.sun_dir[2];
@@ -845,7 +845,7 @@ void GSBaseState::Draw() {
 
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
-            // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
+            // Ren::Vec3f{ 0, 1, 0 }, view_fov_);
             // Target frontend to current frame
             ren_ctx_->in_flight_frontend_frame[ren_ctx_->backend_frame()] = ren_ctx_->next_frontend_frame =
                 ren_ctx_->backend_frame();
@@ -1027,17 +1027,17 @@ void GSBaseState::UpdateFrame(int list_index) {
             auto *probe_tr = (Eng::Transform *)scene_manager_->scene_data().comp_store[Eng::CompTransform]->Get(
                 probe_obj->components[Eng::CompTransform]);
 
-            auto pos = Ren::Vec4f{probe->offset[0], probe->offset[1], probe->offset[2], 1.0f};
+            auto pos = Ren::Vec4f{probe->offset[0], probe->offset[1], probe->offset[2], 1};
             pos = probe_tr->world_from_object * pos;
             pos /= pos[3];
 
-            static const Ren::Vec3f axises[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{-1.0f, 0.0f, 0.0f},
-                                                Ren::Vec3f{0.0f, 1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
-                                                Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, -1.0f}};
+            static const Ren::Vec3f axises[] = {Ren::Vec3f{1, 0, 0}, Ren::Vec3f{-1, 0, 0},
+                                                Ren::Vec3f{0, 1, 0}, Ren::Vec3f{0, -1, 0},
+                                                Ren::Vec3f{0, 0, 1}, Ren::Vec3f{0, 0, -1}};
 
-            static const Ren::Vec3f ups[] = {Ren::Vec3f{0.0f, -1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
-                                             Ren::Vec3f{0.0f, 0.0f, 1.0f},  Ren::Vec3f{0.0f, 0.0f, -1.0f},
-                                             Ren::Vec3f{0.0f, -1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f}};
+            static const Ren::Vec3f ups[] = {Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, -1, 0},
+                                             Ren::Vec3f{0, 0, 1},  Ren::Vec3f{0, 0, -1},
+                                             Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, -1, 0}};
 
             const auto center = Ren::Vec3f{pos[0], pos[1], pos[2]};
 
@@ -1102,7 +1102,7 @@ void GSBaseState::InitScene_PT() {
         memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
         static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::AtmosphereParams));
 
-        if (scene_data.env.sun_angle < 1.0f) {
+        if (scene_data.env.sun_angle < 1) {
             env_desc.envmap_resolution *= 2;
         }
 
@@ -1143,13 +1143,13 @@ void GSBaseState::InitScene_PT() {
             cam_desc.filter = Ray::ePixelFilter::BlackmanHarris;
         }
         cam_desc.filter_width = settings.pixel_filter_width;
-        cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0.0f;
-        cam_desc.fwd[0] = cam_desc.fwd[1] = 0.0f;
-        cam_desc.fwd[2] = -1.0f;
+        cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0;
+        cam_desc.fwd[0] = cam_desc.fwd[1] = 0;
+        cam_desc.fwd[2] = -1;
         cam_desc.fov = scene_manager_->main_cam().angle();
         ray_scene_->AddCamera(cam_desc);
     }
-    if (Length2(scene_data.env.sun_col) > 0.0f) {
+    if (Length2(scene_data.env.sun_col) > 0) {
         // Add sun light
         Ray::directional_light_desc_t sun_desc;
         memcpy(sun_desc.color, ValuePtr(scene_data.env.sun_col), 3 * sizeof(float));
@@ -1274,7 +1274,7 @@ void GSBaseState::InitScene_PT() {
                         mat_desc.base_texture = load_texture(*front_mat->textures[0], true, true);
                         mat_desc.roughness = front_mat->params[0][3];
                         mat_desc.roughness_texture = load_texture(*front_mat->textures[2]);
-                        mat_desc.specular = 0.0f;
+                        mat_desc.specular = 0;
                         mat_desc.importance_sample = true;
                         if (front_mat->params.size() > 1) {
                             mat_desc.sheen = front_mat->params[1][0];
@@ -1289,8 +1289,8 @@ void GSBaseState::InitScene_PT() {
                             mat_desc.clearcoat_roughness = front_mat->params[2][3];
                         }
                         if (front_mat->params.size() > 3) {
-                            mat_desc.alpha = 1.0f - front_mat->params[3][0];
-                            if (mat_desc.transmission > 0.0f) {
+                            mat_desc.alpha = 1 - front_mat->params[3][0];
+                            if (mat_desc.transmission > 0) {
                                 mat_desc.ior = front_mat->params[3][1];
                             } else {
                                 memcpy(mat_desc.emission_color, &front_mat->params[3][1], 3 * sizeof(float));
@@ -1320,7 +1320,7 @@ void GSBaseState::InitScene_PT() {
                         mat_desc.base_texture = load_texture(*back_mat->textures[0], true, true);
                         mat_desc.roughness = back_mat->params[0][3];
                         mat_desc.roughness_texture = load_texture(*back_mat->textures[2]);
-                        mat_desc.specular = 0.0f;
+                        mat_desc.specular = 0;
                         mat_desc.importance_sample = true;
                         if (back_mat->params.size() > 1) {
                             mat_desc.sheen = back_mat->params[1][0];
@@ -1335,8 +1335,8 @@ void GSBaseState::InitScene_PT() {
                             mat_desc.clearcoat_roughness = back_mat->params[2][3];
                         }
                         if (back_mat->params.size() > 3) {
-                            mat_desc.alpha = 1.0f - back_mat->params[3][0];
-                            if (mat_desc.transmission > 0.0f) {
+                            mat_desc.alpha = 1 - back_mat->params[3][0];
+                            if (mat_desc.transmission > 0) {
                                 mat_desc.ior = back_mat->params[3][1];
                             } else {
                                 memcpy(mat_desc.emission_color, &front_mat->params[3][1], 3 * sizeof(float));
@@ -1386,14 +1386,14 @@ void GSBaseState::InitScene_PT() {
         if ((obj.comp_mask & lightsource_mask) == lightsource_mask) {
             const Eng::Transform &tr = transforms[obj.components[Eng::CompTransform]];
             const Eng::LightSource &ls = lights_src[obj.components[Eng::CompLightSource]];
-            if (ls.power > 0.0f) {
+            if (ls.power > 0) {
                 if (ls.type == Eng::eLightType::Sphere) {
-                    auto pos = Ren::Vec4f{ls.offset[0], ls.offset[1], ls.offset[2], 1.0f};
+                    auto pos = Ren::Vec4f{ls.offset[0], ls.offset[1], ls.offset[2], 1};
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
 
                     if (ls.spot_angle < Ren::Pi<float>()) {
-                        auto dir = Ren::Vec4f{ls.dir[0], ls.dir[1], ls.dir[2], 0.0f};
+                        auto dir = Ren::Vec4f{ls.dir[0], ls.dir[1], ls.dir[2], 0};
                         dir = tr.world_from_object * dir;
 
                         Ray::spot_light_desc_t spot_light_desc;
@@ -1465,7 +1465,7 @@ void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, 
     cam_desc.fov = fov;
 
     const float desired_exposure = log2f(renderer_->readback_exposure());
-    if (renderer_->readback_exposure() > 0.0f && std::abs(cam_desc.exposure - desired_exposure) > 0.5f) {
+    if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 0.5f) {
         ray_renderer_->ResetSpatialCache(*ray_scene_, parallel_for);
         invalidate_view_ = true;
     }

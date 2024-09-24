@@ -131,7 +131,7 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
     msg(metal_layer, sel("setDevice:"), metal_device);
     msg(metal_layer, sel("setPixelFormat:"), MTLPixelFormatBGRA8Unorm);
     msg(metal_layer, sel("setFrame:"), frame_rect);
-    //msg(metal_layer, sel("contentsScale:"), 1.0f);
+    //msg(metal_layer, sel("contentsScale:"), 1);
 
     Ren::g_metal_layer = metal_layer;
 
@@ -278,7 +278,7 @@ void DummyApp::PollEvents() {
     }
 
 #if 0
-    static float last_p1_pos[2] = {0.0f, 0.0f};
+    static float last_p1_pos[2] = {0, 0};
     static int last_window_size[2] = {0, 0};
 
     XEvent xev;
@@ -309,7 +309,7 @@ void DummyApp::PollEvents() {
                 evt.type = eInputEvent::P2Down;
             } else if (xev.xbutton.button == Button4 || xev.xbutton.button == Button5) {
                 evt.type = eInputEvent::MouseWheel;
-                evt.move.dx = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
+                evt.move.dx = (xev.xbutton.button == Button4) ? 1 : -1;
             }
             evt.point.x = float(xev.xbutton.x);
             evt.point.y = float(xev.xbutton.y);

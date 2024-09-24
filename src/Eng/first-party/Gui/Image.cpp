@@ -17,8 +17,8 @@ Gui::Image::Image(const Ren::TextureRegionRef &tex, const Vec2f &pos, const Vec2
 Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos, const Vec2f &size,
                   const BaseElement *parent)
     : BaseElement(pos, size, parent) {
-    uvs_px_[0] = Vec2f{0.0f, 0.0f};
-    uvs_px_[1] = Vec2f{0.0f, 0.0f};
+    uvs_px_[0] = Vec2f{0};
+    uvs_px_[1] = Vec2f{0};
 
     Ren::eTexLoadStatus status;
     tex_ = ctx.LoadTextureRegion(tex_name, {}, ctx.default_stage_bufs(), {}, &status);
@@ -52,5 +52,5 @@ void Gui::Image::ResizeToContent(const Vec2f &pos) {
     const Vec2i parent_size_px = parent_->size_px();
 
     BaseElement::Resize(
-        pos, Vec2f{2.0f * float(p.w) / float(parent_size_px[0]), 2.0f * float(p.h) / float(parent_size_px[1])});
+        pos, Vec2f{2 * float(p.w) / float(parent_size_px[0]), 2 * float(p.h) / float(parent_size_px[1])});
 }

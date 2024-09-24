@@ -12,7 +12,7 @@ struct Plane {
     Vec3f n;
     float d;
 
-    Plane() : d(0.0f) {}
+    Plane() : d(0) {}
     Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2);
     explicit Plane(eUninitialized) : n(Uninitialize) {} // NOLINT
 
@@ -48,15 +48,15 @@ class Camera {
     Frustum frustum_, frustum_vs_;
     bool is_orthographic_ = false;
 
-    float angle_ = 0.0f, aspect_ = 1.0f, near_ = 0.0f, far_ = 0.0f;
+    float angle_ = 0, aspect_ = 1, near_ = 0, far_ = 0;
     mutable Vec2f px_offset_;
 
   public:
-    float min_exposure = -1000.0f, max_exposure = 1000.0f;
-    float focus_distance = 4.0f, focus_depth = 2.0f;
-    float focus_near_mul = 0.0f, focus_far_mul = 0.0f;
-    float fade = 0.0f;
-    float gamma = 1.0f;
+    float min_exposure = -1000, max_exposure = 1000;
+    float focus_distance = 4, focus_depth = 2;
+    float focus_near_mul = 0, focus_far_mul = 0;
+    float fade = 0;
+    float gamma = 1;
 
     Camera() = default;
     Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up);

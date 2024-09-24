@@ -172,12 +172,12 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         input_assembly_state_create_info.primitiveRestartEnable = VK_FALSE;
 
         VkViewport viewport = {};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = 1.0f;
-        viewport.height = 1.0f;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = 1;
+        viewport.height = 1;
+        viewport.minDepth = 0;
+        viewport.maxDepth = 1;
 
         VkRect2D scissors = {};
         scissors.offset = {0, 0};
@@ -200,9 +200,9 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         rasterization_state_ci.depthBiasEnable =
             (eDepthBiasMode(rast_state.poly.depth_bias_mode) != eDepthBiasMode::Disabled) ? VK_TRUE : VK_FALSE;
         rasterization_state_ci.depthBiasConstantFactor = rast_state.depth_bias.constant_offset;
-        rasterization_state_ci.depthBiasClamp = 0.0f;
+        rasterization_state_ci.depthBiasClamp = 0;
         rasterization_state_ci.depthBiasSlopeFactor = rast_state.depth_bias.slope_factor;
-        rasterization_state_ci.lineWidth = 1.0f;
+        rasterization_state_ci.lineWidth = 1;
 
         VkPipelineMultisampleStateCreateInfo multisample_state_ci = {
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
@@ -231,8 +231,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         depth_state_ci.stencilTestEnable = rast_state.stencil.enabled ? VK_TRUE : VK_FALSE;
         depth_state_ci.front = stencil_state;
         depth_state_ci.back = stencil_state;
-        depth_state_ci.minDepthBounds = 0.0f;
-        depth_state_ci.maxDepthBounds = 1.0f;
+        depth_state_ci.minDepthBounds = 0;
+        depth_state_ci.maxDepthBounds = 1;
 
         SmallVector<VkPipelineColorBlendAttachmentState, 4> color_blend_attachment_states;
         for (int i = 0; i < int(color_attachments.size()); ++i) {
@@ -253,10 +253,10 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         color_blend_state_ci.logicOp = VK_LOGIC_OP_CLEAR;
         color_blend_state_ci.attachmentCount = uint32_t(color_attachments.size());
         color_blend_state_ci.pAttachments = color_blend_attachment_states.data();
-        color_blend_state_ci.blendConstants[0] = 0.0f;
-        color_blend_state_ci.blendConstants[1] = 0.0f;
-        color_blend_state_ci.blendConstants[2] = 0.0f;
-        color_blend_state_ci.blendConstants[3] = 0.0f;
+        color_blend_state_ci.blendConstants[0] = 0;
+        color_blend_state_ci.blendConstants[1] = 0;
+        color_blend_state_ci.blendConstants[2] = 0;
+        color_blend_state_ci.blendConstants[3] = 0;
 
         SmallVector<VkDynamicState, 8> dynamic_states;
         dynamic_states.push_back(VK_DYNAMIC_STATE_VIEWPORT);

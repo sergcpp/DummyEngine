@@ -97,7 +97,7 @@ DummyApp::DummyApp() { g_app = this; }
 DummyApp::~DummyApp() {}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    static float last_p1_pos[2] = {0.0f, 0.0f}, last_p2_pos[2] = {0.0f, 0.0f};
+    static float last_p1_pos[2] = {0, 0}, last_p2_pos[2] = {0, 0};
 
     switch (uMsg) {
     case WM_CLOSE: {
@@ -106,32 +106,32 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_LBUTTONDOWN: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(Eng::eInputEvent::P1Down, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::P1Down, 0, px, py, 0, 0);
         break;
     }
     case WM_RBUTTONDOWN: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(Eng::eInputEvent::P2Down, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::P2Down, 0, px, py, 0, 0);
         break;
     }
     case WM_MBUTTONDOWN: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(Eng::eInputEvent::MButtonDown, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::MButtonDown, 0, px, py, 0, 0);
         break;
     }
     case WM_LBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(Eng::eInputEvent::P1Up, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::P1Up, 0, px, py, 0, 0);
         break;
     }
     case WM_RBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(Eng::eInputEvent::P2Up, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::P2Up, 0, px, py, 0, 0);
         break;
     }
     case WM_MBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(Eng::eInputEvent::MButtonUp, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::MButtonUp, 0, px, py, 0, 0);
         break;
     }
     case WM_MOUSEMOVE: {
@@ -144,25 +144,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_KEYDOWN: {
         const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-        g_app->AddEvent(Eng::eInputEvent::KeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::KeyDown, key_code, 0, 0, 0, 0);
         break;
     }
     case WM_KEYUP: {
         const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-        g_app->AddEvent(Eng::eInputEvent::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::KeyUp, key_code, 0, 0, 0, 0);
         break;
     }
     case WM_MOUSEWHEEL: {
         WORD _delta = HIWORD(wParam);
         const auto delta = reinterpret_cast<const short &>(_delta);
         const float wheel_motion = float(delta / WHEEL_DELTA);
-        g_app->AddEvent(Eng::eInputEvent::MouseWheel, 0, last_p1_pos[0], last_p1_pos[1], wheel_motion, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::MouseWheel, 0, last_p1_pos[0], last_p1_pos[1], wheel_motion, 0);
         break;
     }
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
-        g_app->AddEvent(Eng::eInputEvent::Resize, 0, float(w), float(h), 0.0f, 0.0f);
+        g_app->AddEvent(Eng::eInputEvent::Resize, 0, float(w), float(h), 0, 0);
         break;
     }
     default: {

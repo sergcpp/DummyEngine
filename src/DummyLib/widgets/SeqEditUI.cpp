@@ -14,7 +14,7 @@ SeqEditUI::SeqEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::
     SeqEditUI::Resize();
 
     timeline_.time_changed_signal.Connect<SeqCanvasUI, &SeqCanvasUI::OnCurTimeChange>(&canvas_);
-    timeline_.set_time_cur(0.0f);
+    timeline_.set_time_cur(0);
 }
 
 void SeqEditUI::Draw(Gui::Renderer *r) {
@@ -25,10 +25,10 @@ void SeqEditUI::Draw(Gui::Renderer *r) {
 void SeqEditUI::Resize() {
     BaseElement::Resize();
 
-    const float timeline_height = 2.0f * 48.0f / float(dims_px_[1][1]);
-    timeline_.Resize(Gui::Vec2f{-1.0f, 1.0f - timeline_height}, Gui::Vec2f{2.0f, timeline_height});
+    const float timeline_height = 2 * 48 / float(dims_px_[1][1]);
+    timeline_.Resize(Gui::Vec2f{-1, 1 - timeline_height}, Gui::Vec2f{2, timeline_height});
 
-    canvas_.Resize(Gui::Vec2f{-1.0f}, Gui::Vec2f{2.0f, 2.0f - timeline_height});
+    canvas_.Resize(Gui::Vec2f{-1}, Gui::Vec2f{2, 2 - timeline_height});
 }
 
 /*void SeqEditUI::Press(const Gui::Vec2f &p, const bool push) {

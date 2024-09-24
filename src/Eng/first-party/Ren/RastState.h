@@ -124,8 +124,8 @@ inline bool operator<(const StencilState &lhs, const StencilState &rhs) {
 }
 
 struct DepthBias {
-    float slope_factor = 0.0f;
-    float constant_offset = 0.0f;
+    float slope_factor = 0;
+    float constant_offset = 0;
 };
 
 inline bool operator==(const DepthBias &lhs, const DepthBias &rhs) {

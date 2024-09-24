@@ -212,7 +212,7 @@ void GSVideoTest::UpdateFixed(const uint64_t dt_us) {
     view_origin_ += view_dir_ * fwd_speed;
     view_origin_ += side * side_speed;
 
-    if (std::abs(fwd_speed) > 0.0f || std::abs(side_speed) > 0.0f) {
+    if (std::abs(fwd_speed) > 0 || std::abs(side_speed) > 0) {
         invalidate_view_ = true;
     }
 }
@@ -242,14 +242,14 @@ bool GSVideoTest::HandleInput(const Eng::input_event_t &evt) {
 
     switch (evt.type) {
     case Eng::eInputEvent::P1Down:
-        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < (float(ren_ctx_->w()) / 3) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
     case Eng::eInputEvent::P2Down:
-        if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
+        if (evt.point.x < (float(ren_ctx_->w()) / 3) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
@@ -367,7 +367,7 @@ void GSVideoTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, 1.0f,
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0, 1, 0}, view_fov_, 1,
                               min_exposure_, max_exposure_);
 
     if (enable_video_update_) {

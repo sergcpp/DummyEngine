@@ -410,7 +410,7 @@ class AsyncFileReaderImpl {
             return false;
         }
 
-        out_size = (size_t)file_size;
+        out_size = size_t(file_size);
         if (out_size > max_size) {
             close(fd);
             return false;
