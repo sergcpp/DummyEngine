@@ -5,7 +5,7 @@
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
-#include <stb/stb_truetype.h>
+#include <Gui/third-party/stb_truetype.h>
 
 #include <Ren/TextureSplitter.h>
 
