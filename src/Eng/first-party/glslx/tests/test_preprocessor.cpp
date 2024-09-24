@@ -560,7 +560,7 @@ void test_preprocessor() {
 			#endif
 )";
         glslx::Preprocessor preprocessor(source);
-        preprocessor.Process();
+        [[maybe_unused]] const std::string output = preprocessor.Process();
         require(preprocessor.error().empty());
 
         require(!HasMacro(preprocessor, "PASSED_0"));
@@ -605,7 +605,7 @@ void test_preprocessor() {
 			#endif
 )";
         glslx::Preprocessor preprocessor(source);
-        preprocessor.Process();
+        [[maybe_unused]] const std::string output = preprocessor.Process();
         require(preprocessor.error().empty());
 
         require(!HasMacro(preprocessor, "PASSED"));
@@ -632,7 +632,7 @@ void test_preprocessor() {
 #endif
 )";
         glslx::Preprocessor preprocessor(source);
-        preprocessor.Process();
+        [[maybe_unused]] const std::string output = preprocessor.Process();
         require(preprocessor.error().empty());
 
         require(HasMacro(preprocessor, "PASSED_0"));
