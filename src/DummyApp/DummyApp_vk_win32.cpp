@@ -90,6 +90,11 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
         g_app->AddEvent(Eng::eInputEvent::P2Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
+    case WM_MBUTTONDOWN: {
+        const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
+        g_app->AddEvent(Eng::eInputEvent::MButtonDown, 0, px, py, 0.0f, 0.0f);
+        break;
+    }
     case WM_LBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
         g_app->AddEvent(Eng::eInputEvent::P1Up, 0, px, py, 0.0f, 0.0f);
@@ -98,6 +103,11 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
     case WM_RBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
         g_app->AddEvent(Eng::eInputEvent::P2Up, 0, px, py, 0.0f, 0.0f);
+        break;
+    }
+    case WM_MBUTTONUP: {
+        const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
+        g_app->AddEvent(Eng::eInputEvent::MButtonUp, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEMOVE: {

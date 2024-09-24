@@ -106,31 +106,36 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_LBUTTONDOWN: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-
         g_app->AddEvent(Eng::eInputEvent::P1Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONDOWN: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-
         g_app->AddEvent(Eng::eInputEvent::P2Down, 0, px, py, 0.0f, 0.0f);
+        break;
+    }
+    case WM_MBUTTONDOWN: {
+        const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
+        g_app->AddEvent(Eng::eInputEvent::MButtonDown, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_LBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-
         g_app->AddEvent(Eng::eInputEvent::P1Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-
         g_app->AddEvent(Eng::eInputEvent::P2Up, 0, px, py, 0.0f, 0.0f);
+        break;
+    }
+    case WM_MBUTTONUP: {
+        const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
+        g_app->AddEvent(Eng::eInputEvent::MButtonUp, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEMOVE: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-
         g_app->AddEvent(Eng::eInputEvent::P1Move, 0, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
 
         last_p1_pos[0] = px;
@@ -144,7 +149,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_KEYUP: {
         const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-
         g_app->AddEvent(Eng::eInputEvent::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
@@ -159,6 +163,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         const int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
         g_app->AddEvent(Eng::eInputEvent::Resize, 0, float(w), float(h), 0.0f, 0.0f);
+        break;
     }
     default: {
         break;
@@ -253,9 +258,9 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
         style &= ~WS_MAXIMIZEBOX;
     }
 
-    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", style,
-                                      CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
-                                      nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", style, CW_USEDEFAULT, CW_USEDEFAULT,
+                                      rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
+                                      GetModuleHandle(nullptr), nullptr);
 
     device_context_ = GetDC(window_handle_);
 

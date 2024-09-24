@@ -14,6 +14,8 @@ enum class eInputEvent : int16_t {
     P2Down,
     P2Up,
     P2Move,
+    MButtonDown,
+    MButtonUp,
     KeyDown,
     KeyUp,
     MouseWheel,
