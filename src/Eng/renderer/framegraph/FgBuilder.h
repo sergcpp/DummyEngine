@@ -1,9 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <climits>
+#include <cstdint>
 
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 #include <Ren/Buffer.h>
@@ -86,6 +87,7 @@ struct FgAllocBuf {
 
     std::string name;
     bool external = false;
+    int alias_of = -1;
     FgBufDesc desc;
     Ren::WeakBufferRef ref;
     Ren::BufferRef strong_ref;
@@ -107,7 +109,6 @@ struct FgAllocTex {
     fg_range_t lifetime;
 
     std::string name;
-    bool transient = false; // unused for now
     bool external = false;
     int alias_of = -1;
     int history_of = -1;
@@ -115,8 +116,8 @@ struct FgAllocTex {
     Ren::Tex2DParams desc;
     Ren::WeakTex2DRef ref;
     Ren::Tex2DRef strong_ref;
-    const Ren::Texture2DArray *arr = nullptr;
-    const Ren::Texture3D *tex3d = nullptr;
+    // TODO: remove this once Texture2D/Texture2DArray/Texture3D will be merged into one class
+    std::variant<std::monostate, const Ren::Texture2DArray *, const Ren::Texture3D *> _ref;
 };
 
 class FgNode;
@@ -161,7 +162,7 @@ class FgBuilder {
         // no deallocation is needed
     }
 
-    std::vector<std::vector<int>> alias_chains_;
+    std::vector<Ren::SmallVector<int, 4>> tex_alias_chains_, buf_alias_chains_;
 
   public:
     FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh)

@@ -1566,79 +1566,102 @@ void Eng::Renderer::InitBackendInfo() {
 
     backend_info_.passes_info.clear();
     backend_info_.resources_info.clear();
-    for (int i = 0; i < int(fg_builder_.node_timings_[ctx_.backend_frame()].size()) - 1; ++i) {
+
+    for (int i = 0; i < int(fg_builder_.node_timings_[ctx_.backend_frame()].size()) - 1 &&
+                    settings.debug_frame != eDebugFrame::Off;
+         ++i) {
         const auto &t = fg_builder_.node_timings_[ctx_.backend_frame()][i];
 
         pass_info_t &info = backend_info_.passes_info.emplace_back();
         info.name = t.name;
         info.duration_us = ctx_.GetTimestampIntervalDurationUs(t.query_beg, t.query_end);
 
-        const FgNode *node = fg_builder_.GetReorderedNode(i);
-        for (const FgResource &res : node->input()) {
-            info.input.push_back(fg_builder_.GetResourceDebugInfo(res));
-        }
-        std::sort(begin(info.input), end(info.input));
-        for (const FgResource &res : node->output()) {
-            info.output.push_back(fg_builder_.GetResourceDebugInfo(res));
-        }
-        std::sort(begin(info.output), end(info.output));
-    }
-
-    const auto &fg_buffers = fg_builder_.buffers();
-    uint32_t heap_size = 0; // dummy for now
-    for (auto it = fg_buffers.cbegin(); it != fg_buffers.cend(); ++it) {
-        if (!it->external && it->ref) {
-            resource_info_t &info = backend_info_.resources_info.emplace_back();
-            info.name = "[Buf] " + it->name;
-            info.first_use = it->lifetime.first_used_node();
-            info.last_use = it->lifetime.last_used_node();
-            info.heap = 0;
-            info.offset = heap_size;
-            info.size = it->desc.size;
-
-            heap_size += it->desc.size;
+        if (settings.debug_frame == eDebugFrame::Full) {
+            const FgNode *node = fg_builder_.GetReorderedNode(i);
+            for (const FgResource &res : node->input()) {
+                info.input.push_back(fg_builder_.GetResourceDebugInfo(res));
+            }
+            std::sort(begin(info.input), end(info.input));
+            for (const FgResource &res : node->output()) {
+                info.output.push_back(fg_builder_.GetResourceDebugInfo(res));
+            }
+            std::sort(begin(info.output), end(info.output));
         }
     }
 
-    heap_size = 0; // dummy for now
-
-    const auto &fg_textures = fg_builder_.textures();
-    Ren::SmallVector<int, 256> indices(fg_textures.capacity(), -1);
-    for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
-        if (!it->external && it->ref && it->alias_of == -1) {
-            resource_info_t &info = backend_info_.resources_info.emplace_back();
-            info.name = "[Tex] " + it->name;
-            if (it->history_index == -1 && it->history_of == -1) {
+    if (settings.debug_frame == eDebugFrame::Full) {
+        const auto &fg_buffers = fg_builder_.buffers();
+        Ren::SmallVector<int, 256> indices(fg_buffers.capacity(), -1);
+        uint32_t heap_size = 0; // dummy for now
+        for (auto it = fg_buffers.cbegin(); it != fg_buffers.cend(); ++it) {
+            if (!it->external && it->ref && it->alias_of == -1) {
+                resource_info_t &info = backend_info_.resources_info.emplace_back();
+                info.name = "[Buf] " + it->name;
                 info.first_use = it->lifetime.first_used_node();
                 info.last_use = it->lifetime.last_used_node();
-            } else {
-                info.first_use = 0;
-                info.last_use = int(backend_info_.passes_info.size() - 1);
-            }
-            info.heap = 1;
-            info.offset = heap_size;
-            info.size = Ren::EstimateMemory(it->desc);
+                info.heap = 0;
+                info.offset = heap_size;
+                info.size = it->desc.size;
 
-            indices[it.index()] = int(backend_info_.resources_info.size() - 1);
-            heap_size += info.size;
+                indices[it.index()] = int(backend_info_.resources_info.size() - 1);
+                heap_size += it->desc.size;
+            }
         }
-    }
-    for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
-        if (!it->external && it->ref && it->alias_of != -1) {
-            resource_info_t &info = backend_info_.resources_info.emplace_back();
-            info.name = "[Tex] " + it->name;
-            if (it->history_index == -1 && it->history_of == -1) {
+        for (auto it = fg_buffers.cbegin(); it != fg_buffers.cend(); ++it) {
+            if (!it->external && it->ref && it->alias_of != -1) {
+                resource_info_t &info = backend_info_.resources_info.emplace_back();
+                info.name = "[Buf] " + it->name;
                 info.first_use = it->lifetime.first_used_node();
                 info.last_use = it->lifetime.last_used_node();
-            } else {
-                info.first_use = 0;
-                info.last_use = int(backend_info_.passes_info.size() - 1);
-            }
-            info.heap = 1;
-            info.offset = backend_info_.resources_info[indices[it->alias_of]].offset;
-            info.size = Ren::EstimateMemory(it->desc);
+                info.heap = 0;
+                info.offset = backend_info_.resources_info[indices[it->alias_of]].offset;
+                info.size = it->desc.size;
 
-            heap_size += info.size;
+                heap_size += it->desc.size;
+            }
+        }
+
+        heap_size = 0; // dummy for now
+
+        const auto &fg_textures = fg_builder_.textures();
+        indices.clear();
+        indices.resize(fg_textures.capacity(), -1);
+        for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
+            if (!it->external && it->ref && it->alias_of == -1) {
+                resource_info_t &info = backend_info_.resources_info.emplace_back();
+                info.name = "[Tex] " + it->name;
+                if (it->history_index == -1 && it->history_of == -1) {
+                    info.first_use = it->lifetime.first_used_node();
+                    info.last_use = it->lifetime.last_used_node();
+                } else {
+                    info.first_use = 0;
+                    info.last_use = int(backend_info_.passes_info.size() - 1);
+                }
+                info.heap = 1;
+                info.offset = heap_size;
+                info.size = Ren::EstimateMemory(it->desc);
+
+                indices[it.index()] = int(backend_info_.resources_info.size() - 1);
+                heap_size += info.size;
+            }
+        }
+        for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
+            if (!it->external && it->ref && it->alias_of != -1) {
+                resource_info_t &info = backend_info_.resources_info.emplace_back();
+                info.name = "[Tex] " + it->name;
+                if (it->history_index == -1 && it->history_of == -1) {
+                    info.first_use = it->lifetime.first_used_node();
+                    info.last_use = it->lifetime.last_used_node();
+                } else {
+                    info.first_use = 0;
+                    info.last_use = int(backend_info_.passes_info.size() - 1);
+                }
+                info.heap = 1;
+                info.offset = backend_info_.resources_info[indices[it->alias_of]].offset;
+                info.size = Ren::EstimateMemory(it->desc);
+
+                heap_size += info.size;
+            }
         }
     }
 

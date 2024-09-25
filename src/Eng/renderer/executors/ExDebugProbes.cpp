@@ -12,9 +12,9 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocTex &offset_tex = builder.GetReadTexture(args_->offset_tex);
-    FgAllocTex &irradiance_tex = builder.GetReadTexture(args_->irradiance_tex);
-    FgAllocTex &distance_tex = builder.GetReadTexture(args_->distance_tex);
+    FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
+    FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
+    FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
     FgAllocTex &exposure_tex = builder.GetReadTexture(args_->exposure_tex);
     FgAllocTex &depth_tex = builder.GetWriteTexture(args_->depth_tex);
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
@@ -29,8 +29,10 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::OFFSET_TEX_SLOT, *offset_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::OFFSET_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
         {Ren::eBindTarget::Tex2DSampled, ProbeDebug::EXPOSURE_TEX_SLOT, *exposure_tex.ref}};
 
     const ProbeVolume &volume = args_->probe_volumes[args_->volume_to_debug];

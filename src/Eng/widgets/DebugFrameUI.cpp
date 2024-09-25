@@ -114,7 +114,7 @@ void Eng::DebugFrameUI::UpdateInfo(const FrontendInfo &frontend_info, const Back
 }
 
 bool Eng::DebugFrameUI::HandleInput(const Gui::input_event_t &ev, const std::vector<bool> &keys_state) {
-    if (view_mode_ != eViewMode::Detailed) {
+    if (back_info_smooth_.resources_info.empty()) {
         return false;
     }
 
@@ -162,10 +162,10 @@ bool Eng::DebugFrameUI::HandleInput(const Gui::input_event_t &ev, const std::vec
 }
 
 void Eng::DebugFrameUI::Draw(Gui::Renderer *r) {
-    if (view_mode_ == eViewMode::Compact) {
-        DrawCompact(r);
-    } else if (view_mode_ == eViewMode::Detailed) {
+    if (!back_info_smooth_.resources_info.empty()) {
         DrawDetailed(r);
+    } else if (!back_info_smooth_.passes_info.empty()) {
+        DrawCompact(r);
     }
 }
 

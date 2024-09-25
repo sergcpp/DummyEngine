@@ -32,11 +32,11 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
 
-    FgAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irradiance_tex = &builder.GetReadTexture(args_->irradiance_tex);
-        distance_tex = &builder.GetReadTexture(args_->distance_tex);
-        offset_tex = &builder.GetReadTexture(args_->offset_tex);
+        irr_tex = &builder.GetReadTexture(args_->irradiance_tex);
+        dist_tex = &builder.GetReadTexture(args_->distance_tex);
+        off_tex = &builder.GetReadTexture(args_->offset_tex);
     }
 
     FgAllocTex *output_tex = &builder.GetWriteTexture(args_->output_tex);
@@ -105,10 +105,13 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
-    if (irradiance_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT, *offset_tex->arr);
+    if (irr_tex) {
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
     }
 
     const auto grp_count =
@@ -122,5 +125,5 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     uniform_params.root_node = args_->swrt.root_node;
 
     DispatchCompute(pi_debug_swrt_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                         ctx.default_descr_alloc(), ctx.log());
+                    ctx.default_descr_alloc(), ctx.log());
 }

@@ -24,11 +24,6 @@ class DebugFrameUI final : public Gui::BaseElement {
     void UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info, const ItemsInfo &items_info,
                     bool debug_items);
 
-    enum class eViewMode { Off, Compact, Detailed };
-
-    eViewMode view_mode() const { return view_mode_; }
-    void set_view_mode(const eViewMode mode) { view_mode_ = mode; }
-
     bool HandleInput(const Gui::input_event_t &ev, const std::vector<bool> &keys_state) override;
 
     void Draw(Gui::Renderer *r) override;
@@ -38,12 +33,6 @@ class DebugFrameUI final : public Gui::BaseElement {
 
     Gui::Image9Patch back_, element_, element_highlighted_;
     Gui::Image line_;
-
-#if !defined(NDEBUG)
-    eViewMode view_mode_ = eViewMode::Compact;
-#else
-    eViewMode view_mode_ = eViewMode::Off;
-#endif
 
     Gui::Vec2f view_offset_ = Gui::Vec2f{-0.9f, 0.5f};
     float view_scale_ = 1;

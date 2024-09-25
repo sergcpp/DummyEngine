@@ -67,9 +67,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             FgAllocTex &normals_tex = builder.GetReadTexture(data->normals_tex);
             FgAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
-            FgAllocTex &irradiance_tex = builder.GetReadTexture(data->irradiance_tex);
-            FgAllocTex &distance_tex = builder.GetReadTexture(data->distance_tex);
-            FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
+            FgAllocTex &irr_tex = builder.GetReadTexture(data->irradiance_tex);
+            FgAllocTex &dist_tex = builder.GetReadTexture(data->distance_tex);
+            FgAllocTex &off_tex = builder.GetReadTexture(data->offset_tex);
             FgAllocTex &out_tex = builder.GetWriteTexture(data->out_tex);
 
             const Ren::Binding bindings[] = {
@@ -77,9 +77,12 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::Tex2DSampled, ProbeSample::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Trg::Tex2DSampled, ProbeSample::NORM_TEX_SLOT, *normals_tex.ref},
                 {Trg::Tex2DSampled, ProbeSample::SSAO_TEX_SLOT, *ssao_tex.ref},
-                {Trg::Tex2DArraySampled, ProbeSample::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-                {Trg::Tex2DArraySampled, ProbeSample::DISTANCE_TEX_SLOT, *distance_tex.arr},
-                {Trg::Tex2DArraySampled, ProbeSample::OFFSET_TEX_SLOT, *offset_tex.arr},
+                {Trg::Tex2DArraySampled, ProbeSample::IRRADIANCE_TEX_SLOT,
+                 *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
+                {Trg::Tex2DArraySampled, ProbeSample::DISTANCE_TEX_SLOT,
+                 *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
+                {Trg::Tex2DArraySampled, ProbeSample::OFFSET_TEX_SLOT,
+                 *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
                 {Trg::Image2D, ProbeSample::OUT_IMG_SLOT, *out_tex.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{

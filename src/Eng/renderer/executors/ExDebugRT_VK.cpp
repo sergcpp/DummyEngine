@@ -24,11 +24,11 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
 
-    FgAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irradiance_tex = &builder.GetReadTexture(args_->irradiance_tex);
-        distance_tex = &builder.GetReadTexture(args_->distance_tex);
-        offset_tex = &builder.GetReadTexture(args_->offset_tex);
+        irr_tex = &builder.GetReadTexture(args_->irradiance_tex);
+        dist_tex = &builder.GetReadTexture(args_->distance_tex);
+        off_tex = &builder.GetReadTexture(args_->offset_tex);
     }
 
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
@@ -55,15 +55,18 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex.ref}};
-    if (irradiance_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT, *offset_tex->arr);
+    if (irr_tex) {
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
     }
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_hwrt_.prog()->descr_set_layouts()[0], bindings,
-                                              ctx.default_descr_alloc(), ctx.log());
+                                         ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.handle());
@@ -103,11 +106,11 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
 
-    FgAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irradiance_tex = &builder.GetReadTexture(args_->irradiance_tex);
-        distance_tex = &builder.GetReadTexture(args_->distance_tex);
-        offset_tex = &builder.GetReadTexture(args_->offset_tex);
+        irr_tex = &builder.GetReadTexture(args_->irradiance_tex);
+        dist_tex = &builder.GetReadTexture(args_->distance_tex);
+        off_tex = &builder.GetReadTexture(args_->offset_tex);
     }
 
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
@@ -175,10 +178,13 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex.ref}};
-    if (irradiance_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT, *offset_tex->arr);
+    if (irr_tex) {
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::OFFSET_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
     }
 
     const auto grp_count =
@@ -195,7 +201,7 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_swrt_.prog()->descr_set_layouts()[0], bindings,
-                                              ctx.default_descr_alloc(), ctx.log());
+                                         ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_.handle());

@@ -41,11 +41,11 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     FgAllocTex &back_color_tex = builder.GetReadTexture(back_color_tex_);
     FgAllocTex &back_depth_tex = builder.GetReadTexture(back_depth_tex_);
 
-    FgAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (irradiance_tex_) {
-        irradiance_tex = &builder.GetReadTexture(irradiance_tex_);
-        distance_tex = &builder.GetReadTexture(distance_tex_);
-        offset_tex = &builder.GetReadTexture(offset_tex_);
+        irr_tex = &builder.GetReadTexture(irradiance_tex_);
+        dist_tex = &builder.GetReadTexture(distance_tex_);
+        off_tex = &builder.GetReadTexture(offset_tex_);
     }
 
     FgAllocTex *specular_tex = nullptr;
@@ -95,19 +95,20 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
         {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_COLOR_TEX_SLOT, *back_color_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_DEPTH_TEX_SLOT, {*back_depth_tex.ref, 1}}};
-    if (irradiance_tex) {
+    if (irr_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::IRRADIANCE_TEX_SLOT,
-                              *irradiance_tex->arr);
+                              *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::DISTANCE_TEX_SLOT,
-                              *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::OFFSET_TEX_SLOT, *offset_tex->arr);
+                              *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::OFFSET_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
     }
     if (specular_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, OITBlendLayer::SPEC_TEX_SLOT, *specular_tex->ref);
     }
 
     int pi_index = -1;
-    if (irradiance_tex) {
+    if (irr_tex) {
         if (specular_tex) {
             pi_index = 3;
         } else {
@@ -122,8 +123,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[pi_index][0].prog()->descr_set_layouts()[0],
-                                              bindings, ctx.default_descr_alloc(), ctx.log());
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[pi_index][0].prog()->descr_set_layouts()[0], bindings,
+                                         ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->textures_descr_sets[0];
 
     using BDB = BasicDrawBatch;

@@ -24,9 +24,9 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
-    FgAllocTex &irradiance_tex = builder.GetReadTexture(args_->irradiance_tex);
-    FgAllocTex &distance_tex = builder.GetReadTexture(args_->distance_tex);
-    FgAllocTex &offset_tex = builder.GetReadTexture(args_->offset_tex);
+    FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
+    FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
+    FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
 
     FgAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
@@ -70,10 +70,14 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
-        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_ray_data_tex.arr}};
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT,
+         *std::get<const Ren::Texture2DArray *>(out_ray_data_tex._ref)}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->tbos[0]);
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->tbos[0]);
@@ -83,7 +87,7 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
     VkDescriptorSet descr_sets[2];
     descr_sets[0] =
         PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
-                                  bindings, ctx.default_descr_alloc(), ctx.log());
+                             bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -138,9 +142,9 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
-    FgAllocTex &irradiance_tex = builder.GetReadTexture(args_->irradiance_tex);
-    FgAllocTex &distance_tex = builder.GetReadTexture(args_->distance_tex);
-    FgAllocTex &offset_tex = builder.GetReadTexture(args_->offset_tex);
+    FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
+    FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
+    FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
 
     FgAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
@@ -227,10 +231,14 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
-        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_ray_data_tex.arr}};
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT,
+         *std::get<const Ren::Texture2DArray *>(out_ray_data_tex._ref)}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->tbos[0]);
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->tbos[0]);
@@ -240,7 +248,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     VkDescriptorSet descr_sets[2];
     descr_sets[0] =
         PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
-                                  bindings, ctx.default_descr_alloc(), ctx.log());
+                             bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,

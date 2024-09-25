@@ -30,11 +30,11 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
 
-    FgAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irradiance_tex = &builder.GetReadTexture(args_->irradiance_tex);
-        distance_tex = &builder.GetReadTexture(args_->distance_tex);
-        offset_tex = &builder.GetReadTexture(args_->offset_tex);
+        irr_tex = &builder.GetReadTexture(args_->irradiance_tex);
+        dist_tex = &builder.GetReadTexture(args_->distance_tex);
+        off_tex = &builder.GetReadTexture(args_->offset_tex);
     }
 
     FgAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
@@ -87,12 +87,13 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]}};
-    if (irradiance_tex) {
+    if (irr_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::IRRADIANCE_TEX_SLOT,
-                              *irradiance_tex->arr);
+                              *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::DISTANCE_TEX_SLOT,
-                              *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
+                              *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
     }
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::STOCH_LIGHTS_BUF_SLOT,
@@ -117,7 +118,7 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
     if (args_->four_bounces) {
         if (stoch_lights_buf) {
             pi = &pi_rt_reflections_4bounce_[2];
-        } else if (irradiance_tex) {
+        } else if (irr_tex) {
             pi = &pi_rt_reflections_4bounce_[1];
         } else {
             pi = &pi_rt_reflections_4bounce_[0];
@@ -125,7 +126,7 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
     } else {
         if (stoch_lights_buf) {
             pi = &pi_rt_reflections_[2];
-        } else if (irradiance_tex) {
+        } else if (irr_tex) {
             pi = &pi_rt_reflections_[1];
         } else {
             pi = &pi_rt_reflections_[0];
@@ -134,7 +135,7 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi->prog()->descr_set_layouts()[0], bindings,
-                                              ctx.default_descr_alloc(), ctx.log());
+                                         ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->handle());
@@ -178,11 +179,11 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
 
-    FgAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (args_->irradiance_tex) {
-        irradiance_tex = &builder.GetReadTexture(args_->irradiance_tex);
-        distance_tex = &builder.GetReadTexture(args_->distance_tex);
-        offset_tex = &builder.GetReadTexture(args_->offset_tex);
+        irr_tex = &builder.GetReadTexture(args_->irradiance_tex);
+        dist_tex = &builder.GetReadTexture(args_->distance_tex);
+        off_tex = &builder.GetReadTexture(args_->offset_tex);
     }
 
     FgAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
@@ -278,12 +279,13 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]}};
-    if (irradiance_tex) {
+    if (irr_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::IRRADIANCE_TEX_SLOT,
-                              *irradiance_tex->arr);
+                              *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::DISTANCE_TEX_SLOT,
-                              *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
+                              *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT,
+                              *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
     }
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::STOCH_LIGHTS_BUF_SLOT,
@@ -308,7 +310,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     if (args_->four_bounces) {
         if (stoch_lights_buf) {
             pi = &pi_rt_reflections_4bounce_[2];
-        } else if (irradiance_tex) {
+        } else if (irr_tex) {
             pi = &pi_rt_reflections_4bounce_[1];
         } else {
             pi = &pi_rt_reflections_4bounce_[0];
@@ -316,7 +318,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     } else {
         if (stoch_lights_buf) {
             pi = &pi_rt_reflections_[2];
-        } else if (irradiance_tex) {
+        } else if (irr_tex) {
             pi = &pi_rt_reflections_[1];
         } else {
             pi = &pi_rt_reflections_[0];
@@ -325,7 +327,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi->prog()->descr_set_layouts()[0], bindings,
-                                              ctx.default_descr_alloc(), ctx.log());
+                                         ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->handle());

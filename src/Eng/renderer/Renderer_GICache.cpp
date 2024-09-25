@@ -104,9 +104,12 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             FgAllocTex &out_irr_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
-                                             {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_irr_tex.arr}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
+                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(offset_tex._ref)},
+                                             {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(out_irr_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
@@ -163,9 +166,12 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
-                                             {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_dist_tex.arr}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
+                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(offset_tex._ref)},
+                                             {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
@@ -207,9 +213,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.arr}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
+                                             {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
@@ -254,9 +261,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.arr}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
+                                             {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT,
+                                              *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;

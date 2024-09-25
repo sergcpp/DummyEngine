@@ -39,9 +39,9 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
 
-    FgAllocTex &irradiance_tex = builder.GetReadTexture(args_->irradiance_tex);
-    FgAllocTex &distance_tex = builder.GetReadTexture(args_->distance_tex);
-    FgAllocTex &offset_tex = builder.GetReadTexture(args_->offset_tex);
+    FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
+    FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
+    FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
 
     FgAllocBuf *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
@@ -131,9 +131,12 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT, *distance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT, *offset_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
         {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->tbos[0]);
@@ -149,6 +152,6 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
     uniform_params.frame_index = view_state_->frame_index;
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
-    DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
-                                 &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
+    DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings, &uniform_params,
+                            sizeof(uniform_params), nullptr, ctx.log());
 }

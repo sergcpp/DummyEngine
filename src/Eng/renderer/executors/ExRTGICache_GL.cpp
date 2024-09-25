@@ -27,9 +27,9 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
-    FgAllocTex &irradiance_tex = builder.GetReadTexture(args_->irradiance_tex);
-    FgAllocTex &distance_tex = builder.GetReadTexture(args_->distance_tex);
-    FgAllocTex &offset_tex = builder.GetReadTexture(args_->offset_tex);
+    FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
+    FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
+    FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
 
     FgAllocBuf *random_seq_buf = nullptr, *stoch_lights_buf = nullptr, *light_nodes_buf = nullptr;
     if (args_->stoch_lights_buf) {
@@ -118,10 +118,14 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
-        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_gi_tex.arr}};
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT,
+         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT,
+         *std::get<const Ren::Texture2DArray *>(out_gi_tex._ref)}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->tbos[0]);
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->tbos[0]);
@@ -147,7 +151,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
     DispatchCompute(pi_rt_gi_cache_[stoch_lights_buf != nullptr],
-                         Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
-                                    PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES},
-                         bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(), ctx.log());
+                    Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
+                               PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES},
+                    bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(), ctx.log());
 }

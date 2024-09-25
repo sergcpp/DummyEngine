@@ -53,11 +53,11 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     FgAllocTex &back_color_tex = builder.GetReadTexture(back_color_tex_);
     FgAllocTex &back_depth_tex = builder.GetReadTexture(back_depth_tex_);
 
-    FgAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
     if (irradiance_tex_) {
-        irradiance_tex = &builder.GetReadTexture(irradiance_tex_);
-        distance_tex = &builder.GetReadTexture(distance_tex_);
-        offset_tex = &builder.GetReadTexture(offset_tex_);
+        irr_tex = &builder.GetReadTexture(irradiance_tex_);
+        dist_tex = &builder.GetReadTexture(distance_tex_);
+        off_tex = &builder.GetReadTexture(offset_tex_);
     }
 
     FgAllocTex *specular_tex = nullptr;
@@ -138,10 +138,13 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::BACK_COLOR_TEX_SLOT, back_color_tex.ref->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::BACK_DEPTH_TEX_SLOT, back_depth_tex.ref->id());
 
-    if (irradiance_tex) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::IRRADIANCE_TEX_SLOT, irradiance_tex->arr->id());
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::DISTANCE_TEX_SLOT, distance_tex->arr->id());
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::OFFSET_TEX_SLOT, offset_tex->arr->id());
+    if (irr_tex) {
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::IRRADIANCE_TEX_SLOT,
+                                   std::get<const Ren::Texture2DArray *>(irr_tex->_ref)->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::DISTANCE_TEX_SLOT,
+                                   std::get<const Ren::Texture2DArray *>(dist_tex->_ref)->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::OFFSET_TEX_SLOT,
+                                   std::get<const Ren::Texture2DArray *>(off_tex->_ref)->id());
     }
 
     if (specular_tex) {

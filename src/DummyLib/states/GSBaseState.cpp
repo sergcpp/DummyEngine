@@ -526,10 +526,14 @@ void GSBaseState::Enter() {
     });
 
     cmdline_ui_->RegisterCommand("r_showFrame", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        if (debug_ui_->view_mode() == Eng::DebugFrameUI::eViewMode::Compact) {
-            debug_ui_->set_view_mode(Eng::DebugFrameUI::eViewMode::Detailed);
+        if (args.size() > 1) {
+            if (args[1].val > 0.5) {
+                renderer_->settings.debug_frame = Eng::eDebugFrame::Full;
+            } else {
+                renderer_->settings.debug_frame = Eng::eDebugFrame::Simple;
+            }
         } else {
-            debug_ui_->set_view_mode(Eng::DebugFrameUI::eViewMode::Compact);
+            renderer_->settings.debug_frame = Eng::eDebugFrame::Off;
         }
         return true;
     });
@@ -1031,13 +1035,11 @@ void GSBaseState::UpdateFrame(int list_index) {
             pos = probe_tr->world_from_object * pos;
             pos /= pos[3];
 
-            static const Ren::Vec3f axises[] = {Ren::Vec3f{1, 0, 0}, Ren::Vec3f{-1, 0, 0},
-                                                Ren::Vec3f{0, 1, 0}, Ren::Vec3f{0, -1, 0},
-                                                Ren::Vec3f{0, 0, 1}, Ren::Vec3f{0, 0, -1}};
+            static const Ren::Vec3f axises[] = {Ren::Vec3f{1, 0, 0},  Ren::Vec3f{-1, 0, 0}, Ren::Vec3f{0, 1, 0},
+                                                Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, 0, 1},  Ren::Vec3f{0, 0, -1}};
 
-            static const Ren::Vec3f ups[] = {Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, -1, 0},
-                                             Ren::Vec3f{0, 0, 1},  Ren::Vec3f{0, 0, -1},
-                                             Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, -1, 0}};
+            static const Ren::Vec3f ups[] = {Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, 0, 1},
+                                             Ren::Vec3f{0, 0, -1}, Ren::Vec3f{0, -1, 0}, Ren::Vec3f{0, -1, 0}};
 
             const auto center = Ren::Vec3f{pos[0], pos[1], pos[2]};
 

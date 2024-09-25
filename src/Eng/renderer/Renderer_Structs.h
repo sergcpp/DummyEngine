@@ -234,6 +234,8 @@ enum class eDebugRT : uint8_t { Off, Main, Shadow };
 
 enum class eDebugDenoise : uint8_t { Off, Reflection, GI, Shadow };
 
+enum class eDebugFrame : uint8_t { Off, Simple, Full };
+
 struct render_settings_t {
     union {
         struct {
@@ -284,6 +286,11 @@ struct render_settings_t {
 
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
+#if !defined(NDEBUG)
+    eDebugFrame debug_frame = eDebugFrame::Full;
+#else
+    eDebugFrame debug_frame = eDebugFrame::Off;
+#endif
     int8_t debug_probes = -1;
     int8_t debug_oit_layer = -1;
 

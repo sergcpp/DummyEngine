@@ -251,16 +251,16 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             FgAllocBuf &in_ray_list_buf = builder.GetReadBuffer(data->in_ray_list);
             FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
-            FgAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr,
-                       *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+            FgAllocTex *albedo_tex = nullptr, *specular_tex = nullptr, *ltc_luts_tex = nullptr, *irr_tex = nullptr,
+                       *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
                 albedo_tex = &builder.GetReadTexture(data->albedo_tex);
                 specular_tex = &builder.GetReadTexture(data->specular_tex);
                 ltc_luts_tex = &builder.GetReadTexture(data->ltc_luts_tex);
 
-                irradiance_tex = &builder.GetReadTexture(data->irradiance_tex);
-                distance_tex = &builder.GetReadTexture(data->distance_tex);
-                offset_tex = &builder.GetReadTexture(data->offset_tex);
+                irr_tex = &builder.GetReadTexture(data->irradiance_tex);
+                dist_tex = &builder.GetReadTexture(data->distance_tex);
+                off_tex = &builder.GetReadTexture(data->offset_tex);
             }
 
             FgAllocTex *out_refl_tex[OIT_REFLECTION_LAYERS] = {};
@@ -282,21 +282,24 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
                 bindings.emplace_back(Trg::Image2D, SSRTraceHQ::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex[i]->ref);
             }
-            if (irradiance_tex) {
+            if (irr_tex) {
                 bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::ALBEDO_TEX_SLOT, *albedo_tex->ref);
                 bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::SPEC_TEX_SLOT, *specular_tex->ref);
                 bindings.emplace_back(Trg::Tex2DSampled, SSRTraceHQ::LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
 
-                bindings.emplace_back(Trg::Tex2DArraySampled, SSRTraceHQ::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
-                bindings.emplace_back(Trg::Tex2DArraySampled, SSRTraceHQ::DISTANCE_TEX_SLOT, *distance_tex->arr);
-                bindings.emplace_back(Trg::Tex2DArraySampled, SSRTraceHQ::OFFSET_TEX_SLOT, *offset_tex->arr);
+                bindings.emplace_back(Trg::Tex2DArraySampled, SSRTraceHQ::IRRADIANCE_TEX_SLOT,
+                                      *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
+                bindings.emplace_back(Trg::Tex2DArraySampled, SSRTraceHQ::DISTANCE_TEX_SLOT,
+                                      *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
+                bindings.emplace_back(Trg::Tex2DArraySampled, SSRTraceHQ::OFFSET_TEX_SLOT,
+                                      *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
             }
 
             SSRTraceHQ::Params uniform_params;
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
 
-            DispatchComputeIndirect(pi_ssr_trace_hq_[1][irradiance_tex != nullptr], *indir_args_buf.ref, 0, bindings,
+            DispatchComputeIndirect(pi_ssr_trace_hq_[1][irr_tex != nullptr], *indir_args_buf.ref, 0, bindings,
                                     &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                     builder.ctx().log());
         });

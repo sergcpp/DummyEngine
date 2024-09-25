@@ -248,6 +248,7 @@ class Context {
         int max_vertex_input = 0, max_vertex_output = 0;
         bool spirv = false;
         bool persistent_buf_mapping = false;
+        bool memory_heaps = false;
         bool bindless_texture = false;
         bool hwrt = false;
         bool swrt = false;
@@ -265,6 +266,7 @@ class Context {
         int max_vertex_input = 0, max_vertex_output = 0;
         bool spirv = true;
         bool persistent_buf_mapping = true;
+        bool memory_heaps = false;
         bool bindless_texture = false;
         bool hwrt = false;
         bool swrt = false;

@@ -919,7 +919,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
 
             DispatchCompute(pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 }
@@ -978,11 +978,12 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
                 {Ren::eBindTarget::Tex2DSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
-                {Ren::eBindTarget::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d},
+                {Ren::eBindTarget::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT,
+                 *std::get<const Ren::Texture3D *>(noise3d_tex._ref)},
                 {Ren::eBindTarget::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
 
             DispatchCompute(pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
     { // Update sun color
@@ -1266,7 +1267,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
         DispatchCompute(pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
-                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+                        sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 }
 
@@ -1587,7 +1588,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             uniform_params.view_from_world = view_state_.view_from_world;
 
             DispatchCompute(pi_gtao_main_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 ctx_.default_descr_alloc(), ctx_.log());
+                            ctx_.default_descr_alloc(), ctx_.log());
         });
     }
     { // filter pass
@@ -1629,8 +1630,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
                 Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
                            (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
-            DispatchCompute(pi_gtao_filter_, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(),
-                                 ctx_.log());
+            DispatchCompute(pi_gtao_filter_, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
         });
     }
     { // accumulation pass
@@ -1682,7 +1682,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
             DispatchCompute(pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
     return gtao_result;
@@ -2046,7 +2046,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             uniform_params.scale = compressed ? HDR_FACTOR : (1.0f / pre_exposure_);
 
             DispatchCompute(pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
-                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
+                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
     FgResRef exposure;
@@ -2086,8 +2086,8 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             uniform_params.min_exposure = min_exposure_;
             uniform_params.max_exposure = max_exposure_;
 
-            DispatchCompute(pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params,
-                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
+            DispatchCompute(pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.log());
         });
     }
     return exposure;
@@ -2132,6 +2132,6 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
         uniform_params.img_size[1] = view_state_.act_res[1];
 
         DispatchCompute(pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                             ctx_.default_descr_alloc(), ctx_.log());
+                        ctx_.default_descr_alloc(), ctx_.log());
     });
 }

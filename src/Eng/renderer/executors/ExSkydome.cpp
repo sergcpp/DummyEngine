@@ -49,7 +49,8 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref},
-        {Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d}};
+        {Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT,
+         *std::get<const Ren::Texture3D *>(noise3d_tex._ref)}};
 
 #if defined(USE_GL_RENDER)
     static const Ren::Vec3f axises[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{-1.0f, 0.0f, 0.0f},
@@ -125,7 +126,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
                            1u};
 
             DispatchCompute(pi_skydome_downsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         }
     }
 
@@ -194,7 +195,8 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d);
+        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT,
+                              *std::get<const Ren::Texture3D *>(noise3d_tex._ref));
 
         rast_state.viewport[2] = view_state_->act_res[0];
         rast_state.viewport[3] = view_state_->act_res[1];
@@ -219,7 +221,8 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d);
+        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT,
+                              *std::get<const Ren::Texture3D *>(noise3d_tex._ref));
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::DEPTH_TEX_SLOT,
                               Ren::OpaqueHandle{*depth_tex.ref, 1});
 
