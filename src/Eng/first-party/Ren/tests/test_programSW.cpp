@@ -19,21 +19,23 @@ FSHADER fshader(FS_IN, FS_OUT) {}
 
 void test_program() {
     printf("Test program            | ");
-    
+
+    using namespace Ren;
+
     {
         // Create program
         ProgramTest test;
 
-        Ren::eProgLoadStatus status;
-        Ren::Attribute _attrs[] = { {} };
-        Ren::Uniform _unifs[] = { {} };
-        Ren::ProgramRef p = test.LoadProgramSW("constant", nullptr, nullptr, 0, _attrs, _unifs, &status);
+        eProgLoadStatus status;
+        Attribute _attrs[] = { {} };
+        Uniform _unifs[] = { {} };
+        ProgramRef p = test.LoadProgramSW("constant", nullptr, nullptr, 0, _attrs, _unifs, &status);
 
         require(p);
-        require(status == Ren::ProgSetToDefault);
+        require(status == ProgSetToDefault);
 
         {
-            Ren::Program *pp = p.get();
+            Program *pp = p.get();
 
             require(pp != nullptr);
             require(std::string(pp->name()) == "constant");
@@ -41,14 +43,14 @@ void test_program() {
             require(!pp->ready());
         }
 
-        Ren::Uniform unifs[] = { {"unif1", 0, SW_FLOAT, 1}, {"unif2", 1, SW_VEC3, 1}, {} };
-        Ren::Attribute attrs[] = { {"attr1", 0, -1, 1}, {"attr2", 1, -1, 1}, {} };
+        Uniform unifs[] = { {"unif1", 0, SW_FLOAT, 1}, {"unif2", 1, SW_VEC3, 1}, {} };
+        Attribute attrs[] = { {"attr1", 0, -1, 1}, {"attr2", 1, -1, 1}, {} };
 
         test.LoadProgramSW("constant", (void*)vshader, (void*)fshader, 0, attrs, unifs, &status);
 
-        require(status == Ren::ProgCreatedFromData);
+        require(status == ProgCreatedFromData);
 
-        Ren::Program *pp = p.get();
+        Program *pp = p.get();
 
         require(pp != nullptr);
         require(std::string(pp->name()) == "constant");
@@ -65,6 +67,6 @@ void test_program() {
 
         require(pp->ready());
     }
-    
+
     printf("OK\n");
 }

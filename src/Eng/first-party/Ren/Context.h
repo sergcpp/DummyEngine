@@ -225,7 +225,10 @@ class Context {
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size, uint32_t suballoc_align = 1);
+    BufferRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size, uint32_t size_alignment = 1,
+                         MemoryAllocators *mem_allocs = nullptr);
+    BufferRef LoadBuffer(std::string_view name, eBufType type, const BufHandle &handle, MemAllocation &&alloc,
+                         uint32_t initial_size, uint32_t size_alignment = 1);
     void ReleaseBuffers();
 
     void InitDefaultBuffers();
@@ -266,7 +269,7 @@ class Context {
         int max_vertex_input = 0, max_vertex_output = 0;
         bool spirv = true;
         bool persistent_buf_mapping = true;
-        bool memory_heaps = false;
+        bool memory_heaps = true;
         bool bindless_texture = false;
         bool hwrt = false;
         bool swrt = false;

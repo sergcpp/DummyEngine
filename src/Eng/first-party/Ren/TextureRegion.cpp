@@ -12,7 +12,7 @@ Ren::TextureRegion::TextureRegion(std::string_view name, TextureAtlasArray *atla
 }
 
 Ren::TextureRegion::TextureRegion(std::string_view name, Span<const uint8_t> data, Buffer &stage_buf,
-                                  CommandBuffer cmd_buf, const Tex2DParams &p, Ren::TextureAtlasArray *atlas,
+                                  CommandBuffer cmd_buf, const Tex2DParams &p, TextureAtlasArray *atlas,
                                   eTexLoadStatus *load_status)
     : name_(name) {
     Init(data, stage_buf, cmd_buf, p, atlas, load_status);
@@ -48,7 +48,7 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
 }
 
 void Ren::TextureRegion::Init(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
-                              Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
+                              TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
     if (data.empty()) {
         uint8_t *out_col = stage_buf.Map();
         out_col[0] = 0;
@@ -77,7 +77,7 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, Buffer &stage_buf, Comma
 }
 
 void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
-                              const Tex2DParams &p, Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
+                              const Tex2DParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
     if (atlas_) {
         atlas_->Free(texture_pos_);
     }
@@ -86,7 +86,7 @@ void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, Co
 }
 
 bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
-                                         Tex2DParams p, Ren::TextureAtlasArray *atlas) {
+                                         Tex2DParams p, TextureAtlasArray *atlas) {
     uint32_t offset = 0;
     if (data.size() - offset < sizeof(DDSHeader)) {
         return false;
@@ -105,9 +105,9 @@ bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, Buffer &stage
 
         DDS_HEADER_DXT10 dx10_header = {};
         memcpy(&dx10_header, &data[offset], sizeof(DDS_HEADER_DXT10));
-        offset += sizeof(Ren::DDS_HEADER_DXT10);
+        offset += sizeof(DDS_HEADER_DXT10);
 
-        p.format = Ren::TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
+        p.format = TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
     }
 
     const int img_data_len = GetMipDataLenBytes(p.w, p.h, p.format, p.block);

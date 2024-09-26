@@ -7,8 +7,10 @@
 void test_hashmap() {
     printf("Test hashmap            | ");
 
+    using namespace Ren;
+
     { // Basic test
-        Ren::HashMap32<int, double> cont;
+        HashMap32<int, double> cont;
 
         for (int i = 0; i < 100; i++) {
             require(cont.Insert(12, 12.0));
@@ -64,7 +66,7 @@ void test_hashmap() {
     }
 
     { // Test with reallocation
-        Ren::HashMap32<std::string, int> cont(16);
+        HashMap32<std::string, int> cont(16);
 
         for (int i = 0; i < 100000; i++) {
             std::string key = std::to_string(i);
@@ -83,7 +85,7 @@ void test_hashmap() {
     }
 
     { // Test iteration
-        Ren::HashMap32<std::string, int> cont(16);
+        HashMap32<std::string, int> cont(16);
 
         for (int i = 0; i < 100000; i++) {
             std::string key = std::to_string(i);

@@ -58,8 +58,8 @@ uint32_t FindMemoryType(uint32_t search_from, const VkPhysicalDeviceMemoryProper
 int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
-                    const uint32_t suballoc_align)
-    : name_(name), api_ctx_(api_ctx), type_(type), size_(0), suballoc_align_(suballoc_align) {
+                    const uint32_t size_alignment, MemoryAllocators *mem_allocs)
+    : name_(name), api_ctx_(api_ctx), mem_allocs_(mem_allocs), type_(type), size_(0), size_alignment_(size_alignment) {
     Resize(initial_size);
 }
 
@@ -76,19 +76,17 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     handle_ = std::exchange(rhs.handle_, {});
     name_ = std::move(rhs.name_);
+    mem_allocs_ = std::exchange(rhs.mem_allocs_, nullptr);
+    sub_alloc_ = std::move(rhs.sub_alloc_);
     alloc_ = std::move(rhs.alloc_);
-    suballoc_align_ = std::exchange(rhs.suballoc_align_, 1);
-    mem_ = std::exchange(rhs.mem_, {});
+    dedicated_mem_ = std::exchange(rhs.dedicated_mem_, {});
 
     type_ = std::exchange(rhs.type_, eBufType::Undefined);
 
     size_ = std::exchange(rhs.size_, 0);
+    size_alignment_ = std::exchange(rhs.size_alignment_, 0);
     mapped_ptr_ = std::exchange(rhs.mapped_ptr_, nullptr);
     mapped_offset_ = std::exchange(rhs.mapped_offset_, 0xffffffff);
-
-#ifndef NDEBUG
-    flushed_ranges_ = std::move(rhs.flushed_ranges_);
-#endif
 
     resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
 
@@ -101,19 +99,20 @@ VkDeviceAddress Ren::Buffer::vk_device_address() const {
     return api_ctx_->vkGetBufferDeviceAddressKHR(api_ctx_->device, &addr_info);
 }
 
-Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, std::string_view tag, const Buffer *init_buf,
-                                               CommandBuffer cmd_buf, const uint32_t init_off) {
-    if (!alloc_) {
-        alloc_ = std::make_unique<FreelistAlloc>(size_);
+Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const uint32_t req_alignment,
+                                               std::string_view tag, const Buffer *init_buf, CommandBuffer cmd_buf,
+                                               const uint32_t init_off) {
+    if (!sub_alloc_) {
+        sub_alloc_ = std::make_unique<FreelistAlloc>(size_);
     }
 
-    FreelistAlloc::Allocation alloc = alloc_->Alloc(suballoc_align_, req_size);
+    FreelistAlloc::Allocation alloc = sub_alloc_->Alloc(req_alignment, req_size);
     while (alloc.pool == 0xffff) {
         Resize(uint32_t(size_ * 1.25f));
-        alloc = alloc_->Alloc(suballoc_align_, req_size);
+        alloc = sub_alloc_->Alloc(req_alignment, req_size);
     }
     assert(alloc.pool == 0);
-    assert(alloc_->IntegrityCheck());
+    assert(sub_alloc_->IntegrityCheck());
     const SubAllocation ret = {alloc.offset, alloc.block};
     if (ret.offset != 0xffffffff) {
         if (init_buf) {
@@ -232,13 +231,13 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
 }
 
 bool Ren::Buffer::FreeSubRegion(const SubAllocation alloc) {
-    alloc_->Free(alloc.block);
-    assert(alloc_->IntegrityCheck());
+    sub_alloc_->Free(alloc.block);
+    assert(sub_alloc_->IntegrityCheck());
     return true;
 }
 
 void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
-    new_size = suballoc_align_ * ((new_size + suballoc_align_ - 1) / suballoc_align_);
+    new_size = size_alignment_ * ((new_size + size_alignment_ - 1) / size_alignment_);
     if (size_ >= new_size) {
         return;
     }
@@ -248,9 +247,9 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
     size_ = new_size;
     assert(size_ > 0);
 
-    if (alloc_) {
-        alloc_->ResizePool(0, size_);
-        assert(alloc_->IntegrityCheck());
+    if (sub_alloc_) {
+        sub_alloc_->ResizePool(0, size_);
+        assert(sub_alloc_->IntegrityCheck());
     }
 
     VkBufferCreateInfo buf_create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -275,51 +274,66 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
     VkMemoryPropertyFlags memory_props = GetVkMemoryPropertyFlags(type_);
 
-    VkMemoryAllocateInfo buf_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-    buf_alloc_info.allocationSize = memory_requirements.size;
-    buf_alloc_info.memoryTypeIndex = FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits,
-                                                    memory_props, buf_alloc_info.allocationSize);
-
-    VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
-    additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-
-    if ((buf_create_info.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0) {
-        buf_alloc_info.pNext = &additional_flags;
-    }
-
-    VkDeviceMemory buffer_mem = {};
-
-    res = VK_ERROR_OUT_OF_DEVICE_MEMORY;
-    while (buf_alloc_info.memoryTypeIndex != 0xffffffff) {
-        res = api_ctx_->vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
-        if (res == VK_SUCCESS) {
-            break;
+    VkDeviceMemory new_dedicated_mem = {};
+    MemAllocation new_allocation = {};
+    if (mem_allocs_ && type_ != eBufType::Upload && type_ != eBufType::Readback) {
+        new_allocation = mem_allocs_->Allocate(memory_requirements, memory_props);
+        if (!new_allocation) {
+            // log->Warning("Not enough device memory, falling back to CPU RAM!");
+            memory_props &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            new_allocation = mem_allocs_->Allocate(memory_requirements, memory_props);
         }
-        buf_alloc_info.memoryTypeIndex =
-            FindMemoryType(buf_alloc_info.memoryTypeIndex + 1, &api_ctx_->mem_properties,
-                           memory_requirements.memoryTypeBits, memory_props, buf_alloc_info.allocationSize);
-    }
-    if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-        // api_ctx_->log()->Warning("Not enough device memory, falling back to CPU RAM!");
-        memory_props &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        buf_alloc_info.memoryTypeIndex =
+        res = api_ctx_->vkBindBufferMemory(api_ctx_->device, new_buf, new_allocation.owner->mem(new_allocation.pool),
+                                           new_allocation.offset);
+        assert(res == VK_SUCCESS && "Failed to bind memory!");
+    } else {
+        // Do a dedicated allocation
+        VkMemoryAllocateInfo mem_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+        mem_alloc_info.allocationSize = memory_requirements.size;
+        mem_alloc_info.memoryTypeIndex =
             FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits, memory_props,
-                           buf_alloc_info.allocationSize);
-        while (buf_alloc_info.memoryTypeIndex != 0xffffffff) {
-            res = api_ctx_->vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
+                           mem_alloc_info.allocationSize);
+
+        VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
+
+        if ((buf_create_info.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0) {
+            additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+            mem_alloc_info.pNext = &additional_flags;
+        }
+
+        res = VK_ERROR_OUT_OF_DEVICE_MEMORY;
+        while (mem_alloc_info.memoryTypeIndex != 0xffffffff) {
+            res = api_ctx_->vkAllocateMemory(api_ctx_->device, &mem_alloc_info, nullptr, &new_dedicated_mem);
             if (res == VK_SUCCESS) {
                 break;
             }
-            buf_alloc_info.memoryTypeIndex =
-                FindMemoryType(buf_alloc_info.memoryTypeIndex + 1, &api_ctx_->mem_properties,
-                               memory_requirements.memoryTypeBits, memory_props, buf_alloc_info.allocationSize);
+            mem_alloc_info.memoryTypeIndex =
+                FindMemoryType(mem_alloc_info.memoryTypeIndex + 1, &api_ctx_->mem_properties,
+                               memory_requirements.memoryTypeBits, memory_props, mem_alloc_info.allocationSize);
         }
-    }
-    assert(res == VK_SUCCESS && "Failed to allocate memory!");
+        if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            // api_ctx_->log()->Warning("Not enough device memory, falling back to CPU RAM!");
+            memory_props &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    res = api_ctx_->vkBindBufferMemory(api_ctx_->device, new_buf, buffer_mem, 0 /* offset */);
-    assert(res == VK_SUCCESS && "Failed to bind memory!");
+            mem_alloc_info.memoryTypeIndex =
+                FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits, memory_props,
+                               mem_alloc_info.allocationSize);
+            while (mem_alloc_info.memoryTypeIndex != 0xffffffff) {
+                res = api_ctx_->vkAllocateMemory(api_ctx_->device, &mem_alloc_info, nullptr, &new_dedicated_mem);
+                if (res == VK_SUCCESS) {
+                    break;
+                }
+                mem_alloc_info.memoryTypeIndex =
+                    FindMemoryType(mem_alloc_info.memoryTypeIndex + 1, &api_ctx_->mem_properties,
+                                   memory_requirements.memoryTypeBits, memory_props, mem_alloc_info.allocationSize);
+            }
+        }
+        assert(res == VK_SUCCESS && "Failed to allocate memory!");
+
+        res = api_ctx_->vkBindBufferMemory(api_ctx_->device, new_buf, new_dedicated_mem, 0 /* offset */);
+        assert(res == VK_SUCCESS && "Failed to bind memory!");
+    }
 
     if (handle_.buf != VK_NULL_HANDLE) {
         if (keep_content) {
@@ -334,26 +348,42 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
             // destroy previous buffer
             api_ctx_->vkDestroyBuffer(api_ctx_->device, handle_.buf, nullptr);
-            api_ctx_->vkFreeMemory(api_ctx_->device, mem_, nullptr);
+            alloc_ = {};
+            if (dedicated_mem_) {
+                api_ctx_->vkFreeMemory(api_ctx_->device, dedicated_mem_, nullptr);
+            }
         } else {
             // destroy previous buffer
             api_ctx_->bufs_to_destroy[api_ctx_->backend_frame].push_back(handle_.buf);
-            api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(mem_);
+            if (alloc_) {
+                api_ctx_->allocs_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
+            }
+            if (dedicated_mem_) {
+                api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(dedicated_mem_);
+            }
         }
     }
 
     handle_.buf = new_buf;
     handle_.generation = g_GenCounter++;
-    mem_ = buffer_mem;
+    alloc_ = std::move(new_allocation);
+    dedicated_mem_ = new_dedicated_mem;
 }
 
 void Ren::Buffer::Free() {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     if (handle_.buf != VK_NULL_HANDLE) {
         api_ctx_->bufs_to_destroy[api_ctx_->backend_frame].push_back(handle_.buf);
-        api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(mem_);
+        if (alloc_) {
+            api_ctx_->allocs_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
+        }
+        if (dedicated_mem_) {
+            api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(dedicated_mem_);
+        }
 
         handle_ = {};
+        mem_allocs_ = nullptr;
+        dedicated_mem_ = nullptr;
         size_ = 0;
     }
 }
@@ -362,7 +392,10 @@ void Ren::Buffer::FreeImmediate() {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     if (handle_.buf != VK_NULL_HANDLE) {
         api_ctx_->vkDestroyBuffer(api_ctx_->device, handle_.buf, nullptr);
-        api_ctx_->vkFreeMemory(api_ctx_->device, mem_, nullptr);
+        alloc_ = {};
+        if (dedicated_mem_) {
+            api_ctx_->vkFreeMemory(api_ctx_->device, dedicated_mem_, nullptr);
+        }
 
         handle_ = {};
         size_ = 0;
@@ -375,27 +408,16 @@ uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) {
 }
 
 uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) {
+    assert(dedicated_mem_);
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
     assert(type_ == eBufType::Upload || type_ == eBufType::Readback);
     assert(offset == AlignMapOffset(offset));
     assert((offset + size) == size_ || (offset + size) == AlignMapOffset(offset + size));
 
-#ifndef NDEBUG
-    for (auto it = std::begin(flushed_ranges_); it != std::end(flushed_ranges_);) {
-        if (offset + size >= it->range.first && offset < it->range.first + it->range.second) {
-            const WaitResult res = it->fence.ClientWaitSync(0);
-            assert(res == WaitResult::Success);
-            it = flushed_ranges_.erase(it);
-        } else {
-            ++it;
-        }
-    }
-#endif
-
     void *mapped = nullptr;
     const VkResult res =
-        api_ctx_->vkMapMemory(api_ctx_->device, mem_, VkDeviceSize(offset), VkDeviceSize(size), 0, &mapped);
+        api_ctx_->vkMapMemory(api_ctx_->device, dedicated_mem_, VkDeviceSize(offset), VkDeviceSize(size), 0, &mapped);
     assert(res == VK_SUCCESS && "Failed to map memory!");
 
     mapped_ptr_ = reinterpret_cast<uint8_t *>(mapped);
@@ -404,8 +426,9 @@ uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const
 }
 
 void Ren::Buffer::Unmap() {
+    assert(dedicated_mem_);
     assert(mapped_offset_ != 0xffffffff && mapped_ptr_);
-    api_ctx_->vkUnmapMemory(api_ctx_->device, mem_);
+    api_ctx_->vkUnmapMemory(api_ctx_->device, dedicated_mem_);
     mapped_ptr_ = nullptr;
     mapped_offset_ = 0xffffffff;
 }

@@ -28,16 +28,16 @@ void Ren::SyncFence::WaitSync() {
     glWaitSync(reinterpret_cast<GLsync>(sync_), 0, GL_TIMEOUT_IGNORED);
 }
 
-Ren::WaitResult Ren::SyncFence::ClientWaitSync(const uint64_t timeout_us) {
+Ren::eWaitResult Ren::SyncFence::ClientWaitSync(const uint64_t timeout_us) {
     assert(sync_);
     auto sync = reinterpret_cast<GLsync>(sync_);
     const GLenum res = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, timeout_us);
 
-    WaitResult ret = WaitResult::Fail;
+    eWaitResult ret = eWaitResult::Fail;
     if (res == GL_ALREADY_SIGNALED || res == GL_CONDITION_SATISFIED) {
-        ret = WaitResult::Success;
+        ret = eWaitResult::Success;
     } else if (res == GL_TIMEOUT_EXPIRED) {
-        ret = WaitResult::Timeout;
+        ret = eWaitResult::Timeout;
     }
 
     return ret;

@@ -31,7 +31,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::OUT_VERTICES1, vertex_buf2_id);
 
         Ren::Buffer temp_unif_buffer =
-            Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(Skinning::Params), 16);
+            Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(Skinning::Params));
 
         for (uint32_t i = 0; i < uint32_t(p_list_->skin_regions.size()); i++) {
             const SkinRegion &sr = p_list_->skin_regions[i];
@@ -40,7 +40,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
 
             if (non_shapekeyed_vertex_count) {
                 Ren::Buffer temp_stage_buffer =
-                    Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(Skinning::Params), 16);
+                    Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(Skinning::Params));
                 {
                     Skinning::Params *stage_data = reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map());
 
@@ -61,7 +61,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
 
             if (sr.shape_keyed_vertex_count) {
                 Ren::Buffer temp_stage_buffer =
-                    Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(Skinning::Params), 16);
+                    Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(Skinning::Params));
                 {
                     Skinning::Params *stage_data = reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map());
 

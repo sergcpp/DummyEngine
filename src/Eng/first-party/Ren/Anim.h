@@ -145,7 +145,7 @@ struct Skeleton {
     void ApplyAnim(int id);
     void ApplyAnim(int anim_id1, int anim_id2, float t);
     void UpdateAnim(int anim_id, float t);
-    void UpdateBones(Ren::Mat4f *matr_palette);
+    void UpdateBones(Mat4f *matr_palette);
     int UpdateShapes(uint16_t *out_shape_palette);
 };
 } // namespace Ren

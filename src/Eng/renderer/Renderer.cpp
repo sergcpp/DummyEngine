@@ -446,21 +446,13 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     {
-        const int TEMP_BUF_SIZE = 256;
-
         Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
                        ndx_buf = ctx_.default_indices_buf();
 
-        // Allocate temporary buffer
-        temp_buf1_vtx_ = vtx_buf1->AllocSubRegion(TEMP_BUF_SIZE, "temp buf");
-        temp_buf2_vtx_ = vtx_buf2->AllocSubRegion(TEMP_BUF_SIZE, "temp buf");
-        assert(temp_buf1_vtx_.offset == temp_buf2_vtx_.offset && "Offsets do not match!");
-        temp_buf_ndx_ = ndx_buf->AllocSubRegion(TEMP_BUF_SIZE, "temp buf");
-
         // Allocate buffer for skinned vertices
         // TODO: fix this. do not allocate twice more memory in buf2
-        skinned_buf1_vtx_ = vtx_buf1->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
-        skinned_buf2_vtx_ = vtx_buf2->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
+        skinned_buf1_vtx_ = vtx_buf1->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, 16, "skinned");
+        skinned_buf2_vtx_ = vtx_buf2->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, 16, "skinned");
         assert(skinned_buf1_vtx_.offset == skinned_buf2_vtx_.offset && "Offsets do not match!");
     }
 

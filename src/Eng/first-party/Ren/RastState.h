@@ -149,10 +149,10 @@ struct RastState {
     DepthBias depth_bias;
 
     // mutable, because they are part of dynamic state
-    mutable Ren::Vec4i viewport;
+    mutable Vec4i viewport;
     mutable struct {
         bool enabled = false;
-        Ren::Vec4i rect;
+        Vec4i rect;
     } scissor;
 
 #if defined(USE_GL_RENDER)

@@ -7,6 +7,8 @@
 void test_program() {
     printf("Test program            | ");
 
+    using namespace Ren;
+
     { // Load glsl program
         TestContext test;
 
@@ -47,23 +49,23 @@ void main() {
     gl_FragColor = vec4(col, 1.0);
 })";
 
-        Ren::eProgLoadStatus status;
-        Ren::ProgramRef p = test.LoadProgram("constant", {}, {}, {}, {}, {}, &status);
+        eProgLoadStatus status;
+        ProgramRef p = test.LoadProgram("constant", {}, {}, {}, {}, {}, &status);
 
-        require(status == Ren::eProgLoadStatus::SetToDefault);
+        require(status == eProgLoadStatus::SetToDefault);
         require(p->name() == "constant");
         require(p->id() == 0); // not initialized
         require(p->ready() == false);
 
-        Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = test.LoadShaderGLSL("constant_vs", vs_src, Ren::eShaderType::Vertex, &sh_status);
-        require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-        Ren::ShaderRef fs_ref = test.LoadShaderGLSL("constant_fs", fs_src, Ren::eShaderType::Fragment, &sh_status);
-        require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+        eShaderLoadStatus sh_status;
+        ShaderRef vs_ref = test.LoadShaderGLSL("constant_vs", vs_src, eShaderType::Vertex, &sh_status);
+        require(sh_status == eShaderLoadStatus::CreatedFromData);
+        ShaderRef fs_ref = test.LoadShaderGLSL("constant_fs", fs_src, eShaderType::Fragment, &sh_status);
+        require(sh_status == eShaderLoadStatus::CreatedFromData);
 
         test.LoadProgram("constant", vs_ref, fs_ref, {}, {}, {}, &status);
 
-        require(status == Ren::eProgLoadStatus::CreatedFromData);
+        require(status == eProgLoadStatus::CreatedFromData);
 
         require(p->name() == "constant");
         require(p->ready() == true);
@@ -108,29 +110,29 @@ void main() {
 	inout_buffer.data[global_index].c = vec4(1.0, 0.0, 1.0, 1.0);
 })";
 
-        Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef cs_ref = test.LoadShaderGLSL("sample_cs", cs_source, Ren::eShaderType::Compute, &sh_status);
-        require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+        eShaderLoadStatus sh_status;
+        ShaderRef cs_ref = test.LoadShaderGLSL("sample_cs", cs_source, eShaderType::Compute, &sh_status);
+        require(sh_status == eShaderLoadStatus::CreatedFromData);
 
-        Ren::eProgLoadStatus status;
-        Ren::ProgramRef p = test.LoadProgram("sample", cs_ref, &status);
-        require(status == Ren::eProgLoadStatus::CreatedFromData);
+        eProgLoadStatus status;
+        ProgramRef p = test.LoadProgram("sample", cs_ref, &status);
+        require(status == eProgLoadStatus::CreatedFromData);
 
         require(p->uniform(0).name == "delta");
         require(p->uniform(0).loc != -1);
 
         struct AttribData {
-            Ren::Vec4f p, c;
+            Vec4f p, c;
         };
 
-        auto buf = Ren::Buffer{"buf", test.api_ctx(), Ren::eBufType::VertexAttribs, sizeof(AttribData) * 128};
+        auto buf = Buffer{"buf", test.api_ctx(), eBufType::VertexAttribs, sizeof(AttribData) * 128};
 
         std::vector<AttribData> _data;
         for (int i = 0; i < 128; i++) {
-            _data.push_back({Ren::Vec4f{0.0f, float(i), 0.0f, 0.0f}, Ren::Vec4f{0.0f}});
+            _data.push_back({Vec4f{0.0f, float(i), 0.0f, 0.0f}, Vec4f{0.0f}});
         }
 
-        auto stage_buf = Ren::Buffer{"upload_buf", test.api_ctx(), Ren::eBufType::Upload, sizeof(AttribData) * 128};
+        auto stage_buf = Buffer{"upload_buf", test.api_ctx(), eBufType::Upload, sizeof(AttribData) * 128};
 
         {
             auto *data = reinterpret_cast<AttribData *>(stage_buf.Map());
@@ -140,7 +142,7 @@ void main() {
             stage_buf.Unmap();
         }
 
-        const uint32_t offset = buf.AllocSubRegion(128 * sizeof(AttribData), "test", &stage_buf).offset;
+        const uint32_t offset = buf.AllocSubRegion(128 * sizeof(AttribData), 1, "test", &stage_buf).offset;
         require(offset == 0);
 
         glUseProgram(p->id());
@@ -355,15 +357,15 @@ void main() {
                 0x03, 0x00, 0x31, 0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0xFD, 0x00, 0x01, 0x00, 0x38, 0x00, 0x01,
                 0x00};
 
-            Ren::eShaderLoadStatus sh_status;
-            Ren::ShaderRef vs_ref = test.LoadShaderSPIRV("simple_vs", vert_spv, Ren::eShaderType::Vertex, &sh_status);
-            require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-            Ren::ShaderRef fs_ref = test.LoadShaderSPIRV("simple_fs", frag_spv, Ren::eShaderType::Fragment, &sh_status);
-            require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+            eShaderLoadStatus sh_status;
+            ShaderRef vs_ref = test.LoadShaderSPIRV("simple_vs", vert_spv, eShaderType::Vertex, &sh_status);
+            require(sh_status == eShaderLoadStatus::CreatedFromData);
+            ShaderRef fs_ref = test.LoadShaderSPIRV("simple_fs", frag_spv, eShaderType::Fragment, &sh_status);
+            require(sh_status == eShaderLoadStatus::CreatedFromData);
 
-            Ren::eProgLoadStatus status;
-            Ren::ProgramRef p = test.LoadProgram("simple", vs_ref, fs_ref, {}, {}, {}, &status);
-            require(status == Ren::eProgLoadStatus::CreatedFromData);
+            eProgLoadStatus status;
+            ProgramRef p = test.LoadProgram("simple", vs_ref, fs_ref, {}, {}, {}, &status);
+            require(status == eProgLoadStatus::CreatedFromData);
 
             require(p->name() == "simple");
             require(p->ready() == true);

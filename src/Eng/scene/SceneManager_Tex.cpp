@@ -296,13 +296,13 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                     TextureRequestPending *req = &io_pending_tex_[i];
                     auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
                     const auto res = stage_buf->fence.ClientWaitSync(0 /* timeout_us */);
-                    if (res == Ren::WaitResult::Fail) {
+                    if (res == Ren::eWaitResult::Fail) {
                         ren_ctx_.log()->Error("Waiting on fence failed!");
 
                         static_cast<TextureRequest &>(*req) = {};
                         req->state = eRequestState::Idle;
                         tex_loader_cnd_.notify_one();
-                    } else if (res != Ren::WaitResult::Timeout) {
+                    } else if (res != Ren::eWaitResult::Timeout) {
                         SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req->ref);
 
                         if (req->ref->params.w != req->orig_w || req->ref->params.h != req->orig_h) {

@@ -434,10 +434,23 @@ void Ren::Context::ReleaseAnims() {
 }
 
 Ren::BufferRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const uint32_t initial_size,
-                                        const uint32_t suballoc_align) {
+                                        const uint32_t size_alignment, MemoryAllocators *mem_allocs) {
     Ren::BufferRef ref = buffers_.FindByName(name);
     if (!ref) {
-        ref = buffers_.Add(name, api_ctx_.get(), type, initial_size, suballoc_align);
+        ref = buffers_.Add(name, api_ctx_.get(), type, initial_size, size_alignment, mem_allocs);
+    } else if (ref->size() < initial_size) {
+        assert(ref->type() == type);
+        ref->Resize(initial_size, false /* keep_content */);
+    }
+    return ref;
+}
+
+Ren::BufferRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const BufHandle &handle,
+                                        MemAllocation &&alloc, const uint32_t initial_size,
+                                        const uint32_t size_alignment) {
+    Ren::BufferRef ref = buffers_.FindByName(name);
+    if (!ref) {
+        ref = buffers_.Add(name, api_ctx_.get(), type, handle, std::move(alloc), initial_size, size_alignment);
     } else if (ref->size() < initial_size) {
         assert(ref->type() == type);
         ref->Resize(initial_size, false /* keep_content */);
@@ -459,15 +472,15 @@ void Ren::Context::ReleaseBuffers() {
 
 void Ren::Context::InitDefaultBuffers() {
     default_vertex_buf1_ =
-        buffers_.Add("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
+        buffers_.Add("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
     default_vertex_buf2_ =
-        buffers_.Add("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
+        buffers_.Add("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
     default_skin_vertex_buf_ =
-        buffers_.Add("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
+        buffers_.Add("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
     default_delta_buf_ =
-        buffers_.Add("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
+        buffers_.Add("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
     default_indices_buf_ =
-        buffers_.Add("default_ndx_buf2", api_ctx_.get(), eBufType::VertexIndices, 16 * 1024 * 1024, 768);
+        buffers_.Add("default_ndx_buf2", api_ctx_.get(), eBufType::VertexIndices, 16 * 1024 * 1024, 4);
 
     default_stage_bufs_.ctx = this;
     for (int i = 0; i < StageBufferCount; ++i) {
@@ -537,8 +550,8 @@ Ren::StageBufRef::StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence,
                               bool &_is_in_use)
     : ctx(_ctx), buf(_buf), fence(_fence), cmd_buf(_cmd_buf), is_in_use(_is_in_use) {
     is_in_use = true;
-    const Ren::WaitResult res = fence.ClientWaitSync();
-    assert(res == Ren::WaitResult::Success);
+    const eWaitResult res = fence.ClientWaitSync();
+    assert(res == eWaitResult::Success);
     ctx.BegSingleTimeCommands(cmd_buf);
 }
 

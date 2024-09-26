@@ -3,7 +3,7 @@
 Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
                                           const int layer_count, const eTexFormat format, const eTexFilter filter)
     : Texture2DArray(api_ctx, name, w, h, layer_count, format, filter,
-                     eTexUsageBits::Transfer | eTexUsageBits::RenderTarget | Ren::eTexUsageBits::Sampled) {
+                     eTexUsageBits::Transfer | eTexUsageBits::RenderTarget | eTexUsageBits::Sampled) {
     splitters_.resize(layer_count, TextureSplitter{w, h});
 }
 

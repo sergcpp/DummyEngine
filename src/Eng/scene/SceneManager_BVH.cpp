@@ -563,19 +563,19 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
     if (!scene_data_.persistent_data.swrt.rt_meshes_buf) {
         scene_data_.persistent_data.swrt.rt_meshes_buf =
-            ren_ctx_.LoadBuffer("SWRT Meshes", Ren::eBufType::Storage, 16 * sizeof(gpu_mesh_t), sizeof(gpu_mesh_t));
+            ren_ctx_.LoadBuffer("SWRT Meshes", Ren::eBufType::Storage, 16 * sizeof(gpu_mesh_t));
     }
     if (!scene_data_.persistent_data.swrt.rt_prim_indices_buf) {
-        scene_data_.persistent_data.swrt.rt_prim_indices_buf = ren_ctx_.LoadBuffer(
-            "SWRT Prim Indices", Ren::eBufType::Texture, 1024 * sizeof(uint32_t), sizeof(uint32_t));
+        scene_data_.persistent_data.swrt.rt_prim_indices_buf =
+            ren_ctx_.LoadBuffer("SWRT Prim Indices", Ren::eBufType::Texture, 1024 * sizeof(uint32_t), sizeof(uint32_t));
     }
     if (!scene_data_.persistent_data.swrt.rt_blas_buf) {
-        scene_data_.persistent_data.swrt.rt_blas_buf = ren_ctx_.LoadBuffer(
-            "SWRT BLAS", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh_node_t), sizeof(gpu_bvh_node_t));
+        scene_data_.persistent_data.swrt.rt_blas_buf =
+            ren_ctx_.LoadBuffer("SWRT BLAS", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh_node_t), 16);
     }
 
     const Ren::SubAllocation mesh_alloc =
-        scene_data_.persistent_data.swrt.rt_meshes_buf->AllocSubRegion(sizeof(gpu_mesh_t), {});
+        scene_data_.persistent_data.swrt.rt_meshes_buf->AllocSubRegion(sizeof(gpu_mesh_t), sizeof(gpu_mesh_t), {});
 
     //
     // Gather geometries
@@ -623,9 +623,9 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
 
     const Ren::SubAllocation nodes_alloc = scene_data_.persistent_data.swrt.rt_blas_buf->AllocSubRegion(
-        uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t), {});
+        uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t), sizeof(gpu_bvh_node_t), {});
     const Ren::SubAllocation prim_alloc = scene_data_.persistent_data.swrt.rt_prim_indices_buf->AllocSubRegion(
-        uint32_t(prim_indices.size()) * sizeof(uint32_t), {});
+        uint32_t(prim_indices.size()) * sizeof(uint32_t), sizeof(uint32_t), {});
 
     new_mesh.node_index = nodes_alloc.offset / sizeof(gpu_bvh_node_t);
     new_mesh.node_count = uint32_t(nodes.size());

@@ -782,7 +782,7 @@ void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
                 ctx_.log()->Info("Buf %s will be alias of %s", buf.name.c_str(), orig_buf.name.c_str());
             }
             if (!buf.ref) {
-                buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size);
+                buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size, 16, ctx_.default_mem_allocs());
                 buf.ref = buf.strong_ref;
 
                 // TODO: this is redundant!
@@ -1083,10 +1083,10 @@ void Eng::FgBuilder::BuildAliases() {
 
     tex_alias_chains_.clear();
     buf_alias_chains_.clear();
-    tex_alias_chains_.resize(textures_.size());
-    buf_alias_chains_.resize(buffers_.size());
+    tex_alias_chains_.resize(textures_.capacity());
+    buf_alias_chains_.resize(buffers_.capacity());
 
-    std::vector<int> tex_aliases(textures_.size(), -1);
+    std::vector<int> tex_aliases(textures_.capacity(), -1);
     for (auto i = textures_.begin(); i != textures_.end(); ++i) {
         const FgAllocTex &tex1 = *i;
         if (tex1.external || tex1.history_index != -1 || tex1.history_of != -1) {
@@ -1119,7 +1119,7 @@ void Eng::FgBuilder::BuildAliases() {
         }
     }
 
-    std::vector<int> buf_aliases(buffers_.size(), -1);
+    std::vector<int> buf_aliases(buffers_.capacity(), -1);
     for (auto i = buffers_.begin(); i != buffers_.end(); ++i) {
         const FgAllocBuf &buf1 = *i;
         if (buf1.external) {

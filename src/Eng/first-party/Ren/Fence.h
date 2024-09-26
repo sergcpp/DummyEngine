@@ -6,7 +6,7 @@
 
 namespace Ren {
 struct ApiContext;
-enum class WaitResult { Success, Timeout, Fail };
+enum class eWaitResult { Success, Timeout, Fail };
 class SyncFence {
 #if defined(USE_VK_RENDER)
     ApiContext *api_ctx_ = nullptr;
@@ -41,7 +41,7 @@ class SyncFence {
 #endif
 
     void WaitSync();
-    WaitResult ClientWaitSync(uint64_t timeout_us = 1000000000);
+    eWaitResult ClientWaitSync(uint64_t timeout_us = 1000000000);
 };
 
 SyncFence MakeFence();

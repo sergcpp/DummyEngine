@@ -49,9 +49,8 @@ GLbitfield GetGLBufStorageFlags(const eBufType type) {
 int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(const std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
-                    const uint32_t suballoc_align)
-    : name_(name), api_ctx_(api_ctx), type_(type), size_(0), alloc_(std::make_unique<FreelistAlloc>(initial_size)),
-      suballoc_align_(suballoc_align) {
+                    const uint32_t size_alignment, MemoryAllocators *mem_allocs)
+    : name_(name), api_ctx_(api_ctx), type_(type), size_(0), size_alignment_(size_alignment) {
     Resize(initial_size);
 }
 
@@ -68,30 +67,30 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     handle_ = std::exchange(rhs.handle_, {});
     name_ = std::move(rhs.name_);
-    alloc_ = std::move(rhs.alloc_);
-    suballoc_align_ = std::exchange(rhs.suballoc_align_, 1);
+    sub_alloc_ = std::move(rhs.sub_alloc_);
     type_ = std::exchange(rhs.type_, eBufType::Undefined);
 
     size_ = std::exchange(rhs.size_, 0);
     mapped_ptr_ = std::exchange(rhs.mapped_ptr_, nullptr);
     mapped_offset_ = std::exchange(rhs.mapped_offset_, 0xffffffff);
 
-#ifndef NDEBUG
-    flushed_ranges_ = std::move(rhs.flushed_ranges_);
-#endif
-
     return (*this);
 }
 
-Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, std::string_view tag, const Buffer *init_buf,
-                                               void *, const uint32_t init_off) {
-    FreelistAlloc::Allocation alloc = alloc_->Alloc(suballoc_align_, req_size);
+Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const uint32_t req_alignment,
+                                               std::string_view tag, const Buffer *init_buf, void *,
+                                               const uint32_t init_off) {
+    if (!sub_alloc_) {
+        sub_alloc_ = std::make_unique<FreelistAlloc>(size_);
+    }
+
+    FreelistAlloc::Allocation alloc = sub_alloc_->Alloc(req_alignment, req_size);
     while (alloc.pool == 0xffff) {
         Resize(uint32_t(size_ * 1.5f));
-        alloc = alloc_->Alloc(suballoc_align_, req_size);
+        alloc = sub_alloc_->Alloc(req_alignment, req_size);
     }
     assert(alloc.pool == 0);
-    assert(alloc_->IntegrityCheck());
+    assert(sub_alloc_->IntegrityCheck());
     const SubAllocation ret = {alloc.offset, alloc.block};
     if (ret.offset != 0xffffffff) {
         if (init_buf) {
@@ -114,13 +113,13 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
 }
 
 bool Ren::Buffer::FreeSubRegion(const SubAllocation alloc) {
-    alloc_->Free(alloc.block);
-    assert(alloc_->IntegrityCheck());
+    sub_alloc_->Free(alloc.block);
+    assert(sub_alloc_->IntegrityCheck());
     return true;
 }
 
 void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
-    new_size = suballoc_align_ * ((new_size + suballoc_align_ - 1) / suballoc_align_);
+    new_size = size_alignment_ * ((new_size + size_alignment_ - 1) / size_alignment_);
     if (size_ >= new_size) {
         return;
     }
@@ -130,7 +129,10 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
     size_ = new_size;
     assert(size_ > 0);
 
-    alloc_->ResizePool(0, size_);
+    if (sub_alloc_) {
+        sub_alloc_->ResizePool(0, size_);
+        assert(sub_alloc_->IntegrityCheck());
+    }
 
     GLuint gl_buffer;
     glGenBuffers(1, &gl_buffer);
@@ -177,18 +179,6 @@ void Ren::Buffer::FreeImmediate() { Free(); }
 uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
-
-#ifndef NDEBUG
-    for (auto it = std::begin(flushed_ranges_); it != std::end(flushed_ranges_);) {
-        if (offset + size > it->range.first && offset < it->range.first + it->range.second) {
-            const WaitResult res = it->fence.ClientWaitSync(0);
-            assert(res == WaitResult::Success);
-            it = flushed_ranges_.erase(it);
-        } else {
-            ++it;
-        }
-    }
-#endif
 
     GLbitfield buf_map_range_flags = GLbitfield(GL_MAP_COHERENT_BIT);
 

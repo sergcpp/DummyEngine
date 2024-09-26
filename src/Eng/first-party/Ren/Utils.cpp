@@ -270,16 +270,16 @@ const uint8_t _blank_ASTC_block_4x4[] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xF
                                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 const int _blank_ASTC_block_4x4_len = sizeof(_blank_ASTC_block_4x4);
 
-force_inline Ren::Vec4f permute(const Ren::Vec4f &x) {
-    return Ren::Mod(((x * 34.0) + Ren::Vec4f{1.0}) * x, Ren::Vec4f{289.0});
+force_inline Vec4f permute(const Vec4f &x) {
+    return Mod(((x * 34.0f) + Vec4f{1.0f}) * x, Vec4f{289.0f});
 }
 
-force_inline Ren::Vec4f taylor_inv_sqrt(const Ren::Vec4f &r) {
-    return Ren::Vec4f{1.79284291400159f} - 0.85373472095314f * r;
+force_inline Vec4f taylor_inv_sqrt(const Vec4f &r) {
+    return Vec4f{1.79284291400159f} - 0.85373472095314f * r;
 }
 
-force_inline Ren::Vec4f fade(const Ren::Vec4f &t) {
-    return t * t * t * (t * (t * 6.0f - Ren::Vec4f{15}) + Ren::Vec4f{10});
+force_inline Vec4f fade(const Vec4f &t) {
+    return t * t * t * (t * (t * 6.0f - Vec4f{15}) + Vec4f{10});
 }
 
 int round_up(int v, int align) { return align * ((v + align - 1) / align); }
@@ -592,7 +592,7 @@ std::vector<uint8_t> Ren::ConvertRGB32F_to_RGBE(Span<const float> image_data, co
             const float common_exp = std::max(exp[0], std::max(exp[1], exp[2]));
             const float range = std::exp2(common_exp);
 
-            Ren::Vec3f mantissa = val / range;
+            Vec3f mantissa = val / range;
             for (int i = 0; i < 3; i++) {
                 if (mantissa[i] < 0)
                     mantissa[i] = 0;
@@ -600,7 +600,7 @@ std::vector<uint8_t> Ren::ConvertRGB32F_to_RGBE(Span<const float> image_data, co
                     mantissa[i] = 1;
             }
 
-            const auto res = Ren::Vec4f{mantissa[0], mantissa[1], mantissa[2], common_exp + 128};
+            const auto res = Vec4f{mantissa[0], mantissa[1], mantissa[2], common_exp + 128};
 
             u8_data[(y * w + x) * 4 + 0] = (uint8_t)_CLAMP(int(res[0] * 255), 0, 255);
             u8_data[(y * w + x) * 4 + 1] = (uint8_t)_CLAMP(int(res[1] * 255), 0, 255);
@@ -1293,7 +1293,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
 //	Classic Perlin 3D Noise
 //	by Stefan Gustavson
 //
-float Ren::PerlinNoise(const Ren::Vec4f &P) {
+float Ren::PerlinNoise(const Vec4f &P) {
     Vec4f Pi0 = Floor(P);          // Integer part for indexing
     Vec4f Pi1 = Pi0 + Vec4f{1}; // Integer part + 1
     Pi0 = Mod(Pi0, Vec4f{289});
@@ -1431,7 +1431,7 @@ float Ren::PerlinNoise(const Ren::Vec4f &P) {
 }
 
 // Classic Perlin noise, periodic version
-float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
+float Ren::PerlinNoise(const Vec4f &P, const Vec4f &rep) {
     const Vec4f Pi0 = Mod(Floor(P), rep);          // Integer part modulo rep
     const Vec4f Pi1 = Mod(Pi0 + Vec4f{1.0f}, rep); // Integer part + 1 mod rep
     const Vec4f Pf0 = Fract(P);                    // Fractional part for interpolation

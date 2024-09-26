@@ -1180,7 +1180,7 @@ void Ren::DestroyDeferredResources(ApiContext *api_ctx, int i) {
     api_ctx->acc_structs_to_destroy[i].clear();
 }
 
-void Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(Ren::ApiContext *api_ctx) {
+void Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(ApiContext *api_ctx) {
     // Finish command buffer
     api_ctx->vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
 

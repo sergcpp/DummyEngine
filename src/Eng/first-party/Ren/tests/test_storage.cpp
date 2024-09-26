@@ -5,8 +5,10 @@
 void test_storage() {
     printf("Test storage            | ");
 
-    class MyObj : public Ren::RefCounter {
-        Ren::String name_;
+    using namespace Ren;
+
+    class MyObj : public RefCounter {
+        String name_;
 
       public:
         int *ref;
@@ -30,7 +32,7 @@ void test_storage() {
             return (*this);
         }
 
-        const Ren::String &name() { return name_; }
+        const String &name() { return name_; }
 
         ~MyObj() {
             if (ref) {
@@ -39,9 +41,8 @@ void test_storage() {
         }
     };
 
-    {
-        // test create/delete
-        Ren::Storage<MyObj> my_obj_storage;
+    { // test create/delete
+        Storage<MyObj> my_obj_storage;
         int counter = 0;
 
         auto ref1 = my_obj_storage.Add("obj", &counter);
@@ -50,9 +51,8 @@ void test_storage() {
         require(counter == 0);
     }
 
-    {
-        // test copy/move reference
-        Ren::Storage<MyObj> my_obj_storage;
+    { // test copy/move reference
+        Storage<MyObj> my_obj_storage;
         int counter = 0;
 
         auto ref1 = my_obj_storage.Add("obj1", &counter);

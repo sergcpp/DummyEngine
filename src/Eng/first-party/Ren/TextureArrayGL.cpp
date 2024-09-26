@@ -19,7 +19,7 @@ Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view 
 
     // TODO: add srgb here
 
-    const int mip_count = Ren::CalcMipCount(w, h, 1, filter);
+    const int mip_count = CalcMipCount(w, h, 1, filter);
     ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
                                 GLInternalFormatFromTexFormat(format, false /* is_srgb */), w, h, layer_count);
 

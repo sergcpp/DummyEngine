@@ -13,7 +13,7 @@ struct Plane {
     float d;
 
     Plane() : d(0) {}
-    Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2);
+    Plane(const Vec3f &v0, const Vec3f &v1, const Vec3f &v2);
     explicit Plane(eUninitialized) : n(Uninitialize) {} // NOLINT
 
     ePointPos ClassifyPoint(const float point[3]) const;
@@ -24,9 +24,9 @@ enum class eCamPlane { Left, Right, Top, Bottom, Near, Far, _Count };
 enum class eVisResult { Invisible, FullyVisible, PartiallyVisible };
 
 struct Frustum {
-    Plane planes[8] = {Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
-                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize},
-                       Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}};
+    Plane planes[8] = {Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize},
+                       Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize},
+                       Plane{Uninitialize}, Plane{Uninitialize}};
     int planes_count = 6;
 
     void UpdateFromMatrix(const Mat4f &xform);
@@ -77,7 +77,7 @@ class Camera {
     [[nodiscard]] Vec3f view_dir() const { return Vec3f{view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2]}; }
 
     [[nodiscard]] Vec4f clip_info() const {
-        return Ren::Vec4f{near_ * far_, near_, far_, std::log2(1.0f + far_ / near_)};
+        return Vec4f{near_ * far_, near_, far_, std::log2(1.0f + far_ / near_)};
     }
 
     [[nodiscard]] float angle() const { return angle_; }

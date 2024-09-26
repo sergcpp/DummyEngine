@@ -43,11 +43,11 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
         if (IsCompressedFormat(formats[i])) {
             for (int j = 0; j < (blank_block_res / 4) * (blank_block_res / 4) * 16;) {
 #if defined(__ANDROID__)
-                memcpy(&blank_block[j], Ren::_blank_ASTC_block_4x4, Ren::_blank_ASTC_block_4x4_len);
-                j += Ren::_blank_ASTC_block_4x4_len;
+                memcpy(&blank_block[j], _blank_ASTC_block_4x4, _blank_ASTC_block_4x4_len);
+                j += _blank_ASTC_block_4x4_len;
 #else
-                memcpy(&blank_block[j], Ren::_blank_DXT5_block_4x4, Ren::_blank_DXT5_block_4x4_len);
-                j += Ren::_blank_DXT5_block_4x4_len;
+                memcpy(&blank_block[j], _blank_DXT5_block_4x4, _blank_DXT5_block_4x4_len);
+                j += _blank_DXT5_block_4x4_len;
 #endif
             }
             internal_format = compressed_tex_format;

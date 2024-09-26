@@ -1,8 +1,8 @@
 #include "ExDepthHierarchy.h"
 
 #include <Ren/Context.h>
-#include <Ren/Program.h>
 #include <Ren/GL.h>
+#include <Ren/Program.h>
 
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
@@ -33,12 +33,11 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
         (output_tex.ref->params.h + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y;
 
     Ren::Buffer temp_unif_buffer =
-        Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(DepthHierarchy::Params), 16);
+        Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(DepthHierarchy::Params));
     Ren::Buffer temp_stage_buffer =
-        Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(DepthHierarchy::Params), 16);
+        Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(DepthHierarchy::Params));
     {
-        DepthHierarchy::Params *stage_data =
-            reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map());
+        DepthHierarchy::Params *stage_data = reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map());
         stage_data->depth_size = Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1],
                                             output_tex.ref->params.mip_count, grp_x * grp_y};
         stage_data->clip_info = view_state_->clip_info;

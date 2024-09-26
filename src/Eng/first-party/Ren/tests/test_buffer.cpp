@@ -9,21 +9,23 @@
 void test_buffer() {
     printf("Test buffer             | ");
 
+    using namespace Ren;
+
     { // Test suballocation
         TestContext test;
 
-        auto buf = Ren::Buffer{"buf", test.api_ctx(), Ren::eBufType::Uniform, 256};
+        auto buf = Buffer{"buf", test.api_ctx(), eBufType::Uniform, 256};
 
-        const Ren::SubAllocation a1 = buf.AllocSubRegion(16, "temp");
+        const SubAllocation a1 = buf.AllocSubRegion(16, 1, "temp");
         require(a1.offset == 0);
-        require(buf.AllocSubRegion(32, "temp").offset == 16);
-        require(buf.AllocSubRegion(64, "temp").offset == 16 + 32);
-        require(buf.AllocSubRegion(16, "temp").offset == 16 + 32 + 64);
-        require(buf.AllocSubRegion(256 - (16 + 32 + 64 + 16), "temp").offset == 16 + 32 + 64 + 16);
+        require(buf.AllocSubRegion(32, 1, "temp").offset == 16);
+        require(buf.AllocSubRegion(64, 1, "temp").offset == 16 + 32);
+        require(buf.AllocSubRegion(16, 1, "temp").offset == 16 + 32 + 64);
+        require(buf.AllocSubRegion(256 - (16 + 32 + 64 + 16), 1, "temp").offset == 16 + 32 + 64 + 16);
 
         buf.FreeSubRegion(a1);
 
-        require(buf.AllocSubRegion(16, "temp").offset == 0);
+        require(buf.AllocSubRegion(16, 1, "temp").offset == 0);
     }
 
     printf("OK\n");

@@ -12,39 +12,41 @@ static const unsigned char test_tga_img[] = {
 void test_texture() {
     printf("Test texture            | ");
 
+    using namespace Ren;
+
     { // TGA load
         TestContext test;
 
-        Ren::eTexLoadStatus status;
-        Ren::Tex2DParams p;
-        p.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        eTexLoadStatus status;
+        Tex2DParams p;
+        p.usage = eTexUsage::Sampled | eTexUsage::Transfer;
 
-        Ren::Tex2DRef t_ref =
+        Tex2DRef t_ref =
             test.LoadTexture2D("checker.tga", {}, p, test.default_stage_bufs(), test.default_mem_allocs(), &status);
-        require(status == Ren::eTexLoadStatus::CreatedDefault);
+        require(status == eTexLoadStatus::CreatedDefault);
 
         require(t_ref->name() == "checker.tga");
-        const Ren::Tex2DParams &tp = t_ref->params;
+        const Tex2DParams &tp = t_ref->params;
         require(tp.w == 1);
         require(tp.h == 1);
-        require(tp.format == Ren::eTexFormat::RawRGBA8888);
+        require(tp.format == eTexFormat::RawRGBA8888);
         require(!t_ref->ready());
 
         {
-            Ren::Tex2DRef t_ref2 =
+            Tex2DRef t_ref2 =
                 test.LoadTexture2D("checker.tga", {}, p, test.default_stage_bufs(), test.default_mem_allocs(), &status);
-            require(status == Ren::eTexLoadStatus::Found);
+            require(status == eTexLoadStatus::Found);
             require(!t_ref2->ready());
         }
 
         {
-            Ren::Tex2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, p, test.default_stage_bufs(),
+            Tex2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, p, test.default_stage_bufs(),
                                                       test.default_mem_allocs(), &status);
-            require(status == Ren::eTexLoadStatus::CreatedFromData);
-            const Ren::Tex2DParams &tp = t_ref3->params;
+            require(status == eTexLoadStatus::CreatedFromData);
+            const Tex2DParams &tp = t_ref3->params;
             require(tp.w == 2);
             require(tp.h == 2);
-            require(tp.format == Ren::eTexFormat::RawRGBA8888);
+            require(tp.format == eTexFormat::RawRGBA8888);
             require(t_ref3->ready());
         }
     }

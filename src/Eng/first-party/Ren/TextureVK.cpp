@@ -172,7 +172,7 @@ Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const
 
 Ren::Texture2D::~Texture2D() { Free(); }
 
-Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
+Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
@@ -2077,7 +2077,7 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, const uint
 void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf) {
     assert(tex.resource_state == eResState::CopyDst);
 
-    if (!Ren::IsDepthFormat(tex.params.format)) {
+    if (!IsDepthFormat(tex.params.format)) {
         VkClearColorValue clear_val = {};
         memcpy(clear_val.float32, rgba, 4 * sizeof(float));
 

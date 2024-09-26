@@ -92,7 +92,7 @@ class Texture2D : public RefCounter {
     void Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &stage_buf, CommandBuffer cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
 
-    void Realloc(int w, int h, int mip_count, int samples, Ren::eTexFormat format, Ren::eTexBlock block, bool is_srgb,
+    void Realloc(int w, int h, int mip_count, int samples, eTexFormat format, eTexBlock block, bool is_srgb,
                  CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, ILog *log);
 
     TexHandle handle() const { return handle_; }
@@ -106,9 +106,9 @@ class Texture2D : public RefCounter {
     void SetSampling(SamplingParams sampling) { params.sampling = sampling; }
     void ApplySampling(SamplingParams sampling, ILog *log);
 
-    void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, Ren::eTexFormat format,
+    void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, eTexFormat format,
                      const void *data, int data_len);
-    SyncFence SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, Ren::eTexFormat format,
+    SyncFence SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, eTexFormat format,
                           const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);
     void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;
 

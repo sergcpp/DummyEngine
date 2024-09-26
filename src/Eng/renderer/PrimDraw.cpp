@@ -33,8 +33,7 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
             uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
             mem_required += (16 - mem_required % 16); // align to vertex stride
 
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, sizeof(__sphere_indices),
-                                       192);
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, sizeof(__sphere_indices));
 
             { // copy quad vertices
                 uint8_t *mapped_ptr = temp_stage_buf.Map();
@@ -43,14 +42,13 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                 temp_stage_buf.Unmap();
             }
 
-            quad_vtx1_ = vtx_buf1->AllocSubRegion(mem_required, "quad", &temp_stage_buf, ctx.current_cmd_buf());
-            quad_vtx2_ = vtx_buf2->AllocSubRegion(mem_required, "quad", nullptr);
+            quad_vtx1_ = vtx_buf1->AllocSubRegion(mem_required, 16, "quad", &temp_stage_buf, ctx.current_cmd_buf());
+            quad_vtx2_ = vtx_buf2->AllocSubRegion(mem_required, 16, "quad", nullptr);
             assert(quad_vtx1_.offset == quad_vtx2_.offset && "Offsets do not match!");
         }
 
         { // Allocate quad indices
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, 6 * sizeof(uint16_t),
-                                       192);
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, 6 * sizeof(uint16_t));
 
             { // copy quad indices
                 uint8_t *mapped_ptr = temp_stage_buf.Map();
@@ -58,11 +56,12 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                 temp_stage_buf.Unmap();
             }
 
-            quad_ndx_ = ndx_buf->AllocSubRegion(6 * sizeof(uint16_t), "quad", &temp_stage_buf, ctx.current_cmd_buf());
+            quad_ndx_ =
+                ndx_buf->AllocSubRegion(6 * sizeof(uint16_t), 4, "quad", &temp_stage_buf, ctx.current_cmd_buf());
         }
 
         { // Allocate sphere positions
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, SphereVerticesSize, 192);
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, SphereVerticesSize);
 
             { // copy sphere positions
                 uint8_t *mapped_ptr = temp_stage_buf.Map();
@@ -72,14 +71,13 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
 
             // Allocate sphere vertices
             sphere_vtx1_ =
-                vtx_buf1->AllocSubRegion(SphereVerticesSize, "sphere", &temp_stage_buf, ctx.current_cmd_buf());
-            sphere_vtx2_ = vtx_buf2->AllocSubRegion(SphereVerticesSize, "sphere", nullptr);
+                vtx_buf1->AllocSubRegion(SphereVerticesSize, 16, "sphere", &temp_stage_buf, ctx.current_cmd_buf());
+            sphere_vtx2_ = vtx_buf2->AllocSubRegion(SphereVerticesSize, 16, "sphere", nullptr);
             assert(sphere_vtx1_.offset == sphere_vtx2_.offset && "Offsets do not match!");
         }
 
         { // Allocate sphere indices
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, sizeof(__sphere_indices),
-                                       192);
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, sizeof(__sphere_indices));
 
             { // copy sphere indices
                 uint8_t *mapped_ptr = temp_stage_buf.Map();
@@ -87,13 +85,13 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                 temp_stage_buf.Unmap();
             }
             sphere_ndx_ =
-                ndx_buf->AllocSubRegion(sizeof(__sphere_indices), "sphere", &temp_stage_buf, ctx.current_cmd_buf());
+                ndx_buf->AllocSubRegion(sizeof(__sphere_indices), 4, "sphere", &temp_stage_buf, ctx.current_cmd_buf());
 
             // Allocate temporary buffer
-            temp_vtx1_ = vtx_buf1->AllocSubRegion(TempBufSize, "temp");
-            temp_vtx2_ = vtx_buf2->AllocSubRegion(TempBufSize, "temp");
+            temp_vtx1_ = vtx_buf1->AllocSubRegion(TempBufSize, 16, "temp");
+            temp_vtx2_ = vtx_buf2->AllocSubRegion(TempBufSize, 16, "temp");
             assert(temp_vtx1_.offset == temp_vtx1_.offset && "Offsets do not match!");
-            temp_ndx_ = ndx_buf->AllocSubRegion(TempBufSize, "temp");
+            temp_ndx_ = ndx_buf->AllocSubRegion(TempBufSize, 4, "temp");
         }
 
         ctx_ = &ctx;

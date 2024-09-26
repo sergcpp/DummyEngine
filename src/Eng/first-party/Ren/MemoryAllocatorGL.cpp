@@ -23,5 +23,3 @@ void Ren::MemoryAllocator::Free(const uint32_t block) {
     alloc_.Free(block);
     assert(alloc_.IntegrityCheck());
 }
-
-void Ren::MemoryAllocators::Print(ILog *log) {}

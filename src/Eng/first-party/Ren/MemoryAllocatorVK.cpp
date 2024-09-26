@@ -40,20 +40,26 @@ Ren::MemoryAllocator::MemoryAllocator(const std::string_view name, ApiContext *a
 }
 
 Ren::MemoryAllocator::~MemoryAllocator() {
-    for (MemPool &pool : pools_) {
+    for (MemHeap &pool : pools_) {
         api_ctx_->vkFreeMemory(api_ctx_->device, pool.mem, nullptr);
     }
 }
 
 bool Ren::MemoryAllocator::AllocateNewPool(const uint32_t size) {
-    VkMemoryAllocateInfo buf_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-    buf_alloc_info.allocationSize = VkDeviceSize(size);
-    buf_alloc_info.memoryTypeIndex = mem_type_index_;
+    VkMemoryAllocateInfo mem_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    mem_alloc_info.allocationSize = VkDeviceSize(size);
+    mem_alloc_info.memoryTypeIndex = mem_type_index_;
+
+    VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
+    if (api_ctx_->raytracing_supported) {
+        additional_flags.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+        mem_alloc_info.pNext = &additional_flags;
+    }
 
     VkDeviceMemory new_mem = {};
-    const VkResult res = api_ctx_->vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &new_mem);
+    const VkResult res = api_ctx_->vkAllocateMemory(api_ctx_->device, &mem_alloc_info, nullptr, &new_mem);
     if (res == VK_SUCCESS) {
-        MemPool &new_pool = pools_.emplace_back();
+        MemHeap &new_pool = pools_.emplace_back();
         new_pool.mem = new_mem;
         new_pool.size = size;
 
@@ -108,8 +114,7 @@ Ren::MemAllocation Ren::MemoryAllocators::Allocate(uint32_t alignment, uint32_t 
     }
 
     if (alloc_index == -1) {
-        char name[32];
-        snprintf(name, sizeof(name), "%s (type %i)", name_, int(mem_type_index));
+        const std::string name = name_ + " (type " + std::to_string(mem_type_index) + ")";
         alloc_index = int(allocators_.size());
         allocators_.emplace_back(name, api_ctx_, initial_block_size_, mem_type_index, growth_factor_, max_pool_size_);
     }
@@ -130,13 +135,4 @@ Ren::MemAllocation Ren::MemoryAllocators::Allocate(const VkMemoryRequirements &m
                                         desired_mem_flags, uint32_t(mem_req.size));
     }
     return {};
-}
-
-void Ren::MemoryAllocators::Print(ILog *log) {
-    /*log->Info("=================================================================");
-    log->Info("MemAllocs %s", name_.c_str());
-    for (const auto &alloc : allocators_) {
-        alloc.Print(log);
-    }
-    log->Info("=================================================================");*/
 }

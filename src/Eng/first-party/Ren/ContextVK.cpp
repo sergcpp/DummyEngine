@@ -362,6 +362,9 @@ void Ren::Context::CheckDeviceCapabilities() {
     if (capabilities.hwrt) {
         (*pp_next) = &api_ctx_->rt_props;
         pp_next = &api_ctx_->rt_props.pNext;
+
+        (*pp_next) = &api_ctx_->acc_props;
+        pp_next = &api_ctx_->acc_props.pNext;
     }
 
     api_ctx_->vkGetPhysicalDeviceProperties2KHR(api_ctx_->physical_device, &prop2);
@@ -419,7 +422,7 @@ int Ren::Context::WriteTimestamp(const bool start) {
         api_ctx_->query_pools[api_ctx_->backend_frame], api_ctx_->query_counts[api_ctx_->backend_frame]);
 
     const uint32_t query_index = api_ctx_->query_counts[api_ctx_->backend_frame]++;
-    assert(api_ctx_->query_counts[api_ctx_->backend_frame] < Ren::MaxTimestampQueries);
+    assert(api_ctx_->query_counts[api_ctx_->backend_frame] < MaxTimestampQueries);
     return int(query_index);
 }
 

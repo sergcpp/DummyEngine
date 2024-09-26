@@ -5,11 +5,13 @@
 void test_string() {
     printf("Test string             | ");
 
-    { // Basic usage
-        Ren::String s1, s2;
+    using namespace Ren;
 
-        s1 = Ren::String{"abcd"};
-        s2 = Ren::String{"12345"};
+    { // Basic usage
+        String s1, s2;
+
+        s1 = String{"abcd"};
+        s2 = String{"12345"};
 
         require(s1.length() == 4);
         require(s2.length() == 5);
@@ -20,20 +22,20 @@ void test_string() {
         require(strcmp(s1.c_str(), "abcd") == 0);
         require(strcmp(s2.c_str(), "12345") == 0);
 
-        Ren::String s3 = s1, s4 = s2;
+        String s3 = s1, s4 = s2;
 
         require(s3.c_str() == s1.c_str());
         require(s4.c_str() == s2.c_str());
 
-        s1 = Ren::String{"another"};
-        s2 = Ren::String{"another"};
+        s1 = String{"another"};
+        s2 = String{"another"};
 
         require(strcmp(s3.c_str(), "abcd") == 0);
         require(strcmp(s4.c_str(), "12345") == 0);
     }
 
     { // Move
-        Ren::String s1 = Ren::String{"test_string"}, s2;
+        String s1 = String{"test_string"}, s2;
 
         require(s1.length() == 11);
         require(s2.length() == 0);
@@ -51,14 +53,14 @@ void test_string() {
     }
 
     { // Extra things
-        auto s1 = Ren::String{"my_image.png"};
+        auto s1 = String{"my_image.png"};
 
         require(s1.EndsWith(".png"));
         require(!s1.EndsWith(".ang"));
     }
 
     { // Part of string
-        auto s1 = Ren::String{"test_string"}, s2 = Ren::String{"another_test_string_bla_bla"};
+        auto s1 = String{"test_string"}, s2 = String{"another_test_string_bla_bla"};
 
         std::string_view s3 = {&s2[8], 11}, s4 = {&s2[8], 12};
 
@@ -67,7 +69,7 @@ void test_string() {
         require(s3 == s1);
         require(s4 != s1);
 
-        auto s5 = Ren::String{s3}, s6 = Ren::String{s4};
+        auto s5 = String{s3}, s6 = String{s4};
 
         require(s1 == s5);
         require(s1 != s6);

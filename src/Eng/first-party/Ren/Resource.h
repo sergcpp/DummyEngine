@@ -70,6 +70,7 @@ int VKImageLayoutForState(eResState state);
 uint32_t VKAccessFlagsForState(eResState state);
 uint32_t VKPipelineStagesForState(eResState state);
 #endif
+bool IsRWState(eResState state);
 eStageBits StageBitsForState(eResState state);
 
 class Buffer;

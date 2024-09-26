@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "MemoryAllocator.h"
 #include "SmallVector.h"
+#include "Storage.h"
 #include "VK.h"
 
 namespace Ren {
@@ -54,6 +55,8 @@ struct ApiContext {
     bool raytracing_supported = false, ray_query_supported = false;
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR rt_props = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+    VkPhysicalDeviceAccelerationStructurePropertiesKHR acc_props = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
 
     bool dynamic_rendering_supported = false;
 

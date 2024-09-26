@@ -4,7 +4,7 @@
 
 #include "Bitmask.h"
 #include "Fence.h"
-#include "FreelistAlloc.h"
+#include "MemoryAllocator.h"
 #include "Resource.h"
 #include "SmallVector.h"
 #include "Storage.h"
@@ -83,24 +83,27 @@ class Buffer : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
     BufHandle handle_;
     String name_;
-    std::unique_ptr<FreelistAlloc> alloc_;
+    std::unique_ptr<FreelistAlloc> sub_alloc_;
+    MemAllocation alloc_;
 #if defined(USE_VK_RENDER)
-    VkDeviceMemory mem_ = {};
+    MemoryAllocators *mem_allocs_ = nullptr;
+    VkDeviceMemory dedicated_mem_ = {};
 #endif
     eBufType type_ = eBufType::Undefined;
-    uint32_t size_ = 0, suballoc_align_ = 1;
+    uint32_t size_ = 0, size_alignment_ = 1;
     uint8_t *mapped_ptr_ = nullptr;
     uint32_t mapped_offset_ = 0xffffffff;
-#ifndef NDEBUG
-    SmallVector<RangeFence, 4> flushed_ranges_;
-#endif
 
     static int g_GenCounter;
 
   public:
     Buffer() = default;
-    explicit Buffer(std::string_view name, ApiContext *api_ctx, eBufType type, uint32_t initial_size,
-                    uint32_t suballoc_align = 1);
+    Buffer(std::string_view name, ApiContext *api_ctx, eBufType type, uint32_t initial_size,
+           uint32_t size_alignment = 1, MemoryAllocators *mem_allocs = nullptr);
+    Buffer(std::string_view name, ApiContext *api_ctx, eBufType type, const BufHandle &handle, MemAllocation &&alloc,
+           uint32_t initial_size, uint32_t size_alignment = 1)
+        : api_ctx_(api_ctx), handle_(handle), name_(name), alloc_(std::move(alloc)), type_(type), size_(initial_size),
+          size_alignment_(size_alignment) {}
     Buffer(const Buffer &rhs) = delete;
     Buffer(Buffer &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Buffer();
@@ -116,17 +119,18 @@ class Buffer : public RefCounter {
     [[nodiscard]] ApiContext *api_ctx() const { return api_ctx_; }
 #if defined(USE_VK_RENDER)
     [[nodiscard]] VkBuffer vk_handle() const { return handle_.buf; }
-    [[nodiscard]] VkDeviceMemory mem() const { return mem_; }
+    [[nodiscard]] VkDeviceMemory mem() const { return dedicated_mem_; }
     [[nodiscard]] VkDeviceAddress vk_device_address() const;
 #elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     [[nodiscard]] uint32_t id() const { return handle_.id; }
 #endif
     [[nodiscard]] uint32_t generation() const { return handle_.generation; }
+    [[nodiscard]] const MemAllocation &mem_alloc() const { return alloc_; }
 
     [[nodiscard]] uint8_t *mapped_ptr() const { return mapped_ptr_; }
 
-    SubAllocation AllocSubRegion(uint32_t size, std::string_view tag, const Buffer *init_buf = nullptr,
-                                 CommandBuffer cmd_buf = {}, uint32_t init_off = 0);
+    SubAllocation AllocSubRegion(uint32_t size, uint32_t alignment, std::string_view tag,
+                                 const Buffer *init_buf = nullptr, CommandBuffer cmd_buf = {}, uint32_t init_off = 0);
     void UpdateSubRegion(uint32_t offset, uint32_t size, const Buffer &init_buf, uint32_t init_off = 0,
                          CommandBuffer cmd_buf = {});
     bool FreeSubRegion(SubAllocation alloc);

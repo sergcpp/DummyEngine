@@ -277,19 +277,19 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     flags_ = {};
     ready_ = true;
 
-    attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_, &stage_buf, cmd_buf);
+    attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, &stage_buf, cmd_buf);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
     // allocate empty data in buffer 2 (for index matching)
-    attribs_buf2_.sub = vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_, nullptr);
+    attribs_buf2_.sub = vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, nullptr);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
     assert(attribs_buf1_.sub.offset == attribs_buf2_.sub.offset && "Offsets do not match!");
 
-    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
+    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
     indices_buf_.buf = std::move(index_buf);
 
-    (*load_status) = Ren::eMeshLoadStatus::CreatedFromData;
+    (*load_status) = eMeshLoadStatus::CreatedFromData;
 }
 
 void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
@@ -414,13 +414,14 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 
     stage_buf->Unmap();
 
-    attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_, stage_buf, cmd_buf, 0 /* offset */);
+    attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, stage_buf, cmd_buf, 0 /* offset */);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
-    attribs_buf2_.sub = vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_, stage_buf, cmd_buf, attribs_buf1_.size);
+    attribs_buf2_.sub =
+        vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, stage_buf, cmd_buf, attribs_buf1_.size);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
-    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, name_, stage_buf, cmd_buf,
+    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, stage_buf, cmd_buf,
                                                  attribs_buf1_.size + attribs_buf2_.size);
     indices_buf_.buf = std::move(index_buf);
 
@@ -516,13 +517,14 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 
     stage_buf.Unmap();
 
-    attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_, &stage_buf, cmd_buf, 0 /* offset */);
+    attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, &stage_buf, cmd_buf, 0 /* offset */);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
-    attribs_buf2_.sub = vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
+    attribs_buf2_.sub =
+        vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
-    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, name_, &stage_buf, cmd_buf,
+    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf,
                                                  attribs_buf1_.size + attribs_buf2_.size);
     indices_buf_.buf = std::move(index_buf);
 
@@ -699,16 +701,17 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     stage_buf.Unmap();
 
     if (shape_data_present) {
-        sk_deltas_buf_.sub = delta_buf->AllocSubRegion(sk_deltas_buf_.size, name_, &stage_buf, cmd_buf, delta_buf_off);
+        sk_deltas_buf_.sub =
+            delta_buf->AllocSubRegion(sk_deltas_buf_.size, 16, name_, &stage_buf, cmd_buf, delta_buf_off);
         sk_deltas_buf_.buf = std::move(delta_buf);
     }
 
     // allocate untransformed vertices
     sk_attribs_buf_.sub =
-        skin_vertex_buf->AllocSubRegion(sk_attribs_buf_.size, name_, &stage_buf, cmd_buf, vertices_off);
+        skin_vertex_buf->AllocSubRegion(sk_attribs_buf_.size, 16, name_, &stage_buf, cmd_buf, vertices_off);
     sk_attribs_buf_.buf = std::move(skin_vertex_buf);
 
-    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, name_, &stage_buf, cmd_buf, indices_off);
+    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf, indices_off);
     indices_buf_.buf = std::move(index_buf);
 
     ready_ = true;

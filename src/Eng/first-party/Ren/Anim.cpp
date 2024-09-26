@@ -202,7 +202,7 @@ void Ren::Skeleton::bone_matrix(std::string_view name, Mat4f &mat) const {
 
 void Ren::Skeleton::bone_matrix(const int i, Mat4f &mat) const { mat = bones[i].cur_comb_matrix; }
 
-void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
+void Ren::Skeleton::UpdateBones(Mat4f *matr_palette) {
     for (int i = 0; i < int(bones.size()); ++i) {
         if (bones[i].dirty) {
             if (bones[i].parent_id != -1) {

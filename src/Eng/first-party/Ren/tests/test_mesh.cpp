@@ -82,6 +82,8 @@ unsigned int __skeletal_mesh_len = 802;
 void test_mesh() {
     printf("Test mesh               | ");
 
+    using namespace Ren;
+
     { // Load simple mesh
         membuf sbuf(__ivy_mesh, sizeof(__ivy_mesh));
         std::istream in(&sbuf);
@@ -90,34 +92,34 @@ void test_mesh() {
 
         auto on_pipelines_needed = [&test](const uint32_t flags, std::string_view arg1, std::string_view arg2,
                                            std::string_view arg3, std::string_view arg4,
-                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {};
+                                           SmallVectorImpl<PipelineRef> &out_pipelines) {};
 
-        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const Ren::eTexFlags flags) {
-            Ren::eTexLoadStatus status;
-            Ren::Tex2DParams p;
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
+            eTexLoadStatus status;
+            Tex2DParams p;
             return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), nullptr, &status);
         };
 
-        auto on_sampler_needed = [&test](Ren::SamplingParams params) {
-            Ren::eSamplerLoadStatus status;
+        auto on_sampler_needed = [&test](SamplingParams params) {
+            eSamplerLoadStatus status;
             return test.LoadSampler(params, &status);
         };
 
         auto on_material_needed = [&](std::string_view name) {
-            Ren::eMatLoadStatus status;
-            Ren::MaterialRef ret =
+            eMatLoadStatus status;
+            MaterialRef ret =
                 test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
             return std::pair{ret, ret};
         };
 
-        Ren::eMeshLoadStatus load_status;
-        Ren::MeshRef m_ref = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
-        require(load_status == Ren::eMeshLoadStatus::CreatedFromData);
-        require(m_ref->type() == Ren::eMeshType::Simple);
+        eMeshLoadStatus load_status;
+        MeshRef m_ref = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
+        require(load_status == eMeshLoadStatus::CreatedFromData);
+        require(m_ref->type() == eMeshType::Simple);
         require(m_ref->name() == "ivy");
 
-        require(m_ref->bbox_min() == Ren::Vec3f(-10.389862f, -220.607803f, -441.704651f));
-        require(m_ref->bbox_max() == Ren::Vec3f(83.354584f, 179.815552f, 441.704651f));
+        require(m_ref->bbox_min() == Vec3f(-10.389862f, -220.607803f, -441.704651f));
+        require(m_ref->bbox_max() == Vec3f(83.354584f, 179.815552f, 441.704651f));
 
         require(m_ref->groups().size() == 1);
 
@@ -128,17 +130,17 @@ void test_mesh() {
         require(!m_ref->indices().empty());
         require(m_ref->indices_buf().size == 20);
 
-        require(m_ref->flags() == Ren::eMeshFlags::HasAlpha);
-        require(m_ref->groups()[0].flags == Ren::eMeshFlags::HasAlpha);
+        require(m_ref->flags() == eMeshFlags::HasAlpha);
+        require(m_ref->groups()[0].flags == eMeshFlags::HasAlpha);
 
         {
-            Ren::eMeshLoadStatus load_status;
-            Ren::MeshRef m_ref2 = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
-            require(load_status == Ren::eMeshLoadStatus::Found);
+            eMeshLoadStatus load_status;
+            MeshRef m_ref2 = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
+            require(load_status == eMeshLoadStatus::Found);
             require(bool(m_ref2));
         }
 
-        Ren::MaterialRef mat_ref = m_ref->groups()[0].front_mat;
+        MaterialRef mat_ref = m_ref->groups()[0].front_mat;
         require(!mat_ref->ready());
     }
 
@@ -151,39 +153,39 @@ void test_mesh() {
 
         auto on_pipelines_needed = [&test](const uint32_t flags, std::string_view arg1, std::string_view arg2,
                                            std::string_view arg3, std::string_view arg4,
-                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
+                                           SmallVectorImpl<PipelineRef> &out_pipelines) {
 #if defined(USE_GL_RENDER)
 
 #elif defined(USE_SW_RENDER)
-            Ren::Attribute _attrs[] = {{}};
-            Ren::Uniform _unifs[] = {{}};
+            Attribute _attrs[] = {{}};
+            Uniform _unifs[] = {{}};
             return test.LoadProgramSW(name, nullptr, nullptr, 0, _attrs, _unifs, &status);
 #endif
         };
 
-        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const Ren::eTexFlags flags) {
-            Ren::eTexLoadStatus status;
-            Ren::Tex2DParams p;
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
+            eTexLoadStatus status;
+            Tex2DParams p;
             return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), nullptr, &status);
         };
 
-        auto on_sampler_needed = [&test](Ren::SamplingParams params) {
-            Ren::eSamplerLoadStatus status;
+        auto on_sampler_needed = [&test](SamplingParams params) {
+            eSamplerLoadStatus status;
             return test.LoadSampler(params, &status);
         };
 
         auto on_material_needed = [&](std::string_view name) {
-            Ren::eMatLoadStatus status;
-            Ren::MaterialRef ret =
+            eMatLoadStatus status;
+            MaterialRef ret =
                 test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
             return std::pair{ret, ret};
         };
 
-        Ren::eMeshLoadStatus load_status;
-        Ren::MeshRef m_ref = test.LoadMesh("test", &in, on_material_needed, &load_status);
-        require(load_status == Ren::eMeshLoadStatus::CreatedFromData);
+        eMeshLoadStatus load_status;
+        MeshRef m_ref = test.LoadMesh("test", &in, on_material_needed, &load_status);
+        require(load_status == eMeshLoadStatus::CreatedFromData);
         require(bool(m_ref));
-        require(m_ref->type() == Ren::eMeshType::Skeletal);
+        require(m_ref->type() == eMeshType::Skeletal);
         require(m_ref->name() == "test");
 
         require(m_ref->bbox_min()[0] == Approx(0).epsilon(0.01));
@@ -216,13 +218,13 @@ void test_mesh() {
         require(m_ref->skel()->bones[1].dirty == 1);
 
         {
-            Ren::eMeshLoadStatus load_status;
-            Ren::MeshRef m_ref2 = test.LoadMesh("test", &in, on_material_needed, &load_status);
-            require(load_status == Ren::eMeshLoadStatus::Found);
+            eMeshLoadStatus load_status;
+            MeshRef m_ref2 = test.LoadMesh("test", &in, on_material_needed, &load_status);
+            require(load_status == eMeshLoadStatus::Found);
             require(bool(m_ref2));
         }
 
-        Ren::MaterialRef mat_ref = m_ref->groups()[0].front_mat;
+        MaterialRef mat_ref = m_ref->groups()[0].front_mat;
         require(bool(mat_ref));
         require(!mat_ref->ready());
     }*/

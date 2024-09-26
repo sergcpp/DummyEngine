@@ -38,11 +38,13 @@ unsigned int __anim_len = 508;
 void test_anim() {
     printf("Test anim               | ");
 
+    using namespace Ren;
+
     { // Load anim
         membuf sbuf(__anim, sizeof(__anim));
         std::istream in(&sbuf);
 
-        Ren::AnimSequence anim;
+        AnimSequence anim;
         anim.Init(in);
 
         require(anim.act_name() == "ArmatureAction");
@@ -57,13 +59,13 @@ void test_anim() {
         require(strcmp(anim.bone(0)->parent_name, "None") == 0);
         require(anim.bone(0)->id == 0);
         require(anim.bone(0)->offset == 0);
-        require((anim.bone(0)->flags & uint32_t(Ren::eAnimBoneFlags::AnimHasTranslate)) == 1);
+        require((anim.bone(0)->flags & uint32_t(eAnimBoneFlags::AnimHasTranslate)) == 1);
 
         require(strcmp(anim.bone(1)->name, "Bone02") == 0);
         require(strcmp(anim.bone(1)->parent_name, "Bone01") == 0);
         require(anim.bone(1)->id == 1);
         require(anim.bone(1)->offset == 7); // 4 for rotation, 3 for translation from previous bone
-        require(anim.bone(1)->flags != uint32_t(Ren::eAnimBoneFlags::AnimHasTranslate));
+        require(anim.bone(1)->flags != uint32_t(eAnimBoneFlags::AnimHasTranslate));
 
         // translation of Bone01 frame 0
         require(anim.frames()[0] == 0);

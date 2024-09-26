@@ -2,8 +2,8 @@
 
 #include <cstring>
 
-Ren::Plane::Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2) : n(Uninitialize) {
-    const Ren::Vec3f e1 = v1 - v0, e2 = v2 - v0;
+Ren::Plane::Plane(const Vec3f &v0, const Vec3f &v1, const Vec3f &v2) : n(Uninitialize) {
+    const Vec3f e1 = v1 - v0, e2 = v2 - v0;
 
     n = Normalize(Cross(e1, e2));
     // d = -(v0[0] * n[0] + v0[1] * n[1] + v0[2] * n[2]);

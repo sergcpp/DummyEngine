@@ -167,7 +167,7 @@ class Renderer {
 
     ShadowFrustumCache sun_shadow_cache_[4];
 
-    Ren::SubAllocation temp_buf1_vtx_, temp_buf2_vtx_, temp_buf_ndx_, skinned_buf1_vtx_, skinned_buf2_vtx_;
+    Ren::SubAllocation skinned_buf1_vtx_, skinned_buf2_vtx_;
 
     DynArray<ShadReg> allocated_shadow_regions_;
 

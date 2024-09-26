@@ -94,7 +94,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
                              const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
                              Span<const RenderTarget> _color_targets, ILog *log) {
-    Ren::SmallVector<Ren::WeakTex2DRef, 4> color_refs;
+    SmallVector<WeakTex2DRef, 4> color_refs;
     for (int i = 0; i < _color_targets.size(); ++i) {
         color_refs.push_back(_color_targets[i].ref);
     }

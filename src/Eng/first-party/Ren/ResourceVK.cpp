@@ -69,7 +69,7 @@ const VkImageLayout g_image_layout_per_state_vk[] = {
 static_assert(std::size(g_image_layout_per_state_vk) == int(eResState::_Count), "!");
 
 const VkAccessFlags g_access_flags_per_state_vk[] = {
-    0,                                                                                          // Undefined
+    VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,                                     // Undefined
     VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,                                                        // VertexBuffer
     VK_ACCESS_UNIFORM_READ_BIT,                                                                 // UniformBuffer
     VK_ACCESS_INDEX_READ_BIT,                                                                   // IndexBuffer
@@ -125,7 +125,7 @@ uint32_t Ren::VKAccessFlagsForState(const eResState state) { return g_access_fla
 
 uint32_t Ren::VKPipelineStagesForState(const eResState state) { return g_pipeline_stages_per_state_vk[int(state)]; }
 
-void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, CommandBuffer cmd_buf, const eStageBits src_stages_mask,
+void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, const eStageBits src_stages_mask,
                                    const eStageBits dst_stages_mask, Span<const TransitionInfo> transitions) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 32> buf_barriers;
@@ -137,8 +137,7 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, CommandBuffer cmd_b
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
                 old_state = tr.p_tex->resource_state;
-                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess &&
-                    old_state != eResState::CopyDst) {
+                if (old_state == tr.new_state && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
                 }
@@ -177,8 +176,7 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, CommandBuffer cmd_b
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
                 old_state = tr.p_3dtex->resource_state;
-                if (old_state != eResState::Undefined && old_state == tr.new_state &&
-                    old_state != eResState::UnorderedAccess) {
+                if (old_state != eResState::Undefined && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
                 }
@@ -211,8 +209,7 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, CommandBuffer cmd_b
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
                 old_state = tr.p_buf->resource_state;
-                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess &&
-                    old_state != eResState::CopyDst && old_state != eResState::BuildASWrite) {
+                if (old_state == tr.new_state && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
                 }
@@ -240,8 +237,7 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, CommandBuffer cmd_b
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
                 old_state = tr.p_tex2darr->resource_state;
-                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess &&
-                    old_state != eResState::CopyDst) {
+                if (old_state == tr.new_state && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
                 }
@@ -285,8 +281,9 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, CommandBuffer cmd_b
     dst_stages &= api_ctx->supported_stages_mask;
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                      0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+        api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      dst_stages ? dst_stages : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr,
+                                      uint32_t(buf_barriers.size()), buf_barriers.cdata(),
                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 }

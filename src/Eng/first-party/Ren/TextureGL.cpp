@@ -235,7 +235,7 @@ Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const
 
 Ren::Texture2D::~Texture2D() { Free(); }
 
-Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
+Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
@@ -361,8 +361,8 @@ void Ren::Texture2D::Free() {
     }
 }
 
-void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const Ren::eTexFormat format,
-                             const Ren::eTexBlock block, const bool is_srgb, CommandBuffer cmd_buf,
+void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
+                             const eTexBlock block, const bool is_srgb, CommandBuffer cmd_buf,
                              MemoryAllocators *mem_allocs, ILog *log) {
     GLuint tex_id;
     glCreateTextures(samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
@@ -371,7 +371,7 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
 #endif
     const GLuint internal_format = GLInternalFormatFromTexFormat(format, is_srgb);
 
-    mip_count = std::min(mip_count, CalcMipCount(w, h, 1, Ren::eTexFilter::Trilinear));
+    mip_count = std::min(mip_count, CalcMipCount(w, h, 1, eTexFilter::Trilinear));
 
     // allocate all mip levels
     ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, GLsizei(mip_count), internal_format, GLsizei(w), GLsizei(h));
@@ -609,9 +609,9 @@ void Ren::Texture2D::InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, con
     _p.w = width;
     _p.h = height;
     if (channels == 3) {
-        _p.format = Ren::eTexFormat::RawRGB888;
+        _p.format = eTexFormat::RawRGB888;
     } else if (channels == 4) {
-        _p.format = Ren::eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RawRGBA8888;
     } else {
         assert(false);
     }
@@ -820,9 +820,9 @@ void Ren::Texture2D::InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, 
     _p.w = width;
     _p.h = height;
     if (channels == 3) {
-        _p.format = Ren::eTexFormat::RawRGB888;
+        _p.format = eTexFormat::RawRGB888;
     } else if (channels == 4) {
-        _p.format = Ren::eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RawRGBA8888;
     } else {
         assert(false);
     }
@@ -1100,7 +1100,7 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
 }
 
 void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                 const int sizey, const Ren::eTexFormat format, const void *data, const int data_len) {
+                                 const int sizey, const eTexFormat format, const void *data, const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
@@ -1124,7 +1124,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
 }
 
 Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                           const int sizey, const Ren::eTexFormat format, const Buffer &sbuf,
+                                           const int sizey, const eTexFormat format, const Buffer &sbuf,
                                            CommandBuffer cmd_buf, const int data_off, const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
@@ -1340,7 +1340,7 @@ uint32_t Ren::GLFormatFromTexFormat(const eTexFormat format) { return g_gl_forma
 
 uint32_t Ren::GLInternalFormatFromTexFormat(const eTexFormat format, const bool is_srgb) {
     const uint32_t ret = g_gl_internal_formats[size_t(format)];
-    return is_srgb ? Ren::ToSRGBFormat(ret) : ret;
+    return is_srgb ? ToSRGBFormat(ret) : ret;
 }
 
 uint32_t Ren::GLTypeFromTexFormat(const eTexFormat format) { return g_gl_types[size_t(format)]; }

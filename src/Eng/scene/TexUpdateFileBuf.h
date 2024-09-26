@@ -14,7 +14,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
 
   public:
     TextureUpdateFileBuf(Ren::ApiContext *api_ctx)
-        : api_ctx_(api_ctx), stage_buf_("Tex Upload Buf", api_ctx, Ren::eBufType::Upload, 768, 768) {
+        : api_ctx_(api_ctx), stage_buf_("Tex Upload Buf", api_ctx, Ren::eBufType::Upload, 768) {
         Realloc(24 * 1024 * 1024);
 
 #if defined(USE_VK_RENDER)

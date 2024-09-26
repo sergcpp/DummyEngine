@@ -9,6 +9,8 @@
 void test_utils() {
     printf("Test utils              | ");
 
+    using namespace Ren;
+
     std::unique_ptr<uint8_t[]> data_in(new uint8_t[256 * 256 * 256 * 3]);
 
     { // fill initial array with test data (every possible color)
@@ -25,8 +27,8 @@ void test_utils() {
     }
 
     { // Convert to YCoCg and back to RGB to check reversability (exact)
-        auto data_CoCgxY = Ren::ConvertRGB_to_CoCgxY_rev(data_in.get(), 256 * 256, 256);
-        auto data_RGB = Ren::ConvertCoCgxY_to_RGB_rev(data_CoCgxY.get(), 256 * 256, 256);
+        auto data_CoCgxY = ConvertRGB_to_CoCgxY_rev(data_in.get(), 256 * 256, 256);
+        auto data_RGB = ConvertCoCgxY_to_RGB_rev(data_CoCgxY.get(), 256 * 256, 256);
 
         const uint8_t *_data_in = data_in.get();
         const uint8_t *_data_RGB = data_RGB.get();
@@ -42,8 +44,8 @@ void test_utils() {
     }
 
     { // Convert to YCoCg and back to RGB to check reversability (approximate)
-        auto data_CoCgxY = Ren::ConvertRGB_to_CoCgxY(data_in.get(), 256 * 256, 256);
-        auto data_RGB = Ren::ConvertCoCgxY_to_RGB(data_CoCgxY.get(), 256 * 256, 256);
+        auto data_CoCgxY = ConvertRGB_to_CoCgxY(data_in.get(), 256 * 256, 256);
+        auto data_RGB = ConvertCoCgxY_to_RGB(data_CoCgxY.get(), 256 * 256, 256);
 
         const uint8_t *_data_in = data_in.get();
         const uint8_t *_data_RGB = data_RGB.get();

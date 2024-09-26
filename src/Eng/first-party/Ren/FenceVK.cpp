@@ -37,15 +37,15 @@ void Ren::SyncFence::WaitSync() {
     // glWaitSync(reinterpret_cast<GLsync>(sync_), 0, GL_TIMEOUT_IGNORED);
 }
 
-Ren::WaitResult Ren::SyncFence::ClientWaitSync(const uint64_t timeout_us) {
+Ren::eWaitResult Ren::SyncFence::ClientWaitSync(const uint64_t timeout_us) {
     assert(fence_ != VK_NULL_HANDLE);
     const VkResult res = api_ctx_->vkWaitForFences(api_ctx_->device, 1, &fence_, VK_TRUE, timeout_us * 1000);
 
-    WaitResult ret = WaitResult::Fail;
+    eWaitResult ret = eWaitResult::Fail;
     if (res == VK_TIMEOUT) {
-        ret = WaitResult::Timeout;
+        ret = eWaitResult::Timeout;
     } else if (res == VK_SUCCESS) {
-        ret = WaitResult::Success;
+        ret = eWaitResult::Success;
     }
 
     return ret;

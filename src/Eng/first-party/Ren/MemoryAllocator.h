@@ -2,9 +2,15 @@
 
 #include <string>
 
-#include "Buffer.h"
 #include "FreelistAlloc.h"
 #include "SmallVector.h"
+
+#if defined(USE_VK_RENDER)
+typedef uint32_t VkFlags;
+typedef VkFlags VkMemoryPropertyFlags;
+typedef struct VkDeviceMemory_T *VkDeviceMemory;
+struct VkMemoryRequirements;
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -12,8 +18,15 @@
 #endif
 
 namespace Ren {
-class Buffer;
+struct ApiContext;
 class MemoryAllocator;
+
+struct MemHeap {
+#if defined(USE_VK_RENDER)
+    VkDeviceMemory mem = {};
+#endif
+    uint32_t size = 0xffffffff;
+};
 
 struct MemAllocation {
     uint32_t offset = 0xffffffff, block = 0xffffffff;
@@ -50,16 +63,9 @@ class MemoryAllocator {
     float growth_factor_;
     uint32_t max_pool_size_;
 
-    struct MemPool {
-#if defined(USE_VK_RENDER)
-        VkDeviceMemory mem;
-#endif
-        uint32_t size = 0xffffffff;
-    };
-
     uint32_t mem_type_index_;
     FreelistAlloc alloc_;
-    SmallVector<MemPool, 8> pools_;
+    SmallVector<MemHeap, 8> pools_;
 
     bool AllocateNewPool(uint32_t size);
 
@@ -81,36 +87,26 @@ class MemoryAllocator {
 
     MemAllocation Allocate(uint32_t alignment, uint32_t size);
     void Free(uint32_t block);
-
-    void Print(ILog *log) const {
-        // for (const auto &block : blocks_) {
-        //     block.alloc.PrintNode(0, "", true, log);
-        // }
-    }
 };
 
 class MemoryAllocators {
-    char name_[16];
     ApiContext *api_ctx_;
+    std::string name_;
     uint32_t initial_block_size_;
     float growth_factor_;
     uint32_t max_pool_size_;
     SmallVector<MemoryAllocator, 4> allocators_;
 
   public:
-    MemoryAllocators(const char name[16], ApiContext *api_ctx, const uint32_t initial_block_size,
+    MemoryAllocators(std::string_view name, ApiContext *api_ctx, const uint32_t initial_block_size,
                      const float growth_factor, const uint32_t max_pool_size)
-        : api_ctx_(api_ctx), initial_block_size_(initial_block_size), growth_factor_(growth_factor),
-          max_pool_size_(max_pool_size) {
-        strcpy(name_, name);
-    }
+        : api_ctx_(api_ctx), name_(name), initial_block_size_(initial_block_size), growth_factor_(growth_factor),
+          max_pool_size_(max_pool_size) {}
 
     MemAllocation Allocate(uint32_t alignment, uint32_t size, uint32_t mem_type_index);
 #if defined(USE_VK_RENDER)
     MemAllocation Allocate(const VkMemoryRequirements &mem_req, VkMemoryPropertyFlags desired_mem_flags);
 #endif
-
-    void Print(ILog *log);
 };
 } // namespace Ren
 

@@ -314,7 +314,7 @@ int Ren::BlockLenFromGLInternalFormat(uint32_t gl_internal_format) {
     return -1;
 }
 
-Ren::eTexUsage Ren::TexUsageFromState(Ren::eResState state) { return g_tex_usage_per_state[int(state)]; }
+Ren::eTexUsage Ren::TexUsageFromState(eResState state) { return g_tex_usage_per_state[int(state)]; }
 
 void Ren::ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params) {
     params->w = uint16_t(hdr.dwWidth);

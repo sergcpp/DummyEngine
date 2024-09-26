@@ -69,9 +69,9 @@ bool IsCompressedFormat(const eTexFormat format);
 int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
 
 #if defined(__ANDROID__)
-const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::ASTC;
+const eTexFormat DefaultCompressedRGBA = eTexFormat::ASTC;
 #else
-const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::BC3;
+const eTexFormat DefaultCompressedRGBA = eTexFormat::BC3;
 #endif
 
 enum class eTexBlock : uint8_t {

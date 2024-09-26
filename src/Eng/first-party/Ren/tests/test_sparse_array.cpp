@@ -19,8 +19,10 @@ std::vector<int> GenTestData(int size) {
 void test_sparse_array() {
     printf("Test sparse_array       | ");
 
+    using namespace Ren;
+
     { // reserve method
-        Ren::SparseArray<int> s1;
+        SparseArray<int> s1;
         require(s1.size() == 0);
         s1.reserve(128);
         require(s1.size() == 0);
@@ -41,7 +43,7 @@ void test_sparse_array() {
     }
 
     { // pushing elements into array
-        Ren::SparseArray<int> s1;
+        SparseArray<int> s1;
         uint32_t i1 = s1.emplace(1);
         uint32_t i2 = s1.push(12);
         uint32_t i3 = s1.push(45);
@@ -107,7 +109,7 @@ void test_sparse_array() {
 
     { // iteration test
         std::vector<int> data = GenTestData(1000);
-        Ren::SparseArray<int> s1;
+        SparseArray<int> s1;
         for (int v : data) {
             s1.push(v);
         }
