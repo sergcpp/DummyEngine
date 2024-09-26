@@ -60,6 +60,11 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/Snd/third-party/OpenAL/libs/arm64-v8a)
 endif()
 
+# Ignore warnings about missing pdb
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
+set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4099")
+
 add_subdirectory(DummyApp)
 add_subdirectory(DummyLib)
 add_subdirectory(Eng)
