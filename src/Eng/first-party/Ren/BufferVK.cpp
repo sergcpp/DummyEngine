@@ -259,7 +259,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
     VkBuffer new_buf = {};
     VkResult res = api_ctx_->vkCreateBuffer(api_ctx_->device, &buf_create_info, nullptr, &new_buf);
-    assert(res == VK_SUCCESS && "Failed to create vertex buffer!");
+    assert(res == VK_SUCCESS && "Failed to create buffer!");
 
 #ifdef ENABLE_OBJ_LABELS
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};

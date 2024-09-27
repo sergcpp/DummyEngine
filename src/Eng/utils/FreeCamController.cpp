@@ -126,6 +126,8 @@ bool Eng::FreeCamController::HandleInput(const input_event_t &evt) {
             side_press_speed_ = 0;
         }
     }
+    default:
+        break;
     }
 
     return true;

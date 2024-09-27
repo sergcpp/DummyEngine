@@ -65,10 +65,11 @@ class Texture2D : public RefCounter {
     Texture2D() = default;
     Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemoryAllocators *mem_allocs,
               ILog *log);
-    // TODO: remove this!
-    Texture2D(std::string_view name, ApiContext *api_ctx, uint32_t tex_id, MemoryAllocators *mem_allocs,
-              const Tex2DParams &p, ILog *log)
-        : handle_{tex_id, 0}, params(p), ready_(true), name_(name) {}
+    Texture2D(std::string_view name, ApiContext *api_ctx, const TexHandle &handle, const Tex2DParams &_params,
+              MemAllocation &&alloc, ILog *log)
+        : ready_(true), name_(name) {
+        Init(handle, _params, std::move(alloc), log);
+    }
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
               Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
               ILog *log);
@@ -85,6 +86,7 @@ class Texture2D : public RefCounter {
     uint64_t GetBindlessHandle() const;
 
     void Init(const Tex2DParams &p, MemoryAllocators *mem_allocs, ILog *log);
+    void Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log);
     void Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &stage_buf, CommandBuffer cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
     void Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &stage_buf, CommandBuffer cmd_buf,
@@ -93,19 +95,23 @@ class Texture2D : public RefCounter {
     void Realloc(int w, int h, int mip_count, int samples, eTexFormat format, eTexBlock block, bool is_srgb,
                  CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, ILog *log);
 
-    TexHandle handle() const { return handle_; }
-    uint32_t id() const { return handle_.id; }
-    uint32_t generation() const { return handle_.generation; }
-    uint16_t initialized_mips() const { return initialized_mips_; }
+    [[nodiscard]] TexHandle handle() const { return handle_; }
+    [[nodiscard]] uint32_t id() const { return handle_.id; }
+    [[nodiscard]] uint32_t generation() const { return handle_.generation; }
+    [[nodiscard]] const MemAllocation &mem_alloc() const {
+        static MemAllocation dummy;
+        return dummy;
+    }
+    [[nodiscard]] uint16_t initialized_mips() const { return initialized_mips_; }
 
-    bool ready() const { return ready_; }
-    const String &name() const { return name_; }
+    [[nodiscard]] bool ready() const { return ready_; }
+    [[nodiscard]] const String &name() const { return name_; }
 
     void SetSampling(SamplingParams sampling) { params.sampling = sampling; }
     void ApplySampling(SamplingParams sampling, ILog *log);
 
-    void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, eTexFormat format,
-                     const void *data, int data_len);
+    void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, eTexFormat format, const void *data,
+                     int data_len);
     SyncFence SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, eTexFormat format,
                           const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);
     void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;

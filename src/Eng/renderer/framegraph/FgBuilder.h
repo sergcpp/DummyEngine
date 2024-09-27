@@ -31,7 +31,7 @@ struct fg_write_node_t {
 };
 static_assert(sizeof(fg_write_node_t) == 4, "!");
 
-struct fg_range_t {
+struct fg_node_range_t {
     int first_write_node = INT_MAX;
     int last_write_node = -1;
     int first_read_node = INT_MAX;
@@ -60,7 +60,7 @@ struct fg_range_t {
     }
 
     int first_used_node() const {
-        int first_node = std::numeric_limits<int>::max();
+        int first_node = INT_MAX;
         if (has_writer()) {
             first_node = std::min(first_node, first_write_node);
         }
@@ -69,48 +69,38 @@ struct fg_range_t {
         }
         return first_node;
     }
+
+    int length() const { return last_used_node() - first_used_node(); }
 };
 
-struct FgAllocBuf {
+struct FgAllocRes {
     union {
         struct {
             uint8_t read_count;
             uint8_t write_count;
         };
-        uint16_t _generation;
+        uint16_t _generation = 0;
     };
-
-    Ren::eStageBits used_in_stages;
-    Ren::SmallVector<fg_write_node_t, 32> written_in_nodes;
-    Ren::SmallVector<fg_write_node_t, 32> read_in_nodes;
-    fg_range_t lifetime;
 
     std::string name;
     bool external = false;
-    int alias_of = -1;
+    int alias_of = -1; // used in case of simple resource-to-resource aliasing
+
+    Ren::eStageBits used_in_stages = {}, aliased_in_stages = {};
+    Ren::SmallVector<fg_write_node_t, 32> written_in_nodes;
+    Ren::SmallVector<fg_write_node_t, 32> read_in_nodes;
+    Ren::SmallVector<FgResRef, 32> overlaps_with; // used in case of memory-level aliasing
+    fg_node_range_t lifetime;
+};
+
+struct FgAllocBuf : public FgAllocRes {
     FgBufDesc desc;
     Ren::WeakBufferRef ref;
     Ren::BufferRef strong_ref;
     Ren::Tex1DRef tbos[4];
 };
 
-struct FgAllocTex {
-    union {
-        struct {
-            uint8_t read_count;
-            uint8_t write_count;
-        };
-        uint16_t _generation;
-    };
-
-    Ren::eStageBits used_in_stages;
-    Ren::SmallVector<fg_write_node_t, 32> written_in_nodes;
-    Ren::SmallVector<fg_write_node_t, 32> read_in_nodes;
-    fg_range_t lifetime;
-
-    std::string name;
-    bool external = false;
-    int alias_of = -1;
+struct FgAllocTex : public FgAllocRes {
     int history_of = -1;
     int history_index = -1;
     Ren::Tex2DParams desc;
@@ -134,7 +124,6 @@ class FgBuilder {
     Ren::SparseArray<FgAllocTex> textures_;
     Ren::HashMap32<std::string, uint16_t> name_to_texture_;
 
-    void AllocateNeededResources(FgNode &node);
     void InsertResourceTransitions(FgNode &node);
     void HandleResourceTransition(const FgResource &res, Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
                                   Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages);
@@ -146,7 +135,12 @@ class FgBuilder {
     void TraverseNodeDependencies_r(FgNode *node, int recursion_depth, std::vector<FgNode *> &out_node_stack);
 
     void PrepareAllocResources();
-    void BuildAliases();
+    void PrepareResourceLifetimes();
+    void AllocateNeededResources_Simple();
+    void AllocateNeededResources_MemHeaps();
+    void ClearResources_Simple();
+    void ClearResources_MemHeaps();
+    void ReleaseMemHeaps();
     void BuildResourceLinkedLists();
 
     static const int AllocBufSize = 4 * 1024 * 1024;
@@ -163,10 +157,12 @@ class FgBuilder {
     }
 
     std::vector<Ren::SmallVector<int, 4>> tex_alias_chains_, buf_alias_chains_;
+    std::vector<Ren::MemHeap> memory_heaps_;
 
   public:
     FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh)
         : ctx_(ctx), sh_(sh), alloc_buf_(new char[AllocBufSize]), alloc_(alloc_buf_.get(), AllocBufSize) {}
+    ~FgBuilder() { Reset(); }
 
     Ren::Context &ctx() { return ctx_; }
     Ren::ILog *log();

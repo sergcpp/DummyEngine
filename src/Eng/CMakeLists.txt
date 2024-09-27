@@ -178,6 +178,8 @@ if(${RENDERER} STREQUAL "GL")
                          renderer/PrimDrawGL.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                       scene/SceneManagerGL.cpp)
+    set(FRAMEGRAPH_SOURCES ${FRAMEGRAPH_SOURCES}
+                           renderer/framegraph/FgBuilderGL.cpp)
     set(EXECUTORS_SOURCES   ${EXECUTORS_SOURCES}
                             renderer/executors/ExDebugRT_GL.cpp
                             renderer/executors/ExDepthFillGL.cpp
@@ -201,6 +203,8 @@ elseif(${RENDERER} STREQUAL "VK")
                          renderer/PrimDrawVK.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                       scene/SceneManagerVK.cpp)
+    set(FRAMEGRAPH_SOURCES ${FRAMEGRAPH_SOURCES}
+                           renderer/framegraph/FgBuilderVK.cpp)
     set(EXECUTORS_SOURCES   ${EXECUTORS_SOURCES}
                             renderer/executors/ExBuildAccStructuresVK.cpp
                             renderer/executors/ExDebugRT_VK.cpp

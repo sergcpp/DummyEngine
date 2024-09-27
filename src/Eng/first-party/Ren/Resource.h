@@ -47,6 +47,7 @@ const eStageBits AllStages = eStageBits::VertexInput | eStageBits::VertexShader 
 
 enum class eResState : uint8_t {
     Undefined,
+    Discarded,
     VertexBuffer,
     UniformBuffer,
     IndexBuffer,
@@ -90,13 +91,13 @@ struct TransitionInfo {
     bool update_internal_state = false;
 
     TransitionInfo() = default;
-    TransitionInfo(const Buffer *_p_buf, eResState _new_state)
+    TransitionInfo(const Buffer *_p_buf, const eResState _new_state)
         : p_buf(_p_buf), new_state(_new_state), update_internal_state(true) {}
-    TransitionInfo(const Texture2D *_p_tex, eResState _new_state)
+    TransitionInfo(const Texture2D *_p_tex, const eResState _new_state)
         : p_tex(_p_tex), new_state(_new_state), update_internal_state(true) {}
-    TransitionInfo(const Texture3D *_p_tex, eResState _new_state)
+    TransitionInfo(const Texture3D *_p_tex, const eResState _new_state)
         : p_3dtex(_p_tex), new_state(_new_state), update_internal_state(true) {}
-    TransitionInfo(const Texture2DArray *_p_tex2darr, eResState _new_state)
+    TransitionInfo(const Texture2DArray *_p_tex2darr, const eResState _new_state)
         : p_tex2darr(_p_tex2darr), new_state(_new_state), update_internal_state(true) {}
 };
 

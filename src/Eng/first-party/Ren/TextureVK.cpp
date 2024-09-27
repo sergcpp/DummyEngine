@@ -199,6 +199,67 @@ void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *mem_allocs, IL
     ready_ = true;
 }
 
+void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log) {
+    handle_ = handle;
+    alloc_ = std::move(alloc);
+    params = _params;
+
+    if (handle.views[0] == VkImageView{} && params.usage != eTexUsageBits::Transfer) {
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+        view_info.image = handle_.img;
+        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view_info.format = g_vk_formats[size_t(params.format)];
+        if (bool(params.flags & eTexFlagBits::SRGB)) {
+            view_info.format = ToSRGBFormat(view_info.format);
+        }
+        if (IsDepthStencilFormat(params.format)) {
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+        } else if (IsDepthFormat(params.format)) {
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        } else {
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+        view_info.subresourceRange.baseMipLevel = 0;
+        view_info.subresourceRange.levelCount = params.mip_count;
+        view_info.subresourceRange.baseArrayLayer = 0;
+        view_info.subresourceRange.layerCount = 1;
+
+        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
+        if (res != VK_SUCCESS) {
+            log->Error("Failed to create image view!");
+            return;
+        }
+
+        if (IsDepthStencilFormat(params.format)) {
+            // create additional depth-only image view
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            VkImageView depth_only_view;
+            const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &depth_only_view);
+            if (res != VK_SUCCESS) {
+                log->Error("Failed to create image view!");
+                return;
+            }
+            handle_.views.push_back(depth_only_view);
+        }
+
+#ifdef ENABLE_OBJ_LABELS
+        for (VkImageView view : handle_.views) {
+            VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+            name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+            name_info.objectHandle = uint64_t(view);
+            name_info.pObjectName = name_.c_str();
+            api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        }
+#endif
+    }
+
+    if (handle_.sampler == VkSampler{} && !bool(params.flags & eTexFlagBits::NoOwnership)) {
+        SetSampling(params.sampling);
+    }
+
+    ready_ = true;
+}
+
 void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &sbuf, CommandBuffer cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
     if (data.empty()) {
@@ -601,7 +662,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
         }
     }
 
-    if (p.usage != eTexUsageBits::Transfer) {
+    if (p.usage != eTexUsageBits::Transfer) { // not 'transfer only'
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;

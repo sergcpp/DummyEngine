@@ -8,8 +8,8 @@
 #include "FgNode.h"
 
 namespace FgBuilderInternal {
-const bool EnableResourceAliasing = true;
-const bool EnableNodesReordering = true;
+extern const bool EnableResourceAliasing = true;
+extern const bool EnableNodesReordering = false;
 
 void insert_sorted(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
     const auto it = std::lower_bound(std::begin(vec), std::end(vec), val);
@@ -84,9 +84,6 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
     const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name());
     if (!pbuf_index) {
         FgAllocBuf new_buf;
-        new_buf.read_count = 0;
-        new_buf.write_count = 0;
-        new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
         new_buf.desc = FgBufDesc{ref->type(), ref->size()};
         new_buf.external = true;
@@ -143,9 +140,6 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
     const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name());
     if (!pbuf_index) {
         FgAllocBuf new_buf;
-        new_buf.read_count = 0;
-        new_buf.write_count = 0;
-        new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
         new_buf.desc = FgBufDesc{ref->type(), ref->size()};
         new_buf.external = true;
@@ -227,9 +221,6 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Re
     const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name().c_str();
         new_tex.desc = ref->params;
         new_tex.external = true;
@@ -269,9 +260,6 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture2DArray *ref, Ren::e
     const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name();
         new_tex.external = true;
 
@@ -310,9 +298,6 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture3D *ref, Ren::eResSt
     const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name();
         new_tex.external = true;
 
@@ -351,9 +336,6 @@ Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(const FgResRef handle, const Re
     if (orig_tex->history_index == -1) {
         // allocate new history texture
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = orig_tex->name + " [Previous]";
         new_tex.desc = orig_tex->desc;
         new_tex.history_of = handle.index;
@@ -392,9 +374,6 @@ Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(std::string_view name, Ren::eRe
     const uint16_t *ptex_index = name_to_texture_.Find(name);
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = name;
         // desc must be initialized later
 
@@ -438,9 +417,6 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(std::string_view name, const FgBufDesc
     const uint16_t *pbuf_index = name_to_buffer_.Find(name);
     if (!pbuf_index) {
         FgAllocBuf new_buf;
-        new_buf.read_count = 0;
-        new_buf.write_count = 0;
-        new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = name;
         new_buf.desc = desc;
 
@@ -478,9 +454,6 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const R
     const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name());
     if (!pbuf_index) {
         FgAllocBuf new_buf;
-        new_buf.read_count = 0;
-        new_buf.write_count = 0;
-        new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
         new_buf.desc = FgBufDesc{ref->type(), ref->size()};
         new_buf.external = true;
@@ -565,9 +538,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex
     const uint16_t *ptex_index = name_to_texture_.Find(name);
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = name;
         new_tex.desc = p;
 
@@ -607,9 +577,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const R
     const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name().c_str();
         new_tex.desc = ref->params;
         new_tex.external = true;
@@ -667,9 +634,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::Texture2DArray *ref, const
     const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name();
         // new_tex.desc = ref->params;
         new_tex.external = true;
@@ -709,11 +673,9 @@ Eng::FgResRef Eng::FgBuilder::MakeTextureResource(const Ren::WeakTex2DRef &ref) 
     const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         FgAllocTex new_tex;
-        new_tex.read_count = 0;
-        new_tex.write_count = 0;
-        new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name().c_str();
         new_tex.desc = ref->params;
+        new_tex.external = true;
 
         ret.index = textures_.emplace(new_tex);
         name_to_texture_[new_tex.name] = ret.index;
@@ -764,83 +726,91 @@ Eng::FgAllocTex &Eng::FgBuilder::GetWriteTexture(const FgResRef handle) {
     return tex;
 }
 
-void Eng::FgBuilder::AllocateNeededResources(FgNode &node) {
-    Ren::SmallVector<Ren::Tex2DRef, 32> textures_to_clear;
-    Ren::SmallVector<Ren::BufferRef, 32> buffers_to_clear;
+void Eng::FgBuilder::AllocateNeededResources_Simple() {
+    for (auto it = std::begin(buffers_); it != std::end(buffers_); ++it) {
+        FgAllocBuf &buf = *it;
+        if (buf.external || buf.alias_of != -1 || !buf.lifetime.is_used()) {
+            continue;
+        }
+        assert(!buf.ref);
+        buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size, 16, ctx_.default_mem_allocs());
+        buf.ref = buf.strong_ref;
+    }
+    for (auto it = std::begin(buffers_); it != std::end(buffers_); ++it) {
+        FgAllocBuf &buf = *it;
+        if (buf.external || buf.alias_of == -1 || !buf.lifetime.is_used()) {
+            continue;
+        }
+        const FgAllocBuf &orig_buf = buffers_.at(buf.alias_of);
+        assert(orig_buf.alias_of == -1);
+        buf.ref = orig_buf.ref;
+        buf.strong_ref = {};
+        ctx_.log()->Info("Buf %s will be alias of %s", buf.name.c_str(), orig_buf.name.c_str());
+    }
+    for (auto it = std::begin(textures_); it != std::end(textures_); ++it) {
+        FgAllocTex &tex = *it;
+        if (tex.external || tex.alias_of != -1 || !tex.lifetime.is_used()) {
+            continue;
+        }
 
-    for (const FgResource res : node.output_) {
-        if (res.type == eFgResType::Buffer) {
-            FgAllocBuf &buf = buffers_.at(res.index);
-            if (buf.external) {
-                continue;
-            }
-            if (buf.alias_of != -1) {
-                const FgAllocBuf &orig_buf = buffers_.at(buf.alias_of);
-                assert(orig_buf.alias_of == -1);
-                buf.ref = orig_buf.ref;
-                buf.strong_ref = {};
-                ctx_.log()->Info("Buf %s will be alias of %s", buf.name.c_str(), orig_buf.name.c_str());
-            }
-            if (!buf.ref) {
-                buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size, 16, ctx_.default_mem_allocs());
-                buf.ref = buf.strong_ref;
+        // Needed to clear the image initially
+        tex.desc.usage |= Ren::eTexUsageBits::Transfer;
 
-                // TODO: this is redundant!
-                buffers_to_clear.push_back(buf.strong_ref);
-            }
-        } else if (res.type == eFgResType::Texture) {
-            FgAllocTex &tex = textures_.at(res.index);
-            if (tex.external) {
-                continue;
-            }
-            if (tex.history_index != -1) {
-                FgAllocTex &hist_tex = textures_.at(tex.history_index);
-                // combine usage flags
-                tex.desc.usage |= hist_tex.desc.usage;
-                hist_tex.desc = tex.desc;
+        if (tex.history_index != -1) {
+            FgAllocTex &hist_tex = textures_.at(tex.history_index);
+            // combine usage flags
+            tex.desc.usage |= hist_tex.desc.usage;
+            hist_tex.desc = tex.desc;
+        }
+        if (tex.history_of != -1) {
+            FgAllocTex &hist_tex = textures_.at(tex.history_of);
+            // combine usage flags
+            tex.desc.usage |= hist_tex.desc.usage;
+            hist_tex.desc = tex.desc;
+        }
 
-                tex.ref = tex.strong_ref;
-                hist_tex.ref = hist_tex.strong_ref;
+        assert(!tex.ref);
+        ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", tex.name.c_str(), tex.desc.w, tex.desc.h,
+                         float(EstimateMemory(tex.desc)) * 0.000001f);
+        Ren::eTexLoadStatus status;
+        tex.strong_ref = ctx_.LoadTexture2D(tex.name, tex.desc, ctx_.default_mem_allocs(), &status);
+        tex.ref = tex.strong_ref;
+        assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+               status == Ren::eTexLoadStatus::Reinitialized);
+    }
+    for (auto it = std::begin(textures_); it != std::end(textures_); ++it) {
+        FgAllocTex &tex = *it;
+        if (tex.external || tex.alias_of == -1 || !tex.lifetime.is_used()) {
+            continue;
+        }
+        assert(!tex.ref);
+        const FgAllocTex &orig_tex = textures_.at(tex.alias_of);
+        assert(orig_tex.alias_of == -1);
+        tex.ref = orig_tex.ref;
+        tex.strong_ref = {};
+        ctx_.log()->Info("Tex %s will be alias of %s", tex.name.c_str(), orig_tex.name.c_str());
+    }
+}
 
-                // Needed to clear the image initially
-                hist_tex.desc.usage |= Ren::eTexUsageBits::Transfer;
+void Eng::FgBuilder::ClearResources_Simple() {
+    std::vector<Ren::BufferRef> buffers_to_clear;
+    std::vector<Ren::Tex2DRef> textures_to_clear;
 
-                if (!hist_tex.ref) {
-                    ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", hist_tex.name.c_str(), hist_tex.desc.w,
-                                     hist_tex.desc.h, float(EstimateMemory(hist_tex.desc)) * 0.000001f);
-                    Ren::eTexLoadStatus status;
-                    hist_tex.strong_ref =
-                        ctx_.LoadTexture2D(hist_tex.name, hist_tex.desc, ctx_.default_mem_allocs(), &status);
+    for (const FgAllocBuf &b : buffers_) {
+        if (b.external || !b.lifetime.is_used()) {
+            continue;
+        }
+        if (b.strong_ref && b.alias_of == -1) {
+            buffers_to_clear.push_back(b.strong_ref);
+        }
+    }
 
-                    hist_tex.ref = hist_tex.strong_ref;
-                    assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                           status == Ren::eTexLoadStatus::Reinitialized);
-                }
-
-                textures_to_clear.emplace_back(hist_tex.strong_ref);
-            }
-
-            // Needed to clear the image initially
-            tex.desc.usage |= Ren::eTexUsageBits::Transfer;
-
-            if (tex.alias_of != -1) {
-                const FgAllocTex &orig_tex = textures_.at(tex.alias_of);
-                assert(orig_tex.alias_of == -1);
-                tex.ref = orig_tex.ref;
-                tex.strong_ref = {};
-                ctx_.log()->Info("Tex %s will be alias of %s", tex.name.c_str(), orig_tex.name.c_str());
-            } else if (!tex.ref) {
-                ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                                 float(EstimateMemory(tex.desc)) * 0.000001f);
-                Ren::eTexLoadStatus status;
-                tex.strong_ref = ctx_.LoadTexture2D(tex.name, tex.desc, ctx_.default_mem_allocs(), &status);
-                tex.ref = tex.strong_ref;
-                assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                       status == Ren::eTexLoadStatus::Reinitialized);
-
-                // TODO: this is redundant!
-                textures_to_clear.emplace_back(tex.strong_ref);
-            }
+    for (const FgAllocTex &t : textures_) {
+        if (t.external || !t.lifetime.is_used()) {
+            continue;
+        }
+        if (t.strong_ref && t.alias_of == -1) {
+            textures_to_clear.push_back(t.strong_ref);
         }
     }
 
@@ -890,6 +860,8 @@ void Eng::FgBuilder::Reset() {
     textures_.clear();
 
     temp_samplers.clear();
+
+    ReleaseMemHeaps();
 }
 
 int16_t Eng::FgBuilder::FindPreviousWrittenInNode(const FgResRef handle) {
@@ -1001,46 +973,35 @@ void Eng::FgBuilder::TraverseNodeDependencies_r(FgNode *node, const int recursio
 }
 
 void Eng::FgBuilder::PrepareAllocResources() {
-    std::vector<bool> visited_buffers(buffers_.capacity(), false);
-    std::vector<bool> visited_textures(textures_.capacity(), false);
-
+    // Initialize history res description (they are allowed to be declared before actual resource)
+    for (auto it = std::begin(textures_); it != std::end(textures_); ++it) {
+        FgAllocTex &tex = *it;
+        if (tex.history_of != -1) {
+            assert(textures_[tex.history_of].history_index == it.index());
+            tex.desc = textures_[tex.history_of].desc;
+        }
+    }
+    // Propagate usage flags
     for (FgNode *cur_node : reordered_nodes_) {
         for (const FgResource &r : cur_node->input_) {
             if (r.type == eFgResType::Buffer) {
-                visited_buffers[r.index] = true;
             } else if (r.type == eFgResType::Texture) {
                 FgAllocTex &tex = textures_[r.index];
                 tex.desc.usage |= Ren::TexUsageFromState(r.desired_state);
-                visited_textures[r.index] = true;
             }
         }
         for (const FgResource &r : cur_node->output_) {
             if (r.type == eFgResType::Buffer) {
-                visited_buffers[r.index] = true;
             } else if (r.type == eFgResType::Texture) {
                 FgAllocTex &tex = textures_[r.index];
                 tex.desc.usage |= Ren::TexUsageFromState(r.desired_state);
-                visited_textures[r.index] = true;
             }
-        }
-    }
-
-    // Release unused resources
-    for (auto it = buffers_.begin(); it != buffers_.end(); ++it) {
-        if (!visited_buffers[it.index()]) {
-            it->ref = it->strong_ref = {};
-        }
-    }
-    for (auto it = textures_.begin(); it != textures_.end(); ++it) {
-        if (!visited_textures[it.index()] && (it->history_of == -1 || !visited_textures[it->history_of]) &&
-            (it->history_index == -1 || !visited_textures[it->history_index])) {
-            it->ref = it->strong_ref = {};
         }
     }
 }
 
-void Eng::FgBuilder::BuildAliases() {
-    auto disjoint_lifetimes = [](const fg_range_t &r1, const fg_range_t &r2) -> bool {
+void Eng::FgBuilder::PrepareResourceLifetimes() {
+    auto disjoint_lifetimes = [](const fg_node_range_t &r1, const fg_node_range_t &r2) -> bool {
         if (!r1.is_used() || !r2.is_used() || !r1.can_alias() || !r2.can_alias()) {
             return false;
         }
@@ -1052,26 +1013,30 @@ void Eng::FgBuilder::BuildAliases() {
         const FgNode *node = reordered_nodes_[i];
         for (const auto &res : node->input_) {
             if (res.type == eFgResType::Texture) {
-                fg_range_t &lifetime = textures_[res.index].lifetime;
+                fg_node_range_t &lifetime = textures_[res.index].lifetime;
                 lifetime.first_read_node = std::min(lifetime.first_read_node, i);
                 lifetime.last_read_node = std::max(lifetime.last_read_node, i);
             } else if (res.type == eFgResType::Buffer) {
-                fg_range_t &lifetime = buffers_[res.index].lifetime;
+                fg_node_range_t &lifetime = buffers_[res.index].lifetime;
                 lifetime.first_read_node = std::min(lifetime.first_read_node, i);
                 lifetime.last_read_node = std::max(lifetime.last_read_node, i);
             }
         }
         for (const auto &res : node->output_) {
             if (res.type == eFgResType::Texture) {
-                fg_range_t &lifetime = textures_[res.index].lifetime;
+                fg_node_range_t &lifetime = textures_[res.index].lifetime;
                 lifetime.first_write_node = std::min(lifetime.first_write_node, i);
                 lifetime.last_write_node = std::max(lifetime.last_write_node, i);
             } else if (res.type == eFgResType::Buffer) {
-                fg_range_t &lifetime = buffers_[res.index].lifetime;
+                fg_node_range_t &lifetime = buffers_[res.index].lifetime;
                 lifetime.first_write_node = std::min(lifetime.first_write_node, i);
                 lifetime.last_write_node = std::max(lifetime.last_write_node, i);
             }
         }
+    }
+
+    if (!FgBuilderInternal::EnableResourceAliasing) {
+        return;
     }
 
     tex_alias_chains_.clear();
@@ -1097,7 +1062,7 @@ void Eng::FgBuilder::BuildAliases() {
                     if (alias == i.index()) {
                         continue;
                     }
-                    const fg_range_t &lifetime = textures_[alias].lifetime;
+                    const fg_node_range_t &lifetime = textures_[alias].lifetime;
                     disjoint &= disjoint_lifetimes(lifetime, tex2.lifetime);
                 }
                 if (disjoint) {
@@ -1129,7 +1094,7 @@ void Eng::FgBuilder::BuildAliases() {
                     if (alias == i.index()) {
                         continue;
                     }
-                    const fg_range_t &lifetime = buffers_[alias].lifetime;
+                    const fg_node_range_t &lifetime = buffers_[alias].lifetime;
                     disjoint &= disjoint_lifetimes(lifetime, buf2.lifetime);
                 }
                 if (disjoint) {
@@ -1287,6 +1252,7 @@ void Eng::FgBuilder::BuildResourceLinkedLists() {
 }
 
 void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
+    using namespace FgBuilderInternal;
     OPTICK_EVENT();
 
     reordered_nodes_.clear();
@@ -1429,80 +1395,78 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
     }
 
     PrepareAllocResources();
-    if (FgBuilderInternal::EnableResourceAliasing) {
-        BuildAliases();
+    PrepareResourceLifetimes();
+    if (ctx_.capabilities.memory_heaps) {
+        // Memory-level aliasing
+        AllocateNeededResources_MemHeaps();
+        ClearResources_MemHeaps();
+    } else {
+        // Simple per-resource aliasing
+        AllocateNeededResources_Simple();
+        ClearResources_Simple();
     }
 
-    for (FgNode *node : reordered_nodes_) {
-        // Must be allocated in order of node execution (because of how aliasing works)
-        AllocateNeededResources(*node);
-    }
-
-    ctx_.log()->Info("======================================================================");
+    ctx_.log()->Info("============================================================================");
     { // report buffers
         std::vector<Ren::WeakBufferRef> not_handled_buffers;
         not_handled_buffers.reserve(buffers_.size());
-        uint32_t total_buffer_memory = 0;
         for (const FgAllocBuf &buf : buffers_) {
             if (buf.alias_of != -1) {
                 const FgAllocBuf &orig_buf = buffers_[buf.alias_of];
-                ctx_.log()->Info("Buf %-24.24s alias of %16s\t| %-f MB", buf.name.c_str(), orig_buf.name.c_str(),
-                                 float(total_buffer_memory) * 0.000001f);
+                assert(!ctx_.capabilities.memory_heaps);
+                ctx_.log()->Info("Buf %-24.24s alias of %16s\t| %f MB", buf.name.c_str(), orig_buf.name.c_str(), 0.0f);
                 continue;
             }
             if (buf.strong_ref) {
-                ctx_.log()->Info("Buf %-24.24s (%f MB)\t\t\t| %f MB", buf.name.c_str(),
-                                 float(buf.strong_ref->size()) * 0.000001f, float(total_buffer_memory) * 0.000001f);
-                total_buffer_memory += buf.strong_ref->size();
+                const Ren::MemAllocation &alloc = buf.strong_ref->mem_alloc();
+                if (alloc.pool != 0xffff) {
+                    ctx_.log()->Info("Buf %-24.24s \t\t\t\t\t| %f MB", buf.name.c_str(),
+                                     float(alloc.block) * 0.000001f);
+                } else {
+                    ctx_.log()->Info("Buf %-24.24s (dedicated)\t\t\t| %f MB", buf.name.c_str(),
+                                     float(buf.strong_ref->size()) * 0.000001f);
+                }
             } else if (buf.ref) {
                 not_handled_buffers.push_back(buf.ref);
             }
         }
-        ctx_.log()->Info("----------------------------------------------------------------------");
-        ctx_.log()->Info("Graph owned buffer memory:\t\t\t\t\t| %f MB", float(total_buffer_memory) * 0.000001f);
-        ctx_.log()->Info("----------------------------------------------------------------------");
+        ctx_.log()->Info("----------------------------------------------------------------------------");
         for (const auto &ref : not_handled_buffers) {
-            total_buffer_memory += ref->size();
-            ctx_.log()->Info("Buf %-24.24s (%f MB)\t\t\t| %f MB", ref->name().c_str(), float(ref->size()) * 0.000001f,
-                             float(total_buffer_memory) * 0.000001f);
+            ctx_.log()->Info("Buf %-24.24s \t\t\t\t\t| %f MB", ref->name().c_str(), float(ref->size()) * 0.000001f);
         }
-        ctx_.log()->Info("----------------------------------------------------------------------");
-        ctx_.log()->Info("Total graph buffer memory:\t\t\t\t\t| %f MB", float(total_buffer_memory) * 0.000001f);
     }
-    ctx_.log()->Info("======================================================================");
+    ctx_.log()->Info("============================================================================");
     { // report textures
         std::vector<Ren::WeakTex2DRef> not_handled_textures;
         not_handled_textures.reserve(textures_.size());
-        uint32_t total_texture_memory = 0;
         for (const FgAllocTex &tex : textures_) {
             if (tex.alias_of != -1) {
                 const FgAllocTex &orig_tex = textures_[tex.alias_of];
                 ctx_.log()->Info("Tex %-24.24s alias of %16s\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
-                                 float(total_texture_memory) * 0.000001f);
+                                 float(EstimateMemory(tex.ref->params)) * 0.000001f);
                 continue;
             }
             if (tex.strong_ref) {
-                total_texture_memory += EstimateMemory(tex.strong_ref->params);
-                ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                                 float(EstimateMemory(tex.ref->params)) * 0.000001f,
-                                 float(total_texture_memory) * 0.000001f);
+                ctx_.log()->Info("Tex %-24.24s (%4ix%-4i)\t\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
+                                 float(EstimateMemory(tex.ref->params)) * 0.000001f);
             } else if (tex.ref) {
                 not_handled_textures.push_back(tex.ref);
             }
         }
-        ctx_.log()->Info("----------------------------------------------------------------------");
-        ctx_.log()->Info("Graph owned texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
-        ctx_.log()->Info("----------------------------------------------------------------------");
+        ctx_.log()->Info("----------------------------------------------------------------------------");
         for (const auto &ref : not_handled_textures) {
-            total_texture_memory += EstimateMemory(ref->params);
-            ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w,
-                             ref->params.h, float(EstimateMemory(ref->params)) * 0.000001f,
-                             float(total_texture_memory) * 0.000001f);
+            ctx_.log()->Info("Tex %-24.24s (%4ix%-4i)\t\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
+                             float(EstimateMemory(ref->params)) * 0.000001f);
         }
-        ctx_.log()->Info("----------------------------------------------------------------------");
-        ctx_.log()->Info("Total graph texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
     }
-    ctx_.log()->Info("======================================================================");
+    ctx_.log()->Info("============================================================================");
+    if (!memory_heaps_.empty()) {
+        for (int i = 0; i < int(memory_heaps_.size()); ++i) {
+            ctx_.log()->Info("Heap[%i] %p\t\t\t\t\t| %f MB", i, memory_heaps_[i].mem,
+                             float(memory_heaps_[i].size) * 0.000001f);
+        }
+        ctx_.log()->Info("============================================================================");
+    }
 }
 
 void Eng::FgBuilder::Execute() {
@@ -1532,6 +1496,8 @@ void Eng::FgBuilder::Execute() {
             tex.used_in_stages |= Ren::eStageBits::Transfer;
         } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex._ref)) {
             tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture2DArray *>(tex._ref)->resource_state);
+        } else if (std::holds_alternative<const Ren::Texture3D *>(tex._ref)) {
+            tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture3D *>(tex._ref)->resource_state);
         }
     }
 
@@ -1561,7 +1527,6 @@ void Eng::FgBuilder::Execute() {
         node_interval.query_beg = ctx_.WriteTimestamp(true);
 
         InsertResourceTransitions(*cur_node);
-
         cur_node->Execute(*this);
 
         // End timestamp
@@ -1577,7 +1542,6 @@ void Eng::FgBuilder::Execute() {
 
 void Eng::FgBuilder::InsertResourceTransitions(FgNode &node) {
     OPTICK_GPU_EVENT("InsertResourceTransitions");
-    auto cmd_buf = reinterpret_cast<VkCommandBuffer>(ctx_.current_cmd_buf());
 
     Ren::SmallVector<Ren::TransitionInfo, 32> res_transitions;
     Ren::eStageBits src_stages = Ren::eStageBits::None;
@@ -1591,7 +1555,7 @@ void Eng::FgBuilder::InsertResourceTransitions(FgNode &node) {
         HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
     }
 
-    TransitionResourceStates(ctx_.api_ctx(), cmd_buf, src_stages, dst_stages, res_transitions);
+    TransitionResourceStates(ctx_.api_ctx(), ctx_.current_cmd_buf(), src_stages, dst_stages, res_transitions);
 }
 
 void Eng::FgBuilder::CheckResourceStates(FgNode &node) {
@@ -1619,10 +1583,7 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
                                               Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
                                               Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages) {
     for (const FgResource *next_res = res.next_use; next_res; next_res = next_res->next_use) {
-        if (next_res->desired_state != res.desired_state ||
-            next_res->desired_state == Ren::eResState::UnorderedAccess ||
-            next_res->desired_state == Ren::eResState::CopyDst ||
-            next_res->desired_state == Ren::eResState::BuildASWrite) {
+        if (next_res->desired_state != res.desired_state || IsRWState(next_res->desired_state)) {
             break;
         }
         dst_stages |= next_res->stages;
@@ -1636,15 +1597,32 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
             assert(buf->alias_of == -1);
         }
 
-        if (buf->ref->resource_state != res.desired_state ||
-            buf->ref->resource_state == Ren::eResState::UnorderedAccess ||
-            buf->ref->resource_state == Ren::eResState::CopyDst ||
-            buf->ref->resource_state == Ren::eResState::BuildASWrite) {
+        if (buf->ref->resource_state == Ren::eResState::Undefined ||
+            buf->ref->resource_state == Ren::eResState::Discarded) {
+            for (const FgResRef other : buf->overlaps_with) {
+                if (other.type == eFgResType::Buffer) {
+                    FgAllocBuf *other_buf = &buffers_.at(other.index);
+                    src_stages |= other_buf->used_in_stages;
+                    dst_stages |= other_buf->aliased_in_stages;
+                    assert(other_buf->ref->resource_state != Ren::eResState::Discarded);
+                    res_transitions.emplace_back(other_buf->ref.get(), Ren::eResState::Discarded);
+                } else if (other.type == eFgResType::Texture) {
+                    FgAllocTex *other_tex = &textures_.at(other.index);
+                    src_stages |= other_tex->used_in_stages;
+                    dst_stages |= other_tex->aliased_in_stages;
+                    assert(other_tex->ref->resource_state != Ren::eResState::Discarded);
+                    res_transitions.emplace_back(other_tex->ref.get(), Ren::eResState::Discarded);
+                }
+            }
+        }
+
+        if (buf->ref->resource_state != res.desired_state || IsRWState(buf->ref->resource_state)) {
             src_stages |= buf->used_in_stages;
             dst_stages |= res.stages;
             buf->used_in_stages = Ren::eStageBits::None;
             res_transitions.emplace_back(buf->ref.get(), res.desired_state);
         }
+
         buf->used_in_stages |= res.stages;
     } else if (res.type == eFgResType::Texture) {
         FgAllocTex *tex = &textures_.at(res.index);
@@ -1656,8 +1634,7 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
 
         if (std::holds_alternative<const Ren::Texture3D *>(tex->_ref)) {
             if (std::get<const Ren::Texture3D *>(tex->_ref)->resource_state != res.desired_state ||
-                std::get<const Ren::Texture3D *>(tex->_ref)->resource_state == Ren::eResState::UnorderedAccess ||
-                std::get<const Ren::Texture3D *>(tex->_ref)->resource_state == Ren::eResState::CopyDst) {
+                IsRWState(std::get<const Ren::Texture3D *>(tex->_ref)->resource_state)) {
                 src_stages |= tex->used_in_stages;
                 dst_stages |= res.stages;
                 tex->used_in_stages = Ren::eStageBits::None;
@@ -1665,23 +1642,40 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
             }
         } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex->_ref)) {
             if (std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state != res.desired_state ||
-                std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state == Ren::eResState::UnorderedAccess ||
-                std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state == Ren::eResState::CopyDst) {
+                IsRWState(std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state)) {
                 src_stages |= tex->used_in_stages;
                 dst_stages |= res.stages;
                 tex->used_in_stages = Ren::eStageBits::None;
                 res_transitions.emplace_back(std::get<const Ren::Texture2DArray *>(tex->_ref), res.desired_state);
             }
         } else {
-            if (tex->ref->resource_state != res.desired_state ||
-                tex->ref->resource_state == Ren::eResState::UnorderedAccess ||
-                tex->ref->resource_state == Ren::eResState::CopyDst) {
+            if (tex->ref->resource_state == Ren::eResState::Undefined ||
+                tex->ref->resource_state == Ren::eResState::Discarded) {
+                for (const FgResRef other : tex->overlaps_with) {
+                    if (other.type == eFgResType::Buffer) {
+                        FgAllocBuf *other_buf = &buffers_.at(other.index);
+                        src_stages |= other_buf->used_in_stages;
+                        dst_stages |= other_buf->aliased_in_stages;
+                        assert(other_buf->ref->resource_state != Ren::eResState::Discarded);
+                        res_transitions.emplace_back(other_buf->ref.get(), Ren::eResState::Discarded);
+                    } else if (other.type == eFgResType::Texture) {
+                        FgAllocTex *other_tex = &textures_.at(other.index);
+                        src_stages |= other_tex->used_in_stages;
+                        dst_stages |= other_tex->aliased_in_stages;
+                        assert(other_tex->ref->resource_state != Ren::eResState::Discarded);
+                        res_transitions.emplace_back(other_tex->ref.get(), Ren::eResState::Discarded);
+                    }
+                }
+            }
+
+            if (tex->ref->resource_state != res.desired_state || IsRWState(tex->ref->resource_state)) {
                 src_stages |= tex->used_in_stages;
                 dst_stages |= res.stages;
                 tex->used_in_stages = Ren::eStageBits::None;
                 res_transitions.emplace_back(tex->ref.get(), res.desired_state);
             }
         }
+
         tex->used_in_stages |= res.stages;
     }
 }

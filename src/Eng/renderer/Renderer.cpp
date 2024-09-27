@@ -1584,74 +1584,113 @@ void Eng::Renderer::InitBackendInfo() {
     if (settings.debug_frame == eDebugFrame::Full) {
         const auto &fg_buffers = fg_builder_.buffers();
         Ren::SmallVector<int, 256> indices(fg_buffers.capacity(), -1);
-        uint32_t heap_size = 0; // dummy for now
+        uint32_t heap_size = 0; // dummy for the case when memory heaps are not available
         for (auto it = fg_buffers.cbegin(); it != fg_buffers.cend(); ++it) {
-            if (!it->external && it->ref && it->alias_of == -1) {
-                resource_info_t &info = backend_info_.resources_info.emplace_back();
-                info.name = "[Buf] " + it->name;
-                info.first_use = it->lifetime.first_used_node();
-                info.last_use = it->lifetime.last_used_node();
+            if (it->external || !it->strong_ref || it->alias_of != -1 || !it->lifetime.is_used() ||
+                it->strong_ref->type() == Ren::eBufType::Upload || it->strong_ref->type() == Ren::eBufType::Readback) {
+                continue;
+            }
+
+            resource_info_t &info = backend_info_.resources_info.emplace_back();
+            info.name = "[Buf] " + it->name;
+            info.first_use = it->lifetime.first_used_node();
+            info.last_use = it->lifetime.last_used_node();
+
+            const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
+            if (alloc.pool != 0xffff && alloc.owner == nullptr) {
+                info.heap = alloc.pool;
+                info.offset = alloc.offset;
+                info.size = alloc.block;
+            } else {
                 info.heap = 0;
                 info.offset = heap_size;
                 info.size = it->desc.size;
-
-                indices[it.index()] = int(backend_info_.resources_info.size() - 1);
                 heap_size += it->desc.size;
             }
+
+            indices[it.index()] = int(backend_info_.resources_info.size() - 1);
         }
         for (auto it = fg_buffers.cbegin(); it != fg_buffers.cend(); ++it) {
-            if (!it->external && it->ref && it->alias_of != -1) {
-                resource_info_t &info = backend_info_.resources_info.emplace_back();
-                info.name = "[Buf] " + it->name;
-                info.first_use = it->lifetime.first_used_node();
-                info.last_use = it->lifetime.last_used_node();
+            if (it->external || !it->strong_ref || it->alias_of == -1 || !it->lifetime.is_used() ||
+                it->strong_ref->type() == Ren::eBufType::Upload || it->strong_ref->type() == Ren::eBufType::Readback) {
+                continue;
+            }
+
+            resource_info_t &info = backend_info_.resources_info.emplace_back();
+            info.name = "[Buf] " + it->name;
+            info.first_use = it->lifetime.first_used_node();
+            info.last_use = it->lifetime.last_used_node();
+
+            const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
+            if (alloc.pool != 0xffff && alloc.owner == nullptr) {
+                info.heap = alloc.pool;
+                info.offset = alloc.offset;
+                info.size = alloc.block;
+            } else {
                 info.heap = 0;
                 info.offset = backend_info_.resources_info[indices[it->alias_of]].offset;
                 info.size = it->desc.size;
-
-                heap_size += it->desc.size;
             }
         }
 
-        heap_size = 0; // dummy for now
+        heap_size = 0; // dummy for the case when memory heaps are not available
 
         const auto &fg_textures = fg_builder_.textures();
         indices.clear();
         indices.resize(fg_textures.capacity(), -1);
         for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
-            if (!it->external && it->ref && it->alias_of == -1) {
-                resource_info_t &info = backend_info_.resources_info.emplace_back();
-                info.name = "[Tex] " + it->name;
-                if (it->history_index == -1 && it->history_of == -1) {
-                    info.first_use = it->lifetime.first_used_node();
-                    info.last_use = it->lifetime.last_used_node();
-                } else {
-                    info.first_use = 0;
-                    info.last_use = int(backend_info_.passes_info.size() - 1);
-                }
+            if (it->external || !it->strong_ref || it->alias_of != -1) {
+                continue;
+            }
+
+            resource_info_t &info = backend_info_.resources_info.emplace_back();
+            info.name = "[Tex] " + it->name;
+            if (it->history_index == -1 && it->history_of == -1) {
+                info.first_use = it->lifetime.first_used_node();
+                info.last_use = it->lifetime.last_used_node();
+            } else {
+                info.first_use = 0;
+                info.last_use = int(backend_info_.passes_info.size() - 1);
+            }
+
+            const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
+            if (alloc.pool != 0xffff && alloc.owner == nullptr) {
+                info.heap = alloc.pool;
+                info.offset = alloc.offset;
+                info.size = alloc.block;
+            } else {
                 info.heap = 1;
                 info.offset = heap_size;
                 info.size = Ren::EstimateMemory(it->desc);
-
-                indices[it.index()] = int(backend_info_.resources_info.size() - 1);
                 heap_size += info.size;
             }
+
+            indices[it.index()] = int(backend_info_.resources_info.size() - 1);
         }
         for (auto it = fg_textures.cbegin(); it != fg_textures.cend(); ++it) {
-            if (!it->external && it->ref && it->alias_of != -1) {
-                resource_info_t &info = backend_info_.resources_info.emplace_back();
-                info.name = "[Tex] " + it->name;
-                if (it->history_index == -1 && it->history_of == -1) {
-                    info.first_use = it->lifetime.first_used_node();
-                    info.last_use = it->lifetime.last_used_node();
-                } else {
-                    info.first_use = 0;
-                    info.last_use = int(backend_info_.passes_info.size() - 1);
-                }
+            if (it->external || !it->strong_ref || it->alias_of == -1) {
+                continue;
+            }
+
+            resource_info_t &info = backend_info_.resources_info.emplace_back();
+            info.name = "[Tex] " + it->name;
+            if (it->history_index == -1 && it->history_of == -1) {
+                info.first_use = it->lifetime.first_used_node();
+                info.last_use = it->lifetime.last_used_node();
+            } else {
+                info.first_use = 0;
+                info.last_use = int(backend_info_.passes_info.size() - 1);
+            }
+
+            const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
+            if (alloc.pool != 0xffff && alloc.owner == nullptr) {
+                info.heap = alloc.pool;
+                info.offset = alloc.offset;
+                info.size = alloc.block;
+            } else {
                 info.heap = 1;
                 info.offset = backend_info_.resources_info[indices[it->alias_of]].offset;
                 info.size = Ren::EstimateMemory(it->desc);
-
                 heap_size += info.size;
             }
         }

@@ -287,7 +287,7 @@ struct render_settings_t {
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
 #if !defined(NDEBUG)
-    eDebugFrame debug_frame = eDebugFrame::Full;
+    eDebugFrame debug_frame = eDebugFrame::Simple;
 #else
     eDebugFrame debug_frame = eDebugFrame::Off;
 #endif

@@ -24,6 +24,8 @@ class MemoryAllocator;
 struct MemHeap {
 #if defined(USE_VK_RENDER)
     VkDeviceMemory mem = {};
+#elif defined(USE_GL_RENDER)
+    void *mem = nullptr;
 #endif
     uint32_t size = 0xffffffff;
 };
@@ -34,6 +36,8 @@ struct MemAllocation {
     MemoryAllocator *owner = nullptr;
 
     MemAllocation() = default;
+    MemAllocation(const uint32_t _offset, const uint32_t _block, const uint16_t _pool)
+        : offset(_offset), block(_block), pool(_pool) {}
     MemAllocation(const MemAllocation &rhs) = delete;
     MemAllocation(MemAllocation &&rhs) noexcept
         : offset(rhs.offset), block(rhs.block), pool(rhs.pool), owner(std::exchange(rhs.owner, nullptr)) {}

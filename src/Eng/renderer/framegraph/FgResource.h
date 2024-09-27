@@ -53,6 +53,13 @@ struct FgResRef {
 
     FgResRef() = default;
     FgResRef(const FgResource &res) : type(res.type), _generation(res._generation), index(res.index) {}
+
+    bool operator<(const FgResRef rhs) const {
+        if (type != rhs.type) {
+            return type < rhs.type;
+        }
+        return index < rhs.index;
+    }
 };
 static_assert(sizeof(FgResRef) == 6, "!");
 

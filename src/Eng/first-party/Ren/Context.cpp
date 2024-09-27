@@ -246,6 +246,21 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const Tex2DPara
     return ref;
 }
 
+Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const TexHandle &handle, const Tex2DParams &p,
+                                          MemAllocation &&alloc, eTexLoadStatus *load_status) {
+    Tex2DRef ref = textures_2D_.FindByName(name);
+    if (!ref) {
+        ref = textures_2D_.Add(name, api_ctx_.get(), handle, p, std::move(alloc), log_);
+        (*load_status) = eTexLoadStatus::CreatedDefault;
+    } else if (ref->params != p) {
+        ref->Init(handle, p, std::move(alloc), log_);
+        (*load_status) = eTexLoadStatus::Reinitialized;
+    } else {
+        (*load_status) = eTexLoadStatus::Found;
+    }
+    return ref;
+}
+
 Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
                                           StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {

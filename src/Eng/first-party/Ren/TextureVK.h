@@ -94,9 +94,11 @@ class Texture2D : public RefCounter {
     Texture2D() = default;
     Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &params, MemoryAllocators *mem_allocs,
               ILog *log);
-    Texture2D(std::string_view name, ApiContext *api_ctx, VkImage img, VkImageView view, VkSampler sampler,
-              const Tex2DParams &_params, ILog *log)
-        : handle_{img, view, VK_NULL_HANDLE, sampler, 0}, params(_params), ready_(true), name_(name) {}
+    Texture2D(std::string_view name, ApiContext *api_ctx, const TexHandle &handle, const Tex2DParams &_params,
+              MemAllocation &&alloc, ILog *log)
+        : api_ctx_(api_ctx), ready_(true), name_(name) {
+        Init(handle, _params, std::move(alloc), log);
+    }
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
               Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
               ILog *log);
@@ -111,11 +113,7 @@ class Texture2D : public RefCounter {
     Texture2D &operator=(Texture2D &&rhs) noexcept;
 
     void Init(const Tex2DParams &params, MemoryAllocators *mem_allocs, ILog *log);
-    void Init(VkImage img, VkImageView view, VkSampler sampler, const Tex2DParams &_params, ILog *log) {
-        handle_ = {img, view, VK_NULL_HANDLE, sampler, 0};
-        params = _params;
-        ready_ = true;
-    }
+    void Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log);
     void Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &stage_buf, CommandBuffer cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
     void Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &stage_buf, CommandBuffer cmd_buf,
@@ -124,13 +122,15 @@ class Texture2D : public RefCounter {
     bool Realloc(int w, int h, int mip_count, int samples, eTexFormat format, eTexBlock block, bool is_srgb,
                  CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, ILog *log);
 
-    const TexHandle &handle() const { return handle_; }
-    TexHandle &handle() { return handle_; }
-    VkSampler vk_sampler() const { return handle_.sampler; }
-    uint16_t initialized_mips() const { return initialized_mips_; }
+    [[nodiscard]] const TexHandle &handle() const { return handle_; }
+    [[nodiscard]] TexHandle &handle() { return handle_; }
+    [[nodiscard]] VkSampler vk_sampler() const { return handle_.sampler; }
+    [[nodiscard]] const MemAllocation &mem_alloc() const { return alloc_; }
+    [[nodiscard]] uint16_t initialized_mips() const { return initialized_mips_; }
 
-    VkDescriptorImageInfo vk_desc_image_info(const int view_index = 0,
-                                             VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const {
+    [[nodiscard]] VkDescriptorImageInfo
+    vk_desc_image_info(const int view_index = 0,
+                       VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const {
         VkDescriptorImageInfo ret;
         ret.sampler = handle_.sampler;
         ret.imageView = handle_.views[view_index];
@@ -140,10 +140,10 @@ class Texture2D : public RefCounter {
 
     ApiContext *api_ctx() { return api_ctx_; }
 
-    const SamplingParams &sampling() const { return params.sampling; }
+    [[nodiscard]] const SamplingParams &sampling() const { return params.sampling; }
 
-    bool ready() const { return ready_; }
-    const String &name() const { return name_; }
+    [[nodiscard]] bool ready() const { return ready_; }
+    [[nodiscard]] const String &name() const { return name_; }
 
     void SetSampling(SamplingParams sampling);
     void ApplySampling(SamplingParams sampling, ILog *log) { SetSampling(sampling); }

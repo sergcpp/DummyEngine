@@ -258,6 +258,14 @@ void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *, ILog *log) {
     ready_ = true;
 }
 
+void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log) {
+    handle_ = handle;
+    params = _params;
+
+    SetSampling(params.sampling);
+    ready_ = true;
+}
+
 void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &sbuf, CommandBuffer cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
     if (data.empty()) {

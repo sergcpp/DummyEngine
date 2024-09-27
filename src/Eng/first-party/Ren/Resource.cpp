@@ -3,6 +3,7 @@
 namespace Ren {
 const eStageBits g_stage_bits_per_state[] = {
     {},                        // Undefined
+    AllStages,                 // Discarded
     eStageBits::VertexInput,   // VertexBuffer
     eStageBits::VertexShader | /* eStageBits::TessCtrlShader | eStageBits::TessEvalShader | eStageBits::GeometryShader
                                   |*/

@@ -194,6 +194,8 @@ class Context {
     /*** Texture 2D ***/
     Tex2DRef LoadTexture2D(std::string_view name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
+    Tex2DRef LoadTexture2D(std::string_view name, const TexHandle &handle, const Tex2DParams &p, MemAllocation &&alloc,
+                           eTexLoadStatus *load_status);
     Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p, StageBufs &stage_bufs,
                            MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
     Tex2DRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,

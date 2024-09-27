@@ -27,6 +27,7 @@ static_assert(sizeof(g_block_res) / sizeof(g_block_res[0]) == int(eTexBlock::_No
 
 const eTexUsage g_tex_usage_per_state[] = {
     {},                      // Undefined
+    {},                      // Discarded
     {},                      // VertexBuffer
     {},                      // UniformBuffer
     {},                      // IndexBuffer
