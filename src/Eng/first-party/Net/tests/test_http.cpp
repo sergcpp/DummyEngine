@@ -26,15 +26,17 @@ const char pack1[] = "GET / HTTP/1.1\r\n"
 void test_http() {
     printf("Test http               | ");
 
+    using namespace Net;
+
     { // Parse upgrade to websocket
-        Net::HTTPRequest req;
+        HTTPRequest req;
         require(req.Parse(pack1));
 
-        require(req.method().type == Net::eMethodType::GET);
+        require(req.method().type == eMethodType::GET);
         require(req.method().arg == "/");
-        require(req.method().ver == Net::eHTTPVer::_1_1);
+        require(req.method().ver == eHTTPVer::_1_1);
 
-        require(req.host_addr() == Net::Address(192, 168, 0, 102, 30000));
+        require(req.host_addr() == Address(192, 168, 0, 102, 30000));
 
         require(req.field("User-Agent") ==
                 "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:48.0) Gecko/20100101 Firefox/48.0");

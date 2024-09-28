@@ -5,8 +5,10 @@
 void test_address() {
     printf("Test address            | ");
 
+    using namespace Net;
+
     {
-        Net::Address addr;
+        Address addr;
         require(addr.a() == 0);
         require(addr.b() == 0);
         require(addr.c() == 0);
@@ -20,7 +22,7 @@ void test_address() {
         const unsigned char c = 50;
         const unsigned char d = 12;
         const unsigned short port = 10000;
-        Net::Address address(a, b, c, d, port);
+        Address address(a, b, c, d, port);
         require(a == address.a());
         require(b == address.b());
         require(c == address.c());
@@ -28,14 +30,14 @@ void test_address() {
         require(port == address.port());
     }
     {
-        Net::Address x(100, 110, 0, 1, 50000);
-        Net::Address y(101, 210, 6, 5, 50002);
+        Address x(100, 110, 0, 1, 50000);
+        Address y(101, 210, 6, 5, 50002);
         require(x != y);
         require(y == y);
         require(x == x);
     }
     {
-        Net::Address x(100, 110, 0, 1, 50000);
+        Address x(100, 110, 0, 1, 50000);
         std::string s = x.str();
         require(s == "100.110.0.1:50000");
     }

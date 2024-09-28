@@ -8,6 +8,8 @@
 void test_udp_connection() {
     printf("Test udp_connection     | ");
 
+    using namespace Net;
+
     { // UDPConnection join
         const int server_port = 30000;
         const int client_port = 30001;
@@ -15,13 +17,13 @@ void test_udp_connection() {
         const float dt_s = 0.001f;
         const float timeout_s = 0.1f;
 
-        Net::UDPConnection client(protocol_id, timeout_s);
-        Net::UDPConnection server(protocol_id, timeout_s);
+        UDPConnection client(protocol_id, timeout_s);
+        UDPConnection server(protocol_id, timeout_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         while (true) {
@@ -62,7 +64,6 @@ void test_udp_connection() {
         require(client.connected());
         require(server.connected());
     }
-
     { // UDPConnection join timeout
         const int server_port = 30000;
         const int client_port = 30001;
@@ -70,11 +71,11 @@ void test_udp_connection() {
         const float dt_s = 0.001f;
         const float timeout_s = 0.1f;
 
-        Net::UDPConnection client(protocol_id, timeout_s);
+        UDPConnection client(protocol_id, timeout_s);
 
         require_nothrow(client.Start(client_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
 
         while (true) {
             if (!client.connecting()) {
@@ -99,7 +100,6 @@ void test_udp_connection() {
         require(!client.connected());
         require(client.connect_failed());
     }
-
     { // UDPConnection join busy
         const int server_port = 30000;
         const int client_port = 30001;
@@ -108,14 +108,13 @@ void test_udp_connection() {
         const float timeout_s = 0.1f;
 
         // connect client to server
-
-        Net::UDPConnection client(protocol_id, timeout_s);
-        Net::UDPConnection server(protocol_id, timeout_s);
+        UDPConnection client(protocol_id, timeout_s);
+        UDPConnection server(protocol_id, timeout_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         while (true) {
@@ -157,10 +156,9 @@ void test_udp_connection() {
         require(server.connected());
 
         // attempt another connection, verify connect fails (busy)
-
-        Net::UDPConnection busy(protocol_id, timeout_s);
+        UDPConnection busy(protocol_id, timeout_s);
         require_nothrow(busy.Start(client_port + 1));
-        busy.Connect(Net::Address(127, 0, 0, 1, server_port));
+        busy.Connect(Address(127, 0, 0, 1, server_port));
 
         while (true) {
             if (!busy.connecting() || busy.connected()) {
@@ -211,7 +209,6 @@ void test_udp_connection() {
         require(!busy.connected());
         require(busy.connect_failed());
     }
-
     { // UDPConnection rejoin
         const int server_port = 30000;
         const int client_port = 30001;
@@ -219,15 +216,14 @@ void test_udp_connection() {
         const float dt_s = 0.001f;
         const float timeout_s = 0.1f;
 
-        Net::UDPConnection client(crotocol_id, timeout_s);
-        Net::UDPConnection server(crotocol_id, timeout_s);
+        UDPConnection client(crotocol_id, timeout_s);
+        UDPConnection server(crotocol_id, timeout_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
         // connect client and server
-
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         while (true) {
@@ -297,8 +293,7 @@ void test_udp_connection() {
         require(!server.connected());
 
         // reconnect client
-
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
 
         while (true) {
             if (client.connected() && server.connected()) {
@@ -338,7 +333,6 @@ void test_udp_connection() {
         require(client.connected());
         require(server.connected());
     }
-
     { // UDPConnection payload
         const int server_port = 30000;
         const int client_port = 30001;
@@ -346,13 +340,13 @@ void test_udp_connection() {
         const float dt_s = 0.001f;
         const float timeout_s = 0.1f;
 
-        Net::UDPConnection client(protocol_id, timeout_s);
-        Net::UDPConnection server(protocol_id, timeout_s);
+        UDPConnection client(protocol_id, timeout_s);
+        UDPConnection server(protocol_id, timeout_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         while (true) {

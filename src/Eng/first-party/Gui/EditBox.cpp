@@ -182,13 +182,13 @@ void Gui::EditBox::DeleteFwd() {
 }
 
 void Gui::EditBox::MoveCursorH(const int m) {
-    const int line_len = Gui::CalcUTF8Length(lines_[current_line_].c_str());
+    const int line_len = CalcUTF8Length(lines_[current_line_].c_str());
     current_char_ = std::max(std::min(current_char_ + m, line_len), 0);
 }
 
 void Gui::EditBox::MoveCursorV(int m) {
     current_line_ = std::max(std::min(current_line_ + m, int(lines_.size()) - 1), 0);
 
-    const int line_len = Gui::CalcUTF8Length(lines_[current_line_].c_str());
+    const int line_len = CalcUTF8Length(lines_[current_line_].c_str());
     current_char_ = std::max(std::min(current_char_, line_len), 0);
 }

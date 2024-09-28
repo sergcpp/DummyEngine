@@ -6,7 +6,7 @@
 
 #include "MVec.h"
 
-namespace GuiInternal {
+namespace Gui {
 static double _root3(double x) {
     double s = 1.0;
     while (x < 1.0) {
@@ -41,10 +41,8 @@ static double root3(double x) {
 
 // Solve cubic equation (x ^ 3) + a * (x ^ 2) + b * x + c = 0
 static int solve_cubic(double a, double b, double c, double x[3]) {
-    using namespace GuiInternal;
-
     const double eps = std::numeric_limits<double>::epsilon();
-    const double TwoPi = 2.0 * Gui::Pi<double>();
+    const double TwoPi = 2.0 * Pi<double>();
 
     const double a2 = a * a;
     double q = (a2 - 3.0 * b) / 9.0;
@@ -85,16 +83,16 @@ static int solve_cubic(double a, double b, double c, double x[3]) {
     }
 }
 
-static double cross2(const Gui::Vec2d &v1, const Gui::Vec2d &v2) { return v1[0] * v2[1] - v1[1] * v2[0]; }
+static double cross2(const Vec2d &v1, const Vec2d &v2) { return v1[0] * v2[1] - v1[1] * v2[0]; }
 
 static uint8_t median(uint8_t r, uint8_t g, uint8_t b) { return std::max(std::min(r, g), std::min(std::max(r, g), b)); }
 
-static int sutherland_hodgman(const Gui::Vec4f *input, int in_count, Gui::Vec4f *output, int axis, float split_pos,
+static int sutherland_hodgman(const Vec4f *input, int in_count, Vec4f *output, int axis, float split_pos,
                               bool is_minimum) {
-    if (in_count < 3)
+    if (in_count < 3) {
         return 0;
-
-    Gui::Vec4f cur = input[0];
+    }
+    Vec4f cur = input[0];
     float sign = is_minimum ? 1.0f : -1.0f;
     float distance = sign * (cur[axis] - split_pos);
     bool cur_is_inside = (distance >= 0);
@@ -105,7 +103,7 @@ static int sutherland_hodgman(const Gui::Vec4f *input, int in_count, Gui::Vec4f 
         if (nextIdx == in_count) {
             nextIdx = 0;
         }
-        const Gui::Vec4f &next = input[nextIdx];
+        const Vec4f &next = input[nextIdx];
         distance = sign * (next[axis] - split_pos);
         const bool next_is_inside = (distance >= 0);
 
@@ -115,13 +113,13 @@ static int sutherland_hodgman(const Gui::Vec4f *input, int in_count, Gui::Vec4f 
         } else if (cur_is_inside && !next_is_inside) {
             // Going outside -- add the intersection
             const float t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
-            Gui::Vec4f p = cur + (next - cur) * t;
+            Vec4f p = cur + (next - cur) * t;
             p[axis] = split_pos; // Avoid roundoff errors
             output[out_count++] = p;
         } else if (!cur_is_inside && next_is_inside) {
             // Coming back inside -- add the intersection + next vertex
             float t = (split_pos - cur[axis]) / (next[axis] - cur[axis]);
-            Gui::Vec4f &p = output[out_count++];
+            Vec4f &p = output[out_count++];
             p = cur + (next - cur) * t;
             p[axis] = split_pos; // Avoid roundoff errors
             output[out_count++] = next;
@@ -134,7 +132,7 @@ static int sutherland_hodgman(const Gui::Vec4f *input, int in_count, Gui::Vec4f 
     return out_count;
 }
 
-} // namespace GuiInternal
+} // namespace Gui
 
 Gui::Vec2f Gui::MapPointToScreen(const Vec2i &p, const Vec2i &res) {
     return (2 * Vec2f(float(p[0]), float(res[1] - p[1]))) / Vec2f{res} + Vec2f(-1);
@@ -159,8 +157,6 @@ bool Gui::ClipQuadToArea(Vec4f pos[2], const Vec4f &clip) {
 }
 
 int Gui::ClipPolyToArea(Vec4f *vertices, int vertex_count, const Vec4f &clip) {
-    using namespace GuiInternal;
-
     Vec4f temp[16];
 
     for (int axis = 0; axis < 2; axis++) {
@@ -269,7 +265,7 @@ int Gui::CalcUTF8Length(const char *utf8) {
     int char_pos = 0, char_len = 0;
     while (utf8[char_pos]) {
         uint32_t unicode;
-        char_pos += Gui::ConvChar_UTF8_to_Unicode(&utf8[char_pos], unicode);
+        char_pos += ConvChar_UTF8_to_Unicode(&utf8[char_pos], unicode);
         char_len++;
     }
     return char_len;
@@ -342,8 +338,6 @@ void Gui::DrawBezier3ToBitmap(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2,
 }
 
 Gui::dist_result_t Gui::Bezier1Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p) {
-    using namespace GuiInternal;
-
     const Vec2d pp0 = p - p0, p10 = p1 - p0;
     const double t_unclumped = Dot(pp0, p10) / Dot(p10, p10);
     const double t = Clamp(t_unclumped, 0.0, 1.0);
@@ -374,8 +368,6 @@ Gui::dist_result_t Gui::Bezier1Distance(const Vec2d &p0, const Vec2d &p1, const 
 }
 
 Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const Vec2d &p2, const Vec2d &p) {
-    using namespace GuiInternal;
-
     const Vec2d _p = p - p0, _p1 = p1 - p0, _p2 = p0 - 2 * p1 + p2;
 
     const double a = Dot(_p2, _p2), b = 3.0 * Dot(_p1, _p2) / a, c = (2.0 * Dot(_p1, _p1) - Dot(_p, _p2)) / a,
@@ -457,7 +449,7 @@ void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_
     const double max_soft_dot = std::cos(max_soft_angle_rad);
 
     for (int i = 0; i < count; i++) {
-        Gui::bezier_seg_t &seg = segs[i];
+        bezier_seg_t &seg = segs[i];
         assert(seg.order >= 1 && seg.order <= 3);
 
         Vec2d edge_derivatives[2];
@@ -472,7 +464,7 @@ void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_
         }
 
         if (i > 0 || seg.is_closed) {
-            const Gui::bezier_seg_t &prev_seg = (i > 0) ? segs[i - 1] : segs[count - 1];
+            const bezier_seg_t &prev_seg = (i > 0) ? segs[i - 1] : segs[count - 1];
 
             if (prev_seg.order == 1) {
                 seg.dAdt1 = seg.p0 - prev_seg.p0;
@@ -484,7 +476,7 @@ void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_
         }
 
         if ((i < count - 1) || segs[0].is_closed) {
-            const Gui::bezier_seg_t &next_seg = (i < count - 1) ? segs[i + 1] : segs[0];
+            const bezier_seg_t &next_seg = (i < count - 1) ? segs[i + 1] : segs[0];
 
             if (next_seg.order == 1) {
                 seg.dBdt0 = next_seg.p1 - seg.p1;
@@ -513,8 +505,6 @@ Gui::dist_result_t Gui::BezierSegmentDistance(const bezier_seg_t &seg, const Vec
 }
 
 int Gui::FixSDFCollisions(uint8_t *img_data, int w, int h, int channels, int threshold) {
-    using namespace GuiInternal;
-
     std::unique_ptr<int[]> marked_pixels(new int[w * h]);
     int marked_pixels_count = 0;
 

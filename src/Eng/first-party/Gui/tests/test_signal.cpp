@@ -22,23 +22,25 @@ public:
 void test_signal() {
     printf("Test signal             | ");
 
+    using namespace Gui;
+
     { // Delegate bind
 
         { // Static func
-            Gui::Delegate<double(int, float)> del;
+            Delegate<double(int, float)> del;
             del.Bind<::static_func>();
             require(del(1, 2.4f) == Approx(3.4));
         }
 
         { // Member func
-            Gui::Delegate<double(int, float)> del;
+            Delegate<double(int, float)> del;
             AAA a;
             del.Bind<AAA, &AAA::member_func>(&a);
             require(del(2, 1.4f) == Approx(0.6));
         }
 
         { // Member const func
-            Gui::Delegate<double(int, float)> del;
+            Delegate<double(int, float)> del;
             AAA a;
             const AAA &_a = a;
             del.Bind<AAA, &AAA::member_const_func>(&_a);
@@ -47,7 +49,7 @@ void test_signal() {
     }
 
     { // Signal connect
-        Gui::Signal<double(int, float)> sig;
+        Signal<double(int, float)> sig;
 
         AAA a;
 
@@ -71,7 +73,7 @@ void test_signal() {
     }
 
     { // SignalN connect
-        Gui::SignalN<double(int, float)> sig;
+        SignalN<double(int, float)> sig;
 
         AAA a;
 

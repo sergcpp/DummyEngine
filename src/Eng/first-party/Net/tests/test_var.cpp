@@ -58,10 +58,10 @@ void test_var() {
             double d;
         };
         std::vector<unsigned char> pack;
-        Net::Var<int> v1 = {"V1", 12};
-        Net::Var<int> v2 = {"V2", 13};
-        Net::Var<float> v3 = {"V3", 25.251f};
-        Net::Var<S1> v4 = {"V4"};
+        Var<int> v1 = {"V1", 12};
+        Var<int> v2 = {"V2", 13};
+        Var<float> v3 = {"V3", 25.251f};
+        Var<S1> v4 = {"V4"};
         v4 = {4.5f, 11, 5.6};
 
         {
@@ -87,7 +87,7 @@ void test_var() {
         require(v3 == 15.044f);
         require(v4.d == -5.6);
 
-        Net::VarContainer cnt;
+        VarContainer cnt;
         cnt.UnPack(pack);
         require(cnt.size() == 4);
 
@@ -108,7 +108,7 @@ void test_var() {
         Var<int> v2 = {"V2", 13};
         Var<float> v3 = {"V3", 25.251f};
         {
-            Net::VarContainer cnt;
+            VarContainer cnt;
 
             cnt.SaveVar(v1);
             cnt.SaveVar(v2);
@@ -213,23 +213,23 @@ void test_var() {
         SomeLargeGameState state;
         state.number = 178;
 
-        Net::VarContainer cnt;
-        Net::Var<SomeLargeGameState> s1 = {"Variable", state};
+        VarContainer cnt;
+        Var<SomeLargeGameState> s1 = {"Variable", state};
         require(s1.number == state.number);
         cnt.SaveVar(s1);
 
-        Net::Var<SomeLargeGameState> s2 = {"Variable", state};
+        Var<SomeLargeGameState> s2 = {"Variable", state};
         cnt.LoadVar(s2);
         require(s2.number == state.number);
     }
 
     { // VarContainer string
-        Net::VarContainer cnt;
+        VarContainer cnt;
 
-        Net::Var<std::string> s1 = {"String", "qwe"};
+        Var<std::string> s1 = {"String", "qwe"};
         cnt.SaveVar(s1);
 
-        Net::Var<std::string> s2 = {"String"};
+        Var<std::string> s2 = {"String"};
         cnt.LoadVar(s2);
 
         require(s1 == s2);

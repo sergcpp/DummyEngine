@@ -12,55 +12,54 @@ const int maximum_sequence = 255;
 void test_reliable_udp_connection() {
     printf("Test rel_udp_connection | ");
 
-    { // Check bit index for sequence
-        require(Net::ReliabilitySystem::bit_index_for_sequence(99, 100, maximum_sequence) == 0);
-        require(Net::ReliabilitySystem::bit_index_for_sequence(90, 100, maximum_sequence) == 9);
-        require(Net::ReliabilitySystem::bit_index_for_sequence(0, 1, maximum_sequence) == 0);
-        require(Net::ReliabilitySystem::bit_index_for_sequence(255, 0, maximum_sequence) == 0);
-        require(Net::ReliabilitySystem::bit_index_for_sequence(255, 1, maximum_sequence) == 1);
-        require(Net::ReliabilitySystem::bit_index_for_sequence(254, 1, maximum_sequence) == 2);
-        require(Net::ReliabilitySystem::bit_index_for_sequence(254, 2, maximum_sequence) == 3);
-    }
+    using namespace Net;
 
+    { // Check bit index for sequence
+        require(ReliabilitySystem::bit_index_for_sequence(99, 100, maximum_sequence) == 0);
+        require(ReliabilitySystem::bit_index_for_sequence(90, 100, maximum_sequence) == 9);
+        require(ReliabilitySystem::bit_index_for_sequence(0, 1, maximum_sequence) == 0);
+        require(ReliabilitySystem::bit_index_for_sequence(255, 0, maximum_sequence) == 0);
+        require(ReliabilitySystem::bit_index_for_sequence(255, 1, maximum_sequence) == 1);
+        require(ReliabilitySystem::bit_index_for_sequence(254, 1, maximum_sequence) == 2);
+        require(ReliabilitySystem::bit_index_for_sequence(254, 2, maximum_sequence) == 3);
+    }
     { // Check generate ack bits
-        Net::PacketQueue packet_queue;
+        PacketQueue packet_queue;
         for (int i = 0; i < 32; ++i) {
-            Net::PacketData data(i, 0, 0);
+            PacketData data(i, 0, 0);
             packet_queue.insert_sorted(data, maximum_sequence);
         }
-        require(Net::ReliabilitySystem::generate_ack_bits(32, packet_queue, maximum_sequence) == 0xFFFFFFFF);
-        require(Net::ReliabilitySystem::generate_ack_bits(31, packet_queue, maximum_sequence) == 0x7FFFFFFF);
-        require(Net::ReliabilitySystem::generate_ack_bits(33, packet_queue, maximum_sequence) == 0xFFFFFFFE);
-        require(Net::ReliabilitySystem::generate_ack_bits(16, packet_queue, maximum_sequence) == 0x0000FFFF);
-        require(Net::ReliabilitySystem::generate_ack_bits(48, packet_queue, maximum_sequence) == 0xFFFF0000);
+        require(ReliabilitySystem::generate_ack_bits(32, packet_queue, maximum_sequence) == 0xFFFFFFFF);
+        require(ReliabilitySystem::generate_ack_bits(31, packet_queue, maximum_sequence) == 0x7FFFFFFF);
+        require(ReliabilitySystem::generate_ack_bits(33, packet_queue, maximum_sequence) == 0xFFFFFFFE);
+        require(ReliabilitySystem::generate_ack_bits(16, packet_queue, maximum_sequence) == 0x0000FFFF);
+        require(ReliabilitySystem::generate_ack_bits(48, packet_queue, maximum_sequence) == 0xFFFF0000);
     }
-
     { // Check generate ack bits with wrap
-        Net::PacketQueue packet_queue;
+        PacketQueue packet_queue;
         for (int i = 255 - 31; i <= 255; ++i) {
-            Net::PacketData data(i, 0, 0);
+            PacketData data(i, 0, 0);
             packet_queue.insert_sorted(data, maximum_sequence);
         }
         require(packet_queue.size() == 32);
-        require(Net::ReliabilitySystem::generate_ack_bits(0, packet_queue, maximum_sequence) == 0xFFFFFFFF);
-        require(Net::ReliabilitySystem::generate_ack_bits(255, packet_queue, maximum_sequence) == 0x7FFFFFFF);
-        require(Net::ReliabilitySystem::generate_ack_bits(1, packet_queue, maximum_sequence) == 0xFFFFFFFE);
-        require(Net::ReliabilitySystem::generate_ack_bits(240, packet_queue, maximum_sequence) == 0x0000FFFF);
-        require(Net::ReliabilitySystem::generate_ack_bits(16, packet_queue, maximum_sequence) == 0xFFFF0000);
+        require(ReliabilitySystem::generate_ack_bits(0, packet_queue, maximum_sequence) == 0xFFFFFFFF);
+        require(ReliabilitySystem::generate_ack_bits(255, packet_queue, maximum_sequence) == 0x7FFFFFFF);
+        require(ReliabilitySystem::generate_ack_bits(1, packet_queue, maximum_sequence) == 0xFFFFFFFE);
+        require(ReliabilitySystem::generate_ack_bits(240, packet_queue, maximum_sequence) == 0x0000FFFF);
+        require(ReliabilitySystem::generate_ack_bits(16, packet_queue, maximum_sequence) == 0xFFFF0000);
     }
-
     { // Check process ack (1)
-        Net::PacketQueue packet_queue;
+        PacketQueue packet_queue;
         for (int i = 0; i < 33; ++i) {
-            Net::PacketData data(i, 0, 0);
+            PacketData data(i, 0, 0);
             packet_queue.insert_sorted(data, maximum_sequence);
         }
-        Net::PacketQueue acked_queue;
+        PacketQueue acked_queue;
         std::vector<unsigned int> acks;
         float rtt = 0;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(32, 0xFFFFFFFF, packet_queue, acked_queue, acks, acked_packets, rtt,
-                                            maximum_sequence);
+        ReliabilitySystem::process_ack(32, 0xFFFFFFFF, packet_queue, acked_queue, acks, acked_packets, rtt,
+                                       maximum_sequence);
         require(acks.size() == 33);
         require(acked_packets == 33);
         require(acked_queue.size() == 33);
@@ -70,85 +69,82 @@ void test_reliable_udp_connection() {
             require(acks[i] == i);
         }
         unsigned int i = 0;
-        for (Net::PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == i);
         }
     }
-
     { // Check process ack (2)
-        Net::PacketQueue pending_ack_queue;
+        PacketQueue pending_ack_queue;
         for (int i = 0; i < 33; ++i) {
-            Net::PacketData data(i, 0, 0);
+            PacketData data(i, 0, 0);
             pending_ack_queue.insert_sorted(data, maximum_sequence);
         }
-        Net::PacketQueue acked_queue;
+        PacketQueue acked_queue;
         std::vector<unsigned int> acks;
         float rtt = 0;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(32, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
-                                            maximum_sequence);
+        ReliabilitySystem::process_ack(32, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                       maximum_sequence);
         require(acks.size() == 17);
         require(acked_packets == 17);
         require(acked_queue.size() == 17);
         require(pending_ack_queue.size() == 33 - 17);
         require(acked_queue.verify_sorted(maximum_sequence));
         unsigned int i = 0;
-        for (Net::PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
             require(it->sequence == i);
         }
         i = 0;
-        for (Net::PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == i + 16);
         }
         for (unsigned int i = 0; i < acks.size(); ++i) {
             require(acks[i] == i + 16);
         }
     }
-
     { // Check process ack (3)
-        Net::PacketQueue pending_ack_queue;
+        PacketQueue pending_ack_queue;
         for (int i = 0; i < 32; ++i) {
-            Net::PacketData data(i, 0, 0);
+            PacketData data(i, 0, 0);
             pending_ack_queue.insert_sorted(data, maximum_sequence);
         }
-        Net::PacketQueue acked_queue;
+        PacketQueue acked_queue;
         std::vector<unsigned int> acks;
         float rtt = 0;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(48, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
-                                            maximum_sequence);
+        ReliabilitySystem::process_ack(48, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                       maximum_sequence);
         require(acks.size() == 16);
         require(acked_packets == 16);
         require(acked_queue.size() == 16);
         require(pending_ack_queue.size() == 16);
         acked_queue.verify_sorted(maximum_sequence);
         unsigned int i = 0;
-        for (Net::PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
             require(it->sequence == i);
         }
         i = 0;
-        for (Net::PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == i + 16);
         }
         for (unsigned int i = 0; i < acks.size(); ++i) {
             require(acks[i] == i + 16);
         }
     }
-
     { // Check process ack wrap around (1)
-        Net::PacketQueue pending_ack_queue;
+        PacketQueue pending_ack_queue;
         for (int i = 255 - 31; i <= 256; ++i) {
-            Net::PacketData data(i & 0xFF, 0, 0);
+            PacketData data(i & 0xFF, 0, 0);
             pending_ack_queue.insert_sorted(data, maximum_sequence);
             pending_ack_queue.verify_sorted(maximum_sequence);
         }
         require(pending_ack_queue.size() == 33);
-        Net::PacketQueue acked_queue;
+        PacketQueue acked_queue;
         std::vector<unsigned int> acks;
         float rtt = 0;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(0, 0xFFFFFFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
-                                            maximum_sequence);
+        ReliabilitySystem::process_ack(0, 0xFFFFFFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                       maximum_sequence);
         require(acks.size() == 33);
         require(acked_packets == 33);
         require(acked_queue.size() == 33);
@@ -158,24 +154,23 @@ void test_reliable_udp_connection() {
             require(acks[i] == ((i + 255 - 31) & 0xFF));
         }
         unsigned int i = 0;
-        for (Net::PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == ((i + 255 - 31) & 0xFF));
         }
     }
-
     { // Check process ack wrap around (2)
-        Net::PacketQueue pending_ack_queue;
+        PacketQueue pending_ack_queue;
         for (int i = 255 - 31; i <= 256; ++i) {
-            Net::PacketData data(i & 0xFF, 0, 0);
+            PacketData data(i & 0xFF, 0, 0);
             pending_ack_queue.insert_sorted(data, maximum_sequence);
         }
         require(pending_ack_queue.size() == 33);
-        Net::PacketQueue acked_queue;
+        PacketQueue acked_queue;
         std::vector<unsigned int> acks;
         float rtt = 0;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(0, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
-                                            maximum_sequence);
+        ReliabilitySystem::process_ack(0, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                       maximum_sequence);
         require(acks.size() == 17);
         require(acked_packets == 17);
         require(acked_queue.size() == 17);
@@ -185,28 +180,27 @@ void test_reliable_udp_connection() {
             require(acks[i] == ((i + 255 - 15) & 0xFF));
         }
         unsigned int i = 0;
-        for (Net::PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
             require(it->sequence == i + 255 - 31);
         }
         i = 0;
-        for (Net::PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == ((i + 255 - 15) & 0xFF));
         }
     }
-
     { // Check process ack wrap around (3)
-        Net::PacketQueue pending_ack_queue;
+        PacketQueue pending_ack_queue;
         for (int i = 255 - 31; i <= 255; ++i) {
-            Net::PacketData data(i & 0xFF, 0, 0);
+            PacketData data(i & 0xFF, 0, 0);
             pending_ack_queue.insert_sorted(data, maximum_sequence);
         }
         require(pending_ack_queue.size() == 32);
-        Net::PacketQueue acked_queue;
+        PacketQueue acked_queue;
         std::vector<unsigned int> acks;
         float rtt = 0;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(16, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
-                                            maximum_sequence);
+        ReliabilitySystem::process_ack(16, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                       maximum_sequence);
         require(acks.size() == 16);
         require(acked_packets == 16);
         require(acked_queue.size() == 16);
@@ -216,15 +210,14 @@ void test_reliable_udp_connection() {
             require(acks[i] == ((i + 255 - 15) & 0xFF));
         }
         unsigned int i = 0;
-        for (Net::PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = pending_ack_queue.begin(); it != pending_ack_queue.end(); ++it, ++i) {
             require(it->sequence == i + 255 - 31);
         }
         i = 0;
-        for (Net::PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
+        for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == ((i + 255 - 15) & 0xFF));
         }
     }
-
     { // Test join
         const int server_port = 30000;
         const int client_port = 30001;
@@ -232,13 +225,13 @@ void test_reliable_udp_connection() {
         const float dt_s = 0.001f;
         const float timeout_s_s = 1;
 
-        Net::ReliableUDPConnection client(protocol_id, timeout_s_s);
-        Net::ReliableUDPConnection server(protocol_id, timeout_s_s);
+        ReliableUDPConnection client(protocol_id, timeout_s_s);
+        ReliableUDPConnection server(protocol_id, timeout_s_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         while (true) {
@@ -278,7 +271,6 @@ void test_reliable_udp_connection() {
         require(client.connected());
         require(server.connected());
     }
-
     { // Test payload
         const int server_port = 30000;
         const int client_port = 30001;
@@ -286,13 +278,13 @@ void test_reliable_udp_connection() {
         const float dt_s = 0.001f;
         const float timeout_s_s = 0.1f;
 
-        Net::ReliableUDPConnection client(protocol_id, timeout_s_s);
-        Net::ReliableUDPConnection server(protocol_id, timeout_s_s);
+        ReliableUDPConnection client(protocol_id, timeout_s_s);
+        ReliableUDPConnection server(protocol_id, timeout_s_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         while (true) {
@@ -334,7 +326,6 @@ void test_reliable_udp_connection() {
         require(client.connected());
         require(server.connected());
     }
-
     { // Test acks
         const int server_port = 30000;
         const int client_port = 30001;
@@ -343,13 +334,13 @@ void test_reliable_udp_connection() {
         const float timeout_s = 0.1f;
         const unsigned int packet_count = 100;
 
-        Net::ReliableUDPConnection client(protocol_id, timeout_s);
-        Net::ReliableUDPConnection server(protocol_id, timeout_s);
+        ReliableUDPConnection client(protocol_id, timeout_s);
+        ReliableUDPConnection server(protocol_id, timeout_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         bool clientAckedPackets[packet_count];
@@ -433,7 +424,6 @@ void test_reliable_udp_connection() {
         require(client.connected());
         require(server.connected());
     }
-
     { // Test ack bits
         const int server_port = 30000;
         const int client_port = 30001;
@@ -442,13 +432,13 @@ void test_reliable_udp_connection() {
         const float timeout_s = 0.1f;
         const unsigned int packet_count = 100;
 
-        Net::ReliableUDPConnection client(protocol_id, timeout_s);
-        Net::ReliableUDPConnection server(protocol_id, timeout_s);
+        ReliableUDPConnection client(protocol_id, timeout_s);
+        ReliableUDPConnection server(protocol_id, timeout_s);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         bool clientAckedPackets[packet_count];
@@ -546,7 +536,6 @@ void test_reliable_udp_connection() {
         require(client.connected());
         require(server.connected());
     }
-
     { // Test packet loss
         const int server_port = 30000;
         const int client_port = 30001;
@@ -555,8 +544,8 @@ void test_reliable_udp_connection() {
         const float timeout_s = 0.1f;
         const unsigned int packet_count = 100;
 
-        Net::ReliableUDPConnection client(protocol_id, timeout_s);
-        Net::ReliableUDPConnection server(protocol_id, timeout_s);
+        ReliableUDPConnection client(protocol_id, timeout_s);
+        ReliableUDPConnection server(protocol_id, timeout_s);
 
         client.set_packet_loss_mask(1);
         server.set_packet_loss_mask(1);
@@ -564,7 +553,7 @@ void test_reliable_udp_connection() {
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         bool clientAckedPackets[packet_count];
@@ -666,7 +655,6 @@ void test_reliable_udp_connection() {
         require(client.connected());
         require(server.connected());
     }
-
     { // Test sequence wrap around
         const int server_port = 30000;
         const int client_port = 30001;
@@ -676,13 +664,13 @@ void test_reliable_udp_connection() {
         const unsigned int packet_count = 256;
         const unsigned int max_sequence = 31; // [0,31]
 
-        Net::ReliableUDPConnection client(protocol_id, timeout_s, max_sequence);
-        Net::ReliableUDPConnection server(protocol_id, timeout_s, max_sequence);
+        ReliableUDPConnection client(protocol_id, timeout_s, max_sequence);
+        ReliableUDPConnection server(protocol_id, timeout_s, max_sequence);
 
         require_nothrow(client.Start(client_port));
         require_nothrow(server.Start(server_port));
 
-        client.Connect(Net::Address(127, 0, 0, 1, server_port));
+        client.Connect(Address(127, 0, 0, 1, server_port));
         server.Listen();
 
         unsigned int clientAckCount[max_sequence + 1];

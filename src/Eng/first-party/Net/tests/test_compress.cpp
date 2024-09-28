@@ -7,7 +7,9 @@
 void test_compress() {
     printf("Test compress           | ");
 
-    Net::Packet test_buf(1024);
+    using namespace Net;
+
+    Packet test_buf(1024);
     for (int i = 0; i < 256; i++) {
         test_buf[i] = (uint8_t)(i % 255);
     }
@@ -20,11 +22,11 @@ void test_compress() {
         test_buf[i] = uint8_t(i % 255);
     }
 
-    Net::Packet compr = Net::CompressLZO(test_buf);
+    Packet compr = CompressLZO(test_buf);
 
     //printf("size before %i, size after %i\n", int(test_buf.size()), int(compr.size()));
 
-    Net::Packet decompr = Net::DecompressLZO(compr);
+    Packet decompr = DecompressLZO(compr);
 
     require(decompr.size() == test_buf.size());
     require(test_buf == decompr);

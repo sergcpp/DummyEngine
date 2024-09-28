@@ -8,8 +8,10 @@
 void test_tcp_socket() {
     printf("Test tcp_socket         | ");
 
+    using namespace Net;
+
     { // TCPSocket open/close
-        Net::TCPSocket socket;
+        TCPSocket socket;
         require(!socket.IsOpen());
         require_nothrow(socket.Open(30000));
         require(socket.IsOpen());
@@ -18,17 +20,15 @@ void test_tcp_socket() {
         require_nothrow(socket.Open(30000));
         require(socket.IsOpen());
     }
-
     { // TCPSocket same port fail
-        Net::TCPSocket a, b;
+        TCPSocket a, b;
         require_nothrow(a.Open(30000, false));
         require_throws(b.Open(30000, false));
         require(a.IsOpen());
         require(!b.IsOpen());
     }
-
     { // TCPSocket send and receive packets
-        Net::TCPSocket a, b;
+        TCPSocket a, b;
         require_nothrow(a.Open(30000));
         require_nothrow(b.Open(30001));
         const char packet[] = "packet data";
@@ -56,7 +56,7 @@ void test_tcp_socket() {
             }
             require(false);
         });
-        require(a.Connect(Net::Address(127, 0, 0, 1, 30001)));
+        require(a.Connect(Address(127, 0, 0, 1, 30001)));
         require(a.Send(packet, sizeof(packet)));
         thr.join();
     }

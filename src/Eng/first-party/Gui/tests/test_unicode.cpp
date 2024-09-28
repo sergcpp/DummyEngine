@@ -5,16 +5,18 @@
 void test_unicode() {
     printf("Test unicode            | ");
 
+    using namespace Gui;
+
     const char test_str1[] = u8"z\u6c34\U0001d10b";
 
     { // utf8 -> unicode
         int pos = 0;
         uint32_t unicode[4];
 
-        pos += Gui::ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[0]);
-        pos += Gui::ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[1]);
-        pos += Gui::ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[2]);
-        pos += Gui::ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[3]);
+        pos += ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[0]);
+        pos += ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[1]);
+        pos += ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[2]);
+        pos += ConvChar_UTF8_to_Unicode(&test_str1[pos], unicode[3]);
 
         require(pos == 9);
         require(unicode[0] == 0x7a);
@@ -27,10 +29,10 @@ void test_unicode() {
         int pos = 0;
         uint16_t utf16[8];
 
-        pos += Gui::ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[0]);
-        pos += Gui::ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[2]);
-        pos += Gui::ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[4]);
-        pos += Gui::ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[6]);
+        pos += ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[0]);
+        pos += ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[2]);
+        pos += ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[4]);
+        pos += ConvChar_UTF8_to_UTF16(&test_str1[pos], &utf16[6]);
 
         require(pos == 9);
         require(utf16[0] == 0x7a);

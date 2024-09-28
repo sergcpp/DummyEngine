@@ -52,9 +52,9 @@ namespace Net {
     class le_type {
     public:
         le_type() : le_val_(0) { }
-        le_type(const T &val) : le_val_(Net::swap_endian<T>(val)) { }
+        le_type(const T &val) : le_val_(swap_endian<T>(val)) { }
         operator T() const {
-            return Net::swap_endian<T>(le_val_);
+            return swap_endian<T>(le_val_);
         }
         le_type<T> operator+=(const le_type<T> &f) {
             return le_type<T>((T)le_val_ + (T)f.le_val_);
@@ -69,7 +69,7 @@ namespace Net {
             return le_type<T>((T)le_val_ / (T)f.le_val_);
         }
         le_type<T>& operator=(const T &f) {
-            le_val_ = Net::swap_endian<T>(f);
+            le_val_ = swap_endian<T>(f);
             return *this;
         }
         /*le_type<T> operator+(const le_type<T> &f1, const le_type<T> &f2) {

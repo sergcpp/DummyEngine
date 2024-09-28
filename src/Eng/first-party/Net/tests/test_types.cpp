@@ -6,10 +6,11 @@
 void test_types() {
     printf("Test types              | ");
 
-    // Check endianness conversion
+    using namespace Net;
 
+    // Check endianness conversion
     { // int16
-        Net::le_int16 v1 = -11345;
+        le_int16 v1 = -11345;
         int16_t v2 = -11345;
         require(v1 == v2);
         v1 = -11344;
@@ -18,7 +19,7 @@ void test_types() {
         require(v2 < v1);
     }
     { // uint16
-        Net::le_uint16 v1 = 11345;
+        le_uint16 v1 = 11345;
         uint16_t v2 = 11345;
         require(v1 == v2);
         v1 = 11346;
@@ -27,7 +28,7 @@ void test_types() {
         require(v2 < v1);
     }
     { // int32
-        Net::le_int32 v1 = -113212145;
+        le_int32 v1 = -113212145;
         int32_t v2 = -113212145;
         require(v1 == v2);
         v1 = -113212144;
@@ -36,7 +37,7 @@ void test_types() {
         require(v2 < v1);
     }
     { // uint32
-        Net::le_uint32 v1 = 87815345;
+        le_uint32 v1 = 87815345;
         uint32_t v2 = 87815345;
         require(v1 == v2);
         v1 = 87815346;
@@ -45,7 +46,7 @@ void test_types() {
         require(v2 < v1);
     }
     { // float32
-        Net::le_float32 v1 = 15345.015457f;
+        le_float32 v1 = 15345.015457f;
         float v2 = 15345.015457f;
         require(v1 == v2);
         v1 = 15345.016457f;
@@ -56,9 +57,9 @@ void test_types() {
     // Just check if it compiles or not
     /*glm::vec2 v2_1;
     glm::vec3 v3_1;
-    Net::le_float32 f1;
-    Net::le_vec2 v2_2;
-    Net::le_vec3 v3_2;
+    le_float32 f1;
+    le_vec2 v2_2;
+    le_vec3 v3_2;
 
     v2_2 = v2_2 + v2_2;
     v2_2 += v2_2;
