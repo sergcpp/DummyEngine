@@ -5,7 +5,6 @@
 #include <Sys/AssetFile.h>
 #include <Sys/ScopeExit.h>
 #include <Sys/Time_.h>
-#include <stb/stb_image.h>
 
 #include "../utils/Random.h"
 #include "../utils/ShaderLoader.h"
@@ -648,46 +647,29 @@ void Eng::Renderer::InitSkyResources() {
                 std::vector<uint8_t> data(moon_tex.size());
                 moon_tex.Read((char *)&data[0], moon_tex.size());
 
-                Ren::DDSHeader header = {};
-                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
-
                 Ren::Tex2DParams p;
-                p.w = header.dwWidth;
-                p.h = header.dwHeight;
-                p.format = Ren::eTexFormat::BC3;
-                p.block = Ren::eTexBlock::_4x4;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
                 p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_moon_tex_ = ctx_.LoadTexture2D(
-                    "Sky Moon Tex", Ren::Span{&data[0] + sizeof(Ren::DDSHeader), data.size() - sizeof(Ren::DDSHeader)},
-                    p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                sky_moon_tex_ = ctx_.LoadTexture2D(moon_tex.name(), data, p, ctx_.default_stage_bufs(),
+                                                   ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init Weather texture
-                Sys::AssetFile weather_tex("assets_pc/textures/internal/weather.uncompressed.png");
+                Sys::AssetFile weather_tex("assets_pc/textures/internal/weather.dds");
                 std::vector<uint8_t> data(weather_tex.size());
                 weather_tex.Read((char *)&data[0], weather_tex.size());
 
-                int width, height, channels;
-                unsigned char *image_data =
-                    stbi_load_from_memory(&data[0], int(data.size()), &width, &height, &channels, 0);
-                SCOPE_EXIT({ stbi_image_free(image_data); })
-                assert(image_data && channels == 4);
-
                 Ren::Tex2DParams p;
-                p.w = width;
-                p.h = height;
-                p.format = Ren::eTexFormat::RawRGBA8888;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
                 p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_weather_tex_ = ctx_.LoadTexture2D("Sky Weather Tex", Ren::Span{image_data, 4 * width * height}, p,
-                                                      ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                sky_weather_tex_ = ctx_.LoadTexture2D(weather_tex.name(), data, p, ctx_.default_stage_bufs(),
+                                                      ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init Cirrus texture
@@ -695,22 +677,14 @@ void Eng::Renderer::InitSkyResources() {
                 std::vector<uint8_t> data(cirrus_tex.size());
                 cirrus_tex.Read((char *)&data[0], cirrus_tex.size());
 
-                Ren::DDSHeader header = {};
-                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
-
                 Ren::Tex2DParams p;
-                p.w = header.dwWidth;
-                p.h = header.dwHeight;
-                p.format = Ren::eTexFormat::RawRG88;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
                 p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_cirrus_tex_ = ctx_.LoadTexture2D(
-                    "Sky Cirrus Tex",
-                    Ren::Span{&data[0] + sizeof(Ren::DDSHeader), data.size() - sizeof(Ren::DDSHeader)}, p,
-                    ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                sky_cirrus_tex_ = ctx_.LoadTexture2D(cirrus_tex.name(), data, p, ctx_.default_stage_bufs(),
+                                                     ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init Curl texture
@@ -718,22 +692,15 @@ void Eng::Renderer::InitSkyResources() {
                 std::vector<uint8_t> data(curl_tex.size());
                 curl_tex.Read((char *)&data[0], curl_tex.size());
 
-                Ren::DDSHeader header = {};
-                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
-
                 Ren::Tex2DParams p;
-                p.w = header.dwWidth;
-                p.h = header.dwHeight;
-                p.format = Ren::eTexFormat::RawRGBA8888;
                 p.flags = Ren::eTexFlagBits::SRGB;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
                 p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_curl_tex_ = ctx_.LoadTexture2D(
-                    "Sky Curl Tex", Ren::Span{&data[0] + sizeof(Ren::DDSHeader), data.size() - sizeof(Ren::DDSHeader)},
-                    p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                sky_curl_tex_ = ctx_.LoadTexture2D(curl_tex.name(), data, p, ctx_.default_stage_bufs(),
+                                                   ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init 3d noise texture

@@ -139,9 +139,9 @@ if(${RENDERER} STREQUAL "GL")
                      VertexInputGL.cpp)
 
     if(WIN32)
-        set(LIBS ${LIBS} opengl32 stb SPIRV-Reflect)
+        set(LIBS ${LIBS} opengl32 SPIRV-Reflect)
     else(WIN32)
-        set(LIBS ${LIBS} stb SPIRV-Reflect)
+        set(LIBS ${LIBS} SPIRV-Reflect)
     ENDIF(WIN32)
 elseif(${RENDERER} STREQUAL "SW")
     set(SOURCE_FILES ${SOURCE_FILES}
@@ -191,11 +191,10 @@ elseif(${RENDERER} STREQUAL "VK")
     list(APPEND REN_SOURCE_FILES ${VULKAN_HEADERS})
     source_group("src/vulkan" FILES ${VULKAN_HEADERS})
 
-    set(LIBS ${LIBS} stb SPIRV-Reflect)
+    set(LIBS ${LIBS} SPIRV-Reflect)
 endif()
 
 add_subdirectory(SW)
-add_subdirectory(third-party/stb)
 add_subdirectory(third-party/SPIRV-Reflect)
 
 list(APPEND REN_SOURCE_FILES ${SOURCE_FILES})

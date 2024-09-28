@@ -229,8 +229,8 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     }
 
     { // load error texture
-        char name_buf[64];
-        snprintf(name_buf, sizeof(name_buf), "%serror.uncompressed.png", paths_.textures_path);
+        std::string name_buf = paths_.textures_path;
+        name_buf += "internal/error.dds";
 
         Sys::AssetFile in_file(name_buf);
         if (in_file) {
@@ -248,7 +248,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
                                                 ren_ctx_.default_mem_allocs(), &status);
             assert(status == Ren::eTexLoadStatus::CreatedFromData);
         } else {
-            log->Error("SceneManager: Failed to load error.uncompressed.png!");
+            log->Error("SceneManager: Failed to load error.dds!");
         }
     }
 

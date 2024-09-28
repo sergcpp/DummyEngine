@@ -13,12 +13,12 @@ template <typename Func> std::vector<float> CDFEvaluate(const int res, const flo
     std::vector<float> cdf(cdf_count);
     cdf[0] = 0.0f;
     for (int i = 0; i < res; ++i) {
-        float x = from + range * float(i) / float(res - 1);
-        float y = func(x);
+        const float x = from + range * float(i) / float(res - 1);
+        const float y = func(x);
         cdf[i + 1] = cdf[i] + std::abs(y);
     }
     // Normalize
-    float fac = (cdf[res] == 0.0f) ? 0.0f : 1.0f / cdf[res];
+    const float fac = (cdf[res] == 0.0f) ? 0.0f : 1.0f / cdf[res];
     for (int i = 0; i <= res; ++i) {
         cdf[i] *= fac;
     }

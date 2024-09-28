@@ -8,8 +8,6 @@
 #include "GL.h"
 #include "Utils.h"
 
-#include "stb/stb_image.h"
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)
@@ -282,8 +280,6 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer
             InitFromDDSFile(data, sbuf, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
             InitFromKTXFile(data, sbuf, p, log);
-        } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-            InitFromPNGFile(data, sbuf, p, log);
         } else {
             uint8_t *stage_data = sbuf.Map();
             memcpy(stage_data, data.data(), data.size());
@@ -315,8 +311,6 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buf
     } else {
         if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, sbuf, p, log);
-        } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-            InitFromPNGFile(data, sbuf, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
             InitFromKTXFile(data, sbuf, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
@@ -527,66 +521,94 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, Buffer &sbuf, con
 }
 
 void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log) {
+    Free();
+
+    int bytes_left = int(data.size());
+    const uint8_t *p_data = data.data();
+
     DDSHeader header;
     memcpy(&header, data.data(), sizeof(DDSHeader));
+    p_data += sizeof(DDSHeader);
+    bytes_left -= sizeof(DDSHeader);
 
-    eTexFormat format;
-    eTexBlock block;
-    int block_size_bytes;
+    Tex2DParams _p = p;
+    ParseDDSHeader(header, &_p);
 
-    const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
-    switch (px_format) {
-    case 1:
-        format = eTexFormat::BC1;
-        block = eTexBlock::_4x4;
-        block_size_bytes = 8;
-        break;
-    case 3:
-        format = eTexFormat::BC2;
-        block = eTexBlock::_4x4;
-        block_size_bytes = 16;
-        break;
-    case 5:
-        format = eTexFormat::BC3;
-        block = eTexBlock::_4x4;
-        block_size_bytes = 16;
-        break;
-    default:
-        log->Error("Unknow DDS pixel format %i", px_format);
+    if (header.sPixelFormat.dwFourCC ==
+        ((unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
+        DDS_HEADER_DXT10 dx10_header = {};
+        memcpy(&dx10_header, data.data() + sizeof(DDSHeader), sizeof(DDS_HEADER_DXT10));
+        _p.format = TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
+
+        p_data += sizeof(DDS_HEADER_DXT10);
+        bytes_left -= sizeof(DDS_HEADER_DXT10);
+    } else if (_p.format == eTexFormat::Undefined) {
+        // Try to use least significant bits of FourCC as format
+        const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
+        if (val == 0x6f) {
+            _p.format = eTexFormat::RawR16F;
+        } else if (val == 0x70) {
+            _p.format = eTexFormat::RawRG16F;
+        } else if (val == 0x71) {
+            _p.format = eTexFormat::RawRGBA16F;
+        } else if (val == 0x72) {
+            _p.format = eTexFormat::RawR32F;
+        } else if (val == 0x73) {
+            _p.format = eTexFormat::RawRG32F;
+        } else if (val == 0x74) {
+            _p.format = eTexFormat::RawRGBA32F;
+        } else if (val == 0) {
+            if (header.sPixelFormat.dwRGBBitCount == 8) {
+                _p.format = eTexFormat::RawR8;
+            } else if (header.sPixelFormat.dwRGBBitCount == 16) {
+                _p.format = eTexFormat::RawRG88;
+                assert(header.sPixelFormat.dwRBitMask == 0x00ff);
+                assert(header.sPixelFormat.dwGBitMask == 0xff00);
+            }
+        }
+    }
+
+    if (_p.format == eTexFormat::Undefined) {
+        log->Error("Failed to parse DDS header!");
         return;
     }
 
-    Free();
-    Realloc(int(header.dwWidth), int(header.dwHeight), int(header.dwMipMapCount), 1, format, block,
-            bool(p.flags & eTexFlagBits::SRGB), nullptr, nullptr, log);
+    params.usage = _p.usage;
 
-    params.flags = p.flags;
-    params.block = block;
-    params.sampling = p.sampling;
+    Realloc(_p.w, _p.h, _p.mip_count, 1, _p.format, _p.block, bool(_p.flags & eTexFlagBits::SRGB), nullptr, nullptr,
+            log);
 
-    const GLuint internal_format = GLInternalFormatFromTexFormat(params.format, bool(p.flags & eTexFlagBits::SRGB));
+    params.flags = _p.flags;
+    params.block = _p.block;
+    params.sampling = _p.sampling;
 
-    int w = params.w, h = params.h;
-    uint32_t bytes_left = uint32_t(data.size()) - sizeof(DDSHeader);
-    const uint8_t *p_data = data.data() + sizeof(DDSHeader);
+    const auto format = (GLenum)GLFormatFromTexFormat(_p.format),
+               internal_format = (GLenum)GLInternalFormatFromTexFormat(_p.format, bool(_p.flags & eTexFlagBits::SRGB)),
+               type = (GLenum)GLTypeFromTexFormat(_p.format);
 
-    assert(bytes_left <= sbuf.size());
+    assert(bytes_left <= int(sbuf.size()));
     uint8_t *stage_data = sbuf.Map();
     memcpy(stage_data, p_data, bytes_left);
     sbuf.Unmap();
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
+    int w = params.w, h = params.h;
     uintptr_t data_off = 0;
     for (uint32_t i = 0; i < header.dwMipMapCount; i++) {
-        const uint32_t len = ((w + 3) / 4) * ((h + 3) / 4) * block_size_bytes;
+        const int len = GetMipDataLenBytes(w, h, params.format, params.block);
         if (len > bytes_left) {
             log->Error("Insufficient data length, bytes left %i, expected %i", bytes_left, len);
             return;
         }
 
-        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(i), 0, 0, w, h, internal_format,
-                                               len, reinterpret_cast<const GLvoid *>(data_off));
+        if (IsCompressedFormat(params.format)) {
+            ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(i), 0, 0, w, h,
+                                                   internal_format, len, reinterpret_cast<const GLvoid *>(data_off));
+        } else {
+            ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), 0, 0, 0, w, h, format, type,
+                                         reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+        }
         initialized_mips_ |= (1u << i);
 
         data_off += len;
@@ -598,32 +620,6 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, con
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     ApplySampling(p.sampling, log);
-}
-
-void Ren::Texture2D::InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log) {
-    int width, height, channels;
-    unsigned char *const image_data =
-        stbi_load_from_memory(data.data(), int(data.size()), &width, &height, &channels, 0);
-
-    Tex2DParams _p = p;
-    _p.w = width;
-    _p.h = height;
-    if (channels == 3) {
-        _p.format = eTexFormat::RawRGB888;
-    } else if (channels == 4) {
-        _p.format = eTexFormat::RawRGBA8888;
-    } else {
-        assert(false);
-    }
-
-    const uint32_t img_size = channels * width * height;
-    assert(img_size <= sbuf.size());
-    uint8_t *stage_data = sbuf.Map();
-    memcpy(stage_data, image_data, img_size);
-    sbuf.Unmap();
-
-    InitFromRAWData(&sbuf, 0, _p, log);
-    free(image_data);
 }
 
 void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log) {
@@ -671,7 +667,8 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, con
         uint32_t img_size;
         memcpy(&img_size, &data[data_offset], sizeof(uint32_t));
         if (data_offset + int(img_size) > data.size()) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", int(data.size() - data_offset), img_size);
+            log->Error("Insufficient data length, bytes left %i, expected %i", int(data.size() - data_offset),
+                       img_size);
             break;
         }
 
@@ -789,43 +786,6 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, 
     _p.w = w;
     _p.h = h;
     _p.format = format;
-
-    InitFromRAWData(sbuf, data_off, _p, log);
-}
-
-void Ren::Texture2D::InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log) {
-    uint8_t *stage_data = sbuf.Map();
-    uint32_t stage_off = 0;
-
-    int data_off[6] = {-1, -1, -1, -1, -1, -1};
-
-    int width, height, channels;
-    for (int i = 0; i < 6; i++) {
-        if (!data[i].empty()) {
-            uint8_t *img_data =
-                stbi_load_from_memory(data[i].data(), int(data[i].size()), &width, &height, &channels, 0);
-
-            assert(stage_off + channels * width * height <= sbuf.size());
-            memcpy(&stage_data[stage_off], img_data, channels * width * height);
-            data_off[i] = int(stage_off);
-            stage_off += channels * width * height;
-
-            free(img_data);
-        }
-    }
-
-    sbuf.Unmap();
-
-    Tex2DParams _p = p;
-    _p.w = width;
-    _p.h = height;
-    if (channels == 3) {
-        _p.format = eTexFormat::RawRGB888;
-    } else if (channels == 4) {
-        _p.format = eTexFormat::RawRGBA8888;
-    } else {
-        assert(false);
-    }
 
     InitFromRAWData(sbuf, data_off, _p, log);
 }

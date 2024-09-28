@@ -18,8 +18,6 @@ class TextureRegion : public RefCounter {
 
     [[nodiscard]] bool InitFromDDSFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
                                        Tex2DParams p, TextureAtlasArray *atlas);
-    [[nodiscard]] bool InitFromImageFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
-                                         Tex2DParams p, TextureAtlasArray *atlas);
     [[nodiscard]] bool InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
                                        const Tex2DParams &p, TextureAtlasArray *atlas);
 

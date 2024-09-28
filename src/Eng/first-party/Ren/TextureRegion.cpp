@@ -4,8 +4,6 @@
 #include "TextureAtlas.h"
 #include "Utils.h"
 
-#include "stb/stb_image.h"
-
 Ren::TextureRegion::TextureRegion(std::string_view name, TextureAtlasArray *atlas, const int texture_pos[3])
     : name_(name), atlas_(atlas) {
     memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
@@ -70,7 +68,11 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, Buffer &stage_buf, Comma
         if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
             ready_ = InitFromDDSFile(data, stage_buf, cmd_buf, p, atlas);
         } else {
-            ready_ = InitFromImageFile(data, stage_buf, cmd_buf, p, atlas);
+            uint8_t *stage_data = stage_buf.Map();
+            memcpy(stage_data, data.data(), data.size());
+            stage_buf.Unmap();
+
+            ready_ = InitFromRAWData(stage_buf, 0, int(data.size()), cmd_buf, p, atlas);
         }
         (*load_status) = ready_ ? eTexLoadStatus::CreatedFromData : eTexLoadStatus::Error;
     }
@@ -123,28 +125,6 @@ bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, Buffer &stage
     }
 
     return InitFromRAWData(stage_buf, 0, img_data_len, cmd_buf, p, atlas);
-}
-
-bool Ren::TextureRegion::InitFromImageFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
-                                           Tex2DParams p, TextureAtlasArray *atlas) {
-    int w, h, channels;
-    unsigned char *const image_data = stbi_load_from_memory(data.data(), int(data.size()), &w, &h, &channels, 0);
-    if (!image_data) {
-        return false;
-    }
-    SCOPE_EXIT({ free(image_data); })
-
-    { // update staging buffer
-        uint8_t *img_stage = stage_buf.Map();
-        memcpy(img_stage, image_data, w * h * channels);
-        stage_buf.Unmap();
-    }
-
-    p.w = w;
-    p.h = h;
-    p.format = eTexFormat::RawRGBA8888;
-
-    return InitFromRAWData(stage_buf, 0, int(w * h * channels), cmd_buf, p, atlas);
 }
 
 bool Ren::TextureRegion::InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
