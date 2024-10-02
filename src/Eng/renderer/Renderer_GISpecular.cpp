@@ -59,7 +59,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     }
 
     FgResRef ray_list, tile_list;
-    FgResRef refl_tex, noise_tex;
+    FgResRef refl_tex, avg_refl_tex, noise_tex;
 
     { // Classify pixel quads
         auto &ssr_classify = fg_builder_.AddNode("SSR CLASSIFY");
@@ -73,7 +73,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgResRef ray_counter;
             FgResRef ray_list;
             FgResRef tile_list;
-            FgResRef out_refl_tex, out_noise_tex;
+            FgResRef out_refl_tex, out_avg_refl_tex, out_noise_tex;
         };
 
         auto *data = ssr_classify.AllocNodeData<PassData>();
@@ -110,6 +110,17 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             refl_tex = data->out_refl_tex =
                 ssr_classify.AddStorageImageOutput("SSR Temp 2", params, Stg::ComputeShader);
         }
+        { // 8x8 average reflections texture
+            Ren::Tex2DParams params;
+            params.w = (view_state_.scr_res[0] + 7) / 8;
+            params.h = (view_state_.scr_res[1] + 7) / 8;
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            avg_refl_tex = data->out_avg_refl_tex =
+                ssr_classify.AddStorageImageOutput("Average Refl", params, Stg::ComputeShader);
+        }
         { // blue noise texture
             Ren::Tex2DParams params;
             params.w = params.h = 128;
@@ -132,6 +143,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
             FgAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
             FgAllocTex &refl_tex = builder.GetWriteTexture(data->out_refl_tex);
+            FgAllocTex &avg_refl_tex = builder.GetWriteTexture(data->out_avg_refl_tex);
             FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
             // Initialize texel buffers if needed
@@ -162,6 +174,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::UTBuf, SSRClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
                 {Trg::UTBuf, SSRClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
                 {Trg::Image2D, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref},
+                {Trg::Image2D, SSRClassifyTiles::AVG_REFL_IMG_SLOT, *avg_refl_tex.ref},
                 {Trg::Image2D, SSRClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
@@ -430,7 +443,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
     }
 
-    FgResRef reproj_refl_tex, avg_refl_tex;
+    FgResRef reproj_refl_tex;
     FgResRef depth_hist_tex, sample_count_tex, variance_temp_tex;
 
     { // Denoiser reprojection
@@ -481,17 +494,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             reproj_refl_tex = data->out_reprojected_tex =
                 ssr_reproject.AddStorageImageOutput("SSR Reprojected", params, Stg::ComputeShader);
         }
-        { // 8x8 average reflections texture
-            Ren::Tex2DParams params;
-            params.w = (view_state_.scr_res[0] + 7) / 8;
-            params.h = (view_state_.scr_res[1] + 7) / 8;
-            params.format = Ren::eTexFormat::RawRGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            avg_refl_tex = data->out_avg_refl_tex =
-                ssr_reproject.AddStorageImageOutput("Average Refl", params, Stg::ComputeShader);
-        }
         { // Variance
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
@@ -515,6 +517,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 ssr_reproject.AddStorageImageOutput("Sample Count", params, Stg::ComputeShader);
         }
 
+        avg_refl_tex = data->out_avg_refl_tex = ssr_reproject.AddStorageImageOutput(avg_refl_tex, Stg::ComputeShader);
         data->sample_count_hist_tex =
             ssr_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
 

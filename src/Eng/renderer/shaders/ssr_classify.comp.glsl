@@ -35,6 +35,7 @@ layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform usamplerBuffer g_scrambling_ti
 layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_tex;
 
 layout(binding = REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_refl_img;
+layout(binding = AVG_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_avg_refl_img;
 layout(binding = NOISE_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_noise_img;
 
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
@@ -195,6 +196,9 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 
     if (g_params.clear > 0.5) {
         imageStore(g_refl_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, -1.0));
+        if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
+            imageStore(g_avg_refl_img, ivec2(gl_WorkGroupID.xy), vec4(0.0));
+        }
     }
 
     groupMemoryBarrier(); // Wait until all waves write into g_tile_count

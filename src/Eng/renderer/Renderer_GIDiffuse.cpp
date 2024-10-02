@@ -145,7 +145,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     }
 
     FgResRef ray_list, tile_list;
-    FgResRef gi_tex, noise_tex;
+    FgResRef gi_tex, avg_gi_tex, noise_tex;
 
     { // Classify pixel quads
         auto &gi_classify = fg_builder_.AddNode("GI CLASSIFY");
@@ -158,7 +158,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef ray_counter;
             FgResRef ray_list;
             FgResRef tile_list;
-            FgResRef out_gi_tex, out_noise_tex;
+            FgResRef out_gi_tex, out_avg_gi_tex, out_noise_tex;
         };
 
         auto *data = gi_classify.AllocNodeData<PassData>();
@@ -197,6 +197,17 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             gi_tex = data->out_gi_tex = gi_classify.AddStorageImageOutput("GI Final", params, Stg::ComputeShader);
         }
+        { // 8x8 average gi texture
+            Ren::Tex2DParams params;
+            params.w = (view_state_.scr_res[0] + 7) / 8;
+            params.h = (view_state_.scr_res[1] + 7) / 8;
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            avg_gi_tex = data->out_avg_gi_tex =
+                gi_classify.AddStorageImageOutput("Average GI", params, Stg::ComputeShader);
+        }
         { // blue noise texture
             Ren::Tex2DParams params;
             params.w = params.h = 128;
@@ -219,6 +230,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
             FgAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
             FgAllocTex &gi_tex = builder.GetWriteTexture(data->out_gi_tex);
+            FgAllocTex &avg_gi_tex = builder.GetWriteTexture(data->out_avg_gi_tex);
             FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
             // Initialize texel buffers if needed
@@ -248,6 +260,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::UTBuf, GIClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
                 {Trg::UTBuf, GIClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
                 {Trg::Image2D, GIClassifyTiles::GI_IMG_SLOT, *gi_tex.ref},
+                {Trg::Image2D, GIClassifyTiles::AVG_GI_IMG_SLOT, *avg_gi_tex.ref},
                 {Trg::Image2D, GIClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
@@ -529,7 +542,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         return;
     }
 
-    FgResRef reproj_gi_tex, avg_gi_tex;
+    FgResRef reproj_gi_tex;
     FgResRef variance_temp_tex, sample_count_tex;
 
     { // Denoiser reprojection
@@ -574,17 +587,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             reproj_gi_tex = data->out_reprojected_tex =
                 gi_reproject.AddStorageImageOutput("GI Reprojected", params, Stg::ComputeShader);
         }
-        { // 8x8 average reflections texture
-            Ren::Tex2DParams params;
-            params.w = (view_state_.scr_res[0] + 7) / 8;
-            params.h = (view_state_.scr_res[1] + 7) / 8;
-            params.format = Ren::eTexFormat::RawRGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            avg_gi_tex = data->out_avg_gi_tex =
-                gi_reproject.AddStorageImageOutput("Average GI", params, Stg::ComputeShader);
-        }
         { // Variance
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
@@ -608,6 +610,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_reproject.AddStorageImageOutput("GI Sample Count", params, Stg::ComputeShader);
         }
 
+        avg_gi_tex = data->out_avg_gi_tex = gi_reproject.AddStorageImageOutput(avg_gi_tex, Stg::ComputeShader);
         data->sample_count_hist_tex =
             gi_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
         data->exposure_tex = gi_reproject.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
