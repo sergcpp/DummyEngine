@@ -30,7 +30,7 @@ vec3 Tonemap(vec3 c, const float exposure) {
 
 vec4 Tonemap(vec4 c, const float exposure) {
     c.rgb = Tonemap(c.rgb, exposure);
-    return c;
+    return sanitize(c);
 }
 
 vec3 TonemapInvert(vec3 c, const float exposure) {

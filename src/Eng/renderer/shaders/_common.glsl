@@ -256,6 +256,18 @@ vec3 decompress_hdr(const vec3 val) {
     return val * HDR_FACTOR;
 }
 
+float sanitize(const float val) {
+    return isnan(val) ? 0.0 : val;
+}
+
+vec3 sanitize(const vec3 col) {
+    return vec3(sanitize(col.x), sanitize(col.y), sanitize(col.z));
+}
+
+vec4 sanitize(const vec4 col) {
+    return vec4(sanitize(col.x), sanitize(col.y), sanitize(col.z), sanitize(col.w));
+}
+
 vec3 TransformFromClipSpace(const mat4 world_from_clip, vec4 pos_cs) {
 #if defined(VULKAN)
     pos_cs.y = -pos_cs.y;

@@ -215,7 +215,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
     float variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
-    /* fp16 */ vec4 sum = texelFetch(g_refl_tex, dispatch_thread_id, 0);
+    /* fp16 */ vec4 sum = sanitize(texelFetch(g_refl_tex, dispatch_thread_id, 0));
     /* fp16 */ vec2 total_weight = vec2(1.0);
     float hit_dist = sum.w * GetHitDistanceNormalization(center_depth_lin, center_roughness);
 
@@ -290,7 +290,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
 
-        sum += weight * textureLod(g_refl_tex, uv, 0.0);
+        sum += weight * sanitize(textureLod(g_refl_tex, uv, 0.0));
         total_weight += vec2(weight);
     }
 
