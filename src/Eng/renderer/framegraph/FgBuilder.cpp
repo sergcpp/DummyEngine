@@ -972,13 +972,6 @@ void Eng::FgBuilder::TraverseNodeDependencies_r(FgNode *node, const int recursio
     }
 
     for (size_t i = 0; i < node->output_.size(); ++i) {
-        if (node->output_[i].desired_state != Ren::eResState::RenderTarget &&
-            node->output_[i].desired_state != Ren::eResState::DepthWrite &&
-            node->output_[i].desired_state != Ren::eResState::UnorderedAccess &&
-            node->output_[i].desired_state != Ren::eResState::CopyDst) {
-            continue;
-        }
-
         const size_t before = previous_nodes.size();
         FindPreviousReadInNodes(node->output_[i], previous_nodes);
 
@@ -1314,6 +1307,57 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
         for (FgNode *node : written_in_nodes) {
             TraverseNodeDependencies_r(node, 0, reordered_nodes_);
         }
+
+        for (auto it = rbegin(reordered_nodes_); it != rend(reordered_nodes_); ++it) {
+            FgNode *node = *it;
+            bool has_consumers =
+                std::find(std::begin(written_in_nodes), std::end(written_in_nodes), node) != std::end(written_in_nodes);
+            for (size_t i = 0; i < node->output_.size() && !has_consumers; ++i) {
+                FgResRef handle = node->output_[i];
+
+                Ren::SmallVectorImpl<fg_write_node_t> *read_in_nodes = nullptr;
+                if (handle.type == eFgResType::Buffer) {
+                    read_in_nodes = &buffers_[handle.index].read_in_nodes;
+                } else if (handle.type == eFgResType::Texture) {
+                    read_in_nodes = &textures_[handle.index].read_in_nodes;
+                }
+
+                for (const fg_write_node_t i : *read_in_nodes) {
+                    const FgNode *_node = nodes_[i.node_index];
+                    if (_node != node && _node->visited_) {
+                        has_consumers = true;
+                        break;
+                    }
+                }
+
+                if (has_consumers) {
+                    break;
+                }
+
+                Ren::SmallVectorImpl<fg_write_node_t> *written_in_nodes = nullptr;
+                if (handle.type == eFgResType::Buffer) {
+                    written_in_nodes = &buffers_[handle.index].written_in_nodes;
+                } else if (handle.type == eFgResType::Texture) {
+                    written_in_nodes = &textures_[handle.index].written_in_nodes;
+                }
+
+                for (const fg_write_node_t i : *written_in_nodes) {
+                    const FgNode *_node = nodes_[i.node_index];
+                    if (_node != node && node->visited_) {
+                        has_consumers = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!has_consumers) {
+                node->visited_ = false;
+            }
+        }
+
+        reordered_nodes_.erase(std::remove_if(begin(reordered_nodes_), end(reordered_nodes_),
+                                              [](FgNode *node) { return !node->visited_; }),
+                               end(reordered_nodes_));
 
         if (FgBuilderInternal::EnableNodesReordering && !reordered_nodes_.empty()) {
             std::vector<FgNode *> scheduled_nodes;
