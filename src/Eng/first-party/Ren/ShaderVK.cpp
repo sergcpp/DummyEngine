@@ -121,7 +121,7 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
 
     for (uint32_t i = 0; i < module.input_variable_count; i++) {
         const auto *var = module.input_variables[i];
-        if (var->built_in == -1) {
+        if (var->built_in == SpvBuiltIn(-1)) {
             Descr &new_item = attr_bindings.emplace_back();
             if (var->name) {
                 new_item.name = String{var->name};

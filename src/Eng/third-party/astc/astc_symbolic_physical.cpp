@@ -17,11 +17,11 @@
 #include "astc_codec_internals.h"
 
 // routine to write up to 8 bits
-inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * ptr);
+void write_bits(int value, int bitcount, int bitoffset, uint8_t * ptr);
 
 
 // routine to read up to 8 bits
-inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr);
+int read_bits(int bitcount, int bitoffset, const uint8_t * ptr);
 
 
 int bitrev8(int p)

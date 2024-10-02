@@ -131,7 +131,7 @@ static double end_coding_time;
 	#include <unistd.h>
 #endif
 
-
+#pragma warning(disable : 4996)
 
 unsigned get_number_of_cpus(void)
 {
@@ -2345,7 +2345,7 @@ int astc_main(int argc, char **argv)
 
 				// Construct new file name and load: <name>_N.<extension>
 				strcpy(new_input_filename, input_filename);
-				sprintf(strrchr(new_input_filename, '.'), "_%d%s", image_index, strrchr(input_filename, '.'));
+				snprintf(strrchr(new_input_filename, '.'), new_input_filename + sizeof(new_input_filename) - strrchr(new_input_filename, '.'), "_%d%s", image_index, strrchr(input_filename, '.'));
 				input_images[image_index] = astc_codec_load_image(new_input_filename, padding, &load_results[image_index]);
 
 				// Check image is not 3D.

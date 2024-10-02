@@ -1297,8 +1297,8 @@ astc_codec_image *astc_codec_load_image(const char *input_filename, int padding,
 		}
 
 		char exr_to_htga_command[550];
-		sprintf(htga_load_filename, "%s.htga", input_filename);
-		sprintf(exr_to_htga_command, "exr_to_htga -q %s %s", input_filename, htga_load_filename);
+		snprintf(htga_load_filename, sizeof(htga_load_filename), "%s.htga", input_filename);
+		snprintf(exr_to_htga_command, sizeof(exr_to_htga_command), "exr_to_htga -q %s %s", input_filename, htga_load_filename);
 
 		int retval = system(exr_to_htga_command);
 		if (retval != 0)
@@ -1436,9 +1436,9 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 
 	case STORE_EXR:
 		*format_string = "EXR";
-		sprintf(htga_output_filename, "%s.htga", output_filename);
+		snprintf(htga_output_filename, sizeof(htga_output_filename), "%s.htga", output_filename);
 		store_result = store_tga_image(output_image, htga_output_filename, 16);
-		sprintf(htga_output_command, "exr_to_htga -e %s %s", htga_output_filename, output_filename);
+		snprintf(htga_output_command, sizeof(htga_output_command), "exr_to_htga -e %s %s", htga_output_filename, output_filename);
 		system_retval = system(htga_output_command);
 		astc_codec_unlink(htga_output_filename);
 		if (system_retval != 0)

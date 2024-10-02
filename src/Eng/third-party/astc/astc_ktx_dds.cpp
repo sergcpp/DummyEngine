@@ -26,6 +26,8 @@
 
 #include "softfloat.h"
 
+#pragma warning(disable : 4996)
+
 enum scanline_copy_method
 {
 	R8_TO_RGBA8,

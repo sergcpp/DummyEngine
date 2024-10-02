@@ -23,6 +23,8 @@
 #define STBI_HEADER_FILE_ONLY
 #include "stb_image.c"
 
+#pragma warning(disable : 4996)
+
 astc_codec_image * load_image_with_stb(const char *filename, int padding, int *result)
 {
 	int xsize, ysize;

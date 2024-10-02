@@ -12,6 +12,8 @@ class Shape {
     Vec3 center_of_mass_ = Vec3{Uninitialize};
 
   public:
+    virtual ~Shape() {}
+
     [[nodiscard]] Vec3 center_of_mass() const { return center_of_mass_; }
 
     [[nodiscard]] virtual eShapeType type() const = 0;

@@ -541,6 +541,9 @@ void glslx::WriterHLSL::Write_WhileStatement(const ast_while_statement *statemen
     case eStatement::Expression:
         Write_ExpressionStatement(static_cast<const ast_expression_statement *>(statement->condition), out_stream, {});
         break;
+    default:
+        // TODO: report error
+        break;
     }
     out_stream << ")";
     Write_Statement(statement->body, out_stream, output_flags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
@@ -575,6 +578,9 @@ void glslx::WriterHLSL::Write_ForStatement(const ast_for_statement *statement, s
         case eStatement::Expression:
             Write_ExpressionStatement(static_cast<ast_expression_statement *>(statement->init), out_stream,
                                       eOutputFlags::Semicolon);
+            break;
+        default:
+            // TODO: report error
             break;
         }
     } else {
@@ -671,6 +677,9 @@ void glslx::WriterHLSL::Write_Statement(const ast_statement *statement, std::ost
         break;
     case eStatement::Discard:
         Write_DistardStatement(static_cast<const ast_discard_statement *>(statement), out_stream, out_flags);
+        break;
+    default:
+        // TODO: report error
         break;
     }
 }
@@ -886,6 +895,9 @@ void glslx::WriterHLSL::Write_Storage(const eStorage storage, std::ostream &out_
     case eStorage::CallableDataIn:
         out_stream << "callableDataInEXT ";
         break;
+    default:
+        // TODO: report error
+        break;
     }
 }
 
@@ -899,6 +911,9 @@ void glslx::WriterHLSL::Write_AuxStorage(eAuxStorage aux_storage, std::ostream &
         break;
     case eAuxStorage::Patch:
         out_stream << "patch ";
+        break;
+    default:
+        // TODO: report error
         break;
     }
 }
@@ -947,6 +962,9 @@ void glslx::WriterHLSL::Write_Precision(ePrecision precision, std::ostream &out_
     case ePrecision::Highp:
         out_stream << "highp ";
         break;
+    default:
+        // TODO: report error
+        break;
     }
 }
 
@@ -973,6 +991,9 @@ void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable
         break;
     case eInterpolation::Noperspective:
         out_stream << "noperspective ";
+        break;
+    default:
+        // TODO: report error
         break;
     }
 
@@ -1655,6 +1676,9 @@ void glslx::WriterHLSL::Find_AtomicOperations(const ast_expression *expression,
             Find_AtomicOperations(arr_specifier->expressions[i], out_operations);
         }
     } break;
+    default:
+        // TODO: report error
+        break;
     }
 }
 
@@ -1770,6 +1794,9 @@ int glslx::WriterHLSL::Calc_TypeSize(const ast_type *type) {
         case eKeyword::K_mat4x4:
         case eKeyword::K_mat4:
             total_size = 16 * 4;
+            break;
+        default:
+            // TODO: report error
             break;
         }
     } else {

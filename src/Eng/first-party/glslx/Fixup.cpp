@@ -97,6 +97,8 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
             // Mark_Expression(return_statement->expression);
         }
     } break;
+    default:
+        break;
     }
 }
 
