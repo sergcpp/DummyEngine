@@ -236,15 +236,14 @@ void ReadTileMetaData(uvec2 gid, out bool is_cleared, out bool all_in_light) {
 }
 
 vec2 FilterSoftShadowsPass(uvec2 gid, uvec2 gtid, uvec2 did, out bool bWriteResults, uint pass, uint stepsize) {
-    bool is_cleared;
-    bool all_in_light;
+    bool is_cleared, all_in_light;
     ReadTileMetaData(gid, is_cleared, all_in_light);
 
     bWriteResults = false;
     vec2 results = vec2(0.0);
     // [branch]
     if (is_cleared) {
-        if (pass != 1) {
+        if (pass != 1 || true) {
             results.x = all_in_light ? 1.0 : 0.0;
             bWriteResults = true;
         }
@@ -283,7 +282,7 @@ void main() {
     vec2 results = FilterSoftShadowsPass(group_id, group_thread_id, dispatch_thread_id, bWriteOutput, PASS_INDEX, STEP_SIZE);
 
     // Recover some of the contrast lost during denoising
-    const float shadow_remap = max(1.2f - results.y, 1.0f);
+    const float shadow_remap = max(1.2 - results.y, 1.0);
     const float mean = pow(abs(results.x), shadow_remap);
 #endif
 
