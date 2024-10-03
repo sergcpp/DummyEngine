@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = buffer_aliasing
-	commit = 759affadb4531196e986c94d1b182de955b9a55c
+	branch = resource_aliasing
+	commit = 968f63ba51e8f7e28339b4b048e23cf3150830a9
 	method = merge
 	cmdver = 0.4.6
-	parent = b9ddcdb2552023d1cbf1f8d4e323318a846a7bd2
+	parent = 1d333e2d49ca19c54a4fbca78b709e7787d9fe61
