@@ -1593,8 +1593,7 @@ void Eng::Renderer::InitBackendInfo() {
 
             resource_info_t &info = backend_info_.resources_info.emplace_back();
             info.name = "[Buf] " + it->name;
-            info.first_use = it->lifetime.first_used_node();
-            info.last_use = it->lifetime.last_used_node();
+            fg_builder_.GetResourceFrameLifetime(*it, info.lifetime);
 
             const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
             if (alloc.pool != 0xffff && alloc.owner == nullptr) {
@@ -1618,8 +1617,7 @@ void Eng::Renderer::InitBackendInfo() {
 
             resource_info_t &info = backend_info_.resources_info.emplace_back();
             info.name = "[Buf] " + it->name;
-            info.first_use = it->lifetime.first_used_node();
-            info.last_use = it->lifetime.last_used_node();
+            fg_builder_.GetResourceFrameLifetime(*it, info.lifetime);
 
             const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
             if (alloc.pool != 0xffff && alloc.owner == nullptr) {
@@ -1645,13 +1643,7 @@ void Eng::Renderer::InitBackendInfo() {
 
             resource_info_t &info = backend_info_.resources_info.emplace_back();
             info.name = "[Tex] " + it->name;
-            if (it->history_index == -1 && it->history_of == -1) {
-                info.first_use = it->lifetime.first_used_node();
-                info.last_use = it->lifetime.last_used_node();
-            } else {
-                info.first_use = 0;
-                info.last_use = int(backend_info_.passes_info.size() - 1);
-            }
+            fg_builder_.GetResourceFrameLifetime(*it, info.lifetime);
 
             const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
             if (alloc.pool != 0xffff && alloc.owner == nullptr) {
@@ -1674,13 +1666,7 @@ void Eng::Renderer::InitBackendInfo() {
 
             resource_info_t &info = backend_info_.resources_info.emplace_back();
             info.name = "[Tex] " + it->name;
-            if (it->history_index == -1 && it->history_of == -1) {
-                info.first_use = it->lifetime.first_used_node();
-                info.last_use = it->lifetime.last_used_node();
-            } else {
-                info.first_use = 0;
-                info.last_use = int(backend_info_.passes_info.size() - 1);
-            }
+            fg_builder_.GetResourceFrameLifetime(*it, info.lifetime);
 
             const Ren::MemAllocation &alloc = it->strong_ref->mem_alloc();
             if (alloc.pool != 0xffff && alloc.owner == nullptr) {

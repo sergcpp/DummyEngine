@@ -287,7 +287,7 @@ struct render_settings_t {
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
 #if !defined(NDEBUG)
-    eDebugFrame debug_frame = eDebugFrame::Simple;
+    eDebugFrame debug_frame = eDebugFrame::Full;
 #else
     eDebugFrame debug_frame = eDebugFrame::Off;
 #endif
@@ -336,7 +336,7 @@ struct pass_info_t {
 
 struct resource_info_t {
     std::string name;
-    int first_use, last_use;
+    uint16_t lifetime[2][2];
     uint32_t heap, offset, size;
 };
 

@@ -32,7 +32,7 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         eFgResType type;
         uint8_t mem_heap = 0xff;
         uint16_t index;
-        uint16_t lifetime[2];
+        uint16_t lifetime[2][2];
         uint32_t mem_offset = 0xffffffff;
         uint32_t mem_size = 0;
         uint32_t mem_alignment = 0;
@@ -64,11 +64,11 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         new_res.type = eFgResType::Buffer;
         new_res.index = uint16_t(it.index());
         if (EnableResourceAliasing) {
-            new_res.lifetime[0] = b.lifetime.first_used_node();
-            new_res.lifetime[1] = b.lifetime.last_used_node() + 1;
+            new_res.lifetime[0][0] = new_res.lifetime[1][0] = b.lifetime.first_used_node();
+            new_res.lifetime[0][1] = new_res.lifetime[1][1] = b.lifetime.last_used_node() + 1;
         } else {
-            new_res.lifetime[0] = 0;
-            new_res.lifetime[1] = uint16_t(reordered_nodes_.size());
+            new_res.lifetime[0][0] = new_res.lifetime[1][0] = 0;
+            new_res.lifetime[0][1] = new_res.lifetime[1][1] = uint16_t(reordered_nodes_.size());
         }
 
         VkBufferCreateInfo buf_create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -118,13 +118,13 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         resource_t &new_res = all_resources.emplace_back();
         new_res.type = eFgResType::Texture;
         new_res.index = uint16_t(it.index());
-        if (EnableResourceAliasing && t.history_of == -1 && t.history_index == -1) {
-            new_res.lifetime[0] = t.lifetime.first_used_node();
-            new_res.lifetime[1] = t.lifetime.last_used_node() + 1;
+        if (EnableResourceAliasing) {
+            GetResourceFrameLifetime(t, new_res.lifetime);
         } else {
-            new_res.lifetime[0] = 0;
-            new_res.lifetime[1] = uint16_t(reordered_nodes_.size());
-        }
+            // In case of no aliasing lifetime spans for the whole frame
+            new_res.lifetime[0][0] = new_res.lifetime[1][0] = 0;
+            new_res.lifetime[0][1] = new_res.lifetime[1][1] = uint16_t(reordered_nodes_.size());
+        } 
 
         Ren::Tex2DParams &p = t.desc;
         // Needed to clear the image initially
@@ -207,16 +207,22 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         // sort by lifetime length
         std::sort(begin(resources_by_memory_type[i]), end(resources_by_memory_type[i]),
                   [&](const int lhs, const int rhs) {
-                      return (all_resources[lhs].lifetime[1] - all_resources[lhs].lifetime[0]) >
-                             (all_resources[rhs].lifetime[1] - all_resources[rhs].lifetime[0]);
+                      return (all_resources[lhs].lifetime[0][1] - all_resources[lhs].lifetime[0][0]) +
+                                 (all_resources[lhs].lifetime[1][1] - all_resources[lhs].lifetime[1][0]) >
+                             (all_resources[rhs].lifetime[0][1] - all_resources[rhs].lifetime[0][0]) +
+                                 (all_resources[rhs].lifetime[1][1] - all_resources[rhs].lifetime[1][0]);
                   });
 
-        std::vector<uint32_t> heap_tops(reordered_nodes_.size(), 0);
+        const int NodesCount = int(reordered_nodes_.size());
+        std::vector<uint32_t> heap_tops(2 * NodesCount, 0);
         for (const int res_index : resources_by_memory_type[i]) {
             resource_t &res = all_resources[res_index];
 
             uint32_t heap_top = 0;
-            for (int j = res.lifetime[0]; j < res.lifetime[1]; ++j) {
+            for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
+                heap_top = std::max(heap_top, heap_tops[j]);
+            }
+            for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
                 heap_top = std::max(heap_top, heap_tops[j]);
             }
 
@@ -225,7 +231,10 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             res.mem_offset = heap_top;
             heap_top += res.mem_size;
 
-            for (int j = res.lifetime[0]; j < res.lifetime[1]; ++j) {
+            for (int j = res.lifetime[0][0]; j < res.lifetime[0][1]; ++j) {
+                heap_tops[j] = heap_top;
+            }
+            for (int j = NodesCount + res.lifetime[1][0]; j < NodesCount + res.lifetime[1][1]; ++j) {
                 heap_tops[j] = heap_top;
             }
         }
@@ -325,7 +334,10 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                         // this is dedicated allocation
                         continue;
                     }
-                    if (buf.lifetime.last_used_node() == i && buf.lifetime.length() < int(reordered_nodes_.size())) {
+                    assert(buffer_to_resource[res.index] != -1);
+                    const resource_t &r = all_resources[buffer_to_resource[res.index]];
+                    if (r.lifetime[j][1] == i + 1 &&
+                        (i != int(reordered_nodes_.size()) - 1 || r.lifetime[!j][0] != 0)) {
                         deactivated_regions.push_back(region_t{alloc.offset, alloc.block, res});
                     }
                 } else if (res.type == eFgResType::Texture) {
@@ -338,7 +350,10 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                         // this is dedicated allocation
                         continue;
                     }
-                    if (tex.lifetime.last_used_node() == i && tex.lifetime.length() < int(reordered_nodes_.size())) {
+                    assert(texture_to_resource[res.index] != -1);
+                    const resource_t &r = all_resources[texture_to_resource[res.index]];
+                    if (r.lifetime[j][1] == i + 1 &&
+                        (i != int(reordered_nodes_.size()) - 1 || r.lifetime[!j][0] != 0)) {
                         deactivated_regions.push_back(region_t{alloc.offset, alloc.block, res});
                     }
                 }
@@ -346,15 +361,27 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             for (const FgResource &res : node->output_) {
                 FgAllocRes *this_res = nullptr;
                 const Ren::MemAllocation *this_alloc = nullptr;
+                bool deactivate = false;
                 if (res.type == eFgResType::Buffer) {
                     this_res = &buffers_.at(res.index);
                     if (buffers_.at(res.index).ref) {
                         this_alloc = &buffers_.at(res.index).ref->mem_alloc();
+                        if (buffer_to_resource[res.index] != -1) {
+                            const resource_t &r = all_resources[buffer_to_resource[res.index]];
+                            deactivate = (r.lifetime[j][1] == i + 1 &&
+                                          (i != int(reordered_nodes_.size()) - 1 || r.lifetime[!j][0] != 0));
+                        }
                     }
                 } else /*if (res.type == eFgResType::Texture)*/ {
+                    assert(res.type == eFgResType::Texture);
                     this_res = &textures_.at(res.index);
                     if (textures_.at(res.index).ref) {
                         this_alloc = &textures_.at(res.index).ref->mem_alloc();
+                        if (texture_to_resource[res.index] != -1) {
+                            const resource_t &r = all_resources[texture_to_resource[res.index]];
+                            deactivate = (r.lifetime[j][1] == i + 1 &&
+                                          (i != int(reordered_nodes_.size()) - 1 || r.lifetime[!j][0] != 0));
+                        }
                     }
                 }
 
@@ -434,8 +461,7 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                         ++it;
                     }
                 }
-                if (this_res->lifetime.last_used_node() == i &&
-                    this_res->lifetime.length() < int(reordered_nodes_.size())) {
+                if (deactivate) {
                     deactivated_regions.push_back(region_t{this_alloc->offset, this_alloc->block, res});
                 }
             }

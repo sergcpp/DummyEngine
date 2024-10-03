@@ -54,6 +54,36 @@ std::string Eng::FgBuilder::GetResourceDebugInfo(const FgResource &res) const {
     return "";
 }
 
+void Eng::FgBuilder::GetResourceFrameLifetime(const FgAllocBuf &b, uint16_t out_lifetime[2][2]) const {
+    out_lifetime[0][0] = out_lifetime[1][0] = uint16_t(b.lifetime.first_used_node());
+    out_lifetime[0][1] = out_lifetime[1][1] = uint16_t(b.lifetime.last_used_node());
+}
+
+void Eng::FgBuilder::GetResourceFrameLifetime(const FgAllocTex &t, uint16_t out_lifetime[2][2]) const {
+    if (t.history_of == -1 && t.history_index == -1) {
+        // Non-history resource, same lifetime in both N and N+1 frames
+        out_lifetime[0][0] = out_lifetime[1][0] = t.lifetime.first_used_node();
+        out_lifetime[0][1] = out_lifetime[1][1] = t.lifetime.last_used_node() + 1;
+    } else if (t.history_index != -1) {
+        // Frame N
+        out_lifetime[0][0] = t.lifetime.first_used_node();
+        out_lifetime[0][1] = uint16_t(reordered_nodes_.size());
+        // Frame N+1
+        const FgAllocTex &hist_tex = textures_[t.history_index];
+        out_lifetime[1][0] = 0;
+        out_lifetime[1][1] = hist_tex.lifetime.last_used_node() + 1;
+    } else {
+        // Frame N
+        assert(t.history_of != -1);
+        out_lifetime[0][0] = 0;
+        out_lifetime[0][1] = t.lifetime.last_used_node() + 1;
+        // Frame N+1
+        const FgAllocTex &hist_tex = textures_[t.history_of];
+        out_lifetime[1][0] = hist_tex.lifetime.first_used_node();
+        out_lifetime[1][1] = uint16_t(reordered_nodes_.size());
+    }
+}
+
 Eng::FgResRef Eng::FgBuilder::ReadBuffer(const FgResRef handle, const Ren::eResState desired_state,
                                          const Ren::eStageBits stages, FgNode &node) {
     assert(handle.type == eFgResType::Buffer);
@@ -865,7 +895,7 @@ void Eng::FgBuilder::Reset() {
 }
 
 int16_t Eng::FgBuilder::FindPreviousWrittenInNode(const FgResRef handle) {
-    Ren::SmallVectorImpl<fg_write_node_t> *written_in_nodes = nullptr;
+    Ren::SmallVectorImpl<fg_node_slot_t> *written_in_nodes = nullptr;
     if (handle.type == eFgResType::Buffer) {
         written_in_nodes = &buffers_[handle.index].written_in_nodes;
     } else if (handle.type == eFgResType::Texture) {
@@ -877,7 +907,7 @@ int16_t Eng::FgBuilder::FindPreviousWrittenInNode(const FgResRef handle) {
         return -1;
     }
 
-    for (const fg_write_node_t i : *written_in_nodes) {
+    for (const fg_node_slot_t i : *written_in_nodes) {
         const FgNode *node = nodes_[i.node_index];
         assert(node->output_[i.slot_index].type == handle.type && node->output_[i.slot_index].index == handle.index);
         if (node->output_[i.slot_index].write_count == handle.write_count - 1) {
@@ -888,7 +918,7 @@ int16_t Eng::FgBuilder::FindPreviousWrittenInNode(const FgResRef handle) {
 }
 
 void Eng::FgBuilder::FindPreviousReadInNodes(const FgResRef handle, Ren::SmallVectorImpl<int16_t> &out_nodes) {
-    Ren::SmallVectorImpl<fg_write_node_t> *read_in_nodes = nullptr;
+    Ren::SmallVectorImpl<fg_node_slot_t> *read_in_nodes = nullptr;
     if (handle.type == eFgResType::Buffer) {
         read_in_nodes = &buffers_[handle.index].read_in_nodes;
     } else if (handle.type == eFgResType::Texture) {
@@ -900,7 +930,7 @@ void Eng::FgBuilder::FindPreviousReadInNodes(const FgResRef handle, Ren::SmallVe
         return;
     }
 
-    for (const fg_write_node_t i : *read_in_nodes) {
+    for (const fg_node_slot_t i : *read_in_nodes) {
         const FgNode *node = nodes_[i.node_index];
         assert(node->input_[i.slot_index].type == handle.type && node->input_[i.slot_index].index == handle.index);
         if (node->input_[i.slot_index].write_count == handle.write_count) {
@@ -1009,29 +1039,29 @@ void Eng::FgBuilder::PrepareResourceLifetimes() {
     };
 
     // Gather lifetimes
-    for (int i = 0; i < int(reordered_nodes_.size()); ++i) {
+    for (int16_t i = 0; i < int16_t(reordered_nodes_.size()); ++i) {
         const FgNode *node = reordered_nodes_[i];
         for (const auto &res : node->input_) {
-            if (res.type == eFgResType::Texture) {
-                fg_node_range_t &lifetime = textures_[res.index].lifetime;
-                lifetime.first_read_node = std::min(lifetime.first_read_node, i);
-                lifetime.last_read_node = std::max(lifetime.last_read_node, i);
-            } else if (res.type == eFgResType::Buffer) {
-                fg_node_range_t &lifetime = buffers_[res.index].lifetime;
-                lifetime.first_read_node = std::min(lifetime.first_read_node, i);
-                lifetime.last_read_node = std::max(lifetime.last_read_node, i);
+            FgAllocRes *this_res = nullptr;
+            if (res.type == eFgResType::Buffer) {
+                this_res = &buffers_.at(res.index);
+            } else /*if (res.type == eFgResType::Texture)*/ {
+                assert(res.type == eFgResType::Texture);
+                this_res = &textures_.at(res.index);
             }
+            this_res->lifetime.first_read_node = std::min(this_res->lifetime.first_read_node, i);
+            this_res->lifetime.last_read_node = std::max(this_res->lifetime.last_read_node, i);
         }
         for (const auto &res : node->output_) {
-            if (res.type == eFgResType::Texture) {
-                fg_node_range_t &lifetime = textures_[res.index].lifetime;
-                lifetime.first_write_node = std::min(lifetime.first_write_node, i);
-                lifetime.last_write_node = std::max(lifetime.last_write_node, i);
-            } else if (res.type == eFgResType::Buffer) {
-                fg_node_range_t &lifetime = buffers_[res.index].lifetime;
-                lifetime.first_write_node = std::min(lifetime.first_write_node, i);
-                lifetime.last_write_node = std::max(lifetime.last_write_node, i);
+            FgAllocRes *this_res = nullptr;
+            if (res.type == eFgResType::Buffer) {
+                this_res = &buffers_.at(res.index);
+            } else /*if (res.type == eFgResType::Texture)*/ {
+                assert(res.type == eFgResType::Texture);
+                this_res = &textures_.at(res.index);
             }
+            this_res->lifetime.first_write_node = std::min(this_res->lifetime.first_write_node, i);
+            this_res->lifetime.last_write_node = std::max(this_res->lifetime.last_write_node, i);
         }
     }
 
@@ -1281,14 +1311,14 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
             for (size_t i = 0; i < node->output_.size() && !has_consumers; ++i) {
                 FgResRef handle = node->output_[i];
 
-                Ren::SmallVectorImpl<fg_write_node_t> *read_in_nodes = nullptr;
+                Ren::SmallVectorImpl<fg_node_slot_t> *read_in_nodes = nullptr;
                 if (handle.type == eFgResType::Buffer) {
                     read_in_nodes = &buffers_[handle.index].read_in_nodes;
                 } else if (handle.type == eFgResType::Texture) {
                     read_in_nodes = &textures_[handle.index].read_in_nodes;
                 }
 
-                for (const fg_write_node_t i : *read_in_nodes) {
+                for (const fg_node_slot_t i : *read_in_nodes) {
                     const FgNode *_node = nodes_[i.node_index];
                     if (_node != node && _node->visited_) {
                         has_consumers = true;
@@ -1300,14 +1330,14 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
                     break;
                 }
 
-                Ren::SmallVectorImpl<fg_write_node_t> *written_in_nodes = nullptr;
+                Ren::SmallVectorImpl<fg_node_slot_t> *written_in_nodes = nullptr;
                 if (handle.type == eFgResType::Buffer) {
                     written_in_nodes = &buffers_[handle.index].written_in_nodes;
                 } else if (handle.type == eFgResType::Texture) {
                     written_in_nodes = &textures_[handle.index].written_in_nodes;
                 }
 
-                for (const fg_write_node_t i : *written_in_nodes) {
+                for (const fg_node_slot_t i : *written_in_nodes) {
                     const FgNode *_node = nodes_[i.node_index];
                     if (_node != node && node->visited_) {
                         has_consumers = true;

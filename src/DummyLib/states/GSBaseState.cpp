@@ -1367,7 +1367,7 @@ void GSBaseState::InitScene_PT() {
 
                 mesh_handle = ray_scene_->AddMesh(mesh_desc);
                 if (dr.material_override.empty()) {
-                    loaded_meshes.emplace(mesh->name().c_str(), mesh_handle).first;
+                    loaded_meshes.emplace(mesh->name().c_str(), mesh_handle);
                 }
             }
 

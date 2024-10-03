@@ -440,34 +440,50 @@ void Eng::DebugFrameUI::DrawDetailed(Gui::Renderer *r) {
 
         // draw resources
         Gui::Vec2f origin = Gui::Vec2f{bbox_min[0], bounds_min[1] - heap_size_y};
-        for (int j = 0; j < 2; ++j) {
-            const auto &resources = resources_per_heap[j];
-            for (const int16_t i : resources) {
-                DrawResourceInfo(r, i, origin, font_height_small);
+        for (int frame = 0; frame < 2; ++frame) {
+            for (int j = 0; j < 2; ++j) {
+                const auto &resources = resources_per_heap[j];
+                for (const int16_t i : resources) {
+                    DrawResourceInfo(r, i, frame, origin, font_height_small);
+                }
+                origin[1] += view_scale_ * HeapScale * float(heap_sizes[j]) / float(dims_px_[1][1]);
+                if (j != 1) {
+                    DrawLine(r, Gui::Vec2f{bounds_min[0], origin[1]}, Gui::Vec2f{bounds_max[0], origin[1]},
+                             line_width_thin, Gui::ColorBlack);
+                }
             }
-            origin[1] += view_scale_ * HeapScale * float(heap_sizes[j]) / float(dims_px_[1][1]);
-            if (j != 1) {
-                DrawLine(r, Gui::Vec2f{bounds_min[0], origin[1]}, Gui::Vec2f{bounds_max[0], origin[1]}, line_width_thin,
-                         Gui::ColorBlack);
-            }
+            origin[0] = bounds_max[0] + 2 * view_scale_ * ElementSizePx[0] / Gui::Vec2f(dims_px_[1])[0];
+            origin[1] = bounds_min[1] - heap_size_y;
         }
 
         { // draw bounds
+            const float x_size = bounds_max[0] - bounds_min[0];
             DrawLine(r, Gui::Vec2f{bounds_min[0], bounds_min[1] - heap_size_y},
                      Gui::Vec2f{bounds_min[0], bounds_max[1]}, line_width_thick, Gui::ColorBlack);
-            DrawLine(r, bounds_min, Gui::Vec2f{bounds_max[0], bounds_min[1]}, line_width_thick, Gui::ColorBlack);
             DrawLine(r, Gui::Vec2f{bounds_min[0], bounds_max[1]}, bounds_max, line_width_thick, Gui::ColorBlack);
-            DrawLine(r, Gui::Vec2f{bounds_max[0], bounds_min[1] - heap_size_y}, bounds_max, line_width_thick,
-                     Gui::ColorBlack);
+            DrawLine(r, Gui::Vec2f{bounds_max[0], bounds_min[1]}, Gui::Vec2f{bounds_max[0], bounds_max[1]},
+                     line_width_thick, Gui::ColorBlack);
             DrawLine(r, Gui::Vec2f{bounds_min[0], bounds_min[1] - heap_size_y},
-                     Gui::Vec2f{bounds_max[0], bounds_min[1] - heap_size_y}, line_width_thick, Gui::ColorBlack);
+                     Gui::Vec2f{bounds_min[0] + 2 * x_size, bounds_min[1] - heap_size_y}, line_width_thick,
+                     Gui::ColorBlack);
+
+            DrawLine(r, Gui::Vec2f{bounds_max[0], bounds_min[1] - heap_size_y},
+                     Gui::Vec2f{bounds_max[0], bounds_min[1]}, line_width_thin, Gui::ColorBlack);
+            DrawLine(r, Gui::Vec2f{bounds_max[0] + x_size, bounds_min[1] - heap_size_y},
+                     Gui::Vec2f{bounds_max[0] + x_size, bounds_min[1]}, line_width_thick, Gui::ColorBlack);
+            DrawLine(r, Gui::Vec2f{bounds_min[0] + x_size, bounds_min[1]},
+                     Gui::Vec2f{bounds_min[0] + 2 * x_size, bounds_min[1]}, line_width_thick, Gui::ColorBlack);
         }
 
         // draw labels
         font_large_->DrawText(r, "Passes", Gui::Vec2f{bounds_min[0], bounds_max[1] - 0.85f * font_height_large},
                               Gui::ColorWhite, font_scale_large, this);
-        font_large_->DrawText(r, "Resources", Gui::Vec2f{bounds_min[0], bounds_min[1] - 0.85f * font_height_large},
-                              Gui::ColorWhite, font_scale_large, this);
+        font_large_->DrawText(r, "Resources (Frame N)",
+                              Gui::Vec2f{bounds_min[0], bounds_min[1] - 0.85f * font_height_large}, Gui::ColorWhite,
+                              font_scale_large, this);
+        font_large_->DrawText(r, "Resources (Frame N+1)",
+                              Gui::Vec2f{bounds_max[0], bounds_min[1] - 0.85f * font_height_large}, Gui::ColorWhite,
+                              font_scale_large, this);
     }
 
     deferred_select_pos_ = {};
@@ -560,25 +576,28 @@ void Eng::DebugFrameUI::DrawPassInfo(Gui::Renderer *r, const int pass_index, con
     }
 }
 
-void Eng::DebugFrameUI::DrawResourceInfo(Gui::Renderer *r, const int res_index, const Gui::Vec2f origin,
-                                         const float font_scale) {
+void Eng::DebugFrameUI::DrawResourceInfo(Gui::Renderer *r, const int res_index, const int frame,
+                                         const Gui::Vec2f origin, const float font_scale) {
     using namespace DebugFrameUIInternal;
 
     const auto &res = back_info_smooth_.resources_info[res_index];
 
     Gui::Image9Patch *el = (selected_res_index_ == res_index) ? &element_highlighted_ : &element_;
 
-    const int first_use = res.first_use != -1 ? res.first_use : 0,
-              last_use = res.last_use != -1 ? res.last_use + 1 : int(back_info_smooth_.passes_info.size());
+    float first_use = float(res.lifetime[frame][0]), last_use = float(res.lifetime[frame][1]);
+    if (last_use == back_info_smooth_.passes_info.size() && res.lifetime[!frame][0] == 0) {
+        last_use += 0.5f;
+    }
+    if (first_use == 0.0f && res.lifetime[!frame][1] == back_info_smooth_.passes_info.size()) {
+        first_use -= 0.5f;
+    }
 
     Gui::Vec2f elem_min = origin, elem_max = origin;
-    elem_min[0] += view_scale_ *
-                   (2 * ElementSpacingPx[0] * float(first_use) - (ElementSpacingPx[0] - ElementSizePx[0])) /
+    elem_min[0] += view_scale_ * (2 * ElementSpacingPx[0] * first_use - (ElementSpacingPx[0] - ElementSizePx[0])) /
                    float(dims_px_[1][0]);
     elem_min[1] += view_scale_ * HeapScale * float(res.offset) / float(dims_px_[1][1]);
 
-    elem_max[0] += view_scale_ *
-                   (2 * ElementSpacingPx[0] * float(last_use) - (ElementSpacingPx[0] - ElementSizePx[0])) /
+    elem_max[0] += view_scale_ * (2 * ElementSpacingPx[0] * last_use - (ElementSpacingPx[0] - ElementSizePx[0])) /
                    float(dims_px_[1][0]);
     elem_max[1] += view_scale_ * HeapScale * float(res.offset + res.size) / float(dims_px_[1][1]);
 

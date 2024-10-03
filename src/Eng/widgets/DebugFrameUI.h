@@ -87,7 +87,7 @@ class DebugFrameUI final : public Gui::BaseElement {
     void DrawDetailed(Gui::Renderer *r);
 
     void DrawPassInfo(Gui::Renderer *r, int pass_index, Gui::Vec2f elem_pos, float font_scale);
-    void DrawResourceInfo(Gui::Renderer *r, int res_index, Gui::Vec2f origin, float font_scale);
+    void DrawResourceInfo(Gui::Renderer *r, int res_index, int frame, Gui::Vec2f origin, float font_scale);
     void DrawConnectionCurves(Gui::Renderer *r, int pass_index, float font_scale, bool detailed_outputs);
 
     void DrawLine(Gui::Renderer *r, const Gui::Vec2f &p0, const Gui::Vec2f &p1, const Gui::Vec2f &width,

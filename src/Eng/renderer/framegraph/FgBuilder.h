@@ -25,17 +25,17 @@
 namespace Eng {
 class ShaderLoader;
 
-struct fg_write_node_t {
+struct fg_node_slot_t {
     int16_t node_index;
     int16_t slot_index;
 };
-static_assert(sizeof(fg_write_node_t) == 4, "!");
+static_assert(sizeof(fg_node_slot_t) == 4, "!");
 
 struct fg_node_range_t {
-    int first_write_node = INT_MAX;
-    int last_write_node = -1;
-    int first_read_node = INT_MAX;
-    int last_read_node = -1;
+    int16_t first_write_node = SHRT_MAX;
+    int16_t last_write_node = -1;
+    int16_t first_read_node = SHRT_MAX;
+    int16_t last_read_node = -1;
 
     bool has_writer() const { return first_write_node <= last_write_node; }
     bool has_reader() const { return first_read_node <= last_read_node; }
@@ -49,7 +49,7 @@ struct fg_node_range_t {
     }
 
     int last_used_node() const {
-        int last_node = 0;
+        int16_t last_node = 0;
         if (has_writer()) {
             last_node = std::max(last_node, last_write_node);
         }
@@ -60,7 +60,7 @@ struct fg_node_range_t {
     }
 
     int first_used_node() const {
-        int first_node = INT_MAX;
+        int16_t first_node = SHRT_MAX;
         if (has_writer()) {
             first_node = std::min(first_node, first_write_node);
         }
@@ -85,10 +85,12 @@ struct FgAllocRes {
     std::string name;
     bool external = false;
     int alias_of = -1; // used in case of simple resource-to-resource aliasing
+    int history_of = -1;
+    int history_index = -1;
 
     Ren::eStageBits used_in_stages = {}, aliased_in_stages = {};
-    Ren::SmallVector<fg_write_node_t, 32> written_in_nodes;
-    Ren::SmallVector<fg_write_node_t, 32> read_in_nodes;
+    Ren::SmallVector<fg_node_slot_t, 32> written_in_nodes;
+    Ren::SmallVector<fg_node_slot_t, 32> read_in_nodes;
     Ren::SmallVector<FgResRef, 32> overlaps_with; // used in case of memory-level aliasing
     fg_node_range_t lifetime;
 };
@@ -101,8 +103,6 @@ struct FgAllocBuf : public FgAllocRes {
 };
 
 struct FgAllocTex : public FgAllocRes {
-    int history_of = -1;
-    int history_index = -1;
     Ren::Tex2DParams desc;
     Ren::WeakTex2DRef ref;
     Ren::Tex2DRef strong_ref;
@@ -177,6 +177,8 @@ class FgBuilder {
     FgNode *GetReorderedNode(const int i) { return reordered_nodes_[i]; }
 
     std::string GetResourceDebugInfo(const FgResource &res) const;
+    void GetResourceFrameLifetime(const FgAllocBuf &b, uint16_t out_lifetime[2][2]) const;
+    void GetResourceFrameLifetime(const FgAllocTex &t, uint16_t out_lifetime[2][2]) const;
 
     const Ren::SparseArray<FgAllocBuf> &buffers() const { return buffers_; }
     const Ren::SparseArray<FgAllocTex> &textures() const { return textures_; }
