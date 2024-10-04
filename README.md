@@ -2,12 +2,19 @@
 
 Cross platform Vulkan/OpenGL 3d engine for personal experimentation. Bundled with a lot of test scenes (using Git LFS).
 
-More or less reusable parts are separated into following libs:
-- Pathtracer: https://github.com/sergcpp/Ray
-- Realtime: https://github.com/sergcpp/Eng
+Main reusable parts are extracted into the following libs:
+- Realtime renderer: https://github.com/sergcpp/Eng
+- Pathtracing renderer: https://github.com/sergcpp/Ray
 
 <details>
   <summary>Images (from realtime renderer)</summary>
+
+  - Links to the original scenes: \
+    Staircase, Coffee maker - https://benedikt-bitterli.me/resources/ \
+    Sponza - https://www.intel.com/content/www/us/en/developer/topic-technology/graphics-research/samples.html \
+    Bistro - https://developer.nvidia.com/orca/amazon-lumberyard-bistro \
+    Interrior - https://evermotion.org/shop/show_product/scene-6-ai43-archinteriors-for-blender/14569
+
   <div>
     <div float="middle">
       <img src="images/ai043_06.jpg" width="98%" />
