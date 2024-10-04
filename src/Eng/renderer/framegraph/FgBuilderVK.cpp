@@ -576,8 +576,9 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
 
 void Eng::FgBuilder::ReleaseMemHeaps() {
     Ren::ApiContext *api_ctx = ctx_.api_ctx();
+    api_ctx->vkDeviceWaitIdle(api_ctx->device);
     for (Ren::MemHeap &heap : memory_heaps_) {
-        api_ctx->mem_to_free[api_ctx->backend_frame].push_back(heap.mem);
+        api_ctx->vkFreeMemory(api_ctx->device, heap.mem, nullptr);
     }
     memory_heaps_.clear();
 }
