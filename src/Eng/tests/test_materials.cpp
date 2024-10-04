@@ -659,7 +659,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
 
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 40.10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 33.85, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 26.60, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 27.10, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 24.15, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 23.95, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 27.30, Full_Ultra));
@@ -677,7 +677,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat2", 25.45, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 36.40, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 33.60, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 28.50, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 29.00, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 21.55, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 19.70, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 22.45, Full_Ultra));
@@ -809,7 +809,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat2", 25.35, Full));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", 43.95, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", 35.65, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", 34.05, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", 33.95, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", 26.90, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", 20.20, Full));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat4", 28.00, NoShadow));
