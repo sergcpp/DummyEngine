@@ -94,14 +94,13 @@ enum class eTexBlock : uint8_t {
 
 enum class eTexFlagBits : uint16_t {
     NoOwnership = (1u << 0u),
-    Mutable = (1u << 1u), // TODO: remove this
-    Signed = (1u << 2u),
-    SRGB = (1u << 3u),
-    NoRepeat = (1u << 4u),
-    NoFilter = (1u << 5u),
-    MIPMin = (1u << 6u),
-    MIPMax = (1u << 7u),
-    NoBias = (1u << 8u)
+    Signed = (1u << 1u),
+    SRGB = (1u << 2u),
+    NoRepeat = (1u << 3u),
+    NoFilter = (1u << 4u),
+    MIPMin = (1u << 5u),
+    MIPMax = (1u << 6u),
+    NoBias = (1u << 7u)
 };
 using eTexFlags = eTexFlagBits;
 inline eTexFlags operator|(eTexFlags a, eTexFlags b) { return eTexFlags(uint16_t(a) | uint16_t(b)); }

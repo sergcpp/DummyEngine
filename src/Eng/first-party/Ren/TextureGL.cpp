@@ -455,43 +455,23 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     }
 
     if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
-        if (bool(p.flags & eTexFlagBits::Mutable)) {
-            glBindTexture(GL_TEXTURE_2D, tex_id);
-            for (int i = 0; i < mip_count; i++) {
-                const int w = std::max(p.w << i, 1);
-                const int h = std::max(p.h << i, 1);
-
-                if (i == 0 && sbuf) {
-                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
-                    glTexImage2D(GL_TEXTURE_2D, GLint(i), internal_format, w, h, 0, format, type,
-                                 reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
-                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-                } else {
-                    glTexImage2D(GL_TEXTURE_2D, GLint(i), internal_format, w, h, 0, format, type, nullptr);
-                }
-
-                initialized_mips_ |= (1u << i);
-            }
+        if (p.samples > 1) {
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
+            glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, GLsizei(p.samples), internal_format, GLsizei(p.w),
+                                      GLsizei(p.h), GL_TRUE);
+            initialized_mips_ |= (1u << 0);
         } else {
-            if (p.samples > 1) {
-                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
-                glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, GLsizei(p.samples), internal_format, GLsizei(p.w),
-                                          GLsizei(p.h), GL_TRUE);
+            // allocate all mip levels
+            ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, GLsizei(p.w), GLsizei(p.h));
+            if (sbuf) {
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
+
+                // update first level
+                ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, 0, 0, 0, p.w, p.h, format, type,
+                                             reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
                 initialized_mips_ |= (1u << 0);
-            } else {
-                // allocate all mip levels
-                ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, GLsizei(p.w),
-                                            GLsizei(p.h));
-                if (sbuf) {
-                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
 
-                    // update first level
-                    ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, 0, 0, 0, p.w, p.h, format, type,
-                                                 reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
-                    initialized_mips_ |= (1u << 0);
-
-                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-                }
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
             }
         }
     }
