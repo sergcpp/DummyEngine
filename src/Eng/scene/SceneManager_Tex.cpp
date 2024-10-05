@@ -424,9 +424,6 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                              bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(),
                              ren_ctx_.default_mem_allocs(), ren_ctx_.log());
 
-            p.sampling.min_lod.from_float(-1.0f);
-            req.ref->SetSampling(p.sampling);
-
             SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
             { // send texture for processing
@@ -657,9 +654,6 @@ void Eng::SceneManager::ForceTextureReload() {
                     ren_ctx_.log());
 
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
-
-        p.sampling.min_lod.from_float(-1.0f);
-        it->ApplySampling(p.sampling, ren_ctx_.log());
 
         TextureRequest req;
         req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};

@@ -1320,7 +1320,7 @@ Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, cons
         p.sampling.wrap = Ren::eTexWrap::Repeat;
     }
     p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
-    p.sampling.min_lod.from_float(-1.0f);
+    p.sampling.lod_bias.from_float(-1.0f); // TAA compensation
 
     Ren::eTexLoadStatus status;
     Ren::Tex2DRef ret = LoadTexture(name, {}, p, &status);

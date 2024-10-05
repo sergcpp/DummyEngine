@@ -427,8 +427,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         params.h = SHADOWMAP_HEIGHT;
         params.format = Ren::eTexFormat::Depth16;
         params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Sampled;
-        // params.sampling.min_lod.from_float(0.0f);
-        // params.sampling.max_lod.from_float(0.0f);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.sampling.compare = Ren::eTexCompare::GEqual;
@@ -571,36 +569,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         list.render_settings.taa_mode != taa_mode_ || cur_dof_enabled != dof_enabled_ || cached_rp_index_ != 0) {
         rendertarget_changed = true;
 
-        if (list.render_settings.taa_mode != eTAAMode::Off) {
-            log->Info("Setting texture lod bias to -1.0");
-
-            // TODO: Replace this with usage of sampler objects
-            int counter = 0;
-            ctx_.VisitTextures(Ren::eTexFlagBits::UsageScene, [&counter, this](Ren::Texture2D &tex) {
-                Ren::Tex2DParams p = tex.params;
-                if (p.sampling.lod_bias.to_float() > -1.0f) {
-                    p.sampling.lod_bias.from_float(-1.0f);
-                    tex.ApplySampling(p.sampling, ctx_.log());
-                    ++counter;
-                }
-            });
-
-            log->Info("Textures processed: %i", counter);
-        } else {
-            log->Info("Setting texture lod bias to 0.0");
-
-            int counter = 0;
-            ctx_.VisitTextures(Ren::eTexFlagBits::UsageScene, [&counter, this](Ren::Texture2D &tex) {
-                Ren::Tex2DParams p = tex.params;
-                if (p.sampling.lod_bias.to_float() < 0.0f) {
-                    p.sampling.lod_bias.from_float(0.0f);
-                    tex.ApplySampling(p.sampling, ctx_.log());
-                    ++counter;
-                }
-            });
-
-            log->Info("Textures processed: %i", counter);
-        }
         { // Texture that holds previous frame (used for SSR)
             Ren::Tex2DParams params;
             params.w = cur_scr_w / 4;
