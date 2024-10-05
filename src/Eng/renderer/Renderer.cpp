@@ -558,7 +558,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         probe_volume_spacing *= 2.0f;
     }
 
-    const bool cur_msaa_enabled = false; //(list.render_flags & EnableMsaa) != 0;
     const bool cur_hq_ssr_enabled = int(list.render_settings.reflections_quality) >= int(eReflectionsQuality::High);
     const bool cur_dof_enabled = list.render_settings.enable_dof;
 
@@ -569,8 +568,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     bool rendertarget_changed = false;
 
     if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1] ||
-        cur_msaa_enabled != view_state_.is_multisampled || list.render_settings.taa_mode != taa_mode_ ||
-        cur_dof_enabled != dof_enabled_ || cached_rp_index_ != 0) {
+        list.render_settings.taa_mode != taa_mode_ || cur_dof_enabled != dof_enabled_ || cached_rp_index_ != 0) {
         rendertarget_changed = true;
 
         if (list.render_settings.taa_mode != eTAAMode::Off) {
@@ -619,7 +617,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
 
         view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
-        view_state_.is_multisampled = cur_msaa_enabled;
         taa_mode_ = list.render_settings.taa_mode;
         dof_enabled_ = cur_dof_enabled;
         accumulated_frames_ = 0;
@@ -955,7 +952,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                                                  ? Ren::eTexFormat::Depth24Stencil8
                                                  : Ren::eTexFormat::Depth32Stencil8;
         frame_textures.depth_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        frame_textures.depth_params.samples = view_state_.is_multisampled ? 4 : 1;
 
         // Main HDR color
         frame_textures.color_params.w = view_state_.scr_res[0];
@@ -963,7 +959,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
         frame_textures.color_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
-        frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
 
         if (deferred_shading) {
             // 4-component world-space normal (alpha or z is roughness)
@@ -977,7 +972,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.specular_params.format = Ren::eTexFormat::RawR32UI;
             frame_textures.specular_params.flags = {};
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
         } else {
             // 4-component world-space normal (alpha or z is roughness)
             frame_textures.normal_params.w = view_state_.scr_res[0];
@@ -988,14 +982,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.normal_params.format = Ren::eTexFormat::RawRGBA8888;
 #endif
             frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            frame_textures.normal_params.samples = view_state_.is_multisampled ? 4 : 1;
             // 4-component specular (alpha is roughness)
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
             frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
             // frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
         }
 
         // 4-component albedo (alpha is unused)
@@ -1148,7 +1140,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         if (list.render_settings.reflections_quality != eReflectionsQuality::Off &&
             !list.render_settings.debug_wireframe) {
-            const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
             if (cur_hq_ssr_enabled) {
                 AddHQSpecularPasses(deferred_shading, list.render_settings.debug_denoise == eDebugDenoise::Reflection,
                                     common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
@@ -1346,9 +1337,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef color_tex;
             const char *output_tex = nullptr;
 
-            if (cur_msaa_enabled ||
-                (list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe) ||
-                apply_dof) {
+            if (list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe || apply_dof) {
                 if (apply_dof) {
                     if (list.render_settings.taa_mode != eTAAMode::Off) {
                         color_tex = frame_textures.color;

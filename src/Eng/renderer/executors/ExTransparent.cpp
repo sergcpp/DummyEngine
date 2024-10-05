@@ -83,7 +83,7 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
 
 #if !defined(USE_VK_RENDER)
     if (!color_only_fb_[fb_to_use_].Setup(ctx.api_ctx(), {}, color_tex.desc.w, color_tex.desc.h, color_tex.ref,
-                                          depth_tex.ref, depth_tex.ref, view_state_->is_multisampled, ctx.log())) {
+                                          depth_tex.ref, depth_tex.ref, false, ctx.log())) {
         ctx.log()->Error("ExTransparent: color_only_fb_ init failed!");
     }
 

@@ -98,8 +98,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         }
     }
 
-    //ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
-    //                           (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
+    // ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
+    //                            (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.tbos[0]->id()));
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.tbos[0]->id()));
@@ -207,27 +207,6 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
 
         backend_info.opaque_draw_calls_count += 2;
         backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
-    }
-
-    if (view_state_->is_multisampled) {
-        /*Ren::DebugMarker _resolve_ms(ctx.api_ctx(), ctx.current_cmd_buf(), "RESOLVE MS BUFFER");
-
-        Ren::RastState rast_state;
-        rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-
-        rast_state.viewport[2] = view_state_->act_res[0];
-        rast_state.viewport[3] = view_state_->act_res[1];
-
-        rast_state.Apply();
-        Ren::RastState applied_state = rast_state;
-
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DMs, BIND_BASE0_TEX, *color_tex.ref}};
-
-        const PrimDraw::Uniform uniforms[] = {
-            {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])}}};
-
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings,
-        uniforms);*/
     }
 }
 

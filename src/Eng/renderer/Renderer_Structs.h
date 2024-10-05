@@ -367,7 +367,6 @@ struct ViewState {
         prev_clip_from_view;
     mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[2];
     Ren::Quatf probe_ray_rotator;
-    bool is_multisampled = false;
     uint32_t env_generation = 0xffffffff;
 };
 

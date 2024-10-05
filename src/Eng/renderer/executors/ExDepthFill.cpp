@@ -481,13 +481,13 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
 
     if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(
             ctx.api_ctx(), rp_depth_only_[0], depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
-            Ren::Span<const Ren::WeakTex2DRef>{}, view_state_->is_multisampled, ctx.log())) {
+            Ren::Span<const Ren::WeakTex2DRef>{}, false, ctx.log())) {
         ctx.log()->Error("[ExDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 
-    if (!depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].Setup(
-            ctx.api_ctx(), rp_depth_velocity_[0], depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
-            velocity_tex.ref, view_state_->is_multisampled, ctx.log())) {
+    if (!depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_depth_velocity_[0],
+                                                                   depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref,
+                                                                   depth_tex.ref, velocity_tex.ref, false, ctx.log())) {
         ctx.log()->Error("[ExDepthFill::LazyInit]: depth_fill_vel_load_fb_ init failed!");
     }
 }

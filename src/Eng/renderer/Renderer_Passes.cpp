@@ -1657,7 +1657,6 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
 
 void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                               FgResRef &inout_velocity_tex) {
-    assert(!view_state_.is_multisampled);
     auto &static_vel = fg_builder_.AddNode("FILL STATIC VEL");
 
     struct PassData {
@@ -1802,7 +1801,6 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, FgRes
 
 void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                const bool static_accumulation, FgResRef &resolved_color) {
-    assert(!view_state_.is_multisampled);
     { // TAA
         auto &taa = fg_builder_.AddNode("TAA");
 
@@ -1831,7 +1829,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
-            resolved_color = data->output_tex = taa.AddColorOutput(RESOLVED_COLOR_TEX, params);
+            resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", params);
             data->output_history_tex = taa.AddColorOutput("Color History", params);
         }
         data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
