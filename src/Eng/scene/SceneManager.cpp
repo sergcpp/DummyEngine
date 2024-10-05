@@ -1307,7 +1307,6 @@ Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, cons
     using namespace SceneManagerConstants;
 
     Ren::Tex2DParams p;
-    p.flags = flags | Ren::eTexFlagBits::UsageScene;
     memcpy(p.fallback_color, color, 4);
 
     if (bool(p.flags & Ren::eTexFlagBits::NoFilter)) {

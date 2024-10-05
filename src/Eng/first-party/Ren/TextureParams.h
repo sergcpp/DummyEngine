@@ -101,9 +101,7 @@ enum class eTexFlagBits : uint16_t {
     NoFilter = (1u << 5u),
     MIPMin = (1u << 6u),
     MIPMax = (1u << 7u),
-    NoBias = (1u << 8u),
-    UsageScene = (1u << 9u),
-    UsageUI = (1u << 10u)
+    NoBias = (1u << 8u)
 };
 using eTexFlags = eTexFlagBits;
 inline eTexFlags operator|(eTexFlags a, eTexFlags b) { return eTexFlags(uint16_t(a) | uint16_t(b)); }
