@@ -86,7 +86,8 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ui
 
     FreelistAlloc::Allocation alloc = sub_alloc_->Alloc(req_alignment, req_size);
     while (alloc.pool == 0xffff) {
-        Resize(uint32_t(size_ * 1.5f));
+        const auto new_size = req_alignment * ((uint32_t(size_ * 1.25f) + req_alignment - 1) / req_alignment);
+        Resize(new_size);
         alloc = sub_alloc_->Alloc(req_alignment, req_size);
     }
     assert(alloc.pool == 0);
