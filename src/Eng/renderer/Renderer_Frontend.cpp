@@ -792,7 +792,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const uint64_t shadow_gather_start = Sys::GetTimeUs();
 
     if (lighting_enabled && scene.root_node != 0xffffffff && shadows_enabled && Length2(list.env.sun_dir) > 0.9f &&
-        Length2(list.env.sun_col) > FLT_EPSILON) {
+        Length2(list.env.sun_col) > FLT_EPSILON && list.env.sun_dir[1] < 0.0f) {
         // Reserve space for sun shadow
         int sun_shadow_pos[2] = {0, 0};
         int sun_shadow_res[2];
