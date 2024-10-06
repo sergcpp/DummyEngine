@@ -15,6 +15,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
+    // TODO: Remove this!
     if (!frame_textures.envmap) {
         return;
     }
@@ -433,8 +434,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.color_params);
             }
             { // background depth
-                const std::string tex_name = "OIT Back Depth #" + std::to_string(i);
-                back_depth = data->out_back_depth =
+                const std::string tex_name = i == 0 ? OPAQUE_DEPTH_TEX : "OIT Back Depth #" + std::to_string(i);
+                back_depth = frame_textures.opaque_depth = data->out_back_depth =
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.depth_params);
             }
 

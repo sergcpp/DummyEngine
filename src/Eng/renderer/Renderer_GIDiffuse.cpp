@@ -25,6 +25,11 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
+    // TODO: Remove this!
+    if (!frame_textures.envmap) {
+        return;
+    }
+
     FgResRef gi_fallback;
 
     if (frame_textures.gi_cache_irradiance) {
@@ -167,7 +172,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         if (debug_denoise) {
             data->variance_history = gi_classify.AddTextureInput(dummy_black_, Stg::ComputeShader);
         } else {
-            data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
+            data->variance_history = gi_classify.AddHistoryTextureInput(DIFFUSE_VARIANCE_TEX, Stg::ComputeShader);
         }
         data->sobol = gi_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
         data->scrambling_tile = gi_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
@@ -566,10 +571,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->depth_tex = gi_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = gi_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->velocity_tex = gi_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
-        data->depth_hist_tex = gi_reproject.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->depth_hist_tex = gi_reproject.AddHistoryTextureInput(OPAQUE_DEPTH_TEX, Stg::ComputeShader);
         data->norm_hist_tex = gi_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->gi_hist_tex = gi_reproject.AddHistoryTextureInput(gi_tex, Stg::ComputeShader);
-        data->variance_hist_tex = gi_reproject.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
+        data->variance_hist_tex = gi_reproject.AddHistoryTextureInput(DIFFUSE_VARIANCE_TEX, Stg::ComputeShader);
         gi_tex = data->gi_tex = gi_reproject.AddTextureInput(gi_tex, Stg::ComputeShader);
 
         data->tile_list = gi_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
@@ -798,7 +803,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             gi_variance_tex = data->out_variance_tex =
-                gi_temporal.AddStorageImageOutput("GI Variance", params, Stg::ComputeShader);
+                gi_temporal.AddStorageImageOutput(DIFFUSE_VARIANCE_TEX, params, Stg::ComputeShader);
         }
 
         gi_temporal.set_execute_cb([this, data](FgBuilder &builder) {

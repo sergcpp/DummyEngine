@@ -266,7 +266,7 @@ class Renderer {
         Ren::Tex2DParams normal_params;
         FgResRef normal;
         Ren::Tex2DParams depth_params;
-        FgResRef depth;
+        FgResRef depth, opaque_depth;
         Ren::Tex2DParams velocity_params;
         FgResRef velocity;
 

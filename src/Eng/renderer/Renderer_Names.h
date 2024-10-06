@@ -10,6 +10,11 @@ const char MAIN_ALBEDO_TEX[] = "Main Albedo";
 
 const char MAIN_COMBINED_TEX[] = "Main Combined";
 
+const char OPAQUE_DEPTH_TEX[] = "Opaque Depth";
+
+const char SPECULAR_VARIANCE_TEX[] = "Specular Variance";
+const char DIFFUSE_VARIANCE_TEX[] = "Diffuse Variance";
+
 const char DEPTH_DOWN_2X_TEX[] = "Depth Down 2x";
 const char DEPTH_DOWN_4X_TEX[] = "Depth Down 4x";
 

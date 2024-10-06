@@ -15,6 +15,8 @@
 #include "shaders/ssr_write_indir_rt_dispatch_interface.h"
 #include "shaders/ssr_write_indirect_args_interface.h"
 
+#include "Renderer_Names.h"
+
 void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool debug_denoise,
                                         const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                         const AccelerationStructureData &acc_struct_data,
@@ -23,6 +25,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                         FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
+
+    // TODO: Remove this!
+    if (!frame_textures.envmap) {
+        return;
+    }
 
     // Reflection settings
     const int SamplesPerQuad = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 4 : 1;
@@ -80,7 +87,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->depth = ssr_classify.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->specular = ssr_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
         data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->variance_history = ssr_classify.AddHistoryTextureInput("Variance", Stg::ComputeShader);
+        data->variance_history = ssr_classify.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
         data->sobol = ssr_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
         data->scrambling_tile = ssr_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
         data->ranking_tile = ssr_classify.AddStorageReadonlyInput(ranking_tile_buf_, Stg::ComputeShader);
@@ -467,15 +474,10 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->depth_tex = ssr_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = ssr_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->velocity_tex = ssr_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
-        data->depth_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->depth_hist_tex = ssr_reproject.AddHistoryTextureInput(OPAQUE_DEPTH_TEX, Stg::ComputeShader);
         data->norm_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
-        /*if (EnableBlur) {
-            data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular 3", Stg::ComputeShader);
-        } else {
-            data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular", Stg::ComputeShader);
-        }*/
         data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput(refl_tex, Stg::ComputeShader);
-        data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput("Variance", Stg::ComputeShader);
+        data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
         refl_tex = data->refl_tex = ssr_reproject.AddTextureInput(refl_tex, Stg::ComputeShader);
         data->exposure_tex = ssr_reproject.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
 
@@ -708,7 +710,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             ssr_variance_tex = data->out_variance_tex =
-                ssr_temporal.AddStorageImageOutput("Variance", params, Stg::ComputeShader);
+                ssr_temporal.AddStorageImageOutput(SPECULAR_VARIANCE_TEX, params, Stg::ComputeShader);
         }
 
         ssr_temporal.set_execute_cb([this, data](FgBuilder &builder) {
