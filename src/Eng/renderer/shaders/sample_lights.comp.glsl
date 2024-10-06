@@ -18,6 +18,8 @@
 
 #pragma multi_compile _ HWRT
 
+const int TRANSPARENCY_LIMIT = 4;
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -214,7 +216,7 @@ void main() {
     int transp_depth = 0;
     while(rayQueryProceedEXT(rq)) {
         if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
-            if (transp_depth++ < 4) {
+            if (transp_depth++ < TRANSPARENCY_LIMIT) {
                 // perform alpha test
                 const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
                 const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
@@ -226,9 +228,9 @@ void main() {
                 const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
                 const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
-                const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
-                const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
-                const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
+                const uint i0 = texelFetch(g_vtx_indices, int(geo.indices_start + 3 * tri_index + 0)).x;
+                const uint i1 = texelFetch(g_vtx_indices, int(geo.indices_start + 3 * tri_index + 1)).x;
+                const uint i2 = texelFetch(g_vtx_indices, int(geo.indices_start + 3 * tri_index + 2)).x;
 
                 const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
                 const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
@@ -249,7 +251,7 @@ void main() {
     }
 
     if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT ||
-        transp_depth >= 4) {
+        transp_depth >= TRANSPARENCY_LIMIT) {
         visibility = 0.0;
     }
 #else // HWRT
@@ -266,7 +268,7 @@ void main() {
         Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
                                 ro, L, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
         if (inter.mask != 0) {
-            if (transp_depth++ < 4) {
+            if (transp_depth++ < TRANSPARENCY_LIMIT) {
                 // perform alpha test
                 const bool backfacing = (inter.prim_index < 0);
                 const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
@@ -316,7 +318,7 @@ void main() {
         break;
     }
 
-    if (inter.mask != 0 || transp_depth >= 4) {
+    if (inter.mask != 0 || transp_depth >= TRANSPARENCY_LIMIT) {
         visibility = 0.0;
     }
 #endif // HWRT
