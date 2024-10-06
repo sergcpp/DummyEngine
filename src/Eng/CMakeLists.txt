@@ -100,7 +100,7 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/Renderer_Passes.cpp
                         renderer/Renderer_Structs.h
                         renderer/Renderer_SunShadows.cpp
-                        renderer/Renderer_Transparent.cpp)
+                        renderer/Renderer_Transparency.cpp)
 
 set(SCENE_SOURCES   scene/Atmosphere.h
                     scene/Atmosphere.cpp
