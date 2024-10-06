@@ -211,9 +211,10 @@ void main() {
     }
 
     // Relax neighbourhood clamping/clipping if variance is high
-    if (depth < 1.0 && g_params.significant_change < 0.5) {
-        col_min.x = col_min.x - 0.35 * sqrt(col_hist.w);
-        col_max.x = col_max.x + 0.35 * sqrt(col_hist.w);
+    if (depth > 0.0 && g_params.significant_change < 0.5) {
+        const float blend = 0.35 * saturate(1.0 - length(closest_vel.xy) / 4.0);
+        col_min.x = col_min.x - blend * sqrt(col_hist.w);
+        col_max.x = col_max.x + blend * sqrt(col_hist.w);
     #if defined(YCoCg)
         vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
         vec2 chroma_center = col_curr.gb;
