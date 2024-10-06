@@ -511,6 +511,7 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                     if (tex.external) {
                         continue;
                     }
+
                     const Ren::MemAllocation &alloc = tex.ref->mem_alloc();
                     if (alloc.pool == 0xffff) {
                         // this is dedicated allocation
@@ -535,14 +536,6 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                 }
             }
 
-            // Swap history images
-            for (FgAllocTex &tex : textures_) {
-                if (tex.history_index != -1) {
-                    auto &hist_tex = textures_.at(tex.history_index);
-                    std::swap(tex.ref, hist_tex.ref);
-                }
-            }
-
             TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
             for (Ren::Buffer *b : bufs_to_clear) {
                 b->Fill(0, b->size(), 0, cmd_buf);
@@ -552,6 +545,17 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                                        float(t->params.fallback_color[1]) / 255.0f,
                                        float(t->params.fallback_color[2]) / 255.0f, 0.0f};
                 Ren::ClearImage(*t, rgba, cmd_buf);
+            }
+        }
+
+        // Swap history images
+        for (FgAllocTex &tex : textures_) {
+            if (tex.history_index != -1) {
+                auto &hist_tex = textures_.at(tex.history_index);
+                if (hist_tex.ref) {
+                    assert(hist_tex.lifetime.is_used());
+                    std::swap(tex.ref, hist_tex.ref);
+                }
             }
         }
     }

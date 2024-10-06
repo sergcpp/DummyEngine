@@ -1506,7 +1506,10 @@ void Eng::FgBuilder::Execute() {
     for (FgAllocTex &tex : textures_) {
         if (tex.history_index != -1) {
             auto &hist_tex = textures_.at(tex.history_index);
-            std::swap(tex.ref, hist_tex.ref);
+            if (hist_tex.ref) {
+                assert(hist_tex.lifetime.is_used());
+                std::swap(tex.ref, hist_tex.ref);
+            }
         }
     }
     // Reset resources
