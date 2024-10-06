@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = lod_bias
-	commit = dfa8a08deda64cacf774c055048fa726d7777994
+	branch = fixes_05_10
+	commit = c7d99af9d85d0d4e606006fbe8bbd1e61d7f21ed
 	method = merge
 	cmdver = 0.4.6
-	parent = 376664fa951668e73cdec1f2c0f33978668da848
+	parent = 2a11cabc392f0038d1d2f20056004b64c0fc64d8
