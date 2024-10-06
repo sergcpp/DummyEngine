@@ -740,6 +740,9 @@ void Eng::Renderer::InitSkyResources() {
 }
 
 void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
     // TODO: Remove this condition
     if (!p_list_->env.env_map) {
         return;
@@ -750,16 +753,16 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
         auto *data = skydome_cube.AllocNodeData<ExSkydomeCube::Args>();
 
-        data->shared_data = skydome_cube.AddUniformBufferInput(
-            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+        data->shared_data =
+            skydome_cube.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-        data->transmittance_lut = skydome_cube.AddTextureInput(sky_transmittance_lut_, Ren::eStageBits::FragmentShader);
-        data->multiscatter_lut = skydome_cube.AddTextureInput(sky_multiscatter_lut_, Ren::eStageBits::FragmentShader);
-        data->moon_tex = skydome_cube.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
-        data->weather_tex = skydome_cube.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
-        data->cirrus_tex = skydome_cube.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
-        data->curl_tex = skydome_cube.AddTextureInput(sky_curl_tex_, Ren::eStageBits::FragmentShader);
-        data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
+        data->transmittance_lut = skydome_cube.AddTextureInput(sky_transmittance_lut_, Stg::FragmentShader);
+        data->multiscatter_lut = skydome_cube.AddTextureInput(sky_multiscatter_lut_, Stg::FragmentShader);
+        data->moon_tex = skydome_cube.AddTextureInput(sky_moon_tex_, Stg::FragmentShader);
+        data->weather_tex = skydome_cube.AddTextureInput(sky_weather_tex_, Stg::FragmentShader);
+        data->cirrus_tex = skydome_cube.AddTextureInput(sky_cirrus_tex_, Stg::FragmentShader);
+        data->curl_tex = skydome_cube.AddTextureInput(sky_curl_tex_, Stg::FragmentShader);
+        data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_.get(), Stg::FragmentShader);
         frame_textures.envmap = data->color_tex = skydome_cube.AddColorOutput(p_list_->env.env_map);
 
         ex_skydome_cube_.Setup(&view_state_, data);
@@ -771,30 +774,26 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         auto &skymap = fg_builder_.AddNode("SKYDOME");
 
         auto *data = skymap.AllocNodeData<ExSkydomeScreen::Args>();
-        data->shared_data = skymap.AddUniformBufferInput(
-            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+        data->shared_data =
+            skymap.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
         if (p_list_->env.env_map_name != "physical_sky") {
-            frame_textures.envmap = data->env_tex =
-                skymap.AddTextureInput(p_list_->env.env_map, Ren::eStageBits::FragmentShader);
+            frame_textures.envmap = data->env_tex = skymap.AddTextureInput(p_list_->env.env_map, Stg::FragmentShader);
             frame_textures.color = data->color_tex = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
             frame_textures.depth = data->depth_tex = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
         } else {
             data->sky_quality = settings.sky_quality;
-            frame_textures.envmap = data->env_tex =
-                skymap.AddTextureInput(frame_textures.envmap, Ren::eStageBits::FragmentShader);
-            data->phys.transmittance_lut =
-                skymap.AddTextureInput(sky_transmittance_lut_, Ren::eStageBits::FragmentShader);
-            data->phys.multiscatter_lut =
-                skymap.AddTextureInput(sky_multiscatter_lut_, Ren::eStageBits::FragmentShader);
-            data->phys.moon_tex = skymap.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
-            data->phys.weather_tex = skymap.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
-            data->phys.cirrus_tex = skymap.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
-            data->phys.curl_tex = skymap.AddTextureInput(sky_curl_tex_, Ren::eStageBits::FragmentShader);
-            data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
+            frame_textures.envmap = data->env_tex = skymap.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
+            data->phys.transmittance_lut = skymap.AddTextureInput(sky_transmittance_lut_, Stg::FragmentShader);
+            data->phys.multiscatter_lut = skymap.AddTextureInput(sky_multiscatter_lut_, Stg::FragmentShader);
+            data->phys.moon_tex = skymap.AddTextureInput(sky_moon_tex_, Stg::FragmentShader);
+            data->phys.weather_tex = skymap.AddTextureInput(sky_weather_tex_, Stg::FragmentShader);
+            data->phys.cirrus_tex = skymap.AddTextureInput(sky_cirrus_tex_, Stg::FragmentShader);
+            data->phys.curl_tex = skymap.AddTextureInput(sky_curl_tex_, Stg::FragmentShader);
+            data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_.get(), Stg::FragmentShader);
 
             if (settings.sky_quality == eSkyQuality::High) {
                 frame_textures.depth = data->depth_tex =
-                    skymap.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
+                    skymap.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
 
                 Ren::Tex2DParams params;
                 params.w = (view_state_.scr_res[0] + 3) / 4;
@@ -834,13 +833,10 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         };
 
         auto *data = sky_upsample.AllocNodeData<PassData>();
-        data->shared_data =
-            sky_upsample.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
-        frame_textures.depth = data->depth_tex =
-            sky_upsample.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-        frame_textures.envmap = data->env_map =
-            sky_upsample.AddTextureInput(frame_textures.envmap, Ren::eStageBits::ComputeShader);
-        data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Ren::eStageBits::ComputeShader);
+        data->shared_data = sky_upsample.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        frame_textures.depth = data->depth_tex = sky_upsample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        frame_textures.envmap = data->env_map = sky_upsample.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
+        data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Stg::ComputeShader);
 
         FgResRef sky_upsampled;
         {
@@ -852,12 +848,12 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             sky_upsampled = data->output_hist_tex =
-                sky_upsample.AddStorageImageOutput("SKY HIST", params, Ren::eStageBits::ComputeShader);
+                sky_upsample.AddStorageImageOutput("SKY HIST", params, Stg::ComputeShader);
         }
 
-        data->sky_hist_tex = sky_upsample.AddHistoryTextureInput(sky_upsampled, Ren::eStageBits::ComputeShader);
-        frame_textures.color = data->output_tex = sky_upsample.AddStorageImageOutput(
-            MAIN_COLOR_TEX, frame_textures.color_params, Ren::eStageBits::ComputeShader);
+        data->sky_hist_tex = sky_upsample.AddHistoryTextureInput(sky_upsampled, Stg::ComputeShader);
+        frame_textures.color = data->output_tex =
+            sky_upsample.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
 
         sky_upsample.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
@@ -868,14 +864,13 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
             FgAllocTex &output_hist_tex = builder.GetWriteTexture(data->output_hist_tex);
 
-            const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, Skydome::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Ren::eBindTarget::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
-                {Ren::eBindTarget::Image2D, Skydome::OUT_IMG_SLOT, *output_tex.ref},
-                {Ren::eBindTarget::Image2D, Skydome::OUT_HIST_IMG_SLOT, *output_hist_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                             {Trg::Tex2DSampled, Skydome::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
+                                             {Trg::Tex2DSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
+                                             {Trg::Tex2DSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
+                                             {Trg::Image2D, Skydome::OUT_IMG_SLOT, *output_tex.ref},
+                                             {Trg::Image2D, Skydome::OUT_HIST_IMG_SLOT, *output_hist_tex.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
@@ -893,6 +888,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
 void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
     using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
 
     if (p_list_->env.env_map_name != "physical_sky") {
         return;
@@ -939,15 +935,15 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
             FgAllocBuf &output_buf = builder.GetWriteBuffer(data->output_buf);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, SunBrightness::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
-                {Ren::eBindTarget::Tex2DSampled, SunBrightness::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
-                {Ren::eBindTarget::Tex2DSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
-                {Ren::eBindTarget::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT,
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::Tex2DSampled, SunBrightness::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
+                {Trg::Tex2DSampled, SunBrightness::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
+                {Trg::Tex2DSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
+                {Trg::Tex2DSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
+                {Trg::Tex2DSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
+                {Trg::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT,
                  *std::get<const Ren::Texture3D *>(noise3d_tex._ref)},
-                {Ren::eBindTarget::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
+                {Trg::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
 
             DispatchCompute(pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -1139,11 +1135,12 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
 
 void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                            const bool enable_gi) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
     if (!frame_textures.envmap) {
         return;
     }
-
-    using Stg = Ren::eStageBits;
 
     auto &gbuf_shade = fg_builder_.AddNode("GBUFFER SHADE");
 
@@ -1207,23 +1204,23 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         FgAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-            {Ren::eBindTarget::UTBuf, GBufferShade::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-            {Ren::eBindTarget::UTBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-            {Ren::eBindTarget::UTBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
-            {Ren::eBindTarget::UTBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::NORM_TEX_SLOT, *normal_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SPEC_TEX_SLOT, *spec_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, *shad_tex.ref, nearest_sampler_.get()},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
-            {Ren::eBindTarget::Image2D, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
+            {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
+            {Trg::UTBuf, GBufferShade::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+            {Trg::UTBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+            {Trg::UTBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
+            {Trg::UTBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
+            {Trg::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+            {Trg::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::NORM_TEX_SLOT, *normal_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::SPEC_TEX_SLOT, *spec_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, *shad_tex.ref, nearest_sampler_.get()},
+            {Trg::Tex2DSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
+            {Trg::Tex2DSampled, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
+            {Trg::Image2D, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + GBufferShade::LOCAL_GROUP_SIZE_X - 1u) / GBufferShade::LOCAL_GROUP_SIZE_X,
@@ -1276,6 +1273,9 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
 }
 
 void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _depth_tex, FgResRef &out_ssao) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
     const Ren::Vec4i cur_res =
         Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1], view_state_.scr_res[0], view_state_.scr_res[1]};
 
@@ -1291,8 +1291,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         };
 
         auto *data = ssao.AllocNodeData<PassData>();
-        data->rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Ren::eStageBits::FragmentShader);
-        data->depth_tex = ssao.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        data->rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Stg::FragmentShader);
+        data->depth_tex = ssao.AddTextureInput(depth_down_2x, Stg::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -1317,9 +1317,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             rast_state.viewport[3] = view_state_.act_res[1] / 2;
 
             { // prepare ao buffer
-                const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
+                                                 {Trg::Tex2DSampled, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
 
                 SSAO::Params uniform_params;
                 uniform_params.transform =
@@ -1347,8 +1346,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         };
 
         auto *data = ssao_blur_h.AllocNodeData<PassData>();
-        data->depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        data->input_tex = ssao_blur_h.AddTextureInput(ssao_raw, Ren::eStageBits::FragmentShader);
+        data->depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+        data->input_tex = ssao_blur_h.AddTextureInput(ssao_raw, Stg::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -1376,9 +1375,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Ren::eBindTarget::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
 
                 Bilateral::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
@@ -1403,8 +1401,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         };
 
         auto *data = ssao_blur_v.AllocNodeData<PassData>();
-        data->depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        data->input_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Ren::eStageBits::FragmentShader);
+        data->depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+        data->input_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Stg::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -1432,9 +1430,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Ren::eBindTarget::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
 
                 Bilateral::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
@@ -1459,9 +1456,9 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         };
 
         auto *data = ssao_upscale.AllocNodeData<PassData>();
-        data->depth_down_2x_tex = ssao_upscale.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        data->depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Ren::eStageBits::FragmentShader);
-        data->input_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Ren::eStageBits::FragmentShader);
+        data->depth_down_2x_tex = ssao_upscale.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+        data->depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Stg::FragmentShader);
+        data->input_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Stg::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -1488,9 +1485,9 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, Upscale::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Ren::eBindTarget::Tex2DSampled, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
+                    {Trg::Tex2DSampled, Upscale::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                    {Trg::Tex2DSampled, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
+                    {Trg::Tex2DSampled, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
                 Upscale::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
                 uniform_params.resolution = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
@@ -1657,6 +1654,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
 
 void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                               FgResRef &inout_velocity_tex) {
+    using Stg = Ren::eStageBits;
+
     auto &static_vel = fg_builder_.AddNode("FILL STATIC VEL");
 
     struct PassData {
@@ -1667,11 +1666,10 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
 
     auto *data = static_vel.AllocNodeData<PassData>();
 
-    data->shared_data = static_vel.AddUniformBufferInput(
-        common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    data->depth_tex =
-        static_vel.AddCustomTextureInput(depth_tex, Ren::eResState::StencilTestDepthFetch,
-                                         Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
+    data->shared_data =
+        static_vel.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+    data->depth_tex = static_vel.AddCustomTextureInput(depth_tex, Ren::eResState::StencilTestDepthFetch,
+                                                       Stg::DepthAttachment | Stg::FragmentShader);
     inout_velocity_tex = data->velocity_tex = static_vel.AddColorOutput(inout_velocity_tex);
 
     static_vel.set_execute_cb([this, data](FgBuilder &builder) {
@@ -1801,87 +1799,87 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, FgRes
 
 void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                const bool static_accumulation, FgResRef &resolved_color) {
-    { // TAA
-        auto &taa = fg_builder_.AddNode("TAA");
+    using Stg = Ren::eStageBits;
 
-        struct PassData {
-            FgResRef clean_tex;
-            FgResRef depth_tex;
-            FgResRef velocity_tex;
-            FgResRef history_tex;
-            FgResRef exposure_tex;
+    auto &taa = fg_builder_.AddNode("TAA");
 
-            FgResRef output_tex;
-            FgResRef output_history_tex;
-        };
+    struct PassData {
+        FgResRef clean_tex;
+        FgResRef depth_tex;
+        FgResRef velocity_tex;
+        FgResRef history_tex;
+        FgResRef exposure_tex;
 
-        auto *data = taa.AllocNodeData<PassData>();
-        data->clean_tex = taa.AddTextureInput(frame_textures.color, Ren::eStageBits::FragmentShader);
-        data->depth_tex = taa.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
-        data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Ren::eStageBits::FragmentShader);
-        data->exposure_tex = taa.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
+        FgResRef output_tex;
+        FgResRef output_history_tex;
+    };
 
-        { // Texture that holds resolved color
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+    auto *data = taa.AllocNodeData<PassData>();
+    data->clean_tex = taa.AddTextureInput(frame_textures.color, Stg::FragmentShader);
+    data->depth_tex = taa.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
+    data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Stg::FragmentShader);
+    data->exposure_tex = taa.AddTextureInput(frame_textures.exposure, Stg::FragmentShader);
 
-            resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", params);
-            data->output_history_tex = taa.AddColorOutput("Color History", params);
-        }
-        data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
+    { // Texture that holds resolved color
+        Ren::Tex2DParams params;
+        params.w = view_state_.scr_res[0];
+        params.h = view_state_.scr_res[1];
+        params.format = Ren::eTexFormat::RawRGBA16F;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
-        taa.set_execute_cb([this, data, static_accumulation](FgBuilder &builder) {
-            FgAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-            FgAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-            FgAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
-
-            Ren::RastState rast_state;
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-
-            rast_state.viewport[2] = view_state_.act_res[0];
-            rast_state.viewport[3] = view_state_.act_res[1];
-
-            { // Blit taa
-                const Ren::RenderTarget render_targets[] = {
-                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
-                    {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-                const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-                    {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
-
-                TempAA::Params uniform_params;
-                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
-                uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
-                uniform_params.significant_change =
-                    Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
-                uniform_params.frame_index = float(view_state_.frame_index % 256);
-                if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
-                    uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
-                } else {
-                    uniform_params.mix_factor = 0.0f;
-                }
-                ++accumulated_frames_;
-
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
-                                    static_accumulation ? blit_taa_static_prog_
-                                                        : blit_taa_prog_[settings.enable_motion_blur],
-                                    render_targets, {}, rast_state, builder.rast_state(), bindings, &uniform_params,
-                                    sizeof(TempAA::Params), 0);
-            }
-        });
+        resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", params);
+        data->output_history_tex = taa.AddColorOutput("Color History", params);
     }
+    data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Stg::FragmentShader);
+
+    taa.set_execute_cb([this, data, static_accumulation](FgBuilder &builder) {
+        FgAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
+        FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+        FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+        FgAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
+        FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+        FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        FgAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
+
+        Ren::RastState rast_state;
+        rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+        rast_state.viewport[2] = view_state_.act_res[0];
+        rast_state.viewport[3] = view_state_.act_res[1];
+
+        { // Blit taa
+            const Ren::RenderTarget render_targets[] = {
+                {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
+
+            TempAA::Params uniform_params;
+            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
+            uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+            uniform_params.significant_change =
+                Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
+            uniform_params.frame_index = float(view_state_.frame_index % 256);
+            if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
+                uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
+            } else {
+                uniform_params.mix_factor = 0.0f;
+            }
+            ++accumulated_frames_;
+
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
+                                static_accumulation ? blit_taa_static_prog_
+                                                    : blit_taa_prog_[settings.enable_motion_blur],
+                                render_targets, {}, rast_state, builder.rast_state(), bindings, &uniform_params,
+                                sizeof(TempAA::Params), 0);
+        }
+    });
 }
 
 void Eng::Renderer::AddDownsampleColorPass(FgResRef input_tex, FgResRef &output_tex) {
