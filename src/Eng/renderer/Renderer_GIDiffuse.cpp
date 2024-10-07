@@ -867,17 +867,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->indir_args = gi_blur.AddIndirectBufferInput(indir_disp_buf);
             data->indir_args_offset = 3 * sizeof(uint32_t);
 
-            { // Final gi
-                Ren::Tex2DParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
-                params.format = Ren::eTexFormat::RawRGBA16F;
-                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                gi_diffuse2_tex = data->out_gi_tex =
-                    gi_blur.AddStorageImageOutput("GI Diffuse 2", params, Stg::ComputeShader);
-            }
+            // Bilinear sampling requires us to not have NaNs in blur passes, so we reuse GI fallback texture
+            gi_diffuse2_tex = data->out_gi_tex = gi_blur.AddStorageImageOutput(gi_fallback, Stg::ComputeShader);
 
             gi_blur.set_execute_cb([this, data](FgBuilder &builder) {
                 FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
