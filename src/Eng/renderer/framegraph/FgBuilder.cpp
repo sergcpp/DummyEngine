@@ -1190,6 +1190,7 @@ void Eng::FgBuilder::PrepareResourceLifetimes() {
 void Eng::FgBuilder::BuildResourceLinkedLists() {
     OPTICK_EVENT();
     std::vector<FgResource *> all_resources;
+    all_resources.reserve(buffers_.size() + textures_.size());
 
     auto resource_compare = [](const FgResource *lhs, const FgResource *rhs) {
         return FgResource::LessThanTypeAndIndex(*lhs, *rhs);
@@ -1276,6 +1277,41 @@ void Eng::FgBuilder::BuildResourceLinkedLists() {
                 r->next_use = nullptr;
                 all_resources.insert(it, r);
             }
+        }
+    }
+
+    // Connect history resources across N and N+1 frames
+    for (auto it = std::begin(textures_); it != std::end(textures_); ++it) {
+        FgAllocTex &tex = *it;
+        if (!tex.lifetime.is_used() || (tex.history_index == -1 && tex.history_of == -1)) {
+            continue;
+        }
+
+        if (tex.history_index != -1) {
+            auto &hist_tex = textures_.at(tex.history_index);
+            if (!hist_tex.ref) {
+                continue;
+            }
+            if (hist_tex.ref) {
+                FgNode *tex_node = reordered_nodes_[tex.lifetime.last_used_node()];
+                FgResource *last_usage = tex_node->FindUsageOf(eFgResType::Texture, it.index());
+                assert(last_usage);
+                FgNode *hist_node = reordered_nodes_[hist_tex.lifetime.first_used_node()];
+                FgResource *first_usage = hist_node->FindUsageOf(eFgResType::Texture, tex.history_index);
+                assert(first_usage);
+                last_usage->next_use = first_usage;
+            }
+        } else if (tex.history_of != -1) {
+            auto &hist_tex = textures_.at(tex.history_of);
+            assert(hist_tex.ref);
+
+            FgNode *tex_node = reordered_nodes_[tex.lifetime.last_used_node()];
+            FgResource *last_usage = tex_node->FindUsageOf(eFgResType::Texture, it.index());
+            assert(last_usage);
+            FgNode *hist_node = reordered_nodes_[hist_tex.lifetime.first_used_node()];
+            FgResource *first_usage = hist_node->FindUsageOf(eFgResType::Texture, tex.history_of);
+            assert(first_usage);
+            last_usage->next_use = first_usage;
         }
     }
 }

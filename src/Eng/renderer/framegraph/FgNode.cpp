@@ -2,6 +2,20 @@
 
 #include "FgBuilder.h"
 
+Eng::FgResource *Eng::FgNode::FindUsageOf(const eFgResType type, const uint16_t index) {
+    for (FgResource &r : input_) {
+        if (r.type == type && r.index == index) {
+            return &r;
+        }
+    }
+    for (FgResource &r : output_) {
+        if (r.type == type && r.index == index) {
+            return &r;
+        }
+    }
+    return nullptr;
+}
+
 Eng::FgResRef Eng::FgNode::AddTransferInput(const Ren::WeakBufferRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 }
