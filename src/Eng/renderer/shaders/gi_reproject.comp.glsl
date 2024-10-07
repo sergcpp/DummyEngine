@@ -290,7 +290,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
             } else {
                 /* fp16 */ float variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
-                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(reprojection.xyz / exposure, reprojection.w));
+                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(reprojection.xyz / max(exposure, 0.00001), reprojection.w));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(variance_mix));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count));
                 // Mix in reprojection for radiance mip computation
@@ -346,7 +346,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
         /* fp16 */ float weight_acc = max(sum.w, 1.0e-3);
         const vec3 radiance_avg = (sum.xyz / weight_acc);
 
-        imageStore(g_out_avg_gi_img, ivec2(dispatch_thread_id / 8), vec4(radiance_avg / exposure, 0.0));
+        imageStore(g_out_avg_gi_img, ivec2(dispatch_thread_id / 8), vec4(radiance_avg / max(exposure, 0.00001), 0.0));
     }
 }
 

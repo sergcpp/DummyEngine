@@ -26,11 +26,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    // TODO: Remove this!
-    if (!frame_textures.envmap) {
-        return;
-    }
-
     // Reflection settings
     const int SamplesPerQuad = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 4 : 1;
     static const bool VarianceGuided = true;
@@ -340,7 +335,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && frame_textures.envmap &&
+    if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf &&
         int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
         FgResRef indir_rt_disp_buf;
 
@@ -479,7 +474,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput(refl_tex, Stg::ComputeShader);
         data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
         refl_tex = data->refl_tex = ssr_reproject.AddTextureInput(refl_tex, Stg::ComputeShader);
-        data->exposure_tex = ssr_reproject.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+        data->exposure_tex = ssr_reproject.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
         data->tile_list = ssr_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_reproject.AddIndirectBufferInput(indir_disp_buf);
@@ -591,7 +586,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->refl_tex = ssr_prefilter.AddTextureInput(refl_tex, Stg::ComputeShader);
         data->variance_tex = ssr_prefilter.AddTextureInput(variance_temp_tex, Stg::ComputeShader);
         data->sample_count_tex = ssr_prefilter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = ssr_prefilter.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+        data->exposure_tex = ssr_prefilter.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = ssr_prefilter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_prefilter.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -682,7 +677,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->reproj_refl_tex = ssr_temporal.AddTextureInput(reproj_refl_tex, Stg::ComputeShader);
         data->variance_tex = ssr_temporal.AddTextureInput(variance_temp2_tex, Stg::ComputeShader);
         data->sample_count_tex = ssr_temporal.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = ssr_temporal.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+        data->exposure_tex = ssr_temporal.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = ssr_temporal.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_temporal.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -906,7 +901,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->depth_tex = ssr_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->velocity_tex = ssr_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
             data->ssr_tex = ssr_stabilization.AddTextureInput(gi_specular3_tex, Stg::ComputeShader);
-            data->exposure_tex = ssr_stabilization.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+            data->exposure_tex = ssr_stabilization.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
             { // Final gi
                 Ren::Tex2DParams params;
@@ -964,7 +959,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
     assert(deferred_shading);
 
-    auto &ssr_compose = fg_builder_.AddNode("SSR COMPOSE NEW");
+    auto &ssr_compose = fg_builder_.AddNode("SSR COMPOSE");
 
     struct PassData {
         FgResRef shared_data;

@@ -213,7 +213,7 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 
-    imageStore(g_out_refl_img, dispatch_thread_id, vec4(resolved_radiance.xyz / exposure, resolved_radiance.w));
+    imageStore(g_out_refl_img, dispatch_thread_id, vec4(resolved_radiance.xyz / max(exposure, 0.00001), resolved_radiance.w));
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(resolved_variance));
 }
 

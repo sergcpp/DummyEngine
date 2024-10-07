@@ -17,7 +17,6 @@ extern __itt_domain *__g_itt_domain;
 #include <Sys/ThreadPool.h>
 #include <Sys/ThreadWorker.h>
 #include <Sys/Time_.h>
-#undef GetObject
 
 #include "../Viewer.h"
 

@@ -15,11 +15,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    // TODO: Remove this!
-    if (!frame_textures.envmap) {
-        return;
-    }
-
     FgResRef oit_depth_buf, oit_specular[OIT_REFLECTION_LAYERS], oit_rays_counter;
 
     { // OIT clear
@@ -306,7 +301,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         });
     }
 
-    if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && frame_textures.envmap &&
+    if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf &&
         int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
         FgResRef indir_rt_disp_buf;
 

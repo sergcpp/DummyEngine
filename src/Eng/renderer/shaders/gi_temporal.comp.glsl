@@ -182,7 +182,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         }
     }
 
-    imageStore(g_out_gi_img, dispatch_thread_id, vec4(new_signal.xyz / exposure, new_signal.w));
+    imageStore(g_out_gi_img, dispatch_thread_id, vec4(new_signal.xyz / max(exposure, 0.00001), new_signal.w));
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(new_variance));
 }
 

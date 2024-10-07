@@ -8,9 +8,9 @@ Features:
 - Deferred and clustered forward render modes
 - Temporal antialiasing
 - Raytraced reflections, GI and shadows
-- Hardware raytracing and software raytracing fallback
+- Hardware raytracing with software fallback
 - Order-independent transparency
-- Procedural sky
+- Procedural sky model
 - Framegraph with automatic barrier placement and resource aliasing
 - Dynamic BVH as main scene structure
 - Occlusion culling based on software rasterization

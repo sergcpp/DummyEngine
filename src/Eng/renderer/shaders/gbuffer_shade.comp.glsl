@@ -274,7 +274,7 @@ void main() {
 
     vec3 final_color = vec3(0.0);
 
-    if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {
+    if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
         const float sun_visibility = texelFetch(g_sun_shadow_tex, icoord, 0).r;
         if (sun_visibility > 0.0) {
             final_color += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,

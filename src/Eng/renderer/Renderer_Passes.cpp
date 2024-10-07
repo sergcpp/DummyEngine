@@ -1138,10 +1138,6 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    if (!frame_textures.envmap) {
-        return;
-    }
-
     auto &gbuf_shade = fg_builder_.AddNode("GBUFFER SHADE");
 
     struct PassData {
@@ -2030,9 +2026,8 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
         params.w = params.h = 1;
         params.format = Ren::eTexFormat::RawR32F;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.fallback_color[0] = params.fallback_color[1] = params.fallback_color[2] = 255;
         exposure = data->exposure =
-            histogram_exposure.AddStorageImageOutput("Exposure", params, Ren::eStageBits::ComputeShader);
+            histogram_exposure.AddStorageImageOutput(EXPOSURE_TEX, params, Ren::eStageBits::ComputeShader);
         data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStageBits::ComputeShader);
 
         histogram_exposure.set_execute_cb([this, data](FgBuilder &builder) {

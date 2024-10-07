@@ -33,7 +33,6 @@
 #include <Sys/ScopeExit.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
-#undef GetObject
 
 #include "../Viewer.h"
 #include "../widgets/FontStorage.h"
@@ -862,8 +861,10 @@ void GSBaseState::Draw() {
 
         if (back_list != -1) {
             // Render current frame (from back list)
-            renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data(), render_target,
-                                       true);
+            if (main_view_lists_[back_list].frame_index != 0) {
+                renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data(),
+                                           render_target, true);
+            }
         } else {
             Draw_PT(render_target);
         }

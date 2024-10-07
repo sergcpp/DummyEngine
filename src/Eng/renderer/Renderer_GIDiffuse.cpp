@@ -25,11 +25,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    // TODO: Remove this!
-    if (!frame_textures.envmap) {
-        return;
-    }
-
     FgResRef gi_fallback;
 
     if (frame_textures.gi_cache_irradiance) {
@@ -618,7 +613,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         avg_gi_tex = data->out_avg_gi_tex = gi_reproject.AddStorageImageOutput(avg_gi_tex, Stg::ComputeShader);
         data->sample_count_hist_tex =
             gi_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = gi_reproject.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+        data->exposure_tex = gi_reproject.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
         gi_reproject.set_execute_cb([this, data](FgBuilder &builder) {
             FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
@@ -688,7 +683,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         gi_tex = data->gi_tex = gi_prefilter.AddTextureInput(gi_tex, Stg::ComputeShader);
         data->variance_tex = gi_prefilter.AddTextureInput(variance_temp_tex, Stg::ComputeShader);
         data->sample_count_tex = gi_prefilter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = gi_prefilter.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+        data->exposure_tex = gi_prefilter.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = gi_prefilter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_prefilter.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -775,7 +770,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->reproj_gi_tex = gi_temporal.AddTextureInput(reproj_gi_tex, Stg::ComputeShader);
         data->variance_tex = gi_temporal.AddTextureInput(variance_temp2_tex, Stg::ComputeShader);
         data->sample_count_tex = gi_temporal.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = gi_temporal.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+        data->exposure_tex = gi_temporal.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = gi_temporal.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_temporal.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -999,7 +994,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->depth_tex = gi_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->velocity_tex = gi_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
             data->gi_tex = gi_stabilization.AddTextureInput(gi_diffuse3_tex, Stg::ComputeShader);
-            data->exposure_tex = gi_stabilization.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
+            data->exposure_tex = gi_stabilization.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
             { // Final gi
                 Ren::Tex2DParams params;

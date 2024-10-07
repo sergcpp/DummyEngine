@@ -858,9 +858,8 @@ void Eng::FgBuilder::ClearResources_Simple() {
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
         for (Ren::Tex2DRef &t : textures_to_clear) {
-            const float rgba[4] = {
-                float(t->params.fallback_color[0]) / 255.0f, float(t->params.fallback_color[1]) / 255.0f,
-                float(t->params.fallback_color[2]) / 255.0f, 0.0f /*float(t->params.fallback_color[3]) / 255.0f*/};
+            // NOTE: we can not really use anything other than zero here
+            const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
             Ren::ClearImage(*t, rgba, cmd_buf);
         }
         for (Ren::BufferRef &b : buffers_to_clear) {

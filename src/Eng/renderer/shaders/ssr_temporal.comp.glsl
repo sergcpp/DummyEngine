@@ -59,7 +59,7 @@ vec4 Tonemap(vec4 c, const float exposure) {
 
 vec3 TonemapInvert(vec3 c, const float exposure) {
     //c = c / (vec3(1.0) - c);
-    c /= exposure;
+    c /= max(exposure, 0.00001);
     return c;
 }
 

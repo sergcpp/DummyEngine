@@ -385,7 +385,7 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                     }
                 }
 
-                if (this_res->external || this_res->lifetime.first_used_node() != i) {
+                if (this_res->external) {
                     continue;
                 }
                 assert(this_alloc);
@@ -394,71 +394,74 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                     continue;
                 }
 
-                for (auto it = begin(deactivated_regions); it != end(deactivated_regions);) {
-                    if (it->res.type == res.type && it->res.index == res.index) {
-                        it = deactivated_regions.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }
-
-                for (auto it = begin(deactivated_regions); it != end(deactivated_regions);) {
-                    assert(it->res.type != res.type || it->res.index != res.index);
-                    FgAllocRes *other_res = nullptr;
-                    if (it->res.type == eFgResType::Buffer) {
-                        other_res = &buffers_.at(it->res.index);
-                        const Ren::MemAllocation &other_alloc = buffers_.at(it->res.index).ref->mem_alloc();
-                        if (other_alloc.pool != this_alloc->pool) {
+                if (this_res->lifetime.first_used_node() == i) { // Resource activation
+                    // Remove from deactivated regions
+                    for (auto it = begin(deactivated_regions); it != end(deactivated_regions);) {
+                        if (it->res.type == res.type && it->res.index == res.index) {
+                            it = deactivated_regions.erase(it);
+                        } else {
                             ++it;
-                            continue;
-                        }
-                    } else if (it->res.type == eFgResType::Texture) {
-                        other_res = &textures_.at(it->res.index);
-                        const Ren::MemAllocation &other_alloc = textures_.at(it->res.index).ref->mem_alloc();
-                        if (other_alloc.pool != this_alloc->pool) {
-                            ++it;
-                            continue;
                         }
                     }
-                    if (it->offset < this_alloc->offset + this_alloc->block &&
-                        it->offset + it->size > this_alloc->offset) {
-                        if (!it->barrier_placed) {
-                            insert_sorted(this_res->overlaps_with, it->res);
-                            it->barrier_placed = true;
-                        }
-                        other_res->aliased_in_stages |= StageBitsForState(res.desired_state);
-
-                        if (this_alloc->offset > it->offset &&
-                            this_alloc->offset + this_alloc->block < it->offset + it->size) {
-                            // current region splits overlapped in two
-                            region_t new_region;
-                            new_region.offset = this_alloc->offset + this_alloc->block;
-                            new_region.size = it->offset + it->size - new_region.offset;
-                            new_region.res = it->res;
-                            new_region.barrier_placed = it->barrier_placed;
-
-                            it->size = this_alloc->offset - it->offset;
-                            const ptrdiff_t dist = std::distance(begin(deactivated_regions), it);
-                            deactivated_regions.push_back(new_region);
-                            it = begin(deactivated_regions) + dist + 1;
-                        } else if (this_alloc->offset <= it->offset) {
-                            // simple overlap from left side
-                            const uint32_t end = it->offset + it->size;
-                            it->offset = this_alloc->offset + this_alloc->block;
-                            if (end > it->offset) {
-                                it->size = end - it->offset;
+                    // Find overlapping regions
+                    for (auto it = begin(deactivated_regions); it != end(deactivated_regions);) {
+                        assert(it->res.type != res.type || it->res.index != res.index);
+                        FgAllocRes *other_res = nullptr;
+                        if (it->res.type == eFgResType::Buffer) {
+                            other_res = &buffers_.at(it->res.index);
+                            const Ren::MemAllocation &other_alloc = buffers_.at(it->res.index).ref->mem_alloc();
+                            if (other_alloc.pool != this_alloc->pool) {
                                 ++it;
+                                continue;
+                            }
+                        } else if (it->res.type == eFgResType::Texture) {
+                            other_res = &textures_.at(it->res.index);
+                            const Ren::MemAllocation &other_alloc = textures_.at(it->res.index).ref->mem_alloc();
+                            if (other_alloc.pool != this_alloc->pool) {
+                                ++it;
+                                continue;
+                            }
+                        }
+                        if (it->offset < this_alloc->offset + this_alloc->block &&
+                            it->offset + it->size > this_alloc->offset) {
+                            if (!it->barrier_placed) {
+                                insert_sorted(this_res->overlaps_with, it->res);
+                                it->barrier_placed = true;
+                            }
+                            other_res->aliased_in_stages |= StageBitsForState(res.desired_state);
+
+                            if (this_alloc->offset > it->offset &&
+                                this_alloc->offset + this_alloc->block < it->offset + it->size) {
+                                // current region splits overlapped in two
+                                region_t new_region;
+                                new_region.offset = this_alloc->offset + this_alloc->block;
+                                new_region.size = it->offset + it->size - new_region.offset;
+                                new_region.res = it->res;
+                                new_region.barrier_placed = it->barrier_placed;
+
+                                it->size = this_alloc->offset - it->offset;
+                                const ptrdiff_t dist = std::distance(begin(deactivated_regions), it);
+                                deactivated_regions.push_back(new_region);
+                                it = begin(deactivated_regions) + dist + 1;
+                            } else if (this_alloc->offset <= it->offset) {
+                                // simple overlap from left side
+                                const uint32_t end = it->offset + it->size;
+                                it->offset = this_alloc->offset + this_alloc->block;
+                                if (end > it->offset) {
+                                    it->size = end - it->offset;
+                                    ++it;
+                                } else {
+                                    it = deactivated_regions.erase(it);
+                                }
                             } else {
-                                it = deactivated_regions.erase(it);
+                                // simple overlap from right side
+                                assert(this_alloc->offset > it->offset);
+                                it->size = this_alloc->offset - it->offset;
+                                ++it;
                             }
                         } else {
-                            // simple overlap from right side
-                            assert(this_alloc->offset > it->offset);
-                            it->size = this_alloc->offset - it->offset;
                             ++it;
                         }
-                    } else {
-                        ++it;
                     }
                 }
                 if (deactivate) {
@@ -475,7 +478,7 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
         for (int i = 0; i < int(reordered_nodes_.size()); ++i) {
             const FgNode *node = reordered_nodes_[i];
 
-            std::vector<Ren::TransitionInfo> transitions, to_desired;
+            std::vector<Ren::TransitionInfo> transitions;
             std::vector<Ren::Buffer *> bufs_to_clear;
             std::vector<Ren::Texture2D *> texs_to_clear;
             for (const FgResource &res : node->output_) {
@@ -541,9 +544,12 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                 b->Fill(0, b->size(), 0, cmd_buf);
             }
             for (Ren::Texture2D *t : texs_to_clear) {
-                const float rgba[4] = {float(t->params.fallback_color[0]) / 255.0f,
-                                       float(t->params.fallback_color[1]) / 255.0f,
-                                       float(t->params.fallback_color[2]) / 255.0f, 0.0f};
+                if (t->name() == "GI Diffuse 4 [Previous]") {
+                    volatile int ii = 0;
+                }
+
+                // NOTE: we can not really use anything other than zero here
+                const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
                 Ren::ClearImage(*t, rgba, cmd_buf);
             }
         }
