@@ -588,7 +588,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         taa_mode_ = list.render_settings.taa_mode;
         dof_enabled_ = cur_dof_enabled;
         accumulated_frames_ = 0;
-        log->Info("Successfully initialized framebuffers %ix%i", view_state_.scr_res[0], view_state_.scr_res[1]);
     }
 
     if (settings.pixel_filter != px_filter_table_filter_ || settings.pixel_filter_width != px_filter_table_width_) {

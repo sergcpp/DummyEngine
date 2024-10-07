@@ -627,6 +627,11 @@ bool GSBaseState::LoadScene(std::string_view name) {
 
     OnPostloadScene(js_scene);
 
+    if (USE_TWO_THREADS) {
+        notified_ = true;
+        thr_notify_.notify_one();
+    }
+
     return true;
 }
 
@@ -861,7 +866,7 @@ void GSBaseState::Draw() {
 
         if (back_list != -1) {
             // Render current frame (from back list)
-            if (main_view_lists_[back_list].frame_index != 0) {
+            /*if (main_view_lists_[back_list].frame_index != 0)*/ {
                 renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data(),
                                            render_target, true);
             }
