@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = denoising_fixes
-	commit = 25837844ad4052ac96340bf97e017d3f08d29429
+	branch = meshlight_specular
+	commit = f70d3442de4e83d32914003a19531629f5aba1c8
 	method = merge
 	cmdver = 0.4.6
-	parent = 1814871dafbcc8b73e6643fd5b06b2bc1fb9f20f
+	parent = 71134587a8b733e1529b212e905b4783d69e91b5
