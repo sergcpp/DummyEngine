@@ -173,7 +173,7 @@ float GetBlurRadius(float radius, float hit_dist, float view_z, float non_linear
 }
 
 void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
-    vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
+    const vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
     if (!IsDiffuseSurface(center_depth, g_spec_tex, pix_uv)) {
         return;
@@ -182,17 +182,13 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     const vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_normal_tex, dispatch_thread_id, 0).x).xyz;
     const vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
-
-#if defined(VULKAN)
-    pix_uv.y = 1.0 - pix_uv.y;
-#endif // VULKAN
-    const vec3 center_point_vs = ReconstructViewPosition(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
+    const vec3 center_point_vs = ReconstructViewPosition_YFlip(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
 
     float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
     float variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
     float accumulation_speed = 1.0 / max(sample_count, 1.0);
 
-    const float PlaneDistSensitivity = 0.001;
+    const float PlaneDistSensitivity = 0.005;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, accumulation_speed);
 
     const float RadiusBias = 1.0;
@@ -207,12 +203,12 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     /* fp16 */ vec4 sum = sanitize(texelFetch(g_gi_tex, dispatch_thread_id, 0));
     /* fp16 */ vec2 total_weight = vec2(1.0);
 
-    float hit_dist = sum.w * GetHitDistanceNormalization(center_depth_lin, 1.0);
-    float blur_radius = GetBlurRadius(InitialBlurRadius, hit_dist, center_depth_lin, accumulation_speed, RadiusBias, RadiusScale, 1.0);
-    float blur_radius_ws = PixelRadiusToWorld(g_shrd_data.taa_info.w, 0.0 /* is_ortho */, blur_radius, center_depth_lin);
+    const float hit_dist = sum.w * GetHitDistanceNormalization(center_depth_lin, 1.0);
+    const float blur_radius = GetBlurRadius(InitialBlurRadius, hit_dist, center_depth_lin, accumulation_speed, RadiusBias, RadiusScale, 1.0);
+    const float blur_radius_ws = PixelRadiusToWorld(g_shrd_data.taa_info.w, 0.0 /* is_ortho */, blur_radius, center_depth_lin);
 
-    mat2x3 TvBv = GetKernelBasis(center_point_vs, center_normal_vs, blur_radius_ws, 1.0 /* roughness */);
-    vec4 kernel_rotator = GetBlurKernelRotation(uvec2(dispatch_thread_id), g_params.rotator, g_params.frame_index.x);
+    const mat2x3 TvBv = GetKernelBasis(center_point_vs, center_normal_vs, blur_radius_ws, 1.0 /* roughness */);
+    const vec4 kernel_rotator = GetBlurKernelRotation(uvec2(dispatch_thread_id), g_params.rotator, g_params.frame_index.x);
 
     for (int i = 0; i < 8; ++i) {
         const vec3 offset = g_Special8[i];
@@ -222,11 +218,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         const float neighbor_depth = LinearizeDepth(depth_fetch, g_shrd_data.clip_info);
         const vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
 
-        vec2 reconstruct_uv = uv;
-#if defined(VULKAN)
-        reconstruct_uv.y = 1.0 - reconstruct_uv.y;
-#endif // VULKAN
-        vec3 neighbor_point_vs = ReconstructViewPosition(reconstruct_uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
+        const vec3 neighbor_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
 
         /* fp16 */ float weight = float(IsDiffuseSurface(depth_fetch, g_spec_tex, uv));
         weight *= IsInScreen(uv);

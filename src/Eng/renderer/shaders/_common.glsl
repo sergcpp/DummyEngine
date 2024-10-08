@@ -298,6 +298,10 @@ vec3 ReconstructViewPosition(vec2 uv, vec4 cam_frustum, float view_z, float is_o
     return p;
 }
 
+vec3 ReconstructViewPosition_YFlip(vec2 uv, vec4 cam_frustum, float view_z, float is_ortho) {
+    return ReconstructViewPosition(vec2(uv.x, 1 - uv.y), cam_frustum, view_z, is_ortho);
+}
+
 float PixelRadiusToWorld(float unproject, float is_ortho, float pixel_radius, float view_z) {
      return pixel_radius * unproject * mix(view_z, 1.0, abs(is_ortho));
 }

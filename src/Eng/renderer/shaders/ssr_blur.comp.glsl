@@ -195,7 +195,7 @@ float GetSpecularLobeTanHalfAngle(float linearRoughness, float percentOfVolume) 
 }
 
 void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
-    vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
+    const vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
     if (!IsReflectiveSurface(center_depth, g_spec_tex, pix_uv)) {
         return;
@@ -206,11 +206,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const vec3 center_normal_ws = normal_fetch.xyz;
     const float center_roughness = normal_fetch.w;
     const vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
-
-#if defined(VULKAN)
-    pix_uv.y = 1.0 - pix_uv.y;
-#endif // VULKAN
-    const vec3 center_point_vs = ReconstructViewPosition(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
+    const vec3 center_point_vs = ReconstructViewPosition_YFlip(pix_uv, g_shrd_data.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
     const vec3 view_dir_vs = -normalize(center_point_vs);
 
     float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
@@ -263,10 +259,10 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     // Blur radius - scaling
     blur_radius *= RadiusScale;
 
-    float blur_radius_ws = PixelRadiusToWorld(g_shrd_data.taa_info.w, 0.0 /* is_ortho */, blur_radius, center_depth_lin);
+    const float blur_radius_ws = PixelRadiusToWorld(g_shrd_data.taa_info.w, 0.0 /* is_ortho */, blur_radius, center_depth_lin);
 
-    mat2x3 TvBv = GetKernelBasis(D.xyz, center_point_vs, center_normal_vs, blur_radius_ws, center_roughness);
-    vec4 kernel_rotator = GetBlurKernelRotation(uvec2(dispatch_thread_id), g_params.rotator, g_params.frame_index.x);
+    const mat2x3 TvBv = GetKernelBasis(D.xyz, center_point_vs, center_normal_vs, blur_radius_ws, center_roughness);
+    const vec4 kernel_rotator = GetBlurKernelRotation(uvec2(dispatch_thread_id), g_params.rotator, g_params.frame_index.x);
 
     const bool needs_blur = IsGlossyReflection(center_roughness) && !IsMirrorReflection(center_roughness);
     for (int i = 0; i < 8 && needs_blur; ++i) {
@@ -276,12 +272,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         const float depth_fetch = textureLod(g_depth_tex, uv, 0.0).x;
         const float neighbor_depth = LinearizeDepth(depth_fetch, g_shrd_data.clip_info);
         const vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
-
-        vec2 reconstruct_uv = uv;
-#if defined(VULKAN)
-        reconstruct_uv.y = 1.0 - reconstruct_uv.y;
-#endif // VULKAN
-        vec3 neighbor_point_vs = ReconstructViewPosition(reconstruct_uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
+        const vec3 neighbor_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
 
         /* fp16 */ float weight = float(IsReflectiveSurface(depth_fetch, g_spec_tex, uv));
         weight *= IsInScreen(uv);

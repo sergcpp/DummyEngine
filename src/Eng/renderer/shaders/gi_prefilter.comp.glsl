@@ -124,20 +124,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ********************************************************************/
 
-#define RADIANCE_WEIGHT_BIAS 0.6
+#define RADIANCE_WEIGHT_BIAS 0.0
 #define RADIANCE_WEIGHT_VARIANCE_K 0.1
 #define PREFILTER_VARIANCE_BIAS 0.1
 #define PREFILTER_VARIANCE_WEIGHT 4.4
 
 #define PREFILTER_NORMAL_SIGMA 32.0 // 512.0
-#define PREFILTER_DEPTH_SIGMA 1024.0
+#define PREFILTER_DEPTH_SIGMA 0.01
 
 /* fp16 */ float GetEdgeStoppingNormalWeight(/* fp16 */ vec3 normal_p, /* fp16 */ vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
 
 /* fp16 */ float GetEdgeStoppingDepthWeight(float center_depth, float neighbor_depth) {
-    return exp(-abs(center_depth - neighbor_depth) * center_depth * PREFILTER_DEPTH_SIGMA);
+    return step(0.985, exp(-abs(center_depth - neighbor_depth) / /*center_depth */ PREFILTER_DEPTH_SIGMA));
 }
 
 /* fp16 */ float GetRadianceWeight(/* fp16 */ vec3 center_radiance, /* fp16 */ vec3 neighbor_radiance, /* fp16 */ float variance) {

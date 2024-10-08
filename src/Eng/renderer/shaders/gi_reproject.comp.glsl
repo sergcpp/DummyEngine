@@ -150,7 +150,7 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
 void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, float exposure,
                       /* fp16 */ out float disocclusion_factor, out vec2 reprojection_uv,
                       /* fp16 */ out vec4 reprojection) {
-    moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
+    //moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
 
     vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
     /* fp16 */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
@@ -179,12 +179,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     disocclusion_factor = float(surf_history.w > 0.0);
     disocclusion_factor *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 
-    if (disocclusion_factor > DISOCCLUSION_THRESHOLD) {
-        return;
-    }
-
-    // Try to find the closest sample in the vicinity if we are not convinced of a disocclusion
-    if (disocclusion_factor < DISOCCLUSION_THRESHOLD && false) {
+    { // Try to find better sample in the vicinity
         vec2 closest_uv = reprojection_uv;
         vec2 dudv = 1.0 / vec2(screen_size);
 
@@ -197,7 +192,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                 float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
                 /* fp16 */ float weight = float(textureLod(g_gi_hist_tex, uv, 0.0).w > 0.0);
                 weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
-                if (weight > disocclusion_factor) {
+                if (weight > disocclusion_factor + 0.001) {
                     disocclusion_factor = weight;
                     closest_uv = uv;
                     reprojection_uv = closest_uv;
@@ -208,10 +203,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         reprojection.rgb *= exposure;
     }
 
-    // Try to get rid of potential leaks at bilinear interpolation level
-    if (disocclusion_factor < DISOCCLUSION_THRESHOLD && false) {
-        // If we've got a discarded history, try to construct a better sample out of 2x2 interpolation neighborhood
-        // Helps quite a bit on the edges in movement
+    { // Perform manual bilinear interpolation
         float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
         float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
         ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
@@ -233,10 +225,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
 
         /* fp16 */ vec4 w;
         // Initialize with occlusion weights
-        w.x = GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.y = GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.z = GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-        w.w = GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.x = float(reprojection00.w > 0.0) * GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.y = float(reprojection10.w > 0.0) * GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.z = float(reprojection01.w > 0.0) * GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.w = float(reprojection11.w > 0.0) * GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
         // And then mix in bilinear weights
         w.x = w.x * (1.0 - uvx) * (1.0 - uvy);
         w.y = w.y * (uvx) * (1.0 - uvy);
@@ -254,6 +246,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
         disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
     }
+
     disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
 }
 
