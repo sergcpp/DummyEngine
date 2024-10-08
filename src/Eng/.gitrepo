@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_07_10
-	commit = 5ecebc488b2d97aec6d48fdfd954a1ff5379acc7
+	branch = denoising_fixes
+	commit = 25837844ad4052ac96340bf97e017d3f08d29429
 	method = merge
 	cmdver = 0.4.6
-	parent = d6b424a77a3c96696fb5901ff0ee75eb978c7f74
+	parent = 1814871dafbcc8b73e6643fd5b06b2bc1fb9f20f
