@@ -1363,6 +1363,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             ex_postprocess_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
             ex_postprocess_args_.fade = list.draw_cam.fade;
             ex_postprocess_args_.aberration = list.render_settings.enable_aberration ? 1.0f : 0.0f;
+            ex_postprocess_args_.purkinje = list.render_settings.enable_purkinje ? 1.0f : 0.0f;
 
             backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 

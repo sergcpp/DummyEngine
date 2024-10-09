@@ -691,6 +691,7 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     }
 
     renderer_->settings.enable_aberration = viewer_->app_params.postprocess;
+    renderer_->settings.enable_purkinje = viewer_->app_params.postprocess;
 }
 
 void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }

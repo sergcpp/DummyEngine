@@ -6,6 +6,7 @@
 
 #pragma multi_compile _ COMPRESSED
 #pragma multi_compile _ ABERRATION
+#pragma multi_compile _ PURKINJE
 #pragma multi_compile _ LUT
 #pragma multi_compile _ TWO_TARGETS
 
@@ -62,7 +63,12 @@ void main() {
 #ifdef COMPRESSED
     col = decompress_hdr(col);
 #endif
-    col *= texelFetch(g_exp_tex, ivec2(0), 0).x;
+    const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
+    col *= exposure;
+
+#ifdef PURKINJE
+    col *= mix(vec3(1.0), vec3(0.8, 0.8, 1.0), g_params.purkinje * saturate(exposure - 12.0));
+#endif
 
 #if defined(LUT)
     col = TonemapLUT(g_lut_tex, col);

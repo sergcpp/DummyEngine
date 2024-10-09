@@ -36,6 +36,7 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     uniform_params.inv_gamma = args_->inv_gamma;
     uniform_params.fade = args_->fade;
     uniform_params.aberration = args_->aberration;
+    uniform_params.purkinje = args_->purkinje;
 
     Ren::SmallVector<Ren::Binding, 8> bindings = {
         {Ren::eBindTarget::Tex2DSampled, BlitCombine::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
@@ -60,13 +61,13 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
 void Eng::ExPostprocess::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         blit_postprocess_prog_[0][0][0] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                                                         "internal/blit_postprocess@ABERRATION.frag.glsl");
+                                                         "internal/blit_postprocess@ABERRATION;PURKINJE.frag.glsl");
         assert(blit_postprocess_prog_[0][0][0]->ready());
         blit_postprocess_prog_[0][0][1] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                                                         "internal/blit_postprocess@ABERRATION;TWO_TARGETS.frag.glsl");
+                                                         "internal/blit_postprocess@ABERRATION;PURKINJE;TWO_TARGETS.frag.glsl");
         assert(blit_postprocess_prog_[0][0][1]->ready());
         blit_postprocess_prog_[0][1][0] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                                                         "internal/blit_postprocess@ABERRATION;LUT.frag.glsl");
+                                                         "internal/blit_postprocess@ABERRATION;PURKINJE;LUT.frag.glsl");
         assert(blit_postprocess_prog_[0][1][0]->ready());
         blit_postprocess_prog_[0][1][1] =
             sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
@@ -74,19 +75,19 @@ void Eng::ExPostprocess::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         assert(blit_postprocess_prog_[0][1][1]->ready());
 
         blit_postprocess_prog_[1][0][0] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                                                         "internal/blit_postprocess@COMPRESSED;ABERRATION.frag.glsl");
+                                                         "internal/blit_postprocess@COMPRESSED;ABERRATION;PURKINJE.frag.glsl");
         assert(blit_postprocess_prog_[1][0][0]->ready());
         blit_postprocess_prog_[1][0][1] =
             sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                           "internal/blit_postprocess@COMPRESSED;ABERRATION;TWO_TARGETS.frag.glsl");
+                           "internal/blit_postprocess@COMPRESSED;ABERRATION;PURKINJE;TWO_TARGETS.frag.glsl");
         assert(blit_postprocess_prog_[1][0][1]->ready());
         blit_postprocess_prog_[1][1][0] =
             sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                           "internal/blit_postprocess@COMPRESSED;ABERRATION;LUT.frag.glsl");
+                           "internal/blit_postprocess@COMPRESSED;ABERRATION;PURKINJE;LUT.frag.glsl");
         assert(blit_postprocess_prog_[1][1][0]->ready());
         blit_postprocess_prog_[1][1][1] =
             sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
-                           "internal/blit_postprocess@COMPRESSED;ABERRATION;LUT;TWO_TARGETS.frag.glsl");
+                           "internal/blit_postprocess@COMPRESSED;ABERRATION;PURKINJE;LUT;TWO_TARGETS.frag.glsl");
         assert(blit_postprocess_prog_[1][1][1]->ready());
 
         initialized = true;

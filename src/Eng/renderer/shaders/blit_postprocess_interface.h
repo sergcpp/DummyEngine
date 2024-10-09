@@ -7,11 +7,15 @@ INTERFACE_START(BlitCombine)
 
 struct Params {
     vec4 transform;
+    //
     vec2 tex_size;
     float tonemap_mode;
     float inv_gamma;
+    //
     float aberration;
+    float purkinje;
     float fade;
+    float _unused0;
 };
 
 const int HDR_TEX_SLOT = 0;

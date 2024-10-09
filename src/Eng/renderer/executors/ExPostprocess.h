@@ -24,6 +24,7 @@ class ExPostprocess final : public FgExecutor {
         int tonemap_mode = 1;
         float inv_gamma = 1.0f, fade = 0.0f;
         float aberration = 1.0f;
+        float purkinje = 1.0f;
     };
 
     explicit ExPostprocess(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
