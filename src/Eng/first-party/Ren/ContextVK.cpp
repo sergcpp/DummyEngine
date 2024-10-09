@@ -203,7 +203,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         return false;
     }
 
-    log_->Info("===========================================");
+    log_->Info("============================================================================");
     log_->Info("Device info:");
 
     log_->Info("\tVulkan version\t: %i.%i", VK_API_VERSION_MAJOR(api_ctx_->device_properties.apiVersion),
@@ -216,8 +216,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         log_->Info("\tVendor\t\t: %s", it->second);
     }
     log_->Info("\tName\t\t: %s", api_ctx_->device_properties.deviceName);
-
-    log_->Info("===========================================");
+    log_->Info("============================================================================");
 
     capabilities.hwrt = (api_ctx_->raytracing_supported && api_ctx_->ray_query_supported);
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;

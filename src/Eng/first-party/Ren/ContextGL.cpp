@@ -55,7 +55,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         glGenQueries(MaxTimestampQueries, api_ctx_->queries[i]);
     }
 
-    log_->Info("===========================================");
+    log_->Info("============================================================================");
     log_->Info("Device info:");
 
     // print device info
@@ -114,7 +114,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_ARITHMETIC_BIT_KHR) != 0;
     }
 
-    log_->Info("===========================================");
+    log_->Info("============================================================================");
 
     if (validation_level && (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
                              IsExtensionSupported("AMD_debug_output"))) {

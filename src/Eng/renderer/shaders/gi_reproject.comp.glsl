@@ -142,7 +142,8 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
 
 /* fp16 */ float GetDisocclusionFactor(/* fp16 */ vec3 normal, /* fp16 */ vec3 history_normal, float linear_depth, float history_linear_depth) {
     /* fp16 */ float factor = 1.0;
-    //factor *= exp(-abs(1.0 - max(0.0, dot(normal, history_normal))) * DISOCCLUSION_NORMAL_WEIGHT);
+    //factor *= exp(-abs(1.0 - saturate(dot(normal, history_normal))) / DISOCCLUSION_NORMAL_WEIGHT);
+    factor *= mix(step(0.95, saturate(dot(normal, history_normal))), 1.0, saturate(0.1 * linear_depth));
     factor *= exp(-abs(history_linear_depth - linear_depth) / linear_depth * DISOCCLUSION_DEPTH_WEIGHT);
     return factor;
 }
