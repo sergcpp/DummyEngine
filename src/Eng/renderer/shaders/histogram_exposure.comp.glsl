@@ -19,9 +19,16 @@ float luma_from_histogram(const float hist) {
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    vec2 total = vec2(0.0);
+    const float sum = float(texelFetch(g_histogram, ivec2(EXPOSURE_HISTOGRAM_RES, 0), 0).x);
+
+    vec2 total = vec2(0.0), bounds = vec2(0.4, 0.98) * sum;
     for (int i = 0; i < EXPOSURE_HISTOGRAM_RES; ++i) {
-        const float val = float(texelFetch(g_histogram, ivec2(i, 0), 0).x);
+        float val = float(texelFetch(g_histogram, ivec2(i, 0), 0).x);
+        float sub = min(val, bounds.x);
+        val -= sub;
+        bounds -= vec2(sub);
+        val = min(val, bounds.y);
+        bounds.y -= val;
         total += vec2(luma_from_histogram(float(i) / float(EXPOSURE_HISTOGRAM_RES)), 1.0) * val;
     }
 
@@ -29,6 +36,7 @@ void main() {
     const float exposure_curr = (1.25 / avg_luma);
     const float exposure_prev = texelFetch(g_exposure_prev, ivec2(0), 0).x;
 
-    const float exposure = clamp(0.8 * exposure_prev + 0.2 * exposure_curr, g_params.min_exposure, g_params.max_exposure);
+    const float k = (exposure_curr < exposure_prev) ? 0.15 : 0.01;
+    const float exposure = clamp(sqrt((1.0 - k) * sqr(exposure_prev) + k * sqr(exposure_curr)), g_params.min_exposure, g_params.max_exposure);
     imageStore(g_out_img, ivec2(0), vec4(exposure));
 }
