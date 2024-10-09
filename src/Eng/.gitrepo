@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = meshlight_specular
-	commit = f70d3442de4e83d32914003a19531629f5aba1c8
+	branch = refraction_tweaks
+	commit = 8cceb4acaf342ebde1924fbe754cf299c4a9d1a9
 	method = merge
 	cmdver = 0.4.6
-	parent = 71134587a8b733e1529b212e905b4783d69e91b5
+	parent = f5312c2930dc2f18684ac9d513ed221474c1a6ca
