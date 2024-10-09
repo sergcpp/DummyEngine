@@ -876,7 +876,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
                 (view_state_.act_res[1] + Skydome::LOCAL_GROUP_SIZE_Y - 1u) / Skydome::LOCAL_GROUP_SIZE_Y, 1u};
 
-            Skydome::Params uniform_params;
+            Skydome::Params2 uniform_params;
             uniform_params.img_size = view_state_.scr_res;
             uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
 

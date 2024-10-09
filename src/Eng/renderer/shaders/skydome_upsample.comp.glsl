@@ -8,7 +8,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params g_params;
+    Params2 g_params;
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
