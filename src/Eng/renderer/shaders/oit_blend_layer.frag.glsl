@@ -299,7 +299,7 @@ void main() {
         uvs_offset.y = -uvs_offset.y;
     #endif
 
-        float k = 4.0 * saturate(ior - 1.0) * (back_lin_depth - lin_depth) / back_lin_depth;
+        float k = saturate(ior - 1.0) * (back_lin_depth - lin_depth) / back_lin_depth;
         k *= 0.5 - abs(norm_uvs.x - 0.5);
         k *= 0.5 - abs(norm_uvs.y - 0.5);
 
