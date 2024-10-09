@@ -30,7 +30,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     const int SamplesPerQuad = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 4 : 1;
     static const bool VarianceGuided = true;
     static const bool EnableBlur = true;
-    const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
+    const bool EnableStabilization = false; //(settings.taa_mode != eTAAMode::Static);
 
     FgResRef ray_counter;
 

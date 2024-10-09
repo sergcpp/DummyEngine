@@ -115,7 +115,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     const int SamplesPerQuad = (settings.gi_quality == eGIQuality::Ultra) ? 4 : 1;
     static const bool VarianceGuided = true;
     static const bool EnableBlur = true;
-    const bool EnableStabilization = (settings.taa_mode != eTAAMode::Static);
+    const bool EnableStabilization = false;
+    //(settings.taa_mode != eTAAMode::Static);
 
     FgResRef ray_counter;
 
