@@ -1,5 +1,5 @@
 #ifndef Z_THICKNESS
-    #define Z_THICKNESS 0.02
+    #define Z_THICKNESS 0.0175
 #endif
 #ifndef MAX_STEPS
     #define MAX_STEPS 256
