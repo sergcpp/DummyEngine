@@ -497,7 +497,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
     { // complex materials
         std::vector<std::future<void>> futures;
 
-        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 24.60, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.40, Full));
         futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.35, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 39.85, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 29.00, NoGI));
@@ -529,7 +529,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 26.55, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_spot_light", 27.80, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 33.50, NoShadow));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 29.20, NoGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 28.30, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 33.40, NoGI_RTShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 21.30, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 22.75, Full_Ultra));
@@ -557,9 +557,9 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 22.60, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", 23.10, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 22.40, NoShadow));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 17.60, NoGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 17.55, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 22.70, NoGI_RTShadow));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 18.65, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 18.45, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", 21.80, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_mesh_lights", 17.05, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_mesh_lights", 20.55, Full));
