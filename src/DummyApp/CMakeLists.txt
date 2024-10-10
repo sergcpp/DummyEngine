@@ -57,7 +57,7 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
-	add_executable(DummyApp ${ALL_SOURCE_FILES})
+	add_executable(DummyApp ${ALL_SOURCE_FILES} DummyApp.rc)
 else()
 	add_library(DummyApp SHARED ${ALL_SOURCE_FILES})
 endif()

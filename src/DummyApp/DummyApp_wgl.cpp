@@ -22,6 +22,7 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 #include <Sys/Time_.h>
 
 #include "../DummyLib/Viewer.h"
+#include "resource.h"
 
 namespace {
 DummyApp *g_app = nullptr;
@@ -183,6 +184,8 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.lpszClassName = "MainWindowClass";
     window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    window_class.hIcon = LoadIcon(window_class.hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    window_class.hIconSm = window_class.hIcon;
     RegisterClassEx(&window_class);
 
     RECT rect;
