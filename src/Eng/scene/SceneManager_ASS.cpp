@@ -646,10 +646,10 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     using namespace SceneManagerInternal;
 
     // for astc codec
-    if (!g_astc_initialized) {
+    /*if (!g_astc_initialized) {
         InitASTCCodec();
         g_astc_initialized = true;
-    }
+    }*/
 
     g_asset_handlers["bff"] = {"bff", HCopy};
     g_asset_handlers["mesh"] = {"mesh", HCopy};
