@@ -714,6 +714,26 @@ void GSBaseState::UpdateAnim(const uint64_t dt_us) {
     if (cmdline_ui_->cursor_blink_us > 1000000) {
         cmdline_ui_->cursor_blink_us = 0;
     }
+
+    if (!viewer_->app_params.freeze_sky && !viewer_->app_params.pt) {
+        // TODO: Use global wind direction
+        Eng::SceneData &scene_data = scene_manager_->scene_data();
+        scene_data.env.atmosphere.clouds_offset_x += float(dt_us * 0.000015);
+        scene_data.env.atmosphere.clouds_offset_z += float(dt_us * 0.000015);
+        scene_data.env.atmosphere.clouds_flutter_x += float(dt_us * 0.00000001);
+        scene_data.env.atmosphere.clouds_flutter_z += float(dt_us * 0.00000001);
+        ++scene_data.env.generation;
+
+        float _unused;
+        scene_data.env.atmosphere.clouds_offset_x =
+            std::modf(scene_data.env.atmosphere.clouds_offset_x * Eng::SKY_CLOUDS_OFFSET_SCALE, &_unused) /
+            Eng::SKY_CLOUDS_OFFSET_SCALE;
+        scene_data.env.atmosphere.clouds_offset_z =
+            std::modf(scene_data.env.atmosphere.clouds_offset_z * Eng::SKY_CLOUDS_OFFSET_SCALE, &_unused) /
+            Eng::SKY_CLOUDS_OFFSET_SCALE;
+        scene_data.env.atmosphere.clouds_flutter_x = std::modf(scene_data.env.atmosphere.clouds_flutter_x, &_unused);
+        scene_data.env.atmosphere.clouds_flutter_z = std::modf(scene_data.env.atmosphere.clouds_flutter_z, &_unused);
+    }
 }
 
 void GSBaseState::Draw() {

@@ -390,7 +390,7 @@ struct SharedDataBlock {
     Types::AtmosphereParams atmosphere;
 };
 static_assert(sizeof(SharedDataBlock) ==
-                  7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + 16 + PROBE_VOLUMES_COUNT * 64,
+                  7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + 16 + 16 + PROBE_VOLUMES_COUNT * 64,
               "!");
 
 const int MAX_MATERIAL_PARAMS = 4;

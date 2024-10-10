@@ -444,14 +444,14 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             scene_data_.env.env_map_name = Ren::String{js_env_map.val.c_str()};
             if (scene_data_.env.env_map_name == "physical_sky") {
-                std::vector<uint8_t> black_cube(4 * 1024 * 1024, 0);
+                std::vector<uint8_t> black_cube(4 * 512 * 512, 0);
                 Ren::Span<const uint8_t> _black_cube[6];
                 for (int i = 0; i < 6; ++i) {
                     _black_cube[i] = black_cube;
                 }
 
                 Ren::Tex2DParams p;
-                p.w = p.h = 1024;
+                p.w = p.h = 512;
                 p.format = Ren::eTexFormat::RawRGBA16F;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Storage |
                            Ren::eTexUsageBits::RenderTarget);

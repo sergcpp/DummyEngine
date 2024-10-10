@@ -57,15 +57,18 @@ void main() {
 #if defined(VULKAN)
     prev_ray_origin_cs.y = -prev_ray_origin_cs.y;
 #endif
+
+    bool no_history = true;
     const vec2 hist_uvs = 0.5 * prev_ray_origin_cs.xy + 0.5;
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
         const vec4 history = textureLod(g_sky_hist_tex, hist_uvs, 0.0);
         if (history.w > 0.0) {
             out_color = history;
+            no_history = false;
         }
     }
 
-    if (all(equal(icoord % 4, g_params.sample_coord))) {
+    if (all(equal(icoord % 4, g_params.sample_coord)) || no_history) {
         const vec4 new_sample = texelFetch(g_sky_tex, icoord/4, 0);
         if (new_sample.w > 0.0) {
             out_color = new_sample;

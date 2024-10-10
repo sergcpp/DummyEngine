@@ -38,7 +38,8 @@ class ExSkydomeCube final : public FgExecutor {
   private:
     PrimDraw &prim_draw_;
     bool initialized_ = false;
-    uint32_t generation_ = 0xffffffff;
+    uint32_t generation_ = 0xffffffff, generation_in_progress_ = 0xffffffff;
+    int last_updated_face_ = 5;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

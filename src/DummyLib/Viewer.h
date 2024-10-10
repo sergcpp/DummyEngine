@@ -50,6 +50,7 @@ struct AppParams {
     bool pt_denoise = true;
     bool pt_nohwrt = false;
     bool postprocess = true;
+    bool freeze_sky = false;
     int pt_max_samples = 128;
     std::optional<float> exposure;
     eGfxPreset gfx_preset = eGfxPreset::High;

@@ -34,7 +34,10 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
         return;
     }
 
-    generation_ = view_state_->env_generation;
+    if (last_updated_face_ == 5) {
+        last_updated_face_ = -1;
+        generation_in_progress_ = view_state_->env_generation;
+    }
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
@@ -68,22 +71,29 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
                                      Ren::Vec3f{0.0f, 1.0f, 0.0f}, Ren::Vec3f{0.0f, 1.0f, 0.0f}};
 #endif
 
+    const int mip_count = color_tex.ref->params.mip_count;
+
     Ren::Camera temp_cam;
     temp_cam.Perspective(Ren::eZRange::OneToZero, 90.0f, 1.0f, 1.0f, 10000.0f);
-    for (int i = 0; i < 6; i++) {
-        temp_cam.SetupView(Ren::Vec3f{0.0f}, axises[i], ups[i]);
+
+    const int face_start = last_updated_face_ + 1;
+    const int face_end = (generation_ == 0xffffffff) ? 6 : face_start + 1;
+
+    for (int face = face_start; face < face_end; ++face) {
+        temp_cam.SetupView(Ren::Vec3f{0.0f}, axises[face], ups[face]);
 
         Skydome::Params uniform_params = {};
         uniform_params.clip_from_world = temp_cam.proj_matrix() * temp_cam.view_matrix();
 
         const Ren::RenderTarget color_targets[] = {
-            {color_tex.ref, uint8_t(i + 1), Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+            {color_tex.ref, uint8_t(face + 1), Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, color_targets, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+
+        last_updated_face_ = face;
     }
 
-    const int mip_count = color_tex.ref->params.mip_count;
-    for (int face = 0; face < 6; ++face) {
+    for (int face = face_start; face < face_end; ++face) {
         for (int mip = 1; mip < mip_count; mip += 4) {
             const Ren::TransitionInfo transitions[] = {{color_tex.ref.get(), Ren::eResState::UnorderedAccess}};
             TransitionResourceStates(builder.ctx().api_ctx(), builder.ctx().current_cmd_buf(), Ren::AllStages,
@@ -128,6 +138,10 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
             DispatchCompute(pi_skydome_downsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         }
+    }
+
+    if (last_updated_face_ == 5) {
+        generation_ = generation_in_progress_;
     }
 
     const Ren::TransitionInfo transitions[] = {{color_tex.ref.get(), Ren::eResState::RenderTarget}};

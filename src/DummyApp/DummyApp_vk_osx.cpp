@@ -234,6 +234,8 @@ int DummyApp::Run(int argc, char *argv[]) {
             app_params.sun_dir[2] = strtof(argv[i], nullptr);
         } else if (strcmp(argv[i], "--no-postprocess") == 0) {
             app_params.postprocess = false;
+        } else if (strcmp(argv[i], "--freeze-sky") == 0) {
+            app_params.freeze_sky = true;
         }
     }
 
