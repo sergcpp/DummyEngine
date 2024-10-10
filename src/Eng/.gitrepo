@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = refraction_tweaks
-	commit = 8cceb4acaf342ebde1924fbe754cf299c4a9d1a9
+	branch = animated_sky
+	commit = d1b8198082e7cc48241fee328096c8491fca2660
 	method = merge
 	cmdver = 0.4.6
-	parent = f5312c2930dc2f18684ac9d513ed221474c1a6ca
+	parent = 6bf5af9a97de0992f65490b2d50cd4a40ed798a2
