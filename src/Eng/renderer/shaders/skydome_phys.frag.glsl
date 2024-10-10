@@ -14,7 +14,6 @@
     #define ENABLE_SUN_DISK 1
 #else
     #define ENABLE_SUN_DISK 0
-    #define ENABLE_CLOUDS_CURL 0
 #endif
 
 #include "atmosphere_common.glsl"

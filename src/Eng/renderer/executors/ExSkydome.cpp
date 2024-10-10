@@ -34,8 +34,8 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
         return;
     }
 
-    if (last_updated_face_ == 5) {
-        last_updated_face_ = -1;
+    if (last_updated_faceq_ == 23) {
+        last_updated_faceq_ = -1;
         generation_in_progress_ = view_state_->env_generation;
     }
 
@@ -76,22 +76,37 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
     Ren::Camera temp_cam;
     temp_cam.Perspective(Ren::eZRange::OneToZero, 90.0f, 1.0f, 1.0f, 10000.0f);
 
-    const int face_start = last_updated_face_ + 1;
-    const int face_end = (generation_ == 0xffffffff) ? 6 : face_start + 1;
+    const int faceq_start = last_updated_faceq_ + 1;
+    const int faceq_end = (generation_ == 0xffffffff) ? 24 : faceq_start + 1;
 
-    for (int face = face_start; face < face_end; ++face) {
-        temp_cam.SetupView(Ren::Vec3f{0.0f}, axises[face], ups[face]);
+    assert(color_tex.ref->params.w % 2 == 0);
+    assert(color_tex.ref->params.h % 2 == 0);
+    const Ren::Vec4i quadrants[] = {
+        Ren::Vec4i{0, 0, color_tex.ref->params.w / 2, color_tex.ref->params.h / 2},
+        Ren::Vec4i{color_tex.ref->params.w / 2, 0, color_tex.ref->params.w / 2, color_tex.ref->params.h / 2},
+        Ren::Vec4i{0, color_tex.ref->params.h / 2, color_tex.ref->params.w / 2, color_tex.ref->params.h / 2},
+        Ren::Vec4i{color_tex.ref->params.w / 2, color_tex.ref->params.h / 2, color_tex.ref->params.w / 2,
+                   color_tex.ref->params.h / 2}};
+
+    for (int faceq = faceq_start; faceq < faceq_end; ++faceq) {
+        rast_state.scissor.enabled = true;
+        rast_state.scissor.rect = quadrants[faceq % 4];
+
+        temp_cam.SetupView(Ren::Vec3f{0.0f}, axises[faceq / 4], ups[faceq / 4]);
 
         Skydome::Params uniform_params = {};
         uniform_params.clip_from_world = temp_cam.proj_matrix() * temp_cam.view_matrix();
 
         const Ren::RenderTarget color_targets[] = {
-            {color_tex.ref, uint8_t(face + 1), Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+            {color_tex.ref, uint8_t((faceq / 4) + 1), Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
         prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, color_targets, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
 
-        last_updated_face_ = face;
+        last_updated_faceq_ = faceq;
     }
+
+    const int face_start = (generation_ == 0xffffffff) ? 0 : (last_updated_faceq_ / 4);
+    const int face_end = (generation_ == 0xffffffff) ? 6 : face_start + 1;
 
     for (int face = face_start; face < face_end; ++face) {
         for (int mip = 1; mip < mip_count; mip += 4) {
@@ -140,7 +155,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
         }
     }
 
-    if (last_updated_face_ == 5) {
+    if (last_updated_faceq_ == 23) {
         generation_ = generation_in_progress_;
     }
 

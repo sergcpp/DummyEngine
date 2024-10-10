@@ -93,6 +93,10 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX, GLuint(textures_buf.ref->id()));
     }
 
+    // Clear commands account for scissor region
+    glDisable(GL_SCISSOR_TEST);
+    builder.rast_state().scissor.enabled = false;
+
     glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id()));
     if (clear_depth_) {
         glClearDepthf(0.0f);

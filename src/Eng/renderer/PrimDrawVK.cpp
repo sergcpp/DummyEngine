@@ -194,7 +194,11 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
                                      0.0f, 1.0f};
         api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
-        const VkRect2D scissor = {0, 0, uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])};
+        VkRect2D scissor = {0, 0, uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])};
+        if (new_rast_state.scissor.enabled) {
+            scissor = VkRect2D{new_rast_state.scissor.rect[0], new_rast_state.scissor.rect[1],
+                               uint32_t(new_rast_state.scissor.rect[2]), uint32_t(new_rast_state.scissor.rect[3])};
+        }
         api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,

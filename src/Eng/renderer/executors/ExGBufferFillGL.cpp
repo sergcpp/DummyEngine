@@ -75,6 +75,10 @@ void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::LEqual);
     }
 
+    // Clear commands account for scissor region
+    glDisable(GL_SCISSOR_TEST);
+    builder.rast_state().scissor.enabled = false;
+
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, main_draw_fb_[0][fb_to_use_].id());
     if (!main_draw_fb_[0][fb_to_use_].color_attachments.empty()) {
