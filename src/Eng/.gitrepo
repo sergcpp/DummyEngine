@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_10_10
-	commit = 7261d7697d23d86b3db6368be8d2c83fba57b0e6
+	branch = bloom
+	commit = 48fab79d53e94d3c4f0fe24ae5c84b3cc69d24b8
 	method = merge
 	cmdver = 0.4.6
-	parent = 48c9fb6548e1f7fac31646ac9ecb46bebfff001d
+	parent = a1dbb37190d1cdfbd683f360f08d7ed19cb3681d
