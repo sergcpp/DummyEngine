@@ -569,21 +569,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         list.render_settings.taa_mode != taa_mode_ || cur_dof_enabled != dof_enabled_ || cached_rp_index_ != 0) {
         rendertarget_changed = true;
 
-        { // Texture that holds previous frame (used for SSR)
-            Ren::Tex2DParams params;
-            params.w = cur_scr_w / 4;
-            params.h = cur_scr_h / 4;
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            Ren::eTexLoadStatus status;
-            down_tex_4x_ = ctx_.LoadTexture2D("DOWN 4x", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                   status == Ren::eTexLoadStatus::Reinitialized);
-        }
-
         view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
         taa_mode_ = list.render_settings.taa_mode;
         dof_enabled_ = cur_dof_enabled;
@@ -1235,17 +1220,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             resolved_color = frame_textures.color;
         }
 
-        //
-        // Color downsampling
-        //
-        const bool downsample_color = list.render_settings.enable_bloom ||
-                                      list.render_settings.tonemap_mode != eTonemapMode::Off ||
-                                      list.render_settings.reflections_quality != eReflectionsQuality::Off;
-        if (downsample_color && !list.render_settings.debug_wireframe) {
-            FgResRef downsampled_res = fg_builder_.MakeTextureResource(down_tex_4x_);
-            AddDownsampleColorPass(resolved_color, downsampled_res);
-        }
-
 #if defined(USE_GL_RENDER) && 0 // gl-only for now
         const bool apply_dof = (list.render_flags & EnableDOF) && list.draw_cam.focus_near_mul > 0.0f &&
                                list.draw_cam.focus_far_mul > 0.0f && ((list.render_flags & DebugWireframe) == 0);
@@ -1277,14 +1251,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 #endif
 
         //
-        // Blur
+        // Bloom
         //
-        FgResRef blur_tex;
-        const bool use_blur = list.render_settings.enable_bloom ||
-                              list.render_settings.tonemap_mode != eTonemapMode::Off ||
-                              list.render_settings.reflections_quality != eReflectionsQuality::Off;
-        if (use_blur && !list.render_settings.debug_wireframe) {
-            AddFrameBlurPasses(down_tex_4x_, blur_tex);
+        FgResRef bloom_tex;
+        if (list.render_settings.enable_bloom && !list.render_settings.debug_wireframe) {
+            bloom_tex = AddBloomPasses(resolved_color, frame_textures.exposure, true);
         }
 
         //
@@ -1292,7 +1263,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         if (list.render_settings.debug_motion) {
             AddDebugVelocityPass(frame_textures.velocity, resolved_color);
-            blur_tex = {};
+            bloom_tex = {};
         }
 
         bool apply_dof = false;
@@ -1338,10 +1309,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             ex_postprocess_args_.exposure_tex =
                 postprocess.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
             ex_postprocess_args_.color_tex = postprocess.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
-            if (false && list.render_settings.enable_bloom && blur_tex) {
-                ex_postprocess_args_.blur_tex = postprocess.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+            if (list.render_settings.enable_bloom && bloom_tex) {
+                ex_postprocess_args_.bloom_tex =
+                    postprocess.AddTextureInput(bloom_tex, Ren::eStageBits::FragmentShader);
             } else {
-                ex_postprocess_args_.blur_tex =
+                ex_postprocess_args_.bloom_tex =
                     postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
             }
             if (output_tex) {
@@ -1769,19 +1741,28 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res);
 
-        auto &combine = fg_builder_.AddNode("COMBINE");
+        FgResRef bloom_tex;
+        if (settings.enable_bloom) {
+            bloom_tex = AddBloomPasses(output_tex_res, exposure_tex, compressed);
+        }
+
+        auto &postprocess = fg_builder_.AddNode("POSTPROCESS");
 
         ex_postprocess_args_ = {};
-        ex_postprocess_args_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
-        ex_postprocess_args_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
-        ex_postprocess_args_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.color_tex = postprocess.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
+        if (bloom_tex) {
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStageBits::FragmentShader);
+        } else {
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+        }
         if (target) {
-            ex_postprocess_args_.output_tex = combine.AddColorOutput(target);
+            ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
             if (blit_to_backbuffer) {
-                ex_postprocess_args_.output_tex2 = combine.AddColorOutput(ctx_.backbuffer_ref());
+                ex_postprocess_args_.output_tex2 = postprocess.AddColorOutput(ctx_.backbuffer_ref());
             }
         } else {
-            ex_postprocess_args_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+            ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
         }
 
         ex_postprocess_args_.compressed = compressed;
@@ -1794,7 +1775,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 
         ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
-        combine.set_executor(&ex_postprocess_);
+        postprocess.set_executor(&ex_postprocess_);
 
         { // Readback exposure
             auto &read_exposure = fg_builder_.AddNode("READ EXPOSURE");
@@ -1821,14 +1802,14 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         auto *update_image = fg_builder_.FindNode("UPDATE IMAGE");
         update_image->ReplaceTransferInput(0, temp_upload_buf);
 
-        auto *combine = fg_builder_.FindNode("COMBINE");
+        auto *postprocess = fg_builder_.FindNode("POSTPROCESS");
         if (target) {
-            ex_postprocess_args_.output_tex = combine->ReplaceColorOutput(0, target);
+            ex_postprocess_args_.output_tex = postprocess->ReplaceColorOutput(0, target);
             if (blit_to_backbuffer) {
-                ex_postprocess_args_.output_tex2 = combine->ReplaceColorOutput(1, ctx_.backbuffer_ref());
+                ex_postprocess_args_.output_tex2 = postprocess->ReplaceColorOutput(1, ctx_.backbuffer_ref());
             }
         } else {
-            ex_postprocess_args_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
+            ex_postprocess_args_.output_tex = postprocess->ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
     }
 

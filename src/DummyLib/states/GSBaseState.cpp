@@ -188,6 +188,11 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_bloom", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.enable_bloom = !renderer_->settings.enable_bloom;
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_shadows", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
             if (args[1].val > 1.5) {
@@ -690,6 +695,7 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         sun_dir_[2] = viewer_->app_params.sun_dir[2];
     }
 
+    renderer_->settings.enable_bloom = viewer_->app_params.postprocess;
     renderer_->settings.enable_aberration = viewer_->app_params.postprocess;
     renderer_->settings.enable_purkinje = viewer_->app_params.postprocess;
 }

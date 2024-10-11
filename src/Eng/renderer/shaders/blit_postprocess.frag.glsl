@@ -11,7 +11,7 @@
 #pragma multi_compile _ TWO_TARGETS
 
 layout(binding = HDR_TEX_SLOT) uniform sampler2D g_tex;
-layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_tex;
+layout(binding = BLOOM_TEX_SLOT) uniform sampler2D g_bloom_tex;
 layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 #if defined(LUT)
     layout(binding = LUT_TEX_SLOT) uniform sampler3D g_lut_tex;
@@ -58,7 +58,7 @@ void main() {
     }
 
     // add bloom
-    col += 0.1 * textureLod(g_blured_tex, g_vtx_uvs, 0.0).xyz;
+    col += 0.075 * textureLod(g_bloom_tex, g_vtx_uvs, 0.0).xyz;
 
 #ifdef COMPRESSED
     col = decompress_hdr(col);

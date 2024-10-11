@@ -14,7 +14,7 @@ class ExPostprocess final : public FgExecutor {
     struct Args {
         FgResRef exposure_tex;
         FgResRef color_tex;
-        FgResRef blur_tex;
+        FgResRef bloom_tex;
         FgResRef output_tex;
         FgResRef output_tex2;
 

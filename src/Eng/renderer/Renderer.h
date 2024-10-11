@@ -108,7 +108,6 @@ class Renderer {
     // FrameBuf probe_sample_buf_;
     Ren::Tex2DRef shadow_map_tex_;
     Ren::SamplerRef nearest_sampler_;
-    Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     eTAAMode taa_mode_ = eTAAMode::Off;
     bool dof_enabled_ = false;
@@ -240,6 +239,8 @@ class Renderer {
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
     Ren::Pipeline pi_sun_brightness_;
+    // Bloom
+    Ren::Pipeline pi_bloom_downsample_[3], pi_bloom_upsample_;
     // Autoexposure
     Ren::Pipeline pi_histogram_sample_, pi_histogram_exposure_;
     // Sky
@@ -308,10 +309,8 @@ class Renderer {
     FgResRef AddGTAOPasses(FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex);
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                    FgResRef &inout_velocity_tex);
-    void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, FgResRef &output_tex);
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
                     FgResRef &resolved_color);
-    void AddDownsampleColorPass(FgResRef input_tex, FgResRef &output_tex);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
     void AddHQSpecularPasses(bool deferred_shading, bool debug_denoise, const CommonBuffers &common_buffers,
@@ -341,6 +340,8 @@ class Renderer {
     void AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                              const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                              bool enabled, FrameTextures &frame_textures);
+
+    FgResRef AddBloomPasses(FgResRef hdr_texture, FgResRef exposure_texture, bool compressed);
 
     FgResRef AddAutoexposurePasses(FgResRef hdr_texture);
 

@@ -18,6 +18,7 @@
 #include "shaders/blit_static_vel_interface.h"
 #include "shaders/blit_taa_interface.h"
 #include "shaders/blit_upscale_interface.h"
+#include "shaders/bloom_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
 #include "shaders/gtao_interface.h"
@@ -135,6 +136,12 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_shadow_filter_[1], "internal/rt_shadow_filter@PASS_1.comp.glsl");
     success &= init_pipeline(pi_shadow_filter_[2], "internal/rt_shadow_filter.comp.glsl");
     success &= init_pipeline(pi_shadow_debug_, "internal/rt_shadow_debug.comp.glsl");
+
+    // Bloom
+    success &= init_pipeline(pi_bloom_downsample_[0], "internal/bloom_downsample.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[1], "internal/bloom_downsample@TONEMAP.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[2], "internal/bloom_downsample@COMPRESSED;TONEMAP.comp.glsl");
+    success &= init_pipeline(pi_bloom_upsample_, "internal/bloom_upsample.comp.glsl");
 
     // Autoexposure
     success &= init_pipeline(pi_histogram_sample_, "internal/histogram_sample.comp.glsl");
@@ -1699,100 +1706,6 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     });
 }
 
-void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, FgResRef &output_tex) {
-    FgResRef blur_temp;
-    { // Blur frame horizontally
-        auto &blur_h = fg_builder_.AddNode("BLUR H");
-
-        struct PassData {
-            FgResRef input_tex;
-            FgResRef output_tex;
-        };
-
-        auto *data = blur_h.AllocNodeData<PassData>();
-        data->input_tex = blur_h.AddTextureInput(input_tex, Ren::eStageBits::FragmentShader);
-
-        { //
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0] / 4;
-            params.h = view_state_.scr_res[1] / 4;
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            blur_temp = data->output_tex = blur_h.AddColorOutput("Blur temp", params);
-        }
-
-        blur_h.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-
-            Ren::RastState rast_state;
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-
-            rast_state.viewport[2] = view_state_.act_res[0] / 4;
-            rast_state.viewport[3] = view_state_.act_res[1] / 4;
-
-            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, Gauss::SRC_TEX_SLOT, *intput_tex.ref}};
-
-            Gauss::Params uniform_params;
-            uniform_params.transform =
-                Ren::Vec4f{0.0f, 0.0f, float(rast_state.viewport[2]), float(rast_state.viewport[3])};
-            uniform_params.vertical[0] = 0.0f;
-
-            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_gauss2_prog_, render_targets, {}, rast_state,
-                                builder.rast_state(), bindings, &uniform_params, sizeof(Gauss::Params), 0);
-        });
-    }
-    { // Blur frame vertically
-        auto &blur_v = fg_builder_.AddNode("BLUR V");
-
-        struct PassData {
-            FgResRef input_tex;
-            FgResRef output_tex;
-        };
-
-        auto *data = blur_v.AllocNodeData<PassData>();
-        data->input_tex = blur_v.AddTextureInput(blur_temp, Ren::eStageBits::FragmentShader);
-
-        { //
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0] / 4;
-            params.h = view_state_.scr_res[1] / 4;
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            output_tex = data->output_tex = blur_v.AddColorOutput("Blur Res", params);
-        }
-
-        blur_v.set_execute_cb([this, data](FgBuilder &builder) {
-            FgAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-
-            Ren::RastState rast_state;
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-
-            rast_state.viewport[2] = view_state_.act_res[0] / 4;
-            rast_state.viewport[3] = view_state_.act_res[1] / 4;
-
-            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, Gauss::SRC_TEX_SLOT, *intput_tex.ref}};
-
-            Gauss::Params uniform_params;
-            uniform_params.transform =
-                Ren::Vec4f{0.0f, 0.0f, float(rast_state.viewport[2]), float(rast_state.viewport[3])};
-            uniform_params.vertical[0] = 1.0f;
-
-            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_gauss2_prog_, render_targets, {}, rast_state,
-                                builder.rast_state(), bindings, &uniform_params, sizeof(Gauss::Params), 0);
-        });
-    }
-}
-
 void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                const bool static_accumulation, FgResRef &resolved_color) {
     using Stg = Ren::eStageBits;
@@ -1878,42 +1791,6 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
     });
 }
 
-void Eng::Renderer::AddDownsampleColorPass(FgResRef input_tex, FgResRef &output_tex) {
-    auto &down_color = fg_builder_.AddNode("DOWNSAMPLE COLOR");
-
-    struct PassData {
-        FgResRef input_tex;
-        FgResRef output_tex;
-    };
-
-    auto *data = down_color.AllocNodeData<PassData>();
-    data->input_tex = down_color.AddTextureInput(input_tex, Ren::eStageBits::FragmentShader);
-    output_tex = data->output_tex = down_color.AddColorOutput(output_tex);
-
-    down_color.set_execute_cb([this, data](FgBuilder &builder) {
-        FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
-        FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-
-        Ren::RastState rast_state;
-
-        rast_state.viewport[2] = view_state_.act_res[0] / 4;
-        rast_state.viewport[3] = view_state_.act_res[1] / 4;
-
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, DownColor::SRC_TEX_SLOT, *input_tex.ref}};
-
-        DownColor::Params uniform_params;
-        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]) / float(view_state_.scr_res[0]),
-                                              float(view_state_.act_res[1]) / float(view_state_.scr_res[1])};
-        uniform_params.resolution =
-            Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]), 0.0f, 0.0f};
-
-        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down2_prog_, render_targets, {}, rast_state,
-                            builder.rast_state(), bindings, &uniform_params, sizeof(DownColor::Params), 0);
-    });
-}
-
 void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                            FgResRef &out_depth_down_2x) {
     auto &downsample_depth = fg_builder_.AddNode("DOWN DEPTH");
@@ -1963,6 +1840,122 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down_depth_prog_, render_targets, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(DownDepth::Params), 0);
     });
+}
+
+Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef exposure_texture, const bool compressed) {
+    static const int BloomMipCount = 5;
+
+    Eng::FgResRef downsampled[BloomMipCount];
+    for (int mip = 0; mip < BloomMipCount; ++mip) {
+        const std::string node_name = "BLOOM DOWNSAMPLE #" + std::to_string(mip);
+        auto &bloom_downsample = fg_builder_.AddNode(node_name);
+
+        struct PassData {
+            FgResRef input_tex;
+            FgResRef exposure_tex;
+            FgResRef output_tex;
+        };
+
+        auto *data = bloom_downsample.AllocNodeData<PassData>();
+        if (mip == 0) {
+            data->input_tex = bloom_downsample.AddTextureInput(hdr_texture, Ren::eStageBits::ComputeShader);
+        } else {
+            data->input_tex = bloom_downsample.AddTextureInput(downsampled[mip - 1], Ren::eStageBits::ComputeShader);
+        }
+        data->exposure_tex = bloom_downsample.AddTextureInput(exposure_texture, Ren::eStageBits::ComputeShader);
+
+        { // Texture that holds downsampled bloom image
+            Ren::Tex2DParams params;
+            params.w = (view_state_.scr_res[0] / 2) >> mip;
+            params.h = (view_state_.scr_res[1] / 2) >> mip;
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            const std::string output_name = "Bloom Downsampled " + std::to_string(mip);
+            downsampled[mip] = data->output_tex =
+                bloom_downsample.AddStorageImageOutput(output_name, params, Ren::eStageBits::ComputeShader);
+        }
+
+        bloom_downsample.set_execute_cb([this, data, mip, compressed](FgBuilder &builder) {
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Bloom::Params uniform_params;
+            uniform_params.img_size[0] = output_tex.ref->params.w;
+            uniform_params.img_size[1] = output_tex.ref->params.h;
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, *input_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, Bloom::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
+                {Ren::eBindTarget::Image2D, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
+                (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
+
+            const int pi = mip == 0 ? (compressed ? 2 : 1) : 0;
+            DispatchCompute(pi_bloom_downsample_[pi], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.log());
+        });
+    }
+    Eng::FgResRef upsampled[BloomMipCount - 1];
+    for (int mip = BloomMipCount - 2; mip >= 0; --mip) {
+        const std::string node_name = "BLOOM UPSAMPLE #" + std::to_string(mip);
+        auto &bloom_upsample = fg_builder_.AddNode(node_name);
+
+        struct PassData {
+            FgResRef input_tex;
+            FgResRef blend_tex;
+            FgResRef output_tex;
+        };
+
+        auto *data = bloom_upsample.AllocNodeData<PassData>();
+        if (mip == BloomMipCount - 2) {
+            data->input_tex = bloom_upsample.AddTextureInput(downsampled[mip + 1], Ren::eStageBits::ComputeShader);
+        } else {
+            data->input_tex = bloom_upsample.AddTextureInput(upsampled[mip + 1], Ren::eStageBits::ComputeShader);
+        }
+        data->blend_tex = bloom_upsample.AddTextureInput(downsampled[mip], Ren::eStageBits::ComputeShader);
+
+        { // Texture that holds upsampled bloom image
+            Ren::Tex2DParams params;
+            params.w = (view_state_.scr_res[0] / 2) >> mip;
+            params.h = (view_state_.scr_res[1] / 2) >> mip;
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            const std::string output_name = "Bloom Upsampled " + std::to_string(mip);
+            upsampled[mip] = data->output_tex =
+                bloom_upsample.AddStorageImageOutput(output_name, params, Ren::eStageBits::ComputeShader);
+        }
+
+        bloom_upsample.set_execute_cb([this, data, mip](FgBuilder &builder) {
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &blend_tex = builder.GetReadTexture(data->blend_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Bloom::Params uniform_params;
+            uniform_params.img_size[0] = output_tex.ref->params.w;
+            uniform_params.img_size[1] = output_tex.ref->params.h;
+            uniform_params.blend_weight = 1.0f / float(1 + BloomMipCount - 1 - mip);
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, *input_tex.ref},
+                                             {Ren::eBindTarget::Tex2DSampled, Bloom::BLEND_TEX_SLOT, *blend_tex.ref},
+                                             {Ren::eBindTarget::Image2D, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
+                (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
+
+            DispatchCompute(pi_bloom_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.log());
+        });
+    }
+
+    return upsampled[0];
 }
 
 Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {

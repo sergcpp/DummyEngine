@@ -16,7 +16,7 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
 
     FgAllocTex &exposure_tex = builder.GetReadTexture(args_->exposure_tex);
     FgAllocTex &color_tex = builder.GetReadTexture(args_->color_tex);
-    FgAllocTex &blur_tex = builder.GetReadTexture(args_->blur_tex);
+    FgAllocTex &bloom_tex = builder.GetReadTexture(args_->bloom_tex);
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
     FgAllocTex *output_tex2 = nullptr;
     if (args_->output_tex2) {
@@ -41,7 +41,7 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     Ren::SmallVector<Ren::Binding, 8> bindings = {
         {Ren::eBindTarget::Tex2DSampled, BlitCombine::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
+        {Ren::eBindTarget::Tex2DSampled, BlitCombine::BLOOM_TEX_SLOT, *bloom_tex.ref}};
     if (args_->tonemap_mode == 2) {
         bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, BlitCombine::LUT_TEX_SLOT, *args_->lut_tex);
     }

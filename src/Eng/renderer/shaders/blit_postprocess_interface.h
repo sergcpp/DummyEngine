@@ -19,7 +19,7 @@ struct Params {
 };
 
 const int HDR_TEX_SLOT = 0;
-const int BLURED_TEX_SLOT = 1;
+const int BLOOM_TEX_SLOT = 1;
 const int EXPOSURE_TEX_SLOT = 2;
 const int LUT_TEX_SLOT = 3;
 
