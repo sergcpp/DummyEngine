@@ -251,6 +251,40 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
             api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
         }
 #endif
+
+        if (uint16_t(params.flags & eTexFlagBits::ExtendedViews) != 0) {
+            // create additional image views
+            for (int j = 0; j < params.mip_count; ++j) {
+                VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+                view_info.image = handle_.img;
+                view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                view_info.format = g_vk_formats[size_t(params.format)];
+                if (bool(params.flags & eTexFlagBits::SRGB)) {
+                    view_info.format = ToSRGBFormat(view_info.format);
+                }
+                view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                view_info.subresourceRange.baseMipLevel = j;
+                view_info.subresourceRange.levelCount = 1;
+                view_info.subresourceRange.baseArrayLayer = 0;
+                view_info.subresourceRange.layerCount = 1;
+
+                handle_.views.emplace_back(VK_NULL_HANDLE);
+                const VkResult res =
+                    api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
+                if (res != VK_SUCCESS) {
+                    log->Error("Failed to create image view!");
+                    return;
+                }
+
+#ifdef ENABLE_OBJ_LABELS
+                VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+                name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+                name_info.objectHandle = uint64_t(handle_.views.back());
+                name_info.pObjectName = name_.c_str();
+                api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
+            }
+        }
     }
 
     if (handle_.sampler == VkSampler{} && !bool(params.flags & eTexFlagBits::NoOwnership)) {
@@ -586,6 +620,40 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     params.block = block;
     initialized_mips_ = new_initialized_mips;
 
+    if (uint16_t(params.flags & eTexFlagBits::ExtendedViews) != 0) {
+        // create additional image views
+        for (int j = 0; j < mip_count; ++j) {
+            VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+            view_info.image = handle_.img;
+            view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            view_info.format = g_vk_formats[size_t(params.format)];
+            if (bool(params.flags & eTexFlagBits::SRGB)) {
+                view_info.format = ToSRGBFormat(view_info.format);
+            }
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            view_info.subresourceRange.baseMipLevel = j;
+            view_info.subresourceRange.levelCount = 1;
+            view_info.subresourceRange.baseArrayLayer = 0;
+            view_info.subresourceRange.layerCount = 1;
+
+            handle_.views.emplace_back(VK_NULL_HANDLE);
+            const VkResult res =
+                api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
+            if (res != VK_SUCCESS) {
+                log->Error("Failed to create image view!");
+                return false;
+            }
+
+#ifdef ENABLE_OBJ_LABELS
+            VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+            name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+            name_info.objectHandle = uint64_t(handle_.views.back());
+            name_info.pObjectName = name_.c_str();
+            api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
+        }
+    }
+
     this->resource_state = new_resource_state;
 
     return true;
@@ -709,6 +777,40 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
             api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
         }
 #endif
+
+        if (uint16_t(params.flags & eTexFlagBits::ExtendedViews) != 0) {
+            // create additional image views
+            for (int j = 0; j < mip_count; ++j) {
+                VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+                view_info.image = handle_.img;
+                view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                view_info.format = g_vk_formats[size_t(p.format)];
+                if (bool(p.flags & eTexFlagBits::SRGB)) {
+                    view_info.format = ToSRGBFormat(view_info.format);
+                }
+                view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                view_info.subresourceRange.baseMipLevel = j;
+                view_info.subresourceRange.levelCount = 1;
+                view_info.subresourceRange.baseArrayLayer = 0;
+                view_info.subresourceRange.layerCount = 1;
+
+                handle_.views.emplace_back(VK_NULL_HANDLE);
+                const VkResult res =
+                    api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
+                if (res != VK_SUCCESS) {
+                    log->Error("Failed to create image view!");
+                    return;
+                }
+
+#ifdef ENABLE_OBJ_LABELS
+                VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+                name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+                name_info.objectHandle = uint64_t(handle_.views.back());
+                name_info.pObjectName = name_.c_str();
+                api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
+            }
+        }
     }
 
     this->resource_state = eResState::Undefined;
@@ -1234,7 +1336,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
 #endif
     }
 
-    if (uint32_t(params.usage & eTexUsageBits::RenderTarget) != 0) {
+    if (uint16_t(params.flags & eTexFlagBits::ExtendedViews) != 0) {
         // create additional image views
         for (int j = 0; j < mip_count; ++j) {
             for (int i = 0; i < 6; ++i) {

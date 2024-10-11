@@ -80,7 +80,7 @@ struct Binding {
         : trg(_trg), loc(_loc), handle(_handle), sampler(_sampler) {}
     Binding(eBindTarget _trg, int _loc, size_t _offset, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), handle(_handle) {}
-    Binding(eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size, OpaqueHandle _handle)
+    Binding(eBindTarget _trg, int _loc, size_t _offset, size_t _size, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
 };
 static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *), "!");

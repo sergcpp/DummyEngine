@@ -455,6 +455,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
                 p.format = Ren::eTexFormat::RawRGBA16F;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Storage |
                            Ren::eTexUsageBits::RenderTarget);
+                p.flags = Ren::eTexFlagBits::ExtendedViews;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

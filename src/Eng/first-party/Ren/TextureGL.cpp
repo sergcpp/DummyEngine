@@ -430,6 +430,19 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     params.format = format;
     params.block = block;
     initialized_mips_ = new_initialized_mips;
+
+    if (uint32_t(params.flags & eTexFlagBits::ExtendedViews) != 0) {
+        // create additional image views
+        for (int j = 0; j < mip_count; ++j) {
+            GLuint tex_view;
+            glGenTextures(1, &tex_view);
+            glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, 0, 1);
+#ifdef ENABLE_OBJ_LABELS
+            glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
+#endif
+            handle_.views.push_back(tex_view);
+        }
+    }
 }
 
 void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex2DParams &p, ILog *log) {
@@ -479,6 +492,19 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     if (IsDepthStencilFormat(p.format)) {
         // create additional 'depth-only' image view (for compatibility with VK)
         handle_.views.push_back(tex_id);
+    }
+
+    if (uint32_t(params.flags & eTexFlagBits::ExtendedViews) != 0) {
+        // create additional image views
+        for (int j = 0; j < mip_count; ++j) {
+            GLuint tex_view;
+            glGenTextures(1, &tex_view);
+            glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, 0, 1);
+#ifdef ENABLE_OBJ_LABELS
+            glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
+#endif
+            handle_.views.push_back(tex_view);
+        }
     }
 
     if (p.samples == 1) {
@@ -724,7 +750,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    if (uint32_t(params.usage & eTexUsageBits::RenderTarget) != 0) {
+    if (uint32_t(params.flags & eTexFlagBits::ExtendedViews) != 0) {
         // create additional image views
         for (int j = 0; j < mip_count; ++j) {
             for (int i = 0; i < 6; ++i) {
