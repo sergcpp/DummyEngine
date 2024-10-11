@@ -194,7 +194,7 @@ void main() {
 
     #if defined(YCoCg)
         vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
-        vec2 chroma_center = col_curr.gb;
+        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.gb;
         col_min.yz = chroma_center - chroma_extent;
         col_max.yz = chroma_center + chroma_extent;
         col_avg.yz = chroma_center;
@@ -217,7 +217,7 @@ void main() {
         col_max.x = col_max.x + blend * sqrt(col_hist.w);
     #if defined(YCoCg)
         vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
-        vec2 chroma_center = col_curr.gb;
+        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.gb;
         col_min.yz = chroma_center - chroma_extent;
         col_max.yz = chroma_center + chroma_extent;
         col_avg.yz = chroma_center;
@@ -245,7 +245,7 @@ void main() {
     vec3 col_screen = col_temporal;
 
 #if defined(MOTION_BLUR)
-    const float MotionScale = 1.0;
+    const float MotionScale = 0.5;
     closest_vel *= MotionScale;
 
     const float vel_mag = length(closest_vel.xy);
