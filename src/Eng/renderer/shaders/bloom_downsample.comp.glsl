@@ -6,10 +6,6 @@
 #pragma multi_compile _ COMPRESSED
 #pragma multi_compile _ TONEMAP
 
-#if defined(COMPRESSED) && !defined(TONEMAP)
-    #pragma dont_compile
-#endif
-
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -17,14 +13,18 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = INPUT_TEX_SLOT) uniform sampler2D g_input_tex;
 layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exposure;
 
-layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_img;
+#ifdef COMPRESSED
+    layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_img;
+#else
+    layout(binding = OUT_IMG_SLOT, rgba32f) uniform image2D g_out_img;
+#endif
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
-vec3 Tonemap(in vec3 c) {
+vec3 Tonemap(vec3 c) {
+#ifdef COMPRESSED
+    c = decompress_hdr(c);
+#endif
 #if defined(TONEMAP)
-    #ifdef COMPRESSED
-        c = decompress_hdr(c);
-    #endif
     c *= texelFetch(g_exposure, ivec2(0), 0).x;
     c = limit_intensity(c, 1024.0);
     c = c / (c + vec3(1.0));
@@ -32,13 +32,13 @@ vec3 Tonemap(in vec3 c) {
     return c;
 }
 
-vec3 TonemapInvert(in vec3 c) {
+vec3 TonemapInvert(vec3 c) {
 #if defined(TONEMAP)
     c = c / (vec3(1.0) - c);
     c /= texelFetch(g_exposure, ivec2(0), 0).x;
-    #ifdef COMPRESSED
-        c = compress_hdr(c);
-    #endif
+#endif
+#ifdef COMPRESSED
+    c = compress_hdr(c);
 #endif
     return c;
 }

@@ -19,7 +19,7 @@ layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, loc
 float Falloff(const float dist2) {
     const float FALLOFF_START2 = 0.3;
     const float FALLOFF_END2 = 0.8;
-	return 2.0 * clamp((dist2 - FALLOFF_START2) / (FALLOFF_END2 - FALLOFF_START2), 0.0, 1.0);
+    return 2.0 * clamp((dist2 - FALLOFF_START2) / (FALLOFF_END2 - FALLOFF_START2), 0.0, 1.0);
 }
 
 void main() {
@@ -88,29 +88,29 @@ void main() {
         horizons = acos(horizons);
 
         // calculate gamma
-		vec3 bitangent	= normalize(cross(dir, view_dir_vs));
-		vec3 tangent	= cross(view_dir_vs, bitangent);
-		vec3 nx			= center_normal_vs - bitangent * dot(center_normal_vs, bitangent);
+        vec3 bitangent	= normalize(cross(dir, view_dir_vs));
+        vec3 tangent	= cross(view_dir_vs, bitangent);
+        vec3 nx			= center_normal_vs - bitangent * dot(center_normal_vs, bitangent);
 
-		float nnx		= length(nx);
-		float invnnx	= 1.0 / (nnx + 1e-6);			// to avoid division with zero
-		float cosxi		= dot(nx, tangent) * invnnx;	// xi = gamma + PI_HALF
-		float gamma		= acos(cosxi) - 0.5 * M_PI;
-		float cosgamma	= dot(nx, view_dir_vs) * invnnx;
-		float singamma2	= -2.0 * cosxi;					// cos(x + PI_HALF) = -sin(x)
+        float nnx		= length(nx);
+        float invnnx	= 1.0 / (nnx + 1e-6);			// to avoid division with zero
+        float cosxi		= dot(nx, tangent) * invnnx;	// xi = gamma + PI_HALF
+        float gamma		= acos(cosxi) - 0.5 * M_PI;
+        float cosgamma	= dot(nx, view_dir_vs) * invnnx;
+        float singamma2	= -2.0 * cosxi;					// cos(x + PI_HALF) = -sin(x)
 
-		// clamp to normal hemisphere
-		horizons.x = gamma + max(-horizons.x - gamma, -0.5 * M_PI);
-		horizons.y = gamma + min(horizons.y - gamma, 0.5 * M_PI);
+        // clamp to normal hemisphere
+        horizons.x = gamma + max(-horizons.x - gamma, -0.5 * M_PI);
+        horizons.y = gamma + min(horizons.y - gamma, 0.5 * M_PI);
 
-		// Riemann integral is additive
-		res += /*nnx */ 0.25 * (
-			(horizons.x * singamma2 + cosgamma - cos(2.0 * horizons.x - gamma)) +
-			(horizons.y * singamma2 + cosgamma - cos(2.0 * horizons.y - gamma)));
+        // Riemann integral is additive
+        res += /*nnx */ 0.25 * (
+            (horizons.x * singamma2 + cosgamma - cos(2.0 * horizons.x - gamma)) +
+            (horizons.y * singamma2 + cosgamma - cos(2.0 * horizons.y - gamma)));
     }
 
     // PDF = 1 / pi and must normalize with pi as of Lambert
-	res = res / float(DirectionsCount);
+    res = res / float(DirectionsCount);
 
     imageStore(g_out_img, ivec2(gl_GlobalInvocationID.xy), vec4(res));
 }

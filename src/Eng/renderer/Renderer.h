@@ -240,7 +240,7 @@ class Renderer {
         pi_shadow_filter_[3], pi_shadow_debug_;
     Ren::Pipeline pi_sun_brightness_;
     // Bloom
-    Ren::Pipeline pi_bloom_downsample_[3], pi_bloom_upsample_;
+    Ren::Pipeline pi_bloom_downsample_[2][2], pi_bloom_upsample_;
     // Autoexposure
     Ren::Pipeline pi_histogram_sample_, pi_histogram_exposure_;
     // Sky

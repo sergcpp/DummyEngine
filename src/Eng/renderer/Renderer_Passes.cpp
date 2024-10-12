@@ -138,9 +138,10 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_shadow_debug_, "internal/rt_shadow_debug.comp.glsl");
 
     // Bloom
-    success &= init_pipeline(pi_bloom_downsample_[0], "internal/bloom_downsample.comp.glsl");
-    success &= init_pipeline(pi_bloom_downsample_[1], "internal/bloom_downsample@TONEMAP.comp.glsl");
-    success &= init_pipeline(pi_bloom_downsample_[2], "internal/bloom_downsample@COMPRESSED;TONEMAP.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[0][0], "internal/bloom_downsample.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[0][1], "internal/bloom_downsample@TONEMAP.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[1][0], "internal/bloom_downsample@COMPRESSED.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[1][1], "internal/bloom_downsample@COMPRESSED;TONEMAP.comp.glsl");
     success &= init_pipeline(pi_bloom_upsample_, "internal/bloom_upsample.comp.glsl");
 
     // Autoexposure
@@ -1868,7 +1869,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             Ren::Tex2DParams params;
             params.w = (view_state_.scr_res[0] / 2) >> mip;
             params.h = (view_state_.scr_res[1] / 2) >> mip;
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = compressed ? Ren::eTexFormat::RawRGBA16F : Ren::eTexFormat::RawRGBA32F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1895,9 +1896,8 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
                 (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
 
-            const int pi = mip == 0 ? (compressed ? 2 : 1) : 0;
-            DispatchCompute(pi_bloom_downsample_[pi], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.log());
+            DispatchCompute(pi_bloom_downsample_[compressed][mip == 0], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
     Eng::FgResRef upsampled[BloomMipCount - 1];
@@ -1923,7 +1923,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             Ren::Tex2DParams params;
             params.w = (view_state_.scr_res[0] / 2) >> mip;
             params.h = (view_state_.scr_res[1] / 2) >> mip;
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = compressed ? Ren::eTexFormat::RawRGBA16F : Ren::eTexFormat::RawRGBA32F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

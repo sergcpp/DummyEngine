@@ -58,7 +58,7 @@ void main() {
     }
 
     // add bloom
-    col += 0.075 * textureLod(g_bloom_tex, g_vtx_uvs, 0.0).xyz;
+    col += 0.05 * textureLod(g_bloom_tex, g_vtx_uvs, 0.0).xyz;
 
 #ifdef COMPRESSED
     col = decompress_hdr(col);
