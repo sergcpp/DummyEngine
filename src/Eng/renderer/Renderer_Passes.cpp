@@ -1218,7 +1218,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Trg::Tex2DSampled, GBufferShade::NORM_TEX_SLOT, *normal_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::SPEC_TEX_SLOT, *spec_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, *shad_tex.ref, nearest_sampler_.get()},
+            {Trg::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, {*shad_tex.ref, *nearest_sampler_}},
             {Trg::Tex2DSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
@@ -1767,8 +1767,10 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
+                //{Ren::eBindTarget::Sampler, TempAA::NEAREST_SAMPLER_SLOT, *nearest_sampler_}
+            };
 
             TempAA::Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};

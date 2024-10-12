@@ -49,10 +49,12 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
         } else if (b.trg == Ren::eBindTarget::Tex2DArraySampled) {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
                                        GLuint(b.handle.tex2d_arr->id()));
+        } else if (b.trg == Ren::eBindTarget::Sampler) {
+            ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
         } else {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
-            if (b.sampler) {
-                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            if (b.handle.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             } else {
                 ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }

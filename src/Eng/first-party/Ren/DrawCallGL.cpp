@@ -12,11 +12,13 @@
 
 namespace Ren {
 const uint32_t gl_binding_targets[] = {
+    GL_TEXTURE_2D,             // Tex2D
     GL_TEXTURE_2D,             // Tex2DSampled
     GL_TEXTURE_2D_ARRAY,       // Tex2DArraySampled
     GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
     GL_TEXTURE_CUBE_MAP_ARRAY, // TexCubeArray
     GL_TEXTURE_3D,             // Tex3DSampled
+    0xffffffff,                // Sampler
     GL_UNIFORM_BUFFER,         // UBuf
     GL_TEXTURE_BUFFER,         // UTBuf
     GL_SHADER_STORAGE_BUFFER,  // SBufRO
@@ -39,28 +41,28 @@ uint32_t Ren::GLBindTarget(const eBindTarget binding) { return gl_binding_target
 void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
                           const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     for (const auto &b : bindings) {
-        if (b.trg == eBindTarget::Tex2DSampled) {
+        if (b.trg == eBindTarget::Tex2D || b.trg == eBindTarget::Tex2DSampled) {
             auto texture_id = GLuint(b.handle.tex->id());
             if (b.handle.view_index) {
                 texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
             }
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), texture_id);
-            if (b.sampler) {
-                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            if (b.handle.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             } else {
                 ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
         } else if (b.trg == eBindTarget::Tex2DArraySampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()));
-            if (b.sampler) {
-                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            if (b.handle.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             } else {
                 ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
         } else if (b.trg == eBindTarget::Tex3DSampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
-            if (b.sampler) {
-                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            if (b.handle.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             } else {
                 ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
@@ -81,6 +83,8 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
                                GLInternalFormatFromTexFormat(b.handle.tex_buf->params().format, false));
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
+        } else if (b.trg == eBindTarget::Sampler) {
+            ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
         } else if (b.trg == eBindTarget::Image2D) {
             auto texture_id = GLuint(b.handle.tex->id());
             if (b.handle.view_index) {
@@ -117,15 +121,15 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
                                   const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
                                   ILog *log) {
     for (const auto &b : bindings) {
-        if (b.trg == eBindTarget::Tex2DSampled) {
+        if (b.trg == eBindTarget::Tex2D || b.trg == eBindTarget::Tex2DSampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
-            if (b.sampler) {
-                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            if (b.handle.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             }
         } else if (b.trg == eBindTarget::Tex2DArraySampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()));
-            if (b.sampler) {
-                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            if (b.handle.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             }
         } else if (b.trg == eBindTarget::Tex3DSampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
@@ -140,6 +144,8 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
+        } else if (b.trg == eBindTarget::Sampler) {
+            ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
         } else if (b.trg == eBindTarget::Image2D) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format, false));

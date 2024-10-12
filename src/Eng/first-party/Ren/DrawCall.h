@@ -19,11 +19,13 @@ class Texture3D;
 class Texture2DArray;
 
 enum class eBindTarget : uint16_t {
+    Tex2D,
     Tex2DSampled,
     Tex2DArraySampled,
     Tex2DMs,
     TexCubeArray,
     Tex3DSampled,
+    Sampler,
     UBuf,
     UTBuf,
     SBufRO,
@@ -53,15 +55,19 @@ struct OpaqueHandle {
         const AccStructureVK *acc_struct;
 #endif
     };
+    const Sampler *sampler = nullptr;
     int view_index = 0;
 
     OpaqueHandle() = default;
     OpaqueHandle(const Texture1D &_tex) : tex_buf(&_tex) {}
     OpaqueHandle(const Texture2D &_tex, int _view_index = 0) : tex(&_tex), view_index(_view_index) {}
+    OpaqueHandle(const Texture2D &_tex, const Sampler &_sampler, int _view_index = 0)
+        : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
     OpaqueHandle(const Texture3D &_tex) : tex3d(&_tex) {}
     OpaqueHandle(const Buffer &_buf) : buf(&_buf) {}
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
     OpaqueHandle(const Texture2DArray &_tex2d_arr) : tex2d_arr(&_tex2d_arr) {}
+    OpaqueHandle(const Sampler &_sampler) : sampler(&_sampler) {}
 #if defined(USE_VK_RENDER)
     OpaqueHandle(const AccStructureVK &_acc_struct) : acc_struct(&_acc_struct) {}
 #endif
@@ -73,11 +79,10 @@ struct Binding {
     uint16_t offset = 0;
     uint16_t size = 0;
     OpaqueHandle handle;
-    const Sampler *sampler = nullptr;
 
     Binding() = default;
-    Binding(eBindTarget _trg, int _loc, OpaqueHandle _handle, const Sampler *_sampler = nullptr)
-        : trg(_trg), loc(_loc), handle(_handle), sampler(_sampler) {}
+    Binding(eBindTarget _trg, int _loc, OpaqueHandle _handle)
+        : trg(_trg), loc(_loc), handle(_handle) {}
     Binding(eBindTarget _trg, int _loc, size_t _offset, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), handle(_handle) {}
     Binding(eBindTarget _trg, int _loc, size_t _offset, size_t _size, OpaqueHandle _handle)

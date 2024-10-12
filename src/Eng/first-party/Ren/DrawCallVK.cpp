@@ -11,6 +11,7 @@
 
 VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
                                           Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+    VkDescriptorImageInfo sampler_infos[16] = {};
     VkDescriptorImageInfo img_sampler_infos[24];
     VkDescriptorImageInfo img_storage_infos[24];
     VkDescriptorBufferInfo ubuf_infos[24];
@@ -22,12 +23,14 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
     uint64_t used_bindings = 0;
 
     for (const auto &b : bindings) {
-        if (b.trg == eBindTarget::Tex2DSampled) {
+        if (b.trg == eBindTarget::Tex2D || b.trg == eBindTarget::Tex2DSampled) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
-            if (b.sampler) {
-                info.sampler = b.sampler->vk_handle();
-            } else {
-                info.sampler = b.handle.tex->handle().sampler;
+            if (b.trg == eBindTarget::Tex2DSampled) {
+                if (b.handle.sampler) {
+                    info.sampler = b.handle.sampler->vk_handle();
+                } else {
+                    info.sampler = b.handle.tex->handle().sampler;
+                }
             }
             info.imageView = b.handle.tex->handle().views[b.handle.view_index];
             info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.tex->resource_state));
@@ -36,7 +39,8 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = b.offset;
-            new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            new_write.descriptorType = (b.trg == eBindTarget::Tex2DSampled) ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+                                                                            : VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
             new_write.descriptorCount = 1;
             new_write.pImageInfo = &info;
 
@@ -44,8 +48,8 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             used_bindings |= (1ull << (b.loc + b.offset));
         } else if (b.trg == eBindTarget::Tex2DArraySampled) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
-            if (b.sampler) {
-                info.sampler = b.sampler->vk_handle();
+            if (b.handle.sampler) {
+                info.sampler = b.handle.sampler->vk_handle();
             } else {
                 info.sampler = b.handle.tex2d_arr->sampler().vk_handle();
             }
@@ -181,6 +185,17 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << b.loc);
+        } else if (b.trg == eBindTarget::Sampler) {
+            auto &info = sampler_infos[descr_sizes.sampler_count++];
+            info.sampler = b.handle.sampler->vk_handle();
+
+            auto &new_write = descr_writes.emplace_back();
+            new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            new_write.dstBinding = b.loc;
+            new_write.dstArrayElement = b.offset;
+            new_write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            new_write.descriptorCount = 1;
+            new_write.pImageInfo = &info;
         } else if (b.trg == eBindTarget::AccStruct) {
             auto &info = desc_tlas_infos[descr_sizes.acc_count++];
             info = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};

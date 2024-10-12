@@ -6,6 +6,8 @@
 namespace Ren {
 const VkDescriptorType g_descr_types_vk[] = {
     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,    // CombinedImageSampler
+    VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,             // SampledImage
+    VK_DESCRIPTOR_TYPE_SAMPLER,                   // Sampler
     VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,             // StorageImage
     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,            // UniformBuffer
     VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,      // UniformTexBuffer
@@ -42,7 +44,10 @@ bool Ren::DescrPool::Init(const DescrSizes &sizes, const uint32_t sets_count) {
     descr_counts_[int(eDescrType::UniformBuffer)] = sizes.ubuf_count;
     descr_counts_[int(eDescrType::UniformTexBuffer)] = sizes.utbuf_count;
     descr_counts_[int(eDescrType::StorageBuffer)] = sizes.sbuf_count;
-    descr_counts_[int(eDescrType::AccStructure)] = sizes.acc_count;
+    descr_counts_[int(eDescrType::StorageTexBuffer)] = sizes.stbuf_count;
+    if (api_ctx_->raytracing_supported) {
+        descr_counts_[int(eDescrType::AccStructure)] = sizes.acc_count;
+    }
 
     SmallVector<VkDescriptorPoolSize, int(eDescrType::_Count)> pool_sizes;
     for (int i = 0; i < int(eDescrType::_Count); ++i) {
@@ -129,24 +134,29 @@ bool Ren::DescrPoolAlloc::Reset() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 Ren::DescrMultiPoolAlloc::DescrMultiPoolAlloc(ApiContext *api_ctx, const uint32_t pool_step,
-                                              const uint32_t max_img_sampler_count, const uint32_t max_store_img_count,
+                                              const uint32_t max_img_sampler_count, const uint32_t max_img_count,
+                                              const uint32_t max_sampler_count, const uint32_t max_store_img_count,
                                               const uint32_t max_ubuf_count, const uint32_t max_tbuf_count,
                                               const uint32_t max_sbuf_count, const uint32_t max_stbuf_count,
                                               const uint32_t max_acc_count, const uint32_t initial_sets_count)
     : pool_step_(pool_step) {
     img_sampler_based_count_ = (max_img_sampler_count + pool_step - 1) / pool_step;
+    img_based_count_ = (max_img_count + pool_step - 1) / pool_step;
+    sampler_based_count_ = (max_sampler_count + pool_step - 1) / pool_step;
     store_img_based_count_ = (max_store_img_count + pool_step - 1) / pool_step;
     ubuf_based_count_ = (max_ubuf_count + pool_step - 1) / pool_step;
     utbuf_based_count_ = (max_tbuf_count + pool_step - 1) / pool_step;
     sbuf_based_count_ = (max_sbuf_count + pool_step - 1) / pool_step;
     stbuf_based_count_ = (max_stbuf_count + pool_step - 1) / pool_step;
     acc_based_count_ = (max_acc_count + pool_step - 1) / pool_step;
-    const uint32_t required_pools_count = img_sampler_based_count_ * store_img_based_count_ * ubuf_based_count_ *
-                                          utbuf_based_count_ * sbuf_based_count_ * stbuf_based_count_ *
-                                          std::max(acc_based_count_, 1u);
+    const uint32_t required_pools_count = img_sampler_based_count_ * img_based_count_ * sampler_based_count_ *
+                                          store_img_based_count_ * ubuf_based_count_ * utbuf_based_count_ *
+                                          sbuf_based_count_ * stbuf_based_count_ * std::max(acc_based_count_, 1u);
 
     // store rounded values
     max_img_sampler_count_ = pool_step * img_sampler_based_count_;
+    max_img_count_ = pool_step * img_based_count_;
+    max_sampler_count_ = pool_step * sampler_based_count_;
     max_store_img_count_ = pool_step * store_img_based_count_;
     max_ubuf_count_ = pool_step * ubuf_based_count_;
     max_utbuf_count_ = pool_step * utbuf_based_count_;
@@ -158,28 +168,24 @@ Ren::DescrMultiPoolAlloc::DescrMultiPoolAlloc(ApiContext *api_ctx, const uint32_
         uint32_t index = i;
 
         DescrSizes pool_sizes = {};
-        if (acc_based_count_ != 0) {
-            pool_sizes.acc_count = pool_step * ((index % acc_based_count_) + 1);
-            index /= acc_based_count_;
-        }
+        pool_sizes.acc_count = pool_step * ((index % acc_based_count_) + 1);
+        index /= acc_based_count_;
         pool_sizes.stbuf_count = pool_step * ((index % stbuf_based_count_) + 1);
-        assert(stbuf_based_count_ != 0);
         index /= stbuf_based_count_;
         pool_sizes.sbuf_count = pool_step * ((index % sbuf_based_count_) + 1);
-        assert(sbuf_based_count_ != 0);
         index /= sbuf_based_count_;
         pool_sizes.utbuf_count = pool_step * ((index % utbuf_based_count_) + 1);
-        assert(utbuf_based_count_ != 0);
         index /= utbuf_based_count_;
         pool_sizes.ubuf_count = pool_step * ((index % ubuf_based_count_) + 1);
-        assert(ubuf_based_count_ != 0);
         index /= ubuf_based_count_;
-        pool_sizes.img_sampler_count = pool_step * ((index % img_sampler_based_count_) + 1);
-        assert(img_sampler_based_count_ != 0);
-        index /= img_sampler_based_count_;
         pool_sizes.store_img_count = pool_step * ((index % store_img_based_count_) + 1);
-        assert(store_img_based_count_ != 0);
         index /= store_img_based_count_;
+        pool_sizes.sampler_count = pool_step * ((index % sampler_based_count_) + 1);
+        index /= sampler_based_count_;
+        pool_sizes.img_count = pool_step * ((index % img_based_count_) + 1);
+        index /= img_based_count_;
+        pool_sizes.img_sampler_count = pool_step * ((index % img_sampler_based_count_) + 1);
+        index /= img_sampler_based_count_;
 
         pools_.emplace_back(api_ctx, pool_sizes, initial_sets_count);
     }
@@ -187,8 +193,21 @@ Ren::DescrMultiPoolAlloc::DescrMultiPoolAlloc(ApiContext *api_ctx, const uint32_
 }
 
 VkDescriptorSet Ren::DescrMultiPoolAlloc::Alloc(const DescrSizes &sizes, const VkDescriptorSetLayout layout) {
+    assert(sizes.acc_count <= max_acc_count_);
+    assert(sizes.stbuf_count <= max_stbuf_count_);
+    assert(sizes.sbuf_count <= max_sbuf_count_);
+    assert(sizes.utbuf_count <= max_utbuf_count_);
+    assert(sizes.ubuf_count <= max_ubuf_count_);
+    assert(sizes.store_img_count <= max_store_img_count_);
+    assert(sizes.sampler_count <= max_sampler_count_);
+    assert(sizes.img_count <= max_img_count_);
+    assert(sizes.img_sampler_count <= max_img_sampler_count_);
+
     const uint32_t img_sampler_based_index =
         sizes.img_sampler_count ? ((sizes.img_sampler_count + pool_step_ - 1) / pool_step_ - 1) : 0;
+    const uint32_t img_based_index = sizes.img_count ? ((sizes.img_count + pool_step_ - 1) / pool_step_ - 1) : 0;
+    const uint32_t sampler_based_index =
+        sizes.sampler_count ? ((sizes.sampler_count + pool_step_ - 1) / pool_step_ - 1) : 0;
     const uint32_t store_img_based_index =
         sizes.store_img_count ? ((sizes.store_img_count + pool_step_ - 1) / pool_step_ - 1) : 0;
     const uint32_t ubuf_based_index = sizes.ubuf_count ? ((sizes.ubuf_count + pool_step_ - 1) / pool_step_ - 1) : 0;
@@ -197,8 +216,13 @@ VkDescriptorSet Ren::DescrMultiPoolAlloc::Alloc(const DescrSizes &sizes, const V
     const uint32_t stbuf_based_index = sizes.stbuf_count ? ((sizes.stbuf_count + pool_step_ - 1) / pool_step_ - 1) : 0;
     const uint32_t acc_based_index = sizes.acc_count ? ((sizes.acc_count + pool_step_ - 1) / pool_step_ - 1) : 0;
 
-    uint32_t pool_index = img_sampler_based_index * store_img_based_count_ * ubuf_based_count_ * utbuf_based_count_ *
-                          sbuf_based_count_ * stbuf_based_count_ * acc_based_count_;
+    uint32_t pool_index = img_sampler_based_index * img_based_count_ * sampler_based_count_ * store_img_based_count_ *
+                          ubuf_based_count_ * utbuf_based_count_ * sbuf_based_count_ * stbuf_based_count_ *
+                          acc_based_count_;
+    pool_index += img_based_index * sampler_based_count_ * store_img_based_count_ * ubuf_based_count_ *
+                  utbuf_based_count_ * sbuf_based_count_ * stbuf_based_count_ * acc_based_count_;
+    pool_index += sampler_based_index * store_img_based_count_ * ubuf_based_count_ * utbuf_based_count_ *
+                  sbuf_based_count_ * stbuf_based_count_ * acc_based_count_;
     pool_index += store_img_based_index * ubuf_based_count_ * utbuf_based_count_ * sbuf_based_count_ *
                   stbuf_based_count_ * acc_based_count_;
     pool_index += ubuf_based_index * utbuf_based_count_ * sbuf_based_count_ * stbuf_based_count_ * acc_based_count_;

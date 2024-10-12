@@ -13,6 +13,8 @@ struct ApiContext;
 //
 enum class eDescrType : uint8_t {
     CombinedImageSampler,
+    SampledImage,
+    Sampler,
     StorageImage,
     UniformBuffer,
     UniformTexBuffer,
@@ -24,6 +26,8 @@ enum class eDescrType : uint8_t {
 
 struct DescrSizes {
     uint32_t img_sampler_count = 0;
+    uint32_t img_count = 0;
+    uint32_t sampler_count = 0;
     uint32_t store_img_count = 0;
     uint32_t ubuf_count = 0;
     uint32_t utbuf_count = 0;
@@ -86,17 +90,18 @@ class DescrPoolAlloc {
 //
 class DescrMultiPoolAlloc {
     uint32_t pool_step_ = 0;
-    uint32_t img_sampler_based_count_ = 0, store_img_based_count_ = 0, ubuf_based_count_ = 0, utbuf_based_count_ = 0,
-             sbuf_based_count_ = 0, stbuf_based_count_ = 0, acc_based_count_ = 0;
-    uint32_t max_img_sampler_count_ = 0, max_store_img_count_ = 0, max_ubuf_count_ = 0, max_utbuf_count_ = 0,
-             max_sbuf_count_ = 0, max_stbuf_count_ = 0, max_acc_count_ = 0;
+    uint32_t img_sampler_based_count_ = 0, img_based_count_ = 0, sampler_based_count_ = 0, store_img_based_count_ = 0,
+             ubuf_based_count_ = 0, utbuf_based_count_ = 0, sbuf_based_count_ = 0, stbuf_based_count_ = 0,
+             acc_based_count_ = 0;
+    uint32_t max_img_sampler_count_ = 0, max_img_count_ = 0, max_sampler_count_ = 0, max_store_img_count_ = 0,
+             max_ubuf_count_ = 0, max_utbuf_count_ = 0, max_sbuf_count_ = 0, max_stbuf_count_ = 0, max_acc_count_ = 0;
     SmallVector<DescrPoolAlloc, 16> pools_;
 
   public:
-    DescrMultiPoolAlloc(ApiContext *api_ctx, uint32_t pool_step, uint32_t max_img_sampler_count,
-                        uint32_t max_store_img_count, uint32_t max_ubuf_count, uint32_t max_utbuf_count,
-                        uint32_t max_sbuf_count, uint32_t max_stbuf_count, uint32_t max_acc_count,
-                        uint32_t initial_sets_count);
+    DescrMultiPoolAlloc(ApiContext *api_ctx, uint32_t pool_step, uint32_t max_img_sampler_count, uint32_t max_img_count,
+                        uint32_t max_sampler_count, uint32_t max_store_img_count, uint32_t max_ubuf_count,
+                        uint32_t max_utbuf_count, uint32_t max_sbuf_count, uint32_t max_stbuf_count,
+                        uint32_t max_acc_count, uint32_t initial_sets_count);
 
     [[nodiscard]] ApiContext *api_ctx() { return pools_.front().api_ctx(); }
 
