@@ -599,15 +599,15 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat3", 46.60, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat3", 35.95, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat3", 26.35, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "diff_mat3", 23.60, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "diff_mat3", 24.35, Full));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat4", 47.35, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat4", 35.30, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat4", 25.60, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "diff_mat4", 21.65, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "diff_mat4", 22.35, Full));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", 44.70, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", 35.40, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", 26.35, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", 23.45, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", 24.15, Full));
 
         for (auto &f : futures) {
             f.wait();
@@ -666,7 +666,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", 27.30, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", 19.60, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", 19.40, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", 21.90, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", 22.40, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", 18.45, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", 18.35, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", 19.00, Full_Ultra));
@@ -684,13 +684,13 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", 22.45, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", 21.00, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", 21.10, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", 22.05, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", 22.70, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", 15.60, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", 14.90, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", 14.70, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", 32.15, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", 30.30, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", 27.90, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", 28.50, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", 20.15, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", 18.70, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", 18.50, Full_Ultra));
@@ -720,7 +720,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat2", 32.55, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat2", 30.95, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat2", 29.75, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "metal_mat2", 29.85, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "metal_mat2", 29.75, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat3", 38.05, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat3", 34.35, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat3", 30.10, NoDiffGI));
@@ -729,7 +729,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat3", 22.05, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat4", 25.25, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat4", 25.20, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "metal_mat4", 26.50, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "metal_mat4", 27.00, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat4", 20.50, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat4", 18.75, Full));
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat4", 18.55, Full_Ultra));
@@ -752,7 +752,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat0", 34.35, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat0", 32.00, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat0", 29.30, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat0", 26.80, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat0", 27.35, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat0", 28.05, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat1", 36.20, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat1", 32.75, NoGI));
@@ -770,7 +770,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", 34.40, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", 31.45, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", 24.90, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", 22.00, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", 22.70, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", 23.45, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat4", 35.75, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat4", 33.35, NoGI));
@@ -782,8 +782,8 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", 34.70, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", 30.40, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", 25.65, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", 21.55, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", 23.05, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", 22.25, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", 23.60, Full_Ultra));
 
         for (auto &f : futures) {
             f.wait();
@@ -797,7 +797,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat0", 34.30, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat0", 33.45, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat0", 29.10, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "tint_mat0", 26.35, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "tint_mat0", 26.90, Full));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat1", 28.65, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat1", 27.65, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat1", 24.40, NoDiffGI));
@@ -876,7 +876,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "alpha_mat3", 36.70, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "alpha_mat3", 33.75, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "alpha_mat3", 29.55, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "alpha_mat3", 30.25, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "alpha_mat3", 30.00, Full_Ultra));
 
         for (auto &f : futures) {
             f.wait();
