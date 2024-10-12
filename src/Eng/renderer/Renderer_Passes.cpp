@@ -1764,13 +1764,12 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_NEAREST_TEX_SLOT, {*clean_tex.ref, *nearest_sampler_}},
+                {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_LINEAR_TEX_SLOT, *clean_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-                //{Ren::eBindTarget::Sampler, TempAA::NEAREST_SAMPLER_SLOT, *nearest_sampler_}
-            };
+                {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref}};
 
             TempAA::Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};

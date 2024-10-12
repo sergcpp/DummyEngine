@@ -15,7 +15,8 @@
     #pragma dont_compile
 #endif
 
-layout(binding = CURR_TEX_SLOT) uniform sampler2D g_color_curr;
+layout(binding = CURR_NEAREST_TEX_SLOT) uniform sampler2D g_color_curr_nearest;
+layout(binding = CURR_LINEAR_TEX_SLOT) uniform sampler2D g_color_curr_linear;
 layout(binding = HIST_TEX_SLOT) uniform sampler2D g_color_hist;
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_curr;
@@ -41,7 +42,7 @@ float PDnrand(vec2 n) {
 }
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
-vec3 Tonemap(in vec3 c) {
+vec3 MaybeTonemap(vec3 c) {
 #if defined(TONEMAP)
     c *= HDR_FACTOR * texelFetch(g_exposure, ivec2(0), 0).x;
     c = c / (c + vec3(1.0));
@@ -49,7 +50,7 @@ vec3 Tonemap(in vec3 c) {
     return c;
 }
 
-vec3 TonemapInvert(in vec3 c) {
+vec3 TonemapInvert(vec3 c) {
 #if defined(TONEMAP)
     c = c / (vec3(1.0) - c);
     c /= HDR_FACTOR * texelFetch(g_exposure, ivec2(0), 0).x;
@@ -57,12 +58,16 @@ vec3 TonemapInvert(in vec3 c) {
     return c;
 }
 
+vec3 MaybeRGB_to_YCoCg(vec3 c) {
+#if defined(YCoCg)
+    c = RGB_to_YCoCg(c);
+#endif
+    return c;
+}
+
 vec4 FetchColor(sampler2D s, ivec2 icoord) {
     vec4 ret = texelFetch(s, icoord, 0);
-    ret.xyz = Tonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX)));
-#if defined(YCoCg)
-    ret.xyz = RGB_to_YCoCg(ret.xyz);
-#endif
+    ret.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX))));
     return ret;
 }
 
@@ -72,19 +77,14 @@ vec4 SampleColor(sampler2D s, vec2 uvs) {
 #else
     vec4 ret = textureLod(s, uvs, 0.0);
 #endif
-    ret.xyz = Tonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX)));
-#if defined(YCoCg)
-    ret.xyz = RGB_to_YCoCg(ret.xyz);
-#endif
+    ret.xyz = MaybeTonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX)));
+    ret.xyz = MaybeRGB_to_YCoCg(ret.xyz);
     return ret;
 }
 
-vec4 SampleColorLinear(sampler2D s, vec2 uvs) {
+vec4 SampleColorLinear(sampler2D s, const vec2 uvs) {
     vec4 ret = textureLod(s, uvs, 0.0);
-    ret.xyz = Tonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX)));
-#if defined(YCoCg)
-    ret.xyz = RGB_to_YCoCg(ret.xyz);
-#endif
+    ret.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX))));
     return ret;
 }
 
@@ -122,7 +122,7 @@ void main() {
     vec2 norm_uvs = g_vtx_uvs / g_params.tex_size;
 
     const float depth = texelFetch(g_depth_curr, uvs_px, 0).r;
-    vec4 col_curr = FetchColor(g_color_curr, uvs_px);
+    vec4 col_curr = SampleColorLinear(g_color_curr_nearest, norm_uvs);
 
 #if defined(STATIC_ACCUMULATION)
     vec4 col_hist = FetchColor(g_color_hist, uvs_px);
@@ -150,7 +150,7 @@ void main() {
             min_depth = depth;
         }
 
-        vec3 col = FetchColor(g_color_curr, uvs_px + offsets[i]).xyz;
+        vec3 col = FetchColor(g_color_curr_nearest, uvs_px + offsets[i]).xyz;
         col_avg += col;
         col_var += col * col;
     }
@@ -164,15 +164,15 @@ void main() {
 
     vec3 closest_vel = texelFetch(g_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(g_params.tex_size - vec2(1))), 0).xyz;
 #else
-    vec3 col_tl = SampleColor(g_color_curr, norm_uvs + vec2(-texel_size.x, -texel_size.y)).xyz;
-    vec3 col_tc = SampleColor(g_color_curr, norm_uvs + vec2(0, -texel_size.y)).xyz;
-    vec3 col_tr = SampleColor(g_color_curr, norm_uvs + vec2(texel_size.x, -texel_size.y)).xyz;
-    vec3 col_ml = SampleColor(g_color_curr, norm_uvs + vec2(-texel_size.x, 0)).xyz;
+    vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, -1)).xyz));
+    vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, -1)).xyz));
+    vec3 col_tr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, -1)).xyz));
+    vec3 col_ml = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +0)).xyz));
     vec3 col_mc = col_curr.xyz;
-    vec3 col_mr = SampleColor(g_color_curr, norm_uvs + vec2(texel_size.x, 0)).xyz;
-    vec3 col_bl = SampleColor(g_color_curr, norm_uvs + vec2(-texel_size.x, texel_size.y)).xyz;
-    vec3 col_bc = SampleColor(g_color_curr, norm_uvs + vec2(0, texel_size.y)).xyz;
-    vec3 col_br = SampleColor(g_color_curr, norm_uvs + vec2(texel_size.x, texel_size.y)).xyz;
+    vec3 col_mr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +0)).xyz));
+    vec3 col_bl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +1)).xyz));
+    vec3 col_bc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, +1)).xyz));
+    vec3 col_br = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +1)).xyz));
 
     vec3 col_min = min3(min3(col_tl, col_tc, col_tr),
                         min3(col_ml, col_mc, col_mr),
@@ -254,7 +254,7 @@ void main() {
     const float vel_trust_span = vel_trust_none - vel_trust_full;
     const float trust = 1.0 - clamp(vel_mag - vel_trust_full, 0.0, vel_trust_span) / vel_trust_span;
 
-    vec3 col_motion = SampleColorMotion(g_color_curr, norm_uvs, (closest_vel.xy / g_params.tex_size)).xyz;
+    vec3 col_motion = SampleColorMotion(g_color_curr_linear, norm_uvs, (closest_vel.xy / g_params.tex_size)).xyz;
 #if defined(YCoCg)
     col_motion = YCoCg_to_RGB(col_motion);
 #endif
