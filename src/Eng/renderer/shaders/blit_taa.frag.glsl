@@ -1,4 +1,5 @@
 #version 430 core
+#extension GL_EXT_control_flow_attributes : require
 
 #include "_fs_common.glsl"
 #include "taa_common.glsl"
@@ -84,7 +85,7 @@ vec4 SampleColor(sampler2D s, vec2 uvs) {
 
 vec4 SampleColorLinear(sampler2D s, const vec2 uvs) {
     vec4 ret = textureLod(s, uvs, 0.0);
-    ret.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX))));
+    ret.xyz = MaybeTonemap(ret.xyz);
     return ret;
 }
 
@@ -122,7 +123,8 @@ void main() {
     vec2 norm_uvs = g_vtx_uvs / g_params.tex_size;
 
     const float depth = texelFetch(g_depth_curr, uvs_px, 0).r;
-    vec4 col_curr = SampleColorLinear(g_color_curr_nearest, norm_uvs);
+    vec4 col_curr = textureLod(g_color_curr_nearest, norm_uvs, 0.0);
+    col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
 
 #if defined(STATIC_ACCUMULATION)
     vec4 col_hist = FetchColor(g_color_hist, uvs_px);
@@ -249,16 +251,15 @@ void main() {
     closest_vel *= MotionScale;
 
     const float vel_mag = length(closest_vel.xy);
-    const float vel_trust_full = 2.0;
-    const float vel_trust_none = 15.0;
-    const float vel_trust_span = vel_trust_none - vel_trust_full;
-    const float trust = 1.0 - clamp(vel_mag - vel_trust_full, 0.0, vel_trust_span) / vel_trust_span;
+    [[dont_flatten]] if (vel_mag > 0.01) {
+        const float vel_trust_full = 2.0;
+        const float vel_trust_none = 15.0;
+        const float vel_trust_span = vel_trust_none - vel_trust_full;
+        const float trust = 1.0 - clamp(vel_mag - vel_trust_full, 0.0, vel_trust_span) / vel_trust_span;
 
-    vec3 col_motion = SampleColorMotion(g_color_curr_linear, norm_uvs, (closest_vel.xy / g_params.tex_size)).xyz;
-#if defined(YCoCg)
-    col_motion = YCoCg_to_RGB(col_motion);
-#endif
-    col_screen = mix(col_motion, col_temporal, trust);
+        vec3 col_motion = SampleColorMotion(g_color_curr_linear, norm_uvs, (closest_vel.xy / g_params.tex_size)).xyz;
+        col_screen = mix(col_motion, col_temporal, trust);
+    }
 #endif // MOTION_BLUR
 
     const float variance = mix(unbiased_diff * unbiased_diff, col_hist.w, history_weight);
