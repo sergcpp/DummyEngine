@@ -1849,7 +1849,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
     Eng::FgResRef downsampled[BloomMipCount];
     for (int mip = 0; mip < BloomMipCount; ++mip) {
-        const std::string node_name = "BLOOM DOWNSAMPLE #" + std::to_string(mip);
+        const std::string node_name = "BLOOM DOWNS. " + std::to_string(mip) + "->" + std::to_string(mip + 1);
         auto &bloom_downsample = fg_builder_.AddNode(node_name);
 
         struct PassData {
@@ -1903,7 +1903,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
     }
     Eng::FgResRef upsampled[BloomMipCount - 1];
     for (int mip = BloomMipCount - 2; mip >= 0; --mip) {
-        const std::string node_name = "BLOOM UPSAMPLE #" + std::to_string(mip);
+        const std::string node_name = "BLOOM UPS. " + std::to_string(mip + 2) + "->" + std::to_string(mip + 1);
         auto &bloom_upsample = fg_builder_.AddNode(node_name);
 
         struct PassData {

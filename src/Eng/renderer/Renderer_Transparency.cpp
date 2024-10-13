@@ -57,16 +57,22 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             oit_rays_counter = data->oit_rays_counter = oit_clear.AddTransferOutput("OIT Ray Counter", desc);
         }
 
-        oit_clear.set_execute_cb([data](FgBuilder &builder) {
+        oit_clear.set_execute_cb([this, data](FgBuilder &builder) {
             FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(data->oit_depth_buf);
             FgAllocBuf &out_rays_counter_buf = builder.GetWriteBuffer(data->oit_rays_counter);
+
             Ren::Context &ctx = builder.ctx();
-            out_depth_buf.ref->Fill(0, out_depth_buf.ref->size(), 0, ctx.current_cmd_buf());
             out_rays_counter_buf.ref->Fill(0, out_rays_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
+
+            if (p_list_->alpha_blend_start_index != -1) {
+                out_depth_buf.ref->Fill(0, out_depth_buf.ref->size(), 0, ctx.current_cmd_buf());
+            }
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
                 FgAllocTex &oit_specular = builder.GetWriteTexture(data->oit_specular[i]);
-                const float rgba[4] = {};
-                Ren::ClearImage(*oit_specular.ref, rgba, ctx.current_cmd_buf());
+                if (p_list_->alpha_blend_start_index != -1) {
+                    const float rgba[4] = {};
+                    Ren::ClearImage(*oit_specular.ref, rgba, ctx.current_cmd_buf());
+                }
             }
         });
     }
@@ -421,8 +427,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             };
 
             auto *data = oit_back.AllocNodeData<PassData>();
-            frame_textures.color = data->in_back_color = oit_back.AddTransferImageInput(frame_textures.color);
-            frame_textures.depth = data->in_back_depth = oit_back.AddTransferImageInput(frame_textures.depth);
+            data->in_back_color = oit_back.AddTransferImageInput(frame_textures.color);
+            data->in_back_depth = oit_back.AddTransferImageInput(frame_textures.depth);
             { // background color
                 const std::string tex_name = "OIT Back Color #" + std::to_string(i);
                 back_color = data->out_back_color =
@@ -434,7 +440,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.depth_params);
             }
 
-            oit_back.set_execute_cb([data](FgBuilder &builder) {
+            oit_back.set_execute_cb([this, data, i](FgBuilder &builder) {
                 FgAllocTex &in_back_color_tex = builder.GetReadTexture(data->in_back_color);
                 FgAllocTex &in_back_depth_tex = builder.GetReadTexture(data->in_back_depth);
                 FgAllocTex &out_back_color_tex = builder.GetWriteTexture(data->out_back_color);
@@ -442,10 +448,14 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
                 const int w = in_back_color_tex.ref->params.w, h = in_back_color_tex.ref->params.h;
 
-                CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0,
-                                 *out_back_color_tex.ref, 0, 0, 0, 0, w, h);
-                CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0,
-                                 *out_back_depth_tex.ref, 0, 0, 0, 0, w, h);
+                if (p_list_->alpha_blend_start_index != -1) {
+                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0,
+                                     *out_back_color_tex.ref, 0, 0, 0, 0, w, h);
+                }
+                if (i == 0 || p_list_->alpha_blend_start_index != -1) {
+                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0,
+                                     *out_back_depth_tex.ref, 0, 0, 0, 0, w, h);
+                }
             });
         }
         { // blend
