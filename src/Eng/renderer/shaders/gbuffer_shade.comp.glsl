@@ -1,6 +1,10 @@
 #version 430 core
 #extension GL_EXT_control_flow_attributes : require
 
+#if defined(SHADOW_JITTER)
+    #define SIMPLIFIED_LTC_DIFFUSE 0
+#endif
+
 #include "_fs_common.glsl"
 #include "principled_common.glsl"
 #include "gbuffer_shade_interface.h"

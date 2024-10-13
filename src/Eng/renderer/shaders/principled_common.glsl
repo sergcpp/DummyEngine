@@ -84,11 +84,19 @@ struct ltc_params_t {
     #define MIN_SPEC_ROUGHNESS 0.0
 #endif
 
+#ifndef SIMPLIFIED_LTC_DIFFUSE
+    #define SIMPLIFIED_LTC_DIFFUSE 1
+#endif
+
 ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, float clearcoat_roughness2) {
     ltc_params_t ret;
 
     const vec2 diff_ltc_uv = LTC_Coords(N_dot_V, clamp(roughness, 0.0, 1.0));
+#if SIMPLIFIED_LTC_DIFFUSE
+    ret.diff_t1 = vec4(1.0, 0.0, 0.0, 1.0);
+#else
     ret.diff_t1 = textureLod(luts, diff_ltc_uv + vec2(0.0, 0.0), 0.0);
+#endif
     ret.diff_t2 = textureLod(luts, diff_ltc_uv + vec2(0.125, 0.0), 0.0).xy;
     ret.sheen_t1 = textureLod(luts, diff_ltc_uv + vec2(0.25, 0.0), 0.0);
     ret.sheen_t2 = textureLod(luts, diff_ltc_uv + vec2(0.375, 0.0), 0.0).xy;
