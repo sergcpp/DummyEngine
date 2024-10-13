@@ -19,7 +19,7 @@
 #include "gbuffer_shade_interface.h"
 
 #pragma multi_compile _ SHADOW_JITTER
-#pragma multi_compile _ SS_SHADOW
+#pragma multi_compile _ SS_SHADOW_ONE SS_SHADOW_MANY
 #pragma multi_compile _ NO_SUBGROUP
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -105,7 +105,7 @@ float LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, flo
         final_visibility = min(final_visibility, shadow_visibility / 16.0);
     }
 
-#ifdef SS_SHADOW
+#ifdef SS_SHADOW_MANY
     if (final_visibility > 0.0 && lin_depth < 30.0) {
         vec2 hit_pixel;
         vec3 hit_point;
@@ -128,7 +128,7 @@ float LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, flo
 
         final_visibility = min(final_visibility, 1.0 - occlusion);
     }
-#endif // SS_SHADOW
+#endif // SS_SHADOW_MANY
 
     return final_visibility;
 }
@@ -229,6 +229,7 @@ void main() {
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
 
     vec3 artificial_light = vec3(0.0);
+    vec3 brightest_light_contribution = vec3(0.0), brightest_light_pos;
 #if !defined(NO_SUBGROUP)
     [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
         const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
@@ -260,7 +261,12 @@ void main() {
                 const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
                 light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
             }
-            artificial_light += light_contribution * LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
+            light_contribution *= LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
+            if (lum(light_contribution) > lum(brightest_light_contribution)) {
+                brightest_light_contribution = light_contribution;
+                brightest_light_pos = litem.shadow_pos_and_tri_index.xyz;
+            }
+            artificial_light += light_contribution;
         }
     } else
 #endif // !defined(NO_SUBGROUP)
@@ -295,10 +301,40 @@ void main() {
                     const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
                     light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
                 }
-                artificial_light += light_contribution * LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
+                light_contribution *= LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
+                if (lum(light_contribution) > lum(brightest_light_contribution)) {
+                    brightest_light_contribution = light_contribution;
+                    brightest_light_pos = litem.shadow_pos_and_tri_index.xyz;
+                }
+                artificial_light += light_contribution;
             }
         }
     }
+
+#ifdef SS_SHADOW_ONE
+    if (lin_depth < 30.0 && lum(brightest_light_contribution) > 0.0) {
+        vec2 hit_pixel;
+        vec3 hit_point;
+
+        float occlusion = 0.0;
+        const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(brightest_light_pos - P), 0.0)).xyz;
+        if (IntersectRay(pos_vs + 0.005 * vec3(0.0, 0.0, 1.0), light_dir_vs, hash, hit_pixel, hit_point)) {
+            const float shadow_vis = texelFetch(g_albedo_tex, ivec2(hit_pixel), 0).w;
+            if (shadow_vis > 0.5) {
+                occlusion = 1.0;
+            }
+        }
+
+        // view distance falloff
+        occlusion *= saturate(30.0 - lin_depth);
+        // shadow fadeout
+        occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs)));
+        // fix shadow terminator
+        occlusion *= saturate(abs(8.0 * dot(N, normalize(brightest_light_pos - P))));
+        // substract occluded portion of light
+        artificial_light -= occlusion * brightest_light_contribution;
+    }
+#endif
 
     //
     // Indirect probes
