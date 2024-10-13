@@ -34,14 +34,17 @@ struct ast_allocator {
     ast_allocator() : allocator(8, 128) {}
 };
 
-template <typename T> struct ast_node : public ast_node_base {
-    void *operator new(const size_t size, ast_allocator *allocator) noexcept {
-        char *data = allocator->allocator.allocate(size);
-        if (data) {
-            allocator->allocations.push_back(ast_memory{(T *)data, size});
-        }
-        return data;
+#define OPERATOR_NEW(Type)                                                                                             \
+    void *operator new(const size_t size, ast_allocator *allocator) noexcept {                                         \
+        char *data = allocator->allocator.allocate(size);                                                              \
+        if (data) {                                                                                                    \
+            allocator->allocations.push_back(ast_memory{(Type *)data, size});                                          \
+        }                                                                                                              \
+        return data;                                                                                                   \
     }
+
+template <typename T> struct ast_node : public ast_node_base {
+    OPERATOR_NEW(T)
     void operator delete(void *, ast_allocator *) {}
 
     void *operator new(size_t) = delete;
@@ -207,6 +210,7 @@ struct ast_struct : ast_type {
     vector<ast_variable *> fields;
 
     explicit ast_struct(MultiPoolAllocator<char> &_alloc) noexcept : ast_type(false), fields(_alloc) {}
+    OPERATOR_NEW(ast_struct)
 };
 
 struct ast_interface_block : ast_struct {
@@ -216,6 +220,7 @@ struct ast_interface_block : ast_struct {
 
     explicit ast_interface_block(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_struct(_alloc), layout_qualifiers(_alloc) {}
+    OPERATOR_NEW(ast_interface_block)
 };
 
 struct ast_version_directive : ast_type {
@@ -251,6 +256,7 @@ struct ast_variable : ast_node<ast_variable> {
     vector<ast_constant_expression *> array_sizes;
 
     ast_variable(eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept : type(_type), array_sizes(_alloc) {}
+    OPERATOR_NEW(ast_variable)
 };
 
 struct ast_function_variable : ast_variable {
@@ -281,6 +287,7 @@ struct ast_global_variable : ast_variable {
 
     explicit ast_global_variable(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_variable(eVariableType::Global, _alloc), layout_qualifiers(_alloc) {}
+    OPERATOR_NEW(ast_global_variable)
 };
 
 struct ast_layout_qualifier : ast_node<ast_layout_qualifier> {
@@ -298,6 +305,7 @@ struct ast_function : ast_node<ast_function> {
     Bitmask<eFunctionAttribute> attributes;
 
     explicit ast_function(MultiPoolAllocator<char> &_alloc) noexcept : parameters(_alloc), statements(_alloc) {}
+    OPERATOR_NEW(ast_function)
 };
 
 enum class eStatement {
@@ -333,6 +341,7 @@ struct ast_compound_statement : ast_statement {
     vector<ast_statement *> statements;
     explicit ast_compound_statement(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_statement(eStatement::Compound), statements(_alloc) {}
+    OPERATOR_NEW(ast_compound_statement)
 };
 
 struct ast_empty_statement : ast_simple_statement {
@@ -344,6 +353,7 @@ struct ast_declaration_statement : ast_simple_statement {
 
     explicit ast_declaration_statement(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_simple_statement(eStatement::Declaration), variables(_alloc) {}
+    OPERATOR_NEW(ast_declaration_statement)
 };
 
 struct ast_expression_statement : ast_simple_statement {
@@ -370,6 +380,7 @@ struct ast_switch_statement : ast_simple_statement {
 
     ast_switch_statement(MultiPoolAllocator<char> &_alloc, Bitmask<eCtrlFlowAttribute> _attributes) noexcept
         : ast_simple_statement(eStatement::Switch), statements(_alloc), attributes(_attributes) {}
+    OPERATOR_NEW(ast_switch_statement)
 };
 
 struct ast_case_label_statement : ast_simple_statement {
@@ -516,6 +527,7 @@ struct ast_array_specifier : ast_expression {
 
     explicit ast_array_specifier(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::ArraySpecifier), expressions(_alloc) {}
+    OPERATOR_NEW(ast_array_specifier)
 };
 
 struct ast_variable_identifier : ast_expression {
@@ -546,6 +558,7 @@ struct ast_function_call : ast_expression {
 
     explicit ast_function_call(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::FunctionCall), parameters(_alloc) {}
+    OPERATOR_NEW(ast_function_call)
 };
 
 struct ast_constructor_call : ast_expression {
@@ -554,6 +567,7 @@ struct ast_constructor_call : ast_expression {
 
     explicit ast_constructor_call(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::ConstructorCall), parameters(_alloc) {}
+    OPERATOR_NEW(ast_constructor_call)
 };
 
 struct ast_unary_expression : ast_expression {
