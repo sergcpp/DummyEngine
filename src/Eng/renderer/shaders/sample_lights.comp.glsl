@@ -81,6 +81,7 @@ void main() {
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).r;
     if (depth == 0.0) {
+        imageStore(g_out_specular_img, icoord, vec4(0.0, 0.0, 0.0, -1.0));
         return;
     }
     const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
