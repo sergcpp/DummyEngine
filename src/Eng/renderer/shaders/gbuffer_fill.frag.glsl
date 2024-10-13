@@ -71,6 +71,7 @@ void main() {
     float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).r;
     float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).r;
 
+#if 0 // decals
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
     const vec3 dp_dx = dFdx(g_vtx_pos);
     const vec3 dp_dy = dFdy(g_vtx_pos);
@@ -125,6 +126,7 @@ void main() {
             }*/
         }
     }
+#endif
 
     vec3 normal;
     normal.xy = norm_color * 2.0 - 1.0;
