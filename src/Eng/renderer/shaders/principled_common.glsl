@@ -217,11 +217,11 @@ vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
             const vec3 dcol = base_color;
 
-            vec3 diff = LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, pos_ws.xyz, ltc.diff_t1, points, TwoSided);
+            vec3 diff = vec3(LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, pos_ws.xyz, ltc.diff_t1, points, TwoSided));
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
             if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                const vec3 _sheen = LTC_Evaluate_Rect(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
+                const float _sheen = LTC_Evaluate_Rect(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
@@ -230,7 +230,7 @@ vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3
         if ((lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) && ENABLE_SPECULAR != 0) {
             const vec3 scol = spec_color;
 
-            vec3 spec = LTC_Evaluate_Rect(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided);
+            vec3 spec = vec3(LTC_Evaluate_Rect(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided));
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
 
             ret += litem.col_and_type.xyz * spec / 4.0;
@@ -238,7 +238,7 @@ vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
             const vec3 ccol = clearcoat_color;
 
-            vec3 coat = LTC_Evaluate_Rect(ltc_luts, 0.875, N, I, pos_ws.xyz, ltc.coat_t1, points, TwoSided);
+            vec3 coat = vec3(LTC_Evaluate_Rect(ltc_luts, 0.875, N, I, pos_ws.xyz, ltc.coat_t1, points, TwoSided));
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
 
             ret += 0.25 * litem.col_and_type.xyz * coat / 4.0;

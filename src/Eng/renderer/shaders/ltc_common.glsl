@@ -126,7 +126,7 @@ vec2 LTC_Coords(float cos_theta, float roughness) {
     return coords;
 }
 
-vec3 LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
+float LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
     // construct orthonormal basis around N
     vec3 T1, T2;
     T1 = normalize(V - N * dot(V, N));
@@ -157,7 +157,7 @@ vec3 LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, 
     bool behind = (dot(dir, lightNormal) < 0.0);
 
     if (L[0].z < 0.0 && L[1].z < 0.0 && L[2].z < 0.0 && L[3].z < 0.0) {
-        return vec3(0.0);
+        return 0;
     }
 
     L[0] = normalize(L[0]);
@@ -195,7 +195,7 @@ vec3 LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, 
     ClipQuadToHorizon(L, n);
 
     if (n == 0) {
-        return vec3(0, 0, 0);
+        return 0;
     }
     // project onto sphere
     L[0] = normalize(L[0]);
@@ -217,7 +217,7 @@ vec3 LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, 
     sum = two_sided ? abs(sum) : max(0.0, sum);
 #endif
 
-    return vec3(sum, sum, sum);
+    return sum;
 }
 
 //

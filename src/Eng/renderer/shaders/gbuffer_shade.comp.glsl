@@ -1,5 +1,14 @@
 #version 430 core
 #extension GL_EXT_control_flow_attributes : require
+#if !defined(NO_SUBGROUP)
+#extension GL_KHR_shader_subgroup_arithmetic : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_KHR_shader_subgroup_vote : require
+#endif
+
+#if defined(NO_SUBGROUP)
+#define subgroupMin(x) (x)
+#endif
 
 #if defined(SHADOW_JITTER)
     #define SIMPLIFIED_LTC_DIFFUSE 0
@@ -11,6 +20,7 @@
 
 #pragma multi_compile _ SHADOW_JITTER
 #pragma multi_compile _ SS_SHADOW
+#pragma multi_compile _ NO_SUBGROUP
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
@@ -52,6 +62,77 @@ float LinearDepthTexelFetch(const vec2 hit_pixel) {
 
 #include "ss_trace_simple.glsl.inl"
 
+float LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, float lin_depth, vec4 rotator, const float hash) {
+    int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
+    [[dont_flatten]] if (shadowreg_index == -1) {
+        return 1.0;
+    }
+
+    float final_visibility = 1.0;
+
+    vec3 from_light = normalize(P + 0.05 * (hash - 0.5) * N - litem.shadow_pos_and_tri_index.xyz);
+    shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+    vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+    vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
+    pp /= pp.w;
+
+    pp.xy = pp.xy * 0.5 + 0.5;
+    pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+#if defined(VULKAN)
+    pp.y = 1.0 - pp.y;
+#endif // VULKAN
+
+    const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES / 2));
+    const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
+#ifdef SHADOW_JITTER
+    const float MaxShadowRadiusPx = 2.0;
+#else // SHADOW_JITTER
+    const float MaxShadowRadiusPx = 3.5;
+#endif // SHADOW_JITTER
+
+    vec2 blocker = BlockerSearch(g_shadow_val_tex, pp.xyz, MaxShadowRadiusPx * (1.0 - pp.z), rotator);
+    if (blocker.y > 0.5) {
+        blocker.x /= blocker.y;
+
+        float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / (1.0 - blocker.x);
+        const float filter_radius_px = clamp(penumbra_size_approx, MinShadowRadiusPx, MaxShadowRadiusPx);
+        float shadow_visibility = 0.0;
+        for (int i = 0; i < 16; ++i) {
+            vec2 uv = pp.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
+            shadow_visibility += textureLod(g_shadow_tex, vec3(uv, pp.z), 0.0);
+        }
+        final_visibility = min(final_visibility, shadow_visibility / 16.0);
+    }
+
+#ifdef SS_SHADOW
+    if (final_visibility > 0.0 && lin_depth < 30.0) {
+        vec2 hit_pixel;
+        vec3 hit_point;
+
+        float occlusion = 0.0;
+        const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(litem.shadow_pos_and_tri_index.xyz - P), 0.0)).xyz;
+        if (IntersectRay(pos_vs + 0.005 * vec3(0.0, 0.0, 1.0), light_dir_vs, hash, hit_pixel, hit_point)) {
+            const float shadow_vis = texelFetch(g_albedo_tex, ivec2(hit_pixel), 0).w;
+            if (shadow_vis > 0.5) {
+                occlusion = 1.0;
+            }
+        }
+
+        // view distance falloff
+        occlusion *= saturate(30.0 - lin_depth);
+        // shadow fadeout
+        occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs)));
+        // fix shadow terminator
+        occlusion *= saturate(abs(8.0 * dot(N, normalize(litem.shadow_pos_and_tri_index.xyz - P))));
+
+        final_visibility = min(final_visibility, 1.0 - occlusion);
+    }
+#endif // SS_SHADOW
+
+    return final_visibility;
+}
+
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
         return;
@@ -71,10 +152,6 @@ void main() {
 
     const int ix = int(gl_GlobalInvocationID.x), iy = int(gl_GlobalInvocationID.y);
     const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
-
-    const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-    const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-    const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
     const vec3 pos_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, pos_cs);
@@ -152,104 +229,75 @@ void main() {
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
 
     vec3 artificial_light = vec3(0.0);
-    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        const uint item_data = texelFetch(g_items_buf, int(i)).x;
-        const int li = int(bitfieldExtract(item_data, 0, 12));
+#if !defined(NO_SUBGROUP)
+    [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
+        const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
+        const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
+        const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
+        for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
+            const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
+            const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
 
-        const light_item_t litem = FetchLightItem(g_lights_buf, li);
-        const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
-        const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
-        const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
+            const light_item_t litem = FetchLightItem(g_lights_buf, s_li);
+            const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+            const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
+            const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
-        lobe_weights_t _lobe_weights = lobe_weights;
-        [[flatten]] if (is_portal) {
-            _lobe_weights.specular *= portals_specular_ltc_weight;
-            _lobe_weights.clearcoat *= portals_specular_ltc_weight;
-        }
-        [[flatten]] if (!is_diffuse) _lobe_weights.diffuse = 0.0;
-        [[flatten]] if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                      sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
-        if (all(equal(light_contribution, vec3(0.0)))) {
-            continue;
-        }
-        if (is_portal) {
-            // Sample environment to create slight color variation
-            const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
-            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
-        }
-
-        float final_visibility = 1.0;
-
-        int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
-        [[dont_flatten]] if (shadowreg_index != -1) {
-#ifdef SS_SHADOW
-            if (lin_depth < 30.0) {
-                vec2 hit_pixel;
-                vec3 hit_point;
-
-                float occlusion = 0.0;
-
-                const float jitter = Bayer4x4(uvec2(icoord), 0);
-                const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(litem.shadow_pos_and_tri_index.xyz - P), 0.0)).xyz;
-                if (IntersectRay(pos_vs + 0.005 * vec3(0.0, 0.0, 1.0), light_dir_vs, jitter /* jitter */, hit_pixel, hit_point)) {
-                    const float shadow_vis = texelFetch(g_albedo_tex, ivec2(hit_pixel), 0).w;
-                    if (shadow_vis > 0.5) {
-                        occlusion = 1.0;
-                    }
-                }
-
-                // view distance falloff
-                occlusion *= saturate(30.0 - lin_depth);
-                // shadow fadeout
-                occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs)));
-                // fix shadow terminator
-                occlusion *= saturate(abs(8.0 * dot(N, normalize(litem.shadow_pos_and_tri_index.xyz - P))));
-
-                final_visibility -= occlusion;
+            lobe_weights_t _lobe_weights = lobe_weights;
+            if (is_portal) {
+                _lobe_weights.specular *= portals_specular_ltc_weight;
+                _lobe_weights.clearcoat *= portals_specular_ltc_weight;
             }
-#endif // SS_SHADOW
+            if (!is_diffuse) _lobe_weights.diffuse = 0.0;
+            if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
+            vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+            if (all(equal(light_contribution, vec3(0.0)))) {
+                continue;
+            }
+            if (is_portal) {
+                // Sample environment to create slight color variation
+                const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
+                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+            }
+            artificial_light += light_contribution * LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
+        }
+    } else
+#endif // !defined(NO_SUBGROUP)
+    {
+        const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
+        const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
+        for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
+            const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
+            const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
+            const int s_li = subgroupMin(v_li);
+            [[flatten]] if (s_li == v_li) {
+                ++i;
+                const light_item_t litem = FetchLightItem(g_lights_buf, s_li);
+                const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+                const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
+                const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
-            vec3 from_light = normalize(P + 0.05 * (hash - 0.5) * N - litem.shadow_pos_and_tri_index.xyz);
-            shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
-            vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
-
-            vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
-            pp /= pp.w;
-
-            pp.xy = pp.xy * 0.5 + 0.5;
-            pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
-            #if defined(VULKAN)
-                pp.y = 1.0 - pp.y;
-            #endif // VULKAN
-
-
-            //final_visibility = min(final_visibility, SampleShadowPCF5x5(g_shadow_tex, pp.xyz));
-
-            const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES / 2));
-            const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
-#ifdef SHADOW_JITTER
-            const float MaxShadowRadiusPx = 2.0;
-#else // SHADOW_JITTER
-            const float MaxShadowRadiusPx = 3.5;
-#endif // SHADOW_JITTER
-
-            vec2 blocker = BlockerSearch(g_shadow_val_tex, pp.xyz, MaxShadowRadiusPx * (1.0 - pp.z), rotator);
-            if (blocker.y > 0.5) {
-                blocker.x /= blocker.y;
-
-                float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / (1.0 - blocker.x);
-                const float filter_radius_px = clamp(penumbra_size_approx, MinShadowRadiusPx, MaxShadowRadiusPx);
-                float shadow_visibility = 0.0;
-                for (int i = 0; i < 16; ++i) {
-                    vec2 uv = pp.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
-                    shadow_visibility += textureLod(g_shadow_tex, vec3(uv, pp.z), 0.0);
+                lobe_weights_t _lobe_weights = lobe_weights;
+                if (is_portal) {
+                    _lobe_weights.specular *= portals_specular_ltc_weight;
+                    _lobe_weights.clearcoat *= portals_specular_ltc_weight;
                 }
-                final_visibility = min(final_visibility, shadow_visibility / 16.0);
+                if (!is_diffuse) _lobe_weights.diffuse = 0.0;
+                if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
+                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                if (all(equal(light_contribution, vec3(0.0)))) {
+                    continue;
+                }
+                if (is_portal) {
+                    // Sample environment to create slight color variation
+                    const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
+                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+                }
+                artificial_light += light_contribution * LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
             }
         }
-
-        artificial_light += light_contribution * final_visibility;
     }
 
     //

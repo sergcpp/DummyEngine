@@ -56,8 +56,13 @@ bool Eng::Renderer::InitPipelines() {
     bool success = true;
 
     success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
-    success &= init_pipeline(pi_gbuf_shade_[0], "internal/gbuffer_shade@SS_SHADOW.comp.glsl");
-    success &= init_pipeline(pi_gbuf_shade_[1], "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW.comp.glsl");
+    success &= init_pipeline(pi_gbuf_shade_[0], ctx_.capabilities.subgroup
+                                                    ? "internal/gbuffer_shade@SS_SHADOW.comp.glsl"
+                                                    : "internal/gbuffer_shade@SS_SHADOW;NO_SUBGROUP.comp.glsl");
+    success &=
+        init_pipeline(pi_gbuf_shade_[1], ctx_.capabilities.subgroup
+                                             ? "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW.comp.glsl"
+                                             : "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW;NO_SUBGROUP.comp.glsl");
     success &=
         init_pipeline(pi_ssr_classify_, ctx_.capabilities.subgroup ? "internal/ssr_classify.comp.glsl"
                                                                    : "internal/ssr_classify@NO_SUBGROUP.comp.glsl");
