@@ -114,8 +114,8 @@ Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
     return default_descr_alloc_[api_ctx_->backend_frame].get();
 }
 
-bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, bool nohwrt,
-                        std::string_view preferred_device) {
+bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const bool nohwrt,
+                        const bool nosubgroup, std::string_view preferred_device) {
     api_ctx_ = std::make_unique<ApiContext>();
     if (!api_ctx_->Load(log)) {
         return false;
@@ -221,6 +221,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     capabilities.hwrt = (api_ctx_->raytracing_supported && api_ctx_->ray_query_supported);
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
+
+    capabilities.subgroup &= !nosubgroup;
 
     default_memory_allocs_ =
         std::make_unique<MemoryAllocators>("Default Allocs", api_ctx_.get(), 32 * 1024 * 1024 /* initial_block_size */,

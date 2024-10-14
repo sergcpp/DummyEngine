@@ -46,6 +46,7 @@ struct AppParams {
     std::string ref_name;
     double psnr = 0.0;
     bool nohwrt = false;
+    bool nosubgroup = false;
     bool pt = false;
     bool pt_denoise = true;
     bool pt_nohwrt = false;

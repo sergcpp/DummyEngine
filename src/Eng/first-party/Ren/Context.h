@@ -101,7 +101,8 @@ class Context {
 
     Context(const Context &rhs) = delete;
 
-    bool Init(int w, int h, ILog *log, int validation_level, bool nohwrt, std::string_view preferred_device);
+    bool Init(int w, int h, ILog *log, int validation_level, bool nohwrt, bool nosubgroup,
+              std::string_view preferred_device);
 
     int w() const { return w_; }
     int h() const { return h_; }

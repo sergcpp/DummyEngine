@@ -22,15 +22,15 @@
 #include "utils/Random.h"
 #include "utils/ShaderLoader.h"
 
-Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, const bool nohwrt, ILog *log,
-                            std::string_view device_name)
+Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, const bool nohwrt,
+                            const bool nosubgroup, ILog *log, std::string_view device_name)
     : log_(log), width(w), height(h) {
     terminated = false;
 
     // Sys::InitWorker();
 
     ren_ctx_ = std::make_unique<Ren::Context>();
-    if (!ren_ctx_->Init(w, h, log_, validation_level, nohwrt, device_name)) {
+    if (!ren_ctx_->Init(w, h, log_, validation_level, nohwrt, nosubgroup, device_name)) {
         throw std::runtime_error("Initialization failed!");
     }
     InitOptickGPUProfiler();

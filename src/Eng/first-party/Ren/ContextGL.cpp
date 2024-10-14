@@ -39,7 +39,7 @@ Ren::Context::~Context() {
 }
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const bool nohwrt,
-                        std::string_view) {
+                        const bool nosubgroup, std::string_view) {
     std::call_once(gl_initialize_once, [&]() { gl_initialized = InitGLExtentions(log); });
     if (!gl_initialized) {
         return false;
@@ -100,7 +100,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         capabilities.max_compute_work_group_size[i] = val;
     }
 
-    if (IsExtensionSupported("GL_KHR_shader_subgroup")) {
+    if (IsExtensionSupported("GL_KHR_shader_subgroup") && !nosubgroup) {
         GLint stages = 0;
         glGetIntegerv(GL_SUBGROUP_SUPPORTED_STAGES_KHR, &stages);
         GLint features = 0;

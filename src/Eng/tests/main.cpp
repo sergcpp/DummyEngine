@@ -15,7 +15,7 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 // void test_object_pool();
 void test_cmdline();
 void test_materials(Sys::ThreadPool &threads, bool full, std::string_view device_name, int validation_level,
-                    bool nohwrt);
+                    bool nohwrt, bool nosubgroup);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     std::string_view device_name;
     int threads_count = 1;
     int validation_level = 1;
-    bool full = false, nohwrt = false;
+    bool full = false, nohwrt = false, nosubgroup = false;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--prepare_assets") == 0) {
@@ -70,6 +70,8 @@ int main(int argc, char *argv[]) {
             validation_level = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--nohwrt") == 0) {
             nohwrt = true;
+        } else if (strcmp(argv[i], "--nosubgroup") == 0) {
+            nosubgroup = true;
         } else if (strcmp(argv[i], "--full") == 0) {
             full = true;
         }
@@ -86,7 +88,7 @@ int main(int argc, char *argv[]) {
     // test_object_pool();
     test_cmdline();
     puts(" ---------------");
-    test_materials(mt_run_pool, full, device_name, validation_level, nohwrt);
+    test_materials(mt_run_pool, full, device_name, validation_level, nohwrt, nosubgroup);
 
     bool tests_success_final = g_tests_success;
     tests_success_final &= !g_log_contains_errors;

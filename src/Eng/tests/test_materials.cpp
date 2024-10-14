@@ -33,7 +33,7 @@ const int LUT_DIMS = 48;
 
 std::string_view g_device_name;
 int g_validation_level = 0;
-bool g_nohwrt = false;
+bool g_nohwrt = false, g_nosubgroup = false;
 
 std::mutex g_stbi_mutex;
 } // namespace
@@ -69,7 +69,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     SCOPE_EXIT({ stbi_image_free(ref_img); })
 
     LogErr log;
-    TestContext ren_ctx(ref_w, ref_h, g_device_name, g_validation_level, g_nohwrt, &log);
+    TestContext ren_ctx(ref_w, ref_h, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
 #if defined(USE_VK_RENDER)
     Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
     require_return(g_device_name.empty() ||
@@ -489,10 +489,11 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
 }
 
 void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view device_name, const int vl,
-                    const bool nohwrt) {
+                    const bool nohwrt, const bool nosubgroup) {
     g_device_name = device_name;
     g_validation_level = vl;
     g_nohwrt = nohwrt;
+    g_nosubgroup = nosubgroup;
 
     { // complex materials
         std::vector<std::future<void>> futures;

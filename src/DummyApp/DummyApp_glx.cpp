@@ -237,6 +237,8 @@ int DummyApp::Run(int argc, char *argv[]) {
             fullscreen_ = true;
         } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
             app_params.validation_level = std::atoi(argv[++i]);
+        } else if (strcmp(arg, "--nosubgroup") == 0) {
+            app_params.nosubgroup = true;
         } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
             app_params.scene_name = argv[i];
         } else if ((strcmp(argv[i], "--reference") == 0 || strcmp(argv[i], "-ref") == 0) && (++i != argc)) {

@@ -263,7 +263,7 @@ class TestContext : public Ren::Context {
 #endif
 
 #endif
-        Context::Init(256, 256, &log_, 2 /* validation_level */, false, {});
+        Context::Init(256, 256, &log_, 2 /* validation_level */, false, false, {});
     }
 
     ~TestContext() {
