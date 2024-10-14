@@ -1,6 +1,13 @@
 #version 460
 #extension GL_EXT_ray_query : require
 #extension GL_EXT_control_flow_attributes : require
+#if !defined(NO_SUBGROUP)
+#extension GL_KHR_shader_subgroup_arithmetic : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_KHR_shader_subgroup_vote : require
+#endif
+
+#define ENABLE_SHEEN 0
 
 #include "_fs_common.glsl"
 #include "rt_common.glsl"
@@ -15,6 +22,7 @@
 #pragma multi_compile _ LAYERED STOCH_LIGHTS
 #pragma multi_compile _ TWO_BOUNCES FOUR_BOUNCES
 #pragma multi_compile _ GI_CACHE
+#pragma multi_compile _ NO_SUBGROUP
 
 #if defined(LAYERED) && (defined(TWO_BOUNCES) || defined(FOUR_BOUNCES))
     #pragma dont_compile
@@ -26,6 +34,10 @@
     #define NUM_BOUNCES 2
 #else
     #define NUM_BOUNCES 1
+#endif
+
+#if defined(NO_SUBGROUP)
+    #define subgroupMin(x) (x)
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -104,6 +116,27 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
 #endif
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+float LightVisibility(const light_item_t litem, const vec3 P) {
+    int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
+    if (shadowreg_index != -1) {
+        const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
+        shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+        vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+        vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
+        pp /= pp.w;
+
+        pp.xy = pp.xy * 0.5 + 0.5;
+        pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+        #if defined(VULKAN)
+            pp.y = 1.0 - pp.y;
+        #endif // VULKAN
+
+        return SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+    }
+    return 1.0;
+}
 
 void main() {
     const uint ray_index = gl_WorkGroupID.x * 64 + gl_LocalInvocationIndex;
@@ -407,59 +440,81 @@ void main() {
                       tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
 
             const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
+#if !defined(NO_SUBGROUP)
+            [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
+                const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
+                const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
+                const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
+                const uvec2 s_dcount_and_pcount = uvec2(bitfieldExtract(s_cell_data.y, 0, 8), bitfieldExtract(s_cell_data.y, 8, 8));
+                for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
+                    const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
+                    const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
 
-            const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-            const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-            const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+                    const light_item_t litem = g_lights[s_li];
 
-            for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-                const uint item_data = texelFetch(g_items_buf, int(i)).x;
-                const int li = int(bitfieldExtract(item_data, 0, 12));
+                    const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+                    const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
+                    const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
-                const light_item_t litem = g_lights[li];
-
-                const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
-                const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
-                const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
-
-                lobe_weights_t _lobe_weights = lobe_weights;
-                if (!is_last_bounce && is_portal) {
-                    // Portal lights affect only diffuse
-                    _lobe_weights.specular *= portals_specular_ltc_weight;
-                    _lobe_weights.clearcoat *= portals_specular_ltc_weight;
+                    lobe_weights_t _lobe_weights = lobe_weights;
+                    if (!is_last_bounce && is_portal) {
+                        // Portal lights affect only diffuse
+                        _lobe_weights.specular *= portals_specular_ltc_weight;
+                        _lobe_weights.clearcoat *= portals_specular_ltc_weight;
+                    }
+                    if (!is_diffuse) _lobe_weights.diffuse = 0.0;
+                    if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
+                    vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                                                                sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                    if (all(equal(light_contribution, vec3(0.0)))) {
+                        continue;
+                    }
+                    if (is_portal) {
+                        // Sample environment to create slight color variation
+                        const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                        light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+                    }
+                    light_total += light_contribution * LightVisibility(litem, P);
                 }
-                [[flatten]] if (!is_diffuse) _lobe_weights.diffuse = 0.0;
-                [[flatten]] if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
-                if (all(equal(light_contribution, vec3(0.0)))) {
-                    continue;
+            } else
+#endif
+            {
+                const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
+                const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
+                const uvec2 v_dcount_and_pcount = uvec2(bitfieldExtract(v_cell_data.y, 0, 8), bitfieldExtract(v_cell_data.y, 8, 8));
+                for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
+                    const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
+                    const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
+                    const int s_li = subgroupMin(v_li);
+                    [[flatten]] if (s_li == v_li) {
+                        ++i;
+                        const light_item_t litem = g_lights[s_li];
+
+                        const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+                        const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
+                        const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
+
+                        lobe_weights_t _lobe_weights = lobe_weights;
+                        if (!is_last_bounce && is_portal) {
+                            // Portal lights affect only diffuse
+                            _lobe_weights.specular *= portals_specular_ltc_weight;
+                            _lobe_weights.clearcoat *= portals_specular_ltc_weight;
+                        }
+                        if (!is_diffuse) _lobe_weights.diffuse = 0.0;
+                        if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
+                        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                                                                    sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                        if (all(equal(light_contribution, vec3(0.0)))) {
+                            continue;
+                        }
+                        if (is_portal) {
+                            // Sample environment to create slight color variation
+                            const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+                        }
+                        light_total += light_contribution * LightVisibility(litem, P);
+                    }
                 }
-                if (is_portal) {
-                    // Sample environment to create slight color variation
-                    const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
-                }
-
-                int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
-                if (shadowreg_index != -1) {
-                    const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
-                    shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
-                    vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
-
-                    vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
-                    pp /= pp.w;
-
-                    pp.xy = pp.xy * 0.5 + 0.5;
-                    pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
-                    #if defined(VULKAN)
-                        pp.y = 1.0 - pp.y;
-                    #endif // VULKAN
-
-                    light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
-                }
-
-                light_total += light_contribution;
             }
 
             if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {

@@ -7,7 +7,7 @@
 #endif
 
 #if defined(NO_SUBGROUP)
-#define subgroupMin(x) (x)
+    #define subgroupMin(x) (x)
 #endif
 
 #if defined(SHADOW_JITTER)

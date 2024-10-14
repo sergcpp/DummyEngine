@@ -52,34 +52,34 @@ bool Eng::Renderer::InitPipelines() {
         }
         return true;
     };
+    auto subgroup_select = [this](std::string_view subgroup_shader, std::string_view nosubgroup_shader) {
+        return ctx_.capabilities.subgroup ? subgroup_shader : nosubgroup_shader;
+    };
 
     bool success = true;
 
     success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
-    success &= init_pipeline(pi_gbuf_shade_[0], ctx_.capabilities.subgroup
-                                                    ? "internal/gbuffer_shade@SS_SHADOW_ONE.comp.glsl"
-                                                    : "internal/gbuffer_shade@SS_SHADOW_ONE;NO_SUBGROUP.comp.glsl");
     success &=
-        init_pipeline(pi_gbuf_shade_[1], ctx_.capabilities.subgroup
-                                             ? "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY.comp.glsl"
-                                             : "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY;NO_SUBGROUP.comp.glsl");
+        init_pipeline(pi_gbuf_shade_[0], subgroup_select("internal/gbuffer_shade@SS_SHADOW_ONE.comp.glsl",
+                                                         "internal/gbuffer_shade@SS_SHADOW_ONE;NO_SUBGROUP.comp.glsl"));
     success &=
-        init_pipeline(pi_ssr_classify_, ctx_.capabilities.subgroup ? "internal/ssr_classify.comp.glsl"
-                                                                   : "internal/ssr_classify@NO_SUBGROUP.comp.glsl");
+        init_pipeline(pi_gbuf_shade_[1],
+                      subgroup_select("internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY.comp.glsl",
+                                      "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY;NO_SUBGROUP.comp.glsl"));
+    success &= init_pipeline(pi_ssr_classify_, subgroup_select("internal/ssr_classify.comp.glsl",
+                                                               "internal/ssr_classify@NO_SUBGROUP.comp.glsl"));
     success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
-    success &= init_pipeline(pi_ssr_trace_hq_[0][0], ctx_.capabilities.subgroup
-                                                         ? "internal/ssr_trace_hq.comp.glsl"
-                                                         : "internal/ssr_trace_hq@NO_SUBGROUP.comp.glsl");
-    success &= init_pipeline(pi_ssr_trace_hq_[0][1], ctx_.capabilities.subgroup
-                                                         ? "internal/ssr_trace_hq@GI_CACHE.comp.glsl"
-                                                         : "internal/ssr_trace_hq@GI_CACHE;NO_SUBGROUP.comp.glsl");
-    success &= init_pipeline(pi_ssr_trace_hq_[1][0], ctx_.capabilities.subgroup
-                                                         ? "internal/ssr_trace_hq@LAYERED.comp.glsl"
-                                                         : "internal/ssr_trace_hq@LAYERED;NO_SUBGROUP.comp.glsl");
+    success &= init_pipeline(pi_ssr_trace_hq_[0][0], subgroup_select("internal/ssr_trace_hq.comp.glsl",
+                                                                     "internal/ssr_trace_hq@NO_SUBGROUP.comp.glsl"));
     success &=
-        init_pipeline(pi_ssr_trace_hq_[1][1], ctx_.capabilities.subgroup
-                                                  ? "internal/ssr_trace_hq@LAYERED;GI_CACHE.comp.glsl"
-                                                  : "internal/ssr_trace_hq@LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl");
+        init_pipeline(pi_ssr_trace_hq_[0][1], subgroup_select("internal/ssr_trace_hq@GI_CACHE.comp.glsl",
+                                                              "internal/ssr_trace_hq@GI_CACHE;NO_SUBGROUP.comp.glsl"));
+    success &=
+        init_pipeline(pi_ssr_trace_hq_[1][0], subgroup_select("internal/ssr_trace_hq@LAYERED.comp.glsl",
+                                                              "internal/ssr_trace_hq@LAYERED;NO_SUBGROUP.comp.glsl"));
+    success &= init_pipeline(pi_ssr_trace_hq_[1][1],
+                             subgroup_select("internal/ssr_trace_hq@LAYERED;GI_CACHE.comp.glsl",
+                                             "internal/ssr_trace_hq@LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl"));
 
     success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
 
@@ -107,13 +107,11 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_gtao_accumulate_, "internal/gtao_accumulate.comp.glsl");
 
     // GI
-    success &=
-        init_pipeline(pi_gi_classify_, ctx_.capabilities.subgroup ? "internal/gi_classify.comp.glsl"
-                                                                  : "internal/gi_classify@NO_SUBGROUP.comp.glsl");
+    success &= init_pipeline(pi_gi_classify_, subgroup_select("internal/gi_classify.comp.glsl",
+                                                              "internal/gi_classify@NO_SUBGROUP.comp.glsl"));
     success &= init_pipeline(pi_gi_write_indirect_, "internal/gi_write_indirect_args.comp.glsl");
-    success &=
-        init_pipeline(pi_gi_trace_ss_, ctx_.capabilities.subgroup ? "internal/gi_trace_ss.comp.glsl"
-                                                                  : "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl");
+    success &= init_pipeline(pi_gi_trace_ss_, subgroup_select("internal/gi_trace_ss.comp.glsl",
+                                                              "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl"));
     success &= init_pipeline(pi_gi_rt_write_indirect_, "internal/gi_write_indir_rt_dispatch.comp.glsl");
     success &= init_pipeline(pi_gi_reproject_, "internal/gi_reproject.comp.glsl");
     success &= init_pipeline(pi_gi_prefilter_, "internal/gi_prefilter.comp.glsl");
@@ -125,17 +123,17 @@ bool Eng::Renderer::InitPipelines() {
     // Sun Shadow
     success &= init_pipeline(pi_sun_shadows_, "internal/sun_shadows@SS_SHADOW.comp.glsl");
     success &= init_pipeline(pi_sun_brightness_, "internal/sun_brightness.comp.glsl");
-    success &= init_pipeline(pi_shadow_classify_,
-                             ctx_.capabilities.subgroup ? "internal/rt_shadow_classify.comp.glsl"
-                                                        : "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl",
-                             32);
+    success &= init_pipeline(
+        pi_shadow_classify_,
+        subgroup_select("internal/rt_shadow_classify.comp.glsl", "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl"),
+        32);
     success &= init_pipeline(pi_shadow_prepare_mask_,
-                             ctx_.capabilities.subgroup ? "internal/rt_shadow_prepare_mask.comp.glsl"
-                                                        : "internal/rt_shadow_prepare_mask@NO_SUBGROUP.comp.glsl",
+                             subgroup_select("internal/rt_shadow_prepare_mask.comp.glsl",
+                                             "internal/rt_shadow_prepare_mask@NO_SUBGROUP.comp.glsl"),
                              32);
     success &= init_pipeline(pi_shadow_classify_tiles_,
-                             ctx_.capabilities.subgroup ? "internal/rt_shadow_classify_tiles.comp.glsl"
-                                                        : "internal/rt_shadow_classify_tiles@NO_SUBGROUP.comp.glsl",
+                             subgroup_select("internal/rt_shadow_classify_tiles.comp.glsl",
+                                             "internal/rt_shadow_classify_tiles@NO_SUBGROUP.comp.glsl"),
                              32);
     success &= init_pipeline(pi_shadow_filter_[0], "internal/rt_shadow_filter@PASS_0.comp.glsl");
     success &= init_pipeline(pi_shadow_filter_[1], "internal/rt_shadow_filter@PASS_1.comp.glsl");
