@@ -4,6 +4,10 @@
 #extension GL_ARB_bindless_texture : enable
 #endif
 
+#define ENABLE_SHEEN 0
+#define ENABLE_CLEARCOAT 0
+#define MIN_SPEC_ROUGHNESS 0.4
+
 #include "_fs_common.glsl"
 #include "rt_common.glsl"
 #include "swrt_common.glsl"

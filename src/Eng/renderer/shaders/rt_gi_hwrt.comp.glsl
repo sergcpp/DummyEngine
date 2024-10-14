@@ -1,6 +1,10 @@
 #version 460
 #extension GL_EXT_ray_query : require
 
+#define ENABLE_SHEEN 0
+#define ENABLE_CLEARCOAT 0
+#define MIN_SPEC_ROUGHNESS 0.4
+
 #include "_fs_common.glsl"
 #include "rt_common.glsl"
 #include "texturing_common.glsl"
