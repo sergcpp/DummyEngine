@@ -1,21 +1,8 @@
 #version 430 core
-#ifndef NO_SUBGROUP
-#extension GL_KHR_shader_subgroup_arithmetic : enable
-#extension GL_KHR_shader_subgroup_basic : enable
-#extension GL_KHR_shader_subgroup_ballot : enable
-#extension GL_KHR_shader_subgroup_shuffle : enable
-#extension GL_KHR_shader_subgroup_vote : enable
-#endif
 
 #include "_cs_common.glsl"
 #include "rt_shadow_debug_interface.h"
 #include "rt_shadow_common.glsl.inl"
-
-#pragma multi_compile _ NO_SUBGROUP
-
-#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP
-#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

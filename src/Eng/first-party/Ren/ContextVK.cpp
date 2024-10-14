@@ -380,6 +380,7 @@ void Ren::Context::CheckDeviceCapabilities() {
     capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_BIT) != 0;
     capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_VOTE_BIT) != 0;
     capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT) != 0;
+    capabilities.subgroup &= (subgroup_props.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT) != 0;
 }
 
 void Ren::Context::BegSingleTimeCommands(CommandBuffer cmd_buf) {

@@ -1,6 +1,6 @@
 #version 430 core
 #ifndef NO_SUBGROUP
-#extension GL_KHR_shader_subgroup_quad : enable
+#extension GL_KHR_shader_subgroup_quad : require
 #endif
 
 #include "_cs_common.glsl"
@@ -8,10 +8,6 @@
 
 #pragma multi_compile _ MIPS_7
 #pragma multi_compile _ NO_SUBGROUP
-
-#if !defined(NO_SUBGROUP) && !defined(GL_KHR_shader_subgroup_quad)
-#define NO_SUBGROUP
-#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -52,7 +48,7 @@ float ReduceQuad(float v) {
     float v3 = subgroupQuadSwapDiagonal(v);
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
-#endif
+#endif // !defined(NO_SUBGROUP)
 
 void WriteDstDepth(int index, ivec2 icoord, float v) {
     imageStore(g_depth_hierarchy[index], icoord, vec4(v));
@@ -95,14 +91,14 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
             // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
             g_shared_depth[x * 2 + y % 2][y * 2] = v;
         }
-#else
+#else // defined(NO_SUBGROUP)
         float v = ReduceQuad(g_shared_depth[x][y]);
         // quad index 0 stores result
         if ((gl_LocalInvocationIndex % 4) == 0) {
             WriteDstDepth(base_level + 1, ivec2(work_group_id * 8) + ivec2(x / 2, y / 2), v);
             g_shared_depth[x + (y / 2) % 2][y] = v;
         }
-#endif
+#endif // defined(NO_SUBGROUP)
         barrier();
     }
     if (levels_total <= base_level + 2) return;
@@ -131,7 +127,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
             // ...
             g_shared_depth[x * 4 + y][y * 4] = v;
         }
-#else
+#else // defined(NO_SUBGROUP)
         if (gl_LocalInvocationIndex < 64) {
             float v = ReduceQuad(g_shared_depth[x * 2 + y % 2][y * 2]);
             // quad index 0 stores result
@@ -140,7 +136,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
                 g_shared_depth[x * 2 + y / 2][y * 2] = v;
             }
         }
-#endif
+#endif // defined(NO_SUBGROUP)
         barrier();
     }
     if (levels_total <= base_level + 3) return;
@@ -160,7 +156,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
             // 0 ...
             g_shared_depth[x + y * 2][0] = v;
         }
-#else
+#else // defined(NO_SUBGROUP)
         if (gl_LocalInvocationIndex < 16) {
             float v = ReduceQuad(g_shared_depth[x * 4 + y][y * 4]);
             // quad index 0 stores result
@@ -169,7 +165,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
                 g_shared_depth[x / 2 + y][0] = v;
             }
         }
-#endif
+#endif // defined(NO_SUBGROUP)
         barrier();
     }
     if (levels_total <= base_level + 4) return;
@@ -181,7 +177,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
             float v = ReduceIntermediate(ivec2(0, 0), ivec2(1, 0), ivec2(2, 0), ivec2(3, 0));
             WriteDstDepth(base_level + 4, ivec2(work_group_id), v);
         }
-#else
+#else // defined(NO_SUBGROUP)
         if (gl_LocalInvocationIndex < 4) {
             float v = ReduceQuad(g_shared_depth[gl_LocalInvocationIndex][0]);
             // quad index 0 stores result
@@ -189,7 +185,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
                 WriteDstDepth(base_level + 4, ivec2(work_group_id), v);
             }
         }
-#endif
+#endif // defined(NO_SUBGROUP)
         barrier();
     }
 }

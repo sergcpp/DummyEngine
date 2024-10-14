@@ -478,7 +478,7 @@ void main() {
                     light_total += light_contribution * LightVisibility(litem, P);
                 }
             } else
-#endif
+#endif // !defined(NO_SUBGROUP)
             {
                 const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
                 const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));

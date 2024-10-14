@@ -95,7 +95,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     // determine compute work group sizes
     for (int i = 0; i < 3; i++) {
-        GLint val;
+        GLint val = 0;
         glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, i, &val);
         capabilities.max_compute_work_group_size[i] = val;
     }
@@ -112,6 +112,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_SHUFFLE_BIT_KHR) != 0;
         capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_VOTE_BIT_KHR) != 0;
         capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_ARITHMETIC_BIT_KHR) != 0;
+        capabilities.subgroup &= (features & GL_SUBGROUP_FEATURE_QUAD_BIT_KHR) != 0;
     }
 
     log_->Info("============================================================================");
