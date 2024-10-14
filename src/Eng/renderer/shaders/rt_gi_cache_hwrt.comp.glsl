@@ -433,13 +433,20 @@ void main() {
             const uint item_data = texelFetch(g_items_buf, int(i)).x;
             const int li = int(bitfieldExtract(item_data, 0, 12));
 
-            light_item_t litem = g_lights[li];
+            const light_item_t litem = g_lights[li];
+
+            const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
             vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                            sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             light_contribution = max(light_contribution, vec3(0.0)); // ???
             if (all(equal(light_contribution, vec3(0.0)))) {
                 continue;
+            }
+            if (is_portal) {
+                // Sample environment to create slight color variation
+                const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).rgb;
             }
 
             int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);

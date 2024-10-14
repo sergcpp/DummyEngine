@@ -113,6 +113,27 @@ vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id, int bounce) {
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
+float LightVisibility(const light_item_t litem, const vec3 P) {
+    int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
+    if (shadowreg_index != -1) {
+        const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
+        shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+        vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+        vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
+        pp /= pp.w;
+
+        pp.xy = pp.xy * 0.5 + 0.5;
+        pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+        #if defined(VULKAN)
+            pp.y = 1.0 - pp.y;
+        #endif // VULKAN
+
+        return SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+    }
+    return 1.0;
+}
+
 void main() {
     uint ray_index = gl_WorkGroupID.x * 64 + gl_LocalInvocationIndex;
     if (ray_index >= g_ray_counter[1]) return;
@@ -384,32 +405,20 @@ void main() {
 
                 const light_item_t litem = g_lights[li];
 
+                const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+
                 vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                            sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 light_contribution = max(light_contribution, vec3(0.0)); // ???
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;
                 }
-
-                int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
-                if (shadowreg_index != -1) {
-                    const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
-                    shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
-                    vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
-
-                    vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
-                    pp /= pp.w;
-
-                    pp.xy = pp.xy * 0.5 + vec2(0.5);
-                    pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
-                    #if defined(VULKAN)
-                        pp.y = 1.0 - pp.y;
-                    #endif // VULKAN
-
-                    light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+                if (is_portal) {
+                    // Sample environment to create slight color variation
+                    const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).rgb;
                 }
-
-                light_total += light_contribution;
+                light_total += light_contribution * LightVisibility(litem, P);
             }
 
             if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {

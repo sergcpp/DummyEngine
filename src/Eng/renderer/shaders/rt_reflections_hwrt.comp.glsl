@@ -465,7 +465,7 @@ void main() {
                     if (!is_diffuse) _lobe_weights.diffuse = 0.0;
                     if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
                     vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                                sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                                                                  sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                     if (all(equal(light_contribution, vec3(0.0)))) {
                         continue;
                     }
@@ -503,7 +503,7 @@ void main() {
                         if (!is_diffuse) _lobe_weights.diffuse = 0.0;
                         if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
                         vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                                    sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                                                                      sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                         if (all(equal(light_contribution, vec3(0.0)))) {
                             continue;
                         }
