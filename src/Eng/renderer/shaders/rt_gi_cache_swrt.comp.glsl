@@ -524,7 +524,7 @@ void main() {
                     pp.y = 1.0 - pp.y;
                 #endif // VULKAN
 
-                light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+                light_contribution *= textureLod(g_shadow_tex, pp.xyz, 0.0);
             }
 
             light_total += light_contribution;
@@ -545,7 +545,7 @@ void main() {
             shadow_uvs.y = 1.0 - shadow_uvs.y;
     #endif // VULKAN
 
-            const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
+            const float sun_visibility = textureLod(g_shadow_tex, shadow_uvs, 0.0);
             if (sun_visibility > 0.0) {
                 light_total += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                                  sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
