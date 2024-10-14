@@ -533,7 +533,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 28.30, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 33.40, NoGI_RTShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 21.30, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 22.75, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", 23.25, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 22.20, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 19.10, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_moon_light", 19.40, Full_Ultra));
@@ -546,8 +546,8 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_hdri", 26.25, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_hdri", 27.60, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_sky", 22.50, MedDiffGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_sky", 21.95, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_sky", 22.35, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_sky", 22.55, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_sky", 23.10, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_mesh_lights", 20.65, MedDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_mesh_lights", 21.20, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_mesh_lights", 22.20, Full_Ultra));
