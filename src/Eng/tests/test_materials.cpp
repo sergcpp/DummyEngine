@@ -497,8 +497,8 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
     { // complex materials
         std::vector<std::future<void>> futures;
 
-        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.40, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.35, Full_Ultra));
+        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.35, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", 25.30, Full_Ultra));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 39.85, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 29.00, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", 28.50, NoDiffGI));

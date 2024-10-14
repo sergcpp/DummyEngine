@@ -119,23 +119,24 @@ layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 float LightVisibility(const light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
-    if (shadowreg_index != -1) {
-        const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
-        shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
-        vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
-
-        vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
-        pp /= pp.w;
-
-        pp.xy = pp.xy * 0.5 + 0.5;
-        pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
-        #if defined(VULKAN)
-            pp.y = 1.0 - pp.y;
-        #endif // VULKAN
-
-        return SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+    if (shadowreg_index == -1) {
+        return 1.0;
     }
-    return 1.0;
+
+    const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
+    shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+    vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+    vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
+    pp /= pp.w;
+
+    pp.xy = pp.xy * 0.5 + 0.5;
+    pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+#if defined(VULKAN)
+    pp.y = 1.0 - pp.y;
+#endif // VULKAN
+
+    return SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
 }
 
 void main() {
