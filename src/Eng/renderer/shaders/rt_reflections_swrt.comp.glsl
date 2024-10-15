@@ -371,7 +371,7 @@ void main() {
             tex_lod += log2(cone_width);
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
             tex_lod -= log2(abs(dot(refl_ray_ws, tri_normal)));
-
+            tex_lod += mix(TEX_LOD_OFFSET_MIN, TEX_LOD_OFFSET_MAX, first_roughness);
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, tex_lod)));
     #else
             // TODO: Fallback to shared texture atlas
