@@ -53,7 +53,6 @@ layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
 };
 
 layout(binding = VTX_BUF1_SLOT) uniform samplerBuffer g_vtx_data0;
-layout(binding = VTX_BUF2_SLOT) uniform usamplerBuffer g_vtx_data1;
 layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 
 layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
@@ -396,6 +395,9 @@ void main() {
         const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
         vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
+        if (backfacing) {
+            tri_normal = -tri_normal;
+        }
         const float pa = length(tri_normal);
         tri_normal /= pa;
 
@@ -413,19 +415,8 @@ void main() {
         float tex_lod = 0.0;
 #endif
 
-        const uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;
-        const uvec2 packed1 = texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).xy;
-        const uvec2 packed2 = texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).xy;
-
-        const vec3 normal0 = vec3(unpackSnorm2x16(packed0.x), unpackSnorm2x16(packed0.y).x);
-        const vec3 normal1 = vec3(unpackSnorm2x16(packed1.x), unpackSnorm2x16(packed1.y).x);
-        const vec3 normal2 = vec3(unpackSnorm2x16(packed2.x), unpackSnorm2x16(packed2.y).x);
-
-        vec3 N = normal0 * (1.0 - inter.u - inter.v) + normal1 * inter.u + normal2 * inter.v;
-        if (backfacing) {
-            N = -N;
-        }
-        N = normalize((world_from_object * vec4(N, 0.0)).xyz);
+        // Use triangle normal for simplicity
+        const vec3 N = tri_normal;
 
         const vec3 P = ro + probe_ray_dir * inter.t;
         const vec3 I = -probe_ray_dir;

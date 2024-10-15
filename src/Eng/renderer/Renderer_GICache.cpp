@@ -30,7 +30,6 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         data->geo_data = rt_gi_cache.AddStorageReadonlyInput(rt_geo_instances_res, stage);
         data->materials = rt_gi_cache.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
         data->vtx_buf1 = rt_gi_cache.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
-        data->vtx_buf2 = rt_gi_cache.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
         data->ndx_buf = rt_gi_cache.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
         data->shared_data = rt_gi_cache.AddUniformBufferInput(common_buffers.shared_data_res, stage);
         data->env_tex = rt_gi_cache.AddTextureInput(env_map, stage);
