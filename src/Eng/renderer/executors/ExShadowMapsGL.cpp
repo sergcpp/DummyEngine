@@ -104,7 +104,6 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
             Ren::RastState rast_state = builder.rast_state();
             rast_state.poly.cull = pi_solid_[pi].rast_state().poly.cull;
             rast_state.ApplyChanged(builder.rast_state());
-            builder.rast_state() = rast_state;
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
                 const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -129,6 +128,8 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
                 j = _draw_range(batch_indices, (*p_list_)->shadow_batches, j, BitFlags[pi], &draw_calls_count);
                 batch_points[i] = j;
             }
+
+            builder.rast_state() = rast_state;
         }
     }
 
@@ -181,7 +182,6 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
             Ren::RastState rast_state = builder.rast_state();
             rast_state.poly.cull = pi_transp_[pi].rast_state().poly.cull;
             rast_state.ApplyChanged(builder.rast_state());
-            builder.rast_state() = rast_state;
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
                 const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -209,6 +209,8 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
                                     BitFlags[pi], cur_mat_id, &draw_calls_count);
                 batch_points[i] = j;
             }
+
+            builder.rast_state() = rast_state;
         }
     }
 
@@ -255,11 +257,13 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
         }
     }*/
 
-    glDisable(GL_SCISSOR_TEST);
-    glPolygonOffset(0.0f, 0.0f);
-    glDisable(GL_POLYGON_OFFSET_FILL);
-    glClearDepthf(1.0f);
+    rast_state.scissor.enabled = false;
+    rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Disabled);
+    rast_state.depth_bias = {};
+    rast_state.ApplyChanged(builder.rast_state());
+    builder.rast_state() = rast_state;
 
+    glClearDepthf(1.0f);
     glBindVertexArray(0);
     Ren::GLUnbindSamplers(0, 1);
 }
