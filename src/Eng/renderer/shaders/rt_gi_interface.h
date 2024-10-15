@@ -12,6 +12,8 @@ struct Params {
     int lights_count;
 };
 
+const float TEX_LOD_OFFSET = 3;
+
 const int TLAS_SLOT = 1;
 const int DEPTH_TEX_SLOT = 2;
 const int NORM_TEX_SLOT = 3;
