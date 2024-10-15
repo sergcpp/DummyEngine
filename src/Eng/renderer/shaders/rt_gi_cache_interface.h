@@ -24,6 +24,8 @@ struct RayPayload {
 
 const int LOCAL_GROUP_SIZE_X = 64;
 
+const float TEX_LOD_OFFSET = 4;
+
 const int TLAS_SLOT = 1;
 const int ENV_TEX_SLOT = 2;
 const int GEO_DATA_BUF_SLOT = 3;

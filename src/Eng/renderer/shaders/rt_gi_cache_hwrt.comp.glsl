@@ -352,6 +352,7 @@ void main() {
         tex_lod += log2(cone_width);
         tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
         tex_lod -= log2(abs(dot(probe_ray_dir, tri_normal)));
+        tex_lod += TEX_LOD_OFFSET;
         vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 
         const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
