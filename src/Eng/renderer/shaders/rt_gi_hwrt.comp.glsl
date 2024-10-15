@@ -62,10 +62,6 @@ layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
     uvec4 g_vtx_data0[];
 };
 
-layout(std430, binding = VTX_BUF2_SLOT) readonly buffer VtxData1 {
-    uvec4 g_vtx_data1[];
-};
-
 layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
     uint g_indices[];
 };
@@ -301,11 +297,11 @@ void main() {
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
             vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
-            float pa = length(tri_normal);
-            tri_normal /= pa;
             if (backfacing) {
                 tri_normal = -tri_normal;
             }
+            float pa = length(tri_normal);
+            tri_normal /= pa;
 
             float cone_width = _cone_width + g_params.pixel_spread_angle * hit_t;
 
@@ -316,18 +312,8 @@ void main() {
             tex_lod += TEX_LOD_OFFSET;
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 
-            const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
-                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
-            const vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x),
-                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
-            const vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x),
-                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
-
-            vec3 N = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
-            if (backfacing) {
-                N = -N;
-            }
-            N = normalize((world_from_object * vec4(N, 0.0)).xyz);
+            // Use triangle normal for simplicity
+            const vec3 N = tri_normal;
 
             const vec3 P = ray_origin_ws.xyz + gi_ray_ws * hit_t;
             const vec3 I = -gi_ray_ws;

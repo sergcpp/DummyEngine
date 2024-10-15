@@ -16,7 +16,6 @@ class ExRTGI final : public FgExecutor {
         FgResRef geo_data;
         FgResRef materials;
         FgResRef vtx_buf1;
-        FgResRef vtx_buf2;
         FgResRef ndx_buf;
         FgResRef shared_data;
         FgResRef depth_tex;

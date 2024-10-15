@@ -16,7 +16,6 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
     FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
     FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(args_->vtx_buf1);
-    FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(args_->vtx_buf2);
     FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
     FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
@@ -70,11 +69,6 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
             ctx.CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RawRGBA32F, 0, vtx_buf1.ref->size());
     }
 
-    if (!vtx_buf2.tbos[0] || vtx_buf2.tbos[0]->params().size != vtx_buf2.ref->size()) {
-        vtx_buf2.tbos[0] = ctx.CreateTexture1D("Vertex Buf 2 TBO", vtx_buf2.ref, Ren::eTexFormat::RawRGBA32UI, 0,
-                                               vtx_buf2.ref->size());
-    }
-
     if (!ndx_buf.tbos[0] || ndx_buf.tbos[0]->params().size != ndx_buf.ref->size()) {
         ndx_buf.tbos[0] =
             ctx.CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::RawR32UI, 0, ndx_buf.ref->size());
@@ -124,7 +118,6 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::SBufRO, RTGI::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::UTBuf, RTGI::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
-        {Ren::eBindTarget::UTBuf, RTGI::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGI::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},

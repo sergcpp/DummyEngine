@@ -429,7 +429,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->geo_data = rt_gi.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_gi.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
             data->vtx_buf1 = rt_gi.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
-            data->vtx_buf2 = rt_gi.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
             data->ndx_buf = rt_gi.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
             data->shared_data = rt_gi.AddUniformBufferInput(common_buffers.shared_data_res, stage);
             data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
