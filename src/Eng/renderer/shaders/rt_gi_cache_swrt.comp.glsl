@@ -129,7 +129,7 @@ void main() {
     { // direct light sampling
         vec3 out_color = vec3(0.0), out_dir = vec3(0.0);
 
-        const uint px_hash = 0;//hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
+        const uint px_hash = g_params.pass_hash;
         const float light_pick_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_PICK, px_hash, ray_index).x;
 
         float pdf_factor;

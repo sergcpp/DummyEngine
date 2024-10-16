@@ -97,6 +97,7 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
     RTGICache::Params uniform_params = {};
     uniform_params.volume_index = view_state_->volume_to_update;
     uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
+    uniform_params.pass_hash = view_state_->probe_ray_hash;
     uniform_params.grid_origin = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].origin[0],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[1],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
@@ -251,6 +252,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     RTGICache::Params uniform_params = {};
     uniform_params.volume_index = view_state_->volume_to_update;
     uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
+    uniform_params.pass_hash = view_state_->probe_ray_hash;
     uniform_params.grid_origin = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].origin[0],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[1],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);

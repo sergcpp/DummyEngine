@@ -8,7 +8,7 @@ INTERFACE_START(RTGICache)
 struct Params {
     int volume_index;
     int stoch_lights_count;
-    int _pad1;
+    uint pass_hash;
     int _pad2;
     vec4 grid_origin;
     ivec4 grid_scroll;

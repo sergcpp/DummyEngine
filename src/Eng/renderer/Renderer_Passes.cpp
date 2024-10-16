@@ -403,6 +403,16 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                     roll = 0.5f;
                 }
 
+                auto hash = [](uint32_t x) {
+                    // finalizer from murmurhash3
+                    x ^= x >> 16;
+                    x *= 0x85ebca6bu;
+                    x ^= x >> 13;
+                    x *= 0xc2b2ae35u;
+                    x ^= x >> 16;
+                    return x;
+                };
+
                 // yaw = rand_.GetNormalizedFloat();
                 // pitch = rand_.GetNormalizedFloat();
                 // yaw = rand_.GetNormalizedFloat();
@@ -412,6 +422,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                 roll *= 2.0f * Ren::Pi<float>();
 
                 view_state_.probe_ray_rotator = Ren::ToQuat(yaw, pitch, roll);
+                view_state_.probe_ray_hash = hash(sample_index % 2);
             }
 
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
