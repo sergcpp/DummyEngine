@@ -8,7 +8,7 @@ INTERFACE_START(HistogramExposure)
 struct Params {
     float min_exposure;
     float max_exposure;
-    float _pad0;
+    float exposure_factor;
     float _pad1;
 };
 

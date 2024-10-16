@@ -2051,6 +2051,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             HistogramExposure::Params uniform_params = {};
             uniform_params.min_exposure = min_exposure_;
             uniform_params.max_exposure = max_exposure_;
+            uniform_params.exposure_factor = (settings.tonemap_mode != Eng::eTonemapMode::Standard) ? 1.25f : 0.5f;
 
             DispatchCompute(pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.log());

@@ -33,7 +33,7 @@ void main() {
     }
 
     const float avg_luma = total.x / max(0.00001, total.y);
-    const float exposure_curr = (1.25 / avg_luma);
+    const float exposure_curr = (g_params.exposure_factor / avg_luma);
     const float exposure_prev = texelFetch(g_exposure_prev, ivec2(0), 0).x;
 
     const float k = (exposure_curr < exposure_prev) ? 0.15 : 0.01;
