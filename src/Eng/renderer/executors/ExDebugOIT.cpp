@@ -2,10 +2,8 @@
 
 #include <Ren/Context.h>
 #include <Ren/DrawCall.h>
-#include <Ren/Texture.h>
 
 #include "../../utils/ShaderLoader.h"
-#include "../Renderer_Structs.h"
 #include "../shaders/oit_debug_interface.h"
 
 void Eng::ExDebugOIT::Execute(FgBuilder &builder) {

@@ -3,7 +3,6 @@
 #include <Ren/Context.h>
 
 #include "../../utils/ShaderLoader.h"
-#include "../Renderer_Structs.h"
 
 void Eng::ExOITDepthPeel::Execute(FgBuilder &builder) {
     FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);

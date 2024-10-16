@@ -1,13 +1,11 @@
 #include "ExDebugRT.h"
 
 #include <Ren/Context.h>
-#include <Ren/GL.h>
 #include <Ren/RastState.h>
 #include <Ren/Texture.h>
 
 #include "../../utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
 
 #include "../shaders/rt_debug_interface.h"
 

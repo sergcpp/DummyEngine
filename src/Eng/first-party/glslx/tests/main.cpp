@@ -29,5 +29,5 @@ int main() {
     test_fixup();
     test_hlsl_writer();
 
-	return g_tests_success ? 0 : -1;
+    return g_tests_success ? 0 : -1;
 }

@@ -5,7 +5,6 @@
 
 #include "../../utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
 #include "../shaders/probe_debug_interface.h"
 
 void Eng::ExDebugProbes::Execute(FgBuilder &builder) {

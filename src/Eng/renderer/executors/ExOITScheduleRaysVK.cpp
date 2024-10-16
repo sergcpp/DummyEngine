@@ -1,14 +1,11 @@
 #include "ExOITScheduleRays.h"
 
-#include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
-
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
-#include "../shaders/blit_oit_depth_interface.h"
+#include "../PrimDraw.h"
 #include "../shaders/oit_schedule_rays_interface.h"
 
 namespace ExSharedInternal {

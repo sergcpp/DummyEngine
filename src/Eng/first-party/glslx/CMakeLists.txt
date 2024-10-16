@@ -9,6 +9,7 @@ if(MSVC)
         set(CMAKE_EXE_LINKER_FLAGS_ASAN "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
     endif()
 else(MSVC)
+    set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)

@@ -4,7 +4,6 @@
 #include <Ren/Span.h>
 
 #include "../../utils/ShaderLoader.h"
-#include "../Renderer_Structs.h"
 
 namespace ExSharedInternal {
 uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,

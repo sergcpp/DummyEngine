@@ -7,7 +7,6 @@
 
 #include "../../utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
 #include "../shaders/rt_gi_interface.h"
 
 void Eng::ExRTGI::Execute_HWRT(FgBuilder &builder) {

@@ -2,13 +2,9 @@
 
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
-#include <Ren/DescriptorPool.h>
 #include <Ren/DrawCall.h>
-#include <Ren/RastState.h>
 #include <Ren/Span.h>
 #include <Ren/VKCtx.h>
-
-#include "../Renderer_Structs.h"
 
 namespace ExSharedInternal {
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,

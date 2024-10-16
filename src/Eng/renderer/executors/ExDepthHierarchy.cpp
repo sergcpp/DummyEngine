@@ -1,7 +1,6 @@
 #include "ExDepthHierarchy.h"
 
 #include <Ren/Context.h>
-#include <Ren/Program.h>
 
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"

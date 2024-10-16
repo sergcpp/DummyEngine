@@ -1,13 +1,10 @@
 #include "ExOITDepthPeel.h"
 
-#include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
-
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
-#include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
+#include "../PrimDraw.h"
 #include "../shaders/depth_peel_interface.h"
 
 namespace ExSharedInternal {

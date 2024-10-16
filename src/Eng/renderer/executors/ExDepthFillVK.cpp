@@ -1,12 +1,8 @@
 #include "ExDepthFill.h"
 
-#include "../Renderer_Structs.h"
-
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
-#include <Ren/DescriptorPool.h>
 #include <Ren/DrawCall.h>
-#include <Ren/RastState.h>
 #include <Ren/Span.h>
 #include <Ren/VKCtx.h>
 

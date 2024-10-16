@@ -1,13 +1,11 @@
 #include "ExOITBlendLayer.h"
 
-#include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
-
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
+#include "../PrimDraw.h"
 #include "../shaders/blit_oit_depth_interface.h"
 #include "../shaders/oit_blend_layer_interface.h"
 

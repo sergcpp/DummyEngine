@@ -2,7 +2,6 @@
 
 #include <Ren/Context.h>
 #include <Ren/RastState.h>
-#include <Ren/Texture.h>
 
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"

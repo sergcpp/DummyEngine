@@ -57,8 +57,7 @@ int main(int argc, char *argv[]) {
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--prepare_assets") == 0) {
-            Sys::ThreadPool prep_threads(4);
-            Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", &prep_threads, &log);
+            // Already done
             return 0;
         } else if ((strcmp(argv[i], "--device") == 0 || strcmp(argv[i], "-d") == 0) && (++i != argc)) {
             device_name = argv[i];

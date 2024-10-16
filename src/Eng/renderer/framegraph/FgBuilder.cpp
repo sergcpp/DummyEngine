@@ -1353,8 +1353,8 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
                     read_in_nodes = &textures_[handle.index].read_in_nodes;
                 }
 
-                for (const fg_node_slot_t i : *read_in_nodes) {
-                    const FgNode *_node = nodes_[i.node_index];
+                for (const fg_node_slot_t slot : *read_in_nodes) {
+                    const FgNode *_node = nodes_[slot.node_index];
                     if (_node != node && _node->visited_) {
                         has_consumers = true;
                         break;
@@ -1365,15 +1365,15 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
                     break;
                 }
 
-                Ren::SmallVectorImpl<fg_node_slot_t> *written_in_nodes = nullptr;
+                Ren::SmallVectorImpl<fg_node_slot_t> *written_in = nullptr;
                 if (handle.type == eFgResType::Buffer) {
-                    written_in_nodes = &buffers_[handle.index].written_in_nodes;
+                    written_in = &buffers_[handle.index].written_in_nodes;
                 } else if (handle.type == eFgResType::Texture) {
-                    written_in_nodes = &textures_[handle.index].written_in_nodes;
+                    written_in = &textures_[handle.index].written_in_nodes;
                 }
 
-                for (const fg_node_slot_t i : *written_in_nodes) {
-                    const FgNode *_node = nodes_[i.node_index];
+                for (const fg_node_slot_t slot : *written_in) {
+                    const FgNode *_node = nodes_[slot.node_index];
                     if (_node != node && node->visited_) {
                         has_consumers = true;
                         break;

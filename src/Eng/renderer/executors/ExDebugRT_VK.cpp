@@ -6,7 +6,6 @@
 
 #include "../../utils/ShaderLoader.h"
 #include "../PrimDraw.h"
-#include "../Renderer_Structs.h"
 #include "../shaders/rt_debug_interface.h"
 
 void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {

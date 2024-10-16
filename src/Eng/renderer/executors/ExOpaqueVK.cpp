@@ -3,11 +3,8 @@
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
 #include <Ren/DescriptorPool.h>
-#include <Ren/RastState.h>
 #include <Ren/Span.h>
 #include <Ren/VKCtx.h>
-
-#include "../Renderer_Structs.h"
 
 namespace ExSharedInternal {
 uint32_t _draw_list_range_full(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
