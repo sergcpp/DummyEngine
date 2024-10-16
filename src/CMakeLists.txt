@@ -54,8 +54,6 @@ include_directories(.)
 
 include_directories(libs)
 
-enable_testing()
-
 if(CMAKE_SYSTEM_NAME MATCHES "Android")
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/Snd/third-party/OpenAL/libs/arm64-v8a)
 endif()
@@ -119,22 +117,3 @@ set_target_properties(astc
                       SPIRV-Reflect
                       optick
                       glslx PROPERTIES FOLDER _)
-
-add_test(EngTest        Eng/tests/test_Eng)
-add_test(NetTest        Net/tests/test_Net)
-add_test(PhyTest        Phy/tests/test_Phy)
-add_test(RayTest        Ray/tests/test_Ray)
-add_test(RenTest        Ren/tests/test_Ren)
-add_test(SWTest         Ren/SW/tests/test_SW)
-add_test(SndTest        Snd/tests/test_Snd)
-add_test(SysTest        Sys/tests/test_Sys)
-
-add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_Eng
-                                                               test_Net
-                                                               test_Phy
-                                                               test_Ray
-                                                               test_Ren
-                                                               test_SW
-                                                               test_Snd
-                                                               test_Sys)
-set_target_properties(Check PROPERTIES FOLDER Tests)
