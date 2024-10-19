@@ -1063,6 +1063,8 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
                 return astnew<ast_bool_constant>(!IVAL(lhs) != !IVAL(rhs));
             case eOperator::logical_or:
                 return astnew<ast_bool_constant>(IVAL(lhs) || IVAL(rhs));
+            case eOperator::bit_or:
+                return astnew<ast_int_constant>(IVAL(lhs) | IVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1106,6 +1108,8 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
                 return astnew<ast_bool_constant>(!UVAL(lhs) != !UVAL(rhs));
             case eOperator::logical_or:
                 return astnew<ast_bool_constant>(UVAL(lhs) || UVAL(rhs));
+            case eOperator::bit_or:
+                return astnew<ast_uint_constant>(UVAL(lhs) | UVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;

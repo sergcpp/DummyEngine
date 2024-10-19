@@ -233,10 +233,13 @@ const std::map<std::string, std::string> g_hlsl_function_mapping = {{"intBitsToF
                                                                     {"atomicMax", "InterlockedMax"},
                                                                     {"atomicExchange", "InterlockedExchange"},
                                                                     {"atomicCompSwap", "InterlockedCompareExchange"},
+                                                                    {"subgroupAll", "WaveActiveAllTrue"},
+                                                                    {"subgroupAny", "WaveActiveAnyTrue"},
                                                                     {"subgroupAdd", "WaveActiveSum"},
                                                                     {"subgroupElect", "WaveIsFirstLane"},
                                                                     {"subgroupExclusiveAdd", "WavePrefixSum"},
-                                                                    {"bitCount", "countbits"}};
+                                                                    {"bitCount", "countbits"},
+                                                                    {"nonuniformEXT", "NonUniformResourceIndex"}};
 } // namespace glslx
 
 void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool nested, std::ostream &out_stream) {
@@ -1068,7 +1071,6 @@ void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expressi
 
 void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, std::ostream &out_stream) {
     bool skip_call = false;
-    skip_call = strcmp(expression->name, "nonuniformEXT") == 0;
 
     bool is_atomic = false;
     for (int i = 0; i < std::size(g_atomic_functions); ++i) {
