@@ -1,16 +1,17 @@
 #if defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
 #include <float.h>
 #include <arm_neon.h>
-
-#ifdef _MSC_VER
-#define force_inline __forceinline
-#else
-#define force_inline __attribute__((always_inline)) inline
-#endif
 #else
 #include <emmintrin.h>
 #include <immintrin.h>
 #include <smmintrin.h>
+#endif
+
+#ifdef _MSC_VER
+#include <intrin.h>
+#define force_inline __forceinline
+#else
+#define force_inline __attribute__((always_inline)) inline
 #endif
 
 #if defined(USE_SSE2)
