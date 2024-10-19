@@ -21,9 +21,6 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
 
     Ren::Context &ctx = builder.ctx();
 
-    std::vector<gpu_bvh_node_t> nodes;
-    std::vector<gpu_mesh_instance_t> mesh_instances;
-
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
     auto &rt_tlas_stage_buf = p_list_->swrt.rt_tlas_nodes_stage_buf[rt_index_];
@@ -41,30 +38,47 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
             memcpy(&new_prim.bbox_max[0], inst.bbox_max_ws, 3 * sizeof(float));
         }
 
+        std::vector<gpu_bvh_node_t> temp_nodes;
         std::vector<uint32_t> mi_indices;
 
         Phy::split_settings_t s;
-        const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, mi_indices);
+        s.oversplit_threshold = -1.0f;
+        s.min_primitives_in_leaf = 1;
+        const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, temp_nodes, mi_indices);
         assert(nodes_count <= MAX_RT_TLAS_NODES);
 
-        for (const uint32_t i : mi_indices) {
+        std::vector<gpu_bvh2_node_t> temp_bvh2_nodes;
+        ConvertToBVH2(temp_nodes, temp_bvh2_nodes);
+
+        for (uint32_t i = 0; i < uint32_t(temp_bvh2_nodes.size()); ++i) {
+            gpu_bvh2_node_t &n = temp_bvh2_nodes[i];
+            if ((n.left_child & BVH2_PRIM_COUNT_BITS) != 0) {
+                n.left_child = (n.left_child & BVH2_PRIM_COUNT_BITS) | mi_indices[n.left_child & BVH2_PRIM_INDEX_BITS];
+            }
+            if ((n.right_child & BVH2_PRIM_COUNT_BITS) != 0) {
+                n.right_child =
+                    (n.right_child & BVH2_PRIM_COUNT_BITS) | mi_indices[n.right_child & BVH2_PRIM_INDEX_BITS];
+            }
+        }
+
+        std::vector<gpu_mesh_instance_t> mesh_instances;
+        mesh_instances.reserve(rt_obj_instances.count);
+        // for (const uint32_t i : mi_indices) {
+        for (int i = 0; i < int(rt_obj_instances.count); ++i) {
             const auto &inst = rt_obj_instances.data[i];
+            const auto *acc = reinterpret_cast<const Ren::AccStructureSW *>(inst.blas_ref);
+            const mesh_t &mesh = rt_meshes_[acc->mesh_index];
             auto &new_mi = mesh_instances.emplace_back();
 
-            memcpy(&new_mi.bbox_min[0], inst.bbox_min_ws, 3 * sizeof(float));
-            memcpy(&new_mi.bbox_max[0], inst.bbox_max_ws, 3 * sizeof(float));
-
-            new_mi.geo_index = inst.geo_index;
             new_mi.visibility = inst.mask;
-
-            const auto *acc = reinterpret_cast<const Ren::AccStructureSW *>(inst.blas_ref);
-            new_mi.mesh_index = acc->mesh_alloc.offset / sizeof(gpu_mesh_t);
+            new_mi.node_index = mesh.node_index;
+            new_mi.vert_index = mesh.vert_index;
+            assert(inst.geo_index <= 0x00ffffff && inst.geo_count <= 0xff);
+            new_mi.geo_index_count = inst.geo_index | (mesh.geo_count << 24);
 
             Ren::Mat4f transform;
             memcpy(&transform[0][0], inst.xform, 12 * sizeof(float));
-
-            // TODO: Optimize this!
-            Ren::Mat4f inv_transform = Inverse(transform);
+            const Ren::Mat4f inv_transform = InverseAffine(transform);
 
             memcpy(&new_mi.inv_transform[0][0], ValuePtr(inv_transform), 12 * sizeof(float));
             memcpy(&new_mi.transform[0][0], ValuePtr(transform), 12 * sizeof(float));
@@ -88,9 +102,9 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
         { // update nodes buf
             uint8_t *stage_mem =
                 rt_tlas_stage_buf->MapRange(ctx.backend_frame() * SWRTTLASNodesBufChunkSize, SWRTTLASNodesBufChunkSize);
-            const uint32_t rt_nodes_mem_size = uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t);
+            const uint32_t rt_nodes_mem_size = uint32_t(temp_bvh2_nodes.size()) * sizeof(gpu_bvh2_node_t);
             if (stage_mem) {
-                memcpy(stage_mem, nodes.data(), rt_nodes_mem_size);
+                memcpy(stage_mem, temp_bvh2_nodes.data(), rt_nodes_mem_size);
                 rt_tlas_stage_buf->Unmap();
             } else {
                 builder.log()->Error("ExBuildAccStructures: Failed to map rt tlas stage buffer!");
@@ -180,4 +194,104 @@ uint32_t Eng::ExBuildAccStructures::PreprocessPrims_SAH(Ren::Span<const Phy::pri
     }
 
     return uint32_t(out_nodes.size() - root_node_index);
+}
+
+// TODO: avoid duplication with SceneManager::ConvertToBVH2
+uint32_t Eng::ExBuildAccStructures::ConvertToBVH2(Ren::Span<const gpu_bvh_node_t> nodes,
+                                                  std::vector<gpu_bvh2_node_t> &out_nodes) {
+    const uint32_t out_index = uint32_t(out_nodes.size());
+
+    if (nodes.size() == 1) {
+        assert((nodes[0].prim_index & LEAF_NODE_BIT) != 0);
+        gpu_bvh2_node_t root_node = {};
+
+        root_node.left_child = nodes[0].prim_index & PRIM_INDEX_BITS;
+        const uint32_t prim_count = std::max(nodes[0].prim_count & PRIM_COUNT_BITS, 2u);
+        assert(prim_count <= 8);
+        root_node.left_child |= (prim_count - 1) << 29;
+        root_node.right_child = root_node.left_child;
+
+        const gpu_bvh_node_t &ch0 = nodes[0];
+
+        root_node.ch_data0[0] = ch0.bbox_min[0];
+        root_node.ch_data0[1] = ch0.bbox_max[0];
+        root_node.ch_data0[2] = ch0.bbox_min[1];
+        root_node.ch_data0[3] = ch0.bbox_max[1];
+        root_node.ch_data2[0] = ch0.bbox_min[2];
+        root_node.ch_data2[1] = ch0.bbox_max[2];
+
+        out_nodes.push_back(root_node);
+
+        return out_index;
+    }
+
+    std::vector<uint32_t> compacted_indices;
+    compacted_indices.resize(nodes.size());
+    uint32_t compacted_count = 0;
+    for (int i = 0; i < int(nodes.size()); ++i) {
+        compacted_indices[i] = compacted_count;
+        if ((nodes[i].prim_index & LEAF_NODE_BIT) == 0) {
+            ++compacted_count;
+        }
+    }
+    out_nodes.reserve(out_nodes.size() + compacted_count);
+
+    const uint32_t offset = uint32_t(out_nodes.size());
+    for (const gpu_bvh_node_t &n : nodes) {
+        gpu_bvh2_node_t new_node = {};
+        new_node.left_child = n.left_child;
+        new_node.right_child = n.right_child & RIGHT_CHILD_BITS;
+        if ((n.prim_index & LEAF_NODE_BIT) == 0) {
+            const gpu_bvh_node_t &ch0 = nodes[new_node.left_child];
+            const gpu_bvh_node_t &ch1 = nodes[new_node.right_child];
+
+            if ((ch0.prim_index & LEAF_NODE_BIT) != 0) {
+                new_node.left_child = ch0.prim_index & PRIM_INDEX_BITS;
+
+                const uint32_t prim_count = std::max(ch0.prim_count & PRIM_COUNT_BITS, 2u);
+                assert(prim_count <= 8);
+                new_node.left_child |= (prim_count - 1) << 29;
+                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) != 0);
+            } else {
+                new_node.left_child = compacted_indices[new_node.left_child];
+                new_node.left_child += offset;
+                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) == 0);
+                assert(new_node.left_child < out_nodes.capacity());
+            }
+            if ((ch1.prim_index & LEAF_NODE_BIT) != 0) {
+                new_node.right_child = ch1.prim_index & PRIM_INDEX_BITS;
+
+                const uint32_t prim_count = std::max(ch1.prim_count & PRIM_COUNT_BITS, 2u);
+                assert(prim_count <= 8);
+                new_node.right_child |= (prim_count - 1) << 29;
+                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) != 0);
+            } else {
+                new_node.right_child = compacted_indices[new_node.right_child];
+                new_node.right_child += offset;
+                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) == 0);
+                assert(new_node.right_child < out_nodes.capacity());
+            }
+
+            new_node.ch_data0[0] = ch0.bbox_min[0];
+            new_node.ch_data0[1] = ch0.bbox_max[0];
+            new_node.ch_data0[2] = ch0.bbox_min[1];
+            new_node.ch_data0[3] = ch0.bbox_max[1];
+
+            new_node.ch_data1[0] = ch1.bbox_min[0];
+            new_node.ch_data1[1] = ch1.bbox_max[0];
+            new_node.ch_data1[2] = ch1.bbox_min[1];
+            new_node.ch_data1[3] = ch1.bbox_max[1];
+
+            new_node.ch_data2[0] = ch0.bbox_min[2];
+            new_node.ch_data2[1] = ch0.bbox_max[2];
+            new_node.ch_data2[2] = ch1.bbox_min[2];
+            new_node.ch_data2[3] = ch1.bbox_max[2];
+
+            out_nodes.push_back(new_node);
+        }
+    }
+
+    assert(out_nodes.size() == out_nodes.capacity());
+
+    return out_index;
 }

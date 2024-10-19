@@ -16,15 +16,22 @@ void Eng::ExSampleLights::Execute(FgBuilder &builder) {
 
 void Eng::ExSampleLights::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized_) {
+        auto subgroup_select = [&ctx](std::string_view subgroup_shader, std::string_view nosubgroup_shader) {
+            return ctx.capabilities.subgroup ? subgroup_shader : nosubgroup_shader;
+        };
+
         if (ctx.capabilities.hwrt) {
-            Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights@HWRT.comp.glsl");
+            Ren::ProgramRef prog =
+                sh.LoadProgram(ctx, subgroup_select("internal/sample_lights@HWRT.comp.glsl",
+                                                    "internal/sample_lights@HWRT;NO_SUBGROUP.comp.glsl"));
             assert(prog->ready());
 
             if (!pi_sample_lights_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
                 ctx.log()->Error("ExSampleLights: Failed to initialize pipeline!");
             }
         } else {
-            Ren::ProgramRef prog = sh.LoadProgram(ctx, "internal/sample_lights.comp.glsl");
+            Ren::ProgramRef prog = sh.LoadProgram(ctx, subgroup_select("internal/sample_lights.comp.glsl",
+                                                                       "internal/sample_lights@NO_SUBGROUP.comp.glsl"));
             assert(prog->ready());
 
             if (!pi_sample_lights_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {

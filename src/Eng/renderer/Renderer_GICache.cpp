@@ -50,7 +50,6 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             data->swrt.rt_blas_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
             data->swrt.prim_ndx_buf =
                 rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
-            data->swrt.meshes_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
             data->swrt.mesh_instances_buf = rt_gi_cache.AddStorageReadonlyInput(rt_obj_instances_res, stage);
 
 #if defined(USE_GL_RENDER)

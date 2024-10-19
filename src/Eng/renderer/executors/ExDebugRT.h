@@ -35,7 +35,6 @@ class ExDebugRT final : public FgExecutor {
             uint32_t root_node;
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
-            FgResRef meshes_buf;
             FgResRef mesh_instances_buf;
             FgResRef rt_tlas_buf;
             FgResRef textures_buf;

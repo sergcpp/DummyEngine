@@ -457,7 +457,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 data->swrt.rt_blas_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx_buf =
                     rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
-                data->swrt.meshes_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
                 data->swrt.mesh_instances_buf = rt_gi.AddStorageReadonlyInput(rt_obj_instances_res, stage);
 #if defined(USE_GL_RENDER)
                 data->swrt.textures_buf = rt_gi.AddStorageReadonlyInput(bindless.textures_buf, stage);
@@ -503,8 +502,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, Stg::ComputeShader);
                 data->swrt.prim_ndx_buf =
                     sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, Stg::ComputeShader);
-                data->swrt.meshes_buf =
-                    sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, Stg::ComputeShader);
                 data->swrt.mesh_instances_buf =
                     sample_lights.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
 #if defined(USE_GL_RENDER)

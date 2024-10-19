@@ -48,9 +48,10 @@ class AccStructureVK : public IAccStructure {
 
 class AccStructureSW : public IAccStructure {
   public:
-    AccStructureSW(SubAllocation _mesh_alloc, SubAllocation _nodes_alloc, SubAllocation _prim_alloc)
-        : mesh_alloc(_mesh_alloc), nodes_alloc(_nodes_alloc), prim_alloc(_prim_alloc) {}
+    AccStructureSW(const uint32_t _mesh_index, const SubAllocation _nodes_alloc, const SubAllocation _prim_alloc)
+        : mesh_index(_mesh_index), nodes_alloc(_nodes_alloc), prim_alloc(_prim_alloc) {}
 
-    SubAllocation mesh_alloc, nodes_alloc, prim_alloc;
+    uint32_t mesh_index;
+    SubAllocation nodes_alloc, prim_alloc;
 };
 } // namespace Ren

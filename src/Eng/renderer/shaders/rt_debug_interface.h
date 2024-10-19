@@ -29,16 +29,15 @@ const int NDX_BUF_SLOT = 7;
 const int BLAS_BUF_SLOT = 8;
 const int TLAS_BUF_SLOT = 9;
 const int PRIM_NDX_BUF_SLOT = 10;
-const int MESHES_BUF_SLOT = 11;
-const int MESH_INSTANCES_BUF_SLOT = 12;
-const int LIGHTS_BUF_SLOT = 13;
-const int IRRADIANCE_TEX_SLOT = 14;
-const int DISTANCE_TEX_SLOT = 15;
-const int OFFSET_TEX_SLOT = 16;
-const int SHADOW_TEX_SLOT = 17;
-const int LTC_LUTS_TEX_SLOT = 18;
-const int CELLS_BUF_SLOT = 19;
-const int ITEMS_BUF_SLOT = 20;
+const int MESH_INSTANCES_BUF_SLOT = 11;
+const int LIGHTS_BUF_SLOT = 12;
+const int IRRADIANCE_TEX_SLOT = 13;
+const int DISTANCE_TEX_SLOT = 14;
+const int OFFSET_TEX_SLOT = 15;
+const int SHADOW_TEX_SLOT = 16;
+const int LTC_LUTS_TEX_SLOT = 17;
+const int CELLS_BUF_SLOT = 18;
+const int ITEMS_BUF_SLOT = 19;
 
 const int OUT_IMG_SLOT = 0;
 

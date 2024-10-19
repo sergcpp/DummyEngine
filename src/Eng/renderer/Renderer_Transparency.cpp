@@ -382,7 +382,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 data->swrt.rt_blas_buf = rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx_buf =
                     rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
-                data->swrt.meshes_buf = rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
                 data->swrt.mesh_instances_buf = rt_refl.AddStorageReadonlyInput(rt_obj_instances_res, stage);
 
 #if defined(USE_GL_RENDER)

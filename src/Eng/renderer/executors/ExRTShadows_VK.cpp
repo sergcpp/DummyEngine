@@ -127,7 +127,6 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.blas_buf);
     FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &meshes_buf = builder.GetReadBuffer(args_->swrt.meshes_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &tile_list_buf = builder.GetReadBuffer(args_->tile_list_buf);
     FgAllocBuf &indir_args_buf = builder.GetReadBuffer(args_->indir_args);
@@ -168,11 +167,6 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
                                 mesh_instances_buf.ref->size());
     }
 
-    if (!meshes_buf.tbos[0] || meshes_buf.tbos[0]->params().size != meshes_buf.ref->size()) {
-        meshes_buf.tbos[0] =
-            ctx.CreateTexture1D("Meshes TBO", meshes_buf.ref, Ren::eTexFormat::RawRG32UI, 0, meshes_buf.ref->size());
-    }
-
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const Ren::Binding bindings[] = {
@@ -185,7 +179,6 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTShadows::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTShadows::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTShadows::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, RTShadows::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTShadows::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTShadows::NDX_BUF_SLOT, *ndx_buf.tbos[0]},

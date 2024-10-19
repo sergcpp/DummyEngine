@@ -5,6 +5,10 @@
 #if !defined(VULKAN)
 #extension GL_ARB_bindless_texture : enable
 #endif
+#if !defined(NO_SUBGROUP)
+#extension GL_KHR_shader_subgroup_vote : require
+#define SWRT_SUBGROUP 1
+#endif
 
 #include "rt_common.glsl"
 #include "swrt_common.glsl"
@@ -41,7 +45,6 @@ layout(binding = VTX_BUF1_SLOT) uniform samplerBuffer g_vtx_data0;
 layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 
 layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
-layout(binding = MESHES_BUF_SLOT) uniform usamplerBuffer g_meshes;
 layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
 
 layout(std430, binding = TILE_LIST_SLOT) readonly buffer TileList {
@@ -103,13 +106,13 @@ void main() {
         hit_data_t inter;
         inter.mask = 0;
         inter.obj_index = inter.prim_index = 0;
-        inter.geo_index = inter.geo_count = 0;
+        inter.geo_index_count = 0;
         inter.t = max_t;
         inter.u = inter.v = 0.0;
 
         int transp_depth = 0;
         while (true) {
-            Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
+            Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
                                     ro, shadow_ray_ws.xyz, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
             if (inter.mask != 0) {
                 if (transp_depth++ < 4) {
@@ -117,8 +120,8 @@ void main() {
                     const bool backfacing = (inter.prim_index < 0);
                     const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
-                    int i = inter.geo_index;
-                    for (; i < inter.geo_index + inter.geo_count; ++i) {
+                    int i = int(inter.geo_index_count & 0x00ffffffu);
+                    for (; i < int(inter.geo_index_count & 0x00ffffffu) + int(inter.geo_index_count >> 24u); ++i) {
                         const int tri_start = int(g_geometries[i].indices_start) / 3;
                         if (tri_start > tri_index) {
                             break;

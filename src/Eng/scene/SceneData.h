@@ -103,6 +103,13 @@ struct bvh_node_t { // NOLINT
 };
 static_assert(sizeof(bvh_node_t) == 36, "!");
 
+struct mesh_t {
+    uint32_t node_index, node_count;
+    uint32_t tris_index, tris_count;
+    uint32_t vert_index, geo_count;
+};
+static_assert(sizeof(mesh_t) == 24, "!");
+
 const int MAX_STACK_SIZE = 64;
 
 struct Environment {
@@ -217,8 +224,8 @@ struct PersistentGpuData {
     struct {
         Ren::BufferRef rt_prim_indices_buf;
         uint32_t rt_root_node = 0;
-        Ren::BufferRef rt_meshes_buf;
         Ren::BufferRef rt_blas_buf;
+        Ren::SparseArray<mesh_t> rt_meshes;
     } swrt;
     uint32_t rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;

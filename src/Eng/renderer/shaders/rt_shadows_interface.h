@@ -28,8 +28,7 @@ const int TILE_LIST_SLOT = 10;
 const int BLAS_BUF_SLOT = 11;
 const int TLAS_BUF_SLOT = 12;
 const int PRIM_NDX_BUF_SLOT = 13;
-const int MESHES_BUF_SLOT = 14;
-const int MESH_INSTANCES_BUF_SLOT = 15;
+const int MESH_INSTANCES_BUF_SLOT = 14;
 
 const int OUT_SHADOW_IMG_SLOT = 0;
 

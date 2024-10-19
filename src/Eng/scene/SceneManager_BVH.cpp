@@ -561,27 +561,22 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     assert(acc.mesh->type() == Ren::eMeshType::Simple);
     const int VertexStride = 13;
 
-    if (!scene_data_.persistent_data.swrt.rt_meshes_buf) {
-        scene_data_.persistent_data.swrt.rt_meshes_buf =
-            ren_ctx_.LoadBuffer("SWRT Meshes", Ren::eBufType::Storage, 16 * sizeof(gpu_mesh_t));
-    }
     if (!scene_data_.persistent_data.swrt.rt_prim_indices_buf) {
         scene_data_.persistent_data.swrt.rt_prim_indices_buf =
             ren_ctx_.LoadBuffer("SWRT Prim Indices", Ren::eBufType::Texture, 1024 * sizeof(uint32_t), sizeof(uint32_t));
     }
     if (!scene_data_.persistent_data.swrt.rt_blas_buf) {
         scene_data_.persistent_data.swrt.rt_blas_buf =
-            ren_ctx_.LoadBuffer("SWRT BLAS", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh_node_t), 16);
+            ren_ctx_.LoadBuffer("SWRT BLAS", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh2_node_t), 16);
     }
 
-    const Ren::SubAllocation mesh_alloc =
-        scene_data_.persistent_data.swrt.rt_meshes_buf->AllocSubRegion(sizeof(gpu_mesh_t), sizeof(gpu_mesh_t), {});
+    const uint32_t mesh_index = scene_data_.persistent_data.swrt.rt_meshes.emplace();
 
     //
     // Gather geometries
     //
 
-    gpu_mesh_t new_mesh = {};
+    mesh_t new_mesh = {};
 
     std::vector<Phy::prim_t> temp_primitives;
     std::vector<uint32_t> temp_indices;
@@ -616,25 +611,46 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
         ++new_mesh.geo_count;
     }
 
-    std::vector<gpu_bvh_node_t> nodes;
+    std::vector<gpu_bvh_node_t> temp_nodes;
     std::vector<uint32_t> prim_indices;
 
     Phy::split_settings_t s;
-    PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
+    s.oversplit_threshold = -1.0f;
+    s.min_primitives_in_leaf = 8;
+    PreprocessPrims_SAH(temp_primitives, s, 2, temp_nodes, prim_indices);
+
+    std::vector<gpu_bvh2_node_t> temp_bvh2_nodes;
+    ConvertToBVH2(temp_nodes, temp_bvh2_nodes);
 
     const Ren::SubAllocation nodes_alloc = scene_data_.persistent_data.swrt.rt_blas_buf->AllocSubRegion(
-        uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t), sizeof(gpu_bvh_node_t), {});
+        uint32_t(temp_bvh2_nodes.size()) * sizeof(gpu_bvh2_node_t), sizeof(gpu_bvh2_node_t), {});
     const Ren::SubAllocation prim_alloc = scene_data_.persistent_data.swrt.rt_prim_indices_buf->AllocSubRegion(
         uint32_t(prim_indices.size()) * sizeof(uint32_t), sizeof(uint32_t), {});
 
-    new_mesh.node_index = nodes_alloc.offset / sizeof(gpu_bvh_node_t);
-    new_mesh.node_count = uint32_t(nodes.size());
+    new_mesh.node_index = nodes_alloc.offset / sizeof(gpu_bvh2_node_t);
+    new_mesh.node_count = uint32_t(temp_bvh2_nodes.size());
     new_mesh.tris_index = prim_alloc.offset / sizeof(uint32_t);
     new_mesh.tris_count = uint32_t(prim_indices.size());
     new_mesh.vert_index = first_vertex;
 
     // offset node indices
-    for (int i = 0; i < int(nodes.size()); ++i) {
+    for (uint32_t i = 0; i < uint32_t(temp_bvh2_nodes.size()); ++i) {
+        gpu_bvh2_node_t &n = temp_bvh2_nodes[i];
+        if ((n.left_child & BVH2_PRIM_COUNT_BITS) == 0) {
+            assert(n.left_child < temp_bvh2_nodes.size());
+            n.left_child += new_mesh.node_index;
+        } else {
+            n.left_child += new_mesh.tris_index;
+        }
+        if ((n.right_child & BVH2_PRIM_COUNT_BITS) == 0) {
+            assert(n.right_child < temp_bvh2_nodes.size());
+            n.right_child += new_mesh.node_index;
+        } else {
+            n.right_child += new_mesh.tris_index;
+        }
+    }
+
+    /*for (int i = 0; i < int(nodes.size()); ++i) {
         gpu_bvh_node_t &n = nodes[i];
         if (n.prim_index & LEAF_NODE_BIT) {
             n.prim_index += new_mesh.tris_index;
@@ -642,28 +658,23 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
             n.left_child += new_mesh.node_index;
             n.right_child += new_mesh.node_index;
         }
-    }
+    }*/
 
     for (int i = 0; i < int(prim_indices.size()); ++i) {
         prim_indices[i] = prim_offset + temp_indices[prim_indices[i]];
     }
 
-    auto new_blas = std::make_unique<Ren::AccStructureSW>(mesh_alloc, nodes_alloc, prim_alloc);
+    scene_data_.persistent_data.swrt.rt_meshes[mesh_index] = new_mesh;
 
-    const auto total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
+    auto new_blas = std::make_unique<Ren::AccStructureSW>(mesh_index, nodes_alloc, prim_alloc);
+
+    const auto total_nodes_size = uint32_t(temp_bvh2_nodes.size() * sizeof(gpu_bvh2_node_t));
     const auto total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
-
-    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Upload", api_ctx, Ren::eBufType::Upload, sizeof(gpu_mesh_t));
-    {
-        uint8_t *rt_meshes_stage = rt_meshes_stage_buf.Map();
-        memcpy(rt_meshes_stage, &new_mesh, sizeof(gpu_mesh_t));
-        rt_meshes_stage_buf.Unmap();
-    }
 
     Ren::Buffer rt_blas_stage_buf("SWRT BLAS Upload", api_ctx, Ren::eBufType::Upload, total_nodes_size);
     {
         uint8_t *rt_blas_stage = rt_blas_stage_buf.Map();
-        memcpy(rt_blas_stage, nodes.data(), total_nodes_size);
+        memcpy(rt_blas_stage, temp_bvh2_nodes.data(), total_nodes_size);
         rt_blas_stage_buf.Unmap();
     }
 
@@ -677,8 +688,6 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
     Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
-    CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_meshes_buf, mesh_alloc.offset,
-                       sizeof(gpu_mesh_t), cmd_buf);
     CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_blas_buf, nodes_alloc.offset,
                        total_nodes_size, cmd_buf);
     CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_prim_indices_buf,
@@ -686,7 +695,6 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
     ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 
-    rt_meshes_stage_buf.FreeImmediate();
     rt_blas_stage_buf.FreeImmediate();
     rt_prim_indices_stage_buf.FreeImmediate();
 
@@ -695,13 +703,13 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
 void Eng::SceneManager::Alloc_SWRT_TLAS() {
     scene_data_.persistent_data.rt_tlas_buf =
-        ren_ctx_.LoadBuffer("TLAS", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
+        ren_ctx_.LoadBuffer("TLAS", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
     scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(
-        "TLAS Shadow", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
+        "TLAS Shadow", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
 }
 
 uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
-                                                std::vector<gpu_bvh_node_t> &out_nodes,
+                                                const int primitive_alignment, std::vector<gpu_bvh_node_t> &out_nodes,
                                                 std::vector<uint32_t> &out_indices) {
     struct prims_coll_t {
         std::vector<uint32_t> indices;
@@ -739,6 +747,9 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
             memcpy(&n.bbox_min[0], &bbox_min[0], 3 * sizeof(float));
             memcpy(&n.bbox_max[0], &bbox_max[0], 3 * sizeof(float));
             out_indices.insert(out_indices.end(), split_data.left_indices.begin(), split_data.left_indices.end());
+            while (out_indices.size() % primitive_alignment) {
+                out_indices.push_back(out_indices.back());
+            }
         } else {
             const auto index = uint32_t(num_nodes);
 
@@ -776,9 +787,9 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
     return uint32_t(out_nodes.size() - root_node_index);
 }
 
-uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
-                                              const uint32_t parent_index,
-                                              std::vector<gpu_light_wbvh_node_t> &out_nodes) {
+uint32_t Eng::SceneManager::ConvertToWBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
+                                            const uint32_t parent_index,
+                                            std::vector<gpu_light_wbvh_node_t> &out_nodes) {
     using namespace SceneManagerInternal;
 
     const gpu_light_bvh_node_t &cur_node = nodes[node_index];
@@ -888,7 +899,7 @@ uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node
 
     for (int i = 0; i < 8; i++) {
         if (sorted_children[i] != 0xffffffff) {
-            new_children[i] = FlattenLightBVH_r(nodes, sorted_children[i], node_index, out_nodes);
+            new_children[i] = ConvertToWBVH_r(nodes, sorted_children[i], node_index, out_nodes);
         } else {
             new_children[i] = 0x7fffffff;
         }
@@ -925,9 +936,9 @@ uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node
     return new_node_index;
 }
 
-uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
-                                              const uint32_t parent_index,
-                                              std::vector<gpu_light_cwbvh_node_t> &out_nodes) {
+uint32_t Eng::SceneManager::ConvertToCWBVH_r(Ren::Span<const gpu_light_bvh_node_t> nodes, const uint32_t node_index,
+                                             const uint32_t parent_index,
+                                             std::vector<gpu_light_cwbvh_node_t> &out_nodes) {
     using namespace SceneManagerInternal;
 
     const gpu_light_bvh_node_t &cur_node = nodes[node_index];
@@ -1055,15 +1066,15 @@ uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node
     uint32_t new_children[8];
     for (int i = 0; i < 8; i++) {
         if (sorted_children[i] != 0xffffffff) {
-            new_children[i] = FlattenLightBVH_r(nodes, sorted_children[i], node_index, out_nodes);
+            new_children[i] = ConvertToCWBVH_r(nodes, sorted_children[i], node_index, out_nodes);
         } else {
             new_children[i] = 0x7fffffff;
         }
     }
 
     gpu_light_cwbvh_node_t &new_node = out_nodes[new_node_index];
-    memcpy(new_node.bbox_min, ValuePtr(all_box_min), 3 * sizeof(float));
-    memcpy(new_node.bbox_max, ValuePtr(all_box_max), 3 * sizeof(float));
+    new_node.bbox_min = all_box_min;
+    new_node.bbox_max = all_box_max;
     memcpy(new_node.child, new_children, sizeof(new_children));
 
     for (int i = 0; i < 8; i++) {
@@ -1105,6 +1116,105 @@ uint32_t Eng::SceneManager::FlattenLightBVH_r(Ren::Span<const gpu_light_bvh_node
     }
 
     return new_node_index;
+}
+
+uint32_t Eng::SceneManager::ConvertToBVH2(Ren::Span<const gpu_bvh_node_t> nodes,
+                                          std::vector<gpu_bvh2_node_t> &out_nodes) {
+    const uint32_t out_index = uint32_t(out_nodes.size());
+
+    if (nodes.size() == 1) {
+        assert((nodes[0].prim_index & LEAF_NODE_BIT) != 0);
+        gpu_bvh2_node_t root_node = {};
+
+        root_node.left_child = nodes[0].prim_index & PRIM_INDEX_BITS;
+        const uint32_t prim_count = std::max(nodes[0].prim_count & PRIM_COUNT_BITS, 2u);
+        assert(prim_count <= 8);
+        root_node.left_child |= (prim_count - 1) << 29;
+        root_node.right_child = root_node.left_child;
+
+        const gpu_bvh_node_t &ch0 = nodes[0];
+
+        root_node.ch_data0[0] = ch0.bbox_min[0];
+        root_node.ch_data0[1] = ch0.bbox_max[0];
+        root_node.ch_data0[2] = ch0.bbox_min[1];
+        root_node.ch_data0[3] = ch0.bbox_max[1];
+        root_node.ch_data2[0] = ch0.bbox_min[2];
+        root_node.ch_data2[1] = ch0.bbox_max[2];
+
+        out_nodes.push_back(root_node);
+
+        return out_index;
+    }
+
+    std::vector<uint32_t> compacted_indices;
+    compacted_indices.resize(nodes.size());
+    uint32_t compacted_count = 0;
+    for (int i = 0; i < int(nodes.size()); ++i) {
+        compacted_indices[i] = compacted_count;
+        if ((nodes[i].prim_index & LEAF_NODE_BIT) == 0) {
+            ++compacted_count;
+        }
+    }
+    out_nodes.reserve(out_nodes.size() + compacted_count);
+
+    const uint32_t offset = uint32_t(out_nodes.size());
+    for (const gpu_bvh_node_t &n : nodes) {
+        gpu_bvh2_node_t new_node = {};
+        new_node.left_child = n.left_child;
+        new_node.right_child = n.right_child & RIGHT_CHILD_BITS;
+        if ((n.prim_index & LEAF_NODE_BIT) == 0) {
+            const gpu_bvh_node_t &ch0 = nodes[new_node.left_child];
+            const gpu_bvh_node_t &ch1 = nodes[new_node.right_child];
+
+            if ((ch0.prim_index & LEAF_NODE_BIT) != 0) {
+                new_node.left_child = ch0.prim_index & PRIM_INDEX_BITS;
+
+                const uint32_t prim_count = std::max(ch0.prim_count & PRIM_COUNT_BITS, 2u);
+                assert(prim_count <= 8);
+                new_node.left_child |= (prim_count - 1) << 29;
+                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) != 0);
+            } else {
+                new_node.left_child = compacted_indices[new_node.left_child];
+                new_node.left_child += offset;
+                assert((new_node.left_child & BVH2_PRIM_COUNT_BITS) == 0);
+                assert(new_node.left_child < out_nodes.capacity());
+            }
+            if ((ch1.prim_index & LEAF_NODE_BIT) != 0) {
+                new_node.right_child = ch1.prim_index & PRIM_INDEX_BITS;
+
+                const uint32_t prim_count = std::max(ch1.prim_count & PRIM_COUNT_BITS, 2u);
+                assert(prim_count <= 8);
+                new_node.right_child |= (prim_count - 1) << 29;
+                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) != 0);
+            } else {
+                new_node.right_child = compacted_indices[new_node.right_child];
+                new_node.right_child += offset;
+                assert((new_node.right_child & BVH2_PRIM_COUNT_BITS) == 0);
+                assert(new_node.right_child < out_nodes.capacity());
+            }
+
+            new_node.ch_data0[0] = ch0.bbox_min[0];
+            new_node.ch_data0[1] = ch0.bbox_max[0];
+            new_node.ch_data0[2] = ch0.bbox_min[1];
+            new_node.ch_data0[3] = ch0.bbox_max[1];
+
+            new_node.ch_data1[0] = ch1.bbox_min[0];
+            new_node.ch_data1[1] = ch1.bbox_max[0];
+            new_node.ch_data1[2] = ch1.bbox_min[1];
+            new_node.ch_data1[3] = ch1.bbox_max[1];
+
+            new_node.ch_data2[0] = ch0.bbox_min[2];
+            new_node.ch_data2[1] = ch0.bbox_max[2];
+            new_node.ch_data2[2] = ch1.bbox_min[2];
+            new_node.ch_data2[3] = ch1.bbox_max[2];
+
+            out_nodes.push_back(new_node);
+        }
+    }
+
+    assert(out_nodes.size() == out_nodes.capacity());
+
+    return out_index;
 }
 
 void Eng::SceneManager::RebuildLightTree() {
@@ -1241,7 +1351,7 @@ void Eng::SceneManager::RebuildLightTree() {
         Phy::split_settings_t s;
         s.oversplit_threshold = -1.0f;
         s.min_primitives_in_leaf = 1;
-        PreprocessPrims_SAH(temp_primitives, s, temp_nodes, prim_indices);
+        PreprocessPrims_SAH(temp_primitives, s, 1, temp_nodes, prim_indices);
 
         // convert to light nodes
         std::vector<gpu_light_bvh_node_t> light_nodes(temp_nodes.size(), gpu_light_bvh_node_t{});
@@ -1332,7 +1442,7 @@ void Eng::SceneManager::RebuildLightTree() {
         }
 
         // Flatten to 8-wide BVH
-        [[maybe_unused]] const uint32_t root_node = FlattenLightBVH_r(light_nodes, 0, 0xffffffff, light_wnodes);
+        [[maybe_unused]] const uint32_t root_node = ConvertToCWBVH_r(light_nodes, 0, 0xffffffff, light_wnodes);
         assert(root_node == 0);
 
         // Collapse leaf level (all leaves have only 1 light)

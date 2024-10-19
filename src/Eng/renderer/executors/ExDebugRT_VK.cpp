@@ -95,7 +95,6 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
     FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->swrt.rt_tlas_buf);
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &meshes_buf = builder.GetReadBuffer(args_->swrt.meshes_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
     FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
@@ -153,11 +152,6 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
                                 mesh_instances_buf.ref->size());
     }
 
-    if (!meshes_buf.tbos[0] || meshes_buf.tbos[0]->params().size != meshes_buf.ref->size()) {
-        meshes_buf.tbos[0] =
-            ctx.CreateTexture1D("Meshes TBO", meshes_buf.ref, Ren::eTexFormat::RawRG32UI, 0, meshes_buf.ref->size());
-    }
-
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
@@ -168,7 +162,6 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTDebug::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTDebug::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTDebug::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::ENV_TEX_SLOT, *env_tex.ref},

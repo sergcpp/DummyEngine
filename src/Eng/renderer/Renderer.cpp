@@ -763,8 +763,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 rt_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("TLAS Scratch Buf", desc);
             }
 
-            build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 0, rt_obj_instances_res, &acc_struct_data,
-                                                                  rt_tlas_res, rt_tlas_build_scratch_res);
+            build_acc_structs.make_executor<ExBuildAccStructures>(
+                p_list_, 0, rt_obj_instances_res, &acc_struct_data,
+                Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
+                                        persistent_data.swrt.rt_meshes.capacity()},
+                rt_tlas_res, rt_tlas_build_scratch_res);
         } else if (ctx_.capabilities.swrt && acc_struct_data.rt_tlas_buf) {
             auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
@@ -790,8 +793,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef rt_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf);
 
-            build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 0, rt_obj_instances_res, &acc_struct_data,
-                                                                  rt_tlas_res, FgResRef{});
+            build_acc_structs.make_executor<ExBuildAccStructures>(
+                p_list_, 0, rt_obj_instances_res, &acc_struct_data,
+                Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
+                                        persistent_data.swrt.rt_meshes.capacity()},
+                rt_tlas_res, FgResRef{});
         }
 
         if (deferred_shading && list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
@@ -832,9 +838,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     rt_sh_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("SH TLAS Scratch Buf", desc);
                 }
 
-                build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 1, rt_sh_obj_instances_res,
-                                                                      &acc_struct_data, rt_sh_tlas_res,
-                                                                      rt_sh_tlas_build_scratch_res);
+                build_acc_structs.make_executor<ExBuildAccStructures>(
+                    p_list_, 1, rt_sh_obj_instances_res, &acc_struct_data,
+                    Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
+                                            persistent_data.swrt.rt_meshes.capacity()},
+                    rt_sh_tlas_res, rt_sh_tlas_build_scratch_res);
             } else if (ctx_.capabilities.swrt && acc_struct_data.rt_sh_tlas_buf) {
                 auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
@@ -860,8 +868,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
                 FgResRef rt_sh_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_sh_tlas_buf);
 
-                build_acc_structs.make_executor<ExBuildAccStructures>(p_list_, 1, rt_sh_obj_instances_res,
-                                                                      &acc_struct_data, rt_sh_tlas_res, FgResRef{});
+                build_acc_structs.make_executor<ExBuildAccStructures>(
+                    p_list_, 1, rt_sh_obj_instances_res, &acc_struct_data,
+                    Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
+                                            persistent_data.swrt.rt_meshes.capacity()},
+                    rt_sh_tlas_res, FgResRef{});
             }
         }
 
@@ -1183,7 +1194,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 data->swrt.rt_blas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stages);
                 data->swrt.prim_ndx_buf =
                     debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stages);
-                data->swrt.meshes_buf = debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stages);
                 data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(rt_obj_instances_res, stages);
                 data->swrt.rt_tlas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_tlas_buf, stages);
 

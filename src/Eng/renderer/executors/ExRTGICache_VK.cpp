@@ -133,7 +133,6 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
     FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
-    FgAllocBuf &meshes_buf = builder.GetReadBuffer(args_->swrt.meshes_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
     FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
@@ -199,11 +198,6 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
                                 mesh_instances_buf.ref->size());
     }
 
-    if (!meshes_buf.tbos[0] || meshes_buf.tbos[0]->params().size != meshes_buf.ref->size()) {
-        meshes_buf.tbos[0] =
-            ctx.CreateTexture1D("Meshes TBO", meshes_buf.ref, Ren::eTexFormat::RawRG32UI, 0, meshes_buf.ref->size());
-    }
-
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     Ren::SmallVector<Ren::Binding, 16> bindings = {
@@ -212,7 +206,6 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTGICache::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGICache::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGICache::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, RTGICache::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGICache::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTGICache::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGICache::MATERIAL_BUF_SLOT, *materials_buf.ref},

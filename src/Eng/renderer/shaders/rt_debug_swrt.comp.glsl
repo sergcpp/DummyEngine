@@ -39,7 +39,6 @@ layout(binding = VTX_BUF2_SLOT) uniform usamplerBuffer g_vtx_data1;
 layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 
 layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
-layout(binding = MESHES_BUF_SLOT) uniform usamplerBuffer g_meshes;
 layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
 
 layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
@@ -101,21 +100,21 @@ void main() {
     hit_data_t inter;
     inter.mask = 0;
     inter.obj_index = inter.prim_index = 0;
-    inter.geo_index = inter.geo_count = 0;
+    inter.geo_index_count = 0;
     inter.t = MAX_DIST;
     inter.u = inter.v = 0.0;
 
     int transp_depth = 0;
     while (transp_depth++ < 4) {
-        Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0,
+        Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0,
                                 g_vtx_indices, g_prim_indices, origin.xyz, direction.xyz, inv_d, (1u << RAY_TYPE_CAMERA), 0 /* root_node */, inter);
         if (inter.mask != 0) {
             // perform alpha test
             const bool backfacing = (inter.prim_index < 0);
             const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
-            int i = inter.geo_index;
-            for (; i < inter.geo_index + inter.geo_count; ++i) {
+            int i = int(inter.geo_index_count & 0x00ffffffu);
+            for (; i < int(inter.geo_index_count & 0x00ffffffu) + int((inter.geo_index_count >> 24) & 0xffu); ++i) {
                 const int tri_start = int(g_geometries[i].indices_start) / 3;
                 if (tri_start > tri_index) {
                     break;
@@ -193,8 +192,8 @@ void main() {
         const bool backfacing = (inter.prim_index < 0);
         const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
-        int i = inter.geo_index;
-        for (; i < inter.geo_index + inter.geo_count; ++i) {
+        int i = int(inter.geo_index_count & 0x00ffffffu);
+        for (; i < int(inter.geo_index_count & 0x00ffffffu) + int((inter.geo_index_count >> 24) & 0xffu); ++i) {
             int tri_start = int(g_geometries[i].indices_start) / 3;
             if (tri_start > tri_index) {
                 break;
@@ -221,9 +220,9 @@ void main() {
 
         vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 #if defined(BINDLESS_TEXTURES)
-        mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
-                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
-                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5))));
+        mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 1)),
+                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
+                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3))));
         vec3 direction_obj_space = (inv_transform * vec4(direction.xyz, 0.0)).xyz;
 
         vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), 0).xy;
@@ -259,9 +258,9 @@ void main() {
         if (backfacing) {
             N = -N;
         }
-        const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
-                                                    texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
-                                                    texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
+        const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
+                                                  texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),
+                                                  texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6))));
         N = normalize((transform * vec4(N, 0.0)).xyz);
 
         const vec3 P = origin.xyz + direction.xyz * inter.t;

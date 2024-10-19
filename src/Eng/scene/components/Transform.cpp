@@ -21,7 +21,7 @@ void Eng::Transform::UpdateBBox() {
     }
 }
 
-void Eng::Transform::UpdateInvMatrix() { object_from_world = Inverse(world_from_object); }
+void Eng::Transform::UpdateInvMatrix() { object_from_world = InverseAffine(world_from_object); }
 
 void Eng::Transform::Read(const JsObjectP &js_in, Transform &tr) {
     tr.world_from_object = Ren::Mat4f{1.0f};

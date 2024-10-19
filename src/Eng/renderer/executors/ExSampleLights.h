@@ -34,7 +34,6 @@ class ExSampleLights final : public FgExecutor {
             uint32_t root_node = 0xffffffff;
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
-            FgResRef meshes_buf;
             FgResRef mesh_instances_buf;
             FgResRef textures_buf;
         } swrt;

@@ -458,6 +458,9 @@ const uint32_t SEP_AXIS_BITS = (0b11u << 30);
 const uint32_t PRIM_COUNT_BITS = ~SEP_AXIS_BITS;
 const uint32_t RIGHT_CHILD_BITS = ~SEP_AXIS_BITS;
 
+const uint32_t BVH2_PRIM_COUNT_BITS = (7u << 29); // 0b111u
+const uint32_t BVH2_PRIM_INDEX_BITS = ~BVH2_PRIM_COUNT_BITS;
+
 struct gpu_bvh_node_t { // NOLINT
     Ren::Vec3f bbox_min;
     union {
@@ -471,6 +474,17 @@ struct gpu_bvh_node_t { // NOLINT
     };
 };
 static_assert(sizeof(gpu_bvh_node_t) == 32, "!");
+
+struct gpu_bvh2_node_t {
+    Ren::Vec4f ch_data0;  // [ ch0.min.x, ch0.max.x, ch0.min.y, ch0.max.y ]
+    Ren::Vec4f ch_data1;  // [ ch1.min.x, ch1.max.x, ch1.min.y, ch1.max.y ]
+    Ren::Vec4f ch_data2;  // [ ch0.min.z, ch0.max.z, ch1.min.z, ch1.max.z ]
+    uint32_t left_child;  // First three bits identify primitive count in leaf nodes
+    uint32_t right_child; // First three bits identify primitive count in leaf nodes
+    uint32_t _unused0, _unused1;
+};
+static_assert(sizeof(gpu_bvh2_node_t) == 64, "!");
+static_assert(sizeof(gpu_bvh2_node_t) == BVH2_NODE_BUF_STRIDE * 4 * sizeof(float), "!");
 
 struct alignas(32) gpu_wbvh_node_t {
     float bbox_min[3][8];
@@ -495,9 +509,9 @@ struct gpu_light_wbvh_node_t : public gpu_wbvh_node_t {
 static_assert(sizeof(gpu_light_wbvh_node_t) == 320, "!");
 
 struct gpu_cwbvh_node_t {
-    float bbox_min[3];
+    Ren::Vec3f bbox_min;
     float _unused0;
-    float bbox_max[3];
+    Ren::Vec3f bbox_max;
     float _unused1;
     uint8_t ch_bbox_min[3][8];
     uint8_t ch_bbox_max[3][8];
@@ -512,26 +526,16 @@ struct gpu_light_cwbvh_node_t : public gpu_cwbvh_node_t {
 };
 static_assert(sizeof(gpu_light_cwbvh_node_t) == 208, "!");
 
-struct gpu_mesh_t {
-    uint32_t node_index, node_count;
-    uint32_t tris_index, tris_count;
-    uint32_t vert_index, geo_count;
-};
-static_assert(sizeof(gpu_mesh_t) == 24, "!");
-static_assert(sizeof(gpu_mesh_t) == MESH_BUF_STRIDE * 2 * sizeof(float), "!");
-
 struct gpu_mesh_instance_t {
-    Ren::Vec3f bbox_min;
-    uint32_t geo_index;
-    Ren::Vec3f bbox_max;
-    uint32_t mesh_index;
     uint32_t visibility;
-    uint32_t _unused[3];
+    uint32_t node_index;
+    uint32_t vert_index;
+    uint32_t geo_index_count;
     // TODO: this can be optimized
     Ren::Mat3x4f inv_transform;
     Ren::Mat3x4f transform;
 };
-static_assert(sizeof(gpu_mesh_instance_t) == 32 + 48 + 48 + 16, "!");
+static_assert(sizeof(gpu_mesh_instance_t) == 112, "!");
 static_assert(sizeof(gpu_mesh_instance_t) == MESH_INSTANCE_BUF_STRIDE * 4 * sizeof(float), "!");
 
 const size_t sizeof_VkAccelerationStructureInstanceKHR = 64;
@@ -549,7 +553,7 @@ const size_t ItemsBufChunkSize = sizeof(ItemData) * MAX_ITEMS_TOTAL;
 const size_t RTGeoInstancesBufChunkSize = sizeof(RTGeoInstance) * MAX_RT_GEO_INSTANCES;
 const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES;
 const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT_OBJ_INSTANCES;
-const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * MAX_RT_TLAS_NODES;
+const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh2_node_t) * MAX_RT_TLAS_NODES;
 const size_t SharedDataBlockSize = 12 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");
