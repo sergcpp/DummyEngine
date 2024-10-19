@@ -26,7 +26,7 @@ template <typename T, int N> class Vec {
     force_inline explicit Vec(eUninitialized) noexcept {}
     force_inline Vec() noexcept : data_{(T)0} {}
     force_inline Vec(const T v) noexcept {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             data_[i] = v;
         }
     }
@@ -37,16 +37,16 @@ template <typename T, int N> class Vec {
 
     template <typename S, int M> force_inline explicit Vec(const Vec<S, M> &rhs) noexcept {
         const int count = N < M ? N : M;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < count; ++i) {
             data_[i] = (T)rhs[i];
         }
-        for (int i = count; i < N; i++) {
+        for (int i = count; i < N; ++i) {
             data_[i] = T(0);
         }
     }
 
     template <typename S> force_inline explicit Vec(const Vec<S, N> &rhs) noexcept {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             data_[i] = (T)rhs[i];
         }
     }
@@ -55,7 +55,7 @@ template <typename T, int N> class Vec {
     force_inline const T &operator[](const int i) const { return data_[i]; }
 
     force_inline friend bool operator==(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             if (lhs[i] != rhs[i]) {
                 return false;
             }
@@ -65,7 +65,7 @@ template <typename T, int N> class Vec {
 
     force_inline friend Vec<T, N> operator-(const Vec<T, N> &v) {
         auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             res.data_[i] = -v.data_[i];
         }
         return res;
@@ -74,25 +74,25 @@ template <typename T, int N> class Vec {
     force_inline friend Vec<T, N> operator+(const Vec<T, N> &v) { return v; }
 
     force_inline Vec<T, N> &operator+=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             data_[i] += rhs.data_[i];
         }
         return *this;
     }
     force_inline Vec<T, N> &operator-=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             data_[i] -= rhs.data_[i];
         }
         return *this;
     }
     force_inline Vec<T, N> &operator*=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             data_[i] *= rhs.data_[i];
         }
         return *this;
     }
     force_inline Vec<T, N> &operator/=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; ++i) {
             data_[i] /= rhs.data_[i];
         }
         return *this;
@@ -101,7 +101,7 @@ template <typename T, int N> class Vec {
 #define DEFINE_ARITHMETIC_OPERATOR(OP)                                                                                 \
     force_inline friend Vec<T, N> operator OP(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {                            \
         auto res = Vec<T, N>{Uninitialize};                                                                            \
-        for (int i = 0; i < N; i++) {                                                                                  \
+        for (int i = 0; i < N; ++i) {                                                                                  \
             res.data_[i] = lhs.data_[i] OP rhs.data_[i];                                                               \
         }                                                                                                              \
         return res;                                                                                                    \
@@ -122,7 +122,7 @@ template <typename T, int N> force_inline bool operator!=(const Vec<T, N> &lhs, 
 
 template <typename T, int N> force_inline T Dot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
     T res = lhs[0] * rhs[0];
-    for (int i = 1; i < N; i++) {
+    for (int i = 1; i < N; ++i) {
         res += lhs[i] * rhs[i];
     }
     return res;
@@ -154,7 +154,7 @@ template <typename T, int N> force_inline Vec<T, N> Normalize(const Vec<T, N> &v
 
 template <typename T, int N> force_inline Vec<T, N> Min(const Vec<T, N> &v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = v1[i] < v2[i] ? v1[i] : v2[i];
     }
     return ret;
@@ -162,7 +162,7 @@ template <typename T, int N> force_inline Vec<T, N> Min(const Vec<T, N> &v1, con
 
 template <typename T, int N> force_inline Vec<T, N> Min(const Vec<T, N> &v1, const T v2) {
     Vec<T, N> ret(Uninitialize);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = v1[i] < v2 ? v1[i] : v2;
     }
     return ret;
@@ -170,7 +170,7 @@ template <typename T, int N> force_inline Vec<T, N> Min(const Vec<T, N> &v1, con
 
 template <typename T, int N> force_inline Vec<T, N> Min(const T v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = v1 < v2[i] ? v1 : v2[i];
     }
     return ret;
@@ -180,7 +180,7 @@ template <typename T> force_inline T Min(const T v1, const T v2) { return v1 < v
 
 template <typename T, int N> force_inline Vec<T, N> Abs(const Vec<T, N> &v) {
     Vec<T, N> ret(Uninitialize);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = std::abs(v[i]);
     }
     return ret;
@@ -188,7 +188,7 @@ template <typename T, int N> force_inline Vec<T, N> Abs(const Vec<T, N> &v) {
 
 template <typename T, int N> force_inline Vec<T, N> Max(const Vec<T, N> &v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = v1[i] < v2[i] ? v2[i] : v1[i];
     }
     return ret;
@@ -196,7 +196,7 @@ template <typename T, int N> force_inline Vec<T, N> Max(const Vec<T, N> &v1, con
 
 template <typename T, int N> force_inline Vec<T, N> Max(const Vec<T, N> &v1, const T v2) {
     Vec<T, N> ret(Uninitialize);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = v1[i] < v2 ? v2 : v1[i];
     }
     return ret;
@@ -204,7 +204,7 @@ template <typename T, int N> force_inline Vec<T, N> Max(const Vec<T, N> &v1, con
 
 template <typename T, int N> force_inline Vec<T, N> Max(const T v1, const Vec<T, N> &v2) {
     Vec<T, N> ret(Uninitialize);
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = v1 < v2[i] ? v2[i] : v1;
     }
     return ret;
@@ -224,7 +224,7 @@ template <typename T, typename S> force_inline T Mix(const T &x, const T &y, con
 
 template <typename T, int N> force_inline Vec<T, N> Floor(const Vec<T, N> &v) {
     Vec<T, N> ret;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = std::floor(v[i]);
     }
     return ret;
@@ -232,8 +232,8 @@ template <typename T, int N> force_inline Vec<T, N> Floor(const Vec<T, N> &v) {
 
 template <typename T, int N> force_inline Vec<T, N> AbsFloor(const Vec<T, N> &v) {
     Vec<T, N> ret;
-    for (int i = 0; i < N; i++) {
-        if (ret[i] > T(0)) {
+    for (int i = 0; i < N; ++i) {
+        if (ret[i] > 0) {
             ret[i] = std::floor(v[i]);
         } else {
             ret[i] = std::ceil(v[i]);
@@ -244,7 +244,7 @@ template <typename T, int N> force_inline Vec<T, N> AbsFloor(const Vec<T, N> &v)
 
 template <typename T, int N> force_inline Vec<T, N> Ceil(const Vec<T, N> &v) {
     Vec<T, N> ret;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = std::ceil(v[i]);
     }
     return ret;
@@ -252,7 +252,7 @@ template <typename T, int N> force_inline Vec<T, N> Ceil(const Vec<T, N> &v) {
 
 template <typename T, int N> force_inline Vec<T, N> Fract(const Vec<T, N> &v) {
     Vec<T, N> ret;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         [[maybe_unused]] T integral_part;
         ret[i] = std::modf(v[i], &integral_part);
     }
@@ -265,7 +265,7 @@ template <typename T, int N> force_inline Vec<T, N> Mod(const Vec<T, N> &x, cons
 
 template <typename T, int N> force_inline Vec<T, N> Step(const Vec<T, N> &x, const Vec<T, N> &edge) {
     Vec<T, N> ret;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; ++i) {
         ret[i] = x[i] < edge[i] ? T(0) : T(1);
     }
     return ret;

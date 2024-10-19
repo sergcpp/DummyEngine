@@ -98,7 +98,7 @@ template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
     }
 
     force_inline friend Mat<T, M, N> operator-(const Mat<T, M, N> &v) {
-        Mat<T, M, N> res = {Uninitialize};
+        auto res = Mat<T, M, N>{Uninitialize};
         for (int i = 0; i < M; i++) {
             res.data_[i] = -v.data_[i];
         }

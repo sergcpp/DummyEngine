@@ -54,8 +54,8 @@ union DepthState {
     uint8_t bits;
 
     DepthState()
-        : test_enabled(0), write_enabled(1), compare_op(uint8_t(eCompareOp::Always)),
-          range_mode(uint8_t(eDepthRangeMode::ZeroToOne)) {}
+        : test_enabled(0), write_enabled(1), range_mode(uint8_t(eDepthRangeMode::ZeroToOne)),
+          compare_op(uint8_t(eCompareOp::Always)) {}
 };
 static_assert(sizeof(DepthState) == 1, "!");
 
