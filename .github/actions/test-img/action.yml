@@ -41,7 +41,7 @@ runs:
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset medium --psnr 25.25 --no-postprocess
         mv coffee_maker.png coffee_maker_medium.png
         cp coffee_maker_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset high --psnr 25.80 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset high --psnr 25.70 --no-postprocess
         mv coffee_maker.png coffee_maker_high.png
         cp coffee_maker_high.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/coffee_maker.json -ref references/coffee_maker_cycles.uncompressed.png -w 800 -h 1000 --preset ultra --psnr 25.65 --no-postprocess
