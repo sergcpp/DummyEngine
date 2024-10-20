@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = swrt_optimization
-	commit = 5ba20298e287b53c23af9c6c8fb00aca0b7d891c
+	branch = fixes_20_10
+	commit = 1f7a51bebdfad595050af54d09979408a405bfda
 	method = merge
 	cmdver = 0.4.6
-	parent = d7f30bea9dbb1b3ef68ef7607b01a81b257632e3
+	parent = 4a0d90a9bd5ec6d014b626c478aa82d37dbeb85f
