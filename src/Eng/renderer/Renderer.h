@@ -227,7 +227,7 @@ class Renderer {
     // SSR Denoiser stuff
     Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
     // GI Cache
-    Ren::Pipeline pi_probe_blend_[3], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_;
+    Ren::Pipeline pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[3], pi_probe_sample_;
     // GTAO
     Ren::Pipeline pi_gtao_main_, pi_gtao_filter_, pi_gtao_accumulate_;
     // GI

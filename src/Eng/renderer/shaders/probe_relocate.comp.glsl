@@ -5,7 +5,12 @@
 
 #include "probe_relocate_interface.h"
 
+#pragma multi_compile _ PARTIAL
 #pragma multi_compile _ RESET
+
+#if defined(RESET) && defined(PARTIAL)
+    #pragma dont_compile
+#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -19,7 +24,7 @@ layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) i
 
 void main() {
     const int probe_index = int(gl_GlobalInvocationID.x);
-    if (probe_index >= PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES) {
+    if (probe_index >= PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z) {
         return;
     }
 
@@ -28,7 +33,17 @@ void main() {
 
 #ifdef RESET
     offset.xyz = vec3(0.0);
-#else
+#else // RESET
+
+#ifdef PARTIAL
+    const bool is_scrolling_plane_probe = IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz);
+    const ivec3 oct_index = get_probe_coords(probe_index) & 1;
+    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1) | (oct_index.z << 2)) != g_params.oct_index;
+    if (!is_scrolling_plane_probe && is_wrong_oct) {
+        return;
+    }
+#endif // PARTIAL
+
     int closest_back_index = -1, closest_front_index = -1, farthest_front_index = -1;
     float closest_back_dist = 1e27, closest_front_dist = 1e27, farthest_front_dist = 0.0;
     float backface_count = 0.0;
@@ -78,6 +93,6 @@ void main() {
     if (dot(normalized_offset, normalized_offset) < 0.45 * 0.45) {
         offset.xyz = full_offset;
     }
-#endif
+#endif // RESET
     imageStore(g_out_img, output_coords, offset);
 }

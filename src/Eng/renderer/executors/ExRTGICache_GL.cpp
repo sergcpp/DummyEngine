@@ -122,6 +122,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     uniform_params.volume_index = view_state_->volume_to_update;
     uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
     uniform_params.pass_hash = view_state_->probe_ray_hash;
+    uniform_params.oct_index = (args_->probe_volumes[view_state_->volume_to_update].updates_count - 1) % 8;
     uniform_params.grid_origin = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].origin[0],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[1],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
@@ -137,8 +138,8 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
                                              args_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
-    DispatchCompute(pi_rt_gi_cache_[stoch_lights_buf != nullptr],
+    DispatchCompute(pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update],
                     Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
-                               PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES},
+                               PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y},
                     bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(), ctx.log());
 }

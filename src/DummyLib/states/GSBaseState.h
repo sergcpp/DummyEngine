@@ -69,6 +69,7 @@ class GSBaseState : public Eng::ViewerState {
     Sys::ThreadPool *threads_ = nullptr;
     std::unique_ptr<Sys::TaskList> render_tasks_, render_and_denoise_tasks_;
     std::unique_ptr<Sys::TaskList> update_cache_tasks_;
+    Eng::render_settings_t orig_settings_;
 
     Gui::Renderer *ui_renderer_ = nullptr;
     Gui::BaseElement *ui_root_ = nullptr;

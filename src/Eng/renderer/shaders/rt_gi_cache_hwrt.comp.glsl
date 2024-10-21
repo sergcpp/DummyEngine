@@ -23,6 +23,7 @@
 #include "rt_gi_cache_interface.h"
 
 #pragma multi_compile _ STOCH_LIGHTS
+#pragma multi_compile _ PARTIAL
 #pragma multi_compile _ NO_SUBGROUP
 
 #if defined(NO_SUBGROUP)
@@ -108,14 +109,21 @@ void main() {
     const int probe_plane_index = int(gl_GlobalInvocationID.y);
     const int plane_index = int(gl_GlobalInvocationID.z);
 
-    int probe_index = (plane_index * PROBE_VOLUME_RES * PROBE_VOLUME_RES) + probe_plane_index;
+    int probe_index = (plane_index * PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z) + probe_plane_index;
 
     const ivec3 probe_coords = get_probe_coords(probe_index);
     probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
 
     const ivec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
-    if (!IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz) &&
-        ray_index >= PROBE_FIXED_RAYS_COUNT && texelFetch(g_offset_tex, tex_coords, 0).w < 0.5) {
+    const bool is_inactive = ray_index >= PROBE_FIXED_RAYS_COUNT && texelFetch(g_offset_tex, tex_coords, 0).w < 0.5;
+#ifdef PARTIAL
+    const ivec3 oct_index = get_probe_coords(probe_index) & 1;
+    const bool is_wrong_oct = (oct_index.x | (oct_index.y << 1) | (oct_index.z << 2)) != g_params.oct_index;
+#else
+    const bool is_wrong_oct = false;
+#endif
+
+    if (!IsScrollingPlaneProbe(probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz) && (is_inactive || is_wrong_oct)) {
         return;
     }
 
@@ -164,14 +172,14 @@ void main() {
             const float ls_pdf = pdf_factor * (ls_dist * ls_dist) / (0.5 * light_fwd_len * cos_theta);
 
             rayQueryInitializeEXT(rq,                       // rayQuery
-                                g_tlas,                   // topLevel
-                                0,                        // rayFlags
-                                (1u << RAY_TYPE_SHADOW),  // cullMask
-                                probe_pos,                // origin
-                                0.0,                      // tMin
-                                L,                        // direction
-                                ls_dist - 0.001           // tMax
-                                );
+                                  g_tlas,                   // topLevel
+                                  0,                        // rayFlags
+                                  (1u << RAY_TYPE_SHADOW),  // cullMask
+                                  probe_pos,                // origin
+                                  0.0,                      // tMin
+                                  L,                        // direction
+                                  ls_dist - 0.001           // tMax
+                                  );
 
             int transp_depth = 0;
             while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
@@ -213,8 +221,8 @@ void main() {
             }
         }
 
-        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES), vec4(compress_hdr(out_color), 0));
-        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 3 * PROBE_VOLUME_RES), vec4(out_dir, 0));
+        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), vec4(compress_hdr(out_color), 0));
+        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 3 * PROBE_VOLUME_RES_Y), vec4(out_dir, 0));
     }
 #endif
 
@@ -560,5 +568,5 @@ void main() {
     final_total = compress_hdr(final_total);
 
     imageStore(g_out_ray_data_img, output_coords, vec4(final_total, final_distance));
-    imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, PROBE_VOLUME_RES), vec4(final_diffuse_only, final_distance));
+    imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, PROBE_VOLUME_RES_Y), vec4(final_diffuse_only, final_distance));
 }

@@ -585,27 +585,27 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
 
     // TODO: make this temporary FG resource
-    // ~16mb
+    // ~56.6mb
     scene_data_.persistent_data.probe_ray_data = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
-        4 * PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z,
+        4 * PROBE_VOLUME_RES_Y, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
-    // ~18.87mb
+    // ~47.8mb
     scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES,
-        PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES, 2 * PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT,
+        ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES,
+        PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES, 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT,
         Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
-    // ~64mb
+    // ~84.9mb
     scene_data_.persistent_data.probe_distance = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES * PROBE_DISTANCE_RES,
-        PROBE_VOLUME_RES * PROBE_DISTANCE_RES, PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRG16F,
+        ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES,
+        PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES, PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRG16F,
         Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
-    // ~0.25mb
+    // ~0.7mb
     scene_data_.persistent_data.probe_offset = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume Offset", PROBE_VOLUME_RES, PROBE_VOLUME_RES,
-        PROBE_VOLUME_RES * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        ren_ctx_.api_ctx(), "Probe Volume Offset", PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z,
+        PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
 
     ClearGICache();
@@ -617,7 +617,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         volume.origin = Ren::Vec3f{0.0f};
         volume.spacing = Ren::Vec3f{probe_volume_spacing};
 
-        probe_volume_spacing *= 2.0f;
+        probe_volume_spacing *= 3.0f;
     }
 
     __itt_task_end(__g_itt_domain);
@@ -1027,8 +1027,8 @@ void Eng::SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *com
         std::istream in_file_stream(&mem);
 
         using namespace std::placeholders;
-        occ->mesh = LoadMesh(js_mesh_file_name.val, &in_file_stream,
-                             std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+        occ->mesh = LoadMesh(js_mesh_file_name.val, &in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1),
+                             &status);
         assert(status == Ren::eMeshLoadStatus::CreatedFromData);
     }
 

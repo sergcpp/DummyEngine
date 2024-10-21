@@ -83,21 +83,22 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
     }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] =
-        PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
-                             bindings, ctx.default_descr_alloc(), ctx.log());
+    descr_sets[0] = PrepareDescriptorSet(
+        api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].prog()->descr_set_layouts()[0],
+        bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                               pi_rt_gi_cache_[stoch_lights_buf != nullptr].handle());
+                               pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].handle());
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                     pi_rt_gi_cache_[stoch_lights_buf != nullptr].layout(), 0, 2, descr_sets, 0,
-                                     nullptr);
+                                     pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].layout(), 0, 2,
+                                     descr_sets, 0, nullptr);
 
     RTGICache::Params uniform_params = {};
     uniform_params.volume_index = view_state_->volume_to_update;
     uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
     uniform_params.pass_hash = view_state_->probe_ray_hash;
+    uniform_params.oct_index = (args_->probe_volumes[view_state_->volume_to_update].updates_count - 1) % 8;
     uniform_params.grid_origin = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].origin[0],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[1],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
@@ -113,11 +114,11 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
                                              args_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_[stoch_lights_buf != nullptr].layout(),
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].layout(),
                                 VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatch(cmd_buf, (PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
-                           PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES);
+                           PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y);
 }
 
 void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
@@ -231,21 +232,22 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] =
-        PrepareDescriptorSet(api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr].prog()->descr_set_layouts()[0],
-                             bindings, ctx.default_descr_alloc(), ctx.log());
+    descr_sets[0] = PrepareDescriptorSet(
+        api_ctx, pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].prog()->descr_set_layouts()[0],
+        bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                               pi_rt_gi_cache_[stoch_lights_buf != nullptr].handle());
+                               pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].handle());
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                                     pi_rt_gi_cache_[stoch_lights_buf != nullptr].layout(), 0, 2, descr_sets, 0,
-                                     nullptr);
+                                     pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].layout(), 0, 2,
+                                     descr_sets, 0, nullptr);
 
     RTGICache::Params uniform_params = {};
     uniform_params.volume_index = view_state_->volume_to_update;
     uniform_params.stoch_lights_count = view_state_->stochastic_lights_count_cache;
     uniform_params.pass_hash = view_state_->probe_ray_hash;
+    uniform_params.oct_index = (args_->probe_volumes[view_state_->volume_to_update].updates_count - 1) % 8;
     uniform_params.grid_origin = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].origin[0],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[1],
                                             args_->probe_volumes[view_state_->volume_to_update].origin[2], 0.0f);
@@ -261,9 +263,9 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
                                              args_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_[stoch_lights_buf != nullptr].layout(),
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update].layout(),
                                 VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatch(cmd_buf, (PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
-                           PROBE_VOLUME_RES * PROBE_VOLUME_RES, PROBE_VOLUME_RES);
+                           PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y);
 }

@@ -180,6 +180,8 @@ struct ProbeVolume {
     mutable Ren::Vec3f origin, spacing;
     mutable Ren::Vec3i scroll, scroll_diff;
     mutable int updates_count = 0;
+    mutable bool reset_relocation = true;
+    mutable bool reset_classification = true;
 };
 
 struct LightItem {
@@ -235,9 +237,6 @@ struct PersistentGpuData {
     std::unique_ptr<Ren::Texture2DArray> probe_distance;
     std::unique_ptr<Ren::Texture2DArray> probe_offset;
     std::vector<ProbeVolume> probe_volumes;
-
-    mutable bool reset_probe_relocation = true;
-    mutable bool reset_probe_classification = true;
 
     PersistentGpuData();
     ~PersistentGpuData();

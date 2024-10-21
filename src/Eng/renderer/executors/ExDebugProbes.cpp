@@ -45,7 +45,7 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
 
     prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_probe_debug_, render_targets, depth_target, rast_state,
                         builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,
-                        PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES);
+                        PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z);
 }
 
 void Eng::ExDebugProbes::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {

@@ -14,7 +14,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    if (settings.gi_quality == eGIQuality::Off) {
+    if (settings.gi_quality == eGIQuality::Off || settings.gi_cache_update_mode == eGICacheUpdateMode::Off) {
         return;
     }
 
@@ -67,6 +67,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             rt_gi_cache.AddTextureInput(persistent_data.probe_offset.get(), Stg::ComputeShader);
 
         data->view_state = &view_state_;
+        data->partial_update = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
         data->probe_volumes = persistent_data.probe_volumes;
 
         ray_data = data->out_ray_data_tex =
@@ -110,6 +111,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                                               *std::get<const Ren::Texture2DArray *>(out_irr_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
+            const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
@@ -117,7 +119,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
-            uniform_params.hysteresis = 0.97f;
+            uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.grid_scroll_diff =
@@ -128,16 +130,16 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             // total irradiance
             uniform_params.input_offset = 0;
             uniform_params.output_offset = 0;
-            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)],
-                            Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES}, bindings, &uniform_params,
-                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)][partial],
+                            Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
+                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
 
             // diffuse-only irradiance
-            uniform_params.input_offset = PROBE_VOLUME_RES;
-            uniform_params.output_offset = PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES;
-            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)],
-                            Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES}, bindings, &uniform_params,
-                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            uniform_params.input_offset = PROBE_VOLUME_RES_Y;
+            uniform_params.output_offset = PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES_Y;
+            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)][partial],
+                            Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
+                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
 
@@ -172,6 +174,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                                               *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
+            const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
@@ -179,7 +182,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
             ProbeBlend::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
-            uniform_params.hysteresis = 0.97f;
+            uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.grid_scroll_diff =
@@ -187,8 +190,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
-            DispatchCompute(pi_probe_blend_[2], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
-                            bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(pi_probe_blend_[2][partial],
+                            Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
+                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
 
@@ -217,26 +221,31 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                                               *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
+            const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
+            const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
 
-            const int probe_count = PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES;
+            const int probe_count = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z;
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (probe_count + ProbeRelocate::LOCAL_GROUP_SIZE_X - 1) / ProbeRelocate::LOCAL_GROUP_SIZE_X, 1u, 1u};
 
             ProbeRelocate::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
+            uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            uniform_params.grid_scroll_diff =
+                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
-            DispatchCompute(pi_probe_relocate_[persistent_data.reset_probe_relocation], grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
-            if (volume_to_update == PROBE_VOLUMES_COUNT - 1) {
-                persistent_data.reset_probe_relocation = false;
-            }
+            const int pi_index =
+                persistent_data.probe_volumes[volume_to_update].reset_relocation ? 2 : (partial ? 1 : 0);
+            DispatchCompute(pi_probe_relocate_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+            persistent_data.probe_volumes[volume_to_update].reset_relocation = false;
         });
     }
 
@@ -265,26 +274,30 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                                               *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
 
             const int volume_to_update = p_list_->volume_to_update;
+            const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[volume_to_update].origin;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[volume_to_update].scroll;
+            const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
 
-            const int probe_count = PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES;
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (probe_count + ProbeClassify::LOCAL_GROUP_SIZE_X - 1) / ProbeClassify::LOCAL_GROUP_SIZE_X, 1u, 1u};
+            const int probe_count = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z;
+            const Ren::Vec3u grp_count = Ren::Vec3u{probe_count / ProbeClassify::LOCAL_GROUP_SIZE_X, 1u, 1u};
 
             ProbeClassify::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
+            uniform_params.oct_index = (persistent_data.probe_volumes[volume_to_update].updates_count - 1) % 8;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            uniform_params.grid_scroll_diff =
+                Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
-            DispatchCompute(pi_probe_classify_[persistent_data.reset_probe_classification], grp_count, bindings,
-                            &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
-            if (volume_to_update == PROBE_VOLUMES_COUNT - 1) {
-                persistent_data.reset_probe_classification = false;
-            }
+            const int pi_index =
+                persistent_data.probe_volumes[volume_to_update].reset_classification ? 2 : (partial ? 1 : 0);
+            DispatchCompute(pi_probe_classify_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+            persistent_data.probe_volumes[volume_to_update].reset_classification = false;
         });
     }
 }

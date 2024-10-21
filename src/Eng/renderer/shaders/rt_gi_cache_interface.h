@@ -9,7 +9,7 @@ struct Params {
     int volume_index;
     int stoch_lights_count;
     uint pass_hash;
-    int _pad2;
+    int oct_index;
     vec4 grid_origin;
     ivec4 grid_scroll;
     ivec4 grid_scroll_diff;

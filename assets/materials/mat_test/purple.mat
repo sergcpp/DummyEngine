@@ -1,0 +1,11 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+textures:
+    - default_basecolor.tex
+    - default_normalmap.dds
+    - default_roughness.tex
+params:
+    - 1.0 0.0 1.0 0.0

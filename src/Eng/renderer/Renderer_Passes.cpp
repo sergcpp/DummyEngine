@@ -92,13 +92,18 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_ssr_stabilization_, "internal/ssr_stabilization.comp.glsl");
 
     // GI Cache
-    success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend@RADIANCE.comp.glsl");
-    success &= init_pipeline(pi_probe_blend_[1], "internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl");
-    success &= init_pipeline(pi_probe_blend_[2], "internal/probe_blend@DISTANCE.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[0][0], "internal/probe_blend@RADIANCE.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[1][0], "internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[2][0], "internal/probe_blend@DISTANCE.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[0][1], "internal/probe_blend@RADIANCE;PARTIAL.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[1][1], "internal/probe_blend@RADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl");
+    success &= init_pipeline(pi_probe_blend_[2][1], "internal/probe_blend@DISTANCE;PARTIAL.comp.glsl");
     success &= init_pipeline(pi_probe_relocate_[0], "internal/probe_relocate.comp.glsl");
-    success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate@RESET.comp.glsl");
+    success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate@PARTIAL.comp.glsl");
+    success &= init_pipeline(pi_probe_relocate_[2], "internal/probe_relocate@RESET.comp.glsl");
     success &= init_pipeline(pi_probe_classify_[0], "internal/probe_classify.comp.glsl");
-    success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify@RESET.comp.glsl");
+    success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify@PARTIAL.comp.glsl");
+    success &= init_pipeline(pi_probe_classify_[2], "internal/probe_classify@RESET.comp.glsl");
     success &= init_pipeline(pi_probe_sample_, "internal/probe_sample.comp.glsl");
 
     // GTAO
@@ -394,7 +399,10 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             }
 
             { // random rotator used by GI probes
-                const int sample_index = view_state_.frame_index / PROBE_VOLUMES_COUNT;
+                const int sample_index =
+                    view_state_.frame_index / (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial
+                                                   ? 8 * PROBE_VOLUMES_COUNT
+                                                   : PROBE_VOLUMES_COUNT);
 
                 float yaw = 0.0f, pitch = 0.0f, roll = 0.0f;
                 if ((sample_index % 2) == 1) {

@@ -41,6 +41,7 @@ class ExRTGICache final : public FgExecutor {
         FgResRef out_ray_data_tex;
 
         const ViewState *view_state = nullptr;
+        bool partial_update = false;
         Ren::Span<const ProbeVolume> probe_volumes;
     };
 
@@ -57,7 +58,7 @@ class ExRTGICache final : public FgExecutor {
     bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_rt_gi_cache_[2];
+    Ren::Pipeline pi_rt_gi_cache_[2][2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

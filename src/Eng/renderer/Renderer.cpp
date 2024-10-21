@@ -495,9 +495,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     if (frame_index_ == 0 && settings.taa_mode != eTAAMode::Static) {
-        persistent_data.reset_probe_classification = true;
-        persistent_data.reset_probe_relocation = true;
-
         Ren::CommandBuffer cmd_buf = ctx_.current_cmd_buf();
 
         const Ren::TransitionInfo transitions[] = {{persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
@@ -514,13 +511,25 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
             persistent_data.probe_volumes[i].updates_count = 0;
+            persistent_data.probe_volumes[i].reset_relocation = true;
+            persistent_data.probe_volumes[i].reset_classification = true;
         }
     }
 
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const ProbeVolume &volume = persistent_data.probe_volumes[i];
         if (i == list.volume_to_update) {
-            const Ren::Vec3i new_scroll = Ren::Vec3i{(list.draw_cam.world_position() - volume.origin) / volume.spacing};
+            Ren::Vec3i new_scroll = Ren::Vec3i{(list.draw_cam.world_position() - volume.origin) / volume.spacing};
+            // Ren::Vec3i new_scroll = Ren::Vec3i{list.draw_cam.world_position() / volume.spacing};
+
+            /*volume.origin[0] = float(new_scroll[0] / PROBE_VOLUME_RES_X) * volume.spacing[0] * PROBE_VOLUME_RES_X;
+            volume.origin[1] = float(new_scroll[1] / PROBE_VOLUME_RES_Y) * volume.spacing[1] * PROBE_VOLUME_RES_Y;
+            volume.origin[2] = float(new_scroll[2] / PROBE_VOLUME_RES_Z) * volume.spacing[2] * PROBE_VOLUME_RES_Z;
+
+            new_scroll[0] = new_scroll[0] % PROBE_VOLUME_RES_X;
+            new_scroll[1] = new_scroll[1] % PROBE_VOLUME_RES_Y;
+            new_scroll[2] = new_scroll[2] % PROBE_VOLUME_RES_Z;*/
+
             volume.scroll_diff = new_scroll - volume.scroll;
             volume.scroll = new_scroll;
             ++volume.updates_count;
@@ -532,7 +541,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     if (list.volume_to_update == PROBE_VOLUMES_COUNT - 1) {
         // force the last volume to cover the whole scene
         const ProbeVolume &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
-        last_volume.spacing = (list.bbox_max - list.bbox_min) / PROBE_VOLUME_RES;
+        last_volume.spacing =
+            (list.bbox_max - list.bbox_min) / Ren::Vec3f{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z};
         last_volume.spacing =
             Ren::Vec3f{std::max(std::max(last_volume.spacing[0], last_volume.spacing[1]), last_volume.spacing[2])};
         const Ren::Vec3i new_scroll =
@@ -543,17 +553,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     float probe_volume_spacing = 0.5f;
     for (int i = 0; i < PROBE_VOLUMES_COUNT - 1; ++i) {
-        const ProbeVolume &volume = persistent_data.probe_volumes[i];
-        const ProbeVolume &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
-
+        const ProbeVolume &volume = persistent_data.probe_volumes[i],
+                          &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
         if (probe_volume_spacing > last_volume.spacing[0]) {
             volume.spacing = last_volume.spacing[0];
             volume.scroll = Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - volume.origin) / volume.spacing};
         } else {
             volume.spacing = probe_volume_spacing;
         }
-
-        probe_volume_spacing *= 2.0f;
+        probe_volume_spacing *= 3.0f;
     }
 
     const bool cur_hq_ssr_enabled = int(list.render_settings.reflections_quality) >= int(eReflectionsQuality::High);

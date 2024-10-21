@@ -632,6 +632,15 @@ bool GSBaseState::LoadScene(std::string_view name) {
 
     OnPostloadScene(js_scene);
 
+    orig_settings_ = renderer_->settings;
+    if (!viewer_->app_params.ref_name.empty()) {
+        // Set to lower settings for faster loading
+        renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Off;
+        renderer_->settings.gi_quality = Eng::eGIQuality::Off;
+        renderer_->settings.gi_cache_update_mode = Eng::eGICacheUpdateMode::Off;
+        renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
+    }
+
     if (USE_TWO_THREADS) {
         notified_ = true;
         thr_notify_.notify_one();
@@ -685,7 +694,6 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer_->settings.sky_quality = Eng::eSkyQuality::Ultra;
     }
-    main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 
     sun_dir_ = scene_manager_->scene_data().env.sun_dir;
     if (std::abs(viewer_->app_params.sun_dir[0]) > 0 || std::abs(viewer_->app_params.sun_dir[1]) > 0 ||
@@ -698,6 +706,8 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     renderer_->settings.enable_bloom = viewer_->app_params.postprocess;
     renderer_->settings.enable_aberration = viewer_->app_params.postprocess;
     renderer_->settings.enable_purkinje = viewer_->app_params.postprocess;
+
+    main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 }
 
 void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
@@ -761,6 +771,9 @@ void GSBaseState::Draw() {
             renderer_->reset_accumulation();
             scene_manager_->ClearGICache(ren_ctx_->current_cmd_buf());
             capture_state_ = eCaptureState::UpdateGICache;
+            renderer_->settings.gi_quality = Eng::eGIQuality::Medium;
+            renderer_->settings.gi_cache_update_mode = Eng::eGICacheUpdateMode::Full;
+            main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
             log_->Info("Starting capture!");
         }
     }
@@ -793,6 +806,7 @@ void GSBaseState::Draw() {
                     main_view_lists_[0].Clear();
                     main_view_lists_[1].Clear();
                     random_->Reset(0);
+                    renderer_->settings = orig_settings_;
                     renderer_->settings.taa_mode = Eng::eTAAMode::Static;
                     renderer_->settings.enable_shadow_jitter = true;
                     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;

@@ -14,52 +14,52 @@ vec2 sign_not_zero(const vec2 v) {
 ivec3 get_ray_data_coords(const int ray_index, const int probe_index) {
     ivec3 coords;
     coords.x = ray_index;
-    coords.z = probe_index / (PROBE_VOLUME_RES * PROBE_VOLUME_RES);
-    coords.y = probe_index - (coords.z * PROBE_VOLUME_RES * PROBE_VOLUME_RES);
+    coords.y = probe_index % (PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z);
+    coords.z = probe_index / (PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z);
     return coords;
 }
 
 ivec3 get_probe_coords(const int probe_index) {
-    return ivec3(probe_index % PROBE_VOLUME_RES,
-                 probe_index / (PROBE_VOLUME_RES * PROBE_VOLUME_RES),
-                 (probe_index / PROBE_VOLUME_RES) % PROBE_VOLUME_RES);
+    return ivec3(probe_index % PROBE_VOLUME_RES_X,
+                 probe_index / (PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z),
+                 (probe_index / PROBE_VOLUME_RES_X) % PROBE_VOLUME_RES_Z);
 }
 
 ivec3 get_probe_texel_coords(const int probe_index) {
-    const int plane_index = probe_index / (PROBE_VOLUME_RES * PROBE_VOLUME_RES);
+    const int plane_index = probe_index / (PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z);
 
-    const int x = (probe_index % PROBE_VOLUME_RES);
-    const int y = (probe_index / PROBE_VOLUME_RES) % PROBE_VOLUME_RES;
+    const int x = (probe_index % PROBE_VOLUME_RES_X);
+    const int y = (probe_index / PROBE_VOLUME_RES_X) % PROBE_VOLUME_RES_Z;
 
     return ivec3(x, y, plane_index);
 }
 
 ivec3 get_probe_texel_coords(const int probe_index, const int volume_index) {
-    const int plane_index = probe_index / (PROBE_VOLUME_RES * PROBE_VOLUME_RES);
+    const int plane_index = probe_index / (PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z);
 
-    const int x = (probe_index % PROBE_VOLUME_RES);
-    const int y = (probe_index / PROBE_VOLUME_RES) % PROBE_VOLUME_RES;
+    const int x = (probe_index % PROBE_VOLUME_RES_X);
+    const int y = (probe_index / PROBE_VOLUME_RES_X) % PROBE_VOLUME_RES_Z;
 
-    return ivec3(x, y, plane_index + volume_index * PROBE_VOLUME_RES);
+    return ivec3(x, y, plane_index + volume_index * PROBE_VOLUME_RES_Y);
 }
 
 int get_probe_index(const ivec3 coords) {
-    const int probe_index_in_plane = coords.x + (coords.z * PROBE_VOLUME_RES);
-    return (coords.y * PROBE_VOLUME_RES * PROBE_VOLUME_RES) + probe_index_in_plane;
+    const int probe_index_in_plane = coords.x + (coords.z * PROBE_VOLUME_RES_X);
+    return (coords.y * PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z) + probe_index_in_plane;
 }
 
 int get_probe_index(const ivec3 coords, const int texel_res) {
-    const int probe_index_in_plane = (coords.x / texel_res) + (PROBE_VOLUME_RES * (coords.y / texel_res));
-    return (coords.z * PROBE_VOLUME_RES * PROBE_VOLUME_RES) + probe_index_in_plane;
+    const int probe_index_in_plane = (coords.x / texel_res) + (PROBE_VOLUME_RES_X * (coords.y / texel_res));
+    return (coords.z * PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z) + probe_index_in_plane;
 }
 
 int get_scrolling_probe_index(const ivec3 coords, const ivec3 offset) {
-    return get_probe_index((coords + offset + PROBE_VOLUME_RES) % PROBE_VOLUME_RES);
+    return get_probe_index((coords + offset + ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z)) % ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z));
 }
 
 vec3 get_probe_pos_ws(const ivec3 coords, const ivec3 offset, const vec3 grid_origin, const vec3 grid_spacing) {
     const vec3 probe_grid_pos_ws = vec3(coords) * grid_spacing;
-    const vec3 probe_grid_shift = (grid_spacing * float(PROBE_VOLUME_RES - 1)) * 0.5;
+    const vec3 probe_grid_shift = (grid_spacing * vec3(ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z) - 1)) * 0.5;
 
     vec3 probe_pos_ws = (probe_grid_pos_ws - probe_grid_shift);
     probe_pos_ws += grid_origin + vec3(offset) * grid_spacing;
@@ -150,15 +150,15 @@ vec3 get_probe_uv(const int probe_index, const vec2 octant_coords, const int num
     const ivec3 coords = get_probe_texel_coords(probe_index);
 
     // Add the border texels to get the total texels per probe
-    float numProbeTexels = (numProbeInteriorTexels + 2.0);
+    const float num_probe_texels = (numProbeInteriorTexels + 2.0);
 
-    float textureWidth = numProbeTexels * PROBE_VOLUME_RES;
-    float textureHeight = numProbeTexels * PROBE_VOLUME_RES;
+    const float texture_width = num_probe_texels * PROBE_VOLUME_RES_X;
+    const float texture_height = num_probe_texels * PROBE_VOLUME_RES_Z;
 
     // Move to the center of the probe and move to the octant texel before normalizing
-    vec2 uv = vec2(coords.x * numProbeTexels, coords.y * numProbeTexels) + (numProbeTexels * 0.5);
+    vec2 uv = vec2(coords.x * num_probe_texels, coords.y * num_probe_texels) + (num_probe_texels * 0.5);
     uv += octant_coords.xy * float(numProbeInteriorTexels) * 0.5;
-    uv /= vec2(textureWidth, textureHeight);
+    uv /= vec2(texture_width, texture_height);
     return vec3(uv, coords.z);
 }
 
@@ -167,15 +167,15 @@ vec3 get_probe_uv(const int probe_index, const int volume_index, const vec2 octa
     const ivec3 coords = get_probe_texel_coords(probe_index, volume_index);
 
     // Add the border texels to get the total texels per probe
-    float numProbeTexels = (numProbeInteriorTexels + 2.0);
+    const float num_probe_texels = (numProbeInteriorTexels + 2.0);
 
-    float textureWidth = numProbeTexels * PROBE_VOLUME_RES;
-    float textureHeight = numProbeTexels * PROBE_VOLUME_RES;
+    const float texture_width = num_probe_texels * PROBE_VOLUME_RES_X;
+    const float texture_height = num_probe_texels * PROBE_VOLUME_RES_Z;
 
     // Move to the center of the probe and move to the octant texel before normalizing
-    vec2 uv = vec2(coords.x * numProbeTexels, coords.y * numProbeTexels) + (numProbeTexels * 0.5);
+    vec2 uv = vec2(coords.x * num_probe_texels, coords.y * num_probe_texels) + (num_probe_texels * 0.5);
     uv += octant_coords.xy * float(numProbeInteriorTexels) * 0.5;
-    uv /= vec2(textureWidth, textureHeight);
+    uv /= vec2(texture_width, texture_height);
     return vec3(uv, coords.z);
 }
 
@@ -184,14 +184,14 @@ ivec3 get_base_probe_grid_coords(const vec3 world_position, const ivec3 offset, 
     vec3 position = world_position - (grid_origin + (vec3(offset) * grid_spacing));
 
     // Shift from [-n/2, n/2] to [0, n] (grid space)
-    position += (grid_spacing * (PROBE_VOLUME_RES - 1)) * 0.5;
+    position += (grid_spacing * vec3(ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z) - 1)) * 0.5;
 
     // Quantize the position to grid space
     ivec3 probeCoords = ivec3(position / grid_spacing);
 
     // Clamp to [0, probeCounts - 1]
     // Snaps positions outside of grid to the grid edge
-    probeCoords = clamp(probeCoords, ivec3(0), ivec3(PROBE_VOLUME_RES) - 1);
+    probeCoords = clamp(probeCoords, ivec3(0), ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z) - 1);
 
     return probeCoords;
 }
@@ -199,14 +199,14 @@ ivec3 get_base_probe_grid_coords(const vec3 world_position, const ivec3 offset, 
 float get_volume_blend_weight(vec3 world_position, const ivec3 offset, const vec3 grid_origin, const vec3 grid_spacing) {
     // Get the volume's origin and extent
     const vec3 origin = grid_origin + vec3(offset) * grid_spacing;
-    const vec3 extent = (grid_spacing * float(PROBE_VOLUME_RES - 1)) * 0.5;
+    const vec3 extent = (grid_spacing * vec3(ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z) - 1)) * 0.5;
 
     // Get the delta between the (rotated volume) and the world-space position
     const vec3 position = abs(world_position - origin);
     //position = abs(RTXGIQuaternionRotate(position, RTXGIQuaternionConjugate(volume.rotation)));
 
     const vec3 delta = position - extent;
-    if(all(lessThan(delta, vec3(0.0)))) {
+    if (all(lessThan(delta, vec3(0.0)))) {
         return 1.0;
     }
 
@@ -221,14 +221,15 @@ float get_volume_blend_weight(vec3 world_position, const ivec3 offset, const vec
 
 bool IsScrollingPlaneProbe(const int probe_index, const ivec3 grid_scroll, const ivec3 grid_scroll_diff) {
     const ivec3 probe_coords = get_probe_coords(probe_index);
+    const ivec3 volume_res = ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z);
 
     // TODO: Simplify this!
     ivec3 test_coord = ivec3(-1);
     for (int i = 0; i < 3; ++i) {
         if (grid_scroll_diff[i] > 0) {
-            test_coord[i] = (PROBE_VOLUME_RES + (grid_scroll[i] - 1)) % PROBE_VOLUME_RES;
+            test_coord[i] = (volume_res[i] + (grid_scroll[i] - 1)) % volume_res[i];
         } else if (grid_scroll_diff[i] < 0) {
-            test_coord[i] = (PROBE_VOLUME_RES + (grid_scroll[i] % PROBE_VOLUME_RES)) % PROBE_VOLUME_RES;
+            test_coord[i] = (volume_res[i] + (grid_scroll[i] % volume_res[i])) % volume_res[i];
         }
     }
 
@@ -237,7 +238,7 @@ bool IsScrollingPlaneProbe(const int probe_index, const ivec3 grid_scroll, const
 
 vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,
                            const vec3 world_position, const vec3 surface_bias, const vec3 direction,
-                           const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing) {
+                           const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool diffuse_only) {
     // Bias the world space position
     const vec3 biased_world_position = (world_position + surface_bias);
 
@@ -259,11 +260,11 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
     for (int i = 0; i < 8; ++i) {
         // Compute the offset to the adjacent probe in grid coordinates by
         // sourcing the offsets from the bits of the loop index: x = bit 0, y = bit 1, z = bit 2
-        const ivec3 adjacent_probe_offset = ivec3(i, i >> 1, i >> 2) & 1;
+        const ivec3 oct_offset = ivec3(i, i >> 1, i >> 2) % 2;
 
         // Get the 3D grid coordinates of the adjacent probe by adding the offset to
         // the base probe and clamping to the grid boundaries
-        const ivec3 adjacent_probe_coords = clamp(base_probe_coords + adjacent_probe_offset, ivec3(0), ivec3(PROBE_VOLUME_RES) - 1);
+        const ivec3 adjacent_probe_coords = clamp(base_probe_coords + oct_offset, ivec3(0), ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z) - 1);
 
         // Get the adjacent probe's index, adjusting the adjacent probe index for scrolling offsets (if present)
         const int adjacent_probe_index = get_scrolling_probe_index(adjacent_probe_coords, grid_scroll);
@@ -283,9 +284,9 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
         const float biased_pos_to_adj_probe_dist = length(adjacent_probe_world_position - biased_world_position);
 
         // Compute trilinear weights based on the distance to each adjacent probe
-        // to smoothly transition between probes. adjacent_probe_offset is binary, so we're
-        // using a 1-alpha when adjacent_probe_offset = 0 and alpha when adjacent_probe_offset = 1.
-        const vec3 trilinear = max(vec3(0.001), mix(1.0 - alpha, alpha, vec3(adjacent_probe_offset)));
+        // to smoothly transition between probes. oct_offset is binary, so we're
+        // using a 1-alpha when oct_offset = 0 and alpha when oct_offset = 1.
+        const vec3 trilinear = max(vec3(0.001), mix(1.0 - alpha, alpha, vec3(oct_offset)));
         const float trilinear_weight = (trilinear.x * trilinear.y * trilinear.z);
         float weight = 1.0;
 
@@ -310,7 +311,7 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
         float chebyshev_weight = 1.0;
 
         // Occlusion test
-        if(biased_pos_to_adj_probe_dist > filtered_distance.x) {
+        if (biased_pos_to_adj_probe_dist > filtered_distance.x) {
             // Find the variance of the mean distance
             const float variance = abs(filtered_distance.x * filtered_distance.x - filtered_distance.y);
 
@@ -394,11 +395,11 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
     for (int i = 0; i < 8; ++i) {
         // Compute the offset to the adjacent probe in grid coordinates by
         // sourcing the offsets from the bits of the loop index: x = bit 0, y = bit 1, z = bit 2
-        const ivec3 adjacent_probe_offset = ivec3(i, i >> 1, i >> 2) & 1;
+        const ivec3 oct_offset = ivec3(i, i >> 1, i >> 2) % 2;
 
         // Get the 3D grid coordinates of the adjacent probe by adding the offset to
         // the base probe and clamping to the grid boundaries
-        const ivec3 adjacent_probe_coords = clamp(base_probe_coords + adjacent_probe_offset, ivec3(0), ivec3(PROBE_VOLUME_RES) - 1);
+        const ivec3 adjacent_probe_coords = clamp(base_probe_coords + oct_offset, ivec3(0), ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z) - 1);
 
         // Get the adjacent probe's index, adjusting the adjacent probe index for scrolling offsets (if present)
         const int adjacent_probe_index = get_scrolling_probe_index(adjacent_probe_coords, grid_scroll);
@@ -419,9 +420,9 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         const float biased_pos_to_adj_probe_dist = length(adjacent_probe_world_position - biased_world_position);
 
         // Compute trilinear weights based on the distance to each adjacent probe
-        // to smoothly transition between probes. adjacent_probe_offset is binary, so we're
-        // using a 1-alpha when adjacent_probe_offset = 0 and alpha when adjacent_probe_offset = 1.
-        const vec3 trilinear = max(vec3(0.001), mix(1.0 - alpha, alpha, vec3(adjacent_probe_offset)));
+        // to smoothly transition between probes. oct_offset is binary, so we're
+        // using a 1-alpha when oct_offset = 0 and alpha when oct_offset = 1.
+        const vec3 trilinear = max(vec3(0.001), mix(1.0 - alpha, alpha, vec3(oct_offset)));
         const float trilinear_weight = (trilinear.x * trilinear.y * trilinear.z);
         float weight = 1.0;
 
@@ -446,7 +447,7 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         float chebyshev_weight = 1.0;
 
         // Occlusion test
-        if(biased_pos_to_adj_probe_dist > filtered_distance.x) {
+        if (biased_pos_to_adj_probe_dist > filtered_distance.x) {
             // Find the variance of the mean distance
             const float variance = abs(filtered_distance.x * filtered_distance.x - filtered_distance.y);
 
@@ -481,7 +482,7 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         // Get the probe's texture coordinates
         probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_IRRADIANCE_RES - 2);
         if (diffuse_only) {
-            probe_texture_uv.z += float(PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES);
+            probe_texture_uv.z += float(PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES_Y);
         }
 
         // Sample the probe's irradiance
@@ -502,7 +503,11 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         return vec3(0.0);
     }
 
-    vec3 irradiance = (0.5 * outdoor_weight > indoor_weight) ? (outdoor_irradiance / outdoor_weight) : (indoor_irradiance / indoor_weight);
+    indoor_irradiance /= max(indoor_weight, 0.001);
+    outdoor_irradiance /= max(outdoor_weight, 0.001)
+
+    const float k = linstep(0.6, 1.0, outdoor_weight / (indoor_weight + outdoor_weight));
+    vec3 irradiance = mix(indoor_irradiance, outdoor_irradiance, k);
     irradiance *= irradiance;   // Go back to linear irradiance
     irradiance *= 2.0 * M_PI;   // Multiply by the area of the integration domain (hemisphere) to complete the Monte Carlo Estimator equation
 

@@ -27,10 +27,10 @@ void main() {
     irradiance = pow(irradiance, vec3(PROBE_RADIANCE_EXP));
     irradiance *= 2.0 * M_PI;
     if (g_probe_state < 0.5) {
-        //irradiance *= vec3(1.0, 0.0, 0.0);
+        irradiance *= vec3(1.0, 0.0, 0.0);
     }
     if (g_probe_state > 1.5) {
-        //irradiance *= vec3(0.0, 0.0, 1.0);
+        irradiance *= vec3(0.0, 0.0, 1.0);
     }
 
     g_out_color = vec4(compress_hdr(irradiance), 1.0);
