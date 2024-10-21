@@ -44,6 +44,7 @@ float PDnrand(vec2 n) {
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 MaybeTonemap(vec3 c) {
+    c = clamp(c, vec3(0.0), vec3(HALF_MAX));
 #if defined(TONEMAP)
     c *= HDR_FACTOR * texelFetch(g_exposure, ivec2(0), 0).x;
     c = c / (c + vec3(1.0));
@@ -56,6 +57,7 @@ vec3 TonemapInvert(vec3 c) {
     c = c / (vec3(1.0) - c);
     c /= HDR_FACTOR * texelFetch(g_exposure, ivec2(0), 0).x;
 #endif
+    c = clamp(c, vec3(0.0), vec3(HALF_MAX));
     return c;
 }
 
@@ -68,7 +70,7 @@ vec3 MaybeRGB_to_YCoCg(vec3 c) {
 
 vec4 FetchColor(sampler2D s, ivec2 icoord) {
     vec4 ret = texelFetch(s, icoord, 0);
-    ret.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX))));
+    ret.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(ret.xyz));
     return ret;
 }
 
@@ -78,7 +80,7 @@ vec4 SampleColor(sampler2D s, vec2 uvs) {
 #else
     vec4 ret = textureLod(s, uvs, 0.0);
 #endif
-    ret.xyz = MaybeTonemap(clamp(ret.xyz, vec3(0.0), vec3(HALF_MAX)));
+    ret.xyz = MaybeTonemap(ret.xyz);
     ret.xyz = MaybeRGB_to_YCoCg(ret.xyz);
     return ret;
 }
@@ -265,7 +267,7 @@ void main() {
     const float variance = mix(unbiased_diff * unbiased_diff, col_hist.w, history_weight);
     const float k = saturate(2.0 - length(closest_vel.xy));
 
-    g_out_color = clamp(vec4(TonemapInvert(col_screen), variance * k), vec4(0.0), vec4(HALF_MAX));
-    g_out_history = clamp(vec4(TonemapInvert(col_temporal), variance * k), vec4(0.0), vec4(HALF_MAX));
+    g_out_color = vec4(TonemapInvert(col_screen), variance * k);
+    g_out_history = vec4(TonemapInvert(col_temporal), variance * k);
 #endif // STATIC_ACCUMULATION
 }

@@ -862,8 +862,7 @@ void GSBaseState::Draw() {
             }
 
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
-            if (!use_pt_ && (prev_sun_dir_[0] != sun_dir_[0] || prev_sun_dir_[1] != sun_dir_[1] ||
-                             prev_sun_dir_[2] != sun_dir_[2])) {
+            if (!use_pt_ && Distance(prev_sun_dir_, sun_dir_) > FLT_EPSILON) {
                 if (renderer_->settings.taa_mode == Eng::eTAAMode::Static) {
                     renderer_->reset_accumulation();
                 }
