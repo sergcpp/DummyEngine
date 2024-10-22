@@ -13,7 +13,6 @@ class ExDebugProbes final : public FgExecutor {
         FgResRef offset_tex;
         FgResRef irradiance_tex;
         FgResRef distance_tex;
-        FgResRef exposure_tex;
         FgResRef depth_tex;
         FgResRef output_tex;
 

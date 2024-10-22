@@ -1140,7 +1140,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 debug_probes.AddTextureInput(frame_textures.gi_cache_irradiance, Ren::eStageBits::FragmentShader);
             data->distance_tex =
                 debug_probes.AddTextureInput(frame_textures.gi_cache_distance, Ren::eStageBits::FragmentShader);
-            data->exposure_tex = debug_probes.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
 
             data->volume_to_debug = list.render_settings.debug_probes;
             data->probe_volumes = persistent_data.probe_volumes;

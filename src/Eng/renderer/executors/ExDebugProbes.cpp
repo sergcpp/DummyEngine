@@ -14,7 +14,6 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
     FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
     FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
     FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
-    FgAllocTex &exposure_tex = builder.GetReadTexture(args_->exposure_tex);
     FgAllocTex &depth_tex = builder.GetWriteTexture(args_->depth_tex);
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
 
@@ -31,8 +30,7 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::OFFSET_TEX_SLOT,
          *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
         {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
-        {Ren::eBindTarget::Tex2DSampled, ProbeDebug::EXPOSURE_TEX_SLOT, *exposure_tex.ref}};
+         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)}};
 
     const ProbeVolume &volume = args_->probe_volumes[args_->volume_to_debug];
 

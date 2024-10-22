@@ -17,7 +17,6 @@ struct Params {
 
 const int IRRADIANCE_TEX_SLOT = 0;
 const int OFFSET_TEX_SLOT = 1;
-const int EXPOSURE_TEX_SLOT = 2;
 
 INTERFACE_END
 
