@@ -137,7 +137,7 @@ class FgBuilder {
     void PrepareAllocResources();
     void PrepareResourceLifetimes();
     void AllocateNeededResources_Simple();
-    void AllocateNeededResources_MemHeaps();
+    bool AllocateNeededResources_MemHeaps();
     void ClearResources_Simple();
     void ClearResources_MemHeaps();
     void ReleaseMemHeaps();

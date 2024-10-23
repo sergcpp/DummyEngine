@@ -1463,8 +1463,14 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
     PrepareResourceLifetimes();
     if (ctx_.capabilities.memory_heaps) {
         // Memory-level aliasing
-        AllocateNeededResources_MemHeaps();
-        ClearResources_MemHeaps();
+        const bool success = AllocateNeededResources_MemHeaps();
+        if (success) {
+            ClearResources_MemHeaps();
+        } else {
+            // Fallback to separate per-resource allocation
+            AllocateNeededResources_Simple();
+            ClearResources_Simple();
+        }
     } else {
         // Simple per-resource aliasing
         AllocateNeededResources_Simple();
@@ -1478,7 +1484,6 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
         for (const FgAllocBuf &buf : buffers_) {
             if (buf.alias_of != -1) {
                 const FgAllocBuf &orig_buf = buffers_[buf.alias_of];
-                assert(!ctx_.capabilities.memory_heaps);
                 ctx_.log()->Info("Buf %-24.24s alias of %16s\t| %f MB", buf.name.c_str(), orig_buf.name.c_str(), 0.0f);
                 continue;
             }

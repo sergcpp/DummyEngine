@@ -1,6 +1,7 @@
 #include "FgBuilder.h"
 
 #include <Ren/Context.h>
+#include <Ren/ScopeExit.h>
 #include <Ren/VKCtx.h>
 
 #include "FgNode.h"
@@ -25,7 +26,7 @@ void insert_sorted(Ren::SmallVectorImpl<Eng::FgResRef> &vec, const Eng::FgResRef
 }
 } // namespace FgBuilderInternal
 
-void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
+bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
     using namespace FgBuilderInternal;
 
     struct resource_t {
@@ -46,6 +47,19 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
     std::vector<int> resources_by_memory_type[32];
     std::vector<int> buffer_to_resource(buffers_.capacity(), -1);
     std::vector<int> texture_to_resource(textures_.capacity(), -1);
+
+    SCOPE_EXIT({
+        for (resource_t &res : all_resources) {
+            if (std::holds_alternative<std::monostate>(res.handle)) {
+                continue;
+            }
+            if (res.type == eFgResType::Buffer) {
+                api_ctx->vkDestroyBuffer(api_ctx->device, std::get<Ren::BufHandle>(res.handle).buf, nullptr);
+            } else if (res.type == eFgResType::Texture) {
+                api_ctx->vkDestroyImage(api_ctx->device, std::get<Ren::TexHandle>(res.handle).img, nullptr);
+            }
+        }
+    });
 
     //
     // Gather resources info
@@ -78,7 +92,10 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
 
         Ren::BufHandle new_buf = {};
         VkResult res = api_ctx->vkCreateBuffer(api_ctx->device, &buf_create_info, nullptr, &new_buf.buf);
-        assert(res == VK_SUCCESS && "Failed to create buffer!");
+        if (res != VK_SUCCESS) {
+            ctx_.log()->Error("Failed to create buffer %s!", b.name.c_str());
+            return false;
+        }
 
 #ifdef ENABLE_OBJ_LABELS
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
@@ -124,7 +141,7 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             // In case of no aliasing lifetime spans for the whole frame
             new_res.lifetime[0][0] = new_res.lifetime[1][0] = 0;
             new_res.lifetime[0][1] = new_res.lifetime[1][1] = uint16_t(reordered_nodes_.size());
-        } 
+        }
 
         Ren::Tex2DParams &p = t.desc;
         // Needed to clear the image initially
@@ -169,8 +186,11 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             img_info.samples = VkSampleCountFlagBits(p.samples);
             img_info.flags = 0;
 
-            VkResult res = api_ctx->vkCreateImage(api_ctx->device, &img_info, nullptr, &new_tex.img);
-            assert(res == VK_SUCCESS && "Failed to create image!");
+            const VkResult res = api_ctx->vkCreateImage(api_ctx->device, &img_info, nullptr, &new_tex.img);
+            if (res != VK_SUCCESS) {
+                ctx_.log()->Error("Failed to create image %s!", t.name.c_str());
+                return false;
+            }
 
 #ifdef ENABLE_OBJ_LABELS
             VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
@@ -259,7 +279,10 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
 
         // TODO: Handle failure properly
         VkResult result = api_ctx->vkAllocateMemory(api_ctx->device, &mem_alloc_info, nullptr, &heap.mem);
-        assert(result == VK_SUCCESS && "Failed to allocate memory!");
+        if (result != VK_SUCCESS) {
+            ctx_.log()->Error("Failed to allocate memory!");
+            return false;
+        }
 
         for (const int res_index : resources_by_memory_type[i]) {
             resource_t &res = all_resources[res_index];
@@ -271,7 +294,10 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                 result = api_ctx->vkBindImageMemory(api_ctx->device, std::get<Ren::TexHandle>(res.handle).img, heap.mem,
                                                     res.mem_offset);
             }
-            assert(result == VK_SUCCESS && "Failed to bind memory!");
+            if (result != VK_SUCCESS) {
+                ctx_.log()->Error("Failed to bind memory!");
+                return false;
+            }
         }
     }
 
@@ -470,6 +496,10 @@ void Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             }
         }
     }
+
+    all_resources.clear();
+
+    return true;
 }
 
 void Eng::FgBuilder::ClearResources_MemHeaps() {
