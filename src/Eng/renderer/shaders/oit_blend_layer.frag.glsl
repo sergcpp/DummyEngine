@@ -180,8 +180,8 @@ void main() {
         }
         [[flatten]] if (!is_diffuse) _lobe_weights.diffuse = 0.0;
         [[flatten]] if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                      sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+        vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         if (all(equal(light_contribution, vec3(0.0)))) {
             continue;
         }
@@ -245,8 +245,8 @@ void main() {
 
         const float sun_visibility =  GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
         if (sun_visibility > 0.0) {
-            sun_color = sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+            sun_color = sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }
     }
 

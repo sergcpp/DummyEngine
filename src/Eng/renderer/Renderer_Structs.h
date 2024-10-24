@@ -382,7 +382,7 @@ struct SharedDataBlock {
     Ren::Mat4f world_from_view, view_from_clip, world_from_clip, delta_matrix;
     Ren::Mat4f rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
-    Ren::Vec4f sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
+    Ren::Vec4f sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
     Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4i ires_and_ifres;
@@ -396,7 +396,7 @@ struct SharedDataBlock {
     Types::AtmosphereParams atmosphere;
 };
 static_assert(sizeof(SharedDataBlock) ==
-                  7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + 16 + 16 + PROBE_VOLUMES_COUNT * 64,
+                  7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + 16 + 16 + 16 + PROBE_VOLUMES_COUNT * 64,
               "!");
 
 const int MAX_MATERIAL_PARAMS = 4;

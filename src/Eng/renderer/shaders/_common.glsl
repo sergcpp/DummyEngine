@@ -365,7 +365,7 @@ struct SharedData {
     mat4 world_from_view, view_from_clip, world_from_clip, delta_matrix;
     mat4 rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
-    vec4 sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
+    vec4 sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
     vec4 clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
     ivec4 ires_and_ifres;

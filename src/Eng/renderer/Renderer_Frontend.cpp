@@ -579,7 +579,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         ls.type_and_flags |= light.affect_diffuse ? LIGHT_DIFFUSE_BIT : 0;
                         ls.type_and_flags |= light.affect_specular ? LIGHT_SPECULAR_BIT : 0;
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
-                        ls.radius = light.radius;
+                        ls.radius = light._radius;
                         memcpy(ls.dir, &dir[0], 3 * sizeof(float));
                         ls.spot = light.spot_angle;
                         memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
@@ -766,7 +766,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     ls.type_and_flags |= light.affect_diffuse ? LIGHT_DIFFUSE_BIT : 0;
                     ls.type_and_flags |= light.affect_specular ? LIGHT_SPECULAR_BIT : 0;
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
-                    ls.radius = light.radius;
+                    ls.radius = light._radius;
                     memcpy(ls.dir, &dir[0], 3 * sizeof(float));
                     ls.spot = light.spot_angle;
                     memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));

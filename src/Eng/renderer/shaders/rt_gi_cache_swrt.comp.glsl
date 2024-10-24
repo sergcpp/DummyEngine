@@ -529,8 +529,7 @@ void main() {
 
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
-                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                            sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_weights, roughness, base_color, approx_spec_col);
                 light_contribution = max(light_contribution, vec3(0.0)); // ???
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;
@@ -558,8 +557,7 @@ void main() {
 
                     const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
-                    vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                                sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                    vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_weights, roughness, base_color, approx_spec_col);
                     light_contribution = max(light_contribution, vec3(0.0)); // ???
                     if (all(equal(light_contribution, vec3(0.0)))) {
                         continue;
@@ -591,8 +589,9 @@ void main() {
 
             const float sun_visibility = textureLod(g_shadow_tex, shadow_uvs, 0.0);
             if (sun_visibility > 0.0) {
-                light_total += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                                 sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                light_total += sun_visibility * EvaluateSunLight_Approx(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w,
+                                                                        I, N, lobe_weights, roughness, clearcoat_roughness2,
+                                                                        base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             }
         }
 

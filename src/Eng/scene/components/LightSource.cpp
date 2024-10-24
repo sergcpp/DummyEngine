@@ -71,6 +71,7 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         const JsNumber &js_radius = js_in.at("radius").as_num();
         ls.radius = float(js_radius.val);
     }
+    ls._radius = ls.radius;
 
     ls.width = 1.0f;
     if (js_in.Has("width")) {
@@ -89,11 +90,14 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     } else if (ls.type == eLightType::Rect) {
         ls.area = ls.width * ls.height;
         // set to diagonal
-        ls.radius = std::sqrt(ls.width * ls.width + ls.height * ls.height);
+        ls._radius = std::sqrt(ls.width * ls.width + ls.height * ls.height);
     } else if (ls.type == eLightType::Disk) {
         ls.area = 0.25f * Ren::Pi<float>() * ls.width * ls.height;
+        // set to avg dim
+        ls._radius = 0.5f * (ls.width + ls.height);
     } else if (ls.type == eLightType::Line) {
-        ls.area = 1.0f;
+        // set to length
+        ls._radius = ls.area = ls.height;
     }
 
     if (js_in.Has("cull_offset")) {

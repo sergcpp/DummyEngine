@@ -1,5 +1,5 @@
-#ifndef _LTC_GLSL
-#define _LTC_GLSL
+#ifndef LTC_COMMON_GLSL
+#define LTC_COMMON_GLSL
 
 ///////////////////////////////
 // Linearly Transformed Cosines
@@ -510,4 +510,4 @@ vec3 LTC_Evaluate_Line(vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[2], fl
     return vec3(clamp(Iline, 0.0, 1.0));
 }
 
-#endif // _LTC_GLSL
+#endif // LTC_COMMON_GLSL

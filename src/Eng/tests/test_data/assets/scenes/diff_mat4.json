@@ -147,7 +147,7 @@
             },
             "light" : {
                 "type" : "line",
-                "power" : 200,
+                "power" : 25.92,
                 "radius" : 0.01,
                 "width" : 0.1296,
                 "height" : 0.1296,

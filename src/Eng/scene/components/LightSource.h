@@ -26,7 +26,7 @@ struct LightSource {
     float shadow_bias[2];
 
     float width, height;
-    float area;
+    float area, _radius;
 
     Ren::Vec3f bbox_min;
     float angle_deg;

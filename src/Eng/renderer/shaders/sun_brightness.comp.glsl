@@ -16,7 +16,7 @@ layout(binding = CIRRUS_TEX_SLOT) uniform sampler2D g_cirrus_tex;
 layout(binding = NOISE3D_TEX_SLOT) uniform sampler3D g_noise3d_tex;
 
 layout(std430, binding = OUT_BUF_SLOT) writeonly buffer OutBuf {
-    vec3 g_out_buf;
+    vec4 g_out_buf[2];
 };
 
 shared uvec3 g_avg_transmittance;
@@ -49,6 +49,8 @@ void main() {
     barrier(); groupMemoryBarrier();
 
     if (gl_LocalInvocationIndex == 0) {
-        g_out_buf = g_shrd_data.sun_col.xyz * vec3(g_avg_transmittance) / 640000.0;
+        const vec3 transmittance = vec3(g_avg_transmittance) / 640000.0;
+        g_out_buf[0] = vec4(g_shrd_data.sun_col.xyz * transmittance, 0.0);
+        g_out_buf[1] = vec4(g_shrd_data.sun_col_point.xyz * transmittance, 0.0);
     }
 }

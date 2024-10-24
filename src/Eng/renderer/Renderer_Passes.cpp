@@ -951,8 +951,8 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
 
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Storage;
-        desc.size = 4 * sizeof(float);
-        output = data->output_buf = sun_color.AddStorageOutput("Sun brightness debug", desc, Stg::ComputeShader);
+        desc.size = 8 * sizeof(float);
+        output = data->output_buf = sun_color.AddStorageOutput("Sun Brightness Result", desc, Stg::ComputeShader);
 
         sun_color.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
@@ -999,6 +999,9 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
 
             CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(SharedDataBlock, sun_col),
                                3 * sizeof(float), builder.ctx().current_cmd_buf());
+            CopyBufferToBuffer(*sample_buf.ref, 4 * sizeof(float), *unif_sh_data_buf.ref,
+                               offsetof(SharedDataBlock, sun_col_point_sh), 3 * sizeof(float),
+                               builder.ctx().current_cmd_buf());
         });
     }
 }

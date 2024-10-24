@@ -251,8 +251,8 @@ void main() {
             }
             if (!is_diffuse) _lobe_weights.diffuse = 0.0;
             if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-            vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+            vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             if (all(equal(light_contribution, vec3(0.0)))) {
                 continue;
             }
@@ -291,8 +291,8 @@ void main() {
                 }
                 if (!is_diffuse) _lobe_weights.diffuse = 0.0;
                 if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                                                                  sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;
                 }
@@ -336,40 +336,17 @@ void main() {
     }
 #endif
 
-    //
-    // Indirect probes
-    //
-    /*vec3 indirect_col = vec3(0.0);
-    float total_fade = 0.0;
-
-    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
-        uint item_data = texelFetch(g_items_buf, int(i)).x;
-        int pi = int(bitfieldExtract(item_data, 24, 8));
-
-        float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, P);
-        float fade = 1.0 - smoothstep(0.9, 1.0, dist / g_shrd_data.probes[pi].pos_and_radius.w);
-
-        indirect_col += fade * EvalSHIrradiance_NonLinear(normal.xyz, g_shrd_data.probes[pi].sh_coeffs[0],
-                                                                      g_shrd_data.probes[pi].sh_coeffs[1],
-                                                                      g_shrd_data.probes[pi].sh_coeffs[2]);
-        total_fade += fade;
-    }
-
-    indirect_col /= max(total_fade, 1.0);
-    indirect_col = max(1.0 * indirect_col, vec3(0.0));*/
-
-    vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-
     vec3 final_color = vec3(0.0);
 
     if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
         const float sun_visibility = texelFetch(g_sun_shadow_tex, icoord, 0).r;
         if (sun_visibility > 0.0) {
-            final_color += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                             sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+            final_color += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+-                                                                sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }
     }
 
+    const vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
     const vec4 gi_fetch = textureLod(g_gi_tex, px_uvs, 0.0);
     vec3 gi_contribution = lobe_weights.diffuse_mul * decompress_hdr(gi_fetch.xyz);
     gi_contribution *= base_color * ltc.diff_t2.x;
