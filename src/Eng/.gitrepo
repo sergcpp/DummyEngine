@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 60397fdcfc6f280de011e206567cf13f05ad4753
+	branch = simpler_shading
+	commit = 3ca6ff494adfddf515c1a4fb57b3a37f286834e7
 	method = merge
 	cmdver = 0.4.6
-	parent = adacb511ee20ea7073365cf91dda6b035ba00899
+	parent = c6b307658606d257c38dbe2c0bd56396e4d8e9c0
