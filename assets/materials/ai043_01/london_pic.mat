@@ -1,0 +1,16 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+textures:
+    - ai043_01/AI43_001_The_City_London_diff.tex
+    - default_normalmap.dds
+    - default_roughness.tex
+    - default_metallic.tex
+    - default_opacity.tex
+params:
+    - 1.0 1.0 1.0 0.43333300948143005    # base color, roughness
+    - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
+    - 0.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
+    - 0.0 0.0 0.0 0.0    # transparency, ior/emission color

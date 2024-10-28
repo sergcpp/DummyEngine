@@ -13,7 +13,8 @@ Main reusable parts are extracted into the following libs:
     Staircase, Coffee maker - https://benedikt-bitterli.me/resources/ \
     Sponza - https://www.intel.com/content/www/us/en/developer/topic-technology/graphics-research/samples.html \
     Bistro - https://developer.nvidia.com/orca/amazon-lumberyard-bistro \
-    Interrior - https://evermotion.org/shop/show_product/scene-6-ai43-archinteriors-for-blender/14569
+    Interrior - https://evermotion.org/shop/show_product/scene-6-ai43-archinteriors-for-blender/14569 \
+    Kitchen - https://evermotion.org/shop/show_product/scene-1-ai43-archinteriors-for-blender/14564
 
   <div>
     <div float="middle">
@@ -24,7 +25,8 @@ Main reusable parts are extracted into the following libs:
       <img src="images/staircase.jpg" width="30.31%" />
     </div>
     <div float="middle">
-      <img src="images/bistro_night.jpg" width="98%" />
+      <img src="images/ai043_01.jpg" width="44.2%" />
+      <img src="images/bistro_night.jpg" width="53.48%" />
     </div>
     <div float="middle">
       <img src="images/coffee_maker.jpg" width="30.31%" />

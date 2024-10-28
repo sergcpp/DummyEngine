@@ -27,6 +27,16 @@ runs:
         cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
+        ### ai043_01
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_01.json -ref references/ai043_01_cycles.uncompressed.png -w 1400 -h 955 --preset medium --psnr 24.20 --no-postprocess
+        mv ai043_01.png ai043_01_medium.png
+        cp ai043_01_medium.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_01.json -ref references/ai043_01_cycles.uncompressed.png -w 1400 -h 955 --preset high --psnr 24.35 --no-postprocess
+        mv ai043_01.png ai043_01_high.png
+        cp ai043_01_high.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_01.json -ref references/ai043_01_cycles.uncompressed.png -w 1400 -h 955 --preset ultra --psnr 25.20 --no-postprocess
+        mv ai043_01.png ai043_01_ultra.png
+        cp ai043_01_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### Bistro (night)
         #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset medium --psnr 19.60 --freeze-sky --no-postprocess
         #mv bistro.png bistro_night_medium.png
@@ -94,13 +104,13 @@ runs:
         mv sponza.png sponza_ultra.png
         cp sponza_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### ai043_06
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 935 --preset medium --psnr 22.00 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 935 --preset medium --psnr 22.75 --no-postprocess
         mv ai043_06.png ai043_06_medium.png
         cp ai043_06_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 935 --preset high --psnr 22.80 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 935 --preset high --psnr 25.40 --no-postprocess
         mv ai043_06.png ai043_06_high.png
         cp ai043_06_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 935 --preset ultra --psnr 24.70 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 935 --preset ultra --psnr 26.00 --no-postprocess
         mv ai043_06.png ai043_06_ultra.png
         cp ai043_06_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06_cycles.uncompressed.png -w 1400 -h 935 --pt --psnr 32.65 --no-postprocess

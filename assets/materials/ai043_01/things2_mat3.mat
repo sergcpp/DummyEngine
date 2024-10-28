@@ -1,0 +1,17 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+    - alpha_blend
+textures:
+    - default_basecolor.tex
+    - default_normalmap.dds
+    - default_roughness.tex
+    - default_metallic.tex
+    - default_opacity.tex
+params:
+    - 0.8361639976501465 0.8361637592315674 0.8361637592315674 0.07666700333356857    # base color, roughness
+    - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
+    - 0.0 1.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
+    - 0.0 1.5199999809265137 0.0 0.0    # transparency, ior/emission color

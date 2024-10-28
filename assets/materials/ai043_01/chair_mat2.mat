@@ -1,0 +1,16 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+textures:
+    - default_basecolor.tex
+    - ai043_01/AM134_04_chrome_dirty_norm.tex
+    - default_roughness.tex
+    - default_metallic.tex
+    - default_opacity.tex
+params:
+    - 0.13512000441551208 0.27383801341056824 0.2738384008407593 0.1333329975605011    # base color, roughness
+    - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
+    - 0.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
+    - 0.0 0.0 0.0 0.0    # transparency, ior/emission color
