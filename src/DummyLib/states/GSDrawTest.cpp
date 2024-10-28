@@ -28,7 +28,32 @@ extern const int LUT_DIMS;
 extern const uint32_t *transform_luts[];
 } // namespace Ray
 
-namespace GSDrawTestInternal {} // namespace GSDrawTestInternal
+namespace GSDrawTestInternal {
+Ren::Span<const uint8_t> RayLUTByName(const std::string_view name) {
+    const uint32_t *lut_data = nullptr;
+    if (name == "agx") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::AgX)];
+    } else if (name == "agx_punchy") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::AgX_Punchy)];
+    } else if (name == "filmic_very_low_contrast") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::Filmic_VeryLowContrast)];
+    } else if (name == "filmic_low_contrast") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::Filmic_LowContrast)];
+    } else if (name == "filmic_med_low_contrast") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumLowContrast)];
+    } else if (name == "filmic_med_contrast" || name == "filmic") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)];
+    } else if (name == "filmic_med_high_contrast") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumHighContrast)];
+    } else if (name == "filmic_high_contrast") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)];
+    } else if (name == "filmic_very_high_contrast") {
+        lut_data = Ray::transform_luts[int(Ray::eViewTransform::Filmic_VeryHighContrast)];
+    }
+    return Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(lut_data),
+                                    4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS);
+}
+} // namespace GSDrawTestInternal
 
 #include <Ren/Utils.h>
 
@@ -286,6 +311,8 @@ void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {
 }
 
 void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
+    using namespace GSDrawTestInternal;
+
     GSBaseState::OnPostloadScene(js_scene);
 
     cam_follow_path_.clear();
@@ -376,40 +403,14 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
 
         if (js_cam.Has("view_transform")) {
             const JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
-            if (js_view_transform.val == "filmic_high_contrast") {
-                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                    Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
-                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
-                                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (js_view_transform.val == "filmic_med_contrast" || js_view_transform.val == "filmic") {
-                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                    Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
-                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
-                                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (js_view_transform.val == "agx") {
-                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                    Ren::Span<const uint8_t>(
-                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
-                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
-                            4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (js_view_transform.val == "agx_punchy") {
-                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                    Ren::Span<const uint8_t>(
-                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX_Punchy)]),
-                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX_Punchy)]) +
-                            4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (js_view_transform.val == "standard") {
+            if (js_view_transform.val == "standard") {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
             } else if (js_view_transform.val == "off") {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
+            } else {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                                         RayLUTByName(js_view_transform.val));
             }
         }
 
