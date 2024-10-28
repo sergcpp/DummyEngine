@@ -539,9 +539,8 @@ vec3 EvaluateLightSource_Approx(const light_item_t litem, const vec3 P, const ve
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / (4.0 * M_PI);
         }
     } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
-        brightness_mul = M_PI * length(litem.u_and_reg.xyz) * length(litem.v_and_blend.xyz);
+        brightness_mul = 0.25 * M_PI * length(litem.u_and_reg.xyz) * length(litem.v_and_blend.xyz);
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
-            const float sqr_dist = dot(litem.pos_and_radius.xyz - P, litem.pos_and_radius.xyz - P);
             const float inv_solid_angle = sqr_dist / (length(litem.u_and_reg.xyz) * length(litem.v_and_blend.xyz));
             const float front_dot_l = saturate(dot(litem.dir_and_spot.xyz, L));
             ret += lobe_weights.diffuse_mul * base_color * litem.col_and_type.xyz * saturate(front_dot_l * N_dot_L / (1.0 + inv_solid_angle)) / 4.0;
@@ -551,17 +550,16 @@ vec3 EvaluateLightSource_Approx(const light_item_t litem, const vec3 P, const ve
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
             const vec3 L0 = litem.pos_and_radius.xyz + litem.v_and_blend.xyz - P;
             const vec3 L1 = litem.pos_and_radius.xyz - litem.v_and_blend.xyz - P;
-
-            vec2 len_sqr = vec2(dot(L0, L0), dot(L1, L1));
-            vec2 inv_len = inversesqrt(len_sqr);
-            vec2 len = len_sqr * inv_len;
+            const vec2 len_sqr = vec2(dot(L0, L0), dot(L1, L1));
+            const vec2 inv_len = inversesqrt(len_sqr);
+            const vec2 len = len_sqr * inv_len;
             const float N_dot_L = saturate(0.5 * (dot(N, L0) * inv_len.x + dot(N, L1) * inv_len.y));
             ret += brightness_mul * lobe_weights.diffuse_mul * base_color * litem.col_and_type.xyz * N_dot_L / max(0.001, 0.5 * (len.x * len.y + dot(L0, L1)));
         }
     }
 
-    const float dist = sqrt(sqr_dist);
     if ((lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) && ENABLE_SPECULAR != 0) {
+        const float dist = sqrt(sqr_dist);
         const float roughness_mod = saturate(roughness + litem.pos_and_radius.w / (3.0 * dist));
         const float roughness2 = sqr(max(roughness_mod, MIN_SPEC_ROUGHNESS));
         const vec3 spec = spec_color * PrincipledSpecular(roughness2, N_dot_V, N_dot_L, N_dot_H);

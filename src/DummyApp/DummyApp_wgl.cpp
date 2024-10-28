@@ -261,7 +261,7 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
         style &= ~WS_MAXIMIZEBOX;
     }
 
-    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", style, CW_USEDEFAULT, CW_USEDEFAULT,
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View [OpenGL]", style, CW_USEDEFAULT, CW_USEDEFAULT,
                                       rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
                                       GetModuleHandle(nullptr), nullptr);
 

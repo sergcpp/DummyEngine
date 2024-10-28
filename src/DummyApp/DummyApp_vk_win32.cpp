@@ -181,13 +181,18 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
         style &= ~WS_THICKFRAME;
         style &= ~WS_MINIMIZEBOX;
         style &= ~WS_MAXIMIZEBOX;
+        style &= ~WS_VISIBLE;
     }
 
     window_handle_ =
-        ::CreateWindowEx(NULL, "MainWindowClass", "View (VK)", style, win_pos[0], win_pos[1], rect.right - rect.left,
+        ::CreateWindowEx(NULL, "MainWindowClass", "View [Vulkan]", style, win_pos[0], win_pos[1], rect.right - rect.left,
                          rect.bottom - rect.top, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
-
     device_context_ = GetDC(window_handle_);
+
+    if (!app_params.ref_name.empty()) {
+        SetActiveWindow(window_handle_);
+        ShowWindow(window_handle_, SW_SHOWNOACTIVATE);
+    }
 
     try {
         Viewer::PrepareAssets("pc");

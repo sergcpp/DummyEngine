@@ -95,7 +95,7 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
     XSetWMProtocols(dpy_, win_, &wm_delete, 1);
 
     XMapWindow(dpy_, win_);
-    XStoreName(dpy_, win_, "View (VK)");
+    XStoreName(dpy_, win_, "View [Vulkan]");
 
     Ren::g_dpy = dpy_;
     Ren::g_win = win_;

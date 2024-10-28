@@ -504,7 +504,7 @@ int ModlApp::Init(const int w, const int h) {
     PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
     wglSwapIntervalEXT = reinterpret_cast<PFNWGLSWAPINTERVALEXTPROC>(wglGetProcAddress("wglSwapIntervalEXT"));
 
-    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View [OpenGL]", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                                       CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
                                       GetModuleHandle(nullptr), nullptr);
 

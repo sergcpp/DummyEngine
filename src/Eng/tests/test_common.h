@@ -251,7 +251,7 @@ class TestContext : public Ren::Context {
         XSetWMProtocols(dpy_, win_, &wm_delete, 1);
 
         XMapWindow(dpy_, win_);
-        XStoreName(dpy_, win_, "View (GL)");
+        XStoreName(dpy_, win_, "View [OpenGL]");
 
         auto glXCreateContextAttribsARB =
             (GLXCREATECONTEXTATTIBSARBPROC)glXGetProcAddress((const GLubyte *)"glXCreateContextAttribsARB");
