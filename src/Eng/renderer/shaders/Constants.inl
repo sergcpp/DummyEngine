@@ -151,11 +151,14 @@ const int PROBE_TOTAL_RAYS_COUNT = 128;
 const int PROBE_FIXED_RAYS_COUNT = 32;
 const int PROBE_IRRADIANCE_RES = 6;
 const int PROBE_DISTANCE_RES = 16;
-const float PROBE_RADIANCE_EXP = 5.0;
+const float PROBE_RADIANCE_EXP = 5;
 
 const float PROBE_STATE_INACTIVE = 0;
 const float PROBE_STATE_ACTIVE = 1;
 const float PROBE_STATE_ACTIVE_OUTDOOR = 2;
+
+// GI
+const float GI_CACHE_MULTIBOUNCE_FACTOR = 0.8f;
 
 const float HDR_FACTOR = 32;
 

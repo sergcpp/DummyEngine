@@ -569,9 +569,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             ls.col[1] = light.power * light.col[1] / light.area;
                             ls.col[2] = light.power * light.col[2] / light.area;
                         } else {
-                            ls.col[0] = scene.env.env_col[0] / sqrtf(light.area);
-                            ls.col[1] = scene.env.env_col[1] / sqrtf(light.area);
-                            ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
+                            ls.col[0] = Ren::Pi<float>() * scene.env.env_col[0];
+                            ls.col[1] = Ren::Pi<float>() * scene.env.env_col[1];
+                            ls.col[2] = Ren::Pi<float>() * scene.env.env_col[2];
                             list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                         }
                         ls.type_and_flags = uint32_t(light.type);
@@ -756,9 +756,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         ls.col[1] = light.power * light.col[1] / light.area;
                         ls.col[2] = light.power * light.col[2] / light.area;
                     } else {
-                        ls.col[0] = scene.env.env_col[0] / sqrtf(light.area);
-                        ls.col[1] = scene.env.env_col[1] / sqrtf(light.area);
-                        ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
+                        ls.col[0] = Ren::Pi<float>() * scene.env.env_col[0];
+                        ls.col[1] = Ren::Pi<float>() * scene.env.env_col[1];
+                        ls.col[2] = Ren::Pi<float>() * scene.env.env_col[2];
                         list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                     }
                     ls.type_and_flags = uint32_t(light.type);
