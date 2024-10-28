@@ -792,6 +792,7 @@ struct tex_config_t {
     bool compress = true;
     bool dx_convention = false;
     bool copy = false;
+    bool srgb_to_linear = false;
     int extract_channel = -1;
 };
 
@@ -845,6 +846,8 @@ tex_config_t ParseTextureConfig(const char *in_file) {
                             ret.dx_convention = true;
                         } else if (flag == "copy") {
                             ret.copy = true;
+                        } else if (flag == "srgb") {
+                            ret.srgb_to_linear = true;
                         }
                     }
                 }
@@ -1225,6 +1228,18 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     } else if (tex.image_type == eImageType::NormalMap && channels == 2 && tex.dx_convention) {
         for (int i = 0; i < width * height; ++i) {
             image_data[2 * i + 1] = 255 - image_data[2 * i + 1];
+        }
+    } else if (tex.srgb_to_linear) {
+        for (int i = 0; i < width * height; ++i) {
+            for (int j = 0; j < channels; ++j) {
+                float val = float(image_data[channels * i + j]) / 255.0f;
+                if (val > 0.04045f) {
+                    val = powf((val + 0.055f) / 1.055f, 2.4f);
+                } else {
+                    val = val / 12.92f;
+                }
+                image_data[channels * i + j] = uint8_t(std::min(std::max(int(val * 255), 0), 255));
+            }
         }
     }
 
