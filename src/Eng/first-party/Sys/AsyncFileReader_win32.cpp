@@ -12,6 +12,8 @@
 #endif
 #include <Windows.h>
 
+#include "ScopeExit.h"
+
 namespace Sys {
 static const int MaxVolumeSectorSize = 4096;
 static const int SimultaniousFileRequests = 16;
@@ -114,11 +116,11 @@ class AsyncFileReaderImpl {
         HANDLE h_file = ::CreateFile(
             file_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN | FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED, NULL);
-
         if (h_file == INVALID_HANDLE_VALUE) {
             out_size = 0;
             return false;
         }
+        SCOPE_EXIT({ ::CloseHandle(h_file); })
 
         LARGE_INTEGER size;
         GetFileSizeEx(h_file, &size);
@@ -127,7 +129,6 @@ class AsyncFileReaderImpl {
         const size_t out_buf_size = out_size;
 
         if (out_buf_size < read_size) {
-            ::CloseHandle(h_file);
             return false;
         }
 
@@ -148,7 +149,6 @@ class AsyncFileReaderImpl {
             const size_t req_size = std::min(size_t(internal_buf_.chunk_size()), left_to_request);
             if (!internal_ev_[i].ReadFile(h_file, aligned_read_offset + size_t(i) * internal_buf_.chunk_size(),
                                           req_size, internal_buf_.chunk(i % SimultaniousFileRequests))) {
-                ::CloseHandle(h_file);
                 return false;
             }
             left_to_request -= req_size;
@@ -177,7 +177,6 @@ class AsyncFileReaderImpl {
                 if (!internal_ev_[next_i].ReadFile(
                         h_file, aligned_read_offset + size_t(next_request) * internal_buf_.chunk_size(), req_size,
                         internal_buf_.chunk(next_i))) {
-                    ::CloseHandle(h_file);
                     return false;
                 }
                 left_to_request -= req_size;
@@ -192,7 +191,6 @@ class AsyncFileReaderImpl {
         assert(left_to_request == 0);
         assert(left_to_read == 0);
 
-        ::CloseHandle(h_file);
         return true;
     }
 
@@ -206,12 +204,12 @@ class AsyncFileReaderImpl {
         HANDLE h_file = ::CreateFile(
             file_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN | FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED, NULL);
-
         if (h_file == INVALID_HANDLE_VALUE) {
             out_buf.set_data_off(0);
             out_buf.set_data_len(0);
             return false;
         }
+        SCOPE_EXIT({ ::CloseHandle(h_file); })
 
         LARGE_INTEGER size;
         GetFileSizeEx(h_file, &size);
@@ -237,7 +235,6 @@ class AsyncFileReaderImpl {
                                     out_buf.chunk(i))) {
                 out_buf.set_data_off(0);
                 out_buf.set_data_len(0);
-                ::CloseHandle(h_file);
                 return false;
             }
             left_to_request -= req_size;
@@ -255,7 +252,6 @@ class AsyncFileReaderImpl {
                         out_buf.chunk(next_request % out_buf.chunk_count()))) {
                     out_buf.set_data_off(0);
                     out_buf.set_data_len(0);
-                    ::CloseHandle(h_file);
                     return false;
                 }
                 left_to_request -= req_size;
@@ -264,7 +260,6 @@ class AsyncFileReaderImpl {
 
         assert(left_to_request == 0);
 
-        ::CloseHandle(h_file);
         return true;
     }
 
@@ -273,7 +268,6 @@ class AsyncFileReaderImpl {
         HANDLE h_file = ::CreateFile(
             file_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN | FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED, NULL);
-
         if (h_file == INVALID_HANDLE_VALUE) {
             out_buf.set_data_off(0);
             out_buf.set_data_len(0);
@@ -313,7 +307,7 @@ Sys::AsyncFileReader::AsyncFileReader() noexcept : impl_(new AsyncFileReaderImpl
 Sys::AsyncFileReader::~AsyncFileReader() = default;
 
 bool Sys::AsyncFileReader::ReadFileBlocking(const char *file_path, const size_t read_offset, const size_t read_size,
-                                             FileReadBufBase &out_buf) {
+                                            FileReadBufBase &out_buf) {
     return impl_->ReadFileBlocking(file_path, read_offset, read_size, out_buf);
 }
 
