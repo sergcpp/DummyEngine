@@ -11,7 +11,7 @@ Features:
 - Hardware raytracing with software fallback
 - Order-independent transparency
 - Procedural sky model
-- Framegraph with automatic barrier placement and resource aliasing
+- Framegraph for automatic barrier placement and resource aliasing
 - Dynamic BVH as main scene structure
 - Occlusion culling based on software rasterization
 - Simple ECS
@@ -20,10 +20,10 @@ Features:
   <summary>Images</summary>
   <div>
       <div float="middle">
-        <img src="images/pbr.png" />
+        <img src="images/ai043_06.jpg" />
       </div>
       <div float="middle">
-        <img src="images/fg.png" />
+        <img src="images/pbr.png" />
       </div>
     </div>
 </details>
