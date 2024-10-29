@@ -1197,6 +1197,8 @@ void GSBaseState::InitScene_PT() {
         cam_desc.fwd[0] = cam_desc.fwd[1] = 0;
         cam_desc.fwd[2] = -1;
         cam_desc.fov = scene_manager_->main_cam().angle();
+        cam_desc.shift[0] = scene_manager_->main_cam().sensor_shift()[0];
+        cam_desc.shift[1] = scene_manager_->main_cam().sensor_shift()[1];
         ray_scene_->AddCamera(cam_desc);
     }
     if (Length2(scene_data.env.sun_col) > 0) {

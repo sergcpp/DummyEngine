@@ -385,6 +385,12 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
             max_exposure_ = float(js_max_exposure.val);
         }
 
+        if (js_cam.Has("shift")) {
+            const JsArrayP &js_shift = js_cam.at("shift").as_arr();
+            view_sensor_shift_[0] = float(js_shift[0].as_num().val);
+            view_sensor_shift_[1] = float(js_shift[1].as_num().val);
+        }
+
         if (js_cam.Has("filter")) {
             const JsStringP &js_filter = js_cam.at("filter").as_str();
             if (js_filter.val == "box") {
@@ -820,8 +826,8 @@ void GSDrawTest::UpdateAnim(const uint64_t dt_us) {
     TestUpdateAnims(delta_time_s);
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0, 1, 0}, view_fov_, gamma_,
-                              min_exposure_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0, 1, 0}, view_fov_,
+                              view_sensor_shift_, gamma_, min_exposure_, max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f", view_origin_[0], view_origin_[1], view_origin_[2], view_dir_[0], view_dir_[1],
     //           view_dir_[2]);

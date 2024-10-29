@@ -869,8 +869,8 @@ void Eng::SceneManager::LoadProbeCache() {
 }
 
 void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up,
-                                  const float fov, const float gamma, const float min_exposure,
-                                  const float max_exposure) {
+                                  const float fov, const Ren::Vec2f sensor_shift, const float gamma,
+                                  const float min_exposure, const float max_exposure) {
     using namespace SceneManagerConstants;
 
     const int cur_scr_w = ren_ctx_.w(), cur_scr_h = ren_ctx_.h();
@@ -880,7 +880,8 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     }
 
     cam_.SetupView(origin, target, up);
-    cam_.Perspective(Ren::eZRange::OneToZero, fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
+    cam_.Perspective(Ren::eZRange::OneToZero, fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP,
+                     sensor_shift);
     cam_.UpdatePlanes();
 
     cam_.set_render_mask(Ren::Bitmask<Drawable::eVisibility>{Drawable::eVisibility::Camera});

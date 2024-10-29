@@ -122,7 +122,7 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0, 1, 0}, view_fov, 1,
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0, 1, 0}, view_fov, Ren::Vec2f{0.0f}, 1,
                               min_exposure, max_exposure);
 
     {
@@ -226,7 +226,7 @@ bool GSUITest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
     case Eng::eInputEvent::P1Down: {
         const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        //word_puzzle_->Press(p, true);
+        // word_puzzle_->Press(p, true);
     } break;
     case Eng::eInputEvent::P2Down: {
 
@@ -234,7 +234,7 @@ bool GSUITest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
     case Eng::eInputEvent::P1Up: {
         const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        //word_puzzle_->Press(p, false);
+        // word_puzzle_->Press(p, false);
     } break;
     case Eng::eInputEvent::P2Up: {
 
@@ -242,7 +242,7 @@ bool GSUITest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
     case Eng::eInputEvent::P1Move: {
         const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        //word_puzzle_->Hover(p);
+        // word_puzzle_->Hover(p);
     } break;
     case Eng::eInputEvent::P2Move: {
 

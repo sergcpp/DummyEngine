@@ -180,13 +180,16 @@ void Ren::Camera::SetPxOffset(const Vec2f px_offset) const {
 }
 
 void Ren::Camera::Perspective(const eZRange mode, const float angle, const float aspect, const float nearr,
-                              const float farr) {
+                              const float farr, const Vec2f sensor_shift) {
     is_orthographic_ = false;
     angle_ = angle;
     aspect_ = aspect;
     near_ = nearr;
     far_ = farr;
+    sensor_shift_ = sensor_shift;
     proj_matrix_ = PerspectiveProjection(angle, aspect, nearr, farr, mode != eZRange::NegOneToOne);
+    proj_matrix_[2][0] += 2 * sensor_shift_[0] / aspect_;
+    proj_matrix_[2][1] += 2 * sensor_shift_[1];
     if (mode == eZRange::OneToZero) {
         const Mat4f reverse_z = Mat4f{Vec4f{1, 0, 0, 0},  //
                                       Vec4f{0, 1, 0, 0},  //

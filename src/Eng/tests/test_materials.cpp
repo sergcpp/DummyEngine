@@ -214,8 +214,8 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         scene_manager.SaveScene(js_scene_out);
         require(js_scene_out.Equals(js_scene, 0.001));
     }
-    scene_manager.SetupView(view_pos, view_pos + view_dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, gamma, min_exposure,
-                            max_exposure);
+    scene_manager.SetupView(view_pos, view_pos + view_dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, Ren::Vec2f{0.0f},
+                            gamma, min_exposure, max_exposure);
 
     //
     // Create required staging buffers

@@ -139,8 +139,8 @@ class SceneManager {
 
     void LoadProbeCache();
 
-    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float gamma,
-                   float min_exposure, float max_exposure);
+    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov,
+                   Ren::Vec2f sensor_shift, float gamma, float min_exposure, float max_exposure);
 
     using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void RegisterComponent(uint32_t index, Eng::CompStorage *storage, const std::function<PostLoadFunc> &post_init);

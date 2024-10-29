@@ -35,13 +35,9 @@ GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
 
     const float font_height = dialog_font_->height(ui_root_);
 
-    Gui::Image9Patch edit_box_frame{*ren_ctx_,
-                                    "assets_pc/textures/ui/frame_01.uncompressed.png",
-                                    Gui::Vec2f{8},
-                                    1,
-                                    Gui::Vec2f{-1},
-                                    Gui::Vec2f{2},
-                                    ui_root_};
+    Gui::Image9Patch edit_box_frame{
+        *ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Gui::Vec2f{8}, 1, Gui::Vec2f{-1}, Gui::Vec2f{2},
+        ui_root_};
     edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_, Gui::Vec2f{-0.5f, 0.75f},
                                                Gui::Vec2f{1.0f, 0.75f * font_height}, ui_root_);
     edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
@@ -127,7 +123,7 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0, 1, 0}, view_fov, 1,
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0, 1, 0}, view_fov, Ren::Vec2f{0.0f}, 1,
                               min_exposure, max_exposure);
 }
 
@@ -354,7 +350,7 @@ bool GSUITest2::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
         Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                              Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, true);
-        //edit_box_->Press(p, true);
+        // edit_box_->Press(p, true);
     } break;
     case Eng::eInputEvent::P2Down: {
 
@@ -365,7 +361,7 @@ bool GSUITest2::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
         const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
                                                    Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, false);
-        //edit_box_->Press(p, false);
+        // edit_box_->Press(p, false);
 
         is_visible_ = !is_visible_;
     } break;

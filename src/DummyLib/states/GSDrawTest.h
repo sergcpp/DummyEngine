@@ -30,6 +30,7 @@ class GSDrawTest final : public GSBaseState {
     Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
 
     Ren::Vec3f view_origin_ = Ren::Vec3f{0}, view_dir_ = Ren::Vec3f{0, 0, -1};
+    Ren::Vec2f view_sensor_shift_ = Ren::Vec2f{};
 
     float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 

@@ -49,17 +49,14 @@ GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
 
     dialog_ui_ = std::make_unique<DialogUI>(Gui::Vec2f{-1}, Gui::Vec2f{2}, ui_root_, *dialog_font_);
 
-    seq_edit_ui_ =
-        std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
+    seq_edit_ui_ = std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
 
-    dialog_edit_ui_ =
-        std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
+    dialog_edit_ui_ = std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
 
-    seq_cap_ui_ =
-        std::make_unique<CaptionsUI>(Gui::Vec2f{-1, 0}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_);
+    seq_cap_ui_ = std::make_unique<CaptionsUI>(Gui::Vec2f{-1, 0}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_);
     // test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
     //    seq_cap_ui_.get());
 
@@ -226,7 +223,7 @@ void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
     GSBaseState::UpdateAnim(dt_us);
 
     scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-                              Ren::Vec3f{0, 1, 0}, cam_ctrl_->view_fov, 1, cam_ctrl_->min_exposure,
+                              Ren::Vec3f{0, 1, 0}, cam_ctrl_->view_fov, Ren::Vec2f{0.0f}, 1, cam_ctrl_->min_exposure,
                               cam_ctrl_->max_exposure);
 
     const Eng::SceneData &scene = scene_manager_->scene_data();

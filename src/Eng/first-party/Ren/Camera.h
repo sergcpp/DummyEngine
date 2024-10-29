@@ -24,9 +24,8 @@ enum class eCamPlane { Left, Right, Top, Bottom, Near, Far, _Count };
 enum class eVisResult { Invisible, FullyVisible, PartiallyVisible };
 
 struct Frustum {
-    Plane planes[8] = {Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize},
-                       Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize},
-                       Plane{Uninitialize}, Plane{Uninitialize}};
+    Plane planes[8] = {Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize},
+                       Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize}, Plane{Uninitialize}};
     int planes_count = 6;
 
     void UpdateFromMatrix(const Mat4f &xform);
@@ -49,6 +48,7 @@ class Camera {
     bool is_orthographic_ = false;
 
     float angle_ = 0, aspect_ = 1, near_ = 0, far_ = 0;
+    Vec2f sensor_shift_;
     mutable Vec2f px_offset_;
 
   public:
@@ -66,6 +66,7 @@ class Camera {
     [[nodiscard]] const Mat4f &proj_matrix_offset() const { return proj_matrix_offset_; }
 
     [[nodiscard]] const Vec3f &world_position() const { return world_position_; }
+    [[nodiscard]] Vec2f sensor_shift() const { return sensor_shift_; }
     [[nodiscard]] Vec2f px_offset() const { return px_offset_; }
 
     [[nodiscard]] Vec3f fwd() const { return Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]}; }
@@ -76,9 +77,7 @@ class Camera {
 
     [[nodiscard]] Vec3f view_dir() const { return Vec3f{view_matrix_[0][2], view_matrix_[1][2], view_matrix_[2][2]}; }
 
-    [[nodiscard]] Vec4f clip_info() const {
-        return Vec4f{near_ * far_, near_, far_, std::log2(1.0f + far_ / near_)};
-    }
+    [[nodiscard]] Vec4f clip_info() const { return Vec4f{near_ * far_, near_, far_, std::log2(1.0f + far_ / near_)}; }
 
     [[nodiscard]] float angle() const { return angle_; }
     [[nodiscard]] float aspect() const { return aspect_; }
@@ -97,7 +96,7 @@ class Camera {
 
     [[nodiscard]] bool is_orthographic() const { return is_orthographic_; }
 
-    void Perspective(eZRange mode, float angle, float aspect, float near, float far);
+    void Perspective(eZRange mode, float angle, float aspect, float near, float far, Vec2f sensor_shift = Vec2f{});
     void Orthographic(eZRange mode, float left, float right, float top, float down, float near, float far);
 
     void SetupView(const Vec3f &center, const Vec3f &target, const Vec3f &up);
