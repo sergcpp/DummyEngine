@@ -160,9 +160,9 @@ const float PROBE_STATE_ACTIVE_OUTDOOR = 2;
 // GI
 const float GI_CACHE_MULTIBOUNCE_FACTOR = 0.8f;
 
-const float HDR_FACTOR = 32;
+const float HDR_PRE_EXPOSURE = 32;
 
-const int OIT_LAYERS_COUNT = 4;
+// Transparency
 const int OIT_REFLECTION_LAYERS = 2;
 
 const int MATERIAL_SOLID_BIT = 32768;  // 0b1000000000000000

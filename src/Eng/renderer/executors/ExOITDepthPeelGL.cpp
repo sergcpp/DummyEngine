@@ -37,7 +37,6 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
     FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
     FgAllocBuf &textures_buf = builder.GetReadBuffer(textures_buf_);
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
     FgAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
 
     FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(out_depth_buf_);
@@ -80,8 +79,6 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
-
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
@@ -102,12 +99,12 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SIMPLE");
 
         glBindVertexArray(vi_simple_.gl_vao());
-        glUseProgram(pi_simple_[0].prog()->id());
+        glUseProgram(pi_simple_[ultra_][0].prog()->id());
 
         { // solid one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[0].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -116,7 +113,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitAlphaBlend,
                                  cur_mat_id, &draws_count);
 
-            rast_state = pi_simple_[1].rast_state();
+            rast_state = pi_simple_[ultra_][1].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -129,7 +126,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         { // solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[2].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -142,7 +139,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         { // moving solid one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[0].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -155,7 +152,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         { // moving solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[2].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -169,7 +166,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         { // alpha-tested one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[0].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -182,7 +179,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         { // alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[2].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -196,7 +193,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         { // moving alpha-tested one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[0].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -210,7 +207,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         { // moving alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[2].rast_state();
+            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());

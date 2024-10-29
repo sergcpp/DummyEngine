@@ -94,7 +94,7 @@ mat3 CreateTBN(vec3 N) {
     return transpose(TBN);
 }
 
-/* fp16 */ float Luminance(/* fp16 */ vec3 color) { return HDR_FACTOR * max(lum(color), 0.001); }
+/* fp16 */ float Luminance(/* fp16 */ vec3 color) { return HDR_PRE_EXPOSURE * max(lum(color), 0.001); }
 
 /* fp16 */ float ComputeTemporalVariance(/* fp16 */ vec3 history_radiance, /* fp16 */ vec3 radiance) {
     /* fp16 */ float history_luminance = Luminance(history_radiance);

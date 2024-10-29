@@ -199,8 +199,8 @@ class Renderer {
     ExTransparent ex_transparent_ = ExTransparent{prim_draw_};
     ExEmissive ex_emissive_;
     ExOITDepthPeel ex_oit_depth_peel_;
-    ExOITBlendLayer rp_oit_blend_layer_[OIT_LAYERS_COUNT] = {ExOITBlendLayer{prim_draw_}, ExOITBlendLayer{prim_draw_},
-                                                             ExOITBlendLayer{prim_draw_}, ExOITBlendLayer{prim_draw_}};
+    Ren::SmallVector<ExOITBlendLayer, 6> rp_oit_blend_layer_;
+
     ExOITScheduleRays ex_oit_schedule_rays_;
     ExRTReflections ex_oit_rt_reflections_ = ExRTReflections{true};
     ExRTGI ex_rt_gi_;

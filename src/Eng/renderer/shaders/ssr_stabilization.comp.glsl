@@ -19,7 +19,7 @@ layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 layout(binding = OUT_SSR_IMG_SLOT, rgba16f) uniform image2D g_out_ssr_img;
 
 float Luma(vec3 col) {
-    return HDR_FACTOR * dot(col, vec3(0.2125, 0.7154, 0.0721));
+    return HDR_PRE_EXPOSURE * dot(col, vec3(0.2125, 0.7154, 0.0721));
 }
 
 vec3 Tonemap(vec3 c, const float exposure) {

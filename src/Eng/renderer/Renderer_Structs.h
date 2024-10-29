@@ -232,6 +232,8 @@ enum class eGICacheUpdateMode : uint8_t { Off, Partial, Full };
 
 enum class eSkyQuality : uint8_t { Medium, High, Ultra };
 
+enum class eTransparencyQuality : uint8_t { High, Ultra };
+
 enum class eDebugRT : uint8_t { Off, Main, Shadow };
 
 enum class eDebugDenoise : uint8_t { Off, Reflection, GI, Shadow };
@@ -287,6 +289,7 @@ struct render_settings_t {
     eGIQuality gi_quality = eGIQuality::High;
     eGICacheUpdateMode gi_cache_update_mode = eGICacheUpdateMode::Partial;
     eSkyQuality sky_quality = eSkyQuality::High;
+    eTransparencyQuality transparency_quality = eTransparencyQuality::High;
 
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
@@ -304,8 +307,9 @@ struct render_settings_t {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
                gi_quality == rhs.gi_quality && gi_cache_update_mode == rhs.gi_cache_update_mode &&
-               sky_quality == rhs.sky_quality && debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise &&
-               debug_probes == rhs.debug_probes && debug_oit_layer == rhs.debug_oit_layer;
+               sky_quality == rhs.sky_quality && transparency_quality == rhs.transparency_quality &&
+               debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
+               debug_oit_layer == rhs.debug_oit_layer;
     }
     bool operator!=(const render_settings_t &rhs) const { return !operator==(rhs); }
 
@@ -322,6 +326,9 @@ struct render_settings_t {
         gi_quality = eGIQuality(std::min(uint8_t(gi_quality), uint8_t(rhs.gi_quality)));
         gi_cache_update_mode =
             eGICacheUpdateMode(std::min(uint8_t(gi_cache_update_mode), uint8_t(rhs.gi_cache_update_mode)));
+        sky_quality = eSkyQuality(std::min(uint8_t(sky_quality), uint8_t(rhs.sky_quality)));
+        transparency_quality =
+            eTransparencyQuality(std::min(uint8_t(transparency_quality), uint8_t(rhs.transparency_quality)));
 
         return (*this);
     }

@@ -2021,7 +2021,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             const bool compressed = (input_tex.ref->params.format == Ren::eTexFormat::RawRGBA16F);
 
             HistogramSample::Params uniform_params = {};
-            uniform_params.scale = compressed ? HDR_FACTOR : (1.0f / pre_exposure_);
+            uniform_params.scale = compressed ? HDR_PRE_EXPOSURE : (1.0f / pre_exposure_);
 
             DispatchCompute(pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());

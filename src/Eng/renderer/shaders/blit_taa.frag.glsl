@@ -46,7 +46,7 @@ float PDnrand(vec2 n) {
 vec3 MaybeTonemap(vec3 c) {
     c = clamp(c, vec3(0.0), vec3(HALF_MAX));
 #if defined(TONEMAP)
-    c *= HDR_FACTOR * texelFetch(g_exposure, ivec2(0), 0).x;
+    c *= HDR_PRE_EXPOSURE * texelFetch(g_exposure, ivec2(0), 0).x;
     c = c / (c + vec3(1.0));
 #endif
     return c;
@@ -55,7 +55,7 @@ vec3 MaybeTonemap(vec3 c) {
 vec3 TonemapInvert(vec3 c) {
 #if defined(TONEMAP)
     c = c / (vec3(1.0) - c);
-    c /= HDR_FACTOR * texelFetch(g_exposure, ivec2(0), 0).x;
+    c /= HDR_PRE_EXPOSURE * texelFetch(g_exposure, ivec2(0), 0).x;
 #endif
     c = clamp(c, vec3(0.0), vec3(HALF_MAX));
     return c;

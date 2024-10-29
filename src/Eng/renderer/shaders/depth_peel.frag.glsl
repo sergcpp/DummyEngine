@@ -7,10 +7,18 @@
 #include "texturing_common.glsl"
 #include "depth_peel_interface.h"
 
+#pragma multi_compile HIGH ULTRA
 #pragma multi_compile _ NO_BINDLESS
 
 #if defined(NO_BINDLESS) && defined(VULKAN)
     #pragma dont_compile
+#endif
+
+// NOTE: Must be in sync with CPU side!
+#if defined(HIGH)
+const int OIT_LAYERS_COUNT = 4;
+#elif defined(ULTRA)
+const int OIT_LAYERS_COUNT = 6;
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {

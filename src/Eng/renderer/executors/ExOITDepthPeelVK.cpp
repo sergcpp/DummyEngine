@@ -20,7 +20,6 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
     auto &ctx = builder.ctx();
     auto *api_ctx = ctx.api_ctx();
 
-    FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
     FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
     FgAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
     FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
@@ -45,10 +44,9 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
             {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
             {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-            {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref},
             {Ren::eBindTarget::STBufRW, DepthPeel::OUT_IMG_BUF_SLOT, *out_depth_buf.tbos[0]}};
-        descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0].prog()->descr_set_layouts()[0], bindings,
-                                                  ctx.default_descr_alloc(), ctx.log());
+        descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_simple_[0][0].prog()->descr_set_layouts()[0], bindings,
+                                             ctx.default_descr_alloc(), ctx.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
@@ -87,91 +85,92 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
 
             { // solid one-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "SOLID-ONE-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[0], batch_indices, batches, i, BDB::BitAlphaBlend,
-                                    materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[1].handle());
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[1], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][0].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][0].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][0], batch_indices, batches, i,
+                                    BDB::BitAlphaBlend, materials_per_descriptor, bindless_tex_->textures_descr_sets,
+                                    &draws_count);
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][1].handle());
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][1], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitBackSided, materials_per_descriptor,
                                     bindless_tex_->textures_descr_sets, &draws_count);
             }
 
             { // solid two-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "SOLID-TWO-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[2], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][2].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][2].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][2], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitTwoSided, materials_per_descriptor,
                                     bindless_tex_->textures_descr_sets, &draws_count);
             }
 
             { // moving solid one-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "MOVING-SOLID-ONE-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[0], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][0].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][0].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][0], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitMoving, materials_per_descriptor,
                                     bindless_tex_->textures_descr_sets, &draws_count);
             }
 
             { // moving solid two-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "MOVING-SOLID-TWO-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[2], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][2].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][2].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][2], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitTwoSided, materials_per_descriptor,
                                     bindless_tex_->textures_descr_sets, &draws_count);
             }
 
             { // alpha-tested one-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "ALPHA-ONE-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[0], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][0].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][0].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][0], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitAlphaTest, materials_per_descriptor,
                                     bindless_tex_->textures_descr_sets, &draws_count);
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[1].handle());
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[1], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][1].handle());
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][1], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitBackSided,
                                     materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
             }
 
             { // alpha-tested two-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "ALPHA-TWO-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[2], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][2].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][2].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][2], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitTwoSided, materials_per_descriptor,
                                     bindless_tex_->textures_descr_sets, &draws_count);
             }
 
             { // moving alpha-tested one-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "MOVING-ALPHA-ONE-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[0].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[0], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][0].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][0].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][0], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest, materials_per_descriptor,
                                     bindless_tex_->textures_descr_sets, &draws_count);
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[1].handle());
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[1], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][1].handle());
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][1], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitBackSided,
                                     materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
             }
 
             { // moving alpha-tested two-sided
                 Ren::DebugMarker _mm(api_ctx, cmd_buf, "MOVING-ALPHA-TWO-SIDED");
-                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].handle());
-                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[2].layout(), 0, 2,
-                                                 descr_sets, 0, nullptr);
-                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[2], batch_indices, batches, i,
+                api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_simple_[ultra_][2].handle());
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pi_simple_[ultra_][2].layout(), 0, 2, descr_sets, 0, nullptr);
+                i = _draw_range_ext(api_ctx, cmd_buf, pi_simple_[ultra_][2], batch_indices, batches, i,
                                     BDB::BitAlphaBlend | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided,
                                     materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
             }

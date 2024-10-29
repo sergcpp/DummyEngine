@@ -13,9 +13,8 @@ class ExOITDepthPeel final : public FgExecutor {
 
     // lazily initialized data
     Ren::RenderPass rp_depth_peel_;
-    Ren::VertexInput vi_simple_, vi_vegetation_;
-    Ren::Pipeline pi_simple_[3];
-    Ren::Pipeline pi_vegetation_[2];
+    Ren::VertexInput vi_simple_;
+    Ren::Pipeline pi_simple_[2][3];
     Ren::Framebuffer main_draw_fb_[Ren::MaxFramesInFlight][2];
     int fb_to_use_ = 0;
 
@@ -24,6 +23,7 @@ class ExOITDepthPeel final : public FgExecutor {
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const DrawList **p_list_ = nullptr;
+    bool ultra_ = false;
 
     FgResRef vtx_buf1_;
     FgResRef vtx_buf2_;
@@ -33,7 +33,6 @@ class ExOITDepthPeel final : public FgExecutor {
     FgResRef shared_data_buf_;
     FgResRef materials_buf_;
     FgResRef textures_buf_;
-    FgResRef noise_tex_;
     FgResRef dummy_white_;
 
     FgResRef depth_tex_;
@@ -46,9 +45,9 @@ class ExOITDepthPeel final : public FgExecutor {
   public:
     void Setup(const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
                const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
-               const BindlessTextureData *bindless_tex, const FgResRef noise_tex, FgResRef dummy_white,
-               const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
-               const FgResRef depth_tex, const FgResRef out_depth_buf) {
+               const BindlessTextureData *bindless_tex, const FgResRef dummy_white, const FgResRef instances_buf,
+               const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef depth_tex,
+               const FgResRef out_depth_buf, const bool ultra) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
 
@@ -62,11 +61,12 @@ class ExOITDepthPeel final : public FgExecutor {
         shared_data_buf_ = shared_data_buf;
         materials_buf_ = materials_buf;
         textures_buf_ = textures_buf;
-        noise_tex_ = noise_tex;
         dummy_white_ = dummy_white;
 
         depth_tex_ = depth_tex;
         out_depth_buf_ = out_depth_buf;
+
+        ultra_ = ultra;
     }
 
     void Execute(FgBuilder &builder) override;

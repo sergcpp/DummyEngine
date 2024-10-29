@@ -126,6 +126,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         renderer->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
         renderer->settings.gi_quality = Eng::eGIQuality::Ultra;
         renderer->settings.sky_quality = Eng::eSkyQuality::Ultra;
+        renderer->settings.transparency_quality = Eng::eTransparencyQuality::Ultra;
     }
 
     Eng::path_config_t paths;

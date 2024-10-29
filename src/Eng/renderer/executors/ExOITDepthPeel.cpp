@@ -26,16 +26,15 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
         const bool bindless = true;
 #endif
 
-        Ren::ProgramRef depth_peel_simple_prog = sh.LoadProgram(
+        Ren::ProgramRef depth_peel_simple_high_prog = sh.LoadProgram(
             ctx, bindless ? "internal/depth_peel.vert.glsl" : "internal/depth_peel@NO_BINDLESS.vert.glsl",
-            bindless ? "internal/depth_peel.frag.glsl" : "internal/depth_peel@NO_BINDLESS.frag.glsl");
-        assert(depth_peel_simple_prog->ready());
-        Ren::ProgramRef depth_peel_vegetation_prog =
-            sh.LoadProgram(ctx,
-                           bindless ? "internal/depth_peel@VEGETATION.vert.glsl"
-                                    : "internal/depth_peel@VEGETATION;NO_BINDLESS.vert.glsl",
-                           bindless ? "internal/depth_peel.frag.glsl" : "internal/depth_peel@NO_BINDLESS.frag.glsl");
-        assert(depth_peel_vegetation_prog->ready());
+            bindless ? "internal/depth_peel@HIGH.frag.glsl" : "internal/depth_peel@HIGH;NO_BINDLESS.frag.glsl");
+        assert(depth_peel_simple_high_prog->ready());
+
+        Ren::ProgramRef depth_peel_simple_ultra_prog = sh.LoadProgram(
+            ctx, bindless ? "internal/depth_peel.vert.glsl" : "internal/depth_peel@NO_BINDLESS.vert.glsl",
+            bindless ? "internal/depth_peel@ULTRA.frag.glsl" : "internal/depth_peel@ULTRA;NO_BINDLESS.frag.glsl");
+        assert(depth_peel_simple_ultra_prog->ready());
 
         if (!rp_depth_peel_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {
             ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to init render pass!");
@@ -50,58 +49,40 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
             }
         }
 
-        { // VAO for vegetation meshes (uses additional vertex color attribute)
-            const Ren::VtxAttribDesc attribs[] = {
-                // Attributes from buffer 1
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                // Attributes from buffer 2
-                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_vegetation_.Setup(attribs, ndx_buf.ref)) {
-                ctx.log()->Error("[ExOITDepthPeel::LazyInit]: vi_vegetation_ init failed!");
-            }
-        }
-
         { // simple and skinned
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
             rast_state.depth.write_enabled = false;
             rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Greater);
 
-            if (!pi_simple_[2].Init(ctx.api_ctx(), rast_state, depth_peel_simple_prog, &vi_simple_, &rp_depth_peel_, 0,
-                                    ctx.log())) {
+            if (!pi_simple_[0][2].Init(ctx.api_ctx(), rast_state, depth_peel_simple_high_prog, &vi_simple_,
+                                       &rp_depth_peel_, 0, ctx.log())) {
+                ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to initialize pipeline!");
+            }
+            if (!pi_simple_[1][2].Init(ctx.api_ctx(), rast_state, depth_peel_simple_ultra_prog, &vi_simple_,
+                                       &rp_depth_peel_, 0, ctx.log())) {
                 ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            if (!pi_simple_[0].Init(ctx.api_ctx(), rast_state, depth_peel_simple_prog, &vi_simple_, &rp_depth_peel_, 0,
-                                    ctx.log())) {
+            if (!pi_simple_[0][0].Init(ctx.api_ctx(), rast_state, depth_peel_simple_high_prog, &vi_simple_,
+                                       &rp_depth_peel_, 0, ctx.log())) {
+                ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to initialize pipeline!");
+            }
+            if (!pi_simple_[1][0].Init(ctx.api_ctx(), rast_state, depth_peel_simple_ultra_prog, &vi_simple_,
+                                       &rp_depth_peel_, 0, ctx.log())) {
                 ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
 
-            if (!pi_simple_[1].Init(ctx.api_ctx(), rast_state, depth_peel_simple_prog, &vi_simple_, &rp_depth_peel_, 0,
-                                    ctx.log())) {
+            if (!pi_simple_[0][1].Init(ctx.api_ctx(), rast_state, depth_peel_simple_high_prog, &vi_simple_,
+                                       &rp_depth_peel_, 0, ctx.log())) {
                 ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to initialize pipeline!");
             }
-        }
-
-        { // vegetation
-            Ren::RastState rast_state;
-            rast_state.depth.test_enabled = true;
-            rast_state.depth.write_enabled = false;
-            rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Greater);
-
-            if (!pi_vegetation_[1].Init(ctx.api_ctx(), rast_state, depth_peel_vegetation_prog, &vi_vegetation_,
-                                        &rp_depth_peel_, 0, ctx.log())) {
-                ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to initialize pipeline!");
-            }
-
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-
-            if (!pi_vegetation_[0].Init(ctx.api_ctx(), rast_state, depth_peel_vegetation_prog, &vi_vegetation_,
-                                        &rp_depth_peel_, 0, ctx.log())) {
+            if (!pi_simple_[1][1].Init(ctx.api_ctx(), rast_state, depth_peel_simple_ultra_prog, &vi_simple_,
+                                       &rp_depth_peel_, 0, ctx.log())) {
                 ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to initialize pipeline!");
             }
         }

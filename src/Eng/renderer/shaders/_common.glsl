@@ -249,11 +249,11 @@ vec3 limit_intensity(vec3 color, const float limit) {
 }
 
 vec3 compress_hdr(const vec3 val) {
-    return clamp(val / HDR_FACTOR, vec3(0.0), vec3(HALF_MAX - 1.0));
+    return clamp(val / HDR_PRE_EXPOSURE, vec3(0.0), vec3(HALF_MAX - 1.0));
 }
 
 vec3 decompress_hdr(const vec3 val) {
-    return val * HDR_FACTOR;
+    return val * HDR_PRE_EXPOSURE;
 }
 
 float sanitize(const float val) {

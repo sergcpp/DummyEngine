@@ -318,6 +318,15 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_oit", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        if (args[1].val > 0.5) {
+            renderer_->settings.transparency_quality = Eng::eTransparencyQuality::Ultra;
+        } else {
+            renderer_->settings.transparency_quality = Eng::eTransparencyQuality::High;
+        }
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_shadowJitter", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         renderer_->settings.enable_shadow_jitter = !renderer_->settings.enable_shadow_jitter;
         return true;
@@ -688,11 +697,13 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
         renderer_->settings.sky_quality = Eng::eSkyQuality::High;
+        renderer_->settings.transparency_quality = Eng::eTransparencyQuality::High;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::Ultra) {
         renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer_->settings.sky_quality = Eng::eSkyQuality::Ultra;
+        renderer_->settings.transparency_quality = Eng::eTransparencyQuality::Ultra;
     }
 
     sun_dir_ = scene_manager_->scene_data().env.sun_dir;

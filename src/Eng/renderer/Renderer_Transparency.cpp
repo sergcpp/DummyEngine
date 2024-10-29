@@ -17,6 +17,12 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
     FgResRef oit_depth_buf, oit_specular[OIT_REFLECTION_LAYERS], oit_rays_counter;
 
+    const int oit_layer_count = (settings.transparency_quality == eTransparencyQuality::Ultra) ? 6 : 4;
+    rp_oit_blend_layer_.clear();
+    for (int i = 0; i < oit_layer_count; ++i) {
+        rp_oit_blend_layer_.emplace_back(prim_draw_);
+    }
+
     { // OIT clear
         auto &oit_clear = fg_builder_.AddNode("OIT CLEAR");
 
@@ -31,7 +37,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         { // output buffer
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Texture;
-            desc.size = OIT_LAYERS_COUNT * view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
+            desc.size = oit_layer_count * view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
             oit_depth_buf = data->oit_depth_buf = oit_clear.AddTransferOutput("Depth Values", desc);
         }
 
@@ -106,8 +112,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         oit_depth_buf = oit_depth_peel.AddStorageOutput(oit_depth_buf, Stg::FragmentShader);
 
         ex_oit_depth_peel_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-                                 &bindless, noise_tex, white_tex, instances_buf, instances_indices_buf, shader_data_buf,
-                                 frame_textures.depth, oit_depth_buf);
+                                 &bindless, white_tex, instances_buf, instances_indices_buf, shader_data_buf,
+                                 frame_textures.depth, oit_depth_buf,
+                                 settings.transparency_quality == eTransparencyQuality::Ultra);
         oit_depth_peel.set_executor(&ex_oit_depth_peel_);
     }
 
@@ -411,7 +418,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         }
     }
 
-    for (int i = 0; i < OIT_LAYERS_COUNT; ++i) {
+    for (int i = 0; i < oit_layer_count; ++i) {
         FgResRef back_color, back_depth;
         { // copy background
             const std::string pass_name = "OIT BACK #" + std::to_string(i);
@@ -503,7 +510,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             frame_textures.color = oit_blend_layer.AddColorOutput(frame_textures.color);
             oit_depth_buf = oit_blend_layer.AddStorageReadonlyInput(oit_depth_buf, Stg::FragmentShader);
 
-            const int layer_index = OIT_LAYERS_COUNT - 1 - i;
+            const int layer_index = oit_layer_count - 1 - i;
 
             FgResRef specular_tex;
             if (layer_index < OIT_REFLECTION_LAYERS && settings.reflections_quality != eReflectionsQuality::Off) {
