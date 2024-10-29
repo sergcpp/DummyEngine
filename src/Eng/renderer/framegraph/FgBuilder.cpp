@@ -1491,10 +1491,10 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
                 const Ren::MemAllocation &alloc = buf.strong_ref->mem_alloc();
                 if (alloc.pool != 0xffff) {
                     ctx_.log()->Info("Buf %-24.24s \t\t\t\t\t| %f MB", buf.name.c_str(),
-                                     float(alloc.block) * 0.000001f);
+                                     float(alloc.block) / (1024.0f * 1024.0f));
                 } else {
                     ctx_.log()->Info("Buf %-24.24s (dedicated)\t\t\t| %f MB", buf.name.c_str(),
-                                     float(buf.strong_ref->size()) * 0.000001f);
+                                     float(buf.strong_ref->size()) / (1024.0f * 1024.0f));
                 }
             } else if (buf.ref) {
                 not_handled_buffers.push_back(buf.ref);
@@ -1502,7 +1502,8 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
         }
         ctx_.log()->Info("----------------------------------------------------------------------------");
         for (const auto &ref : not_handled_buffers) {
-            ctx_.log()->Info("Buf %-24.24s \t\t\t\t\t| %f MB", ref->name().c_str(), float(ref->size()) * 0.000001f);
+            ctx_.log()->Info("Buf %-24.24s \t\t\t\t\t| %f MB", ref->name().c_str(),
+                             float(ref->size()) / (1024.0f * 1024.0f));
         }
     }
     ctx_.log()->Info("============================================================================");
@@ -1513,12 +1514,12 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
             if (tex.alias_of != -1) {
                 const FgAllocTex &orig_tex = textures_[tex.alias_of];
                 ctx_.log()->Info("Tex %-24.24s alias of %16s\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
-                                 float(EstimateMemory(tex.ref->params)) * 0.000001f);
+                                 float(EstimateMemory(tex.ref->params)) / (1024.0f * 1024.0f));
                 continue;
             }
             if (tex.strong_ref) {
                 ctx_.log()->Info("Tex %-24.24s (%4ix%-4i)\t\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                                 float(EstimateMemory(tex.ref->params)) * 0.000001f);
+                                 float(EstimateMemory(tex.ref->params)) / (1024.0f * 1024.0f));
             } else if (tex.ref) {
                 not_handled_textures.push_back(tex.ref);
             }
@@ -1526,14 +1527,14 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
         ctx_.log()->Info("----------------------------------------------------------------------------");
         for (const auto &ref : not_handled_textures) {
             ctx_.log()->Info("Tex %-24.24s (%4ix%-4i)\t\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
-                             float(EstimateMemory(ref->params)) * 0.000001f);
+                             float(EstimateMemory(ref->params)) / (1024.0f * 1024.0f));
         }
     }
     ctx_.log()->Info("============================================================================");
     if (!memory_heaps_.empty()) {
         for (int i = 0; i < int(memory_heaps_.size()); ++i) {
             ctx_.log()->Info("Heap[%i] %p\t\t\t\t\t| %f MB", i, memory_heaps_[i].mem,
-                             float(memory_heaps_[i].size) * 0.000001f);
+                             float(memory_heaps_[i].size) / (1024.0f * 1024.0f));
         }
         ctx_.log()->Info("============================================================================");
     }
