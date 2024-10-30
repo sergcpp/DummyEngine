@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit.vert.glsl main_probelit_pom.frag.glsl
-    - main_probelit.vert.glsl main_probelit_pom.frag.glsl
 textures:
     - cobblestone_diff.png
     - cobblestone_norm.png

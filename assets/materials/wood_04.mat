@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit.vert.glsl main_probelit.frag.glsl
-    - main_probelit.vert.glsl main_probelit.frag.glsl
 textures:
     - brown_planks_03_diff.png
     - brown_planks_03_norm.png

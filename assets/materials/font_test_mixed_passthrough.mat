@@ -1,6 +1,4 @@
 pipelines:
-    - _font_test_mixed_passthrough.vert.glsl _font_test_mixed.frag.glsl
-    - _font_test_mixed_passthrough.vert.glsl _font_test_mixed.frag.glsl
 flags:
     - alpha_blend
 textures:

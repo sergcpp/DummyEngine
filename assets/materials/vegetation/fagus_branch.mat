@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - alpha_test
     - two_sided

@@ -1,6 +1,4 @@
 pipelines:
-    - main_unlit.vert.glsl main_unlit.frag.glsl
-    - main_unlit.vert.glsl main_unlit.frag.glsl
 textures:
     - white.png
     - default_normalmap.dds

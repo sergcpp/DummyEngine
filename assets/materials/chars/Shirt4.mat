@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 textures:
     - chars/Shirt4_diff.png
     - chars/Shirt4_norm.png

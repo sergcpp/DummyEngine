@@ -1,6 +1,4 @@
 pipelines:
-    - _wind_debug.vert.glsl _wind_debug.frag.glsl
-    - _wind_debug.vert.glsl _wind_debug.frag.glsl
 textures:
     - checker_diff.png
     - default_normalmap.dds

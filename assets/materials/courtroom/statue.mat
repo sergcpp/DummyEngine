@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
-    - main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
 textures:
     - grey_diff.png
     - default_normalmap.dds

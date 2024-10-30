@@ -1,6 +1,4 @@
 pipelines:
-    - main_glass_thin.vert.glsl main_glass_thin.frag.glsl
-    - main_glass_thin.vert.glsl main_glass_thin.frag.glsl
 flags:
     - alpha_blend
 textures:

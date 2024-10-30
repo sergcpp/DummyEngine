@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
 textures:
     - vegetation/Leaf_2_v4_diff.png
     - default_normalmap.dds

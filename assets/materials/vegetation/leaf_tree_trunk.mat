@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
 textures:
     - vegetation/leaf_tree_trunk_diff.png
     - vegetation/leaf_tree_trunk_norm.png

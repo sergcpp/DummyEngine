@@ -1,6 +1,4 @@
 pipelines:
-    - main_lightmapped.vert.glsl main_lightmapped.frag.glsl
-    - main_probelit.vert.glsl main_probelit.frag.glsl
 textures:
     - concrete_02_diff.png
     - default_normalmap.dds

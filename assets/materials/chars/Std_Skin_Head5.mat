@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
-    - main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
 textures:
     - chars/Std_Skin_Head5_diff.png
     - chars/Std_Skin_Head5_norm.png

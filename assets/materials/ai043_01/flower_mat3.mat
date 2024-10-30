@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - two_sided
     - alpha_blend

@@ -1,6 +1,4 @@
 pipelines:
-    - main_lightmapped.vert.glsl main_lightmapped.frag.glsl
-    - main_probelit.vert.glsl main_probelit.frag.glsl
 textures:
     - parquet_flooring_03_diff.png
     - parquet_flooring_03_norm.png

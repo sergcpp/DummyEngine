@@ -1,6 +1,4 @@
 pipelines:
-    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 textures:
     - rubber_Diamond_diff.png
     - rubber_diamond_norm.png
