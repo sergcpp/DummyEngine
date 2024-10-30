@@ -806,7 +806,7 @@ void GSBaseState::Draw() {
             render_target = capture_result_;
             if (capture_state_ == eCaptureState::UpdateGICache) {
                 log_->Info("UpdateGICache iteration #%i", renderer_->accumulated_frames());
-                if (renderer_->accumulated_frames() >= 256) {
+                if (renderer_->accumulated_frames() >= 96) {
                     capture_state_ = eCaptureState::Warmup;
                     if (USE_TWO_THREADS) {
                         std::unique_lock<std::mutex> lock(mtx_);
