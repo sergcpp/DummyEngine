@@ -1,0 +1,1 @@
+DummyAppVK.exe -s scenes/transparent_machines.json -w 1000 -h 1000 --preset ultra

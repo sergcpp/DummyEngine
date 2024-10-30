@@ -1,0 +1,1 @@
+DummyAppVK.exe -s scenes/transparent_machines.json -w 1000 -h 1000 --pt --pt_max_spec_depth 64 --pt_max_refr_depth 64 --pt_max_total_depth 64 --pt_clamp_direct 10.0 --pt_clamp_indirect 10.0

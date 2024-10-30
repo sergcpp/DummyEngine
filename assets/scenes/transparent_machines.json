@@ -1,0 +1,66 @@
+{
+    "name": "transparent_machines",
+    "environment": {
+        "sun_dir": [
+            0.0,
+            -1.0,
+            0.0
+        ],
+        "sun_col": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "sun_angle": 0.1,
+        "env_col": [
+            16.0,
+            16.0,
+            16.0
+        ],
+        "env_map": "env/transparent_machines_env.hdr"
+    },
+    "camera": {
+        "view_origin": [
+            15.172428131103516,
+            -36.81391906738281,
+            25.644716262817383
+        ],
+        "view_rot": [
+            147.21646303072913,
+            -37.27664190484211,
+            22.398439128256037
+        ],
+        "fov": 26.91905617948963,
+        "view_transform": "agx",
+        "filter": "blackman-harris",
+        "filter_width": 1.0,
+        "gamma": 0.5,
+        "min_exposure": 0.0,
+        "max_exposure": 0.0,
+        "fwd_speed": 0.05
+    },
+    "objects": [
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    117.99998734654109,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    0.9999999403953552,
+                    0.9999999403953552
+                ]
+            },
+            "drawable": {
+                "mesh_file": "transparent_machines/BEGINNING.gltf"
+            }
+        }
+    ]
+}

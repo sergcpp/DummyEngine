@@ -217,60 +217,9 @@ void DummyApp::Destroy() {
 #if !defined(__ANDROID__)
 int DummyApp::Run(int argc, char *argv[]) {
     int w = 1024, h = 576;
-    AppParams app_params;
     fullscreen_ = false;
-
-    for (int i = 1; i < argc; i++) {
-        const char *arg = argv[i];
-        if (strcmp(arg, "--prepare_assets") == 0) {
-            Viewer::PrepareAssets(argv[i + 1]);
-            i++;
-        } else if (strcmp(arg, "--norun") == 0) {
-            return 0;
-        } else if ((strcmp(arg, "--width") == 0 || strcmp(arg, "-w") == 0) &&
-                   (i + 1 < argc)) {
-            w = std::atoi(argv[++i]);
-        } else if ((strcmp(arg, "--height") == 0 || strcmp(arg, "-h") == 0) &&
-                   (i + 1 < argc)) {
-            h = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "-fs") == 0) {
-            fullscreen_ = true;
-        } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
-            app_params.validation_level = std::atoi(argv[++i]);
-        } else if (strcmp(arg, "--nosubgroup") == 0) {
-            app_params.nosubgroup = true;
-        } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
-            app_params.scene_name = argv[i];
-        } else if ((strcmp(argv[i], "--reference") == 0 || strcmp(argv[i], "-ref") == 0) && (++i != argc)) {
-            app_params.ref_name = argv[i];
-        } else if (strcmp(argv[i], "--psnr") == 0 && (++i != argc)) {
-            app_params.psnr = strtod(argv[i], nullptr);
-        } else if (strcmp(argv[i], "--pt") == 0) {
-            app_params.pt = true;
-        } else if (strcmp(argv[i], "--pt_nodenoise") == 0) {
-            app_params.pt_denoise = false;
-        } else if (strcmp(arg, "--pt_max_samples") == 0 && (i + 1 < argc)) {
-            app_params.pt_max_samples = std::atoi(argv[++i]);
-        } else if (strcmp(argv[i], "--exposure") == 0 && (++i != argc)) {
-            app_params.exposure = strtof(argv[i], nullptr);
-        } else if (strcmp(argv[i], "--preset") == 0 && (++i != argc)) {
-            if (strcmp(argv[i], "medium") == 0) {
-                app_params.gfx_preset = eGfxPreset::Medium;
-            } else if (strcmp(argv[i], "high") == 0) {
-                app_params.gfx_preset = eGfxPreset::High;
-            } else if (strcmp(argv[i], "ultra") == 0) {
-                app_params.gfx_preset = eGfxPreset::Ultra;
-            }
-        } else if (strcmp(argv[i], "--sun_dir") == 0 && (++i != argc)) {
-            app_params.sun_dir[0] = strtof(argv[i++], nullptr);
-            app_params.sun_dir[1] = strtof(argv[i++], nullptr);
-            app_params.sun_dir[2] = strtof(argv[i], nullptr);
-        } else if (strcmp(argv[i], "--no-postprocess") == 0) {
-            app_params.postprocess = false;
-        } else if (strcmp(argv[i], "--freeze-sky") == 0) {
-            app_params.freeze_sky = true;
-        }
-    }
+    AppParams app_params;
+    ParseArgs(argc, argv, w, h, app_params);
 
     if (Init(w, h, app_params) < 0) {
         return -1;

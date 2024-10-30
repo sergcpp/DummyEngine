@@ -27,6 +27,13 @@ runs:
         cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
+        ### transparent_machines
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/transparent_machines.json -ref references/transparent_machines_cycles.uncompressed.png -w 1000 -h 1000 --preset high --psnr 20.00 --no-postprocess
+        mv transparent_machines.png transparent_machines_high.png
+        cp transparent_machines_high.png $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/transparent_machines.json -ref references/transparent_machines_cycles.uncompressed.png -w 1000 -h 1000 --preset ultra --psnr 18.75 --no-postprocess
+        mv transparent_machines.png transparent_machines_ultra.png
+        cp transparent_machines_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### ai043_01
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_01.json -ref references/ai043_01_cycles.uncompressed.png -w 1400 -h 955 --preset medium --psnr 24.10 --no-postprocess
         mv ai043_01.png ai043_01_medium.png

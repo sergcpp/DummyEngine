@@ -1210,6 +1210,16 @@ void GSBaseState::InitScene_PT() {
         cam_desc.fov = scene_manager_->main_cam().angle();
         cam_desc.shift[0] = scene_manager_->main_cam().sensor_shift()[0];
         cam_desc.shift[1] = scene_manager_->main_cam().sensor_shift()[1];
+
+        cam_desc.max_diff_depth = viewer_->app_params.pt_max_diff_depth;
+        cam_desc.max_spec_depth = viewer_->app_params.pt_max_spec_depth;
+        cam_desc.max_refr_depth = viewer_->app_params.pt_max_refr_depth;
+        cam_desc.max_transp_depth = viewer_->app_params.pt_max_transp_depth;
+        cam_desc.max_total_depth = viewer_->app_params.pt_max_total_depth;
+
+        cam_desc.clamp_direct = viewer_->app_params.pt_clamp_direct;
+        cam_desc.clamp_indirect = viewer_->app_params.pt_clamp_indirect;
+
         ray_scene_->AddCamera(cam_desc);
     }
     if (Length2(scene_data.env.sun_col) > 0) {

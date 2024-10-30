@@ -53,6 +53,13 @@ struct AppParams {
     bool postprocess = true;
     bool freeze_sky = false;
     int pt_max_samples = 128;
+    int pt_max_diff_depth = 4;
+    int pt_max_spec_depth = 8;
+    int pt_max_refr_depth = 8;
+    int pt_max_transp_depth = 8;
+    int pt_max_total_depth = 8;
+    float pt_clamp_direct = 0.0f;
+    float pt_clamp_indirect = 0.0f;
     std::optional<float> exposure;
     eGfxPreset gfx_preset = eGfxPreset::High;
     float sun_dir[3] = {};

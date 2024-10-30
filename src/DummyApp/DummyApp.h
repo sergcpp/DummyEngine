@@ -71,6 +71,8 @@ class DummyApp {
     std::unique_ptr<Eng::ViewerBase> viewer_;
     Eng::InputManager *input_manager_ = nullptr;
 
+    void ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_params);
+
   public:
     DummyApp();
     ~DummyApp();
