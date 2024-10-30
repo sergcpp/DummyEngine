@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_29_10
-	commit = f1c573aeb043751b4e96d5b6fedd70b45837b013
+	branch = transparent_machines
+	commit = 304d41e9765ee2b225651069894203c72fddc46f
 	method = merge
 	cmdver = 0.4.6
-	parent = 8bc1f9dc7a69c807f2c2c1def815b2aa95faaef1
+	parent = 205be095ad44ba911c6c100bbf9c26628990f649
