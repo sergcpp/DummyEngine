@@ -650,16 +650,6 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
         }
     }
 
-    /*for (int i = 0; i < int(nodes.size()); ++i) {
-        gpu_bvh_node_t &n = nodes[i];
-        if (n.prim_index & LEAF_NODE_BIT) {
-            n.prim_index += new_mesh.tris_index;
-        } else {
-            n.left_child += new_mesh.node_index;
-            n.right_child += new_mesh.node_index;
-        }
-    }*/
-
     for (int i = 0; i < int(prim_indices.size()); ++i) {
         prim_indices[i] = prim_offset + temp_indices[prim_indices[i]];
     }
@@ -706,6 +696,15 @@ void Eng::SceneManager::Alloc_SWRT_TLAS() {
         ren_ctx_.LoadBuffer("TLAS", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
     scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(
         "TLAS Shadow", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
+
+    if (!scene_data_.persistent_data.swrt.rt_prim_indices_buf) {
+        scene_data_.persistent_data.swrt.rt_prim_indices_buf =
+            ren_ctx_.LoadBuffer("SWRT Prim Indices", Ren::eBufType::Texture, 1024 * sizeof(uint32_t), sizeof(uint32_t));
+    }
+    if (!scene_data_.persistent_data.swrt.rt_blas_buf) {
+        scene_data_.persistent_data.swrt.rt_blas_buf =
+            ren_ctx_.LoadBuffer("SWRT BLAS", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh2_node_t), 16);
+    }
 }
 
 uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,

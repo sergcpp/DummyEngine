@@ -63,7 +63,7 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
 
         std::vector<gpu_mesh_instance_t> mesh_instances;
         mesh_instances.reserve(rt_obj_instances.count);
-        // for (const uint32_t i : mi_indices) {
+
         for (int i = 0; i < int(rt_obj_instances.count); ++i) {
             const auto &inst = rt_obj_instances.data[i];
             const auto *acc = reinterpret_cast<const Ren::AccStructureSW *>(inst.blas_ref);
@@ -113,6 +113,9 @@ void Eng::ExBuildAccStructures::Execute_SWRT(FgBuilder &builder) {
             CopyBufferToBuffer(*rt_tlas_stage_buf, ctx.backend_frame() * SWRTTLASNodesBufChunkSize, *rt_tlas_buf.ref, 0,
                                rt_nodes_mem_size, ctx.current_cmd_buf());
         }
+    } else {
+        const gpu_bvh2_node_t dummy_node = {};
+        rt_tlas_buf.ref->UpdateImmediate(0, sizeof(dummy_node), &dummy_node, ctx.current_cmd_buf());
     }
 }
 
