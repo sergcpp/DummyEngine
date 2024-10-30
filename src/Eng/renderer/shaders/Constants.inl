@@ -50,15 +50,6 @@ const int BIND_BASE0_TEX = 0;
 const int BIND_BASE1_TEX = 1;
 const int BIND_BASE2_TEX = 2;
 
-const int BIND_REFL_DEPTH_TEX = 0;
-const int BIND_REFL_NORM_TEX = 1;
-const int BIND_REFL_SPEC_TEX = 2;
-const int BIND_REFL_PREV_TEX = 3;
-const int BIND_REFL_SSR_TEX = 4;
-const int BIND_REFL_ENV_TEX = 5;
-const int BIND_REFL_BRDF_TEX = 6;
-const int BIND_REFL_DEPTH_LOW_TEX = 7;
-
 const int REN_U_BASE_INSTANCE_LOC = 2;
 
 const int BIND_UB_SHARED_DATA_BUF = 23;
