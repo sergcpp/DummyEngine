@@ -71,7 +71,6 @@ ENDIF(WIN32)
 set(SOURCE_FILES Config.h
                  Eng.h
                  Eng.cpp
-                 FrameInfo.h
                  Log.h
                  Log.cpp
                  ViewerBase.h
@@ -264,6 +263,7 @@ set(SCENE_COMP_SOURCES  scene/components/Common.h
 
 set(UTILS_SOURCES utils/FlowControl.h
                   utils/FlowControl.cpp
+                  utils/FrameInfo.h
                   utils/FreeCamController.h
                   utils/FreeCamController.cpp
                   utils/Load.h

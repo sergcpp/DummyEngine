@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "Config.h"
-#include "FrameInfo.h"
+#include "utils/FrameInfo.h"
 
 namespace Gui {
 class Renderer;
