@@ -154,6 +154,8 @@ const float GI_CACHE_MULTIBOUNCE_FACTOR = 0.8f;
 const float HDR_PRE_EXPOSURE = 32;
 
 // Transparency
+const int OIT_LAYERS_HIGH = 4;
+const int OIT_LAYERS_ULTRA = 6;
 const int OIT_REFLECTION_LAYERS = 2;
 
 const int MATERIAL_SOLID_BIT = 32768;  // 0b1000000000000000

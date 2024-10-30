@@ -14,11 +14,10 @@
     #pragma dont_compile
 #endif
 
-// NOTE: Must be in sync with CPU side!
 #if defined(HIGH)
-const int OIT_LAYERS_COUNT = 4;
+const int OIT_LAYERS_COUNT = OIT_LAYERS_HIGH;
 #elif defined(ULTRA)
-const int OIT_LAYERS_COUNT = 6;
+const int OIT_LAYERS_COUNT = OIT_LAYERS_ULTRA;
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {

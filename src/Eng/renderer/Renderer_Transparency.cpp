@@ -17,7 +17,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
     FgResRef oit_depth_buf, oit_specular[OIT_REFLECTION_LAYERS], oit_rays_counter;
 
-    const int oit_layer_count = (settings.transparency_quality == eTransparencyQuality::Ultra) ? 6 : 4;
+    const int oit_layer_count =
+        (settings.transparency_quality == eTransparencyQuality::Ultra) ? OIT_LAYERS_ULTRA : OIT_LAYERS_HIGH;
     rp_oit_blend_layer_.clear();
     for (int i = 0; i < oit_layer_count; ++i) {
         rp_oit_blend_layer_.emplace_back(prim_draw_);
