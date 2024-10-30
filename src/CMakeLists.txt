@@ -79,7 +79,7 @@ set_target_properties(DummyApp
                       DummyLib PROPERTIES FOLDER App)
 
 if(${RENDERER} STREQUAL "GL")
-    set_target_properties(ModlApp PROPERTIES FOLDER App)
+    set_target_properties(ModlAppGL PROPERTIES FOLDER App)
 endif()
 
 set_target_properties(Eng

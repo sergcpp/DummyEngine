@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(ModlApp)
+project(ModlAppGL)
 
 IF(WIN32)
     set(LIBS winmm imm32 version)
@@ -15,11 +15,11 @@ set(SOURCE_FILES main.cpp
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
-add_executable(ModlApp ${ALL_SOURCE_FILES})
-target_link_libraries(ModlApp Eng ${LIBS})
+add_executable(ModlAppGL ${ALL_SOURCE_FILES})
+target_link_libraries(ModlAppGL Eng ${LIBS})
 
-add_custom_command(TARGET ModlApp
+add_custom_command(TARGET ModlAppGL
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ModlApp> ${WORKING_DIRECTORY})
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ModlAppGL> ${WORKING_DIRECTORY})
 
-set_target_properties(ModlApp PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")
+set_target_properties(ModlAppGL PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

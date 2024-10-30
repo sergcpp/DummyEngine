@@ -11,7 +11,7 @@ DummyApp*.exe
 DummyAppGL*
 DummyAppVK*
 libDummyApp*.so
-ModlApp.exe
+ModlAppGL.exe
 DummyApp.apk
 test.txt
 test.mesh
