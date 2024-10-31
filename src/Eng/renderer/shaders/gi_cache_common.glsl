@@ -224,7 +224,7 @@ bool IsScrollingPlaneProbe(const int probe_index, const ivec3 grid_scroll, const
     const ivec3 volume_res = ivec3(PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z);
 
     // TODO: Simplify this!
-    ivec3 test_coord = ivec3(-1);
+    ivec3 test_coord = ivec3(-1000);
     for (int i = 0; i < 3; ++i) {
         if (grid_scroll_diff[i] > 0) {
             test_coord[i] = (volume_res[i] + (grid_scroll[i] - 1)) % volume_res[i];
@@ -233,7 +233,8 @@ bool IsScrollingPlaneProbe(const int probe_index, const ivec3 grid_scroll, const
         }
     }
 
-    return any(equal(test_coord, probe_coords));
+    return any(lessThan(abs(test_coord - probe_coords), abs(grid_scroll_diff)));
+    //return any(equal(test_coord, probe_coords));
 }
 
 vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,

@@ -132,7 +132,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
     uniform_params.grid_scroll_diff =
         Ren::Vec4i(args_->probe_volumes[view_state_->volume_to_update].scroll_diff[0],
                    args_->probe_volumes[view_state_->volume_to_update].scroll_diff[1],
-                   args_->probe_volumes[view_state_->volume_to_update].scroll_diff[2], 0.0f);
+                   args_->probe_volumes[view_state_->volume_to_update].scroll_diff[2], 0);
     uniform_params.grid_spacing = Ren::Vec4f(args_->probe_volumes[view_state_->volume_to_update].spacing[0],
                                              args_->probe_volumes[view_state_->volume_to_update].spacing[1],
                                              args_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
