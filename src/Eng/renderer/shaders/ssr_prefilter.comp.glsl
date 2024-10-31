@@ -15,7 +15,6 @@ layout(binding = AVG_REFL_TEX_SLOT) uniform sampler2D g_avg_refl_tex;
 layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_tex;
 layout(binding = SAMPLE_COUNT_TEX_SLOT) uniform sampler2D g_sample_count_tex;
-layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 
 layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
@@ -72,7 +71,7 @@ void StoreWithOffset(ivec2 group_thread_id, const ivec2 _offset, const vec4 radi
     StoreInSharedMemory(group_thread_id, radiance, variance, normal, depth);
 }
 
-void InitSharedMemory(ivec2 dispatch_thread_id, const ivec2 group_thread_id, const float exposure) {
+void InitSharedMemory(ivec2 dispatch_thread_id, const ivec2 group_thread_id) {
     // Load 16x16 region into shared memory.
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
@@ -88,7 +87,6 @@ void InitSharedMemory(ivec2 dispatch_thread_id, const ivec2 group_thread_id, con
 
     for (int i = 0; i < 4; ++i) {
         LoadWithOffset(dispatch_thread_id, offset[i], radiance[i], variance[i], normal[i], depth[i]);
-        radiance[i].rgb *= exposure;
     }
 
     for (int i = 0; i < 4; ++i) {
@@ -193,8 +191,8 @@ void Resolve(ivec2 group_thread_id, /* fp16 */ vec3 avg_radiance, neighborhood_s
     resolved_variance = accumulated_variance;
 }
 
-void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, float exposure) {
-    InitSharedMemory(dispatch_thread_id, group_thread_id, exposure);
+void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
+    InitSharedMemory(dispatch_thread_id, group_thread_id);
 
     groupMemoryBarrier();
     barrier();
@@ -209,11 +207,11 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     const bool needs_denoiser = (center.radiance.w > 0.0) && (center.variance > 0.0) && IsGlossyReflection(center.normal.w) && !IsMirrorReflection(center.normal.w);
     if (needs_denoiser) {
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* fp16 */ const vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb * exposure;
+        /* fp16 */ const vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb;
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 
-    imageStore(g_out_refl_img, dispatch_thread_id, vec4(resolved_radiance.xyz / max(exposure, 0.00001), resolved_radiance.w));
+    imageStore(g_out_refl_img, dispatch_thread_id, resolved_radiance);
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(resolved_variance));
 }
 
@@ -226,7 +224,5 @@ void main() {
     const uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
     const uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
-    const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
-
-    Prefilter(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size.xy, exposure);
+    Prefilter(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size.xy);
 }

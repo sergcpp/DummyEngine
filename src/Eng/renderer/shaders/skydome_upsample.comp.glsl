@@ -50,7 +50,7 @@ void main() {
         const float sun_disk = smoothstep(cos_theta - SKY_SUN_BLEND_VAL, cos_theta + SKY_SUN_BLEND_VAL, costh);
         out_color.xyz += sun_disk * g_shrd_data.sun_col.xyz;
     }
-    out_color.xyz = compress_hdr(out_color.xyz);
+    out_color.xyz = compress_hdr(out_color.xyz, g_shrd_data.cam_pos_and_exp.w);
 
     vec4 prev_ray_origin_cs = g_shrd_data.prev_clip_from_world * vec4(ray_origin_ws, 1.0);
     prev_ray_origin_cs /= prev_ray_origin_cs.w;

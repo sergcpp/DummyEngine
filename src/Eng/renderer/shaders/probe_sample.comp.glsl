@@ -57,5 +57,5 @@ void main() {
     }
     final_color *= texelFetch(g_ssao_tex, icoord, 0).x;
 
-    imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color / M_PI), 1.0));
+    imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color / M_PI, g_shrd_data.cam_pos_and_exp.w), 1.0));
 }

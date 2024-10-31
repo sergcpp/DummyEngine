@@ -303,15 +303,15 @@ void main() {
         k *= 0.5 - abs(norm_uvs.x - 0.5);
         k *= 0.5 - abs(norm_uvs.y - 0.5);
 
-        const vec3 background_col = textureLod(g_back_color_tex, norm_uvs + k * uvs_offset, 0.0).xyz;
+        const vec3 background_col = textureLod(g_back_color_tex, norm_uvs + k * uvs_offset, 0.0).xyz / g_shrd_data.cam_pos_and_exp.w;
         final_color *= fresnel;
-        final_color += (1.0 - fresnel) * base_color * decompress_hdr(background_col);
+        final_color += (1.0 - fresnel) * base_color * background_col;
     }
 
 #ifdef SPECULAR
-    //vec4 refl = textureLod(g_specular_tex, norm_uvs, 0.0);
     vec4 refl = SampleTextureCatmullRom(g_specular_tex, norm_uvs, vec2(g_shrd_data.ires_and_ifres.xy / 2));
-    refl.xyz = decompress_hdr(refl.xyz / max(refl.w, 0.001));
+    refl.xyz /= g_shrd_data.cam_pos_and_exp.w;
+    refl.xyz /= max(refl.w, 0.001);
     if (lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) {
         final_color += fresnel * refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
     }
@@ -320,5 +320,5 @@ void main() {
     if (any(isinf(final_color)) || any(isnan(final_color))) {
         final_color = vec3(0.0);
     }
-    g_out_color = vec4(compress_hdr(final_color), alpha);
+    g_out_color = vec4(compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w), alpha);
 }

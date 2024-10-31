@@ -31,5 +31,5 @@ layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 
 void main() {
     const vec3 emission_color = g_mat_params2.yzw * SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_emission_tex), g_vtx_uvs)));
-    g_out_color = vec4(compress_hdr(emission_color), 1.0);
+    g_out_color = vec4(compress_hdr(emission_color, g_shrd_data.cam_pos_and_exp.w), 1.0);
 }

@@ -1,9 +1,9 @@
-#ifndef BLIT_COMBINE_INTERFACE_H
-#define BLIT_COMBINE_INTERFACE_H
+#ifndef BLIT_POSTPROCESS_INTERFACE_H
+#define BLIT_POSTPROCESS_INTERFACE_H
 
 #include "_interface_common.h"
 
-INTERFACE_START(BlitCombine)
+INTERFACE_START(BlitPostprocess)
 
 struct Params {
     vec4 transform;
@@ -15,7 +15,7 @@ struct Params {
     float aberration;
     float purkinje;
     float fade;
-    float _unused0;
+    float pre_exposure;
 };
 
 const int HDR_TEX_SLOT = 0;
@@ -25,4 +25,4 @@ const int LUT_TEX_SLOT = 3;
 
 INTERFACE_END
 
-#endif // BLIT_COMBINE_INTERFACE_H
+#endif // BLIT_POSTPROCESS_INTERFACE_H

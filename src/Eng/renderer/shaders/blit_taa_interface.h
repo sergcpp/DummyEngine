@@ -21,7 +21,6 @@ const int CURR_LINEAR_TEX_SLOT = 1;
 const int HIST_TEX_SLOT = 2;
 const int DEPTH_TEX_SLOT = 3;
 const int VELOCITY_TEX_SLOT = 4;
-const int EXPOSURE_TEX_SLOT = 5;
 
 INTERFACE_END
 

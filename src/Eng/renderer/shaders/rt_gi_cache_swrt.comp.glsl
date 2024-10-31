@@ -248,7 +248,7 @@ void main() {
             }
         }
 
-        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), vec4(compress_hdr(out_color), 0));
+        imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), vec4(compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w), 0));
         imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, 3 * PROBE_VOLUME_RES_Y), vec4(out_dir, 0));
     }
 #endif
@@ -623,8 +623,8 @@ void main() {
         }
     }
 
-    final_diffuse_only = compress_hdr(final_diffuse_only);
-    final_total = compress_hdr(final_total);
+    final_diffuse_only = compress_hdr(final_diffuse_only, g_shrd_data.cam_pos_and_exp.w);
+    final_total = compress_hdr(final_total, g_shrd_data.cam_pos_and_exp.w);
 
     imageStore(g_out_ray_data_img, output_coords, vec4(final_total, final_distance));
     imageStore(g_out_ray_data_img, output_coords + ivec3(0, 0, PROBE_VOLUME_RES_Y), vec4(final_diffuse_only, final_distance));

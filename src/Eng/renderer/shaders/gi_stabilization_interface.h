@@ -17,7 +17,6 @@ const int VELOCITY_TEX_SLOT = 2;
 const int GI_TEX_SLOT = 3;
 const int GI_HIST_TEX_SLOT = 4;
 const int SAMPLE_COUNT_TEX_SLOT = 5;
-const int EXPOSURE_TEX_SLOT = 6;
 
 const int OUT_GI_IMG_SLOT = 0;
 

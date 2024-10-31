@@ -8,7 +8,7 @@ INTERFACE_START(Bloom)
 struct Params {
     uvec2 img_size;
     float blend_weight;
-    float _unused;
+    float pre_exposure;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

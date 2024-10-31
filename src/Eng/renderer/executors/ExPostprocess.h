@@ -20,7 +20,6 @@ class ExPostprocess final : public FgExecutor {
 
         Ren::WeakTex3DRef lut_tex;
 
-        bool compressed = true;
         int tonemap_mode = 1;
         float inv_gamma = 1.0f, fade = 0.0f;
         float aberration = 1.0f;
@@ -40,7 +39,7 @@ class ExPostprocess final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::ProgramRef blit_postprocess_prog_[2][2][2];
+    Ren::ProgramRef blit_postprocess_prog_[2][2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

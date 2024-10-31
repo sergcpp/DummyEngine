@@ -31,5 +31,5 @@ void main() {
         out_color += sun_disk * g_shrd_data.sun_col.xyz;
     }
 
-    g_out_color = vec4(compress_hdr(out_color), 1.0);
+    g_out_color = vec4(compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w), 1.0);
 }

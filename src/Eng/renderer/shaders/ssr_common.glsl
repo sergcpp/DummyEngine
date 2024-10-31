@@ -192,7 +192,7 @@ vec3 SampleReflectionVector(const vec3 view_direction, const vec3 normal, const 
     return (inv_tbn_transform * reflected_direction_tbn);
 }
 
-/* fp16 */ float Luminance(/* fp16 */ vec3 color) { return HDR_PRE_EXPOSURE * max(dot(color, vec3(0.299, 0.587, 0.114)), 0.001); }
+/* fp16 */ float Luminance(/* fp16 */ vec3 color) { return max(dot(color, vec3(0.299, 0.587, 0.114)), 0.001); }
 
 /* fp16 */ float ComputeTemporalVariance(/* fp16 */ vec3 history_radiance, /* fp16 */ vec3 radiance) {
     /* fp16 */ float history_luminance = Luminance(history_radiance);

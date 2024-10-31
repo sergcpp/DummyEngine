@@ -101,7 +101,7 @@ void main() {
                                                                   g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex,
                                                                   g_cirrus_tex, g_curl_tex, g_noise3d_tex, transmittance);
 #if defined(SCREEN)
-    radiance = compress_hdr(radiance);
+    radiance = compress_hdr(radiance, g_shrd_data.cam_pos_and_exp.w);
 #endif
     g_out_color = vec4(radiance, 1.0);
 }

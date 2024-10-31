@@ -3,7 +3,6 @@
 #include "_cs_common.glsl"
 #include "bloom_interface.h"
 
-#pragma multi_compile _ COMPRESSED
 #pragma multi_compile _ TONEMAP
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -21,12 +20,8 @@ layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exposure;
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(vec3 c) {
-#ifdef COMPRESSED
-    c = decompress_hdr(c);
-#endif
 #if defined(TONEMAP)
-    c *= texelFetch(g_exposure, ivec2(0), 0).x;
-    c = limit_intensity(c, 1024.0);
+    c *= (texelFetch(g_exposure, ivec2(0), 0).x / g_params.pre_exposure);
     c = c / (c + vec3(1.0));
 #endif
     return c;
@@ -35,10 +30,7 @@ vec3 Tonemap(vec3 c) {
 vec3 TonemapInvert(vec3 c) {
 #if defined(TONEMAP)
     c = c / (vec3(1.0) - c);
-    c /= texelFetch(g_exposure, ivec2(0), 0).x;
-#endif
-#ifdef COMPRESSED
-    c = compress_hdr(c);
+    c /= (texelFetch(g_exposure, ivec2(0), 0).x / g_params.pre_exposure);
 #endif
     return c;
 }

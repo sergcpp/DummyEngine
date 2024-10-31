@@ -23,7 +23,6 @@ layout(binding = GI_HIST_TEX_SLOT) uniform sampler2D g_gi_hist_tex;
 layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity_tex;
 layout(binding = VARIANCE_HIST_TEX_SLOT) uniform sampler2D g_variance_hist_tex;
 layout(binding = SAMPLE_COUNT_HIST_TEX_SLOT) uniform sampler2D g_sample_count_hist_tex;
-layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 
 layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
@@ -37,7 +36,7 @@ layout(binding = OUT_SAMPLE_COUNT_IMG_SLOT, r16f) uniform image2D g_out_sample_c
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
 
-void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size, float exposure) {
+void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size) {
     // Load 16x16 region into shared memory using 4 8x8 blocks
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
@@ -50,7 +49,6 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     // Load into registers
     for (int i = 0; i < 4; ++i) {
         refl[i] = texelFetch(g_gi_tex, dispatch_thread_id + offset[i], 0);
-        refl[i].xyz *= exposure;
     }
 
     // Move to shared memory
@@ -148,7 +146,7 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
     return factor;
 }
 
-void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, float exposure,
+void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size,
                       /* fp16 */ out float disocclusion_factor, out vec2 reprojection_uv,
                       /* fp16 */ out vec4 reprojection) {
     //moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
@@ -162,7 +160,6 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     const vec2 surf_repr_uv = uv - motion_vector.xy;
 
     /* fp16 */ vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
-    surf_history.rgb *= exposure;
     /* fp16 */ vec3 surf_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
     float history_linear_depth;
 
@@ -201,7 +198,6 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             }
         }
         reprojection = textureLod(g_gi_hist_tex, reprojection_uv, 0.0);
-        reprojection.rgb *= exposure;
     }
 
     { // Perform manual bilinear interpolation
@@ -242,7 +238,6 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         /* fp16 */ vec3 history_normal;
         float history_linear_depth;
         reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
-        reprojection.rgb *= exposure;
         history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
         history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
         disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
@@ -251,8 +246,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
 }
 
-void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, int max_samples, float exposure) {
-    LoadIntoSharedMemory(ivec2(dispatch_thread_id), ivec2(group_thread_id), ivec2(screen_size), exposure);
+void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, int max_samples) {
+    LoadIntoSharedMemory(ivec2(dispatch_thread_id), ivec2(group_thread_id), ivec2(screen_size));
 
     groupMemoryBarrier();
     barrier();
@@ -263,13 +258,12 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     /* fp16 */ float sample_count = 0.0;
     vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
     /* fp16 */ vec4 gi = texelFetch(g_gi_tex, ivec2(dispatch_thread_id), 0);
-    gi.xyz *= exposure;
 
     if (gi.w > 0.0) {
         /* fp16 */ float disocclusion_factor;
         vec2 reprojection_uv;
         /* fp16 */ vec4 reprojection;
-        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size, exposure,
+        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size,
                          disocclusion_factor, reprojection_uv, reprojection);
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
@@ -284,7 +278,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
             } else {
                 /* fp16 */ float variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
-                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(reprojection.xyz / max(exposure, 0.00001), reprojection.w));
+                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), reprojection);
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(variance_mix));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count));
                 // Mix in reprojection for radiance mip computation
@@ -340,7 +334,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
         /* fp16 */ float weight_acc = max(sum.w, 1.0e-3);
         const vec3 radiance_avg = (sum.xyz / weight_acc);
 
-        imageStore(g_out_avg_gi_img, ivec2(dispatch_thread_id / 8), vec4(radiance_avg / max(exposure, 0.00001), 0.0));
+        imageStore(g_out_avg_gi_img, ivec2(dispatch_thread_id / 8), vec4(radiance_avg, 0.0));
     }
 }
 
@@ -353,7 +347,5 @@ void main() {
     uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
     uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
-    const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
-
-    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 32, exposure);
+    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 32);
 }

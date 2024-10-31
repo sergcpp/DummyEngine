@@ -30,7 +30,6 @@ layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
 layout(binding = REPROJ_REFL_TEX_SLOT) uniform sampler2D g_reproj_refl_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_tex;
 layout(binding = SAMPLE_COUNT_TEX_SLOT) uniform sampler2D g_sample_count_tex;
-layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 
 layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
@@ -46,29 +45,27 @@ layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
 
-vec3 Tonemap(vec3 c, const float exposure) {
-    c *= exposure;
+vec3 Tonemap(vec3 c) {
     //c = c / (c + vec3(1.0));
     return c;
 }
 
-vec4 Tonemap(vec4 c, const float exposure) {
-    c.rgb = Tonemap(c.rgb, exposure);
+vec4 Tonemap(vec4 c) {
+    c.rgb = Tonemap(c.rgb);
     return c;
 }
 
-vec3 TonemapInvert(vec3 c, const float exposure) {
+vec3 TonemapInvert(vec3 c) {
     //c = c / (vec3(1.0) - c);
-    c /= max(exposure, 0.00001);
     return c;
 }
 
-vec4 TonemapInvert(vec4 c, const float exposure) {
-    c.rgb = TonemapInvert(c.rgb, exposure);
+vec4 TonemapInvert(vec4 c) {
+    c.rgb = TonemapInvert(c.rgb);
     return c;
 }
 
-void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size, float exposure) {
+void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size) {
     // Load 16x16 region into shared memory using 4 8x8 blocks
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
@@ -80,7 +77,7 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
 
     // Load into registers
     for (int i = 0; i < 4; ++i) {
-        refl[i] = Tonemap(texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0), exposure);
+        refl[i] = Tonemap(texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0));
     }
 
     // Move to shared memory
@@ -181,8 +178,8 @@ SOFTWARE.
 }
 
 // From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
-void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, vec2 inv_screen_size, float history_clip_weight, float exposure) {
-    LoadIntoSharedMemory(dispatch_thread_id, group_thread_id, ivec2(screen_size), exposure);
+void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, vec2 inv_screen_size, float history_clip_weight) {
+    LoadIntoSharedMemory(dispatch_thread_id, group_thread_id, ivec2(screen_size));
 
     groupMemoryBarrier();
     barrier();
@@ -197,9 +194,9 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     if (center_radiance.w > 0.0 && IsGlossyReflection(roughness) && !IsMirrorReflection(roughness)) {
         /* fp16 */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* fp16 */ vec3 avg_radiance = Tonemap(textureLod(g_avg_refl_tex, uv8, 0.0).rgb, exposure);
+        /* fp16 */ vec3 avg_radiance = Tonemap(textureLod(g_avg_refl_tex, uv8, 0.0).rgb);
 
-        /* fp16 */ vec4 old_signal = Tonemap(texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0), exposure);
+        /* fp16 */ vec4 old_signal = Tonemap(texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0));
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
         /* fp16 */ vec3 color_std = (sqrt(local_neighborhood.variance.xyz) + length(local_neighborhood.mean.xyz - avg_radiance)) * history_clip_weight;
@@ -228,7 +225,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         new_variance = 0.0;
     }
 
-    imageStore(g_out_refl_img, dispatch_thread_id, TonemapInvert(new_signal, exposure));
+    imageStore(g_out_refl_img, dispatch_thread_id, TonemapInvert(new_signal));
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(new_variance));
 }
 
@@ -243,7 +240,5 @@ void main() {
 
     const vec2 inv_screen_size = 1.0 / vec2(g_params.img_size);
 
-    const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
-
-    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 1.0 /* history_clip_weight */, exposure);
+    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 1.0 /* history_clip_weight */);
 }

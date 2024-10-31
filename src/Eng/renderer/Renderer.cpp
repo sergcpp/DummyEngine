@@ -618,6 +618,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     view_state_.env_generation = list.env.generation;
+    view_state_.pre_exposure = readback_exposure();
 
     if (list.render_settings.taa_mode != eTAAMode::Off) {
         const int samples_to_use =
@@ -699,7 +700,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         AddLightBuffersUpdatePass(common_buffers);
         AddSunColorUpdatePass(common_buffers);
 
-        {
+        { // Skinning
             auto &skinning = fg_builder_.AddNode("SKINNING");
 
             FgResRef skin_vtx_res =
@@ -1695,19 +1696,20 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         log->Error("[Renderer] Failed to initialize primitive drawing!");
     }
 
+    min_exposure_ = std::pow(2.0f, min_exposure);
+    max_exposure_ = std::pow(2.0f, max_exposure);
+
     bool resolution_changed = false;
     if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1]) {
         resolution_changed = true;
         view_state_.scr_res = view_state_.act_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
     }
+    view_state_.pre_exposure = readback_exposure();
 
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
                                       !fg_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
     cached_settings_ = settings;
     cached_rp_index_ = 1;
-
-    min_exposure_ = std::pow(2.0f, min_exposure);
-    max_exposure_ = std::pow(2.0f, max_exposure);
 
     assert(format == Ren::eTexFormat::RawRGBA32F);
 
@@ -1766,7 +1768,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         auto &postprocess = fg_builder_.AddNode("POSTPROCESS");
 
         ex_postprocess_args_ = {};
-        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
         ex_postprocess_args_.color_tex = postprocess.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
         if (bloom_tex) {
             ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStageBits::FragmentShader);
@@ -1782,7 +1784,6 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
         }
 
-        ex_postprocess_args_.compressed = compressed;
         ex_postprocess_args_.lut_tex = tonemap_lut_;
         ex_postprocess_args_.tonemap_mode = int(settings.tonemap_mode);
         ex_postprocess_args_.inv_gamma = 1.0f / gamma;

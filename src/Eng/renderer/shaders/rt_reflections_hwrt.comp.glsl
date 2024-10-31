@@ -585,7 +585,7 @@ void main() {
         }
     }
 
-    final_color = compress_hdr(final_color);
+    final_color = compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w);
     first_ray_len = GetNormHitDist(first_ray_len, view_z, first_roughness);
 #if 0
     int copy_count = 0;

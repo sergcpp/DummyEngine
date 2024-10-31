@@ -62,7 +62,7 @@ class Renderer {
 
     float readback_exposure() const {
         if (ex_read_exposure_.exposure() > 0.0f) {
-            return ex_read_exposure_.exposure();
+            return std::min(std::max(ex_read_exposure_.exposure(), min_exposure_), max_exposure_);
         }
         return std::min(std::max(1.0f, min_exposure_), max_exposure_);
     }
@@ -240,7 +240,7 @@ class Renderer {
         pi_shadow_filter_[3], pi_shadow_debug_;
     Ren::Pipeline pi_sun_brightness_;
     // Bloom
-    Ren::Pipeline pi_bloom_downsample_[2][2], pi_bloom_upsample_;
+    Ren::Pipeline pi_bloom_downsample_[2], pi_bloom_upsample_;
     // Autoexposure
     Ren::Pipeline pi_histogram_sample_, pi_histogram_exposure_;
     // Sky

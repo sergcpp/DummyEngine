@@ -146,10 +146,8 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_shadow_debug_, "internal/rt_shadow_debug.comp.glsl");
 
     // Bloom
-    success &= init_pipeline(pi_bloom_downsample_[0][0], "internal/bloom_downsample.comp.glsl");
-    success &= init_pipeline(pi_bloom_downsample_[0][1], "internal/bloom_downsample@TONEMAP.comp.glsl");
-    success &= init_pipeline(pi_bloom_downsample_[1][0], "internal/bloom_downsample@COMPRESSED.comp.glsl");
-    success &= init_pipeline(pi_bloom_downsample_[1][1], "internal/bloom_downsample@COMPRESSED;TONEMAP.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[0], "internal/bloom_downsample.comp.glsl");
+    success &= init_pipeline(pi_bloom_downsample_[1], "internal/bloom_downsample@TONEMAP.comp.glsl");
     success &= init_pipeline(pi_bloom_upsample_, "internal/bloom_upsample.comp.glsl");
 
     // Autoexposure
@@ -436,7 +434,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
             shrd_data.prev_cam_pos =
                 Ren::Vec4f{view_state_.prev_cam_pos[0], view_state_.prev_cam_pos[1], view_state_.prev_cam_pos[2], 0.0f};
-            shrd_data.cam_pos_and_exp = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 1.0f};
+            shrd_data.cam_pos_and_exp = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], view_state_.pre_exposure};
             shrd_data.wind_scroll =
                 Ren::Vec4f{p_list_->env.curr_wind_scroll_lf[0], p_list_->env.curr_wind_scroll_lf[1],
                            p_list_->env.curr_wind_scroll_hf[0], p_list_->env.curr_wind_scroll_hf[1]};
@@ -1743,7 +1741,6 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
         FgResRef depth_tex;
         FgResRef velocity_tex;
         FgResRef history_tex;
-        FgResRef exposure_tex;
 
         FgResRef output_tex;
         FgResRef output_history_tex;
@@ -1753,7 +1750,6 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
     data->clean_tex = taa.AddTextureInput(frame_textures.color, Stg::FragmentShader);
     data->depth_tex = taa.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
     data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Stg::FragmentShader);
-    data->exposure_tex = taa.AddTextureInput(frame_textures.exposure, Stg::FragmentShader);
 
     { // Texture that holds resolved color
         Ren::Tex2DParams params;
@@ -1773,7 +1769,6 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
         FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
         FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
         FgAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
-        FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
         FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
         FgAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
 
@@ -1793,8 +1788,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_LINEAR_TEX_SLOT, *clean_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref}};
+                {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
 
             TempAA::Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
@@ -1904,7 +1898,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 bloom_downsample.AddStorageImageOutput(output_name, params, Ren::eStageBits::ComputeShader);
         }
 
-        bloom_downsample.set_execute_cb([this, data, mip, compressed](FgBuilder &builder) {
+        bloom_downsample.set_execute_cb([this, data, mip](FgBuilder &builder) {
             FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
             FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
@@ -1912,6 +1906,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             Bloom::Params uniform_params;
             uniform_params.img_size[0] = output_tex.ref->params.w;
             uniform_params.img_size[1] = output_tex.ref->params.h;
+            uniform_params.pre_exposure = view_state_.pre_exposure;
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, *input_tex.ref},
@@ -1922,7 +1917,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
                 (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
 
-            DispatchCompute(pi_bloom_downsample_[compressed][mip == 0], grp_count, bindings, &uniform_params,
+            DispatchCompute(pi_bloom_downsample_[mip == 0], grp_count, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
@@ -2021,7 +2016,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             const bool compressed = (input_tex.ref->params.format == Ren::eTexFormat::RawRGBA16F);
 
             HistogramSample::Params uniform_params = {};
-            uniform_params.scale = compressed ? HDR_PRE_EXPOSURE : (1.0f / pre_exposure_);
+            uniform_params.pre_exposure = view_state_.pre_exposure;
 
             DispatchCompute(pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());

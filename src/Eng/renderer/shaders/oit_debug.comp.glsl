@@ -23,5 +23,5 @@ void main() {
     frag_index += px_coords.y * g_params.img_size.x + px_coords.x;
 
     const float depth = uintBitsToFloat(texelFetch(g_oit_depth_buf, frag_index).x);
-    imageStore(g_out_img, px_coords, vec4(compress_hdr(vec3(depth, 0, 0)), 0));
+    imageStore(g_out_img, px_coords, vec4(compress_hdr(vec3(depth, 0, 0), 1.0), 0));
 }

@@ -4,7 +4,6 @@
 #include "_fs_common.glsl"
 #include "blit_postprocess_interface.h"
 
-#pragma multi_compile _ COMPRESSED
 #pragma multi_compile _ ABERRATION
 #pragma multi_compile _ PURKINJE
 #pragma multi_compile _ LUT
@@ -58,13 +57,10 @@ void main() {
     }
 
     // add bloom
-    col += 0.05 * textureLod(g_bloom_tex, g_vtx_uvs, 0.0).xyz;
+    col += 0.025 * textureLod(g_bloom_tex, g_vtx_uvs, 0.0).xyz;
 
-#ifdef COMPRESSED
-    col = decompress_hdr(col);
-#endif
     const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
-    col *= exposure;
+    col *= exposure / g_params.pre_exposure;
 
 #ifdef PURKINJE
     col *= mix(vec3(1.0), vec3(0.8, 0.8, 1.0), g_params.purkinje * saturate(exposure - 12.0));

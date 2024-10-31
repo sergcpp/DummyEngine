@@ -30,7 +30,7 @@ void main() {
     const vec2 uv_corner = vec2(grp) / vec2(16.0, 8.0);
     const vec2 uv_sample = uv_corner + hammersley(gl_LocalInvocationIndex, LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y) / vec2(16.0, 8.0);
 
-    const vec3 color = g_params.scale * textureLod(g_hdr_tex, uv_sample, 0.0).xyz;
+    const vec3 color = textureLod(g_hdr_tex, uv_sample, 0.0).xyz / g_params.pre_exposure;
 
     const float luma = lum(color);
     const float bucketId = saturate(histogram_from_luma(luma)) * (EXPOSURE_HISTOGRAM_RES - 1) * (1.0 - 1e-5);

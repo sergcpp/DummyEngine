@@ -359,6 +359,6 @@ void main() {
     }
 
     const vec4 prev_val = imageLoad(g_out_diffuse_img, icoord);
-    imageStore(g_out_diffuse_img, icoord, vec4(prev_val.xyz + compress_hdr(visibility * diffuse_col), prev_val.w));
-    imageStore(g_out_specular_img, icoord, vec4(compress_hdr(visibility * specular_col.xyz), specular_col.w));
+    imageStore(g_out_diffuse_img, icoord, vec4(prev_val.xyz + compress_hdr(visibility * diffuse_col, g_shrd_data.cam_pos_and_exp.w), prev_val.w));
+    imageStore(g_out_specular_img, icoord, vec4(compress_hdr(visibility * specular_col.xyz, g_shrd_data.cam_pos_and_exp.w), specular_col.w));
 }

@@ -126,6 +126,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                 Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
+            uniform_params.pre_exposure = view_state_.pre_exposure;
 
             // total irradiance
             uniform_params.input_offset = 0;

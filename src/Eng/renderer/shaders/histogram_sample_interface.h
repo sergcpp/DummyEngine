@@ -6,7 +6,7 @@
 INTERFACE_START(HistogramSample)
 
 struct Params {
-    float scale;
+    float pre_exposure;
     float _pad0;
     float _pad1;
     float _pad2;

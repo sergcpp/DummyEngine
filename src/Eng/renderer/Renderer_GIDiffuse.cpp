@@ -549,7 +549,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef shared_data;
             FgResRef depth_tex, norm_tex, velocity_tex;
             FgResRef depth_hist_tex, norm_hist_tex, gi_hist_tex, variance_hist_tex, sample_count_hist_tex;
-            FgResRef exposure_tex;
             FgResRef gi_tex;
             FgResRef tile_list;
             FgResRef indir_args;
@@ -610,7 +609,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         avg_gi_tex = data->out_avg_gi_tex = gi_reproject.AddStorageImageOutput(avg_gi_tex, Stg::ComputeShader);
         data->sample_count_hist_tex =
             gi_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = gi_reproject.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
         gi_reproject.set_execute_cb([this, data](FgBuilder &builder) {
             FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
@@ -623,7 +621,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocTex &variance_hist_tex = builder.GetReadTexture(data->variance_hist_tex);
             FgAllocTex &sample_count_hist_tex = builder.GetReadTexture(data->sample_count_hist_tex);
             FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
             FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
             FgAllocTex &out_reprojected_tex = builder.GetWriteTexture(data->out_reprojected_tex);
@@ -642,7 +639,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::Tex2DSampled, GIReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
                 {Trg::Tex2DSampled, GIReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
                 {Trg::Tex2DSampled, GIReproject::GI_TEX_SLOT, *gi_tex.ref},
-                {Trg::Tex2DSampled, GIReproject::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Trg::SBufRO, GIReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, GIReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
                 {Trg::Image2D, GIReproject::OUT_AVG_GI_IMG_SLOT, *out_avg_gi_tex.ref},
@@ -667,7 +663,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef depth_tex, norm_tex;
             FgResRef avg_gi_tex, gi_tex;
             FgResRef variance_tex, sample_count_tex;
-            FgResRef exposure_tex;
             FgResRef tile_list, indir_args;
             uint32_t indir_args_offset = 0;
             FgResRef out_gi_tex, out_variance_tex;
@@ -680,7 +675,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         gi_tex = data->gi_tex = gi_prefilter.AddTextureInput(gi_tex, Stg::ComputeShader);
         data->variance_tex = gi_prefilter.AddTextureInput(variance_temp_tex, Stg::ComputeShader);
         data->sample_count_tex = gi_prefilter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = gi_prefilter.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = gi_prefilter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_prefilter.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -715,7 +709,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
             FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
             FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
             FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
@@ -729,7 +722,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::Tex2DSampled, GIPrefilter::GI_TEX_SLOT, *gi_tex.ref},
                 {Trg::Tex2DSampled, GIPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::Tex2DSampled, GIPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::Tex2DSampled, GIPrefilter::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Trg::SBufRO, GIPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, GIPrefilter::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
                 {Trg::Image2D, GIPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
@@ -752,7 +744,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef shared_data;
             FgResRef norm_tex, avg_gi_tex, fallback_gi_tex, gi_tex, reproj_gi_tex;
             FgResRef variance_tex, sample_count_tex, tile_list;
-            FgResRef exposure_tex;
             FgResRef indir_args;
             uint32_t indir_args_offset = 0;
             FgResRef out_gi_tex, out_variance_tex;
@@ -767,7 +758,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->reproj_gi_tex = gi_temporal.AddTextureInput(reproj_gi_tex, Stg::ComputeShader);
         data->variance_tex = gi_temporal.AddTextureInput(variance_temp2_tex, Stg::ComputeShader);
         data->sample_count_tex = gi_temporal.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = gi_temporal.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = gi_temporal.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_temporal.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -807,7 +797,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocTex &reproj_gi_tex = builder.GetReadTexture(data->reproj_gi_tex);
             FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
             FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
             FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
@@ -823,7 +812,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::Tex2DSampled, GIResolveTemporal::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Trg::SBufRO, GIResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, GIResolveTemporal::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
                 {Trg::Image2D, GIResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
@@ -974,7 +962,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             struct PassData {
                 FgResRef depth_tex, velocity_tex, gi_tex, gi_hist_tex;
-                FgResRef exposure_tex;
                 FgResRef out_gi_tex;
             };
 
@@ -982,7 +969,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->depth_tex = gi_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->velocity_tex = gi_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
             data->gi_tex = gi_stabilization.AddTextureInput(gi_diffuse3_tex, Stg::ComputeShader);
-            data->exposure_tex = gi_stabilization.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
             { // Final gi
                 Ren::Tex2DParams params;
@@ -1003,7 +989,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
                 FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
                 FgAllocTex &gi_hist_tex = builder.GetReadTexture(data->gi_hist_tex);
-                FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
 
                 FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
@@ -1012,7 +997,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     {Trg::Tex2DSampled, GIStabilization::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                     {Trg::Tex2DSampled, GIStabilization::GI_TEX_SLOT, *gi_tex.ref},
                     {Trg::Tex2DSampled, GIStabilization::GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                    {Trg::Tex2DSampled, GIStabilization::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                     {Trg::Image2D, GIStabilization::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =

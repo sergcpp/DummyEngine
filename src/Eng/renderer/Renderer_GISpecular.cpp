@@ -455,7 +455,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgResRef depth_tex, norm_tex, velocity_tex;
             FgResRef depth_hist_tex, norm_hist_tex, refl_hist_tex, variance_hist_tex, sample_count_hist_tex;
             FgResRef refl_tex;
-            FgResRef exposure_tex;
             FgResRef tile_list;
             FgResRef indir_args;
             uint32_t indir_args_offset = 0;
@@ -473,7 +472,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput(refl_tex, Stg::ComputeShader);
         data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
         refl_tex = data->refl_tex = ssr_reproject.AddTextureInput(refl_tex, Stg::ComputeShader);
-        data->exposure_tex = ssr_reproject.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
         data->tile_list = ssr_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_reproject.AddIndirectBufferInput(indir_disp_buf);
@@ -528,7 +526,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgAllocTex &variance_hist_tex = builder.GetReadTexture(data->variance_hist_tex);
             FgAllocTex &sample_count_hist_tex = builder.GetReadTexture(data->sample_count_hist_tex);
             FgAllocTex &relf_tex = builder.GetReadTexture(data->refl_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
             FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
             FgAllocTex &out_reprojected_tex = builder.GetWriteTexture(data->out_reprojected_tex);
@@ -547,7 +544,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::Tex2DSampled, SSRReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::REFL_TEX_SLOT, *relf_tex.ref},
-                {Trg::Tex2DSampled, SSRReproject::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Trg::SBufRO, SSRReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
                 {Trg::Image2D, SSRReproject::OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
@@ -572,7 +568,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgResRef depth_tex, norm_tex;
             FgResRef avg_refl_tex, refl_tex;
             FgResRef variance_tex, sample_count_tex;
-            FgResRef exposure_tex;
             FgResRef tile_list, indir_args;
             uint32_t indir_args_offset = 0;
             FgResRef out_refl_tex, out_variance_tex;
@@ -585,7 +580,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->refl_tex = ssr_prefilter.AddTextureInput(refl_tex, Stg::ComputeShader);
         data->variance_tex = ssr_prefilter.AddTextureInput(variance_temp_tex, Stg::ComputeShader);
         data->sample_count_tex = ssr_prefilter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = ssr_prefilter.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = ssr_prefilter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_prefilter.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -620,7 +614,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
             FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
             FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
             FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
@@ -634,7 +627,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::Tex2DSampled, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
                 {Trg::Tex2DSampled, SSRPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::Tex2DSampled, SSRPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::Tex2DSampled, SSRPrefilter::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Trg::SBufRO, SSRPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRPrefilter::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::Image2D, SSRPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
@@ -662,7 +654,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgResRef shared_data;
             FgResRef norm_tex, avg_refl_tex, refl_tex, reproj_refl_tex;
             FgResRef variance_tex, sample_count_tex, tile_list;
-            FgResRef exposure_tex;
             FgResRef indir_args;
             uint32_t indir_args_offset = 0;
             FgResRef out_refl_tex, out_variance_tex;
@@ -676,7 +667,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->reproj_refl_tex = ssr_temporal.AddTextureInput(reproj_refl_tex, Stg::ComputeShader);
         data->variance_tex = ssr_temporal.AddTextureInput(variance_temp2_tex, Stg::ComputeShader);
         data->sample_count_tex = ssr_temporal.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-        data->exposure_tex = ssr_temporal.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
         data->tile_list = ssr_temporal.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_temporal.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
@@ -715,7 +705,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgAllocTex &reproj_refl_tex = builder.GetReadTexture(data->reproj_refl_tex);
             FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
             FgAllocTex &sample_count_tex = builder.GetReadTexture(data->sample_count_tex);
-            FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
             FgAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
@@ -730,7 +719,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::Tex2DSampled, SSRResolveTemporal::REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
                 {Trg::Tex2DSampled, SSRResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::Tex2DSampled, SSRResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::Tex2DSampled, SSRResolveTemporal::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Trg::SBufRO, SSRResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRResolveTemporal::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::Image2D, SSRResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
@@ -930,7 +918,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     {Trg::Tex2DSampled, SSRStabilization::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                     {Trg::Tex2DSampled, SSRStabilization::SSR_TEX_SLOT, *gi_tex.ref},
                     {Trg::Tex2DSampled, SSRStabilization::SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                    {Trg::Tex2DSampled, SSRStabilization::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                     {Trg::Image2D, SSRStabilization::OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =

@@ -430,5 +430,5 @@ void main() {
         final_color = light_total;
     }
 
-    imageStore(g_out_image, ivec2(gl_GlobalInvocationID.xy), vec4(compress_hdr(final_color), 1.0));
+    imageStore(g_out_image, ivec2(gl_GlobalInvocationID.xy), vec4(compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w), 1.0));
 }

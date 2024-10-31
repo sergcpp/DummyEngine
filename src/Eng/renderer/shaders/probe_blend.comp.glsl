@@ -76,7 +76,7 @@ void main() {
             vec4 ray_data = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, g_params.input_offset), 0);
 
 #if defined(RADIANCE)
-            ray_data.xyz = decompress_hdr(ray_data.xyz);
+            ray_data.xyz = (ray_data.xyz / g_params.pre_exposure);
 
             if (ray_data.a < 0.0) {
                 ++backfaces;
@@ -110,7 +110,7 @@ void main() {
         for (int i = 0; i < PROBE_TOTAL_RAYS_COUNT; ++i) {
             const ivec3 ray_data_coords = get_ray_data_coords(i, probe_index);
 
-            const vec3 light_color = decompress_hdr(texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), 0).xyz);
+            const vec3 light_color = (texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 2 * PROBE_VOLUME_RES_Y), 0).xyz / g_params.pre_exposure);
             const vec3 light_dir = texelFetch(g_ray_data, ray_data_coords + ivec3(0, 0, 3 * PROBE_VOLUME_RES_Y), 0).xyz;
 
             const float weight = saturate(dot(probe_ray_dir, light_dir));

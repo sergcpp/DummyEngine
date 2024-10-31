@@ -33,5 +33,5 @@ void main() {
         irradiance *= vec3(0.0, 0.0, 1.0);
     }
 
-    g_out_color = vec4(compress_hdr(irradiance), 1.0);
+    g_out_color = vec4(compress_hdr(irradiance, g_shrd_data.cam_pos_and_exp.w), 1.0);
 }

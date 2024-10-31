@@ -31,7 +31,6 @@ layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_tex;
 layout(binding = REPROJ_GI_TEX_SLOT) uniform sampler2D g_reproj_gi_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_tex;
 layout(binding = SAMPLE_COUNT_TEX_SLOT) uniform sampler2D g_sample_count_tex;
-layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 
 layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
@@ -47,7 +46,7 @@ layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
 
-void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size, float exposure) {
+void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size) {
     // Load 16x16 region into shared memory using 4 8x8 blocks
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
@@ -60,7 +59,6 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     // Load into registers
     for (int i = 0; i < 4; ++i) {
         radiance[i] = texelFetch(g_gi_tex, dispatch_thread_id + offset[i], 0);
-        radiance[i].xyz *= exposure;
     }
 
     // Move to shared memory
@@ -134,8 +132,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ********************************************************************/
-void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, vec2 inv_screen_size, float history_clip_weight, float exposure) {
-    LoadIntoSharedMemory(dispatch_thread_id, group_thread_id, ivec2(screen_size), exposure);
+void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, vec2 inv_screen_size, float history_clip_weight) {
+    LoadIntoSharedMemory(dispatch_thread_id, group_thread_id, ivec2(screen_size));
 
     groupMemoryBarrier();
     barrier();
@@ -149,11 +147,10 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     if (center_radiance.w > 0.0) {
         /* fp16 */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb * exposure;
-        const vec3 fallback_radiance = texelFetch(g_fallback_tex, dispatch_thread_id, 0).rgb * exposure;
+        const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb;
+        const vec3 fallback_radiance = texelFetch(g_fallback_tex, dispatch_thread_id, 0).rgb;
 
         /* fp16 */ vec4 old_signal = texelFetch(g_reproj_gi_tex, dispatch_thread_id, 0);
-        old_signal.xyz *= exposure;
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
         /* fp16 */ vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.rgb - fallback_radiance)) * history_clip_weight * 1.4;
@@ -182,22 +179,20 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         }
     }
 
-    imageStore(g_out_gi_img, dispatch_thread_id, vec4(new_signal.xyz / max(exposure, 0.00001), new_signal.w));
+    imageStore(g_out_gi_img, dispatch_thread_id, new_signal);
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(new_variance));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    uint packed_coords = g_tile_list[gl_WorkGroupID.x];
-    ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
-    ivec2  dispatch_group_id = dispatch_thread_id / 8;
-    uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
-    uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
+    const uint packed_coords = g_tile_list[gl_WorkGroupID.x];
+    const ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
+    const ivec2  dispatch_group_id = dispatch_thread_id / 8;
+    const uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
+    const uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
-    vec2 inv_screen_size = 1.0 / vec2(g_params.img_size);
+    const vec2 inv_screen_size = 1.0 / vec2(g_params.img_size);
 
-    const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
-
-    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 0.9 /* history_clip_weight */, exposure);
+    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 0.9 /* history_clip_weight */);
 }
