@@ -293,6 +293,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     // SWRT is temporarily works with bindless textures only
     capabilities.swrt = (api_ctx_->max_combined_image_samplers >= 16384u);
 
+    // Temp. solution (prevent reallocation)
+    textures_2D_.reserve(4096);
+
     return true;
 }
 
