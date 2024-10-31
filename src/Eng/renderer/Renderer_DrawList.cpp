@@ -31,7 +31,7 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
 
     for (int i = 0; i < 2; ++i) {
         rt_geo_instances[i].realloc(MAX_RT_GEO_INSTANCES);
-        rt_obj_instances[i].realloc(MAX_RT_OBJ_INSTANCES);
+        rt_obj_instances[i].realloc(MAX_RT_OBJ_INSTANCES_TOTAL);
     }
     rt_geo_instances_stage_buf[0] = std::move(_rt_geo_instances_stage_buf);
     rt_geo_instances_stage_buf[1] = std::move(_rt_sh_geo_instances_stage_buf);

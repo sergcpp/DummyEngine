@@ -526,7 +526,7 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
 
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
-    const uint32_t max_instance_count = MAX_RT_OBJ_INSTANCES; // allocate for worst case
+    const uint32_t max_instance_count = MAX_RT_OBJ_INSTANCES_TOTAL; // allocate for worst case
 
     VkAccelerationStructureGeometryInstancesDataKHR instances_data = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};

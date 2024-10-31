@@ -124,7 +124,8 @@ const int MAX_DECALS_TOTAL = 4096;
 const int MAX_ITEMS_TOTAL = int(1u << 16u);
 
 const int MAX_RT_GEO_INSTANCES = 32768;
-const int MAX_RT_OBJ_INSTANCES = 4096;
+const int MAX_RT_OBJ_INSTANCES_GI = 1536;
+const int MAX_RT_OBJ_INSTANCES_TOTAL = 4096;
 const int MAX_RT_TLAS_NODES = 8192; // (4096 + 2048 + 1024 + ...)
 
 const int DECALS_BUF_STRIDE = 7;

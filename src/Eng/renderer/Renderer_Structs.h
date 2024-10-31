@@ -563,8 +563,8 @@ const size_t DecalsBufChunkSize = sizeof(DecalItem) * MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * ITEM_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * MAX_ITEMS_TOTAL;
 const size_t RTGeoInstancesBufChunkSize = sizeof(RTGeoInstance) * MAX_RT_GEO_INSTANCES;
-const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES;
-const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT_OBJ_INSTANCES;
+const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES_TOTAL;
+const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT_OBJ_INSTANCES_TOTAL;
 const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh2_node_t) * MAX_RT_TLAS_NODES;
 const size_t SharedDataBlockSize = 12 * 1024;
 

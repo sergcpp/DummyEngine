@@ -194,7 +194,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     list.materials = &scene.materials;
     list.decals_atlas = &scene.decals_atlas;
-    //list.probe_storage = &scene.probe_storage;
+    // list.probe_storage = &scene.probe_storage;
 
     // mask render settings with what renderer itself is capable of
     list.render_settings &= settings;
@@ -660,24 +660,26 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
 
         VisObjStorage &rt_objects = temp_rt_visible_objects_[CompAccStructureBit];
-        if (rt_objects.count > MAX_RT_OBJ_INSTANCES) {
+        if (rt_objects.count > MAX_RT_OBJ_INSTANCES_GI) {
             OPTICK_EVENT("SORT RT INSTANCES");
 
             const Vec3f &cam_pos = list.draw_cam.world_position();
-            std::partial_sort(rt_objects.objects.data(), rt_objects.objects.data() + MAX_RT_OBJ_INSTANCES,
+            std::partial_sort(rt_objects.objects.data(), rt_objects.objects.data() + MAX_RT_OBJ_INSTANCES_GI,
                               rt_objects.objects.data() + rt_objects.count.load(),
                               [&](const VisObj lhs, const VisObj rhs) {
                                   const SceneObject &lhs_obj = scene.objects[lhs.index];
                                   const SceneObject &rhs_obj = scene.objects[rhs.index];
 
-                                  return acc_structs[lhs_obj.components[CompAccStructure]].surf_area / lhs.dist2 >
-                                         acc_structs[rhs_obj.components[CompAccStructure]].surf_area / rhs.dist2;
+                                  const float lhs_area = acc_structs[lhs_obj.components[CompAccStructure]].surf_area;
+                                  const float rhs_area = acc_structs[rhs_obj.components[CompAccStructure]].surf_area;
+
+                                  return (lhs_area * lhs_area) / lhs.dist2 > (rhs_area * rhs_area) / rhs.dist2;
                               });
         }
 
-        rt_objects.objects.resize(std::min(rt_objects.count.load(), MAX_RT_OBJ_INSTANCES));
+        rt_objects.objects.resize(std::min(rt_objects.count.load(), MAX_RT_OBJ_INSTANCES_GI));
 
-        for (const VisObj i : Ren::Span<VisObj>{rt_objects.objects.data(), rt_objects.count.load()}) {
+        for (const VisObj i : Ren::Span<VisObj>{rt_objects.objects.data(), rt_objects.objects.size()}) {
             const SceneObject &obj = scene.objects[i.index];
 
             const Transform &tr = transforms[obj.components[CompTransform]];
@@ -1174,7 +1176,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         proc_objects_[i.index].rt_sh_index = list.rt_obj_instances[1].count;
 
                         const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
-                        if (acc.mesh->blas && list.rt_obj_instances[1].count < MAX_RT_OBJ_INSTANCES) {
+                        if (acc.mesh->blas && list.rt_obj_instances[1].count < MAX_RT_OBJ_INSTANCES_TOTAL) {
                             const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
                             RTObjInstance &new_instance =

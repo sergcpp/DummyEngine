@@ -29,7 +29,7 @@ void Eng::ExUpdateAccBuffers::Execute_HWRT(FgBuilder &builder) {
 
     if (rt_obj_instances.count) {
         const uint32_t rt_obj_instances_mem_size = rt_obj_instances.count * sizeof(VkAccelerationStructureInstanceKHR);
-        assert(rt_obj_instances_mem_size < HWRTObjInstancesBufChunkSize);
+        assert(rt_obj_instances_mem_size <= HWRTObjInstancesBufChunkSize);
 
         uint8_t *stage_mem = rt_obj_instances_stage_buf->MapRange(ctx.backend_frame() * HWRTObjInstancesBufChunkSize,
                                                                   HWRTObjInstancesBufChunkSize);
