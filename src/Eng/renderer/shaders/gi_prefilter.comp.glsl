@@ -172,8 +172,8 @@ void Resolve(ivec2 group_thread_id, /* fp16 */ vec3 avg_radiance, sample_t cente
     };
 
     for (int i = 0; i < 12; ++i) {
-        ivec2 new_idx = group_thread_id + sample_offsets[i];
-        sample_t neighbor = LoadFromSharedMemory(new_idx);
+        const ivec2 new_idx = group_thread_id + sample_offsets[i];
+        const sample_t neighbor = LoadFromSharedMemory(new_idx);
 
         /* fp16 */ float weight = float(neighbor.radiance.w > 0.0);
         weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
@@ -210,7 +210,7 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     const bool needs_denoiser = (center.radiance.w > 0.0) && (center.variance > 0.0);
     if (needs_denoiser) {
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* fp16 */ vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb;
+        /* fp16 */ const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb;
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 
@@ -221,11 +221,11 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    uint packed_coords = g_tile_list[gl_WorkGroupID.x];
-    ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
-    ivec2  dispatch_group_id = dispatch_thread_id / 8;
-    uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
-    uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
+    const uint packed_coords = g_tile_list[gl_WorkGroupID.x];
+    const ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
+    const ivec2  dispatch_group_id = dispatch_thread_id / 8;
+    const uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
+    const uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
     Prefilter(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size.xy);
 }
