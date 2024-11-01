@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = rt_tweaks
-	commit = 771e13a2f62664b07cc046940efdcd40b7f71861
+	branch = preexposure
+	commit = 8b0cace6f2d53e1fc98848c7e8050a9e57c59e54
 	method = merge
 	cmdver = 0.4.6
-	parent = 5a3e793fe6f3a52f555532de1996180c98cc68ed
+	parent = 3d5be9e21bc9d4fb7b558f1c30829dc4213a5642
