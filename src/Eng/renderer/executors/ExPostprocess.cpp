@@ -62,7 +62,7 @@ void Eng::ExPostprocess::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         blit_postprocess_prog_[0][0] = sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
                                                       "internal/blit_postprocess@ABERRATION;PURKINJE.frag.glsl");
-        assert(blit_postprocess_prog_0][0]->ready());
+        assert(blit_postprocess_prog_[0][0]->ready());
         blit_postprocess_prog_[0][1] =
             sh.LoadProgram(ctx, "internal/blit_postprocess.vert.glsl",
                            "internal/blit_postprocess@ABERRATION;PURKINJE;TWO_TARGETS.frag.glsl");

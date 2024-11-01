@@ -85,7 +85,8 @@ bool Eng::Renderer::InitPipelines() {
 
     // Reflections denoising
     success &= init_pipeline(pi_ssr_reproject_, "internal/ssr_reproject.comp.glsl");
-    success &= init_pipeline(pi_ssr_prefilter_, "internal/ssr_prefilter.comp.glsl");
+    success &= init_pipeline(pi_ssr_prefilter_[0], "internal/ssr_prefilter.comp.glsl");
+    success &= init_pipeline(pi_ssr_prefilter_[1], "internal/ssr_prefilter@RELAXED.comp.glsl");
     success &= init_pipeline(pi_ssr_temporal_, "internal/ssr_temporal.comp.glsl");
     success &= init_pipeline(pi_ssr_blur_[0], "internal/ssr_blur.comp.glsl");
     success &= init_pipeline(pi_ssr_blur_[1], "internal/ssr_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
@@ -119,7 +120,8 @@ bool Eng::Renderer::InitPipelines() {
                                                               "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl"));
     success &= init_pipeline(pi_gi_rt_write_indirect_, "internal/gi_write_indir_rt_dispatch.comp.glsl");
     success &= init_pipeline(pi_gi_reproject_, "internal/gi_reproject.comp.glsl");
-    success &= init_pipeline(pi_gi_prefilter_, "internal/gi_prefilter.comp.glsl");
+    success &= init_pipeline(pi_gi_prefilter_[0], "internal/gi_prefilter.comp.glsl");
+    success &= init_pipeline(pi_gi_prefilter_[1], "internal/gi_prefilter@RELAXED.comp.glsl");
     success &= init_pipeline(pi_gi_temporal_, "internal/gi_temporal.comp.glsl");
     success &= init_pipeline(pi_gi_blur_[0], "internal/gi_blur.comp.glsl");
     success &= init_pipeline(pi_gi_blur_[1], "internal/gi_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");

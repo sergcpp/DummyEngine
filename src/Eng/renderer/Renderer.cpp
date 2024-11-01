@@ -619,6 +619,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     view_state_.env_generation = list.env.generation;
     view_state_.pre_exposure = readback_exposure();
+    view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
 
     if (list.render_settings.taa_mode != eTAAMode::Off) {
         const int samples_to_use =
@@ -1403,7 +1404,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     fg_builder_.Execute();
 
-    { // store matrix to use it in next frame
+    { // store info to use it in next frame
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
         view_state_.prev_cam_pos = list.draw_cam.world_position();
         view_state_.prev_sun_dir = list.env.sun_dir;
@@ -1411,6 +1412,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         view_state_.prev_clip_from_world = list.draw_cam.proj_matrix() * list.draw_cam.view_matrix();
         view_state_.prev_view_from_world = list.draw_cam.view_matrix();
         view_state_.prev_clip_from_view = list.draw_cam.proj_matrix_offset();
+
+        view_state_.prev_pre_exposure = view_state_.pre_exposure;
     }
 
     const uint64_t cpu_draw_end_us = Sys::GetTimeUs();

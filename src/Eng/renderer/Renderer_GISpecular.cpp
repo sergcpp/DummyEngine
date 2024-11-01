@@ -639,9 +639,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             SSRPrefilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            DispatchComputeIndirect(pi_ssr_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                    builder.ctx().log());
+            DispatchComputeIndirect(pi_ssr_prefilter_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
+                                    data->indir_args_offset, bindings, &uniform_params, sizeof(uniform_params),
+                                    builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 

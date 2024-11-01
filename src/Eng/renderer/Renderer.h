@@ -225,7 +225,7 @@ class Renderer {
     Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2][2];
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
+    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_[2], pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
     // GI Cache
     Ren::Pipeline pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[3], pi_probe_sample_;
     // GTAO
@@ -234,7 +234,7 @@ class Renderer {
     Ren::Pipeline pi_gi_classify_, pi_gi_write_indirect_, pi_gi_trace_ss_;
     Ren::Pipeline pi_gi_rt_write_indirect_;
     // GI Denoiser stuff
-    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_temporal_, pi_gi_blur_[2], pi_gi_stabilization_;
+    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_[2], pi_gi_temporal_, pi_gi_blur_[2], pi_gi_stabilization_;
     // Sun shadows
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;

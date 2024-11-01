@@ -44,7 +44,7 @@ Features:
       <img src="images/sponza.jpg" width="67.359%" />
     </div>
     <div float="middle">
-      <img src="images/pbr.png" width="65.1%" />
+      <img src="images/pbr.jpg" width="65.1%" />
       <img src="images/transparent_machines.jpg" width="32.55%" />
     </div>
   </div>

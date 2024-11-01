@@ -96,7 +96,7 @@ float FetchFilteredVarianceFromSharedMemory(ivec2 pos) {
     return variance;
 }
 
-void StoreInGroupSharedMemory(ivec2 idx, /* fp16 */ vec3 normals, /* fp16 */ vec2 input_, float depth) {
+void StoreInSharedMemory(ivec2 idx, /* fp16 */ vec3 normals, /* fp16 */ vec2 input_, float depth) {
     g_shared_input[idx.y][idx.x] = packHalf2x16(input_);
     g_shared_depth[idx.y][idx.x] = depth;
     g_shared_normals_xy[idx.y][idx.x] = packHalf2x16(normals.xy);
@@ -105,7 +105,7 @@ void StoreInGroupSharedMemory(ivec2 idx, /* fp16 */ vec3 normals, /* fp16 */ vec
 
 void StoreWithOffset(ivec2 gtid, ivec2 offset, /* fp16 */ vec3 normals, /* fp16 */ vec2 input_, float depth) {
     gtid += offset;
-    StoreInGroupSharedMemory(gtid, normals, input_, depth);
+    StoreInSharedMemory(gtid, normals, input_, depth);
 }
 
 void InitializeSharedMemory(ivec2 did, ivec2 gtid) {
@@ -219,7 +219,7 @@ vec2 ApplyFilterWithPrecache(uvec2 did, uvec2 gtid, uint stepsize) {
     groupMemoryBarrier(); barrier();
     if (needs_denoiser) {
         float depth = texelFetch(g_depth_tex, ivec2(did), 0).r;
-        gtid += 4; // Center threads in groupshared memory
+        gtid += 4; // Center threads in shared memory
         DenoiseFromSharedMemory(did, gtid, weight_sum, shadow_sum, depth, stepsize);
     }
 

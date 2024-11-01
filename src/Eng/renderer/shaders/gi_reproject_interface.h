@@ -7,6 +7,8 @@ INTERFACE_START(GIReproject)
 
 struct Params {
     uvec2 img_size;
+    float hist_weight;
+    float _unused0;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

@@ -1,9 +1,19 @@
 #version 430 core
 #extension GL_ARB_shading_language_packing : require
 
+// NOTE: This is not used for now
+#if !USE_FP16
+    #define float16_t float
+    #define f16vec2 vec2
+    #define f16vec3 vec3
+    #define f16vec4 vec4
+#endif
+
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
 #include "gi_prefilter_interface.h"
+
+#pragma multi_compile _ RELAXED
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -30,9 +40,9 @@ shared uint g_shared_3[16][16];
 shared float g_shared_depth[16][16];
 
 struct sample_t {
-    /* fp16 */ vec4 radiance;
-    /* fp16 */ float variance;
-    /* fp16 */ vec3 normal;
+    f16vec4 radiance;
+    float16_t variance;
+    f16vec3 normal;
     float depth;
 };
 
@@ -41,7 +51,7 @@ sample_t LoadFromSharedMemory(ivec2 idx) {
     ret.radiance.xy = unpackHalf2x16(g_shared_0[idx.y][idx.x]);
     ret.radiance.zw = unpackHalf2x16(g_shared_1[idx.y][idx.x]);
     ret.normal.xy = unpackHalf2x16(g_shared_2[idx.y][idx.x]);
-    /* fp16 */ vec2 temp = unpackHalf2x16(g_shared_3[idx.y][idx.x]);
+    const f16vec2 temp = unpackHalf2x16(g_shared_3[idx.y][idx.x]);
     ret.normal.z = temp.x;
     ret.variance = temp.y;
     ret.depth = g_shared_depth[idx.y][idx.x];
@@ -74,9 +84,9 @@ void InitSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id) {
     // Load 16x16 region into shared memory.
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
-    /* fp16 */ vec4 radiance[4];
-    /* fp16 */ float variance[4];
-    /* fp16 */ vec3 normal[4];
+    f16vec4 radiance[4];
+    float16_t variance[4];
+    f16vec3 normal[4];
     float depth[4];
 
     /// XA
@@ -99,47 +109,30 @@ float Gaussian(float x, float m, float sigma) {
     return exp(-0.5 * a);
 }
 
-// From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
-/**********************************************************************
-Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-********************************************************************/
+// Taken from https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
 
 #define RADIANCE_WEIGHT_BIAS 0.0
-#define RADIANCE_WEIGHT_VARIANCE_K 0.02
+#define RADIANCE_WEIGHT_VARIANCE_K 0.1
 #define PREFILTER_VARIANCE_BIAS 0.1
 #define PREFILTER_VARIANCE_WEIGHT 4.4
 
 #define PREFILTER_NORMAL_SIGMA 32.0 // 512.0
 #define PREFILTER_DEPTH_SIGMA 0.01
 
-/* fp16 */ float GetEdgeStoppingNormalWeight(/* fp16 */ vec3 normal_p, /* fp16 */ vec3 normal_q) {
+float16_t GetEdgeStoppingNormalWeight(const f16vec3 normal_p, const f16vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
 
-/* fp16 */ float GetEdgeStoppingDepthWeight(float center_depth, float neighbor_depth) {
+float16_t GetEdgeStoppingDepthWeight(const float center_depth, const float neighbor_depth) {
     return step(0.985, exp(-abs(center_depth - neighbor_depth) / /*center_depth */ PREFILTER_DEPTH_SIGMA));
 }
 
-/* fp16 */ float GetRadianceWeight(/* fp16 */ vec3 center_radiance, /* fp16 */ vec3 neighbor_radiance, /* fp16 */ float variance) {
+float16_t GetRadianceWeight(const f16vec3 center_radiance, const f16vec3 neighbor_radiance, const float16_t variance) {
+#ifndef RELAXED
     return max(exp(-(RADIANCE_WEIGHT_BIAS + variance * RADIANCE_WEIGHT_VARIANCE_K) * length(center_radiance - neighbor_radiance)), 1.0e-2);
+#else
+    return 1.0;
+#endif
 }
 
 float GetGaussianWeight(float r) {
@@ -147,14 +140,14 @@ float GetGaussianWeight(float r) {
     return exp( -0.66 * r * r );
 }
 
-void Resolve(ivec2 group_thread_id, /* fp16 */ vec3 avg_radiance, sample_t center,
-             out /* fp16 */ vec4 resolved_radiance, out /* fp16 */ float resolved_variance) {
+void Resolve(ivec2 group_thread_id, f16vec3 avg_radiance, sample_t center,
+             out f16vec4 resolved_radiance, out float16_t resolved_variance) {
     // Initial weight is important to remove fireflies.
     // That removes quite a bit of energy but makes everything much more stable.
-    /* fp16 */ float accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance.rgb, center.variance);
-    /* fp16 */ vec4 accumulated_radiance = center.radiance * accumulated_weight;
-    /* fp16 */ float accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
-    /* fp16 */ float variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
+    float16_t accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance.rgb, center.variance);
+    f16vec4 accumulated_radiance = center.radiance * accumulated_weight;
+    float16_t accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
+    float16_t variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
 
     const ivec2 sample_offsets[] = {
         ivec2(-1,  0),
@@ -175,7 +168,7 @@ void Resolve(ivec2 group_thread_id, /* fp16 */ vec3 avg_radiance, sample_t cente
         const ivec2 new_idx = group_thread_id + sample_offsets[i];
         const sample_t neighbor = LoadFromSharedMemory(new_idx);
 
-        /* fp16 */ float weight = float(neighbor.radiance.w > 0.0);
+        float16_t weight = float16_t(neighbor.radiance.w > 0.0);
         weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
         weight *= GetEdgeStoppingDepthWeight(center.depth, neighbor.depth);
         weight *= GetRadianceWeight(avg_radiance, neighbor.radiance.rgb, center.variance);
@@ -204,13 +197,13 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
 
     sample_t center = LoadFromSharedMemory(group_thread_id);
 
-    /* fp16 */ vec4 resolved_radiance = center.radiance;
-    /* fp16 */ float resolved_variance = center.variance;
+    f16vec4 resolved_radiance = center.radiance;
+    float16_t resolved_variance = center.variance;
 
     const bool needs_denoiser = (center.radiance.w > 0.0) && (center.variance > 0.0);
     if (needs_denoiser) {
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* fp16 */ const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb;
+        const f16vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb;
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 

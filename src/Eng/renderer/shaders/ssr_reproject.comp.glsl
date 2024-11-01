@@ -1,6 +1,14 @@
 #version 430 core
 #extension GL_ARB_shading_language_packing : require
 
+// NOTE: This is not used for now
+#if !USE_FP16
+    #define float16_t float
+    #define f16vec2 vec2
+    #define f16vec3 vec3
+    #define f16vec4 vec4
+#endif
+
 #include "_cs_common.glsl"
 #include "rt_common.glsl"
 #include "ssr_common.glsl"
@@ -41,7 +49,7 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
     // Intermediate storage
-    /* fp16 */ vec4 refl[4];
+    f16vec4 refl[4];
 
     // Start from the upper left corner of 16x16 region
     dispatch_thread_id -= ivec2(4);
@@ -59,33 +67,12 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
     }
 }
 
-/* fp16 */ vec4 LoadFromGroupSharedMemoryRaw(ivec2 idx) {
+f16vec4 LoadFromSharedMemoryRaw(const ivec2 idx) {
     return vec4(unpackHalf2x16(g_shared_storage_0[idx.y][idx.x]),
                 unpackHalf2x16(g_shared_storage_1[idx.y][idx.x]));
 }
 
-// From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
-/**********************************************************************
-Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-********************************************************************/
+// Taken from https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
 
 #define GAUSSIAN_K 3.0
 
@@ -98,20 +85,20 @@ THE SOFTWARE.
 #define DISOCCLUSION_THRESHOLD 0.9
 #define SAMPLES_FOR_ROUGHNESS(r) (1.0 - exp(-r * 100.0))
 
-/* fp16 */ float GetLuminanceWeight(/* fp16 */ vec3 val) {
-    /* fp16 */ float luma = Luminance(val.xyz);
-    /* fp16 */ float weight = max(exp(-luma * AVG_RADIANCE_LUMINANCE_WEIGHT), 1.0e-2);
+float16_t GetLuminanceWeight(const f16vec3 val) {
+    const float16_t luma = Luminance(val.xyz);
+    const float16_t weight = max(exp(-luma * AVG_RADIANCE_LUMINANCE_WEIGHT), 1.0e-2);
     return weight;
 }
 
-/* fp16 */ float LocalNeighborhoodKernelWeight(/* fp16 */ float i) {
-    const /* fp16 */ float radius = LOCAL_NEIGHBORHOOD_RADIUS + 1.0;
+float16_t LocalNeighborhoodKernelWeight(const float16_t i) {
+    const float16_t radius = LOCAL_NEIGHBORHOOD_RADIUS + 1.0;
     return exp(-GAUSSIAN_K * (i * i) / (radius * radius));
 }
 
 struct moments_t {
-    /* fp16 */ vec4 mean;
-    /* fp16 */ vec4 variance;
+    f16vec4 mean;
+    f16vec4 variance;
 };
 
 moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
@@ -119,12 +106,12 @@ moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
     ret.mean = vec4(0.0);
     ret.variance = vec4(0.0);
 
-    /* fp16 */ float accumulated_weight = 0;
+    float16_t accumulated_weight = 0;
     for (int j = -LOCAL_NEIGHBORHOOD_RADIUS; j <= LOCAL_NEIGHBORHOOD_RADIUS; ++j) {
         for (int i = -LOCAL_NEIGHBORHOOD_RADIUS; i <= LOCAL_NEIGHBORHOOD_RADIUS; ++i) {
-            ivec2 index = group_thread_id + ivec2(i, j);
-            /* fp16 */ vec4 radiance = LoadFromGroupSharedMemoryRaw(index);
-            /* fp16 */ float weight = float(radiance.w > 0.0) * LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
+            const ivec2 index = group_thread_id + ivec2(i, j);
+            const f16vec4 radiance = LoadFromSharedMemoryRaw(index);
+            const float16_t weight = float16_t(radiance.w > 0.0) * LocalNeighborhoodKernelWeight(i) * LocalNeighborhoodKernelWeight(j);
             accumulated_weight += weight;
 
             ret.mean += radiance * weight;
@@ -184,22 +171,22 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     return prev_hit_position;
 }
 
-/* fp16 */ float GetDisocclusionFactor(/* fp16 */ vec3 normal, /* fp16 */ vec3 history_normal, float linear_depth, float history_linear_depth) {
-    /* fp16 */ float factor = 1.0
-                        * exp(-abs(1.0 - max(0.0, dot(normal, history_normal))) * DISOCCLUSION_NORMAL_WEIGHT)
-                        * exp(-abs(history_linear_depth - linear_depth) / linear_depth * DISOCCLUSION_DEPTH_WEIGHT);
+float16_t GetDisocclusionFactor(const f16vec3 normal, const f16vec3 history_normal, float linear_depth, float history_linear_depth) {
+    const float16_t factor = 1.0
+                           * exp(-abs(1.0 - max(0.0, dot(normal, history_normal))) * DISOCCLUSION_NORMAL_WEIGHT)
+                           * exp(-abs(history_linear_depth - linear_depth) / linear_depth * DISOCCLUSION_DEPTH_WEIGHT);
     return factor;
 }
 
 void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size,
-                      /* fp16 */ float roughness, /* fp16 */ float ray_len,
-                      /* fp16 */ out float disocclusion_factor, out vec2 reprojection_uv,
-                      /* fp16 */ out vec4 reprojection) {
+                      float16_t roughness, float16_t ray_len,
+                      out float16_t disocclusion_factor, out vec2 reprojection_uv,
+                      out f16vec4 reprojection) {
     moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
 
     vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
-    /* fp16 */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
-    /* fp16 */ vec3 history_normal;
+    f16vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
+    f16vec3 history_normal;
     float history_linear_depth;
 
     {
@@ -208,17 +195,17 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         const vec2 surf_repr_uv = uv - motion_vector.xy;
         const vec2 hit_repr_uv = GetHitPositionReprojection(ivec2(dispatch_thread_id), uv, ray_len);
 
-        /* fp16 */ vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
-        /* fp16 */ vec4 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0);
+        const f16vec4 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0);
+        const f16vec4 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0);
 
-        /* fp16 */ vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
-        /* fp16 */ vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
+        const f16vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
+        const f16vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
 
-        /* fp16 */ vec3 surf_normal = surf_fetch.xyz, hit_normal = hit_fetch.xyz;
-        /* fp16 */ float surf_roughness = surf_fetch.w, hit_roughness = hit_fetch.w;
+        const f16vec3 surf_normal = surf_fetch.xyz, hit_normal = hit_fetch.xyz;
+        const float16_t surf_roughness = surf_fetch.w, hit_roughness = hit_fetch.w;
 
-        float hit_normal_similarity = dot(hit_normal, normal);
-        float surf_normal_similarity = dot(surf_normal, normal);
+        const float hit_normal_similarity = dot(hit_normal, normal);
+        const float surf_normal_similarity = dot(surf_normal, normal);
 
         // Choose reprojection uv based on similarity to the local neighborhood
         if (hit_normal_similarity > REPROJECTION_NORMAL_SIMILARITY_THRESHOLD &&
@@ -265,10 +252,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             for (int y = -SearchRadius; y <= SearchRadius; ++y) {
                 for (int x = -SearchRadius; x <= SearchRadius; ++x) {
                     vec2 uv = reprojection_uv + vec2(x, y) * dudv;
-                    /* fp16 */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
+                    f16vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
                     float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
                     float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
-                    /* fp16 */ float weight = float(textureLod(g_refl_hist_tex, uv, 0.0).w > 0.0);
+                    float16_t weight = float(textureLod(g_refl_hist_tex, uv, 0.0).w > 0.0);
                     weight *= GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
                     if (weight > disocclusion_factor) {
                         disocclusion_factor = weight;
@@ -284,26 +271,26 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
             // If we've got a discarded history, try to construct a better sample out of 2x2 interpolation neighborhood
             // Helps quite a bit on the edges in movement
-            float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
-            float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
-            ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
+            const float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
+            const float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
+            const ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
 
-            /* fp16 */ vec4 reprojection00 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
-            /* fp16 */ vec4 reprojection10 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
-            /* fp16 */ vec4 reprojection01 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
-            /* fp16 */ vec4 reprojection11 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
+            const f16vec4 reprojection00 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
+            const f16vec4 reprojection10 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
+            const f16vec4 reprojection01 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
+            const f16vec4 reprojection11 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
 
-            /* fp16 */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
-            /* fp16 */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
-            /* fp16 */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
-            /* fp16 */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
+            const f16vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
+            const f16vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
+            const f16vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
+            const f16vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
 
-            float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
-            float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
-            float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, g_shrd_data.clip_info);
-            float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, g_shrd_data.clip_info);
+            const float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
+            const float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
+            const float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, g_shrd_data.clip_info);
+            const float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, g_shrd_data.clip_info);
 
-            /* fp16 */ vec4 w;
+            f16vec4 w;
             // Initialize with occlusion weights
             w.x = (reprojection00.w > 0.0 && GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
             w.y = (reprojection10.w > 0.0 && GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0) ? 1.0 : 0.0;
@@ -314,11 +301,11 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             w.y = w.y * (uvx) * (1.0 - uvy);
             w.z = w.z * (1.0 - uvx) * (uvy);
             w.w = w.w * (uvx) * (uvy);
-            /* fp16 */ float ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
+            const float16_t ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
             // normalize
             w /= ws;
 
-            /* fp16 */ vec3 history_normal;
+            f16vec3 history_normal;
             float history_linear_depth;
             reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
             history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
@@ -337,11 +324,11 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     group_thread_id += 4; // center threads in shared memory
 
-    /* fp16 */ float variance = 1.0;
+    float16_t variance = 1.0;
     const vec4 normal_fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x);
     const vec3 normal = normal_fetch.xyz;
     const float roughness = normal_fetch.w;
-    /* fp16 */ vec4 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
+    f16vec4 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
 
     const float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
     const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
@@ -349,24 +336,24 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     refl.w *= GetHitDistanceNormalization(linear_depth, roughness);
 
     if (refl.w > 0.0 && IsGlossyReflection(roughness)) {
-        /* fp16 */ float disocclusion_factor;
+        float16_t disocclusion_factor;
         vec2 reprojection_uv;
-        /* fp16 */ vec4 reprojection;
+        f16vec4 reprojection;
         PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size, roughness, refl.w,
                          disocclusion_factor, reprojection_uv, reprojection);
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
-            /* fp16 */ float prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
-            float sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
-            /* fp16 */ float s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
+            const float16_t prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
+            float16_t sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
+            float16_t s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
             sample_count = min(s_max_samples, sample_count + 1);
-            /* fp16 */ float new_variance = ComputeTemporalVariance(refl.rgb, reprojection.rgb);
+            float16_t new_variance = ComputeTemporalVariance(refl.rgb, reprojection.rgb);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
             } else {
-                /* fp16 */ float variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
+                const float16_t variance_mix = mix(new_variance, prev_variance, 1.0 / sample_count);
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), reprojection);
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(variance_mix));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count));
@@ -382,7 +369,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     // Downsample 8x8 -> 1 radiance using shared memory
     // Initialize shared array for downsampling
-    /* fp16 */ float weight = float(refl.w > 0.0);
+    float16_t weight = float16_t(refl.w > 0.0);
     weight *= GetLuminanceWeight(refl.xyz);
     refl *= weight;
     if (any(greaterThanEqual(dispatch_thread_id, screen_size)) || any(isinf(refl)) || any(isnan(refl)) || weight > 1.0e3) {
@@ -404,11 +391,11 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
         int ix = int(group_thread_id.x) * i + i / 2;
         int iy = int(group_thread_id.y) * i + i / 2;
         if (ix < 8 && iy < 8) {
-            /* fp16 */ vec4 rad_weight00 = LoadFromGroupSharedMemoryRaw(ivec2(ox, oy));
-            /* fp16 */ vec4 rad_weight10 = LoadFromGroupSharedMemoryRaw(ivec2(ox, iy));
-            /* fp16 */ vec4 rad_weight01 = LoadFromGroupSharedMemoryRaw(ivec2(ix, oy));
-            /* fp16 */ vec4 rad_weight11 = LoadFromGroupSharedMemoryRaw(ivec2(ix, iy));
-            /* fp16 */ vec4 sum = rad_weight00 + rad_weight01 + rad_weight10 + rad_weight11;
+            f16vec4 rad_weight00 = LoadFromSharedMemoryRaw(ivec2(ox, oy));
+            f16vec4 rad_weight10 = LoadFromSharedMemoryRaw(ivec2(ox, iy));
+            f16vec4 rad_weight01 = LoadFromSharedMemoryRaw(ivec2(ix, oy));
+            f16vec4 rad_weight11 = LoadFromSharedMemoryRaw(ivec2(ix, iy));
+            f16vec4 sum = rad_weight00 + rad_weight01 + rad_weight10 + rad_weight11;
 
             g_shared_storage_0[group_thread_id.y][group_thread_id.x] = packHalf2x16(sum.xy);
             g_shared_storage_1[group_thread_id.y][group_thread_id.x] = packHalf2x16(sum.zw);
@@ -418,8 +405,8 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     }
 
     if (all(equal(group_thread_id, uvec2(0)))) {
-        /* fp16 */ vec4 sum = LoadFromGroupSharedMemoryRaw(ivec2(0));
-        /* fp16 */ float weight_acc = max(sum.w, 1.0e-3);
+        const f16vec4 sum = LoadFromSharedMemoryRaw(ivec2(0));
+        const float16_t weight_acc = max(sum.w, 1.0e-3);
         const vec3 radiance_avg = (sum.xyz / weight_acc);
 
         imageStore(g_out_avg_refl_img, ivec2(dispatch_thread_id / 8), vec4(radiance_avg, 0.0));
