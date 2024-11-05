@@ -57,9 +57,9 @@ class PoolAllocator {
     void Free(void *p) {
         if (!last_free_chunk_ || (p < last_free_chunk_->p_data) ||
             (p >= last_free_chunk_->p_data + block_size_ * block_count_)) {
-            for (auto it = begin(chunks_); it != end(chunks_); ++it) {
-                if (p >= it->p_data && p < (it->p_data + block_size_ * block_count_)) {
-                    last_free_chunk_ = &*it;
+            for (MemChunk &ch : chunks_) {
+                if (p >= ch.p_data && p < (ch.p_data + block_size_ * block_count_)) {
+                    last_free_chunk_ = &ch;
                     break;
                 }
             }

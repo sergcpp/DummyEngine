@@ -8,7 +8,7 @@
 #include "PoolAlloc.h"
 
 namespace glslx {
-template <typename T> using vector = std::vector<T, MultiPoolAllocator<T>>;
+template <typename T> using vector = SmallVector<T, 1, alignof(T), MultiPoolAllocator<T>>;
 
 enum class eTokType {
     Eof,

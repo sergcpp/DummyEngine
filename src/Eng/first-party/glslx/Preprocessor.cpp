@@ -132,15 +132,23 @@ std::string glslx::Preprocessor::Process() {
             }
             break;
         case eTokenType::Identifier: {
-            const auto macro_it =
-                std::find_if(cbegin(macros_), cend(macros_),
-                             [&curr_token](const macro_desc_t &macro) { return macro.name == curr_token.raw_view; });
-            const auto ctx_it =
-                std::find_if(cbegin(context_stack_), cend(context_stack_),
-                             [&curr_token](const std::string &name) { return name == curr_token.raw_view; });
-            if (macro_it != cend(macros_) /*&& ctx_it == cend(context_stack_)*/) {
+            // const auto macro_it =
+            //     std::find_if(begin(macros_), end(macros_),
+            //                  [&curr_token](const macro_desc_t &macro) { return macro.name == curr_token.raw_view; });
+            // const auto ctx_it =
+            //     std::find_if(cbegin(context_stack_), cend(context_stack_),
+            //                  [&curr_token](const std::string &name) { return name == curr_token.raw_view; });
+
+            const macro_desc_t *macro = nullptr;
+            for (const macro_desc_t &d : macros_) {
+                if (d.name == curr_token.raw_view) {
+                    macro = &d;
+                }
+            }
+
+            if (macro != nullptr /*&& ctx_it == cend(context_stack_)*/) {
                 const std::vector<token_t> expanded = ExpandMacroDefinition(
-                    *macro_it, curr_token, std::bind(&Preprocessor::GetNextToken, this, std::placeholders::_1));
+                    *macro, curr_token, std::bind(&Preprocessor::GetNextToken, this, std::placeholders::_1));
                 if (expanded.empty() && !error_.empty()) {
                     return {};
                 }
@@ -362,7 +370,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, std::string &inout_line) 
                 return;
             }
 
-            std::string number;
+            std::string &number = temp_str_;
 
             if (ch == '0' && !inout_line.empty()) {
                 inout_line.erase(0, 1);

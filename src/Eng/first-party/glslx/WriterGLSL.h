@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Span.h"
 #include "WriterBase.h"
 #include "parser/Parser.h"
 

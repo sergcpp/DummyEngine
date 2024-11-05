@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "SmallVector.h"
+
 namespace glslx {
 template <typename T> struct remove_all_const : std::remove_const<T> {};
 
@@ -38,6 +40,10 @@ template <typename T> class Span {
     Span(const std::vector<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), size_t(v.size())) {}
     template <typename Alloc>
     Span(std::vector<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), size_t(v.size())) {}
+    template <typename Alloc>
+    Span(const SmallVectorImpl<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+    template <typename Alloc>
+    Span(SmallVectorImpl<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
 
     template <size_t N> Span(T (&arr)[N]) : p_data_(arr), size_(N) {}
 

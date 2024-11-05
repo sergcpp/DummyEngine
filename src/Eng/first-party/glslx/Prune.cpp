@@ -289,9 +289,10 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
     }
 
     // changes the order, but we don't care
-    for (size_t i = 0; i < tu->alloc.allocations.size(); ++i) {
+    for (size_t i = 0; i < tu->alloc.allocations.size();) {
         if (tu->alloc.allocations[i].data->gc) {
             tu->alloc.allocations[i].data->gc = 0;
+            ++i;
         } else {
             tu->alloc.allocations[i].destroy(tu->alloc.allocator);
             tu->alloc.allocations[i] = tu->alloc.allocations.back();

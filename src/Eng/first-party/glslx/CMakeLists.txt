@@ -15,7 +15,8 @@ endif(MSVC)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SOURCE_FILES Bitmask.h
+set(SOURCE_FILES AlignedAlloc.h
+                 Bitmask.h
                  Fixup.h
                  Fixup.cpp
                  glslx.h
@@ -50,6 +51,10 @@ set(PARSER_SOURCE_FILES parser/AST.h
                         parser/PoolAlloc.h
                         parser/Utils.h
                         parser/Utils.cpp)
+
+if(MSVC)
+    list(APPEND SOURCE_FILES _CustomTypes.natvis)
+endif(MSVC)
 
 list(APPEND LIB_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
