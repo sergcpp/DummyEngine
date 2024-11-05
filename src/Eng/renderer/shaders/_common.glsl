@@ -30,11 +30,13 @@
 
 #define length2(x) dot(x, x)
 
-#define LinearizeDepth(z, clip_info) \
-    (((clip_info)[0] / ((1.0 - (z)) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2])))
+float LinearizeDepth(const float z, const vec4 clip_info) {
+    return clip_info[0] / ((1.0 - z) * (clip_info[1] - clip_info[2]) + clip_info[2]);
+}
 
-#define DelinearizeDepth(z, clip_info) \
-    (1.0 - ((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
+float DelinearizeDepth(const float z, const vec4 clip_info) {
+    return 1.0 - (clip_info[0] / (z) - clip_info[2]) / (clip_info[1] - clip_info[2]);
+}
 
 float approx_acos(float x) { // max error is 0.000068f
     float negate = float(x < 0);

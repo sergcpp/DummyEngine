@@ -116,4 +116,5 @@ set_target_properties(astc
                       stb
                       SPIRV-Reflect
                       optick
-                      glslx PROPERTIES FOLDER _)
+                      glslx
+                      spirv_compiler PROPERTIES FOLDER _)

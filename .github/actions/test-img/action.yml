@@ -24,7 +24,7 @@ runs:
         cd ../textures
         ln -s ../../src/Eng/textures internal
         cd ../../
-        cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
+        cp $WORK_DIR/${{ inputs.bin-dir }}/* ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
         ### transparent_machines

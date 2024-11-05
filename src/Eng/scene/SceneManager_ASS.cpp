@@ -18,8 +18,6 @@
 #include <Gui/Renderer.h>
 #include <Gui/Utils.h>
 
-#include <glslang/Include/glslang_c_interface.h>
-
 namespace SceneManagerInternal {
 const uint32_t AssetsBuildVersion = 44;
 
@@ -888,7 +886,14 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         ctx.cache->js_db.Insert("files", JsObjectP{mp_alloc});
     }
 
-    glslang_initialize_process();
+    ctx.spirv_compiler = Sys::DynLib{"./spirv_compiler"};
+    if (ctx.spirv_compiler) {
+        int (*initialize)() = reinterpret_cast<int (*)()>(ctx.spirv_compiler.GetProcAddress("initialize"));
+        initialize();
+    }
+
+    //Sys::ThreadPool additional_threads(8);
+    //ctx.p_threads = &additional_threads;
 
     if (p_threads) {
         std::deque<std::future<void>> events;
@@ -903,7 +908,10 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
     WriteDB(ctx.cache->js_db, out_folder, ctx.log);
 
-    glslang_finalize_process();
+    if (ctx.spirv_compiler) {
+        void (*finalize)() = reinterpret_cast<void (*)()>(ctx.spirv_compiler.GetProcAddress("finalize"));
+        finalize();
+    }
 
     return true;
 }

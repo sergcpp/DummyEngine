@@ -10,6 +10,7 @@
 #include <Ren/RingBuffer.h>
 #include <Ren/Span.h>
 #include <Sys/AsyncFileReader.h>
+#include <Sys/DynLib.h>
 
 #include "SceneData.h"
 
@@ -89,6 +90,7 @@ struct assets_context_t {
     std::unique_ptr<SceneManagerInternal::AssetCache> cache;
     Sys::MultiPoolAllocator<char> *mp_alloc;
     Sys::ThreadPool *p_threads;
+    Sys::DynLib spirv_compiler;
     std::mutex cache_mtx;
 };
 

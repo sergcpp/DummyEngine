@@ -8,12 +8,15 @@
 #include <Sys/ThreadPool.h>
 
 #include <glslang/Include/glslang_c_interface.h>
-#include <glslang/Public/resource_limits_c.h>
-#include <glslang/include/spirv-tools/optimizer.hpp>
 #include <glslx/glslx.h>
 
 namespace SceneManagerInternal {
 bool SkipAssetForCurrentBuild(Ren::Bitmask<Eng::eAssetFlags> flags);
+}
+
+extern "C" {
+int (*compile_spirv_shader)(const glslang_input_t *glslang_input, const int use_spv14, const int optimize,
+                            const char *output_file, void *ctx, void (*msg_callback)(void *ctx, const char *m));
 }
 
 bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::string &output,
@@ -166,7 +169,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
     const size_t ext_pos = std::string_view(out_file).find('.');
     assert(ext_pos != std::string::npos);
 
-    std::vector<std::future<bool>> futures;
+    std::deque<std::future<bool>> futures;
     bool result = true;
 
     for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::VK_SPIRV}) {
@@ -367,7 +370,10 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         glslang_input.force_default_version_and_profile = false;
                         glslang_input.forward_compatible = false;
                         glslang_input.messages = GLSLANG_MSG_DEFAULT_BIT;
-                        glslang_input.resource = glslang_default_resource();
+
+                        auto default_resource = reinterpret_cast<const glslang_resource_t *(*)()>(
+                            ctx.spirv_compiler.GetProcAddress("default_resource"));
+                        glslang_input.resource = default_resource();
 
                         switch (unit_type) {
                         case glslx::eTrUnitType::Vertex:
@@ -420,135 +426,26 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                             }
                         }
 
-                        glslang_shader_t *shader = glslang_shader_create(&glslang_input);
-                        SCOPE_EXIT(glslang_shader_delete(shader);)
-
-                        if (!glslang_shader_preprocess(shader, &glslang_input)) {
-                            ctx.log->Error("GLSL preprocessing failed %s", out_file);
-
-                            ctx.log->Error("%s", glslang_shader_get_info_log(shader));
-                            ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
-                            ctx.log->Error("%s", glslang_input.code);
-
-#if !defined(NDEBUG) && defined(_WIN32)
-                            __debugbreak();
-#endif
-                            return false;
-                        }
-
-                        if (!glslang_shader_parse(shader, &glslang_input)) {
-                            ctx.log->Error("GLSL parsing failed %s", out_file);
-                            ctx.log->Error("%s", glslang_shader_get_info_log(shader));
-                            ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
-                            // ctx.log->Error("%s", glslang_shader_get_preprocessed_code(shader));
-
-#if !defined(NDEBUG) && defined(_WIN32)
-                            __debugbreak();
-#endif
-                            return false;
-                        }
-
-                        glslang_program_t *program = glslang_program_create();
-                        SCOPE_EXIT(glslang_program_delete(program);)
-                        glslang_program_add_shader(program, shader);
-
-                        int msg_rules = GLSLANG_MSG_SPV_RULES_BIT;
-                        if (sh_output == eShaderOutput::VK_SPIRV) {
-                            msg_rules |= GLSLANG_MSG_VULKAN_RULES_BIT;
-                        }
-                        if (!glslang_program_link(program, msg_rules)) {
-                            ctx.log->Error("GLSL linking failed %s\n", out_file);
-                            ctx.log->Error("%s\n", glslang_program_get_info_log(program));
-                            ctx.log->Error("%s\n", glslang_program_get_info_debug_log(program));
-
-#if !defined(NDEBUG) && defined(_WIN32)
-                            __debugbreak();
-#endif
-                            return false;
-                        }
-
-                        glslang_program_SPIRV_generate(program, glslang_input.stage);
-
-                        std::vector<uint32_t> out_shader_module(glslang_program_SPIRV_get_size(program));
-                        glslang_program_SPIRV_get(program, out_shader_module.data());
-
-                        if (EnableOptimization) {
-                            spvtools::Optimizer opt(use_spv14 ? SPV_ENV_UNIVERSAL_1_4 : SPV_ENV_UNIVERSAL_1_3);
-
-                            auto print_msg_to_stderr = [&ctx](spv_message_level_t, const char *, const spv_position_t &,
-                                                              const char *m) { ctx.log->Error("%s", m); };
-                            opt.SetMessageConsumer(print_msg_to_stderr);
-
-                            opt.RegisterPass(spvtools::CreateWrapOpKillPass())
-                                .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                                .RegisterPass(spvtools::CreateMergeReturnPass())
-                                .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreatePrivateToLocalPass())
-                                .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-                                .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreateScalarReplacementPass())
-                                .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-                                .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-                                .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreateEliminateDeadConstantPass())
-                                .RegisterPass(spvtools::CreateUnifyConstantPass())
-                                .RegisterPass(spvtools::CreateCCPPass())
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreateLoopUnrollPass(true))
-                                .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                                .RegisterPass(spvtools::CreateLocalRedundancyEliminationPass())
-                                .RegisterPass(spvtools::CreateCombineAccessChainsPass())
-                                .RegisterPass(spvtools::CreateSimplificationPass())
-                                .RegisterPass(spvtools::CreateScalarReplacementPass())
-                                .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-                                .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreateVectorDCEPass())
-                                .RegisterPass(spvtools::CreateDeadInsertElimPass())
-                                .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                                .RegisterPass(spvtools::CreateSimplificationPass())
-                                .RegisterPass(spvtools::CreateIfConversionPass())
-                                .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
-                                .RegisterPass(spvtools::CreateReduceLoadSizePass())
-                                .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
-                                .RegisterPass(spvtools::CreateBlockMergePass())
-                                .RegisterPass(spvtools::CreateRedundancyEliminationPass())
-                                .RegisterPass(spvtools::CreateDeadBranchElimPass())
-                                .RegisterPass(spvtools::CreateBlockMergePass())
-                                .RegisterPass(spvtools::CreateSimplificationPass())
-                                .RegisterPass(spvtools::CreateStripDebugInfoPass())
-                                .RegisterPass(spvtools::CreateStripNonSemanticInfoPass());
-                            opt.SetValidateAfterAll(true);
-
-                            spvtools::OptimizerOptions opt_options;
-                            opt_options.set_preserve_bindings(true);
-
-                            if (!opt.Run(out_shader_module.data(), out_shader_module.size(), &out_shader_module,
-                                         opt_options)) {
-#if !defined(NDEBUG) && defined(_WIN32)
-                                __debugbreak();
-#endif
-                                return false;
-                            }
-                        }
-
-                        { // write output file
-                            std::ofstream out_spv_file(output_file, std::ios::binary);
-                            out_spv_file.write((char *)out_shader_module.data(),
-                                               out_shader_module.size() * sizeof(uint32_t));
-                            return out_spv_file.good();
-                        }
+                        auto msg_callback = [](void *ctx, const char *m) { ((Ren::ILog *)ctx)->Error("%s", m); };
+                        auto compler_shader = reinterpret_cast<decltype(compile_spirv_shader)>(
+                            ctx.spirv_compiler.GetProcAddress("compile_spirv_shader"));
+                        const int result = compler_shader(&glslang_input, use_spv14, EnableOptimization,
+                                                          output_file.c_str(), ctx.log, msg_callback);
+                        return result == 1;
                     }
 
                     return true;
                 };
                 if (ctx.p_threads) {
-                    futures.push_back(ctx.p_threads->Enqueue(compile_job, sh_output, EnableOptimization, perm));
+                    while (!futures.empty() &&
+                           futures.front().wait_for(std::chrono::milliseconds(100)) == std::future_status::ready) {
+                        futures.pop_front();
+                    }
+                    if (futures.size() < 2) {
+                        futures.push_back(ctx.p_threads->Enqueue(compile_job, sh_output, EnableOptimization, perm));
+                    } else {
+                        result &= compile_job(sh_output, EnableOptimization, perm);
+                    }
                 } else {
                     result &= compile_job(sh_output, EnableOptimization, perm);
                 }

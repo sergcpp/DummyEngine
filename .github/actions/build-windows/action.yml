@@ -32,6 +32,7 @@ runs:
           cp build/src/Eng/first-party/Snd/tests/${{ inputs.config }}/test_Snd* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Eng/first-party/Net/tests/${{ inputs.config }}/test_Net* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Eng/first-party/glslx/tests/${{ inputs.config }}/test_glslx* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/third-party/glslang/${{ inputs.config }}/spirv_compiler* $WORK_DIR/${{ inputs.bin-dir }}
           cp DummyApp*.exe $WORK_DIR/${{ inputs.bin-dir }}
         fi
       shell: bash

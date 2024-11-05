@@ -30,40 +30,10 @@ endif(MSVC)
 IF(WIN32)
     set(VPX_LIB "vpxmd")
     set(ITT_LIB "libittnotify")
-    set(GLSLANG_LIBS debug GenericCodeGend                  optimized GenericCodeGen
-                     debug glslangd                         optimized glslang
-                     debug glslang-default-resource-limitsd optimized glslang-default-resource-limits
-                     debug MachineIndependentd              optimized MachineIndependent
-                     debug OSDependentd                     optimized OSDependent
-                     debug SPIRVd                           optimized SPIRV
-                     debug SPIRV-Toolsd                     optimized SPIRV-Tools
-                     debug SPIRV-Tools-diffd                optimized SPIRV-Tools-diff
-                     debug SPIRV-Tools-linkd                optimized SPIRV-Tools-link
-                     debug SPIRV-Tools-lintd                optimized SPIRV-Tools-lint
-                     debug SPIRV-Tools-optd                 optimized SPIRV-Tools-opt
-                     debug SPIRV-Tools-reduced              optimized SPIRV-Tools-reduce
-                     debug SPVRemapperd                     optimized SPVRemapper)
 ELSE(WIN32)
     set(VPX_LIB "vpx")
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Android" AND NOT CMAKE_APPLE_SILICON_PROCESSOR MATCHES "arm64")
         set(ITT_LIB "ittnotify")
-    endif()
-    set(GLSLANG_LIBS glslang
-                     glslang-default-resource-limits
-                     MachineIndependent
-                     GenericCodeGen
-                     OSDependent
-                     SPIRV
-                     SPIRV-Tools-opt
-                     SPIRV-Tools
-                     SPIRV-Tools-diff
-                     SPIRV-Tools-link
-                     SPIRV-Tools-lint
-                     SPIRV-Tools-reduce
-                     SPVRemapper)
-    if (NOT APPLE)
-        set(GLSLANG_LIBS ${GLSLANG_LIBS}
-                         X11)
     endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(WIN32)
@@ -323,11 +293,6 @@ target_include_directories(Eng PUBLIC third-party)
 target_include_directories(Eng PUBLIC third-party/glslang/include)
 target_include_directories(Eng PUBLIC third-party/vpx/include)
 if (WIN32)
-    if(CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
-        target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/win/arm64)
-    else(CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
-        target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/win/x64)
-    endif(CMAKE_GENERATOR_PLATFORM MATCHES "ARM64")
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vtune/win/x64)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/win/Release/x64)
@@ -339,19 +304,18 @@ else(WIN32)
     if (APPLE)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vtune/osx/x64)
         if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
-            target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/macos/arm64)
             target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/osx/arm64)
         else()
-            target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/macos/x64)
             target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/osx/x64)
         endif()
     else(APPLE)
-        target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/linux)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vtune/linux/x64)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/linux/x64)
+        target_link_libraries(Eng X11)
     endif(APPLE)
 endif(WIN32)
-target_link_libraries(Eng Gui Net Phy Ren Snd Sys stb astc optick glslx_lib ${GLSLANG_LIBS} ${ITT_LIB})
+target_link_libraries(Eng Gui Net Phy Ren Snd Sys stb astc optick glslx_lib ${ITT_LIB})
+add_dependencies(Eng spirv_compiler)
 
 add_subdirectory(tests)
 add_subdirectory(first-party/Gui)
@@ -365,5 +329,6 @@ add_subdirectory(third-party/ltc_fit)
 add_subdirectory(third-party/astc)
 add_subdirectory(third-party/optick)
 add_subdirectory(third-party/stb)
+add_subdirectory(third-party/glslang)
 target_include_directories(optick PUBLIC first-party/Ren/third-party)
 set_target_properties(glslx PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
