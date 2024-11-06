@@ -313,7 +313,7 @@ void DummyApp::PollEvents() {
             evt.point[0] = float(xev.xmotion.x);
             evt.point[1] = float(xev.xmotion.y);
             evt.move[0] = evt.point[0] - last_p1_pos[0];
-            evt.move[1] = evt.point[1] - last_p1_pos[1];
+            evt.move[1] = last_p1_pos[1] - evt.point[1];
 
             last_p1_pos[0] = evt.point[0];
             last_p1_pos[1] = evt.point[1];
