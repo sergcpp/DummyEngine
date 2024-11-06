@@ -9,10 +9,10 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     elseif(APPLE)
         set(LIBS ${CORE_GRAPHICS})
     else()
-        
+
     endif()
 else()
-	
+
 endif()
 
 add_executable(test_Eng main.cpp

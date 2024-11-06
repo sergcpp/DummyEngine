@@ -281,29 +281,29 @@ jobs:
         with:
           name: windows-x86_64-vk-xe-output
           path: windows-x86_64-vk-xe-output/
-#  test-linux-x86_64-vk-amd:
-#    runs-on: [ linux, x86_64, amd ]
-#    needs:
-#      - build-linux-x86_64-vk-rel
-#    steps:
-#      - name: Checkout Workflows
-#        uses: actions/checkout@v4
-#        with:
-#          sparse-checkout: .github
-#      - name: Re-initialize repository
-#        uses: ./.github/actions/checkout
-#      - name: Run Tests
-#        uses: ./.github/actions/test
-#        with:
-#          bin-dir: "linux-x86_64-vk"
-#          out-dir: "linux-x86_64-vk-amd-output"
-#          test-args: "-d AMD --nocpu --nohwrt"
-#      - name: Upload artifacts
-#        uses: actions/upload-artifact@v3
-#        if: always()
-#        with:
-#          name: linux-x86_64-vk-amd-output
-#          path: linux-x86_64-vk-amd-output/
+  test-linux-x86_64-vk-amd:
+    runs-on: [ linux, x86_64, amd ]
+    needs:
+      - build-linux-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "linux-x86_64-vk"
+          out-dir: "linux-x86_64-vk-amd-output"
+          test-args: "-d AMD --nocpu --nohwrt"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: linux-x86_64-vk-amd-output
+          path: linux-x86_64-vk-amd-output/
   test-linux-x86_64-vk-nv:
     runs-on: [ linux, x86_64, nv ]
     needs:
@@ -352,7 +352,7 @@ jobs:
           path: linux-x86_64-gl-nv-output/
   analyze-output:
     runs-on: [ linux ]
-    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-nv, test-linux-x86_64-gl-nv ]
+    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv, test-linux-x86_64-gl-nv ]
     if: always()
     steps:
       - name: Checkout Workflows
@@ -383,10 +383,10 @@ jobs:
       #  with:
       #    name: windows-x86_64-gl-arc-output
       #    path: windows-x86_64-gl-arc-output/
-      #- uses: actions/download-artifact@v3
-      #  with:
-      #    name: linux-x86_64-vk-amd-output
-      #    path: linux-x86_64-vk-amd-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x86_64-vk-amd-output
+          path: linux-x86_64-vk-amd-output/
       - uses: actions/download-artifact@v3
         with:
           name: linux-x86_64-vk-nv-output
@@ -397,5 +397,5 @@ jobs:
           path: linux-x86_64-gl-nv-output/
       - name: Analyze Output
         run: |
-          python src/Eng/scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt windows-x86_64-vk-xe-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-gl-nv-output/test_Eng_output.txt
+          python src/Eng/scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt windows-x86_64-vk-xe-output/test_Eng_output.txt linux-x86_64-vk-amd-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-gl-nv-output/test_Eng_output.txt
         shell: bash

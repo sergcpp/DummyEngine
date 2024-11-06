@@ -40,6 +40,7 @@ runs:
         ln -s ../../../../renderer/shaders internal
         cd $WORK_DIR/../../builds/$REPO_NAME/src/Eng/tests/test_data/assets/textures
         ln -s ../../../../textures internal
+        cp $WORK_DIR/${{ inputs.bin-dir }}/*spirv_compiler* $WORK_DIR/../../builds/$REPO_NAME/src/Eng/tests/test_data/
         cd $WORK_DIR/../../builds/$REPO_NAME/src/Eng/tests/test_data
         $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }} | tee $WORK_DIR/${{ inputs.out-dir }}/test_Eng_output.txt
         cd $WORK_DIR/../../builds/$REPO_NAME/src/Ray/tests
