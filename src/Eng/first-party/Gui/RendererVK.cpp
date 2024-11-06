@@ -255,7 +255,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     render_pass_begin_info.renderPass = render_pass_.handle();
     render_pass_begin_info.framebuffer = framebuffers_[api_ctx->active_present_image].handle();
-    render_pass_begin_info.renderArea = {0, 0, uint32_t(w), uint32_t(h)};
+    render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(w), uint32_t(h)}};
 
     api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -264,7 +264,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     const VkViewport viewport = {0, 0, float(w), float(h), 0, 1};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
-    const VkRect2D scissor = {0, 0, uint32_t(w), uint32_t(h)};
+    const VkRect2D scissor = {{0, 0}, {uint32_t(w), uint32_t(h)}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.layout(), 0, 1, &descr_set, 0,

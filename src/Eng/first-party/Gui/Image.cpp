@@ -41,7 +41,7 @@ Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos
 void Gui::Image::Draw(Renderer *r) {
     const Vec2f pos[2] = {dims_[0], dims_[0] + dims_[1]};
 
-    const Ren::Tex2DParams &p = tex_->params();
+    //const Ren::Tex2DParams &p = tex_->params();
     const int tex_layer = tex_->pos(2);
 
     r->PushImageQuad(eDrawMode::Passthrough, tex_layer, pos, uvs_px_);

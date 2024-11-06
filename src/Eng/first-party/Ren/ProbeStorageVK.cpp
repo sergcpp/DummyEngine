@@ -182,7 +182,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
                 proto_region.imageSubresource.baseArrayLayer = layer * 6 + face;
 
                 for (uint32_t y_off = 0; y_off < _res; y_off += BlankBlockRes) {
-                    const int buf_len =
+                    [[maybe_unused]] const int buf_len =
 #if defined(__ANDROID__)
                         // TODO: '+ y_off' fixes an error on Qualcomm (wtf ???)
                         (_init_res / 4) * ((_init_res + y_off) / 4) * 16;

@@ -9,9 +9,6 @@ namespace EditBoxConstants {
 const uint32_t default_flags = (1u << uint32_t(eEditBoxFlags::Integers)) | (1u << uint32_t(eEditBoxFlags::Chars)) |
                                (1u << uint32_t(eEditBoxFlags::Floats)) | (1u << uint32_t(eEditBoxFlags::Signed)) |
                                (1u << uint32_t(eEditBoxFlags::Multiline));
-
-const int padding = 10;
-const int cursor_offset = 12;
 } // namespace EditBoxConstants
 } // namespace Gui
 

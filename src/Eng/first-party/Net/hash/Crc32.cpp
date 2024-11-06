@@ -51,7 +51,7 @@
 const uint32_t Polynomial = 0xEDB88320;
 
 /// swap endianess
-static inline uint32_t swap(uint32_t x)
+[[maybe_unused]] static inline uint32_t swap(uint32_t x)
 {
 #if defined(__GNUC__) || defined(__clang__)
   return __builtin_bswap32(x);

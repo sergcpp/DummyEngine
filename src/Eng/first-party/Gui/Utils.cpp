@@ -486,8 +486,7 @@ void Gui::PreprocessBezierShape(bezier_seg_t *segs, int count, const double max_
         }
 
         const double val = Dot(Normalize(edge_derivatives[0]), Normalize(seg.dAdt1));
-
-        if (Dot(Normalize(edge_derivatives[0]), Normalize(seg.dAdt1)) < max_soft_dot) {
+        if (val < max_soft_dot) {
             seg.is_hard = true;
         }
     }

@@ -470,7 +470,7 @@ Phy::real Phy::EPA_Expand(const Body &a, const Body &b, real bias,
 }
 
 void Phy::GJK_ClosestPoints(const Body &a, const Body &b, Vec3 &pt_on_a, Vec3 &pt_on_b) {
-    const Vec3 Origin = Vec3(0);
+    // const Vec3 Origin = Vec3(0);
 
     int pts_count = 1;
     point_t simplex_pts[4];

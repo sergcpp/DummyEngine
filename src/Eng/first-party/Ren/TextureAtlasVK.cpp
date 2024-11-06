@@ -115,7 +115,7 @@ Ren::TextureAtlas::~TextureAtlas() {
 }
 
 Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) noexcept
-    : api_ctx_(rhs.api_ctx_), splitter_(std::move(rhs.splitter_)), filter_(rhs.filter_) {
+    : api_ctx_(rhs.api_ctx_), filter_(rhs.filter_), splitter_(std::move(rhs.splitter_)) {
     for (int i = 0; i < MaxTextureCount; i++) {
         formats_[i] = rhs.formats_[i];
         rhs.formats_[i] = eTexFormat::Undefined;

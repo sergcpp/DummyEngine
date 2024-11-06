@@ -149,7 +149,7 @@ uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
 // All this is needed when reading KTX files
 //
 #if !defined(USE_GL_RENDER)
-static const uint32_t GL_COMPRESSED_RGB_S3TC_DXT1_EXT = 33776;
+[[maybe_unused]] static const uint32_t GL_COMPRESSED_RGB_S3TC_DXT1_EXT = 33776;
 static const uint32_t GL_COMPRESSED_RGBA_S3TC_DXT1_EXT = 33777;
 static const uint32_t GL_COMPRESSED_RGBA_S3TC_DXT3_EXT = 33778;
 static const uint32_t GL_COMPRESSED_RGBA_S3TC_DXT5_EXT = 33779;

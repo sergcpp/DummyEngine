@@ -294,7 +294,7 @@ const int MAX_RGB9E5_EXP = (RGB9E5_MAX_VALID_BIASED_EXP - RGB9E5_EXP_BIAS);
 const int RGB9E5_MANTISSA_VALUES = (1 << RGB9E5_MANTISSA_BITS);
 const int MAX_RGB9E5_MANTISSA = (RGB9E5_MANTISSA_VALUES - 1);
 const float MAX_RGB9E5 = (((float)MAX_RGB9E5_MANTISSA) / RGB9E5_MANTISSA_VALUES * (1 << MAX_RGB9E5_EXP));
-const float EPSILON_RGB9E5 = ((1.0f / RGB9E5_MANTISSA_VALUES) / (1 << RGB9E5_EXP_BIAS));
+[[maybe_unused]] const float EPSILON_RGB9E5 = ((1.0f / RGB9E5_MANTISSA_VALUES) / (1 << RGB9E5_EXP_BIAS));
 
 struct BitsOfIEEE754 {
     unsigned int mantissa : 23;
@@ -922,9 +922,9 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
         std::unique_ptr<int32_t[]> tris;
     };
 
-    const int MaxSizeVertexCache = 32;
+    static const int MaxSizeVertexCache = 32;
 
-    auto get_vertex_score = [MaxSizeVertexCache](int32_t cache_pos, uint32_t active_tris_count) -> float {
+    auto get_vertex_score = [](int32_t cache_pos, uint32_t active_tris_count) -> float {
         const float CacheDecayPower = 1.5f;
         const float LastTriScore = 0.75f;
         const float ValenceBoostScale = 2.0f;

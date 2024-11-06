@@ -56,7 +56,7 @@ struct TaskList {
     SmallVector<short, 16> tasks_order, tasks_pos;
 
     template <class F, class... Args> short AddTask(F &&f, Args &&...args) {
-        using return_type = typename std::invoke_result_t<F, Args...>;
+        //using return_type = typename std::invoke_result_t<F, Args...>;
 
         const auto ret = short(tasks.size());
         Task &t = tasks.emplace_back();

@@ -43,8 +43,8 @@ class Texture2DArray {
     mutable eResState resource_state = eResState::Undefined;
 
   protected:
-    std::string name_;
     ApiContext *api_ctx_ = nullptr;
+    std::string name_;
     int w_ = 0, h_ = 0;
     int mip_count_ = 0;
     int layer_count_ = 0;

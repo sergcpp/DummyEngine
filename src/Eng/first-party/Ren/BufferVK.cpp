@@ -59,7 +59,7 @@ int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
                     const uint32_t size_alignment, MemoryAllocators *mem_allocs)
-    : name_(name), api_ctx_(api_ctx), mem_allocs_(mem_allocs), type_(type), size_(0), size_alignment_(size_alignment) {
+    : api_ctx_(api_ctx), name_(name), mem_allocs_(mem_allocs), type_(type), size_(0), size_alignment_(size_alignment) {
     Resize(initial_size);
 }
 

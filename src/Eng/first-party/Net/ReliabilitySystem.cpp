@@ -113,7 +113,7 @@ void Net::ReliabilitySystem::UpdateStats() {
         sent_bytes_per_second += pack.size;
     }
 
-    int acked_packets_per_second = 0;
+    [[maybe_unused]] int acked_packets_per_second = 0;
     int acked_bytes_per_second = 0;
 
     for (PacketData &pack: acked_queue_) {

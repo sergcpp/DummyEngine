@@ -32,8 +32,8 @@ void test_tcp_socket() {
         require_nothrow(a.Open(30000));
         require_nothrow(b.Open(30001));
         const char packet[] = "packet data";
-        bool a_received_packet = false;
-        bool b_received_packet = false;
+        [[maybe_unused]] bool a_received_packet = false;
+        [[maybe_unused]] bool b_received_packet = false;
         require(b.Listen());
 
         std::thread thr([&]() {

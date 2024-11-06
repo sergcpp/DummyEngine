@@ -131,7 +131,7 @@ void test_json() {
             require(a2[1].as_num().val == Approx(2));
             require(a2[2].as_str() == JsString{ "qwe123" });
 
-            JsType _unused;
+            [[maybe_unused]] JsType _unused;
             require_throws(_unused = a2.at(3).type());
 
             // check equality
@@ -169,7 +169,7 @@ void test_json() {
             require(a2[1].as_num().val == Approx(2));
             require(a2[2].as_str() == JsStringP("qwe123", my_alloc));
 
-            JsType _unused;
+            [[maybe_unused]] JsType _unused;
             require_throws(_unused = a2.at(3).type());
 
             // check equality
@@ -200,7 +200,7 @@ void test_json() {
             require(_obj["123"].as_num().val == Approx(46));
             require(_obj["asdf"].as_str() == JsString{ "asdfsdf" });
 
-            JsType _unused;
+            [[maybe_unused]] JsType _unused;
             require_throws(_unused = _obj.at("non exists").type());
 
             // check equality
@@ -233,7 +233,7 @@ void test_json() {
             require(_obj["123"].as_num().val == Approx(46));
             require(_obj["asdf"].as_str() == JsStringP("asdfsdf", my_alloc));
 
-            JsType _unused;
+            [[maybe_unused]] JsType _unused;
             require_throws(_unused = _obj.at("non exists").type());
 
             // check equality
@@ -267,7 +267,7 @@ void test_json() {
         }
 
         { // JsElement
-            JsType _unused;
+            [[maybe_unused]] JsType _unused;
 
             JsElement _el1(16);
             const JsElement &el1 = _el1;
@@ -337,7 +337,7 @@ void test_json() {
 
         { // JsElement pooled
             Sys::MultiPoolAllocator<char> my_alloc(32, 512);
-            JsType _unused;
+            [[maybe_unused]] JsType _unused;
 
             JsElementP _el1(16);
             const JsElementP &el1 = _el1;

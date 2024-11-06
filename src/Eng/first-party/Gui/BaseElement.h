@@ -35,7 +35,7 @@ class BaseElement {
 
   public:
     BaseElement(const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
-    ~BaseElement();
+    virtual ~BaseElement();
 
     [[nodiscard]] Bitmask<eFlags> flags() const { return flags_; }
     void set_flags(const Bitmask<eFlags> flags) { flags_ = flags; }

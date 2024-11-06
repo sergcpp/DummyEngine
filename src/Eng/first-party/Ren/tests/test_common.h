@@ -92,7 +92,7 @@ class TestContext : public Ren::Context {
 #if defined(_WIN32)
     HWND hWnd;
     HDC hDC;
-    HGLRC hRC;
+    [[maybe_unused]] HGLRC hRC;
 #else
     Display         *dpy_ = nullptr;
     Window          win_ = {};

@@ -207,7 +207,7 @@ void Ren::Context::ReleasePrograms() {
         return;
     }
     log_->Error("---------REMAINING PROGRAMS--------");
-    for (const Program &p : programs_) {
+    for ([[maybe_unused]] const Program &p : programs_) {
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
         log_->Error("%s %i", p.name().c_str(), int(p.id()));
 #endif
@@ -411,7 +411,7 @@ void Ren::Context::ReleaseSamplers() {
         return;
     }
     log_->Error("--------REMAINING SAMPLERS---------");
-    for (const Sampler &s : samplers_) {
+    for ([[maybe_unused]] const Sampler &s : samplers_) {
         // log_->Error("%s", t.name().c_str());
     }
     log_->Error("-----------------------------------");
