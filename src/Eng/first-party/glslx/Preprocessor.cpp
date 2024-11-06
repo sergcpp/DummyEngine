@@ -4,7 +4,7 @@
 #include <sstream>
 
 namespace glslx {
-bool is_escape_sequence(const std::string &str, size_t pos) {
+bool is_escape_sequence(const std::string_view str, size_t pos) {
     if (pos + 1 >= str.length() || pos >= str.length() || str[pos] != '\\') {
         return false;
     }
@@ -37,26 +37,28 @@ std::unique_ptr<std::istream> default_include_callback(const char *path, bool is
 } // namespace glslx
 
 glslx::Preprocessor::Preprocessor(std::unique_ptr<std::istream> stream, preprocessor_config_t config)
-    : config_(std::move(config)), directives_table_{{"define", eTokenType::Define},
-                                                    {"ifdef", eTokenType::Ifdef},
-                                                    {"ifndef", eTokenType::Ifndef},
-                                                    {"if", eTokenType::If},
-                                                    {"else", eTokenType::Else},
-                                                    {"elif", eTokenType::Elif},
-                                                    {"undef", eTokenType::Undef},
-                                                    {"endif", eTokenType::Endif},
-                                                    {"include", eTokenType::Include},
-                                                    {"defined", eTokenType::Defined},
-                                                    {"extension", eTokenType::Extension},
-                                                    {"line", eTokenType::PassthroughDirective},
-                                                    {"version", eTokenType::PassthroughDirective},
-                                                    {"pragma", eTokenType::PassthroughDirective}},
-      macros_{{"__LINE__"}} {
+    : alloc_(8, 128), config_(std::move(config)),
+      directives_table_{{{"define", alloc_}, eTokenType::Define},
+                        {{"ifdef", alloc_}, eTokenType::Ifdef},
+                        {{"ifndef", alloc_}, eTokenType::Ifndef},
+                        {{"if", alloc_}, eTokenType::If},
+                        {{"else", alloc_}, eTokenType::Else},
+                        {{"elif", alloc_}, eTokenType::Elif},
+                        {{"undef", alloc_}, eTokenType::Undef},
+                        {{"endif", alloc_}, eTokenType::Endif},
+                        {{"include", alloc_}, eTokenType::Include},
+                        {{"defined", alloc_}, eTokenType::Defined},
+                        {{"extension", alloc_}, eTokenType::Extension},
+                        {{"line", alloc_}, eTokenType::PassthroughDirective},
+                        {{"version", alloc_}, eTokenType::PassthroughDirective},
+                        {{"pragma", alloc_}, eTokenType::PassthroughDirective}},
+      current_line_(alloc_), temp_str_(alloc_) {
     streams_.push_back(std::move(stream));
+    macros_.emplace_back("__LINE__", alloc_);
     for (const macro_def_t &m : config_.default_macros) {
-        macros_.push_back({m.name});
+        macros_.emplace_back(m.name, alloc_);
         if (m.value != config_.empty_macro_value) {
-            macros_.back().value.push_back({eTokenType::Number, std::to_string(m.value)});
+            macros_.back().value.push_back({eTokenType::Number, std::to_string(m.value), alloc_});
         }
     }
 }
@@ -69,7 +71,7 @@ glslx::Preprocessor::~Preprocessor() = default;
 std::string glslx::Preprocessor::Process() {
     std::string output;
 
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     while (curr_token.type != eTokenType::End) {
         switch (curr_token.type) {
@@ -134,10 +136,12 @@ std::string glslx::Preprocessor::Process() {
         case eTokenType::Identifier: {
             // const auto macro_it =
             //     std::find_if(begin(macros_), end(macros_),
-            //                  [&curr_token](const macro_desc_t &macro) { return macro.name == curr_token.raw_view; });
+            //                  [&curr_token](const macro_desc_t &macro) { return
+            //                  macro.name == curr_token.raw_view; });
             // const auto ctx_it =
             //     std::find_if(cbegin(context_stack_), cend(context_stack_),
-            //                  [&curr_token](const std::string &name) { return name == curr_token.raw_view; });
+            //                  [&curr_token](const std::string &name) { return name ==
+            //                  curr_token.raw_view; });
 
             const macro_desc_t *macro = nullptr;
             for (const macro_desc_t &d : macros_) {
@@ -162,7 +166,7 @@ std::string glslx::Preprocessor::Process() {
         case eTokenType::Reject_Macro:
             context_stack_.erase(
                 std::remove_if(begin(context_stack_), end(context_stack_),
-                               [&curr_token](const std::string &name) { return name == curr_token.raw_view; }),
+                               [&curr_token](const string &name) { return name == curr_token.raw_view; }),
                 end(context_stack_));
             break;
         case eTokenType::Concat_Op:
@@ -215,7 +219,7 @@ std::string glslx::Preprocessor::Process() {
     return output;
 }
 
-void glslx::Preprocessor::ReadLine(std::string &out_line) {
+void glslx::Preprocessor::ReadLine(string &out_line) {
     if (streams_.empty() || streams_.back()->eof() || !streams_.back()->good()) {
         out_line.clear();
         return;
@@ -228,12 +232,12 @@ void glslx::Preprocessor::ReadLine(std::string &out_line) {
     ++source_line_;
 }
 
-void glslx::Preprocessor::RequestSourceLine(std::string &out_line) {
+void glslx::Preprocessor::RequestSourceLine(string &out_line) {
     ReadLine(out_line);
     size_t pos = 0;
     while ((pos = out_line.find_first_of('\\')) != std::string::npos &&
            (pos >= out_line.length() || std::isspace(out_line[pos + 1])) && !is_escape_sequence(out_line, pos)) {
-        std::string next_line;
+        string next_line(alloc_);
         ReadLine(next_line);
         if (!next_line.empty()) {
             out_line.replace(pos ? (pos - 1) : 0, std::string::npos, next_line);
@@ -253,7 +257,7 @@ void glslx::Preprocessor::GetNextToken(token_t &out_tok) {
     if (current_line_.empty()) {
         RequestSourceLine(current_line_);
         if (current_line_.empty()) {
-            out_tok = {eTokenType::End};
+            out_tok = {eTokenType::End, alloc_};
             return;
         }
     }
@@ -261,7 +265,7 @@ void glslx::Preprocessor::GetNextToken(token_t &out_tok) {
     ScanTokens(out_tok, current_line_);
 }
 
-void glslx::Preprocessor::ScanTokens(token_t &out_tok, std::string &inout_line) {
+void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
     out_tok.raw_view.clear();
     temp_str_.clear();
 
@@ -269,7 +273,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, std::string &inout_line) 
     while (!inout_line.empty()) {
         ch = inout_line.front();
         if (ch == '/') {
-            std::string &comment_str = out_tok.raw_view;
+            string &comment_str = out_tok.raw_view;
             if (inout_line.length() > 1 && inout_line[1] == '/') { // single line comment
                 comment_str = ExtractSingleLineComment(inout_line);
             } else if (inout_line.length() > 1 && inout_line[1] == '*') { // multi-line comment
@@ -352,13 +356,13 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, std::string &inout_line) 
                 if (next == '#') { // concatenation operator
                     inout_line.erase(0, 1);
                     ++curr_pos_;
-                    out_tok = {eTokenType::Concat_Op, {}, source_line_, curr_pos_};
+                    out_tok = {eTokenType::Concat_Op, {}, alloc_, source_line_, curr_pos_};
                     return;
                 } else if (next != ' ') { // stringification operator
-                    out_tok = {eTokenType::Stringize_Op, {}, source_line_, curr_pos_};
+                    out_tok = {eTokenType::Stringize_Op, {}, alloc_, source_line_, curr_pos_};
                     return;
                 } else {
-                    out_tok = {eTokenType::Blob, "#", source_line_, curr_pos_};
+                    out_tok = {eTokenType::Blob, "#", alloc_, source_line_, curr_pos_};
                     return;
                 }
             }
@@ -370,7 +374,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, std::string &inout_line) 
                 return;
             }
 
-            std::string &number = temp_str_;
+            string number(alloc_);
 
             if (ch == '0' && !inout_line.empty()) {
                 inout_line.erase(0, 1);
@@ -425,7 +429,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, std::string &inout_line) 
 
         if (is_separator(ch)) {
             if (!temp_str_.empty()) {
-                token_t separator_token;
+                token_t separator_token(alloc_);
                 ScanSeparator(separator_token, ch, inout_line);
                 if (separator_token.type != eTokenType::End) {
                     tokens_queue_.push_front(std::move(separator_token));
@@ -451,21 +455,21 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, std::string &inout_line) 
         return;
     }
 
-    out_tok = {eTokenType::End};
+    out_tok = {eTokenType::End, alloc_};
 }
 
-void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, std::string &inout_line) {
+void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, string &inout_line) {
     out_tok.raw_view.clear();
 
     switch (ch) {
     case ',':
-        out_tok = {eTokenType::Comma, ",", source_line_, curr_pos_};
+        out_tok = {eTokenType::Comma, ",", alloc_, source_line_, curr_pos_};
         return;
     case '(':
-        out_tok = {eTokenType::Bracket_Begin, "(", source_line_, curr_pos_};
+        out_tok = {eTokenType::Bracket_Begin, "(", alloc_, source_line_, curr_pos_};
         return;
     case ')':
-        out_tok = {eTokenType::Bracket_End, ")", source_line_, curr_pos_};
+        out_tok = {eTokenType::Bracket_End, ")", alloc_, source_line_, curr_pos_};
         return;
     case '<':
         if (!inout_line.empty()) {
@@ -473,16 +477,16 @@ void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, std::st
             if (next == '<') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::LShift, "<<", source_line_, curr_pos_};
+                out_tok = {eTokenType::LShift, "<<", alloc_, source_line_, curr_pos_};
                 return;
             } else if (next == '=') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::LessEqual, "<=", source_line_, curr_pos_};
+                out_tok = {eTokenType::LessEqual, "<=", alloc_, source_line_, curr_pos_};
                 return;
             }
         }
-        out_tok = {eTokenType::Less, "<", source_line_, curr_pos_};
+        out_tok = {eTokenType::Less, "<", alloc_, source_line_, curr_pos_};
         return;
     case '>':
         if (!inout_line.empty()) {
@@ -490,103 +494,103 @@ void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, std::st
             if (next == '>') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::RShift, ">>", source_line_, curr_pos_};
+                out_tok = {eTokenType::RShift, ">>", alloc_, source_line_, curr_pos_};
                 return;
             } else if (next == '=') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::GreaterEqual, ">=", source_line_, curr_pos_};
+                out_tok = {eTokenType::GreaterEqual, ">=", alloc_, source_line_, curr_pos_};
                 return;
             }
         }
-        out_tok = {eTokenType::Greater, ">", source_line_, curr_pos_};
+        out_tok = {eTokenType::Greater, ">", alloc_, source_line_, curr_pos_};
         return;
     case '\"':
-        out_tok = {eTokenType::Quotes, "\"", source_line_, curr_pos_};
+        out_tok = {eTokenType::Quotes, "\"", alloc_, source_line_, curr_pos_};
         return;
     case '+':
-        out_tok = {eTokenType::Plus, "+", source_line_, curr_pos_};
+        out_tok = {eTokenType::Plus, "+", alloc_, source_line_, curr_pos_};
         return;
     case '-':
-        out_tok = {eTokenType::Minus, "-", source_line_, curr_pos_};
+        out_tok = {eTokenType::Minus, "-", alloc_, source_line_, curr_pos_};
         return;
     case '*':
-        out_tok = {eTokenType::Star, "*", source_line_, curr_pos_};
+        out_tok = {eTokenType::Star, "*", alloc_, source_line_, curr_pos_};
         return;
     case '/':
-        out_tok = {eTokenType::Slash, "/", source_line_, curr_pos_};
+        out_tok = {eTokenType::Slash, "/", alloc_, source_line_, curr_pos_};
         return;
     case '&':
         if (!inout_line.empty() && inout_line.front() == '&') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::And, "&&", source_line_, curr_pos_};
+            out_tok = {eTokenType::And, "&&", alloc_, source_line_, curr_pos_};
             return;
         }
-        out_tok = {eTokenType::Ampersand, "&", source_line_, curr_pos_};
+        out_tok = {eTokenType::Ampersand, "&", alloc_, source_line_, curr_pos_};
         return;
     case '|':
         if (!inout_line.empty() && inout_line.front() == '|') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::Or, "||", source_line_, curr_pos_};
+            out_tok = {eTokenType::Or, "||", alloc_, source_line_, curr_pos_};
             return;
         }
-        out_tok = {eTokenType::Vline, "|", source_line_, curr_pos_};
+        out_tok = {eTokenType::Vline, "|", alloc_, source_line_, curr_pos_};
         return;
     case '!':
         if (!inout_line.empty() && inout_line.front() == '=') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::NotEqual, "!=", source_line_, curr_pos_};
+            out_tok = {eTokenType::NotEqual, "!=", alloc_, source_line_, curr_pos_};
             return;
         }
-        out_tok = {eTokenType::Not, "!", source_line_, curr_pos_};
+        out_tok = {eTokenType::Not, "!", alloc_, source_line_, curr_pos_};
         return;
     case '=':
         if (!inout_line.empty() && inout_line.front() == '=') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::Equal, "==", source_line_, curr_pos_};
+            out_tok = {eTokenType::Equal, "==", alloc_, source_line_, curr_pos_};
             return;
         }
-        out_tok = {eTokenType::Blob, "=", source_line_, curr_pos_};
+        out_tok = {eTokenType::Blob, "=", alloc_, source_line_, curr_pos_};
         return;
     case ':':
-        out_tok = {eTokenType::Colon, ":", source_line_, curr_pos_};
+        out_tok = {eTokenType::Colon, ":", alloc_, source_line_, curr_pos_};
         return;
     case ';':
-        out_tok = {eTokenType::Semicolon, ";", source_line_, curr_pos_};
+        out_tok = {eTokenType::Semicolon, ";", alloc_, source_line_, curr_pos_};
         return;
     }
-    out_tok = {eTokenType::End};
+    out_tok = {eTokenType::End, alloc_};
 }
 
-std::string glslx::Preprocessor::ExtractSingleLineComment(const std::string &line) {
-    std::string ret = line;
+glslx::string glslx::Preprocessor::ExtractSingleLineComment(const string &line) {
+    string ret = line;
     while (ret.back() == '\n') {
         ret.pop_back();
     }
     return ret;
 }
 
-std::string glslx::Preprocessor::ExtractMultiLineComment(std::string &line) {
-    std::string ret;
+glslx::string glslx::Preprocessor::ExtractMultiLineComment(string &line) {
+    string ret(alloc_);
 
-    std::string input = line;
+    string input = line;
     size_t pos;
     while ((pos = input.find("*/")) == std::string::npos && !input.empty()) {
         ret += input;
         RequestSourceLine(input);
         line += input;
     }
-    ret += input.substr(0, pos + 2);
+    ret.append(input, 0, pos + 2);
 
     return ret;
 }
 
 bool glslx::Preprocessor::CreateMacroDefinition() {
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     if (!expect(eTokenType::Space, curr_token.type)) {
         return false;
@@ -597,11 +601,10 @@ bool glslx::Preprocessor::CreateMacroDefinition() {
         return false;
     }
 
-    macro_desc_t macro_desc;
-    macro_desc.name = curr_token.raw_view;
+    macro_desc_t macro_desc(curr_token.raw_view, alloc_);
 
     auto extract_value = [this](std::vector<token_t> &value) {
-        token_t curr_token;
+        token_t curr_token(alloc_);
         GetNextToken(curr_token);
         while (curr_token.type == eTokenType::Space) {
             GetNextToken(curr_token); // skip space tokens
@@ -615,7 +618,7 @@ bool glslx::Preprocessor::CreateMacroDefinition() {
         }
 
         if (value.empty() && config_.empty_macro_value != INT_MAX) {
-            value.push_back({eTokenType::Number, std::to_string(config_.empty_macro_value), source_line_});
+            value.push_back({eTokenType::Number, std::to_string(config_.empty_macro_value), alloc_, source_line_});
         }
 
         if (!expect(eTokenType::Newline, curr_token.type)) {
@@ -634,7 +637,8 @@ bool glslx::Preprocessor::CreateMacroDefinition() {
     case eTokenType::Newline:
     case eTokenType::End:
         if (config_.empty_macro_value != INT_MAX) {
-            macro_desc.value.push_back({eTokenType::Number, std::to_string(config_.empty_macro_value), source_line_});
+            macro_desc.value.push_back(
+                {eTokenType::Number, std::to_string(config_.empty_macro_value), alloc_, source_line_});
         }
         break;
     case eTokenType::Bracket_Begin: {
@@ -682,7 +686,8 @@ bool glslx::Preprocessor::CreateMacroDefinition() {
             // Same macro definition is allowed
             return true;
         }
-        error_ = "Macro '" + macro_desc.name + "' has already been defined " + std::to_string(source_line_);
+        error_ = std::string("Macro '") + macro_desc.name.c_str() + "' has already been defined " +
+                 std::to_string(source_line_);
         return false;
     }
 
@@ -691,7 +696,7 @@ bool glslx::Preprocessor::CreateMacroDefinition() {
     return true;
 }
 
-bool glslx::Preprocessor::RemoveMacroDefinition(const std::string &macro_name) {
+bool glslx::Preprocessor::RemoveMacroDefinition(std::string_view macro_name) {
     if (ShouldTokenBeSkipped()) {
         return true;
     }
@@ -704,7 +709,7 @@ bool glslx::Preprocessor::RemoveMacroDefinition(const std::string &macro_name) {
 
     macros_.erase(it);
 
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     if (!expect(eTokenType::Newline, curr_token.type)) {
         return false;
@@ -718,7 +723,7 @@ bool glslx::Preprocessor::ProcessInclude() {
         return true;
     }
 
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     while (curr_token.type == eTokenType::Space) {
         GetNextToken(curr_token); // skip space tokens
@@ -770,7 +775,7 @@ bool glslx::Preprocessor::ProcessInclude() {
 }
 
 bool glslx::Preprocessor::ProcessExtension(std::string &output) {
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     while (curr_token.type == eTokenType::Space) {
         output.append(curr_token.raw_view);
@@ -780,7 +785,7 @@ bool glslx::Preprocessor::ProcessExtension(std::string &output) {
     if (!expect(eTokenType::Identifier, curr_token.type)) {
         return false;
     }
-    const std::string extension_name = curr_token.raw_view;
+    const string extension_name = curr_token.raw_view;
     GetNextToken(curr_token);
     while (curr_token.type == eTokenType::Space) {
         output.append(curr_token.raw_view);
@@ -800,9 +805,8 @@ bool glslx::Preprocessor::ProcessExtension(std::string &output) {
         return false;
     }
     if (curr_token.raw_view != "disable") {
-        macro_desc_t macro_desc;
-        macro_desc.name = extension_name;
-        macro_desc.value.push_back({eTokenType::Number, "1", source_line_});
+        macro_desc_t macro_desc(extension_name, alloc_);
+        macro_desc.value.push_back({eTokenType::Number, "1", alloc_, source_line_});
 
         macros_.push_back(macro_desc);
     }
@@ -810,7 +814,7 @@ bool glslx::Preprocessor::ProcessExtension(std::string &output) {
 }
 
 bool glslx::Preprocessor::ProcessIf() {
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     if (curr_token.type == eTokenType::Space) {
         GetNextToken(curr_token);
@@ -839,7 +843,7 @@ bool glslx::Preprocessor::ProcessIf() {
 }
 
 bool glslx::Preprocessor::ProcessIfdef() {
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     if (!expect(eTokenType::Space, curr_token.type)) {
         return false;
@@ -850,7 +854,7 @@ bool glslx::Preprocessor::ProcessIfdef() {
         return false;
     }
 
-    const std::string macro_identifier = curr_token.raw_view;
+    const string macro_identifier = curr_token.raw_view;
 
     GetNextToken(curr_token);
     if (curr_token.type != eTokenType::Space && curr_token.type != eTokenType::Newline) {
@@ -871,7 +875,7 @@ bool glslx::Preprocessor::ProcessIfdef() {
 }
 
 bool glslx::Preprocessor::ProcessIfndef() {
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     if (!expect(eTokenType::Space, curr_token.type)) {
         return false;
@@ -882,7 +886,7 @@ bool glslx::Preprocessor::ProcessIfndef() {
         return false;
     }
 
-    const std::string macro_identifier = curr_token.raw_view;
+    const string macro_identifier = curr_token.raw_view;
 
     GetNextToken(curr_token);
     if (curr_token.type != eTokenType::Space && curr_token.type != eTokenType::Newline) {
@@ -921,7 +925,7 @@ bool glslx::Preprocessor::ProcessElif() {
         return false;
     }
 
-    token_t curr_token;
+    token_t curr_token(alloc_);
     GetNextToken(curr_token);
     if (curr_token.type == eTokenType::Space) {
         GetNextToken(curr_token);
@@ -953,14 +957,14 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
                                            const std::function<void(token_t &)> &get_next_token) {
     if (macro.arg_names.empty()) {
         if (macro.name == "__LINE__") {
-            return {{eTokenType::Blob, std::to_string(source_line_)}};
+            return {{eTokenType::Blob, std::to_string(source_line_), alloc_}};
         }
         return macro.value;
     }
 
     context_stack_.push_back(macro.name);
 
-    token_t curr_token;
+    token_t curr_token(alloc_);
     get_next_token(curr_token);
     while (curr_token.type == eTokenType::Space) {
         get_next_token(curr_token); // skip space tokens
@@ -1017,7 +1021,7 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
     std::vector<token_t> replacement_list = macro.value;
 
     for (int arg_index = 0; arg_index < int(processing_tokens.size()); ++arg_index) {
-        const std::string &arg_name = macro.arg_names[arg_index];
+        const string &arg_name = macro.arg_names[arg_index];
 
         for (auto it = begin(replacement_list); it != end(replacement_list);) {
             if (it->type == eTokenType::Identifier && it->raw_view == arg_name) {
@@ -1037,7 +1041,7 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
 
 int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
     std::vector<token_t> tokens(_tokens.begin(), _tokens.end());
-    tokens.push_back({eTokenType::End});
+    tokens.push_back({eTokenType::End, alloc_});
 
     auto eval_prim = [this, &tokens]() {
         while (tokens.front().type == eTokenType::Space) {
@@ -1048,7 +1052,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
 
         switch (curr_token.type) {
         case eTokenType::Identifier: {
-            token_t identifier_token;
+            token_t identifier_token(alloc_);
             if (curr_token.raw_view == "defined") {
                 do {
                     tokens.erase(tokens.cbegin());
@@ -1108,7 +1112,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
 
         case eTokenType::Number:
             tokens.erase(tokens.cbegin());
-            return std::stoi(curr_token.raw_view);
+            return std::stoi(curr_token.raw_view.c_str());
 
         case eTokenType::Bracket_Begin:
             tokens.erase(tokens.cbegin());
@@ -1121,13 +1125,13 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         return 0;
     };
 
-    auto eval_unary = [&tokens, &eval_prim]() {
+    auto eval_unary = [this, &tokens, &eval_prim]() {
         while (tokens.front().type == eTokenType::Space) {
             tokens.erase(tokens.cbegin());
         }
 
         bool result_apply = false;
-        token_t curr_token;
+        token_t curr_token(alloc_);
         while ((curr_token = tokens.front()).type == eTokenType::Not || curr_token.type == eTokenType::Not) {
             switch (curr_token.type) {
             case eTokenType::Minus:
@@ -1147,11 +1151,11 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         return static_cast<int>(result_apply) ^ eval_prim();
     };
 
-    auto eval_muldiv = [&tokens, &eval_unary]() {
+    auto eval_muldiv = [this, &tokens, &eval_unary]() {
         int result = eval_unary();
         int second_operand = 0;
 
-        token_t curr_token;
+        token_t curr_token(alloc_);
         while ((curr_token = tokens.front()).type == eTokenType::Star || curr_token.type == eTokenType::Slash) {
             switch (curr_token.type) {
             case eTokenType::Star:
@@ -1172,10 +1176,10 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         return result;
     };
 
-    auto eval_addsub = [&tokens, &eval_muldiv]() {
+    auto eval_addsub = [this, &tokens, &eval_muldiv]() {
         int result = eval_muldiv();
 
-        token_t curr_token;
+        token_t curr_token(alloc_);
         while ((curr_token = tokens.front()).type == eTokenType::Plus || curr_token.type == eTokenType::Minus) {
             switch (curr_token.type) {
             case eTokenType::Plus:
@@ -1194,10 +1198,10 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         return result;
     };
 
-    auto eval_cmp = [&tokens, &eval_addsub]() {
+    auto eval_cmp = [this, &tokens, &eval_addsub]() {
         int result = eval_addsub();
 
-        token_t curr_token;
+        token_t curr_token(alloc_);
         while ((curr_token = tokens.front()).type == eTokenType::Less || curr_token.type == eTokenType::Greater ||
                curr_token.type == eTokenType::LessEqual || curr_token.type == eTokenType::GreaterEqual) {
             switch (curr_token.type) {
@@ -1225,10 +1229,10 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         return result;
     };
 
-    auto eval_eq = [&tokens, &eval_cmp]() {
+    auto eval_eq = [this, &tokens, &eval_cmp]() {
         int result = eval_cmp();
 
-        token_t curr_token;
+        token_t curr_token(alloc_);
         while ((curr_token = tokens.front()).type == eTokenType::Equal || curr_token.type == eTokenType::NotEqual) {
             switch (curr_token.type) {
             case eTokenType::Equal:

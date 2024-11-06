@@ -7,7 +7,7 @@
 void test_preprocessor() {
     printf("Test preprocessor       | ");
 
-    auto HasMacro = [](const glslx::Preprocessor &preprocessor, const std::string &macro) -> bool {
+    auto HasMacro = [](const glslx::Preprocessor &preprocessor, std::string_view macro) -> bool {
         const auto &macros = preprocessor.macros();
 
         auto it = std::find_if(macros.cbegin(), macros.cend(), [&macro](auto &&entry) { return entry.name == macro; });
