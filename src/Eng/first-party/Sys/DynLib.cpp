@@ -21,7 +21,7 @@ Sys::DynLib::DynLib() {
 Sys::DynLib::DynLib(const char *name) {
     std::string name_with_ext;
     const char *ext = strrchr(name, '.');
-    if (!ext) {
+    if (!ext || ext == name) {
         name_with_ext = name;
         // Attach platform-preferred extension
 #if defined(_WIN32)
