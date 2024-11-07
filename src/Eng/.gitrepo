@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_05_11
-	commit = 3296e9be960714d306739a5ca81d7cbbc246ee99
+	branch = scene_pack
+	commit = f70c384ab8eb03159dbb4a33cd2a1fc6bb3535ca
 	method = merge
 	cmdver = 0.4.6
-	parent = 000c5f1268146e833a708ace9a66871b7944bf31
+	parent = 86deba989e5c286e2f7e3b3845e27005ff7512a7
