@@ -19,7 +19,7 @@ void Eng::PhysicsManager::Update(SceneData &scene, const float dt_s) {
     using namespace PhysicsManagerInternal;
 
     // retrieve pointers to components for fast access
-    auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
+    [[maybe_unused]] auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
     auto *physes = (Physics *)scene.comp_store[CompPhysics]->SequentialData();
 
     updated_objects_.clear();

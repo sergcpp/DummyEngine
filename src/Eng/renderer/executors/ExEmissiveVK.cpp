@@ -28,7 +28,6 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
     FgAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
 
     FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
-    FgAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
 
     if ((*p_list_)->emissive_start_index == -1) {
         return;
@@ -56,7 +55,7 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
     const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
                                  0.0f, 1.0f};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-    const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches};
@@ -69,7 +68,7 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_main_draw_.handle();
         rp_begin_info.framebuffer = main_draw_fb_[api_ctx->backend_frame][fb_to_use_].handle();
-        rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         const VkClearValue clear_values[4] = {{}, {}, {}, {}};
         rp_begin_info.pClearValues = clear_values;
         rp_begin_info.clearValueCount = 4;

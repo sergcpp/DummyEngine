@@ -21,7 +21,7 @@ std::vector<uint8_t> Eng::LoadHDR(std::string_view name, int &out_w, int &out_h)
         throw std::runtime_error("Is not HDR file!");
     }
 
-    float exposure = 1.0f;
+    [[maybe_unused]] float exposure = 1.0f;
     std::string format;
 
     while (std::getline(in_stream, line)) {

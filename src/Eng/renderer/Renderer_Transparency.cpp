@@ -98,7 +98,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         const FgResRef textures_buf = {};
 #endif
 
-        const FgResRef noise_tex = oit_depth_peel.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+        [[maybe_unused]] const FgResRef noise_tex =
+            oit_depth_peel.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
         const FgResRef white_tex =
             oit_depth_peel.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
         const FgResRef instances_buf = oit_depth_peel.AddStorageReadonlyInput(
@@ -136,7 +137,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         const FgResRef textures_buf = {};
 #endif
 
-        const FgResRef noise_tex = oit_schedule.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+        [[maybe_unused]] const FgResRef noise_tex =
+            oit_schedule.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
         const FgResRef white_tex = oit_schedule.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
         const FgResRef instances_buf = oit_schedule.AddStorageReadonlyInput(
             persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
@@ -396,8 +398,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 data->swrt.textures_buf = rt_refl.AddStorageReadonlyInput(bindless.textures_buf, stage);
 #endif
             }
-
-            data->dummy_black = rt_refl.AddTextureInput(dummy_black_, stage);
 
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
 

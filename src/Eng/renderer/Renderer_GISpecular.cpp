@@ -419,8 +419,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 #endif
             }
 
-            data->dummy_black = rt_refl.AddTextureInput(dummy_black_, stage);
-
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
 
             data->probe_volume = &persistent_data.probe_volumes[0];
@@ -445,7 +443,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
     }
 
     FgResRef reproj_refl_tex;
-    FgResRef depth_hist_tex, sample_count_tex, variance_temp_tex;
+    FgResRef sample_count_tex, variance_temp_tex;
 
     { // Denoiser reprojection
         auto &ssr_reproject = fg_builder_.AddNode("SSR REPROJECT");
@@ -630,11 +628,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::SBufRO, SSRPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRPrefilter::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::Image2D, SSRPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
-
-            const auto grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + SSRPrefilter::LOCAL_GROUP_SIZE_X - 1u) / SSRPrefilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + SSRPrefilter::LOCAL_GROUP_SIZE_Y - 1u) / SSRPrefilter::LOCAL_GROUP_SIZE_Y,
-                1u};
 
             SSRPrefilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
@@ -880,7 +873,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             struct PassData {
                 FgResRef depth_tex, velocity_tex, ssr_tex, ssr_hist_tex;
-                FgResRef exposure_tex;
                 FgResRef out_ssr_tex;
             };
 
@@ -888,7 +880,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->depth_tex = ssr_stabilization.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->velocity_tex = ssr_stabilization.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
             data->ssr_tex = ssr_stabilization.AddTextureInput(gi_specular3_tex, Stg::ComputeShader);
-            data->exposure_tex = ssr_stabilization.AddHistoryTextureInput(EXPOSURE_TEX, Stg::ComputeShader);
 
             { // Final gi
                 Ren::Tex2DParams params;
@@ -909,7 +900,6 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
                 FgAllocTex &gi_tex = builder.GetReadTexture(data->ssr_tex);
                 FgAllocTex &gi_hist_tex = builder.GetReadTexture(data->ssr_hist_tex);
-                FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
 
                 FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_ssr_tex);
 
@@ -1126,8 +1116,6 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             { // dilate ssr buffer
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-                Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
 
                 const Ren::Binding bindings[] = {{Trg::Tex2DSampled, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
 

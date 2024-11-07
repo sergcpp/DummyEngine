@@ -30,7 +30,6 @@ class ExRTReflections final : public FgExecutor {
         FgResRef ltc_luts_tex;
         FgResRef cells_buf;
         FgResRef items_buf;
-        FgResRef dummy_black;
         FgResRef ray_counter;
         FgResRef ray_list;
         FgResRef indir_args;

@@ -42,7 +42,6 @@ Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, std::string_view n
     temp_param_def_.clear();
 
     temp_param_str_ += name;
-    const int name_len = int(temp_param_str_.length());
     if (temp_param_str_.length() < 10) {
         return {};
     }

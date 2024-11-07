@@ -13,7 +13,7 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
     FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
     FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
-    FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
+    [[maybe_unused]] FgAllocTex &dist_tex = builder.GetReadTexture(args_->distance_tex);
     FgAllocTex &depth_tex = builder.GetWriteTexture(args_->depth_tex);
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
 

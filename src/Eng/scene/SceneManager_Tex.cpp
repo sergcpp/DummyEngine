@@ -47,7 +47,7 @@ void Eng::SceneManager::TextureLoaderProc() {
 
         {
             std::unique_lock<std::mutex> lock(tex_requests_lock_);
-            tex_loader_cnd_.wait(lock, [this, &req] {
+            tex_loader_cnd_.wait(lock, [this] {
                 if (tex_loader_stop_) {
                     return true;
                 }

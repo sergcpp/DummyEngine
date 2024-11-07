@@ -91,7 +91,7 @@ struct bvh_node_t { // NOLINT
     Ren::Vec3f bbox_max;
     union {
         struct {
-            uint32_t space_axis : 2;
+            uint32_t sep_axis : 2;
             uint32_t prim_count : 30;
         };
         struct {

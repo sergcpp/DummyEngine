@@ -17,7 +17,6 @@ class ExReadExposure final : public FgExecutor {
     [[nodiscard]] float exposure() const { return exposure_; }
 
   private:
-    bool initialized_ = false;
     float exposure_ = 1.0f;
 
     // temp data (valid only between Setup and Execute calls)

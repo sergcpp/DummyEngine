@@ -40,7 +40,7 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
             ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to init render pass!");
         }
 
-        const int buf1_stride = 16, buf2_stride = 16;
+        [[maybe_unused]] const int buf1_stride = 16, buf2_stride = 16;
 
         { // VAO for simple and skinned meshes
             const Ren::VtxAttribDesc attribs[] = {{vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};

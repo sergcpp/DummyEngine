@@ -57,7 +57,6 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
 
     FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
     FgAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
-    FgAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
 
     if ((*p_list_)->emissive_start_index == -1) {
         return;

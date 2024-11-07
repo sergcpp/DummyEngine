@@ -574,10 +574,6 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                 b->Fill(0, b->size(), 0, cmd_buf);
             }
             for (Ren::Texture2D *t : texs_to_clear) {
-                if (t->name() == "GI Diffuse 4 [Previous]") {
-                    volatile int ii = 0;
-                }
-
                 // NOTE: we can not really use anything other than zero here
                 const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
                 Ren::ClearImage(*t, rgba, cmd_buf);

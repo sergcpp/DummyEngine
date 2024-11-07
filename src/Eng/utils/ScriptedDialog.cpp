@@ -22,7 +22,6 @@ bool Eng::ScriptedDialog::Load(const std::string_view lookup_name, const JsObjec
         if (js_ending.Has("choices")) {
             const JsArray &js_choices = js_ending.at("choices").as_arr();
 
-            int choice_index = 0;
             for (const JsElement &js_choice_el : js_choices.elements) {
                 const JsObject &js_choice = js_choice_el.as_obj();
                 const JsString &js_choice_key = js_choice.at("key").as_str();
@@ -54,8 +53,6 @@ bool Eng::ScriptedDialog::Load(const std::string_view lookup_name, const JsObjec
 
                 SeqChoice *choice = sequences_[cur_seq_index].GetChoice(js_choice_key.val);
                 choice->seq_id = choice_seq_index;
-
-                ++choice_index;
             }
         }
         return true;

@@ -17,7 +17,6 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
     FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
-    FgAllocTex &dummy_black = builder.GetReadTexture(args_->dummy_black);
     FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
@@ -98,7 +97,6 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
     FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
-    FgAllocTex &dummy_black = builder.GetReadTexture(args_->dummy_black);
     FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);

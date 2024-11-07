@@ -467,8 +467,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->distance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_distance, stage);
             data->offset_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_offset, stage);
 
-            data->dummy_black = rt_gi.AddTextureInput(dummy_black_, stage);
-
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
 
             gi_tex = data->out_gi_tex = rt_gi.AddStorageImageOutput(gi_tex, stage);

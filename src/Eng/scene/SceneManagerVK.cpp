@@ -218,7 +218,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     for (uint32_t i = update_range.first; i < update_range.second; ++i) {
         const uint32_t rel_i = i - update_range.first;
 
-        const uint32_t set_index = i / materials_per_descriptor;
+        //const uint32_t set_index = i / materials_per_descriptor;
         const uint32_t arr_offset = i % materials_per_descriptor;
 
         const Ren::Material *mat = scene_data_.materials.GetOrNull(i);
@@ -267,7 +267,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 
             const uint32_t set_index = i / materials_per_descriptor;
             const uint32_t arr_offset = i % materials_per_descriptor;
-            const uint32_t arr_count = (materials_per_descriptor - arr_offset);
+            //const uint32_t arr_count = (materials_per_descriptor - arr_offset);
 
             VkWriteDescriptorSet descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = scene_data_.persistent_data.textures_descr_sets[ren_ctx_.backend_frame()][set_index];

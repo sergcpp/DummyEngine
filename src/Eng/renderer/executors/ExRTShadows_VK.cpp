@@ -18,7 +18,7 @@ void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) {
     FgAllocTex &noise_tex = builder.GetReadTexture(args_->noise_tex);
     FgAllocTex &depth_tex = builder.GetReadTexture(args_->depth_tex);
     FgAllocTex &normal_tex = builder.GetReadTexture(args_->normal_tex);
-    FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
+    [[maybe_unused]] FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
 
     FgAllocTex &out_shadow_tex = builder.GetWriteTexture(args_->out_shadow_tex);
 
@@ -71,7 +71,7 @@ void Eng::ExRTShadows::Execute_HWRT_Inline(FgBuilder &builder) {
     FgAllocTex &noise_tex = builder.GetReadTexture(args_->noise_tex);
     FgAllocTex &depth_tex = builder.GetReadTexture(args_->depth_tex);
     FgAllocTex &normal_tex = builder.GetReadTexture(args_->normal_tex);
-    FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
+    [[maybe_unused]] FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &tile_list_buf = builder.GetReadBuffer(args_->tile_list_buf);
     FgAllocBuf &indir_args_buf = builder.GetReadBuffer(args_->indir_args);
 

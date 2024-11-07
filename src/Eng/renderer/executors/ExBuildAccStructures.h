@@ -30,8 +30,8 @@ class ExBuildAccStructures final : public FgExecutor {
     ExBuildAccStructures(const DrawList *&p_list, int rt_index, const FgResRef rt_obj_instances_buf,
                          const AccelerationStructureData *acc_struct_data, Ren::Span<const mesh_t> rt_meshes,
                          const FgResRef rt_tlas_buf, const FgResRef rt_tlas_scratch_buf)
-        : p_list_(p_list), rt_index_(rt_index), rt_obj_instances_buf_(rt_obj_instances_buf),
-          acc_struct_data_(acc_struct_data), rt_meshes_(rt_meshes), rt_tlas_buf_(rt_tlas_buf),
+        : p_list_(p_list), rt_index_(rt_index), acc_struct_data_(acc_struct_data), rt_meshes_(rt_meshes),
+          rt_obj_instances_buf_(rt_obj_instances_buf), rt_tlas_buf_(rt_tlas_buf),
           rt_tlas_build_scratch_buf_(rt_tlas_scratch_buf) {}
 
     void Execute(FgBuilder &builder) override;

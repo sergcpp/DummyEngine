@@ -5,7 +5,7 @@
 
 void Eng::ExBuildAccStructures::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &rt_obj_instances_buf = builder.GetReadBuffer(rt_obj_instances_buf_);
-    FgAllocBuf &rt_tlas_buf = builder.GetWriteBuffer(rt_tlas_buf_);
+    [[maybe_unused]] FgAllocBuf &rt_tlas_buf = builder.GetWriteBuffer(rt_tlas_buf_);
     FgAllocBuf &rt_tlas_build_scratch_buf = builder.GetWriteBuffer(rt_tlas_build_scratch_buf_);
 
     Ren::Context &ctx = builder.ctx();

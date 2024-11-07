@@ -38,8 +38,8 @@ extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
 const float DefaultSunShadowBias[2] = {4.0f, 8.0f};
 
-const int PROBE_RES = 512;
-const int PROBE_COUNT = 1;
+//const int PROBE_RES = 512;
+//const int PROBE_COUNT = 1;
 
 __itt_string_handle *itt_load_scene_str = __itt_string_handle_create("SceneManager::LoadScene");
 __itt_string_handle *itt_serve_str = __itt_string_handle_create("SceneManager::Serve");
@@ -463,7 +463,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
                                              ren_ctx_.default_mem_allocs(), &status);
             } else if (!scene_data_.env.env_map_name.empty()) {
                 Sys::AssetFile in_file(std::string(paths_.textures_path) + scene_data_.env.env_map_name.c_str());
-                const size_t in_file_size = in_file.size();
+                [[maybe_unused]] const size_t in_file_size = in_file.size();
 
                 Ren::DDSHeader header = {};
                 in_file.Read((char *)&header, sizeof(Ren::DDSHeader));
@@ -562,7 +562,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     }
 
     // scene_data_.probe_storage.Finalize();
-    LoadProbeCache();
+    // LoadProbeCache();
 
     log->Info("SceneManager: RebuildSceneBVH!");
 
@@ -580,7 +580,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         Alloc_SWRT_TLAS();
     }
 
-    const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
+    [[maybe_unused]] const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
 
     // TODO: make this temporary FG resource
     // ~56.6mb
@@ -979,11 +979,11 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
         }
     }
 
-    if (dr->mesh->type() == Ren::eMeshType::Skeletal) {
+    /*if (dr->mesh->type() == Ren::eMeshType::Skeletal) {
         const Ren::Skeleton *skel = dr->mesh->skel();
 
         // Attach ellipsoids to bones
-        /*for (int i = 0; i < dr->ellipsoids_count; i++) {
+        for (int i = 0; i < dr->ellipsoids_count; i++) {
             Drawable::Ellipsoid &e = dr->ellipsoids[i];
             if (e.bone_name.empty()) {
                 e.bone_index = -1;
@@ -996,8 +996,8 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
                     break;
                 }
             }
-        }*/
-    }
+        }
+    }*/
 
     obj_bbox[0] = Min(obj_bbox[0], dr->mesh->bbox_min());
     obj_bbox[1] = Max(obj_bbox[1], dr->mesh->bbox_max());
@@ -1057,8 +1057,8 @@ void Eng::SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *
     auto *ls = (LightSource *)comp;
 
     // Compute bounding box of light source
-    const auto pos = Ren::Vec4f{ls->offset[0], ls->offset[1], ls->offset[2], 1.0f},
-               dir = Ren::Vec4f{ls->dir[0], ls->dir[1], ls->dir[2], 0.0f};
+    [[maybe_unused]] const auto pos = Ren::Vec4f{ls->offset[0], ls->offset[1], ls->offset[2], 1.0f},
+                                dir = Ren::Vec4f{ls->dir[0], ls->dir[1], ls->dir[2], 0.0f};
 
     Ren::Vec3f bbox_min, bbox_max;
 

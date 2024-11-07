@@ -18,7 +18,7 @@ void Eng::ExSampleLights::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
     FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(args_->vtx_buf1);
     FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
-    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
+    [[maybe_unused]] FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
 
     FgAllocTex &albedo_tex = builder.GetReadTexture(args_->albedo_tex);
     FgAllocTex &depth_tex = builder.GetReadTexture(args_->depth_tex);

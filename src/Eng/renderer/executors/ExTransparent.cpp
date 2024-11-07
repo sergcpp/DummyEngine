@@ -58,7 +58,7 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
         initialized = true;
     }
 
-    const int buf1_stride = 16, buf2_stride = 16;
+    [[maybe_unused]] const int buf1_stride = 16, buf2_stride = 16;
 
     { // VertexInput for main drawing (uses all attributes)
         const Ren::VtxAttribDesc attribs[] = {

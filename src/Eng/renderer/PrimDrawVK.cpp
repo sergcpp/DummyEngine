@@ -145,7 +145,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
                                      0.0f, 1.0f};
         api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
-        const VkRect2D scissor = {0, 0, uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])};
+        const VkRect2D scissor = {{0, 0}, {uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])}};
         api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
@@ -185,7 +185,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         render_pass_begin_info.renderPass = rp->handle();
         render_pass_begin_info.framebuffer = fb->handle();
-        render_pass_begin_info.renderArea = {0, 0, uint32_t(fb->w), uint32_t(fb->h)};
+        render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(fb->w), uint32_t(fb->h)}};
 
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
         api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
@@ -194,10 +194,10 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
                                      0.0f, 1.0f};
         api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
-        VkRect2D scissor = {0, 0, uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])};
+        VkRect2D scissor = {{0, 0}, {uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])}};
         if (new_rast_state.scissor.enabled) {
-            scissor = VkRect2D{new_rast_state.scissor.rect[0], new_rast_state.scissor.rect[1],
-                               uint32_t(new_rast_state.scissor.rect[2]), uint32_t(new_rast_state.scissor.rect[3])};
+            scissor = VkRect2D{{new_rast_state.scissor.rect[0], new_rast_state.scissor.rect[1]},
+                               {uint32_t(new_rast_state.scissor.rect[2]), uint32_t(new_rast_state.scissor.rect[3])}};
         }
         api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 

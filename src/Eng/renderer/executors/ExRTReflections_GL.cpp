@@ -31,7 +31,6 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &textures_buf = builder.GetReadBuffer(args_->swrt.textures_buf);
-    FgAllocTex &dummy_black = builder.GetReadTexture(args_->dummy_black);
     FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);

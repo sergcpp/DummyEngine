@@ -17,7 +17,7 @@ void Eng::ExRTGICache::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
     FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
-    FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
+    [[maybe_unused]] FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
     FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);

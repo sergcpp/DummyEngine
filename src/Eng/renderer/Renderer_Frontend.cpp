@@ -170,9 +170,11 @@ __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("Proces
 #define REN_UNINITIALIZE_X8(t) REN_UNINITIALIZE_X4(t), REN_UNINITIALIZE_X4(t)
 
 #define BBOX_POINTS(min, max)                                                                                          \
-    (min)[0], (min)[1], (min)[2], (max)[0], (min)[1], (min)[2], (min)[0], (min)[1], (max)[2], (max)[0], (min)[1],      \
-        (max)[2], (min)[0], (max)[1], (min)[2], (max)[0], (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0],  \
-        (max)[1], (max)[2]
+    {(min)[0], (min)[1], (min)[2]}, {(max)[0], (min)[1], (min)[2]}, {(min)[0], (min)[1], (max)[2]},                    \
+        {(max)[0], (min)[1], (max)[2]}, {(min)[0], (max)[1], (min)[2]}, {(max)[0], (max)[1], (min)[2]},                \
+        {(min)[0], (max)[1], (max)[2]}, {                                                                              \
+        (max)[0], (max)[1], (max)[2]                                                                                   \
+    }
 
 #define _CROSS(x, y)                                                                                                   \
     { (x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0] }
@@ -292,7 +294,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
     const auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->SequentialData();
     const auto *occluders = (Occluder *)scene.comp_store[CompOccluder]->SequentialData();
-    const auto *lightmaps = (Lightmap *)scene.comp_store[CompLightmap]->SequentialData();
+    // const auto *lightmaps = (Lightmap *)scene.comp_store[CompLightmap]->SequentialData();
     const auto *lights_src = (LightSource *)scene.comp_store[CompLightSource]->SequentialData();
     const auto *decals = (Decal *)scene.comp_store[CompDecal]->SequentialData();
     const auto *probes = (LightProbe *)scene.comp_store[CompProbe]->SequentialData();
@@ -663,7 +665,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         if (rt_objects.count > MAX_RT_OBJ_INSTANCES_GI) {
             OPTICK_EVENT("SORT RT INSTANCES");
 
-            const Vec3f &cam_pos = list.draw_cam.world_position();
             std::partial_sort(rt_objects.objects.data(), rt_objects.objects.data() + MAX_RT_OBJ_INSTANCES_GI,
                               rt_objects.objects.data() + rt_objects.count.load(),
                               [&](const VisObj lhs, const VisObj rhs) {
@@ -829,9 +830,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         const Vec3f cam_side = Normalize(Cross(light_dir, cam_up));
         cam_up = Cross(cam_side, light_dir);
 
-        const Vec3f scene_dims = scene.nodes[scene.root_node].bbox_max - scene.nodes[scene.root_node].bbox_min;
         const float max_dist = Distance(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max);
-
         const Vec3f view_dir = list.draw_cam.view_dir();
 
         // Gather drawables for each cascade
@@ -886,7 +885,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             }
 
             const Vec3f cam_support1 = FindSupport(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max, light_dir);
-            const Vec3f cam_support2 = FindSupport(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max, -light_dir);
             const Vec3f cam_center = cam_target + fabsf(Dot(cam_support1 - cam_target, light_dir)) * light_dir;
             const float cam_extents = Distance(cam_center, cam_target) + bounding_radius;
 
@@ -1496,8 +1494,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                             const Mesh *mesh = dr.mesh.get();
 
-                            Mat4f world_from_object_trans = Transpose(tr.world_from_object);
-
                             if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
                                 proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().sub.offset / 16;
 
@@ -2091,9 +2087,9 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
     for (int j = 0; j < int(list.lights.size()); j++) {
         const LightItem &l = list.lights[j];
         const LightSource *ls = &light_sources[litem_to_lsource[j]];
-        const float radius = ls->radius;
+        //const float radius = ls->radius;
         const float cull_radius = ls->cull_radius;
-        const float cap_radius = ls->cap_radius;
+        //const float cap_radius = ls->cap_radius;
 
         eVisResult visible_to_slice = eVisResult::FullyVisible;
 
@@ -2198,7 +2194,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
     }
 
     for (int j = 0; j < int(list.decals.size()); j++) {
-        const DecalItem &de = list.decals[j];
+        //const DecalItem &de = list.decals[j];
 
         const float bbox_points[8][3] = {BBOX_POINTS(decals_boxes[j].bmin, decals_boxes[j].bmax)};
 

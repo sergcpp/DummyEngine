@@ -216,8 +216,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                             return true;
                         }
 
-                        int count = 0;
-
                         const char *p1 = params + 1;
                         const char *p2 = p1 + 1;
                         while (*p2) {
@@ -236,14 +234,12 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                                 if (*p2) {
                                     p1 = ++p2;
                                 }
-                                ++count;
                             } else if (*p2 == ';') {
                                 preamble += "#define ";
                                 preamble += std::string(p1, p2);
                                 preamble += "\n";
 
                                 p1 = ++p2;
-                                ++count;
                             }
 
                             if (*p2) {
@@ -255,14 +251,12 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                             preamble += "#define ";
                             preamble += std::string(p1, p2);
                             preamble += "\n";
-
-                            ++count;
                         }
                     }
 
                     std::string glsl_file_data = preamble + orig_glsl_file_data;
 
-                    glslx::eTrUnitType unit_type;
+                    glslx::eTrUnitType unit_type = glslx::eTrUnitType(-1);
                     if (strstr(out_file, ".vert.glsl")) {
                         unit_type = glslx::eTrUnitType::Vertex;
                     } else if (strstr(out_file, ".frag.glsl")) {

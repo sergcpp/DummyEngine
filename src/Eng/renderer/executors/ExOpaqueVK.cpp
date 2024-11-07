@@ -118,9 +118,9 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     FgAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
 
     FgAllocTex &shad_tex = builder.GetReadTexture(shad_tex_);
-    FgAllocTex &brdf_lut = builder.GetReadTexture(brdf_lut_);
+    [[maybe_unused]] FgAllocTex &brdf_lut = builder.GetReadTexture(brdf_lut_);
     FgAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
-    FgAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
+    [[maybe_unused]] FgAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
 
     FgAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
     FgAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
@@ -161,8 +161,8 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
         /*const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
                                                 (*p_list_)->probe_storage->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};*/
-        const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
+        //const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
+        //const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
 
         const VkBufferView lights_buf_view = lights_buf.tbos[0]->view();
         const VkBufferView decals_buf_view = decals_buf.tbos[0]->view();
@@ -351,7 +351,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
                                  0.0f, 1.0f};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-    const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
@@ -372,7 +372,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_opaque_.handle();
         rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].handle();
-        rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])}};
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
         draw_pass_vi_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);

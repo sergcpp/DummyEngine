@@ -25,7 +25,6 @@ class ExDebugRT final : public FgExecutor {
         FgResRef ltc_luts_tex;
         FgResRef cells_buf;
         FgResRef items_buf;
-        FgResRef dummy_black;
 
         FgResRef irradiance_tex;
         FgResRef distance_tex;

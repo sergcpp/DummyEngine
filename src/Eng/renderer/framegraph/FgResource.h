@@ -24,7 +24,7 @@ struct FgResource {
     FgResource() = default;
     FgResource(const eFgResType _type, const uint16_t __generation, const Ren::eResState _desired_state,
                const Ren::eStageBits _stages, const uint16_t _index)
-        : type(_type), _generation(__generation), desired_state(_desired_state), stages(_stages), index(_index) {}
+        : type(_type), desired_state(_desired_state), _generation(__generation), index(_index), stages(_stages) {}
 
     operator bool() const { return type != eFgResType::Undefined; }
 

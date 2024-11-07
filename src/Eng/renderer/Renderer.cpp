@@ -1217,8 +1217,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->distance_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_distance, stages);
             data->offset_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_offset, stages);
 
-            data->dummy_black = debug_rt.AddTextureInput(dummy_black_, stages);
-
             frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stages);
 
             const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlases[int(list.render_settings.debug_rt) - 1];
@@ -1294,7 +1292,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef color_tex;
             const char *output_tex = nullptr;
 
-            if (list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe || apply_dof) {
+            if ((list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe) || apply_dof) {
                 if (apply_dof) {
                     if (list.render_settings.taa_mode != eTAAMode::Off) {
                         color_tex = frame_textures.color;
@@ -1319,8 +1317,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     // output_tex = target->attachments[0].tex->handle();
                 }
             }
-
-            const bool tonemap = (list.render_settings.tonemap_mode != eTonemapMode::Off);
 
             auto &postprocess = fg_builder_.AddNode("POSTPROCESS");
 
@@ -1750,7 +1746,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
         }
 
-        update_image.set_execute_cb([this, stage_buf_res, output_tex_res](FgBuilder &builder) {
+        update_image.set_execute_cb([stage_buf_res, output_tex_res](FgBuilder &builder) {
             FgAllocBuf &stage_buf = builder.GetReadBuffer(stage_buf_res);
             FgAllocTex &output_image = builder.GetWriteTexture(output_tex_res);
 

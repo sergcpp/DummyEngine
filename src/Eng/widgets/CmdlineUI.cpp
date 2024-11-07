@@ -128,7 +128,7 @@ bool Eng::CmdlineUI::HandleInput(const Gui::input_event_t &ev, const std::vector
             }
         } else if (ev.key_code == Gui::eKey::Tab) {
             Ren::String hint_str;
-            const int index = NextHint(history_.back(), -1, hint_str);
+            NextHint(history_.back(), -1, hint_str);
             if (!hint_str.empty()) {
                 history_.back() = hint_str.c_str();
             }

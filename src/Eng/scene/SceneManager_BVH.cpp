@@ -1,6 +1,7 @@
 #include "SceneManager.h"
 
 #include <deque>
+#include <utility>
 
 #include <Phy/BVHSplit.h>
 #include <Ren/Context.h>
@@ -34,23 +35,23 @@ bool insert_candidate_compare(insert_candidate_t c1, insert_candidate_t c2) { re
 void sort_children(const Eng::bvh_node_t *nodes, Eng::bvh_node_t &node) {
     const uint32_t ch0 = node.left_child, ch1 = node.right_child;
 
-    uint32_t space_axis = 0;
+    uint32_t sep_axis = 0;
     const Ren::Vec3f c_left = (nodes[ch0].bbox_min + nodes[ch0].bbox_max) / 2,
                      c_right = (nodes[ch1].bbox_min + nodes[ch1].bbox_max) / 2;
 
     const Ren::Vec3f dist = Abs(c_left - c_right);
 
     if (dist[0] > dist[1] && dist[0] > dist[2]) {
-        space_axis = 0;
+        sep_axis = 0;
     } else if (dist[1] > dist[0] && dist[1] > dist[2]) {
-        space_axis = 1;
+        sep_axis = 1;
     } else {
-        space_axis = 2;
+        sep_axis = 2;
     }
 
-    node.space_axis = space_axis;
+    node.sep_axis = sep_axis;
 
-    if (c_left[space_axis] > c_right[space_axis]) {
+    if (c_left[sep_axis] > c_right[sep_axis]) {
         const uint32_t temp = node.left_child;
         node.left_child = node.right_child;
         node.right_child = temp;
@@ -181,18 +182,18 @@ void Eng::SceneManager::RebuildSceneBVH() {
             n.leaf_node = 1;
             n.prim_index = split_data.left_indices[0];
             n.bbox_max = Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]};
-            n.space_axis = 0;
+            n.sep_axis = 0;
             n.prim_count = uint32_t(split_data.left_indices.size());
             n.parent = parent_index;
         } else {
-            auto index = (uint32_t)nodes_count;
+            auto index = uint32_t(nodes_count);
 
             const Phy::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
                              c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
             const Phy::Vec3f dist = Abs(c_left - c_right);
 
-            const uint32_t space_axis =
+            const uint32_t sep_axis =
                 (dist[0] > dist[1] && dist[0] > dist[2]) ? 0 : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
 
             const Phy::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
@@ -205,7 +206,7 @@ void Eng::SceneManager::RebuildSceneBVH() {
             n.leaf_node = 0;
             n.left_child = index + 1;
             n.bbox_max = Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]};
-            n.space_axis = space_axis;
+            n.sep_axis = sep_axis;
             n.right_child = index + 2;
             n.parent = parent_index;
 
@@ -373,7 +374,7 @@ void Eng::SceneManager::UpdateObjects() {
             new_node.leaf_node = 1;
             new_node.prim_index = obj_index;
             new_node.bbox_max = tr.bbox_max_ws + BoundsMargin * d;
-            new_node.space_axis = 0;
+            new_node.sep_axis = 0;
             new_node.prim_count = 1;
 
             Sys::MonoAlloc<insert_candidate_t> m_alloc(temp_buf.data(), temp_buf.size());

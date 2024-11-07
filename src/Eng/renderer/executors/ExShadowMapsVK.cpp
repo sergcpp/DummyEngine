@@ -30,9 +30,9 @@ void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf
         1.0f};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
-    const VkRect2D scissor = {sh_list.scissor_test_pos[0],
-                              (Eng::SHADOWMAP_RES / 2) - sh_list.scissor_test_pos[1] - sh_list.scissor_test_size[1],
-                              uint32_t(sh_list.scissor_test_size[0]), uint32_t(sh_list.scissor_test_size[1])};
+    const VkRect2D scissor = {{sh_list.scissor_test_pos[0],
+                               (Eng::SHADOWMAP_RES / 2) - sh_list.scissor_test_pos[1] - sh_list.scissor_test_size[1]},
+                              {uint32_t(sh_list.scissor_test_size[0]), uint32_t(sh_list.scissor_test_size[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     api_ctx->vkCmdSetDepthBias(cmd_buf, sh_list.bias[1], 0.0f, sh_list.bias[0]);
@@ -103,7 +103,7 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
     VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     rp_begin_info.renderPass = rp_depth_only_.handle();
     rp_begin_info.framebuffer = shadow_fb_.handle();
-    rp_begin_info.renderArea = {0, 0, uint32_t(shadowmap_tex.ref->params.w), uint32_t(shadowmap_tex.ref->params.h)};
+    rp_begin_info.renderArea = {{0, 0}, {uint32_t(shadowmap_tex.ref->params.w), uint32_t(shadowmap_tex.ref->params.h)}};
     api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
     Ren::SmallVector<uint32_t, 32> batch_points((*p_list_)->shadow_lists.count, 0);
@@ -206,7 +206,6 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
 
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_[0].layout(), 0, 2,
                                          simple_descr_sets, 0, nullptr);
-        uint32_t bound_descr_id = 0;
 
         vi_depth_pass_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 

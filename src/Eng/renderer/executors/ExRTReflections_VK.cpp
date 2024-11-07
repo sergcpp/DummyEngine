@@ -22,8 +22,7 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &ray_counter_buf = builder.GetReadBuffer(args_->ray_counter);
     FgAllocBuf &ray_list_buf = builder.GetReadBuffer(args_->ray_list);
     FgAllocBuf &indir_args_buf = builder.GetReadBuffer(args_->indir_args);
-    FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
-    FgAllocTex &dummy_black = builder.GetReadTexture(args_->dummy_black);
+    [[maybe_unused]] FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
     FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
@@ -171,7 +170,6 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
-    FgAllocTex &dummy_black = builder.GetReadTexture(args_->dummy_black);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
     FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);

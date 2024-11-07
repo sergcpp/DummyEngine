@@ -312,7 +312,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
 
                 view_state_.frustum_info = shrd_data.frustum_info;
 
-                auto ReconstructViewPosition = [](const Ren::Vec2f uv, const Ren::Vec4f &cam_frustum,
+                /*auto ReconstructViewPosition = [](const Ren::Vec2f uv, const Ren::Vec4f &cam_frustum,
                                                   const float view_z, const float is_ortho) {
                     Ren::Vec3f p;
                     p[0] = uv[0] * cam_frustum[2] + cam_frustum[0];
@@ -323,7 +323,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                     p[2] = view_z;
 
                     return p;
-                };
+                };*/
             }
 
             shrd_data.clip_from_view[2][0] += p_list_->draw_cam.px_offset()[0];
@@ -1282,7 +1282,6 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
 
     const FgResRef noise_tex = emissive.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
     const FgResRef dummy_white = emissive.AddTextureInput(dummy_white_, Stg::FragmentShader);
-    const FgResRef dummy_black = emissive.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
     const FgResRef instances_buf = emissive.AddStorageReadonlyInput(
         persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
@@ -1296,7 +1295,7 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
     frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
     ex_emissive_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
-                       noise_tex, dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf,
+                       noise_tex, dummy_white, instances_buf, instances_indices_buf, shared_data_buf,
                        frame_textures.color, frame_textures.depth);
     emissive.set_executor(&ex_emissive_);
 }
@@ -1304,9 +1303,6 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
 void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _depth_tex, FgResRef &out_ssao) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
-
-    const Ren::Vec4i cur_res =
-        Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1], view_state_.scr_res[0], view_state_.scr_res[1]};
 
     FgResRef ssao_raw;
     { // Main SSAO pass
@@ -1819,15 +1815,11 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
     auto &downsample_depth = fg_builder_.AddNode("DOWN DEPTH");
 
     struct PassData {
-        FgResRef shared_data;
         FgResRef in_depth_tex;
-
         FgResRef out_depth_tex;
     };
 
     auto *data = downsample_depth.AllocNodeData<PassData>();
-    data->shared_data = downsample_depth.AddUniformBufferInput(
-        common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
     data->in_depth_tex = downsample_depth.AddTextureInput(depth_tex, Ren::eStageBits::FragmentShader);
 
     { // Texture that holds 2x downsampled linear depth
@@ -1841,7 +1833,6 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
     }
 
     downsample_depth.set_execute_cb([this, data](FgBuilder &builder) {
-        FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
         FgAllocTex &depth_tex = builder.GetReadTexture(data->in_depth_tex);
         FgAllocTex &output_tex = builder.GetWriteTexture(data->out_depth_tex);
 
@@ -2014,8 +2005,6 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2DSampled, HistogramSample::HDR_TEX_SLOT, *input_tex.ref},
                 {Ren::eBindTarget::Image2D, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
-
-            const bool compressed = (input_tex.ref->params.format == Ren::eTexFormat::RawRGBA16F);
 
             HistogramSample::Params uniform_params = {};
             uniform_params.pre_exposure = view_state_.pre_exposure;

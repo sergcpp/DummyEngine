@@ -226,9 +226,6 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, RTShadowDebug::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
                                              {Trg::Image2D, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
 
-            const uint32_t x_tiles = (view_state_.act_res[0] + 8u - 1u) / 8;
-            const uint32_t y_tiles = (view_state_.act_res[1] + 4u - 1u) / 4;
-
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (view_state_.act_res[0] + RTShadowDebug::LOCAL_GROUP_SIZE_X - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_X,
                 (view_state_.act_res[1] + RTShadowDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_Y,
