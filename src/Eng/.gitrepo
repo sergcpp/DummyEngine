@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = scene_pack
-	commit = f70c384ab8eb03159dbb4a33cd2a1fc6bb3535ca
+	branch = tex_budget
+	commit = 20043eadbe9c8b16c9aaaff0797d7a5790907496
 	method = merge
 	cmdver = 0.4.6
-	parent = 86deba989e5c286e2f7e3b3845e27005ff7512a7
+	parent = ab6462562988e2cb659fc16028ceb719eff95cd4
