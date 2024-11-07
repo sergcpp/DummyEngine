@@ -92,7 +92,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
       fg_builder_(ctx_, sh_) {
     using namespace RendererInternal;
 
-    // Culling is done in quarter resolution
+    // Culling is done in lower resolution
     swCullCtxInit(&cull_ctx_, 8 * std::max(ctx.w() / 32, 1), 4 * std::max(ctx.h() / 16, 1), 0.0f);
 
     /*{ // buffer used to sample probes

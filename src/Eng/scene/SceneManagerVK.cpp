@@ -382,13 +382,8 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
     // make sure we will not use this potentially stale pointer
     build_info.pGeometries = nullptr;
 
-    const auto needed_build_scratch_size = uint32_t(size_info.buildScratchSize);
     const auto needed_total_acc_struct_size =
         uint32_t(align_up(size_info.accelerationStructureSize, AccStructAlignment));
-
-    Ren::Buffer scratch_buf =
-        Ren::Buffer("BLAS Scratch Buf", api_ctx, Ren::eBufType::Storage, needed_build_scratch_size);
-    VkDeviceAddress scratch_addr = scratch_buf.vk_device_address();
 
     Ren::Buffer acc_structs_buf("BLAS Before-Compaction Buf", api_ctx, Ren::eBufType::AccStructure,
                                 needed_total_acc_struct_size);
@@ -408,6 +403,10 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
     VkAccelerationStructureKHR blas_before_compaction = {};
 
     { // Submit build commands
+        const auto needed_build_scratch_size = uint32_t(size_info.buildScratchSize);
+        Ren::Buffer scratch_buf =
+            Ren::Buffer("BLAS Scratch Buf", api_ctx, Ren::eBufType::Storage, needed_build_scratch_size);
+
         VkAccelerationStructureCreateInfoKHR acc_create_info = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
         acc_create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
@@ -425,7 +424,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
         build_info.pGeometries = geometries.cdata();
 
         build_info.dstAccelerationStructure = blas_before_compaction;
-        build_info.scratchData.deviceAddress = scratch_addr;
+        build_info.scratchData.deviceAddress = scratch_buf.vk_device_address();
 
         VkCommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
@@ -449,6 +448,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
                                                                query_pool, 0);
 
         api_ctx->EndSingleTimeCommands(cmd_buf);
+        scratch_buf.FreeImmediate();
     }
 
     VkDeviceSize compact_size = {};
@@ -515,7 +515,6 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
 
         api_ctx->vkDestroyAccelerationStructureKHR(api_ctx->device, blas_before_compaction, nullptr);
         acc_structs_buf.FreeImmediate();
-        scratch_buf.FreeImmediate();
     }
 
     return compacted_blas;

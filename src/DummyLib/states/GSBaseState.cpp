@@ -605,7 +605,7 @@ bool GSBaseState::LoadScene(std::string_view name) {
         }
     }
 
-    { // Load probe cache data from file
+    /*{ // Load probe cache data from file
         std::string cache_file =
 #if defined(__ANDROID__)
             "assets/textures/probes_cache/";
@@ -629,7 +629,7 @@ bool GSBaseState::LoadScene(std::string_view name) {
                 js_probe_cache.elements.clear();
             }
         }
-    }
+    }*/
 
     OnPreloadScene(js_scene);
 

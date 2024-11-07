@@ -197,19 +197,21 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
                           std::bind(&SceneManager::PostloadAccStructure, this, _1, _2, _3));
     }
 
-    Sys::MemBuf buf{__cam_rig_mesh, size_t(__cam_rig_mesh_size)};
-    std::istream in_mesh(&buf);
+    { // Load cam rig
+        Sys::MemBuf buf{__cam_rig_mesh, size_t(__cam_rig_mesh_size)};
+        std::istream in_mesh(&buf);
 
-    Ren::eMeshLoadStatus status;
-    cam_rig_ = ren_ctx.LoadMesh(
-        "__cam_rig", &in_mesh,
-        [this](std::string_view name) -> std::pair<Ren::MaterialRef, Ren::MaterialRef> {
-            Ren::eMatLoadStatus status;
-            Ren::MaterialRef mat = ren_ctx_.LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
-            return std::pair{mat, mat};
-        },
-        &status);
-    assert(status == Ren::eMeshLoadStatus::CreatedFromData);
+        Ren::eMeshLoadStatus status;
+        cam_rig_ = ren_ctx.LoadMesh(
+            "__cam_rig", &in_mesh,
+            [this](std::string_view name) -> std::pair<Ren::MaterialRef, Ren::MaterialRef> {
+                Ren::eMatLoadStatus status;
+                Ren::MaterialRef mat = ren_ctx_.LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
+                return std::pair{mat, mat};
+            },
+            &status);
+        assert(status == Ren::eMeshLoadStatus::CreatedFromData);
+    }
 
     Ren::ILog *log = ren_ctx_.log();
 
