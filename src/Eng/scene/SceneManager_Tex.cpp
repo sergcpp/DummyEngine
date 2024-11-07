@@ -13,8 +13,6 @@ extern __itt_domain *__g_itt_domain;
 namespace SceneManagerConstants {
 __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
 __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures");
-
-const size_t TextureMemoryLimit = 2048ull * 1024 * 1024;
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
@@ -54,7 +52,7 @@ void Eng::SceneManager::TextureLoaderProc() {
                     return true;
                 }
 
-                if (requested_textures_.empty() || scene_data_.estimated_texture_mem.load() > TextureMemoryLimit) {
+                if (requested_textures_.empty() || scene_data_.estimated_texture_mem.load() > tex_memory_limit_.load()) {
                     return false;
                 }
 
@@ -307,7 +305,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
 
                         if (req->ref->params.w != req->orig_w || req->ref->params.h != req->orig_h) {
                             // process texture further (for next mip levels)
-                            req->sort_key = req->ref->name().StartsWith("lightmap") ? 0 : 0xffffffff;
+                            req->sort_key = 0xffffffff;
                             requested_textures_.push_back(std::move(*req));
                         } else {
                             std::lock_guard<std::mutex> _lock(gc_textures_mtx_);
@@ -435,6 +433,8 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
         }
     }
 
+    finished |= (scene_data_.estimated_texture_mem.load() > tex_memory_limit_.load());
+
     return finished;
 }
 
@@ -532,19 +532,19 @@ void Eng::SceneManager::TexturesGCIteration(const Ren::Span<const TexEntry> visi
 
     const int FinishedPortion = 16;
 
-    const bool enable_gc = (scene_data_.estimated_texture_mem.load() >= 9 * TextureMemoryLimit / 10);
+    const bool enable_gc = (scene_data_.estimated_texture_mem.load() >= 9 * tex_memory_limit_.load() / 10);
 
     std::lock_guard<std::mutex> _lock(gc_textures_mtx_);
 
     auto start_it = finished_textures_.begin() + std::min(finished_index_, uint32_t(finished_textures_.size()));
     finished_index_ += FinishedPortion;
-    auto end_it = finished_textures_.begin() + std::min(finished_index_, uint32_t(finished_textures_.size()));
 
     if (finished_index_ >= finished_textures_.size()) {
         finished_index_ = 0;
     }
 
-    for (auto it = start_it; it != end_it;) {
+    int processed_count = 0;
+    for (auto it = start_it; it != finished_textures_.end();) {
         const TexEntry *found_entry = nullptr;
 
         { // search among visible textures first
@@ -571,14 +571,15 @@ void Eng::SceneManager::TexturesGCIteration(const Ren::Span<const TexEntry> visi
             }
         }
 
+        it->frame_dist += std::max(int(finished_textures_.size()) / FinishedPortion, 1);
+
         if (found_entry) {
             it->sort_key = found_entry->sort_key;
             it->frame_dist = 0;
 
             ++it;
-        } else if (++it->frame_dist > 1000 && enable_gc && it->ref->params.w > 16 && it->ref->params.w == it->orig_w &&
-                   it->ref->params.h > 16 && it->ref->params.h == it->orig_h &&
-                   !it->ref->name().StartsWith("lightmap")) {
+        } else if (it->frame_dist > 1000 && enable_gc && it->ref->params.w > 16 && it->ref->params.w == it->orig_w &&
+                   it->ref->params.h > 16 && it->ref->params.h == it->orig_h) {
             // Reduce texture's mips
             it->frame_dist = 0;
             it->sort_key = 0xffffffff;
@@ -588,6 +589,10 @@ void Eng::SceneManager::TexturesGCIteration(const Ren::Span<const TexEntry> visi
             it = finished_textures_.erase(it);
         } else {
             ++it;
+        }
+
+        if (++processed_count >= FinishedPortion) {
+            break;
         }
     }
 }

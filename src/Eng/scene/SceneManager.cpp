@@ -301,9 +301,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         throw std::runtime_error("Level has no name!");
     }
 
-    scene_texture_load_counter_ = 0;
-
-    { // load lightmaps
+    /*{ // load lightmaps
         std::string lm_base_tex_name = "lightmaps/";
         lm_base_tex_name += scene_data_.name.c_str();
 
@@ -334,7 +332,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             scene_data_.env.lm_indir_sh[sh_l] =
                 OnLoadTexture(lm_indir_sh_tex_name, default_l1_color, Ren::eTexFlagBits::NoRepeat);
         }
-    }
+    }*/
 
     const JsArrayP &js_objects = js_scene.at("objects").as_arr();
     for (const JsElementP &js_elem : js_objects.elements) {

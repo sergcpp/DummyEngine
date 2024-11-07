@@ -78,6 +78,8 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             out_params.postprocess = false;
         } else if (strcmp(argv[i], "--freeze-sky") == 0) {
             out_params.freeze_sky = true;
+        } else if (strcmp(argv[i], "--tex-budget") == 0 && (i + 1 != argc)) {
+            out_params.tex_budget = std::atoi(argv[++i]);
         }
     }
 }

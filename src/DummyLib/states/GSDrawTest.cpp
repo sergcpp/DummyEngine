@@ -280,16 +280,6 @@ void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {
                         js_posz.val += double(z * 15);
                     }
 
-                    if (js_obj_copy.Has("lightmap")) {
-                        const size_t ndx = js_obj_copy.IndexOf("lightmap");
-                        js_obj_copy.elements.erase(js_obj_copy.elements.begin() + ndx);
-                    }
-
-                    if (js_obj_orig.Has("lightmap")) {
-                        const size_t ndx = js_obj_orig.IndexOf("lightmap");
-                        js_obj_orig.elements.erase(js_obj_orig.elements.begin() + ndx);
-                    }
-
                     js_new_objects.Push(std::move(js_obj_copy));
                 }
             }

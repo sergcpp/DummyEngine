@@ -714,6 +714,8 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         sun_dir_[2] = viewer_->app_params.sun_dir[2];
     }
 
+    scene_manager_->set_tex_memory_limit(size_t(viewer_->app_params.tex_budget) * 1024 * 1024);
+
     renderer_->settings.enable_bloom = viewer_->app_params.postprocess;
     renderer_->settings.enable_aberration = viewer_->app_params.postprocess;
     renderer_->settings.enable_purkinje = viewer_->app_params.postprocess;

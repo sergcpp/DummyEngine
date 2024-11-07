@@ -114,11 +114,11 @@ class SceneManager {
     Ren::Camera &ext_cam() { return ext_cam_; }
     Ren::Mesh *cam_rig() { return cam_rig_.get(); }
     Eng::SceneData &scene_data() { return scene_data_; }
-    bool load_complete() const { return scene_texture_load_counter_ == 0; }
-
     Snd::Source &ambient_sound() { return amb_sound_; }
 
     const Eng::PersistentGpuData &persistent_data() const { return scene_data_.persistent_data; }
+
+    void set_tex_memory_limit(const size_t limit) { tex_memory_limit_ = limit; }
 
     Eng::SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
@@ -224,8 +224,6 @@ class SceneManager {
     void RebuildLightTree();
     void RemoveNode(uint32_t node_index);
 
-    int scene_texture_load_counter_ = 0;
-
     Ren::Context &ren_ctx_;
     Eng::ShaderLoader &sh_;
     Snd::Context *snd_ctx_ = nullptr;
@@ -273,6 +271,7 @@ class SceneManager {
     Ren::RingBuffer<TextureRequest> finished_textures_;
     uint32_t finished_index_ = 0;
     Ren::RingBuffer<TextureRequest> gc_textures_;
+    std::atomic<size_t> tex_memory_limit_ = 2ull * 1024 * 1024 * 1024;
 
     std::mutex tex_requests_lock_;
     std::thread tex_loader_thread_;

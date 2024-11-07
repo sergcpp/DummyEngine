@@ -62,6 +62,7 @@ struct AppParams {
     float pt_clamp_indirect = 0.0f;
     std::optional<float> exposure;
     eGfxPreset gfx_preset = eGfxPreset::High;
+    int tex_budget = 2048;
     float sun_dir[3] = {};
 #ifndef NDEBUG
     int validation_level = 1;
