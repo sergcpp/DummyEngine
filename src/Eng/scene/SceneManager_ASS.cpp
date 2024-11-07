@@ -629,8 +629,6 @@ std::vector<uint8_t> base64_decode(const std::string_view encoded_string) {
 enum class eGLTFComponentType { Byte = 5120, UByte = 5121, Short = 5122, UShort = 5123, UInt = 5125, Float = 5126 };
 
 bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]);
-
-bool g_astc_initialized = false;
 } // namespace SceneManagerInternal
 
 Ren::HashMap32<std::string, Eng::SceneManager::Handler> Eng::SceneManager::g_asset_handlers;
@@ -646,12 +644,6 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     if (!std::filesystem::is_directory(in_folder)) {
         return true;
     }
-
-    // for astc codec
-    /*if (!g_astc_initialized) {
-        InitASTCCodec();
-        g_astc_initialized = true;
-    }*/
 
     g_asset_handlers["bff"] = {"bff", HCopy};
     g_asset_handlers["mesh"] = {"mesh", HCopy};
@@ -682,16 +674,14 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["rmiss.glsl"] = {"rmiss.glsl", HCompileShader};
         g_asset_handlers["rcall.glsl"] = {"rcall.glsl", HCompileShader};
     } else if (platform == "android") {
-        g_asset_handlers["tga"] = {"ktx", HConvToASTC};
+        // g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         // g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
         // g_asset_handlers["png"] = {"ktx", HConvToASTC};
         // g_asset_handlers["jpg"] = {"ktx", HConvToASTC};
-        g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
+        // g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
         g_asset_handlers["ktx"] = {"ktx", HCopy};
     }
     g_asset_handlers["mat"] = {"mat", HPreprocessMaterial};
-
-    // auto
 
     g_asset_handlers["uncompressed.tga"] = {"uncompressed.tga", HCopy};
     g_asset_handlers["uncompressed.png"] = {"uncompressed.png", HCopy};

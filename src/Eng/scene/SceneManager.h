@@ -311,18 +311,12 @@ class SceneManager {
 
     static Ren::HashMap32<std::string, Handler> g_asset_handlers;
 
-    static void InitASTCCodec();
-
     static bool HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &);
     static bool HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
                       Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &);
 
     // image textures
-    static bool HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                            Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &);
-    static bool HConvToDDS_old(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &);
     static bool HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
                            Ren::SmallVectorImpl<std::string> &out_dependencies, Ren::SmallVectorImpl<asset_output_t> &);
     static bool HConvHDRToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
@@ -335,8 +329,6 @@ class SceneManager {
     // probe textures
     static bool HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
                               Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &);
-    static bool HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<asset_output_t> &);
 
     // shaders
     static bool ResolveIncludes(assets_context_t &ctx, const char *in_file, std::string &output,

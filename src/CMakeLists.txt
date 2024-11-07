@@ -111,8 +111,7 @@ set_target_properties(test_Eng
                       test_Sys
                       test_glslx PROPERTIES FOLDER Tests)
 
-set_target_properties(astc
-                      ltc_fit
+set_target_properties(ltc_fit
                       stb
                       SPIRV-Reflect
                       optick
