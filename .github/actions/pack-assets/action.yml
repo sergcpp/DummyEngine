@@ -1,0 +1,130 @@
+name: 'Pack Assets'
+inputs:
+  bin-name:
+    required: true
+  bin-dir:
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.bin-dir }}
+        path: ${{ inputs.bin-dir }}/
+    - run: |
+        REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
+        WORK_DIR=`pwd`
+        cd ../../builds/$REPO_NAME/assets/shaders
+        ln -s ../../src/Eng/renderer/shaders internal
+        cd ../textures
+        ln -s ../../src/Eng/textures internal
+        cd ../../
+        cp $WORK_DIR/${{ inputs.bin-dir }}/* ./
+        chmod +x ./${{ inputs.bin-name }}
+        rm -rf ./assets_pc || true
+        ./${{ inputs.bin-name }} --prepare_assets pc --norun
+        # coffee_maker
+        mkdir $WORK_DIR/coffee_maker-win-x86_64-vk
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/fonts
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/materials/coffee_maker
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/materials/mat_test
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/textures/mat_test
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/textures/internal
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/models/coffee_maker
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/models/mat_test
+        mkdir -p $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/shaders/internal
+        mkdir $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/scenes
+        cp ./${{ inputs.bin-name }} $WORK_DIR/coffee_maker-win-x86_64-vk/
+        cp ./run_coffee_maker* $WORK_DIR/coffee_maker-win-x86_64-vk/
+        cp ./assets_pc/config.json $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/
+        cp ./assets_pc/fonts/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/fonts/
+        cp ./assets_pc/scenes/coffee_maker.json $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/scenes/mat_test.json $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/materials/coffee_maker/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/materials/coffee_maker/
+        cp ./assets_pc/materials/mat_test/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/materials/mat_test/
+        cp ./assets_pc/models/coffee_maker/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/models/coffee_maker/
+        cp ./assets_pc/models/mat_test/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/internal/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/shaders/internal/
+        cp ./assets_pc/textures/mat_test/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/textures/mat_test/
+        cp ./assets_pc/textures/internal/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/textures/internal/
+        cp ./assets_pc/textures/default_* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/textures/
+        # staircase
+        mkdir $WORK_DIR/staircase-win-x86_64-vk
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/fonts
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/staircase
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/mat_test
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/mat_test
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/internal
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/models/staircase
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/models/mat_test
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/internal
+        mkdir $WORK_DIR/staircase-win-x86_64-vk/assets_pc/scenes
+        cp ./${{ inputs.bin-name }} $WORK_DIR/staircase-win-x86_64-vk/
+        cp ./run_staircase* $WORK_DIR/staircase-win-x86_64-vk/
+        cp ./assets_pc/config.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/
+        cp ./assets_pc/fonts/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/fonts/
+        cp ./assets_pc/scenes/staircase.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/scenes/mat_test.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/materials/staircase/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/staircase/
+        cp ./assets_pc/materials/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/mat_test/
+        cp ./assets_pc/models/staircase/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/models/staircase/
+        cp ./assets_pc/models/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/internal/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/internal/
+        cp ./assets_pc/textures/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/mat_test/
+        cp ./assets_pc/textures/internal/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/internal/
+        cp ./assets_pc/textures/default_* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/
+        # ai043_01
+        mkdir $WORK_DIR/ai043_01-win-x86_64-vk
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/fonts
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/materials/ai043_01
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/materials/mat_test
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/ai043_01
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/mat_test
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/internal
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/models/ai043_01
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/models/mat_test
+        mkdir -p $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/shaders/internal
+        mkdir $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/scenes
+        cp ./${{ inputs.bin-name }} $WORK_DIR/ai043_01-win-x86_64-vk/
+        cp ./run_ai043_01* $WORK_DIR/ai043_01-win-x86_64-vk/
+        cp ./assets_pc/config.json $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/
+        cp ./assets_pc/fonts/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/fonts/
+        cp ./assets_pc/scenes/ai043_01.json $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/scenes/mat_test.json $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/materials/ai043_01/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/materials/ai043_01/
+        cp ./assets_pc/materials/mat_test/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/materials/mat_test/
+        cp ./assets_pc/models/ai043_01/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/models/ai043_01/
+        cp ./assets_pc/models/mat_test/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/internal/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/shaders/internal/
+        cp ./assets_pc/textures/ai043_01/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/ai043_01/
+        cp ./assets_pc/textures/mat_test/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/mat_test/
+        cp ./assets_pc/textures/internal/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/internal/
+        cp ./assets_pc/textures/default_* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/
+        # ai043_06
+        mkdir $WORK_DIR/ai043_06-win-x86_64-vk
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/fonts
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/materials/ai043_06
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/materials/mat_test
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/ai043_06
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/mat_test
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/internal
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/models/ai043_06
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/models/mat_test
+        mkdir -p $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/shaders/internal
+        mkdir $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/scenes
+        cp ./${{ inputs.bin-name }} $WORK_DIR/ai043_06-win-x86_64-vk/
+        cp ./run_ai043_06* $WORK_DIR/ai043_06-win-x86_64-vk/
+        cp ./assets_pc/config.json $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/
+        cp ./assets_pc/fonts/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/fonts/
+        cp ./assets_pc/scenes/ai043_06.json $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/scenes/mat_test.json $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/materials/ai043_06/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/materials/ai043_06/
+        cp ./assets_pc/materials/mat_test/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/materials/mat_test/
+        cp ./assets_pc/models/ai043_06/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/models/ai043_06/
+        cp ./assets_pc/models/mat_test/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/internal/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/shaders/internal/
+        cp ./assets_pc/textures/ai043_06/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/ai043_06/
+        cp ./assets_pc/textures/mat_test/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/mat_test/
+        cp ./assets_pc/textures/internal/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/internal/
+        cp ./assets_pc/textures/default_* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/
+      shell: bash

@@ -424,3 +424,46 @@ jobs:
         with:
           name: windows-x86_64-gl-nv-img-output
           path: windows-x86_64-gl-nv-img-output/
+  pack-assets-windows-x86_64-vk:
+    runs-on: [ windows, x86_64 ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Prepare Assets
+        uses: ./.github/actions/pack-assets
+        with:
+          bin-name: "DummyAppVK"
+          bin-dir: "windows-x86_64-vk"
+      - name: Upload artifacts (1/4)
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coffee_maker-win-x86_64-vk
+          path: coffee_maker-win-x86_64-vk/
+      - name: Upload artifacts (2/4)
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: staircase-win-x86_64-vk
+          path: staircase-win-x86_64-vk/
+      - name: Upload artifacts (3/4)
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ai043_01-win-x86_64-vk
+          path: ai043_01-win-x86_64-vk/
+      - name: Upload artifacts (4/4)
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ai043_06-win-x86_64-vk
+          path: ai043_06-win-x86_64-vk/

@@ -643,6 +643,10 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                                       Sys::ThreadPool *p_threads, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
+    if (!std::filesystem::is_directory(in_folder)) {
+        return true;
+    }
+
     // for astc codec
     /*if (!g_astc_initialized) {
         InitASTCCodec();
