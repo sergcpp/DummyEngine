@@ -13,26 +13,23 @@ const char *Ren::Version() { return "v0.1.0-unknown-commit"; }
 
 Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, const float *positions, const int vtx_count,
                                     const uint32_t *indices, const int ndx_count, eMeshLoadStatus *load_status) {
-    return LoadMesh(name, positions, vtx_count, indices, ndx_count, default_stage_bufs_, default_vertex_buf1_,
-                    default_vertex_buf2_, default_indices_buf_, load_status);
+    return LoadMesh(name, positions, vtx_count, indices, ndx_count, default_vertex_buf1_, default_vertex_buf2_,
+                    default_indices_buf_, load_status);
 }
 
-Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, const float *positions, int vtx_count,
-                                    const uint32_t *indices, int ndx_count, StageBufs &stage_bufs,
-                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
-                                    eMeshLoadStatus *load_status) {
+Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, const float *positions, const int vtx_count,
+                                    const uint32_t *indices, const int ndx_count, BufferRef &vertex_buf1,
+                                    BufferRef &vertex_buf2, BufferRef &index_buf, eMeshLoadStatus *load_status) {
     MeshRef ref = meshes_.FindByName(name);
     if (!ref) {
-        StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = meshes_.Add(name, positions, vtx_count, indices, ndx_count, *sb.buf, sb.cmd_buf, vertex_buf1, vertex_buf2,
+        ref = meshes_.Add(name, positions, vtx_count, indices, ndx_count, api_ctx_.get(), vertex_buf1, vertex_buf2,
                           index_buf, load_status, log_);
     } else {
         if (ref->ready()) {
             (*load_status) = eMeshLoadStatus::Found;
         } else if (positions) {
-            StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(positions, vtx_count, indices, ndx_count, *sb.buf, sb.cmd_buf, vertex_buf1, vertex_buf2,
-                      index_buf, load_status, log_);
+            ref->Init(positions, vtx_count, indices, ndx_count, api_ctx_.get(), vertex_buf1, vertex_buf2, index_buf,
+                      load_status, log_);
         }
     }
 
@@ -41,25 +38,23 @@ Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, const float *position
 
 Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, std::istream *data,
                                     const material_load_callback &on_mat_load, eMeshLoadStatus *load_status) {
-    return LoadMesh(name, data, on_mat_load, default_stage_bufs(), default_vertex_buf1_, default_vertex_buf2_,
-                    default_indices_buf_, default_skin_vertex_buf_, default_delta_buf_, load_status);
+    return LoadMesh(name, data, on_mat_load, default_vertex_buf1_, default_vertex_buf2_, default_indices_buf_,
+                    default_skin_vertex_buf_, default_delta_buf_, load_status);
 }
 
 Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, std::istream *data,
-                                    const material_load_callback &on_mat_load, StageBufs &stage_bufs,
-                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
-                                    BufferRef &skin_vertex_buf, BufferRef &delta_buf, eMeshLoadStatus *load_status) {
+                                    const material_load_callback &on_mat_load, BufferRef &vertex_buf1,
+                                    BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+                                    BufferRef &delta_buf, eMeshLoadStatus *load_status) {
     MeshRef ref = meshes_.FindByName(name);
     if (!ref) {
-        StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = meshes_.Add(name, data, on_mat_load, *sb.buf, sb.cmd_buf, vertex_buf1, vertex_buf2, index_buf,
-                          skin_vertex_buf, delta_buf, load_status, log_);
+        ref = meshes_.Add(name, data, on_mat_load, api_ctx_.get(), vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf,
+                          delta_buf, load_status, log_);
     } else {
         if (ref->ready()) {
             (*load_status) = eMeshLoadStatus::Found;
         } else if (data) {
-            StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(data, on_mat_load, *sb.buf, sb.cmd_buf, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf,
+            ref->Init(data, on_mat_load, api_ctx_.get(), vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf,
                       delta_buf, load_status, log_);
         }
     }
@@ -262,36 +257,29 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const TexHandle
 }
 
 Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
-                                          StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
-                                          eTexLoadStatus *load_status) {
+                                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
-        StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = textures_2D_.Add(name, api_ctx_.get(), data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+        ref = textures_2D_.Add(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
         (*load_status) = eTexLoadStatus::Found;
         if (!ref->ready() && !data.empty()) {
-            StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+            ref->Init(data, p, mem_allocs, load_status, log_);
         }
     }
-
     return ref;
 }
 
 Ren::Tex2DRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
-                                            StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
-                                            eTexLoadStatus *load_status) {
+                                            MemoryAllocators *mem_allocs, eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
-        StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = textures_2D_.Add(name, api_ctx_.get(), data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+        ref = textures_2D_.Add(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
         if (ref->ready()) {
             (*load_status) = eTexLoadStatus::Found;
         } else if (data) {
-            StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+            ref->Init(data, p, mem_allocs, load_status, log_);
         }
     }
 
@@ -347,18 +335,15 @@ void Ren::Context::Release1DTextures() {
 }
 
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Span<const uint8_t> data,
-                                                      StageBufs &stage_bufs, const Tex2DParams &p,
-                                                      eTexLoadStatus *load_status) {
+                                                      const Tex2DParams &p, eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {
-        StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = texture_regions_.Add(name, data, *sb.buf, sb.cmd_buf, p, &texture_atlas_, load_status);
+        ref = texture_regions_.Add(name, data, p, &texture_atlas_, load_status);
     } else {
         if (ref->ready()) {
             (*load_status) = eTexLoadStatus::Found;
         } else {
-            StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(data, *sb.buf, sb.cmd_buf, p, &texture_atlas_, load_status);
+            ref->Init(data, p, &texture_atlas_, load_status);
         }
     }
     return ref;
@@ -496,35 +481,6 @@ void Ren::Context::InitDefaultBuffers() {
         buffers_.Add("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
     default_indices_buf_ =
         buffers_.Add("default_ndx_buf2", api_ctx_.get(), eBufType::VertexIndices, 16 * 1024 * 1024, 4);
-
-    default_stage_bufs_.ctx = this;
-    for (int i = 0; i < StageBufferCount; ++i) {
-        const std::string name = "default_stage_buf_" + std::to_string(i);
-        default_stage_bufs_.bufs[i] = buffers_.Add(name, api_ctx_.get(), eBufType::Upload, 32 * 1024 * 1024);
-#if defined(USE_VK_RENDER)
-        VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        VkFence new_fence;
-        VkResult res = api_ctx_->vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
-        assert(res == VK_SUCCESS);
-
-        default_stage_bufs_.fences[i] = SyncFence{api_ctx_.get(), new_fence};
-
-        VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-        alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        alloc_info.commandPool = api_ctx_->command_pool;
-        alloc_info.commandBufferCount = 1;
-
-        VkCommandBuffer command_buf = {};
-        res = api_ctx_->vkAllocateCommandBuffers(api_ctx_->device, &alloc_info, &command_buf);
-        assert(res == VK_SUCCESS);
-
-        default_stage_bufs_.cmd_bufs[i] = command_buf;
-#else
-        default_stage_bufs_.fences[i] = MakeFence();
-#endif
-        default_stage_bufs_.is_in_use[i] = false;
-    }
 }
 
 void Ren::Context::ReleaseDefaultBuffers() {
@@ -533,9 +489,6 @@ void Ren::Context::ReleaseDefaultBuffers() {
     default_skin_vertex_buf_ = {};
     default_delta_buf_ = {};
     default_indices_buf_ = {};
-    for (auto &buf : default_stage_bufs_.bufs) {
-        buf = {};
-    }
 }
 
 void Ren::Context::ReleaseAll() {

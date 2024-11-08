@@ -16,16 +16,15 @@ class TextureRegion : public RefCounter {
     Tex2DParams params_;
     bool ready_ = false;
 
-    [[nodiscard]] bool InitFromDDSFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
-                                       Tex2DParams p, TextureAtlasArray *atlas);
+    [[nodiscard]] bool InitFromDDSFile(Span<const uint8_t> data, Tex2DParams p, TextureAtlasArray *atlas);
     [[nodiscard]] bool InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
                                        const Tex2DParams &p, TextureAtlasArray *atlas);
 
   public:
     TextureRegion() = default;
     TextureRegion(std::string_view name, TextureAtlasArray *atlas, const int texture_pos[3]);
-    TextureRegion(std::string_view name, Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
-                  const Tex2DParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status);
+    TextureRegion(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p, TextureAtlasArray *atlas,
+                  eTexLoadStatus *load_status);
     TextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
                   const Tex2DParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status);
     ~TextureRegion();
@@ -41,8 +40,7 @@ class TextureRegion : public RefCounter {
 
     [[nodiscard]] bool ready() const { return ready_; }
 
-    void Init(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
-              TextureAtlasArray *atlas, eTexLoadStatus *load_status);
+    void Init(Span<const uint8_t> data, const Tex2DParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status);
     void Init(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, const Tex2DParams &p,
               TextureAtlasArray *atlas, eTexLoadStatus *load_status);
 };

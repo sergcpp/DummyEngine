@@ -20,6 +20,9 @@ struct ApiContext {
     uint32_t queries[MaxFramesInFlight][MaxTimestampQueries] = {};
     uint32_t query_counts[MaxFramesInFlight] = {};
     uint64_t query_results[MaxFramesInFlight][MaxTimestampQueries] = {};
+
+    CommandBuffer BegSingleTimeCommands() { return nullptr; }
+    void EndSingleTimeCommands(CommandBuffer command_buf) {}
 };
 
 bool ReadbackTimestampQueries(ApiContext *api_ctx, int i);

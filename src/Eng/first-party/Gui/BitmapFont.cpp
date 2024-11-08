@@ -81,16 +81,19 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
             draw_mode_ = eDrawMode(draw_mode);
             blend_mode_ = eBlendMode(blend_mode);
 
-            Ren::StageBufRef sb = ctx.default_stage_bufs().GetNextBuffer();
-
-            uint8_t *stage_data = sb.buf->Map();
-
-            const int img_data_size = 4 * img_data_w * img_data_h;
-            if (!data.read((char *)stage_data, img_data_size)) {
-                return false;
+            const uint32_t img_data_size = 4u * img_data_w * img_data_h;
+            auto stage_buf = Ren::Buffer{"Temp Stage Buf", ctx.api_ctx(), Ren::eBufType::Upload, img_data_size};
+            { // Update staging buffer
+                uint8_t *stage_data = stage_buf.Map();
+                if (!data.read((char *)stage_data, img_data_size)) {
+                    stage_buf.Unmap();
+                    stage_buf.FreeImmediate();
+                    return false;
+                }
+                stage_buf.Unmap();
             }
 
-            sb.buf->Unmap();
+            Ren::CommandBuffer cmd_buf = ctx.BegTempSingleTimeCommands();
 
             Ren::Tex2DParams p;
             p.w = img_data_w;
@@ -101,7 +104,10 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
             p.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             Ren::eTexLoadStatus status;
-            tex_ = ctx.LoadTextureRegion(name, *sb.buf, 0, img_data_size, sb.cmd_buf, p, &status);
+            tex_ = ctx.LoadTextureRegion(name, stage_buf, 0, img_data_size, cmd_buf, p, &status);
+
+            ctx.EndTempSingleTimeCommands(cmd_buf);
+            stage_buf.FreeImmediate();
         } else if (chunk_id == uint32_t(eFontFileChunk::FontChGlyphData)) {
             if (!data.read((char *)&glyph_range_count_, sizeof(uint32_t))) {
                 return false;

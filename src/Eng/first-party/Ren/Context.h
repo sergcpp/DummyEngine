@@ -78,7 +78,6 @@ class Context {
 
     BufferRef default_vertex_buf1_, default_vertex_buf2_, default_skin_vertex_buf_, default_delta_buf_,
         default_indices_buf_;
-    StageBufs default_stage_bufs_;
     std::unique_ptr<MemoryAllocators> default_memory_allocs_;
 
 #if defined(USE_VK_RENDER)
@@ -126,7 +125,6 @@ class Context {
     BufferRef default_skin_vertex_buf() const { return default_skin_vertex_buf_; }
     BufferRef default_delta_buf() const { return default_delta_buf_; }
     BufferRef default_indices_buf() const { return default_indices_buf_; }
-    StageBufs &default_stage_bufs() { return default_stage_bufs_; }
     MemoryAllocators *default_mem_allocs() { return default_memory_allocs_.get(); }
     DescrMultiPoolAlloc *default_descr_alloc() const;
 
@@ -147,13 +145,13 @@ class Context {
     MeshRef LoadMesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices,
                      int ndx_count, eMeshLoadStatus *load_status);
     MeshRef LoadMesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices,
-                     int ndx_count, StageBufs &stage_bufs, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
-                     BufferRef &index_buf, eMeshLoadStatus *load_status);
+                     int ndx_count, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
+                     eMeshLoadStatus *load_status);
     MeshRef LoadMesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load,
                      eMeshLoadStatus *load_status);
     MeshRef LoadMesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load,
-                     StageBufs &stage_bufs, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
-                     BufferRef &skin_vertex_buf, BufferRef &delta_buf, eMeshLoadStatus *load_status);
+                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+                     BufferRef &delta_buf, eMeshLoadStatus *load_status);
 
     /*** Material ***/
     MaterialRef LoadMaterial(std::string_view name, std::string_view mat_src, eMatLoadStatus *status,
@@ -197,10 +195,10 @@ class Context {
                            eTexLoadStatus *load_status);
     Tex2DRef LoadTexture2D(std::string_view name, const TexHandle &handle, const Tex2DParams &p, MemAllocation &&alloc,
                            eTexLoadStatus *load_status);
-    Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p, StageBufs &stage_bufs,
+    Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
                            MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
     Tex2DRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
-                             StageBufs &stage_bufs, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
+                             MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
 
     void VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback);
     int NumTexturesNotReady();
@@ -211,8 +209,8 @@ class Context {
     void Release1DTextures();
 
     /** Texture regions (placed on default atlas) **/
-    TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, StageBufs &stage_bufs,
-                                       const Tex2DParams &p, eTexLoadStatus *load_status);
+    TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
+                                       eTexLoadStatus *load_status);
     TextureRegionRef LoadTextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
                                        CommandBuffer cmd_buf, const Tex2DParams &p, eTexLoadStatus *load_status);
 

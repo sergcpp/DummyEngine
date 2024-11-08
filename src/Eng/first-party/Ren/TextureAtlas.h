@@ -37,6 +37,7 @@ class TextureAtlas {
 #elif defined(USE_GL_RENDER)
     uint32_t tex_id(const int i) const { return tex_ids_[i]; }
 #endif
+    ApiContext *api_ctx() { return api_ctx_; }
 
     int AllocateRegion(const int res[2], int out_pos[2]);
     void InitRegion(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format, eTexFlags flags,

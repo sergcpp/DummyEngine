@@ -35,6 +35,7 @@ class Texture2DArray {
 #elif defined(USE_GL_RENDER)
     uint32_t id() const { return tex_id_; }
 #endif
+    ApiContext *api_ctx() { return api_ctx_; }
 
     void SetSubImage(int level, int layer, int offsetx, int offsety, int sizex, int sizey, eTexFormat format,
                      const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf);

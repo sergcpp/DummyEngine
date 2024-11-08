@@ -22,7 +22,7 @@ void test_material() {
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
             eTexLoadStatus status;
             Tex2DParams p;
-            return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), test.default_mem_allocs(), &status);
+            return test.LoadTexture2D(name, {}, p, test.default_mem_allocs(), &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {

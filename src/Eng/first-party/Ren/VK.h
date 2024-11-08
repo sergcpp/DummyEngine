@@ -1,7 +1,7 @@
 #pragma once
 
 #define VK_NO_PROTOTYPES
-#define VK_ENABLE_BETA_EXTENSIONS
+#define VK_ENABLE_BETA_EXTENSIONS // needed for VK_KHR_portability_subset on mac
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -9,7 +9,6 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <vulkan/vulkan.h>
-
 #undef far
 #undef near
 #undef Convex
@@ -18,6 +17,3 @@
 #undef Success
 #undef True
 #undef GetObject
-
-#define VK_API_VERSION_MAJOR(version) (((uint32_t)(version) >> 22) & 0x7FU)
-#define VK_API_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3FFU)

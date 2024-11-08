@@ -21,7 +21,7 @@ Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos
     uvs_px_[1] = Vec2f{0};
 
     Ren::eTexLoadStatus status;
-    tex_ = ctx.LoadTextureRegion(tex_name, {}, ctx.default_stage_bufs(), {}, &status);
+    tex_ = ctx.LoadTextureRegion(tex_name, {}, {}, &status);
     if (status == Ren::eTexLoadStatus::CreatedDefault) {
         std::ifstream in_file(tex_name.data(), std::ios::binary | std::ios::ate);
         const size_t in_file_size = size_t(in_file.tellg());
@@ -29,7 +29,7 @@ Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos
         std::vector<uint8_t> data(in_file_size);
         in_file.read((char *)data.data(), std::streamsize(in_file_size));
 
-        tex_ = ctx.LoadTextureRegion(tex_name, data, ctx.default_stage_bufs(), {}, &status);
+        tex_ = ctx.LoadTextureRegion(tex_name, data, {}, &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
         const Ren::Tex2DParams &p = tex_->params();

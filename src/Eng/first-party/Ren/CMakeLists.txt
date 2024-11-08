@@ -38,10 +38,11 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
     set(LIBS GLESv2 GLESv3 EGL)
 endif()
 
-set(SOURCE_FILES Anim.h
-                 Anim.cpp
-                 AccStructure.h
+set(SOURCE_FILES AccStructure.h
                  AccStructure.cpp
+                 Anim.h
+                 Anim.cpp
+                 ApiContext.h
                  Bitmask.h
                  Buffer.h
                  Buffer.cpp

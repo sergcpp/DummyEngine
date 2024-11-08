@@ -102,26 +102,23 @@ class Mesh : public RefCounter {
     Skeleton skel_;
 
     // simple static mesh with normals
-    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                        CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-                        ILog *log);
+    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
+                        BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log);
     // simple mesh with 4 per-vertex colors
-    void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                         CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-                         ILog *log);
+    void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
+                         BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log);
     // mesh with 4 bone weights per vertex
-    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                          CommandBuffer cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf,
-                          ILog *log);
+    void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
+                          BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf, ILog *log);
 
   public:
     Mesh() = default;
     Mesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
-         Buffer &stage_buf, CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+         ApiContext *api_ctx, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
          eMeshLoadStatus *load_status, ILog *log);
-    Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-         CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-         BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
+    Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
+         BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
+         BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
 
     Mesh(const Mesh &rhs) = delete;
     Mesh(Mesh &&rhs) = default;
@@ -151,12 +148,12 @@ class Mesh : public RefCounter {
     const Skeleton *skel() const { return &skel_; }
     Skeleton *skel() { return &skel_; }
 
-    void Init(const float *positions, int vtx_count, const uint32_t *indices, int ndx_count, Buffer &stage_buf,
-              CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+    void Init(const float *positions, int vtx_count, const uint32_t *indices, int ndx_count, ApiContext *api_ctx,
+              BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, eMeshLoadStatus *load_status,
+              ILog *log);
+    void Init(std::istream *data, const material_load_callback &on_mat_load, ApiContext *api_ctx, BufferRef vertex_buf1,
+              BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf, BufferRef delta_buf,
               eMeshLoadStatus *load_status, ILog *log);
-    void Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf, CommandBuffer cmd_buf,
-              BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
-              BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
 
     std::unique_ptr<IAccStructure> blas;
 };

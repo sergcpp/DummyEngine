@@ -97,7 +97,7 @@ void test_mesh() {
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
             eTexLoadStatus status;
             Tex2DParams p;
-            return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), nullptr, &status);
+            return test.LoadTexture2D(name, {}, p, nullptr, &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {
@@ -166,7 +166,7 @@ void test_mesh() {
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
             eTexLoadStatus status;
             Tex2DParams p;
-            return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), nullptr, &status);
+            return test.LoadTexture2D(name, {}, p, nullptr, &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {

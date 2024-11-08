@@ -21,8 +21,7 @@ void test_texture() {
         Tex2DParams p;
         p.usage = eTexUsage::Sampled | eTexUsage::Transfer;
 
-        Tex2DRef t_ref =
-            test.LoadTexture2D("checker.tga", {}, p, test.default_stage_bufs(), test.default_mem_allocs(), &status);
+        Tex2DRef t_ref = test.LoadTexture2D("checker.tga", {}, p, test.default_mem_allocs(), &status);
         require(status == eTexLoadStatus::CreatedDefault);
 
         require(t_ref->name() == "checker.tga");
@@ -33,15 +32,13 @@ void test_texture() {
         require(!t_ref->ready());
 
         {
-            Tex2DRef t_ref2 =
-                test.LoadTexture2D("checker.tga", {}, p, test.default_stage_bufs(), test.default_mem_allocs(), &status);
+            Tex2DRef t_ref2 = test.LoadTexture2D("checker.tga", {}, p, test.default_mem_allocs(), &status);
             require(status == eTexLoadStatus::Found);
             require(!t_ref2->ready());
         }
 
         {
-            Tex2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, p, test.default_stage_bufs(),
-                                                      test.default_mem_allocs(), &status);
+            Tex2DRef t_ref3 = test.LoadTexture2D("checker.tga", test_tga_img, p, test.default_mem_allocs(), &status);
             require(status == eTexLoadStatus::CreatedFromData);
             const Tex2DParams &tp = t_ref3->params;
             require(tp.w == 2);

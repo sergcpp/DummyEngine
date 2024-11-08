@@ -683,8 +683,7 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_moon_tex_ = ctx_.LoadTexture2D(moon_tex.name(), data, p, ctx_.default_stage_bufs(),
-                                                   ctx_.default_mem_allocs(), &status);
+                sky_moon_tex_ = ctx_.LoadTexture2D(moon_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init Weather texture
@@ -698,8 +697,7 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_weather_tex_ = ctx_.LoadTexture2D(weather_tex.name(), data, p, ctx_.default_stage_bufs(),
-                                                      ctx_.default_mem_allocs(), &status);
+                sky_weather_tex_ = ctx_.LoadTexture2D(weather_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init Cirrus texture
@@ -713,8 +711,7 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_cirrus_tex_ = ctx_.LoadTexture2D(cirrus_tex.name(), data, p, ctx_.default_stage_bufs(),
-                                                     ctx_.default_mem_allocs(), &status);
+                sky_cirrus_tex_ = ctx_.LoadTexture2D(cirrus_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init Curl texture
@@ -729,8 +726,7 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_curl_tex_ = ctx_.LoadTexture2D(curl_tex.name(), data, p, ctx_.default_stage_bufs(),
-                                                   ctx_.default_mem_allocs(), &status);
+                sky_curl_tex_ = ctx_.LoadTexture2D(curl_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init 3d noise texture

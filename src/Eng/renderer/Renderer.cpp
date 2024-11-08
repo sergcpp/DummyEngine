@@ -113,12 +113,10 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        dummy_black_ =
-            ctx_.LoadTexture2D("dummy_black", black, p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        dummy_black_ = ctx_.LoadTexture2D("dummy_black", black, p, ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
-        dummy_white_ =
-            ctx_.LoadTexture2D("dummy_white", white, p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        dummy_white_ = ctx_.LoadTexture2D("dummy_white", white, p, ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -130,7 +128,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::eTexLoadStatus status;
         rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", {(const uint8_t *)&PMJSamples64[0][0], sizeof(PMJSamples64)}, p,
-                                         ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                                         ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -143,7 +141,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::eTexLoadStatus status;
         rand2d_dirs_4x4_ =
             ctx_.LoadTexture2D("rand2d_dirs_4x4", {(const uint8_t *)&__rand_dirs[0], sizeof(__rand_dirs)}, p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                               ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -172,7 +170,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::eTexLoadStatus status;
         cone_rt_lut_ = ctx_.LoadTexture2D("cone_rt_lut", {&__cone_rt_lut[0], 4 * __cone_rt_lut_res * __cone_rt_lut_res},
-                                          p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                                          p, ctx_.default_mem_allocs(), &status);
 
         // cone_rt_lut_ =
         //    ctx_.LoadTexture2D("cone_rt_lut", &occ_data[0], 4 * resx * resy, p,
@@ -193,7 +191,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::eTexLoadStatus status;
         brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", {(const uint8_t *)&__brdf_lut[0], sizeof(__brdf_lut)}, p,
-                                       ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                                       ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -230,7 +228,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::eTexLoadStatus status;
         ltc_luts_ =
             ctx_.LoadTexture2D("LTC LUTs", {(const uint8_t *)combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float)}, p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                               ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -249,7 +247,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::eTexLoadStatus status;
         noise_tex_ = ctx_.LoadTexture2D("noise", {(const uint8_t *)&__noise[0], __noise_res * __noise_res * 4}, p,
-                                        ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                                        ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -1292,7 +1290,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef color_tex;
             const char *output_tex = nullptr;
 
-            if ((list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe) || apply_dof) {
+            if ((list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe) ||
+                apply_dof) {
                 if (apply_dof) {
                     if (list.render_settings.taa_mode != eTAAMode::Off) {
                         color_tex = frame_textures.color;

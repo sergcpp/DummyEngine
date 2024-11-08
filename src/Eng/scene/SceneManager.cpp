@@ -38,8 +38,8 @@ extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
 const float DefaultSunShadowBias[2] = {4.0f, 8.0f};
 
-//const int PROBE_RES = 512;
-//const int PROBE_COUNT = 1;
+// const int PROBE_RES = 512;
+// const int PROBE_COUNT = 1;
 
 __itt_string_handle *itt_load_scene_str = __itt_string_handle_create("SceneManager::LoadScene");
 __itt_string_handle *itt_serve_str = __itt_string_handle_create("SceneManager::Serve");
@@ -225,8 +225,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         static const uint8_t data[4] = {255, 255, 255, 255};
 
         Ren::eTexLoadStatus status;
-        white_tex_ = ren_ctx_.LoadTexture2D("White Tex", data, p, ren_ctx_.default_stage_bufs(),
-                                            ren_ctx_.default_mem_allocs(), &status);
+        white_tex_ = ren_ctx_.LoadTexture2D("White Tex", data, p, ren_ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -246,8 +245,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
             p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
 
             Ren::eTexLoadStatus status;
-            error_tex_ = ren_ctx_.LoadTexture2D(name_buf, in_file_data, p, ren_ctx_.default_stage_bufs(),
-                                                ren_ctx_.default_mem_allocs(), &status);
+            error_tex_ = ren_ctx_.LoadTexture2D(name_buf, in_file_data, p, ren_ctx_.default_mem_allocs(), &status);
             assert(status == Ren::eTexLoadStatus::CreatedFromData);
         } else {
             log->Error("SceneManager: Failed to load error.dds!");
@@ -288,9 +286,11 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     Ren::ILog *log = ren_ctx_.log();
 
     log->Info("SceneManager: Loading scene!");
-    if (!scene_data_.objects.empty()) {
+    {
         StopTextureLoaderThread();
         ClearScene();
+        // Temp. solution (prevent reallocation)
+        scene_data_.textures.reserve(16384);
         StartTextureLoaderThread();
     }
 
@@ -444,7 +444,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             scene_data_.env.env_map_name = Ren::String{js_env_map.val.c_str()};
             if (scene_data_.env.env_map_name == "physical_sky") {
-                std::vector<uint8_t> black_cube(4 * 512 * 512, 0);
+                std::vector<uint8_t> black_cube(8 * 1023 * 1023, 0); // 1023 because of mips
                 Ren::Span<const uint8_t> _black_cube[6];
                 for (int i = 0; i < 6; ++i) {
                     _black_cube[i] = black_cube;
@@ -461,8 +461,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
                 Ren::eTexLoadStatus status;
                 scene_data_.env.env_map =
-                    ren_ctx_.LoadTextureCube("Sky Envmap", _black_cube, p, ren_ctx_.default_stage_bufs(),
-                                             ren_ctx_.default_mem_allocs(), &status);
+                    ren_ctx_.LoadTextureCube("Sky Envmap", _black_cube, p, ren_ctx_.default_mem_allocs(), &status);
             } else if (!scene_data_.env.env_map_name.empty()) {
                 Sys::AssetFile in_file(std::string(paths_.textures_path) + scene_data_.env.env_map_name.c_str());
                 [[maybe_unused]] const size_t in_file_size = in_file.size();
@@ -497,8 +496,8 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 Ren::eTexLoadStatus load_status;
-                scene_data_.env.env_map = ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_stage_bufs(),
-                                                                   ren_ctx_.default_mem_allocs(), &load_status);
+                scene_data_.env.env_map =
+                    ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_mem_allocs(), &load_status);
             } else {
                 static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128},
                                                          {255, 255, 255, 128}, {255, 255, 255, 128},
@@ -516,9 +515,8 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 Ren::eTexLoadStatus status;
-                scene_data_.env.env_map =
-                    ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p, ren_ctx_.default_stage_bufs(),
-                                             ren_ctx_.default_mem_allocs(), &status);
+                scene_data_.env.env_map = ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p,
+                                                                   ren_ctx_.default_mem_allocs(), &status);
             }
         } else {
             static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128},
@@ -537,8 +535,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             Ren::eTexLoadStatus status;
             scene_data_.env.env_map =
-                ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p, ren_ctx_.default_stage_bufs(),
-                                         ren_ctx_.default_mem_allocs(), &status);
+                ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p, ren_ctx_.default_mem_allocs(), &status);
         }
         if (js_env.Has("env_map_rot")) {
             const JsNumber &js_env_map_rot = js_env.at("env_map_rot").as_num();
@@ -1354,8 +1351,7 @@ Ren::MeshRef Eng::SceneManager::LoadMesh(std::string_view name, std::istream *da
                                          Ren::eMeshLoadStatus *load_status) {
     Ren::MeshRef ref = scene_data_.meshes.FindByName(name);
     if (!ref) {
-        Ren::StageBufRef sb = ren_ctx_.default_stage_bufs().GetNextBuffer();
-        ref = scene_data_.meshes.Add(name, data, on_mat_load, *sb.buf, sb.cmd_buf, ren_ctx_.default_vertex_buf1(),
+        ref = scene_data_.meshes.Add(name, data, on_mat_load, ren_ctx_.api_ctx(), ren_ctx_.default_vertex_buf1(),
                                      ren_ctx_.default_vertex_buf2(), ren_ctx_.default_indices_buf(),
                                      ren_ctx_.default_skin_vertex_buf(), ren_ctx_.default_delta_buf(), load_status,
                                      ren_ctx_.log());
@@ -1365,8 +1361,7 @@ Ren::MeshRef Eng::SceneManager::LoadMesh(std::string_view name, std::istream *da
                 (*load_status) = Ren::eMeshLoadStatus::Found;
             }
         } else if (data) {
-            Ren::StageBufRef sb = ren_ctx_.default_stage_bufs().GetNextBuffer();
-            ref->Init(data, on_mat_load, *sb.buf, sb.cmd_buf, ren_ctx_.default_vertex_buf1(),
+            ref->Init(data, on_mat_load, ren_ctx_.api_ctx(), ren_ctx_.default_vertex_buf1(),
                       ren_ctx_.default_vertex_buf2(), ren_ctx_.default_indices_buf(),
                       ren_ctx_.default_skin_vertex_buf(), ren_ctx_.default_delta_buf(), load_status, ren_ctx_.log());
         }
@@ -1400,16 +1395,14 @@ Ren::Tex2DRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<co
                                              const Ren::Tex2DParams &p, Ren::eTexLoadStatus *load_status) {
     Ren::Tex2DRef ref = scene_data_.textures.FindByName(name);
     if (!ref) {
-        Ren::StageBufRef sb = ren_ctx_.default_stage_bufs().GetNextBuffer();
-        ref = scene_data_.textures.Add(name, ren_ctx_.api_ctx(), data, p, *sb.buf, sb.cmd_buf,
-                                       ren_ctx_.default_mem_allocs(), load_status, ren_ctx_.log());
+        ref = scene_data_.textures.Add(name, ren_ctx_.api_ctx(), data, p, ren_ctx_.default_mem_allocs(), load_status,
+                                       ren_ctx_.log());
     } else {
         if (load_status) {
             (*load_status) = Ren::eTexLoadStatus::Found;
         }
         if (!ref->ready() && !data.empty()) {
-            Ren::StageBufRef sb = ren_ctx_.default_stage_bufs().GetNextBuffer();
-            ref->Init(data, p, *sb.buf, sb.cmd_buf, ren_ctx_.default_mem_allocs(), load_status, ren_ctx_.log());
+            ref->Init(data, p, ren_ctx_.default_mem_allocs(), load_status, ren_ctx_.log());
         }
     }
 
@@ -1441,22 +1434,15 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
     const uint8_t *p_data = in_file_data.get() + sizeof(Ren::DDSHeader);
     int data_len = int(in_file_size) - int(sizeof(Ren::DDSHeader));
 
-    Ren::StageBufRef stage_buf = ren_ctx_.default_stage_bufs().GetNextBuffer();
-    if (stage_buf.buf->size() < uint32_t(data_len)) {
-        ren_ctx_.log()->Error("Texture is larger than stage buffer!");
-        return Ren::Vec4f{};
-    }
-
+    auto stage_buf = Ren::Buffer{"Temp Stage Buf", ren_ctx_.api_ctx(), Ren::eBufType::Upload, uint32_t(data_len)};
     { // Initialize stage buffer
-        uint8_t *stage_data = stage_buf.buf->Map();
+        uint8_t *stage_data = stage_buf.Map();
         if (!stage_data) {
             ren_ctx_.log()->Error("Failed to map buffer!");
             return Ren::Vec4f{};
         }
-
         memcpy(stage_data, p_data, data_len);
-
-        stage_buf.buf->Unmap();
+        stage_buf.Unmap();
     }
 
     int pos[2];
@@ -1470,6 +1456,8 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
     int _res[2] = {res[0], res[1]};
     int level = 0;
 
+    Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
+
     int data_off = 0;
     while (_res[0] >= 16 && _res[1] >= 16) {
         const int len = ((_res[0] + 3) / 4) * ((_res[1] + 3) / 4) * 16;
@@ -1479,8 +1467,8 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
             break;
         }
 
-        scene_data_.decals_atlas.InitRegion(*stage_buf.buf, data_off, len, stage_buf.cmd_buf,
-                                            Ren::DefaultCompressedRGBA, {}, 0, level, _pos, _res, ren_ctx_.log());
+        scene_data_.decals_atlas.InitRegion(stage_buf, data_off, len, cmd_buf, Ren::DefaultCompressedRGBA, {}, 0, level,
+                                            _pos, _res, ren_ctx_.log());
 
         data_off += len;
         data_len -= len;
@@ -1491,6 +1479,9 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
         _res[1] = _res[1] / 2;
         level++;
     }
+
+    ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+    stage_buf.FreeImmediate();
 #else
     Ren::KTXHeader header;
     memcpy(&header, in_file_data.get(), sizeof(Ren::KTXHeader));

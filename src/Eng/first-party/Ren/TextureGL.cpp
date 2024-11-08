@@ -219,16 +219,15 @@ Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
-                          Buffer &stage_buf, void *, MemoryAllocators *, eTexLoadStatus *load_status, ILog *log)
+                          MemoryAllocators *, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
-    Init(data, p, stage_buf, nullptr, nullptr, load_status, log);
+    Init(data, p, nullptr, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
-                          Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
-                          eTexLoadStatus *load_status, ILog *log)
+                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
-    Init(data, p, stage_buf, nullptr, nullptr, load_status, log);
+    Init(data, p, nullptr, load_status, log);
 }
 
 Ren::Texture2D::~Texture2D() { Free(); }
@@ -266,12 +265,15 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
     ready_ = true;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &sbuf, CommandBuffer cmd_buf,
-                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
+void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+                          eTexLoadStatus *load_status, ILog *log) {
     if (data.empty()) {
-        uint8_t *stage_data = sbuf.Map();
-        memcpy(stage_data, p.fallback_color, 4);
-        sbuf.Unmap();
+        auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, 4};
+        { // Update staging buffer
+            uint8_t *stage_data = sbuf.Map();
+            memcpy(stage_data, p.fallback_color, 4);
+            sbuf.Unmap();
+        }
 
         Tex2DParams _p = p;
         _p.w = _p.h = 1;
@@ -283,16 +285,18 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer
         (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
         if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-            InitFromTGAFile(data, sbuf, p, log);
+            InitFromTGAFile(data, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, sbuf, p, log);
+            InitFromDDSFile(data, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-            InitFromKTXFile(data, sbuf, p, log);
+            InitFromKTXFile(data, p, log);
         } else {
-            uint8_t *stage_data = sbuf.Map();
-            memcpy(stage_data, data.data(), data.size());
-            sbuf.Unmap();
-
+            auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(data.size())};
+            { // Update staging buffer
+                uint8_t *stage_data = sbuf.Map();
+                memcpy(stage_data, data.data(), data.size());
+                sbuf.Unmap();
+            }
             InitFromRAWData(&sbuf, 0, p, log);
         }
         ready_ = true;
@@ -300,12 +304,15 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer
     }
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &sbuf, CommandBuffer cmd_buf,
-                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
+void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemoryAllocators *mem_allocs,
+                          eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
-        uint8_t *stage_data = sbuf.Map();
-        memcpy(stage_data, p.fallback_color, 4);
-        sbuf.Unmap();
+        auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, 4};
+        { // Update staging buffer
+            uint8_t *stage_data = sbuf.Map();
+            memcpy(stage_data, p.fallback_color, 4);
+            sbuf.Unmap();
+        }
 
         int data_off[6] = {};
 
@@ -318,28 +325,31 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buf
         (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
         if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-            InitFromTGAFile(data, sbuf, p, log);
+            InitFromTGAFile(data, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-            InitFromKTXFile(data, sbuf, p, log);
+            InitFromKTXFile(data, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, sbuf, p, log);
+            InitFromDDSFile(data, p, log);
         } else {
-            uint8_t *stage_data = sbuf.Map();
-            uint32_t stage_off = 0;
-
+            auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload,
+                               uint32_t(data[0].size() + data[1].size() + data[2].size() + data[3].size() +
+                                        data[4].size() + data[5].size())};
             int data_off[6];
-            for (int i = 0; i < 6; i++) {
-                if (!data[i].empty()) {
-                    memcpy(&stage_data[stage_off], data[i].data(), data[i].size());
-                    data_off[i] = int(stage_off);
-                    stage_off += uint32_t(data[i].size());
-                } else {
-                    data_off[i] = -1;
+            { // Update staging buffer
+                uint8_t *stage_data = sbuf.Map();
+                uint32_t stage_off = 0;
+
+                for (int i = 0; i < 6; i++) {
+                    if (!data[i].empty()) {
+                        memcpy(&stage_data[stage_off], data[i].data(), data[i].size());
+                        data_off[i] = int(stage_off);
+                        stage_off += uint32_t(data[i].size());
+                    } else {
+                        data_off[i] = -1;
+                    }
                 }
+                sbuf.Unmap();
             }
-
-            sbuf.Unmap();
-
             InitFromRAWData(sbuf, data_off, p, log);
         }
 
@@ -514,17 +524,22 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     CheckError("create texture", log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
     uint32_t img_size = 0;
     const bool res1 = ReadTGAFile(data, w, h, format, nullptr, img_size);
-    assert(res1 && img_size <= sbuf.size());
+    if (!res1) {
+        return;
+    }
 
-    uint8_t *stage_data = sbuf.Map();
-    const bool res2 = ReadTGAFile(data, w, h, format, stage_data, img_size);
-    assert(res2);
-    sbuf.Unmap();
+    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, img_size};
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        const bool res2 = ReadTGAFile(data, w, h, format, stage_data, img_size);
+        assert(res2);
+        sbuf.Unmap();
+    }
 
     Tex2DParams _p = p;
     _p.w = w;
@@ -534,7 +549,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, Buffer &sbuf, con
     InitFromRAWData(&sbuf, 0, _p, log);
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log) {
     Free();
 
     int bytes_left = int(data.size());
@@ -600,10 +615,12 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, con
                internal_format = (GLenum)GLInternalFormatFromTexFormat(_p.format, bool(_p.flags & eTexFlagBits::SRGB)),
                type = (GLenum)GLTypeFromTexFormat(_p.format);
 
-    assert(bytes_left <= int(sbuf.size()));
-    uint8_t *stage_data = sbuf.Map();
-    memcpy(stage_data, p_data, bytes_left);
-    sbuf.Unmap();
+    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(bytes_left)};
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        memcpy(stage_data, p_data, bytes_left);
+        sbuf.Unmap();
+    }
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
@@ -636,7 +653,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, con
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log) {
     KTXHeader header;
     memcpy(&header, data.data(), sizeof(KTXHeader));
 
@@ -664,10 +681,12 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, con
 
     int data_offset = sizeof(KTXHeader);
 
-    assert(uint32_t(data.size() - data_offset) <= sbuf.size());
-    uint8_t *stage_data = sbuf.Map();
-    memcpy(stage_data, data.data(), data.size());
-    sbuf.Unmap();
+    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(data.size() - data_offset)};
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        memcpy(stage_data, data.data(), data.size() - data_offset);
+        sbuf.Unmap();
+    }
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
@@ -770,31 +789,36 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], const Tex2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
 
-    uint8_t *stage_data = sbuf.Map();
-    uint32_t stage_off = 0;
-
+    auto sbuf = Buffer{
+        "Temp Stage Buf", nullptr, eBufType::Upload,
+        uint32_t(data[0].size() + data[1].size() + data[2].size() + data[3].size() + data[4].size() + data[5].size())};
     int data_off[6] = {-1, -1, -1, -1, -1, -1};
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        uint32_t stage_off = 0;
 
-    for (int i = 0; i < 6; i++) {
-        if (!data[i].empty()) {
-            uint32_t data_size;
-            const bool res1 = ReadTGAFile(data[i], w, h, format, nullptr, data_size);
-            assert(res1);
+        int data_off[6] = {-1, -1, -1, -1, -1, -1};
 
-            assert(stage_off + data_size < sbuf.size());
-            const bool res2 = ReadTGAFile(data[i], w, h, format, &stage_data[stage_off], data_size);
-            assert(res2);
+        for (int i = 0; i < 6; i++) {
+            if (!data[i].empty()) {
+                uint32_t data_size;
+                const bool res1 = ReadTGAFile(data[i], w, h, format, nullptr, data_size);
+                assert(res1);
 
-            data_off[i] = int(stage_off);
-            stage_off += data_size;
+                assert(stage_off + data_size < sbuf.size());
+                const bool res2 = ReadTGAFile(data[i], w, h, format, &stage_data[stage_off], data_size);
+                assert(res2);
+
+                data_off[i] = int(stage_off);
+                stage_off += data_size;
+            }
         }
+        sbuf.Unmap();
     }
-
-    sbuf.Unmap();
 
     Tex2DParams _p = p;
     _p.w = w;
@@ -804,11 +828,10 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, 
     InitFromRAWData(sbuf, data_off, _p, log);
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const Tex2DParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
-    uint8_t *stage_data = sbuf.Map();
     uint32_t data_off[6] = {};
     uint32_t stage_len = 0;
 
@@ -847,13 +870,18 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, 
             assert(block == first_block);
         }
 
-        memcpy(stage_data + stage_len, data[i].data(), data[i].size());
-
         data_off[i] = stage_len;
         stage_len += uint32_t(data[i].size());
     }
 
-    sbuf.Unmap();
+    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, stage_len};
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        for (int i = 0; i < 6; ++i) {
+            memcpy(stage_data + data_off[i], data[i].data(), data[i].size());
+        }
+        sbuf.Unmap();
+    }
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &tex_id);
@@ -897,12 +925,11 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, 
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const Tex2DParams &p, ILog *log) {
     Free();
 
     const auto *first_header = reinterpret_cast<const KTXHeader *>(data[0].data());
 
-    uint8_t *stage_data = sbuf.Map();
     uint32_t data_off[6] = {};
     uint32_t stage_len = 0;
 
@@ -926,13 +953,18 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], Buffer &sbuf, 
             continue;
         }
 
-        memcpy(stage_data + stage_len, data[i].data(), data[i].size());
-
         data_off[i] = stage_len;
         stage_len += uint32_t(data[i].size());
     }
 
-    sbuf.Unmap();
+    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, stage_len};
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        for (int i = 0; i < 6; ++i) {
+            memcpy(stage_data + data_off[i], data[i].data(), data[i].size());
+        }
+        sbuf.Unmap();
+    }
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &tex_id);

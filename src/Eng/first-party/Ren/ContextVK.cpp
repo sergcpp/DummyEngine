@@ -76,12 +76,6 @@ Ren::Context::~Context() {
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, MaxFramesInFlight,
                                        &api_ctx_->draw_cmd_buf[0]);
 
-        for (int i = 0; i < StageBufferCount; ++i) {
-            default_stage_bufs_.fences[i].ClientWaitSync();
-            default_stage_bufs_.fences[i] = {};
-            default_stage_bufs_.bufs[i] = {};
-        }
-
         api_ctx_->vkDestroyCommandPool(api_ctx_->device, api_ctx_->command_pool, nullptr);
         api_ctx_->vkDestroyCommandPool(api_ctx_->device, api_ctx_->temp_command_pool, nullptr);
 
@@ -292,9 +286,6 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     // SWRT is temporarily works with bindless textures only
     capabilities.swrt = (api_ctx_->max_combined_image_samplers >= 16384u);
-
-    // Temp. solution (prevent reallocation)
-    textures_2D_.reserve(4096);
 
     return true;
 }
