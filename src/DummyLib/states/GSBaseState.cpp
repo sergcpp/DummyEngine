@@ -34,6 +34,10 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
+#if defined(USE_VK_RENDER)
+#include <Ren/VKCtx.h>
+#endif
+
 #include "../Viewer.h"
 #include "../widgets/FontStorage.h"
 
@@ -1145,6 +1149,98 @@ void GSBaseState::InitRenderer_PT() {
         }
         s.use_hwrt = !viewer_->app_params.pt_nohwrt;
         s.validation_level = viewer_->app_params.validation_level;
+#if defined(USE_VK_RENDER)
+        Ren::ApiContext *api_ctx = ren_ctx_->api_ctx();
+        s.vk_device.instance = api_ctx->instance;
+        s.vk_device.physical_device = api_ctx->physical_device;
+        s.vk_device.device = api_ctx->device;
+        s.vk_functions.vkGetInstanceProcAddr = api_ctx->vkGetInstanceProcAddr;
+        s.vk_functions.vkGetDeviceProcAddr = api_ctx->vkGetDeviceProcAddr;
+        s.vk_functions.vkGetPhysicalDeviceProperties = api_ctx->vkGetPhysicalDeviceProperties;
+        s.vk_functions.vkGetPhysicalDeviceMemoryProperties = api_ctx->vkGetPhysicalDeviceMemoryProperties;
+        s.vk_functions.vkGetPhysicalDeviceFormatProperties =
+            (Ray::PFN_vkGetPhysicalDeviceFormatProperties)api_ctx->vkGetPhysicalDeviceFormatProperties;
+        s.vk_functions.vkGetPhysicalDeviceImageFormatProperties =
+            (Ray::PFN_vkGetPhysicalDeviceImageFormatProperties)api_ctx->vkGetPhysicalDeviceImageFormatProperties;
+        s.vk_functions.vkGetPhysicalDeviceFeatures = api_ctx->vkGetPhysicalDeviceFeatures;
+        s.vk_functions.vkGetPhysicalDeviceQueueFamilyProperties = api_ctx->vkGetPhysicalDeviceQueueFamilyProperties;
+        s.vk_functions.vkEnumerateDeviceExtensionProperties =
+            (Ray::PFN_vkEnumerateDeviceExtensionProperties)api_ctx->vkEnumerateDeviceExtensionProperties;
+        s.vk_functions.vkGetDeviceQueue = api_ctx->vkGetDeviceQueue;
+        s.vk_functions.vkCreateCommandPool = (Ray::PFN_vkCreateCommandPool)api_ctx->vkCreateCommandPool;
+        s.vk_functions.vkDestroyCommandPool = api_ctx->vkDestroyCommandPool;
+        s.vk_functions.vkAllocateCommandBuffers = (Ray::PFN_vkAllocateCommandBuffers)api_ctx->vkAllocateCommandBuffers;
+        s.vk_functions.vkFreeCommandBuffers = api_ctx->vkFreeCommandBuffers;
+        s.vk_functions.vkCreateFence = (Ray::PFN_vkCreateFence)api_ctx->vkCreateFence;
+        s.vk_functions.vkResetFences = (Ray::PFN_vkResetFences)api_ctx->vkResetFences;
+        s.vk_functions.vkDestroyFence = api_ctx->vkDestroyFence;
+        s.vk_functions.vkGetFenceStatus = (Ray::PFN_vkGetFenceStatus)api_ctx->vkGetFenceStatus;
+        s.vk_functions.vkWaitForFences = (Ray::PFN_vkWaitForFences)api_ctx->vkWaitForFences;
+        s.vk_functions.vkCreateSemaphore = (Ray::PFN_vkCreateSemaphore)api_ctx->vkCreateSemaphore;
+        s.vk_functions.vkDestroySemaphore = api_ctx->vkDestroySemaphore;
+        s.vk_functions.vkCreateQueryPool = (Ray::PFN_vkCreateQueryPool)api_ctx->vkCreateQueryPool;
+        s.vk_functions.vkDestroyQueryPool = api_ctx->vkDestroyQueryPool;
+        s.vk_functions.vkGetQueryPoolResults = (Ray::PFN_vkGetQueryPoolResults)api_ctx->vkGetQueryPoolResults;
+        s.vk_functions.vkCreateShaderModule = (Ray::PFN_vkCreateShaderModule)api_ctx->vkCreateShaderModule;
+        s.vk_functions.vkDestroyShaderModule = api_ctx->vkDestroyShaderModule;
+        s.vk_functions.vkCreateDescriptorSetLayout =
+            (Ray::PFN_vkCreateDescriptorSetLayout)api_ctx->vkCreateDescriptorSetLayout;
+        s.vk_functions.vkDestroyDescriptorSetLayout = api_ctx->vkDestroyDescriptorSetLayout;
+        s.vk_functions.vkCreatePipelineLayout = (Ray::PFN_vkCreatePipelineLayout)api_ctx->vkCreatePipelineLayout;
+        s.vk_functions.vkDestroyPipelineLayout = api_ctx->vkDestroyPipelineLayout;
+        s.vk_functions.vkCreateGraphicsPipelines =
+            (Ray::PFN_vkCreateGraphicsPipelines)api_ctx->vkCreateGraphicsPipelines;
+        s.vk_functions.vkCreateComputePipelines = (Ray::PFN_vkCreateComputePipelines)api_ctx->vkCreateComputePipelines;
+        s.vk_functions.vkDestroyPipeline = api_ctx->vkDestroyPipeline;
+        s.vk_functions.vkAllocateMemory = (Ray::PFN_vkAllocateMemory)api_ctx->vkAllocateMemory;
+        s.vk_functions.vkFreeMemory = api_ctx->vkFreeMemory;
+        s.vk_functions.vkCreateBuffer = (Ray::PFN_vkCreateBuffer)api_ctx->vkCreateBuffer;
+        s.vk_functions.vkDestroyBuffer = api_ctx->vkDestroyBuffer;
+        s.vk_functions.vkBindBufferMemory = (Ray::PFN_vkBindBufferMemory)api_ctx->vkBindBufferMemory;
+        s.vk_functions.vkGetBufferMemoryRequirements = api_ctx->vkGetBufferMemoryRequirements;
+        s.vk_functions.vkCreateBufferView = (Ray::PFN_vkCreateBufferView)api_ctx->vkCreateBufferView;
+        s.vk_functions.vkDestroyBufferView = api_ctx->vkDestroyBufferView;
+        s.vk_functions.vkMapMemory = (Ray::PFN_vkMapMemory)api_ctx->vkMapMemory;
+        s.vk_functions.vkUnmapMemory = api_ctx->vkUnmapMemory;
+        s.vk_functions.vkBeginCommandBuffer = (Ray::PFN_vkBeginCommandBuffer)api_ctx->vkBeginCommandBuffer;
+        s.vk_functions.vkEndCommandBuffer = (Ray::PFN_vkEndCommandBuffer)api_ctx->vkEndCommandBuffer;
+        s.vk_functions.vkResetCommandBuffer = (Ray::PFN_vkResetCommandBuffer)api_ctx->vkResetCommandBuffer;
+        s.vk_functions.vkQueueSubmit = (Ray::PFN_vkQueueSubmit)api_ctx->vkQueueSubmit;
+        s.vk_functions.vkQueueWaitIdle = (Ray::PFN_vkQueueWaitIdle)api_ctx->vkQueueWaitIdle;
+        s.vk_functions.vkCreateImage = (Ray::PFN_vkCreateImage)api_ctx->vkCreateImage;
+        s.vk_functions.vkDestroyImage = api_ctx->vkDestroyImage;
+        s.vk_functions.vkGetImageMemoryRequirements = api_ctx->vkGetImageMemoryRequirements;
+        s.vk_functions.vkBindImageMemory = (Ray::PFN_vkBindImageMemory)api_ctx->vkBindImageMemory;
+        s.vk_functions.vkCreateImageView = (Ray::PFN_vkCreateImageView)api_ctx->vkCreateImageView;
+        s.vk_functions.vkDestroyImageView = api_ctx->vkDestroyImageView;
+        s.vk_functions.vkCreateSampler = (Ray::PFN_vkCreateSampler)api_ctx->vkCreateSampler;
+        s.vk_functions.vkDestroySampler = api_ctx->vkDestroySampler;
+        s.vk_functions.vkCreateDescriptorPool = (Ray::PFN_vkCreateDescriptorPool)api_ctx->vkCreateDescriptorPool;
+        s.vk_functions.vkDestroyDescriptorPool = api_ctx->vkDestroyDescriptorPool;
+        s.vk_functions.vkResetDescriptorPool = (Ray::PFN_vkResetDescriptorPool)api_ctx->vkResetDescriptorPool;
+        s.vk_functions.vkAllocateDescriptorSets = (Ray::PFN_vkAllocateDescriptorSets)api_ctx->vkAllocateDescriptorSets;
+        s.vk_functions.vkFreeDescriptorSets = (Ray::PFN_vkFreeDescriptorSets)api_ctx->vkFreeDescriptorSets;
+        s.vk_functions.vkUpdateDescriptorSets = api_ctx->vkUpdateDescriptorSets;
+
+        s.vk_functions.vkCmdPipelineBarrier = api_ctx->vkCmdPipelineBarrier;
+        s.vk_functions.vkCmdBindPipeline = (Ray::PFN_vkCmdBindPipeline)api_ctx->vkCmdBindPipeline;
+        s.vk_functions.vkCmdBindDescriptorSets = (Ray::PFN_vkCmdBindDescriptorSets)api_ctx->vkCmdBindDescriptorSets;
+        s.vk_functions.vkCmdBindVertexBuffers = api_ctx->vkCmdBindVertexBuffers;
+        s.vk_functions.vkCmdBindIndexBuffer = (Ray::PFN_vkCmdBindIndexBuffer)api_ctx->vkCmdBindIndexBuffer;
+        s.vk_functions.vkCmdCopyBufferToImage = (Ray::PFN_vkCmdCopyBufferToImage)api_ctx->vkCmdCopyBufferToImage;
+        s.vk_functions.vkCmdCopyImageToBuffer = (Ray::PFN_vkCmdCopyImageToBuffer)api_ctx->vkCmdCopyImageToBuffer;
+        s.vk_functions.vkCmdCopyBuffer = api_ctx->vkCmdCopyBuffer;
+        s.vk_functions.vkCmdFillBuffer = api_ctx->vkCmdFillBuffer;
+        s.vk_functions.vkCmdUpdateBuffer = api_ctx->vkCmdUpdateBuffer;
+        s.vk_functions.vkCmdPushConstants = api_ctx->vkCmdPushConstants;
+        s.vk_functions.vkCmdBlitImage = (Ray::PFN_vkCmdBlitImage)api_ctx->vkCmdBlitImage;
+        s.vk_functions.vkCmdClearColorImage = (Ray::PFN_vkCmdClearColorImage)api_ctx->vkCmdClearColorImage;
+        s.vk_functions.vkCmdCopyImage = (Ray::PFN_vkCmdCopyImage)api_ctx->vkCmdCopyImage;
+        s.vk_functions.vkCmdDispatch = api_ctx->vkCmdDispatch;
+        s.vk_functions.vkCmdDispatchIndirect = api_ctx->vkCmdDispatchIndirect;
+        s.vk_functions.vkCmdResetQueryPool = api_ctx->vkCmdResetQueryPool;
+        s.vk_functions.vkCmdWriteTimestamp = (Ray::PFN_vkCmdWriteTimestamp)api_ctx->vkCmdWriteTimestamp;
+#endif
         ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
 
         ray_renderer_->InitUNetFilter(true /* alias_memory */, unet_props_);
