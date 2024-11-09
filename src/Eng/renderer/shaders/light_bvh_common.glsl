@@ -417,7 +417,7 @@ int PickLightSource(const vec3 P, samplerBuffer nodes_buf, const uint lights_cou
 #endif // USE_HIERARCHICAL_NEE
 }
 
-shared float g_stack_factors[64][48];
+shared float g_stack_factors[64][MAX_STACK_SIZE];
 
 float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, samplerBuffer lights_buf, const uint lights_count, const uint tri_index, const vec3 ro) {
     uint stack_size = 0;

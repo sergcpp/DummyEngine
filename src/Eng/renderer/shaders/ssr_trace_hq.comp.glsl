@@ -61,7 +61,7 @@ layout(std430, binding = INOUT_RAY_COUNTER_SLOT) restrict coherent buffer RayCou
 
 #include "ss_trace_hierarchical.glsl.inl"
 
-layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs, const vec3 refl_ray_vs, const float hit_t, out bool discard_intersection) {
     vec3 approx_spec = vec3(0.0);
@@ -147,7 +147,7 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs
 }
 
 void main() {
-    const uint ray_index = gl_WorkGroupID.x * 64 + gl_LocalInvocationIndex;
+    const uint ray_index = gl_WorkGroupID.x * LOCAL_GROUP_SIZE_X + gl_LocalInvocationIndex;
     if (ray_index >= g_inout_ray_counter[1]) return;
 #ifndef LAYERED
     const uint packed_coords = g_in_ray_list[ray_index];

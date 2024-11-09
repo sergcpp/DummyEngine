@@ -34,22 +34,6 @@ void Eng::ExBuildAccStructures::Execute_HWRT(FgBuilder &builder) {
 
     tlas_build_info.scratchData.deviceAddress = rt_tlas_build_scratch_buf.ref->vk_device_address();
 
-    /*VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
-    create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-    create_info.buffer = acc_struct_data_->rt_tlas_buf->vk_handle();
-    create_info.offset = 0;
-    create_info.size = acc_struct_data_->rt_tlas_buf->size();
-
-    VkAccelerationStructureKHR tlas_handle;
-    VkResult res = vkCreateAccelerationStructureKHR(api_ctx->device, &create_info, nullptr, &tlas_handle);
-    if (res != VK_SUCCESS) {
-        ctx.log()->Error("[ExBuildAccStructures]: Failed to create acceleration structure!");
-    }
-
-    if (!vk_tlas->Init(api_ctx, tlas_handle)) {
-        ctx.log()->Error("[SceneManager::InitHWAccStructures]: Failed to init TLAS!");
-    }*/
-
     VkAccelerationStructureBuildRangeInfoKHR range_info = {};
     range_info.primitiveOffset = 0;
     range_info.primitiveCount = p_list_->rt_obj_instances[rt_index_].count;

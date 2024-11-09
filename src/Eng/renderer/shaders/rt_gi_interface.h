@@ -12,6 +12,8 @@ struct Params {
     int lights_count;
 };
 
+const int LOCAL_GROUP_SIZE_X = 64;
+
 const float TEX_LOD_OFFSET = 3;
 
 const int TLAS_SLOT = 1;

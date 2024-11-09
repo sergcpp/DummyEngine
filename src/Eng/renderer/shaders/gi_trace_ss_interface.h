@@ -9,8 +9,7 @@ struct Params {
     uvec4 resolution;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int LOCAL_GROUP_SIZE_X = 64;
 
 const int DEPTH_TEX_SLOT = 4;
 const int COLOR_TEX_SLOT = 5;
