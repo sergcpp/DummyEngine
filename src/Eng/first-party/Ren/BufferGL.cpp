@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 
+#include "Config.h"
 #include "GL.h"
 #include "Log.h"
 
@@ -138,7 +139,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
     GLuint gl_buffer;
     glGenBuffers(1, &gl_buffer);
     glBindBuffer(g_gl_buf_targets[int(type_)], gl_buffer);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_BUFFER, gl_buffer, -1, name_.c_str());
 #endif
 #if !defined(__ANDROID__)

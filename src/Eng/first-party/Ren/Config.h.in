@@ -1,0 +1,3 @@
+#pragma once
+
+#cmakedefine ENABLE_GPU_DEBUG

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "Config.h"
 #include "Log.h"
 #include "TextureParams.h"
 #include "Utils.h"
@@ -240,7 +241,7 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
             handle_.views.push_back(depth_only_view);
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         for (VkImageView view : handle_.views) {
             VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
             name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
@@ -274,7 +275,7 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
                     return;
                 }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
                 VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
                 name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
                 name_info.objectHandle = uint64_t(handle_.views.back());
@@ -459,7 +460,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             return false;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(new_image);
@@ -506,7 +507,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             return false;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(new_image_view);
@@ -671,7 +672,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
                 return false;
             }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
             VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
             name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
             name_info.objectHandle = uint64_t(handle_.views.back());
@@ -726,7 +727,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
@@ -795,7 +796,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
             handle_.views.push_back(depth_only_view);
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         for (VkImageView view : handle_.views) {
             VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
             name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
@@ -829,7 +830,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
                     return;
                 }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
                 VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
                 name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
                 name_info.objectHandle = uint64_t(handle_.views.back());
@@ -1327,7 +1328,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
@@ -1373,7 +1374,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(handle_.views[0]);
@@ -1407,7 +1408,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
                     return;
                 }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
                 VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
                 name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
                 name_info.objectHandle = uint64_t(handle_.views.back());
@@ -1642,7 +1643,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemoryAllocato
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
@@ -1688,7 +1689,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemoryAllocato
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(handle_.views[0]);
@@ -1879,7 +1880,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemoryAllocato
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
@@ -1925,7 +1926,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemoryAllocato
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(handle_.views[0]);
@@ -2413,7 +2414,7 @@ void Ren::Texture3D::Init(const Tex3DParams &p, MemoryAllocators *mem_allocs, IL
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
@@ -2470,7 +2471,7 @@ void Ren::Texture3D::Init(const Tex3DParams &p, MemoryAllocators *mem_allocs, IL
             return;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         for (VkImageView view : handle_.views) {
             VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
             name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;

@@ -1,0 +1,6 @@
+.vscode
+build-*
+cmake-build-*
+Config.h
+.DS_Store
+.idea

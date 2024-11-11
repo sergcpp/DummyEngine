@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 project(Ren)
 
+OPTION(ENABLE_GPU_DEBUG "Enable GPU debug markers" OFF)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -38,6 +40,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
     set(LIBS GLESv2 GLESv3 EGL)
 endif()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/Config.h)
+
 set(SOURCE_FILES AccStructure.h
                  AccStructure.cpp
                  Anim.h
@@ -49,6 +53,7 @@ set(SOURCE_FILES AccStructure.h
                  Camera.h
                  Camera.cpp
                  Common.h
+                 Config.h
                  Context.h
                  Context.cpp
                  CPUFeatures.h
@@ -224,7 +229,6 @@ set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 #set_source_files_properties(VKCtx.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(Ren STATIC ${REN_SOURCE_FILES})
-target_compile_definitions(Ren PUBLIC ENABLE_OBJ_LABELS)
 if(${RENDERER} STREQUAL "GL")
     target_compile_definitions(Ren PUBLIC USE_GL_RENDER)
 elseif(${RENDERER} STREQUAL "VK")

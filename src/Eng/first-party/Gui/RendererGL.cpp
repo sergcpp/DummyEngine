@@ -23,7 +23,8 @@ Gui::Renderer::~Renderer() {
 }
 
 void Gui::Renderer::Draw(const int w, const int h) {
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, GLsizei(name_.length()), name_.c_str());
+    const std::string label_name = name_ + "::Draw";
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, GLsizei(label_name.length()), label_name.c_str());
 
     //
     // Update buffers

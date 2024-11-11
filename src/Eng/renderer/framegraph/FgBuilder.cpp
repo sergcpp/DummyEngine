@@ -1543,6 +1543,8 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
 void Eng::FgBuilder::Execute() {
     OPTICK_EVENT();
 
+    Ren::DebugMarker exec_marker(ctx_.api_ctx(), ctx_.current_cmd_buf(), "Eng::Framegraph::Execute");
+
     // Swap history images
     for (FgAllocTex &tex : textures_) {
         if (tex.history_index != -1) {

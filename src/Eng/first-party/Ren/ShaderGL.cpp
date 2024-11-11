@@ -1,5 +1,6 @@
 #include "ShaderGL.h"
 
+#include "Config.h"
 #include "GL.h"
 #include "Log.h"
 
@@ -96,7 +97,7 @@ void Ren::Shader::InitFromGLSL(std::string_view shader_src, const eShaderType ty
         (*status) = eShaderLoadStatus::SetToDefault;
         return;
     } else {
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         glObjectLabel(GL_SHADER, id_, -1, name_.c_str());
 #endif
     }
@@ -126,7 +127,7 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_data, const eShaderTy
     type_ = type;
     source_ = eShaderSource::SPIRV;
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_SHADER, id_, -1, name_.c_str());
 #endif
 

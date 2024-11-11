@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 project(_Dummy)
 
+OPTION(ENABLE_GPU_DEBUG "Enable GPU debugging" ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -51,7 +53,6 @@ else()
 endif()
 
 include_directories(.)
-
 include_directories(libs)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Android")

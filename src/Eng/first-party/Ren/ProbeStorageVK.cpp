@@ -1,5 +1,6 @@
 #include "ProbeStorage.h"
 
+#include "Config.h"
 #include "Context.h"
 #include "Utils.h"
 #include "VKCtx.h"
@@ -46,7 +47,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
             return false;
         }
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);

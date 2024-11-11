@@ -1,5 +1,6 @@
 #include "ProgramGL.h"
 
+#include "Config.h"
 #include "GL.h"
 #include "Log.h"
 
@@ -94,7 +95,7 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, S
             glDeleteProgram(program);
             program = 0;
         } else {
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
             glObjectLabel(GL_PROGRAM, program, -1, name_.c_str());
 #endif
         }
@@ -141,7 +142,7 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
             glDeleteProgram(program);
             program = 0;
         } else {
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
             glObjectLabel(GL_PROGRAM, program, -1, name_.c_str());
 #endif
         }

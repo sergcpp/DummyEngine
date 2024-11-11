@@ -6,6 +6,7 @@
 #include <dlfcn.h>
 #endif
 
+#include "Config.h"
 #include "Log.h"
 #include "SmallVector.h"
 #include "Texture.h"
@@ -961,7 +962,7 @@ bool Ren::ApiContext::InitPresentImageViews(ILog *log) {
     present_images.resize(image_count);
     vkGetSwapchainImagesKHR(device, swapchain, &image_count, &present_images[0]);
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     for (uint32_t i = 0; i < image_count; ++i) {
         const std::string name = "PresentImage[" + std::to_string(i) + "]";
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};

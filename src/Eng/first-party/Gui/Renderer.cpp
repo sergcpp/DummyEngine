@@ -90,20 +90,20 @@ bool Gui::Renderer::Init() {
         }
     }
 
-    name_ = "UI_Render [" + std::to_string(instance_index_) + "]";
+    name_ = "Gui::Renderer[" + std::to_string(instance_index_) + "]";
 
     char name_buf[32];
-    snprintf(name_buf, sizeof(name_buf), "UI_VertexBuffer [%i]", instance_index_);
+    snprintf(name_buf, sizeof(name_buf), "Gui::VertexBuffer[%i]", instance_index_);
     vertex_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::VertexAttribs, MaxVerticesPerRange * sizeof(vertex_t));
 
-    snprintf(name_buf, sizeof(name_buf), "UI_VertexStageBuffer [%i]", instance_index_);
+    snprintf(name_buf, sizeof(name_buf), "Gui::VertexStageBuffer[%i]", instance_index_);
     vertex_stage_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::Upload,
                                         (Ren::MaxFramesInFlight + 1) * MaxVerticesPerRange * sizeof(vertex_t));
 
-    snprintf(name_buf, sizeof(name_buf), "UI_IndexBuffer [%i]", instance_index_);
+    snprintf(name_buf, sizeof(name_buf), "Gui::IndexBuffer[%i]", instance_index_);
     index_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::VertexIndices, MaxIndicesPerRange * sizeof(uint16_t));
 
-    snprintf(name_buf, sizeof(name_buf), "UI_IndexStageBuffer [%i]", instance_index_);
+    snprintf(name_buf, sizeof(name_buf), "Gui::IndexStageBuffer[%i]", instance_index_);
     index_stage_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::Upload,
                                        (Ren::MaxFramesInFlight + 1) * MaxIndicesPerRange * sizeof(uint16_t));
 

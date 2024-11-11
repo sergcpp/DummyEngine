@@ -1,6 +1,6 @@
 #include "ShaderVK.h"
 
-// #include "GL.h"
+#include "Config.h"
 #include "Log.h"
 #include "VKCtx.h"
 
@@ -76,7 +76,7 @@ void Ren::Shader::Init(std::string_view shader_src, eShaderType type, eShaderLoa
 void Ren::Shader::Init(Span<const uint8_t> shader_code, const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     InitFromSPIRV(shader_code, type, status, log);
 
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
     name_info.objectHandle = uint64_t(module_);

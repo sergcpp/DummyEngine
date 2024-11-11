@@ -4,6 +4,7 @@
 #undef min
 #undef max
 
+#include "Config.h"
 #include "Context.h"
 #include "GL.h"
 #include "Utils.h"
@@ -378,7 +379,7 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
                              MemoryAllocators *mem_allocs, ILog *log) {
     GLuint tex_id;
     glCreateTextures(samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
     const GLuint internal_format = GLInternalFormatFromTexFormat(format, is_srgb);
@@ -447,7 +448,7 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             GLuint tex_view;
             glGenTextures(1, &tex_view);
             glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, 0, 1);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
             glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
 #endif
             handle_.views.push_back(tex_view);
@@ -460,7 +461,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
 
     GLuint tex_id;
     glCreateTextures(p.samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
     handle_ = {tex_id, TextureHandleCounter++};
@@ -510,7 +511,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
             GLuint tex_view;
             glGenTextures(1, &tex_view);
             glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, 0, 1);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
             glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
 #endif
             handle_.views.push_back(tex_view);
@@ -732,7 +733,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &tex_id);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
 
@@ -776,7 +777,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
                 GLuint tex_view;
                 glGenTextures(1, &tex_view);
                 glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, i, 1);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
                 glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
 #endif
                 handle_.views.push_back(tex_view);
@@ -885,7 +886,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const Tex2DPar
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &tex_id);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
 
@@ -968,7 +969,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const Tex2DPar
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &tex_id);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
 
@@ -1226,7 +1227,7 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_BUFFER, 1, &tex_id);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
     glBindTexture(GL_TEXTURE_BUFFER, tex_id);
@@ -1281,7 +1282,7 @@ void Ren::Texture3D::Init(const Tex3DParams &p, MemoryAllocators *mem_allocs, IL
 
     GLuint tex_id;
     glCreateTextures(GL_TEXTURE_3D, 1, &tex_id);
-#ifdef ENABLE_OBJ_LABELS
+#ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
 

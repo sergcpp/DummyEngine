@@ -46,9 +46,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
     }
 
     VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
-    label.pLabelName = name_.c_str();
+    const std::string label_name = name_ + "::Draw";
+    label.pLabelName = label_name.c_str();
     label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1;
-
     api_ctx->vkCmdBeginDebugUtilsLabelEXT(cmd_buf, &label);
 
     //
