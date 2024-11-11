@@ -18,6 +18,7 @@ class ExPostprocess final : public FgExecutor {
         FgResRef output_tex;
         FgResRef output_tex2;
 
+        Ren::SamplerRef linear_sampler;
         Ren::WeakTex3DRef lut_tex;
 
         int tonemap_mode = 1;

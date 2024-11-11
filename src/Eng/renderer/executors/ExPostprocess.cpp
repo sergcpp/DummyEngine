@@ -41,7 +41,7 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
 
     Ren::SmallVector<Ren::Binding, 8> bindings = {
         {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::HDR_TEX_SLOT, *color_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::HDR_TEX_SLOT, {*color_tex.ref, *args_->linear_sampler}},
         {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::BLOOM_TEX_SLOT, *bloom_tex.ref}};
     if (args_->tonemap_mode == 2) {
         bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, BlitPostprocess::LUT_TEX_SLOT, *args_->lut_tex);

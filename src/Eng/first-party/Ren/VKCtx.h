@@ -64,6 +64,14 @@ struct ApiContext {
 
     bool subgroup_size_control_supported = false;
 
+    bool fp16_supported = false;
+
+    bool shader_int64_supported = false;
+
+    bool shader_buf_int64_atomics_supported = false;
+
+    bool coop_matrix_supported = false;
+
     uint32_t supported_stages_mask = 0xffffffff;
 
     // resources scheduled for deferred destruction
@@ -174,6 +182,7 @@ struct ApiContext {
     PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties = {};
     PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties = {};
     PFN_vkGetPhysicalDeviceImageFormatProperties vkGetPhysicalDeviceImageFormatProperties = {};
+    PFN_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR = {};
 
     PFN_vkCreateImage vkCreateImage = {};
     PFN_vkDestroyImage vkDestroyImage = {};

@@ -52,6 +52,49 @@ extern const int TaaSampleCountStatic;
 
 namespace GSBaseStateInternal {
 const bool USE_TWO_THREADS = true;
+
+Ren::eResState to_ren_state(const Ray::eGPUResState state) {
+    switch (state) {
+    case Ray::eGPUResState::RenderTarget:
+        return Ren::eResState::RenderTarget;
+    case Ray::eGPUResState::UnorderedAccess:
+        return Ren::eResState::UnorderedAccess;
+    case Ray::eGPUResState::DepthRead:
+        return Ren::eResState::DepthRead;
+    case Ray::eGPUResState::DepthWrite:
+        return Ren::eResState::DepthWrite;
+    case Ray::eGPUResState::ShaderResource:
+        return Ren::eResState::ShaderResource;
+    case Ray::eGPUResState::CopyDst:
+        return Ren::eResState::CopyDst;
+    case Ray::eGPUResState::CopySrc:
+        return Ren::eResState::CopySrc;
+    }
+    assert(false);
+    return Ren::eResState::Undefined;
+}
+
+Ray::eGPUResState to_ray_state(const Ren::eResState state) {
+    switch (state) {
+    case Ren::eResState::RenderTarget:
+        return Ray::eGPUResState::RenderTarget;
+    case Ren::eResState::UnorderedAccess:
+        return Ray::eGPUResState::UnorderedAccess;
+    case Ren::eResState::DepthRead:
+        return Ray::eGPUResState::DepthRead;
+    case Ren::eResState::DepthWrite:
+        return Ray::eGPUResState::DepthWrite;
+    case Ren::eResState::ShaderResource:
+        return Ray::eGPUResState::ShaderResource;
+    case Ren::eResState::CopyDst:
+        return Ray::eGPUResState::CopyDst;
+    case Ren::eResState::CopySrc:
+        return Ray::eGPUResState::CopySrc;
+    }
+    assert(false);
+    return Ray::eGPUResState(-1);
+}
+
 } // namespace GSBaseStateInternal
 
 GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
@@ -1154,95 +1197,89 @@ void GSBaseState::InitRenderer_PT() {
         s.vk_device.instance = api_ctx->instance;
         s.vk_device.physical_device = api_ctx->physical_device;
         s.vk_device.device = api_ctx->device;
-        s.vk_functions.vkGetInstanceProcAddr = api_ctx->vkGetInstanceProcAddr;
-        s.vk_functions.vkGetDeviceProcAddr = api_ctx->vkGetDeviceProcAddr;
-        s.vk_functions.vkGetPhysicalDeviceProperties = api_ctx->vkGetPhysicalDeviceProperties;
-        s.vk_functions.vkGetPhysicalDeviceMemoryProperties = api_ctx->vkGetPhysicalDeviceMemoryProperties;
-        s.vk_functions.vkGetPhysicalDeviceFormatProperties =
-            (Ray::PFN_vkGetPhysicalDeviceFormatProperties)api_ctx->vkGetPhysicalDeviceFormatProperties;
-        s.vk_functions.vkGetPhysicalDeviceImageFormatProperties =
-            (Ray::PFN_vkGetPhysicalDeviceImageFormatProperties)api_ctx->vkGetPhysicalDeviceImageFormatProperties;
-        s.vk_functions.vkGetPhysicalDeviceFeatures = api_ctx->vkGetPhysicalDeviceFeatures;
-        s.vk_functions.vkGetPhysicalDeviceQueueFamilyProperties = api_ctx->vkGetPhysicalDeviceQueueFamilyProperties;
-        s.vk_functions.vkEnumerateDeviceExtensionProperties =
-            (Ray::PFN_vkEnumerateDeviceExtensionProperties)api_ctx->vkEnumerateDeviceExtensionProperties;
-        s.vk_functions.vkGetDeviceQueue = api_ctx->vkGetDeviceQueue;
-        s.vk_functions.vkCreateCommandPool = (Ray::PFN_vkCreateCommandPool)api_ctx->vkCreateCommandPool;
-        s.vk_functions.vkDestroyCommandPool = api_ctx->vkDestroyCommandPool;
-        s.vk_functions.vkAllocateCommandBuffers = (Ray::PFN_vkAllocateCommandBuffers)api_ctx->vkAllocateCommandBuffers;
-        s.vk_functions.vkFreeCommandBuffers = api_ctx->vkFreeCommandBuffers;
-        s.vk_functions.vkCreateFence = (Ray::PFN_vkCreateFence)api_ctx->vkCreateFence;
-        s.vk_functions.vkResetFences = (Ray::PFN_vkResetFences)api_ctx->vkResetFences;
-        s.vk_functions.vkDestroyFence = api_ctx->vkDestroyFence;
-        s.vk_functions.vkGetFenceStatus = (Ray::PFN_vkGetFenceStatus)api_ctx->vkGetFenceStatus;
-        s.vk_functions.vkWaitForFences = (Ray::PFN_vkWaitForFences)api_ctx->vkWaitForFences;
-        s.vk_functions.vkCreateSemaphore = (Ray::PFN_vkCreateSemaphore)api_ctx->vkCreateSemaphore;
-        s.vk_functions.vkDestroySemaphore = api_ctx->vkDestroySemaphore;
-        s.vk_functions.vkCreateQueryPool = (Ray::PFN_vkCreateQueryPool)api_ctx->vkCreateQueryPool;
-        s.vk_functions.vkDestroyQueryPool = api_ctx->vkDestroyQueryPool;
-        s.vk_functions.vkGetQueryPoolResults = (Ray::PFN_vkGetQueryPoolResults)api_ctx->vkGetQueryPoolResults;
-        s.vk_functions.vkCreateShaderModule = (Ray::PFN_vkCreateShaderModule)api_ctx->vkCreateShaderModule;
-        s.vk_functions.vkDestroyShaderModule = api_ctx->vkDestroyShaderModule;
-        s.vk_functions.vkCreateDescriptorSetLayout =
-            (Ray::PFN_vkCreateDescriptorSetLayout)api_ctx->vkCreateDescriptorSetLayout;
-        s.vk_functions.vkDestroyDescriptorSetLayout = api_ctx->vkDestroyDescriptorSetLayout;
-        s.vk_functions.vkCreatePipelineLayout = (Ray::PFN_vkCreatePipelineLayout)api_ctx->vkCreatePipelineLayout;
-        s.vk_functions.vkDestroyPipelineLayout = api_ctx->vkDestroyPipelineLayout;
-        s.vk_functions.vkCreateGraphicsPipelines =
-            (Ray::PFN_vkCreateGraphicsPipelines)api_ctx->vkCreateGraphicsPipelines;
-        s.vk_functions.vkCreateComputePipelines = (Ray::PFN_vkCreateComputePipelines)api_ctx->vkCreateComputePipelines;
-        s.vk_functions.vkDestroyPipeline = api_ctx->vkDestroyPipeline;
-        s.vk_functions.vkAllocateMemory = (Ray::PFN_vkAllocateMemory)api_ctx->vkAllocateMemory;
-        s.vk_functions.vkFreeMemory = api_ctx->vkFreeMemory;
-        s.vk_functions.vkCreateBuffer = (Ray::PFN_vkCreateBuffer)api_ctx->vkCreateBuffer;
-        s.vk_functions.vkDestroyBuffer = api_ctx->vkDestroyBuffer;
-        s.vk_functions.vkBindBufferMemory = (Ray::PFN_vkBindBufferMemory)api_ctx->vkBindBufferMemory;
-        s.vk_functions.vkGetBufferMemoryRequirements = api_ctx->vkGetBufferMemoryRequirements;
-        s.vk_functions.vkCreateBufferView = (Ray::PFN_vkCreateBufferView)api_ctx->vkCreateBufferView;
-        s.vk_functions.vkDestroyBufferView = api_ctx->vkDestroyBufferView;
-        s.vk_functions.vkMapMemory = (Ray::PFN_vkMapMemory)api_ctx->vkMapMemory;
-        s.vk_functions.vkUnmapMemory = api_ctx->vkUnmapMemory;
-        s.vk_functions.vkBeginCommandBuffer = (Ray::PFN_vkBeginCommandBuffer)api_ctx->vkBeginCommandBuffer;
-        s.vk_functions.vkEndCommandBuffer = (Ray::PFN_vkEndCommandBuffer)api_ctx->vkEndCommandBuffer;
-        s.vk_functions.vkResetCommandBuffer = (Ray::PFN_vkResetCommandBuffer)api_ctx->vkResetCommandBuffer;
-        s.vk_functions.vkQueueSubmit = (Ray::PFN_vkQueueSubmit)api_ctx->vkQueueSubmit;
-        s.vk_functions.vkQueueWaitIdle = (Ray::PFN_vkQueueWaitIdle)api_ctx->vkQueueWaitIdle;
-        s.vk_functions.vkCreateImage = (Ray::PFN_vkCreateImage)api_ctx->vkCreateImage;
-        s.vk_functions.vkDestroyImage = api_ctx->vkDestroyImage;
-        s.vk_functions.vkGetImageMemoryRequirements = api_ctx->vkGetImageMemoryRequirements;
-        s.vk_functions.vkBindImageMemory = (Ray::PFN_vkBindImageMemory)api_ctx->vkBindImageMemory;
-        s.vk_functions.vkCreateImageView = (Ray::PFN_vkCreateImageView)api_ctx->vkCreateImageView;
-        s.vk_functions.vkDestroyImageView = api_ctx->vkDestroyImageView;
-        s.vk_functions.vkCreateSampler = (Ray::PFN_vkCreateSampler)api_ctx->vkCreateSampler;
-        s.vk_functions.vkDestroySampler = api_ctx->vkDestroySampler;
-        s.vk_functions.vkCreateDescriptorPool = (Ray::PFN_vkCreateDescriptorPool)api_ctx->vkCreateDescriptorPool;
-        s.vk_functions.vkDestroyDescriptorPool = api_ctx->vkDestroyDescriptorPool;
-        s.vk_functions.vkResetDescriptorPool = (Ray::PFN_vkResetDescriptorPool)api_ctx->vkResetDescriptorPool;
-        s.vk_functions.vkAllocateDescriptorSets = (Ray::PFN_vkAllocateDescriptorSets)api_ctx->vkAllocateDescriptorSets;
-        s.vk_functions.vkFreeDescriptorSets = (Ray::PFN_vkFreeDescriptorSets)api_ctx->vkFreeDescriptorSets;
-        s.vk_functions.vkUpdateDescriptorSets = api_ctx->vkUpdateDescriptorSets;
-
-        s.vk_functions.vkCmdPipelineBarrier = api_ctx->vkCmdPipelineBarrier;
-        s.vk_functions.vkCmdBindPipeline = (Ray::PFN_vkCmdBindPipeline)api_ctx->vkCmdBindPipeline;
-        s.vk_functions.vkCmdBindDescriptorSets = (Ray::PFN_vkCmdBindDescriptorSets)api_ctx->vkCmdBindDescriptorSets;
-        s.vk_functions.vkCmdBindVertexBuffers = api_ctx->vkCmdBindVertexBuffers;
-        s.vk_functions.vkCmdBindIndexBuffer = (Ray::PFN_vkCmdBindIndexBuffer)api_ctx->vkCmdBindIndexBuffer;
-        s.vk_functions.vkCmdCopyBufferToImage = (Ray::PFN_vkCmdCopyBufferToImage)api_ctx->vkCmdCopyBufferToImage;
-        s.vk_functions.vkCmdCopyImageToBuffer = (Ray::PFN_vkCmdCopyImageToBuffer)api_ctx->vkCmdCopyImageToBuffer;
-        s.vk_functions.vkCmdCopyBuffer = api_ctx->vkCmdCopyBuffer;
-        s.vk_functions.vkCmdFillBuffer = api_ctx->vkCmdFillBuffer;
-        s.vk_functions.vkCmdUpdateBuffer = api_ctx->vkCmdUpdateBuffer;
-        s.vk_functions.vkCmdPushConstants = api_ctx->vkCmdPushConstants;
-        s.vk_functions.vkCmdBlitImage = (Ray::PFN_vkCmdBlitImage)api_ctx->vkCmdBlitImage;
-        s.vk_functions.vkCmdClearColorImage = (Ray::PFN_vkCmdClearColorImage)api_ctx->vkCmdClearColorImage;
-        s.vk_functions.vkCmdCopyImage = (Ray::PFN_vkCmdCopyImage)api_ctx->vkCmdCopyImage;
-        s.vk_functions.vkCmdDispatch = api_ctx->vkCmdDispatch;
-        s.vk_functions.vkCmdDispatchIndirect = api_ctx->vkCmdDispatchIndirect;
-        s.vk_functions.vkCmdResetQueryPool = api_ctx->vkCmdResetQueryPool;
-        s.vk_functions.vkCmdWriteTimestamp = (Ray::PFN_vkCmdWriteTimestamp)api_ctx->vkCmdWriteTimestamp;
+        s.vk_functions = {
+            api_ctx->vkGetInstanceProcAddr,
+            api_ctx->vkGetDeviceProcAddr,
+            api_ctx->vkGetPhysicalDeviceProperties,
+            api_ctx->vkGetPhysicalDeviceMemoryProperties,
+            (Ray::PFN_vkGetPhysicalDeviceFormatProperties)api_ctx->vkGetPhysicalDeviceFormatProperties,
+            (Ray::PFN_vkGetPhysicalDeviceImageFormatProperties)api_ctx->vkGetPhysicalDeviceImageFormatProperties,
+            api_ctx->vkGetPhysicalDeviceFeatures,
+            api_ctx->vkGetPhysicalDeviceQueueFamilyProperties,
+            (Ray::PFN_vkEnumerateDeviceExtensionProperties)api_ctx->vkEnumerateDeviceExtensionProperties,
+            api_ctx->vkGetDeviceQueue,
+            (Ray::PFN_vkCreateCommandPool)api_ctx->vkCreateCommandPool,
+            api_ctx->vkDestroyCommandPool,
+            (Ray::PFN_vkAllocateCommandBuffers)api_ctx->vkAllocateCommandBuffers,
+            api_ctx->vkFreeCommandBuffers,
+            (Ray::PFN_vkCreateFence)api_ctx->vkCreateFence,
+            (Ray::PFN_vkResetFences)api_ctx->vkResetFences,
+            api_ctx->vkDestroyFence,
+            (Ray::PFN_vkGetFenceStatus)api_ctx->vkGetFenceStatus,
+            (Ray::PFN_vkWaitForFences)api_ctx->vkWaitForFences,
+            (Ray::PFN_vkCreateSemaphore)api_ctx->vkCreateSemaphore,
+            api_ctx->vkDestroySemaphore,
+            (Ray::PFN_vkCreateQueryPool)api_ctx->vkCreateQueryPool,
+            api_ctx->vkDestroyQueryPool,
+            (Ray::PFN_vkGetQueryPoolResults)api_ctx->vkGetQueryPoolResults,
+            (Ray::PFN_vkCreateShaderModule)api_ctx->vkCreateShaderModule,
+            api_ctx->vkDestroyShaderModule,
+            (Ray::PFN_vkCreateDescriptorSetLayout)api_ctx->vkCreateDescriptorSetLayout,
+            api_ctx->vkDestroyDescriptorSetLayout,
+            (Ray::PFN_vkCreatePipelineLayout)api_ctx->vkCreatePipelineLayout,
+            api_ctx->vkDestroyPipelineLayout,
+            (Ray::PFN_vkCreateGraphicsPipelines)api_ctx->vkCreateGraphicsPipelines,
+            (Ray::PFN_vkCreateComputePipelines)api_ctx->vkCreateComputePipelines,
+            api_ctx->vkDestroyPipeline,
+            (Ray::PFN_vkAllocateMemory)api_ctx->vkAllocateMemory,
+            api_ctx->vkFreeMemory,
+            (Ray::PFN_vkCreateBuffer)api_ctx->vkCreateBuffer,
+            api_ctx->vkDestroyBuffer,
+            (Ray::PFN_vkBindBufferMemory)api_ctx->vkBindBufferMemory,
+            api_ctx->vkGetBufferMemoryRequirements,
+            (Ray::PFN_vkCreateBufferView)api_ctx->vkCreateBufferView,
+            api_ctx->vkDestroyBufferView,
+            (Ray::PFN_vkMapMemory)api_ctx->vkMapMemory,
+            api_ctx->vkUnmapMemory,
+            (Ray::PFN_vkBeginCommandBuffer)api_ctx->vkBeginCommandBuffer,
+            (Ray::PFN_vkEndCommandBuffer)api_ctx->vkEndCommandBuffer,
+            (Ray::PFN_vkResetCommandBuffer)api_ctx->vkResetCommandBuffer,
+            (Ray::PFN_vkQueueSubmit)api_ctx->vkQueueSubmit,
+            (Ray::PFN_vkQueueWaitIdle)api_ctx->vkQueueWaitIdle,
+            (Ray::PFN_vkCreateImage)api_ctx->vkCreateImage,
+            api_ctx->vkDestroyImage,
+            api_ctx->vkGetImageMemoryRequirements,
+            (Ray::PFN_vkBindImageMemory)api_ctx->vkBindImageMemory,
+            (Ray::PFN_vkCreateImageView)api_ctx->vkCreateImageView,
+            api_ctx->vkDestroyImageView,
+            (Ray::PFN_vkCreateSampler)api_ctx->vkCreateSampler,
+            api_ctx->vkDestroySampler,
+            (Ray::PFN_vkCreateDescriptorPool)api_ctx->vkCreateDescriptorPool,
+            api_ctx->vkDestroyDescriptorPool,
+            (Ray::PFN_vkResetDescriptorPool)api_ctx->vkResetDescriptorPool,
+            (Ray::PFN_vkAllocateDescriptorSets)api_ctx->vkAllocateDescriptorSets,
+            (Ray::PFN_vkFreeDescriptorSets)api_ctx->vkFreeDescriptorSets,
+            api_ctx->vkUpdateDescriptorSets,
+            api_ctx->vkCmdPipelineBarrier,
+            (Ray::PFN_vkCmdBindPipeline)api_ctx->vkCmdBindPipeline,
+            (Ray::PFN_vkCmdBindDescriptorSets)api_ctx->vkCmdBindDescriptorSets,
+            api_ctx->vkCmdBindVertexBuffers,
+            (Ray::PFN_vkCmdBindIndexBuffer)api_ctx->vkCmdBindIndexBuffer,
+            (Ray::PFN_vkCmdCopyBufferToImage)api_ctx->vkCmdCopyBufferToImage,
+            (Ray::PFN_vkCmdCopyImageToBuffer)api_ctx->vkCmdCopyImageToBuffer,
+            api_ctx->vkCmdCopyBuffer,
+            api_ctx->vkCmdFillBuffer,
+            api_ctx->vkCmdUpdateBuffer,
+            api_ctx->vkCmdPushConstants,
+            (Ray::PFN_vkCmdBlitImage)api_ctx->vkCmdBlitImage,
+            (Ray::PFN_vkCmdClearColorImage)api_ctx->vkCmdClearColorImage,
+            (Ray::PFN_vkCmdCopyImage)api_ctx->vkCmdCopyImage,
+            api_ctx->vkCmdDispatch,
+            api_ctx->vkCmdDispatchIndirect,
+            api_ctx->vkCmdResetQueryPool,
+            (Ray::PFN_vkCmdWriteTimestamp)api_ctx->vkCmdWriteTimestamp};
 #endif
         ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
-
         ray_renderer_->InitUNetFilter(true /* alias_memory */, unet_props_);
     }
 }
@@ -1665,6 +1702,8 @@ void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, 
 }
 
 void GSBaseState::Clear_PT() {
+    using namespace GSBaseStateInternal;
+
     for (auto &ctxs : ray_reg_ctx_) {
         for (auto &ctx : ctxs) {
             ctx.Clear();
@@ -1674,6 +1713,8 @@ void GSBaseState::Clear_PT() {
 }
 
 void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
+    using namespace GSBaseStateInternal;
+
     auto [res_x, res_y] = ray_renderer_->size();
 
     if (res_x != ren_ctx_->w() || res_y != ren_ctx_->h()) {
@@ -1681,6 +1722,7 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         ray_renderer_->Resize(ren_ctx_->w(), ren_ctx_->h());
         res_x = ren_ctx_->w();
         res_y = ren_ctx_->h();
+        pt_result_ = {};
     }
 
     using namespace std::placeholders;
@@ -1810,16 +1852,44 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         ray_renderer_->ResolveSpatialCache(*ray_scene_);
         ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[0][0]);
         for (int i = 0;
-             i < unet_props_.pass_count && ray_reg_ctx_[0][0].iteration > 1 && viewer_->app_params.pt_denoise; ++i) {
+             i < unet_props_.pass_count && ray_reg_ctx_[0][0].iteration > 16 && viewer_->app_params.pt_denoise; ++i) {
             ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0][0]);
         }
     }
 
-    const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
-    renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
-                                 Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().gamma,
-                                 scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
-                                 target, false, true);
+#if defined(USE_VK_RENDER)
+    if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
+        const Ray::GpuImage pt_image = ray_renderer_->get_native_raw_pixels();
+        if (!pt_result_) {
+            Ren::TexHandle handle = {};
+            handle.img = pt_image.vk_image;
+            handle.views[0] = pt_image.vk_image_view;
+
+            Ren::Tex2DParams params = {};
+            params.w = res_x;
+            params.h = res_y;
+            params.format = Ren::eTexFormat::RawRGBA32F;
+            params.flags = Ren::eTexFlagBits::NoOwnership;
+
+            Ren::eTexLoadStatus status;
+            pt_result_ = ren_ctx_->LoadTexture2D("PT Result Ref", handle, params, {}, &status);
+            assert(status == Ren::eTexLoadStatus::CreatedDefault);
+            pt_result_->resource_state = to_ren_state(pt_image.state);
+        }
+        pt_result_->resource_state = to_ren_state(pt_image.state);
+        renderer_->BlitPixelsTonemap(pt_result_, res_x, res_y, Ren::eTexFormat::RawRGBA32F,
+                                     scene_manager_->main_cam().gamma, scene_manager_->main_cam().min_exposure,
+                                     scene_manager_->main_cam().max_exposure, target, false, true);
+        ray_renderer_->set_native_raw_pixels_state(to_ray_state(pt_result_->resource_state));
+    } else
+#endif
+    {
+        const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
+        renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
+                                     Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().gamma,
+                                     scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
+                                     target, false, true);
+    }
 }
 
 int GSBaseState::WriteAndValidateCaptureResult() {

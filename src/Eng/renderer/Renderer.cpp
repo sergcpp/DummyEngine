@@ -439,6 +439,9 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::eSamplerLoadStatus status;
         nearest_sampler_ = ctx_.LoadSampler(sampler_params, &status);
+
+        sampler_params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        linear_sampler_ = ctx_.LoadSampler(sampler_params, &status);
     }
 
     {
@@ -1344,6 +1347,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             } else {
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
             }
+            ex_postprocess_args_.linear_sampler = linear_sampler_;
             ex_postprocess_args_.lut_tex = tonemap_lut_;
             ex_postprocess_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
             ex_postprocess_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
@@ -1781,7 +1785,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         } else {
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
         }
-
+        ex_postprocess_args_.linear_sampler = linear_sampler_;
         ex_postprocess_args_.lut_tex = tonemap_lut_;
         ex_postprocess_args_.tonemap_mode = int(settings.tonemap_mode);
         ex_postprocess_args_.inv_gamma = 1.0f / gamma;
@@ -1818,6 +1822,119 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         auto *update_image = fg_builder_.FindNode("UPDATE IMAGE");
         update_image->ReplaceTransferInput(0, temp_upload_buf);
 
+        auto *postprocess = fg_builder_.FindNode("POSTPROCESS");
+        if (target) {
+            ex_postprocess_args_.output_tex = postprocess->ReplaceColorOutput(0, target);
+            if (blit_to_backbuffer) {
+                ex_postprocess_args_.output_tex2 = postprocess->ReplaceColorOutput(1, ctx_.backbuffer_ref());
+            }
+        } else {
+            ex_postprocess_args_.output_tex = postprocess->ReplaceColorOutput(0, ctx_.backbuffer_ref());
+        }
+    }
+
+    fg_builder_.Execute();
+}
+
+void Eng::Renderer::BlitPixelsTonemap(const Ren::Tex2DRef &result, const int w, const int h, Ren::eTexFormat format,
+                                      const float gamma, const float min_exposure, const float max_exposure,
+                                      const Ren::Tex2DRef &target, const bool compressed,
+                                      const bool blit_to_backbuffer) {
+    const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
+    Ren::ILog *log = ctx_.log();
+
+    if (!cur_scr_w || !cur_scr_h) {
+        // view is minimized?
+        return;
+    }
+
+    if (!prim_draw_.LazyInit(ctx_)) {
+        log->Error("[Renderer] Failed to initialize primitive drawing!");
+    }
+
+    min_exposure_ = std::pow(2.0f, min_exposure);
+    max_exposure_ = std::pow(2.0f, max_exposure);
+
+    bool resolution_changed = false;
+    if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1]) {
+        resolution_changed = true;
+        view_state_.scr_res = view_state_.act_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+    }
+    view_state_.pre_exposure = readback_exposure();
+
+    const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
+                                      !fg_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
+    cached_settings_ = settings;
+    cached_rp_index_ = 1;
+
+    assert(format == Ren::eTexFormat::RawRGBA32F);
+
+    if (rebuild_renderpasses) {
+        const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
+
+        fg_builder_.Reset();
+        backbuffer_sources_.clear();
+
+        FgResRef output_tex_res = fg_builder_.MakeTextureResource(result);
+        FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res);
+
+        FgResRef bloom_tex;
+        if (settings.enable_bloom) {
+            bloom_tex = AddBloomPasses(output_tex_res, exposure_tex, compressed);
+        }
+
+        auto &postprocess = fg_builder_.AddNode("POSTPROCESS");
+
+        ex_postprocess_args_ = {};
+        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.color_tex = postprocess.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
+        if (bloom_tex) {
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStageBits::FragmentShader);
+        } else {
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+        }
+        if (target) {
+            ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
+            if (blit_to_backbuffer) {
+                ex_postprocess_args_.output_tex2 = postprocess.AddColorOutput(ctx_.backbuffer_ref());
+            }
+        } else {
+            ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
+        }
+        ex_postprocess_args_.linear_sampler = linear_sampler_;
+        ex_postprocess_args_.lut_tex = tonemap_lut_;
+        ex_postprocess_args_.tonemap_mode = int(settings.tonemap_mode);
+        ex_postprocess_args_.inv_gamma = 1.0f / gamma;
+        ex_postprocess_args_.fade = 0.0f;
+        ex_postprocess_args_.aberration = settings.enable_aberration ? 1.0f : 0.0f;
+
+        backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
+
+        ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
+        postprocess.set_executor(&ex_postprocess_);
+
+        { // Readback exposure
+            auto &read_exposure = fg_builder_.AddNode("READ EXPOSURE");
+
+            auto *data = read_exposure.AllocNodeData<ExReadExposure::Args>();
+            data->input_tex = read_exposure.AddTransferImageInput(exposure_tex);
+
+            FgBufDesc desc;
+            desc.type = Ren::eBufType::Readback;
+            desc.size = Ren::MaxFramesInFlight * sizeof(float);
+            data->output_buf = read_exposure.AddTransferOutput("Exposure Readback", desc);
+
+            backbuffer_sources_.push_back(data->output_buf);
+
+            ex_read_exposure_.Setup(data);
+            read_exposure.set_executor(&ex_read_exposure_);
+        }
+
+        fg_builder_.Compile();
+
+        const uint64_t rp_setup_end_us = Sys::GetTimeUs();
+        ctx_.log()->Info("Renderpass setup is done in %.2fms", (rp_setup_end_us - rp_setup_beg_us) * 0.001);
+    } else {
         auto *postprocess = fg_builder_.FindNode("POSTPROCESS");
         if (target) {
             ex_postprocess_args_.output_tex = postprocess->ReplaceColorOutput(0, target);

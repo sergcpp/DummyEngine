@@ -188,15 +188,6 @@ elseif(${RENDERER} STREQUAL "VK")
                      VKCtx.h
                      VKCtx.cpp)
 
-    set(VULKAN_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_layer.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_platform.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_sdk_platform.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vulkan.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vulkan_core.h)
-
-    list(APPEND REN_SOURCE_FILES ${VULKAN_HEADERS})
-    source_group("src/vulkan" FILES ${VULKAN_HEADERS})
-
     set(LIBS ${LIBS} SPIRV-Reflect)
 endif()
 

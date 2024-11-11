@@ -1898,7 +1898,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             uniform_params.pre_exposure = view_state_.pre_exposure;
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, *input_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
                 {Ren::eBindTarget::Tex2DSampled, Bloom::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Ren::eBindTarget::Image2D, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
 
@@ -1999,7 +1999,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             FgAllocTex &output_tex = builder.GetWriteTexture(histogram);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2DSampled, HistogramSample::HDR_TEX_SLOT, *input_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, HistogramSample::HDR_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
                 {Ren::eBindTarget::Image2D, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
 
             HistogramSample::Params uniform_params = {};

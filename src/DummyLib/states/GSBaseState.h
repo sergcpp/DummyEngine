@@ -115,6 +115,8 @@ class GSBaseState : public Eng::ViewerState {
     enum class eCaptureState { None, UpdateGICache, Warmup, Started } capture_state_ = eCaptureState::None;
     Ren::Tex2DRef capture_result_;
 
+    Ren::Tex2DRef pt_result_;
+
     bool LoadScene(std::string_view name);
 
     virtual void OnPreloadScene(JsObjectP &js_scene);

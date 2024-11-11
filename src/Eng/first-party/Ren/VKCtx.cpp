@@ -270,6 +270,8 @@ bool Ren::ApiContext::LoadInstanceFunctions(ILog *log) {
     LOAD_OPTIONAL_INSTANCE_FUN(vkCmdBeginRenderingKHR)
     LOAD_OPTIONAL_INSTANCE_FUN(vkCmdEndRenderingKHR)
 
+    LOAD_OPTIONAL_INSTANCE_FUN(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR)
+
 #undef LOAD_INSTANCE_FUN
 
     return true;
@@ -515,6 +517,20 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
         device_extensions.push_back(VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME);
     }
 
+    if (this->fp16_supported) {
+        device_extensions.push_back(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
+    }
+
+    if (this->shader_buf_int64_atomics_supported) {
+        device_extensions.push_back(VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME);
+    }
+
+    if (this->coop_matrix_supported) {
+        device_extensions.push_back(VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME);
+    }
+
     device_info.enabledExtensionCount = uint32_t(device_extensions.size());
     device_info.ppEnabledExtensionNames = device_extensions.cdata();
 
@@ -525,6 +541,7 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
     features.fillModeNonSolid = VK_TRUE;
     features.fragmentStoresAndAtomics = VK_TRUE;
     features.geometryShader = VK_TRUE;
+    features.shaderInt64 = this->shader_int64_supported ? VK_TRUE : VK_FALSE;
     device_info.pEnabledFeatures = &features;
     void **pp_next = const_cast<void **>(&device_info.pNext);
 
@@ -591,6 +608,48 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
         pp_next = &subgroup_size_control_features.pNext;
     }
 
+    VkPhysicalDeviceShaderFloat16Int8FeaturesKHR shader_fp16_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR};
+    shader_fp16_features.shaderFloat16 = VK_TRUE;
+
+    VkPhysicalDevice16BitStorageFeaturesKHR storage_fp16_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR};
+    storage_fp16_features.storageBuffer16BitAccess = VK_TRUE;
+
+    if (this->fp16_supported) {
+        (*pp_next) = &shader_fp16_features;
+        pp_next = &shader_fp16_features.pNext;
+
+        (*pp_next) = &storage_fp16_features;
+        pp_next = &storage_fp16_features.pNext;
+    }
+
+    VkPhysicalDeviceShaderAtomicInt64Features atomic_int64_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR};
+    atomic_int64_features.shaderBufferInt64Atomics = VK_TRUE;
+
+    if (this->shader_buf_int64_atomics_supported) {
+        (*pp_next) = &atomic_int64_features;
+        pp_next = &atomic_int64_features.pNext;
+    }
+
+    VkPhysicalDeviceVulkanMemoryModelFeatures mem_model_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES};
+    mem_model_features.vulkanMemoryModel = VK_TRUE;
+    mem_model_features.vulkanMemoryModelDeviceScope = VK_TRUE;
+
+    VkPhysicalDeviceCooperativeMatrixFeaturesKHR coop_matrix_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR};
+    coop_matrix_features.cooperativeMatrix = VK_TRUE;
+
+    if (this->coop_matrix_supported) {
+        (*pp_next) = &mem_model_features;
+        pp_next = &mem_model_features.pNext;
+
+        (*pp_next) = &coop_matrix_features;
+        pp_next = &coop_matrix_features.pNext;
+    }
+
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
     VkPhysicalDevicePortabilitySubsetFeaturesKHR subset_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR};
@@ -623,7 +682,8 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
 
         bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false,
              dynamic_rendering_supported = false, renderpass_loadstore_none_supported = false,
-             subgroup_size_control_supported = false;
+             subgroup_size_control_supported = false, shader_fp16_supported = false, storage_fp16_supported = false,
+             shader_int64_supported = false, shader_buf_int64_atomics_supported = false, coop_matrix_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -652,6 +712,14 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                     renderpass_loadstore_none_supported = true;
                 } else if (strcmp(ext.extensionName, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME) == 0) {
                     subgroup_size_control_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) == 0) {
+                    shader_fp16_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_16BIT_STORAGE_EXTENSION_NAME) == 0) {
+                    storage_fp16_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME) == 0) {
+                    shader_buf_int64_atomics_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME) == 0) {
+                    coop_matrix_supported = true;
                 }
             }
 
@@ -662,6 +730,60 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
 
             if (!swapchain_supported || !anisotropy_supported) {
                 continue;
+            }
+
+            VkPhysicalDeviceFeatures2KHR device_features2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+
+            VkPhysicalDeviceShaderAtomicInt64Features atomic_int64_features = {
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR};
+            if (shader_buf_int64_atomics_supported) {
+                device_features2.pNext = &atomic_int64_features;
+            }
+            vkGetPhysicalDeviceFeatures2KHR(physical_devices[i], &device_features2);
+
+            shader_int64_supported = (device_features2.features.shaderInt64 == VK_TRUE);
+            shader_buf_int64_atomics_supported &= (atomic_int64_features.shaderBufferInt64Atomics == VK_TRUE);
+
+            if (shader_fp16_supported) {
+                VkPhysicalDeviceShaderFloat16Int8Features fp16_features = {
+                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES};
+
+                VkPhysicalDeviceFeatures2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+                prop2.pNext = &fp16_features;
+
+                vkGetPhysicalDeviceFeatures2KHR(physical_devices[i], &prop2);
+
+                shader_fp16_supported &= (fp16_features.shaderFloat16 != 0);
+            }
+
+            if (coop_matrix_supported) {
+                VkPhysicalDeviceCooperativeMatrixFeaturesKHR coop_matrix_features = {
+                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR};
+
+                VkPhysicalDeviceFeatures2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+                prop2.pNext = &coop_matrix_features;
+
+                vkGetPhysicalDeviceFeatures2KHR(physical_devices[i], &prop2);
+
+                uint32_t props_count = 0;
+                vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(physical_devices[i], &props_count, nullptr);
+
+                SmallVector<VkCooperativeMatrixPropertiesKHR, 16> coop_matrix_props(
+                    props_count, {VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR});
+
+                vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(physical_devices[i], &props_count,
+                                                                  coop_matrix_props.data());
+
+                bool found = false;
+                for (const VkCooperativeMatrixPropertiesKHR &p : coop_matrix_props) {
+                    if (p.AType == VK_COMPONENT_TYPE_FLOAT16_KHR && p.BType == VK_COMPONENT_TYPE_FLOAT16_KHR &&
+                        p.CType == VK_COMPONENT_TYPE_FLOAT16_KHR && p.ResultType == VK_COMPONENT_TYPE_FLOAT16_KHR &&
+                        p.MSize == 16 && p.NSize == 8 && p.KSize == 8 && p.scope == VK_SCOPE_SUBGROUP_KHR) {
+                        found = true;
+                        break;
+                    }
+                }
+                coop_matrix_supported &= found;
             }
         }
 
@@ -740,6 +862,10 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 this->renderpass_loadstore_none_supported = renderpass_loadstore_none_supported;
                 this->subgroup_size_control_supported = subgroup_size_control_supported;
                 this->supported_stages_mask = _supported_stages_mask;
+                this->fp16_supported = (shader_fp16_supported && storage_fp16_supported);
+                this->shader_int64_supported = shader_int64_supported;
+                this->shader_buf_int64_atomics_supported = shader_buf_int64_atomics_supported;
+                this->coop_matrix_supported = coop_matrix_supported;
             }
         }
     }

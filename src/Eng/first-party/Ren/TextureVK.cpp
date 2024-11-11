@@ -203,7 +203,8 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
     alloc_ = std::move(alloc);
     params = _params;
 
-    if (handle.views[0] == VkImageView{} && params.usage != eTexUsageBits::Transfer) {
+    if (handle.views[0] == VkImageView{} && params.usage != eTexUsageBits::Transfer &&
+        !bool(params.flags & eTexFlagBits::NoOwnership)) {
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;

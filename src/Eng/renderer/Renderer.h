@@ -85,6 +85,9 @@ class Renderer {
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
                            float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
                            bool blit_to_backbuffer = false);
+    void BlitPixelsTonemap(const Ren::Tex2DRef &result, int w, int h, Ren::eTexFormat format, float gamma,
+                           float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
+                           bool blit_to_backbuffer = false);
     render_settings_t settings = {};
 
   private:
@@ -107,7 +110,7 @@ class Renderer {
 
     // FrameBuf probe_sample_buf_;
     Ren::Tex2DRef shadow_map_tex_;
-    Ren::SamplerRef nearest_sampler_;
+    Ren::SamplerRef nearest_sampler_, linear_sampler_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     eTAAMode taa_mode_ = eTAAMode::Off;
     bool dof_enabled_ = false;
