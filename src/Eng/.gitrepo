@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = pt_integration
-	commit = 7892881ee062a7b4039a391edcb78ea3f1c7e5a5
+	branch = no_readback
+	commit = a20286c9e1e14e9143eedc1c755a5dd80ecdf867
 	method = merge
 	cmdver = 0.4.6
-	parent = b3f04a460b60cd42102ba2b143f2ade891fb39b8
+	parent = ff6e9ae6b0730dcf6ca87a7f88c83d1e4d5bb382
