@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Ray
-	branch = external_vk
-	commit = 2b9136685132346343f705ce8bc726e1f00a0d06
-	parent = 9da3617cac8498cf7e69cf9476fe9545610a0f5d
+	branch = master
+	commit = 18891c9bf20e26a7819157cc635509b458265438
+	parent = f65f93a6afa657da5d487f9937918c4b49de5f71
 	method = merge
 	cmdver = 0.4.6
