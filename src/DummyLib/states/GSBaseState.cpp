@@ -1877,9 +1877,9 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
             pt_result_->resource_state = to_ren_state(pt_image.state);
         }
         pt_result_->resource_state = to_ren_state(pt_image.state);
-        renderer_->BlitPixelsTonemap(pt_result_, res_x, res_y, Ren::eTexFormat::RawRGBA32F,
-                                     scene_manager_->main_cam().gamma, scene_manager_->main_cam().min_exposure,
-                                     scene_manager_->main_cam().max_exposure, target, false, true);
+        renderer_->BlitImageTonemap(pt_result_, res_x, res_y, Ren::eTexFormat::RawRGBA32F,
+                                    scene_manager_->main_cam().gamma, scene_manager_->main_cam().min_exposure,
+                                    scene_manager_->main_cam().max_exposure, target, false, true);
         ray_renderer_->set_native_raw_pixels_state(to_ray_state(pt_result_->resource_state));
     } else
 #endif

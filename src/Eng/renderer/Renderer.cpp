@@ -1836,10 +1836,10 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
     fg_builder_.Execute();
 }
 
-void Eng::Renderer::BlitPixelsTonemap(const Ren::Tex2DRef &result, const int w, const int h, Ren::eTexFormat format,
-                                      const float gamma, const float min_exposure, const float max_exposure,
-                                      const Ren::Tex2DRef &target, const bool compressed,
-                                      const bool blit_to_backbuffer) {
+void Eng::Renderer::BlitImageTonemap(const Ren::Tex2DRef &result, const int w, const int h, Ren::eTexFormat format,
+                                     const float gamma, const float min_exposure, const float max_exposure,
+                                     const Ren::Tex2DRef &target, const bool compressed,
+                                     const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 

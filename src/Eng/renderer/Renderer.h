@@ -85,9 +85,9 @@ class Renderer {
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
                            float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
                            bool blit_to_backbuffer = false);
-    void BlitPixelsTonemap(const Ren::Tex2DRef &result, int w, int h, Ren::eTexFormat format, float gamma,
-                           float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
-                           bool blit_to_backbuffer = false);
+    void BlitImageTonemap(const Ren::Tex2DRef &result, int w, int h, Ren::eTexFormat format, float gamma,
+                          float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
+                          bool blit_to_backbuffer = false);
     render_settings_t settings = {};
 
   private:
