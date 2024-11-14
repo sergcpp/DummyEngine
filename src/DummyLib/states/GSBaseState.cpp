@@ -323,6 +323,7 @@ void GSBaseState::Enter() {
         } else {
             ray_scene_.reset();
             ray_renderer_.reset();
+            pt_result_ = {};
         }
         return true;
     });
@@ -1709,12 +1710,24 @@ void GSBaseState::Clear_PT() {
             ctx.Clear();
         }
     }
+#if defined(USE_VK_RENDER)
+    if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
+        ray_renderer_->set_command_buffer(
+            Ray::GpuCommandBuffer{ren_ctx_->current_cmd_buf(), ren_ctx_->backend_frame()});
+    }
+#endif
     ray_renderer_->Clear({});
 }
 
 void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
     using namespace GSBaseStateInternal;
 
+#if defined(USE_VK_RENDER)
+    if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
+        ray_renderer_->set_command_buffer(
+            Ray::GpuCommandBuffer{ren_ctx_->current_cmd_buf(), ren_ctx_->backend_frame()});
+    }
+#endif
     auto [res_x, res_y] = ray_renderer_->size();
 
     if (res_x != ren_ctx_->w() || res_y != ren_ctx_->h()) {
@@ -1852,7 +1865,7 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         ray_renderer_->ResolveSpatialCache(*ray_scene_);
         ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[0][0]);
         for (int i = 0;
-             i < unet_props_.pass_count && ray_reg_ctx_[0][0].iteration > 16 && viewer_->app_params.pt_denoise; ++i) {
+             i < unet_props_.pass_count && ray_reg_ctx_[0][0].iteration > 1 && viewer_->app_params.pt_denoise; ++i) {
             ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0][0]);
         }
     }
