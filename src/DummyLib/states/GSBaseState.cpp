@@ -1675,6 +1675,12 @@ void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, 
 
     const float desired_exposure = log2f(renderer_->readback_exposure());
     if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 0.5f) {
+#if defined(USE_VK_RENDER)
+        if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
+            ray_renderer_->set_command_buffer(
+                Ray::GpuCommandBuffer{ren_ctx_->current_cmd_buf(), ren_ctx_->backend_frame()});
+        }
+#endif
         ray_renderer_->ResetSpatialCache(*ray_scene_, parallel_for);
         invalidate_view_ = true;
     }
