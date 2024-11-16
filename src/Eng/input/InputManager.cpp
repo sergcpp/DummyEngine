@@ -1,11 +1,9 @@
 #include "InputManager.h"
 
-#include <queue>
-
 namespace Eng {
 struct InputManagerImp {
     std::function<input_event_t(const input_event_t &)> input_converters[int(eInputEvent::_Count)];
-    std::queue<input_event_t> input_buffer;
+    std::deque<input_event_t> input_buffer;
     std::vector<bool> keys_state;
 };
 } // namespace Eng
@@ -18,6 +16,8 @@ Eng::InputManager::InputManager() {
 Eng::InputManager::~InputManager() = default;
 
 const std::vector<bool> &Eng::InputManager::keys_state() const { return imp_->keys_state; }
+
+const std::deque<Eng::input_event_t> &Eng::InputManager::peek_events() const { return imp_->input_buffer; }
 
 void Eng::InputManager::SetConverter(const eInputEvent evt_type,
                                      const std::function<input_event_t(const input_event_t &)> &conv) {
@@ -32,16 +32,16 @@ void Eng::InputManager::AddRawInputEvent(input_event_t evt) {
     if (conv) {
         evt = conv(evt);
     }
-    imp_->input_buffer.push(evt);
+    imp_->input_buffer.push_back(evt);
 }
 
-bool Eng::InputManager::PollEvent(uint64_t time_us, input_event_t &evt) {
+bool Eng::InputManager::PollEvent(const uint64_t time_us, input_event_t &evt) {
     if (imp_->input_buffer.empty()) {
         return false;
     } else {
         evt = imp_->input_buffer.front();
         if (evt.time_stamp <= time_us) {
-            imp_->input_buffer.pop();
+            imp_->input_buffer.pop_front();
             if (evt.type == eInputEvent::KeyDown) {
                 if (evt.key_code < imp_->keys_state.size()) {
                     imp_->keys_state[evt.key_code] = true;
@@ -58,13 +58,9 @@ bool Eng::InputManager::PollEvent(uint64_t time_us, input_event_t &evt) {
     }
 }
 
-void Eng::InputManager::ClearBuffer() {
-    while (imp_->input_buffer.size()) {
-        imp_->input_buffer.pop();
-    }
-}
+void Eng::InputManager::ClearBuffer() { imp_->input_buffer.clear(); }
 
-char Eng::InputManager::CharFromKeycode(uint32_t key_code) {
+char Eng::InputManager::CharFromKeycode(const uint32_t key_code) {
     if (key_code >= Eng::eKey::A && key_code <= Eng::eKey::Z) {
         return 'a' + char(key_code - Eng::eKey::A);
     } else if (key_code >= Eng::eKey::_1 && key_code <= Eng::eKey::_9) {

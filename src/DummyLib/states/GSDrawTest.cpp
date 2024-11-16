@@ -426,7 +426,7 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
         min_exposure_ = max_exposure_ = viewer_->app_params.exposure.value();
     }
 
-    view_origin_ = initial_view_pos_;
+    next_view_origin_ = prev_view_origin_ = initial_view_pos_;
     view_dir_ = initial_view_dir_;
 
     Eng::SceneData &scene = scene_manager_->scene_data();
@@ -513,18 +513,16 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
+    prev_view_origin_ = next_view_origin_;
+
     if (cam_follow_path_.size() < 3) {
         const float fwd_speed =
                         std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_),
                     side_speed =
                         std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
-        view_origin_ += view_dir_ * fwd_speed;
-        view_origin_ += side * side_speed;
-
-        if (std::abs(fwd_speed) > 0 || std::abs(side_speed) > 0) {
-            invalidate_view_ = true;
-        }
+        next_view_origin_ += view_dir_ * fwd_speed;
+        next_view_origin_ += side * side_speed;
     } else {
         int next_point = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
 
@@ -542,54 +540,11 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
 
         const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_], &p2 = cam_follow_path_[next_point];
 
-        view_origin_ = 0.95f * view_origin_ + 0.05f * Mix(p1, p2, cam_follow_param_);
-        view_dir_ = 0.9f * view_dir_ + 0.1f * Normalize(p2 - view_origin_);
+        next_view_origin_ = 0.95f * next_view_origin_ + 0.05f * Mix(p1, p2, cam_follow_param_);
+        view_dir_ = 0.9f * view_dir_ + 0.1f * Normalize(p2 - next_view_origin_);
         view_dir_ = Normalize(view_dir_);
-
-        invalidate_view_ = true;
     }
 
-#if 0
-    uint32_t mask = CompTransformBit | CompDrawableBit;
-
-    static float t = 0;
-    t += 0.04f;
-
-    //const uint32_t monkey_ids[] = { 12, 13, 14, 15, 16 };
-    const uint32_t monkey_ids[] = { 28, 29, 30, 31, 32 };
-
-    SceneObject *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
-    if ((monkey1->comp_mask & mask) == mask) {
-        auto *tr = monkey1->tr.get();
-        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    SceneObject *monkey2 = scene_manager_->GetObject(monkey_ids[1]);
-    if ((monkey2->comp_mask & mask) == mask) {
-        auto *tr = monkey2->tr.get();
-        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    SceneObject *monkey3 = scene_manager_->GetObject(monkey_ids[2]);
-    if ((monkey3->comp_mask & mask) == mask) {
-        auto *tr = monkey3->tr.get();
-        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    SceneObject *monkey4 = scene_manager_->GetObject(monkey_ids[3]);
-    if ((monkey4->comp_mask & mask) == mask) {
-        auto *tr = monkey4->tr.get();
-        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    SceneObject *monkey5 = scene_manager_->GetObject(monkey_ids[4]);
-    if ((monkey5->comp_mask & mask) == mask) {
-        auto *tr = monkey5->tr.get();
-        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
-    }
-
-    scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransformBit);
-#endif
     Eng::SceneData &scene = scene_manager_->scene_data();
 
     if (scooter_indices_[0] != 0xffffffff) {
@@ -643,6 +598,73 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
 
     scene.env.wind_vec = 0.99f * scene.env.wind_vec + 0.01f * wind_vector_goal_;
     scene.env.wind_turbulence = 2 * Length(scene.env.wind_vec);
+}
+
+void GSDrawTest::UpdateAnim(const uint64_t dt_us) {
+    using namespace Ren;
+
+    OPTICK_EVENT();
+    const float delta_time_s = dt_us * 0.000001f;
+
+    // test test test
+    TestUpdateAnims(delta_time_s);
+
+    const Eng::FrameInfo &fr = fr_info_;
+    const Vec3f smooth_view_origin = Mix(prev_view_origin_, next_view_origin_, float(fr.time_fract));
+
+    // Invalidate view if camera has moved
+    invalidate_view_ |= Distance(view_origin_, smooth_view_origin) > 0.00001f;
+    view_origin_ = smooth_view_origin;
+
+    // Make sure we use latest camera rotation (reduce lag)
+    Vec3f view_dir = view_dir_;
+    for (const Eng::input_event_t &evt : viewer_->input_manager()->peek_events()) {
+        switch (evt.type) {
+        case Eng::eInputEvent::P1Move:
+            if (view_pointer_ == 1) {
+                auto up = Vec3f{0, 1, 0};
+                Vec3f side = Normalize(Cross(view_dir, up));
+                up = Cross(side, view_dir);
+
+                Mat4f rot;
+                rot = Rotate(rot, -0.005f * evt.move[0], up);
+                rot = Rotate(rot, 0.005f * evt.move[1], side);
+
+                auto rot_m3 = Mat3f(rot);
+                view_dir = rot_m3 * view_dir;
+
+                invalidate_view_ = true;
+            }
+            break;
+        case Eng::eInputEvent::P2Move:
+            if (view_pointer_ == 2) {
+                auto up = Vec3f{0, 1, 0};
+                Vec3f side = Normalize(Cross(view_dir, up));
+                up = Cross(side, view_dir);
+
+                Mat4f rot;
+                rot = Rotate(rot, 0.01f * evt.move[0], up);
+                rot = Rotate(rot, -0.01f * evt.move[1], side);
+
+                auto rot_m3 = Mat3f(rot);
+                view_dir = rot_m3 * view_dir;
+
+                invalidate_view_ = true;
+            }
+            break;
+        }
+    }
+
+    const bool view_locked = !viewer_->app_params.ref_name.empty();
+    if (view_locked) {
+        view_dir = view_dir_;
+    }
+
+    // Update camera
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir), Vec3f{0, 1, 0}, view_fov_, view_sensor_shift_,
+                              gamma_, min_exposure_, max_exposure_);
+
+    GSBaseState::UpdateAnim(dt_us);
 }
 
 bool GSDrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
@@ -806,23 +828,6 @@ bool GSDrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bo
     }
 
     return true;
-}
-
-void GSDrawTest::UpdateAnim(const uint64_t dt_us) {
-    OPTICK_EVENT();
-    const float delta_time_s = dt_us * 0.000001f;
-
-    // test test test
-    TestUpdateAnims(delta_time_s);
-
-    // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0, 1, 0}, view_fov_,
-                              view_sensor_shift_, gamma_, min_exposure_, max_exposure_);
-
-    // log_->Info("%f %f %f | %f %f %f", view_origin_[0], view_origin_[1], view_origin_[2], view_dir_[0], view_dir_[1],
-    //           view_dir_[2]);
-
-    GSBaseState::UpdateAnim(dt_us);
 }
 
 void GSDrawTest::SaveScene(JsObjectP &js_scene) {

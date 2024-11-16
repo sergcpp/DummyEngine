@@ -28,7 +28,11 @@ std::once_flag gl_initialize_once;
 bool gl_initialized = false;
 } // namespace Ren
 
-Ren::Context::Context() = default;
+Ren::Context::Context() {
+    for (int i = 0; i < Ren::MaxFramesInFlight; ++i) {
+        in_flight_frontend_frame[i] = -1;
+    }
+}
 
 Ren::Context::~Context() {
     api_ctx_->present_image_refs.clear();

@@ -237,7 +237,7 @@ class Context {
     void ReleaseAll();
 
     int next_frontend_frame = 0;
-    int in_flight_frontend_frame[Ren::MaxFramesInFlight] = {-1, -1, -1};
+    int in_flight_frontend_frame[Ren::MaxFramesInFlight];
     int backend_frame() const;
     int active_present_image() const;
 

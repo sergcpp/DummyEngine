@@ -46,7 +46,11 @@ const std::pair<uint32_t, const char *> KnownVendors[] = {
     {0x1002, "AMD"}, {0x10DE, "NVIDIA"}, {0x8086, "INTEL"}, {0x13B5, "ARM"}};
 } // namespace Ren
 
-Ren::Context::Context() = default;
+Ren::Context::Context() {
+    for (int i = 0; i < Ren::MaxFramesInFlight; ++i) {
+        in_flight_frontend_frame[i] = -1;
+    }
+}
 
 Ren::Context::~Context() {
     std::lock_guard<std::mutex> _(g_device_mtx);

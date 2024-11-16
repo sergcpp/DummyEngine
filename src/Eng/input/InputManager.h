@@ -2,8 +2,10 @@
 
 #include <functional>
 #include <memory>
+#include <deque>
 
 #include <Gui/Input.h>
+#include <Ren/Span.h>
 
 namespace Eng {
 struct InputManagerImp;
@@ -22,6 +24,7 @@ class InputManager {
     InputManager &operator=(const InputManager &) = delete;
 
     const std::vector<bool> &keys_state() const;
+    const std::deque<input_event_t> &peek_events() const;
 
     void SetConverter(eInputEvent evt_type, const std::function<input_event_t(const input_event_t &)> &conv);
     void AddRawInputEvent(input_event_t evt);
