@@ -1081,3 +1081,7 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
     scene.env.curr_wind_scroll_hf =
         Fract(scene.env.curr_wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
 }
+
+#undef TINYEXR_IMPLEMENTATION
+#undef TINYEXR_USE_MINIZ
+#undef TINYEXR_USE_STB_ZLIB
