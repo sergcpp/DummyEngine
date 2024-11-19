@@ -64,6 +64,7 @@ runs:
         cp ./assets_pc/config.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/
         cp ./assets_pc/fonts/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/fonts/
         cp ./assets_pc/scenes/staircase.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/scenes/staircase2.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/scenes/
         cp ./assets_pc/scenes/mat_test.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/scenes/
         cp ./assets_pc/materials/staircase/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/staircase/
         cp ./assets_pc/materials/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/mat_test/
