@@ -277,10 +277,10 @@ struct ApiContext {
 
     bool LoadInstanceFunctions(ILog *log);
 
-    bool InitVkInstance(const char *enabled_layers[], int enabled_layers_count, int validation_level, ILog *log);
+    bool InitVkInstance(const char *enabled_layers[], int enabled_layers_count, int &validation_level, ILog *log);
     bool InitVkSurface(ILog *log);
     bool ChooseVkPhysicalDevice(std::string_view preferred_device, ILog *log);
-    bool InitVkDevice(const char *enabled_layers[], int enabled_layers_count, ILog *log);
+    bool InitVkDevice(const char *enabled_layers[], int enabled_layers_count, int validation_level, ILog *log);
     bool InitSwapChain(int w, int h, ILog *log);
     bool InitCommandBuffers(uint32_t family_index, ILog *log);
     bool InitPresentImageViews(ILog *log);

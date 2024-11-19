@@ -277,8 +277,8 @@ bool Ren::ApiContext::LoadInstanceFunctions(ILog *log) {
     return true;
 }
 
-bool Ren::ApiContext::InitVkInstance(const char *enabled_layers[], const int enabled_layers_count, int validation_level,
-                                     ILog *log) {
+bool Ren::ApiContext::InitVkInstance(const char *enabled_layers[], const int enabled_layers_count,
+                                     int &validation_level, ILog *log) {
     if (validation_level) { // Find validation layer
         uint32_t layers_count = 0;
         vkEnumerateInstanceLayerProperties(&layers_count, nullptr);
@@ -451,7 +451,8 @@ bool Ren::ApiContext::InitVkSurface(ILog *log) {
     return true;
 }
 
-bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_layers_count, ILog *log) {
+bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabled_layers_count,
+                                   const int validation_level, ILog *log) {
     VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
     int infos_count = 0;
     const float queue_priorities[] = {1.0f};
@@ -477,9 +478,10 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
     VkDeviceCreateInfo device_info = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     device_info.queueCreateInfoCount = infos_count;
     device_info.pQueueCreateInfos = queue_create_infos;
-    device_info.enabledLayerCount = enabled_layers_count;
-    device_info.ppEnabledLayerNames = enabled_layers;
-
+    if (validation_level) {
+        device_info.enabledLayerCount = enabled_layers_count;
+        device_info.ppEnabledLayerNames = enabled_layers;
+    }
     SmallVector<const char *, 16> device_extensions;
 
     device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);

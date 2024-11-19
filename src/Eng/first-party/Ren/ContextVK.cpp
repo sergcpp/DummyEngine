@@ -112,7 +112,7 @@ Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
     return default_descr_alloc_[api_ctx_->backend_frame].get();
 }
 
-bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const bool nohwrt,
+bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_level, const bool nohwrt,
                         const bool nosubgroup, std::string_view preferred_device) {
     api_ctx_ = std::make_unique<ApiContext>();
     if (!api_ctx_->Load(log)) {
@@ -159,7 +159,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         return false;
     }
 
-    if (!api_ctx_->InitVkDevice(enabled_layers, enabled_layers_count, log)) {
+    if (!api_ctx_->InitVkDevice(enabled_layers, enabled_layers_count, validation_level, log)) {
         return false;
     }
 
