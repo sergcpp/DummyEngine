@@ -480,7 +480,7 @@ void Ren::Context::InitDefaultBuffers() {
     default_delta_buf_ =
         buffers_.Insert("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
     default_indices_buf_ =
-        buffers_.Insert("default_ndx_buf2", api_ctx_.get(), eBufType::VertexIndices, 16 * 1024 * 1024, 4);
+        buffers_.Insert("default_ndx_buf", api_ctx_.get(), eBufType::VertexIndices, 16 * 1024 * 1024, 4);
 }
 
 void Ren::Context::ReleaseDefaultBuffers() {

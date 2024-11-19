@@ -214,29 +214,25 @@ void pack_vertex_delta(const VtxDelta &in_v, packed_vertex_delta_t &out_v) {
 } // namespace Ren
 
 Ren::Mesh::Mesh(std::string_view name, const float *positions, const int vtx_count, const uint32_t *indices,
-                const int ndx_count, ApiContext *api_ctx, BufferRef vertex_buf1, BufferRef vertex_buf2,
-                BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log) {
+                const int ndx_count, ApiContext *api_ctx, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
+                BufferRef &index_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};
-    Init(positions, vtx_count, indices, ndx_count, api_ctx, std::move(vertex_buf1), std::move(vertex_buf2),
-         std::move(index_buf), load_status, log);
+    Init(positions, vtx_count, indices, ndx_count, api_ctx, vertex_buf1, vertex_buf2, index_buf, load_status, log);
 }
 
 Ren::Mesh::Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load,
-                ApiContext *api_ctx, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-                BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
+                ApiContext *api_ctx, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
+                BufferRef &skin_vertex_buf, BufferRef &delta_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};
-    Init(data, on_mat_load, api_ctx, std::move(vertex_buf1), std::move(vertex_buf2), std::move(index_buf),
-         std::move(skin_vertex_buf), std::move(delta_buf), load_status, log);
+    Init(data, on_mat_load, api_ctx, vertex_buf1, vertex_buf2, index_buf, skin_vertex_buf, delta_buf, load_status, log);
 }
 
 void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t *indices, const int ndx_count,
-                     ApiContext *api_ctx, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                     ApiContext *api_ctx, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
                      eMeshLoadStatus *load_status, ILog *log) {
 
     if (!positions) {
-        // TODO: actually set to default mesh ('error' label like in source engine for
-        // example)
-        (*load_status) = eMeshLoadStatus::SetToDefault;
+        (*load_status) = eMeshLoadStatus::Error;
         return;
     }
 
@@ -281,16 +277,16 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     CommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
     attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, &stage_buf, cmd_buf);
-    attribs_buf1_.buf = std::move(vertex_buf1);
+    attribs_buf1_.buf = vertex_buf1;
 
     // allocate empty data in buffer 2 (for index matching)
     attribs_buf2_.sub = vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, nullptr);
-    attribs_buf2_.buf = std::move(vertex_buf2);
+    attribs_buf2_.buf = vertex_buf2;
 
     assert(attribs_buf1_.sub.offset == attribs_buf2_.sub.offset && "Offsets do not match!");
 
     indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
-    indices_buf_.buf = std::move(index_buf);
+    indices_buf_.buf = index_buf;
 
     api_ctx->EndSingleTimeCommands(cmd_buf);
     stage_buf.FreeImmediate();
@@ -299,8 +295,8 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
 }
 
 void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-                     BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
-                     BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
+                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
+                     BufferRef &delta_buf, eMeshLoadStatus *load_status, ILog *log) {
 
     if (data) {
         char mesh_type_str[12];
@@ -309,26 +305,21 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
         data->seekg(pos, std::ios::beg);
 
         if (strcmp(mesh_type_str, "STATIC_MESH\0") == 0) {
-            InitMeshSimple(*data, on_mat_load, api_ctx, std::move(vertex_buf1), std::move(vertex_buf2),
-                           std::move(index_buf), log);
+            InitMeshSimple(*data, on_mat_load, api_ctx, vertex_buf1, vertex_buf2, index_buf, log);
         } else if (strcmp(mesh_type_str, "COLORE_MESH\0") == 0) {
-            InitMeshColored(*data, on_mat_load, api_ctx, std::move(vertex_buf1), std::move(vertex_buf2),
-                            std::move(index_buf), log);
+            InitMeshColored(*data, on_mat_load, api_ctx, vertex_buf1, vertex_buf2, index_buf, log);
         } else if (strcmp(mesh_type_str, "SKELET_MESH\0") == 0 || strcmp(mesh_type_str, "SKECOL_MESH\0") == 0) {
-            InitMeshSkeletal(*data, on_mat_load, api_ctx, std::move(skin_vertex_buf), std::move(delta_buf),
-                             std::move(index_buf), log);
+            InitMeshSkeletal(*data, on_mat_load, api_ctx, skin_vertex_buf, delta_buf, index_buf, log);
         }
 
         (*load_status) = eMeshLoadStatus::CreatedFromData;
     } else {
-        // TODO: actually set to default mesh ('error' label like in source engine for
-        // example)
-        (*load_status) = eMeshLoadStatus::SetToDefault;
+        (*load_status) = eMeshLoadStatus::Error;
     }
 }
 
 void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-                               BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log) {
+                               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "STATIC_MESH\0") == 0);
@@ -416,15 +407,15 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     CommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
     attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, &stage_buf, cmd_buf, 0 /* offset */);
-    attribs_buf1_.buf = std::move(vertex_buf1);
+    attribs_buf1_.buf = vertex_buf1;
 
     attribs_buf2_.sub =
         vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
-    attribs_buf2_.buf = std::move(vertex_buf2);
+    attribs_buf2_.buf = vertex_buf2;
 
     indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf,
                                                  attribs_buf1_.size + attribs_buf2_.size);
-    indices_buf_.buf = std::move(index_buf);
+    indices_buf_.buf = index_buf;
     assert(attribs_buf1_.sub.offset == attribs_buf2_.sub.offset && "Offsets do not match!");
 
     api_ctx->EndSingleTimeCommands(cmd_buf);
@@ -434,7 +425,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 }
 
 void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-                                BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log) {
+                                BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "COLORE_MESH\0") == 0);
@@ -524,15 +515,15 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
     CommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
     attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, &stage_buf, cmd_buf, 0 /* offset */);
-    attribs_buf1_.buf = std::move(vertex_buf1);
+    attribs_buf1_.buf = vertex_buf1;
 
     attribs_buf2_.sub =
         vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
-    attribs_buf2_.buf = std::move(vertex_buf2);
+    attribs_buf2_.buf = vertex_buf2;
 
     indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf,
                                                  attribs_buf1_.size + attribs_buf2_.size);
-    indices_buf_.buf = std::move(index_buf);
+    indices_buf_.buf = index_buf;
     assert(attribs_buf1_.sub.offset == attribs_buf2_.sub.offset && "Offsets do not match!");
 
     api_ctx->EndSingleTimeCommands(cmd_buf);
@@ -542,7 +533,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 }
 
 void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-                                 BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf, ILog *log) {
+                                 BufferRef &skin_vertex_buf, BufferRef &delta_buf, BufferRef &index_buf, ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "SKELET_MESH\0") == 0 || strcmp(mesh_type_str, "SKECOL_MESH\0") == 0);
@@ -718,16 +709,16 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     if (shape_data_present) {
         sk_deltas_buf_.sub =
             delta_buf->AllocSubRegion(sk_deltas_buf_.size, 16, name_, &stage_buf, cmd_buf, delta_buf_off);
-        sk_deltas_buf_.buf = std::move(delta_buf);
+        sk_deltas_buf_.buf = delta_buf;
     }
 
     // allocate untransformed vertices
     sk_attribs_buf_.sub =
         skin_vertex_buf->AllocSubRegion(sk_attribs_buf_.size, 16, name_, &stage_buf, cmd_buf, vertices_off);
-    sk_attribs_buf_.buf = std::move(skin_vertex_buf);
+    sk_attribs_buf_.buf = skin_vertex_buf;
 
     indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf, indices_off);
-    indices_buf_.buf = std::move(index_buf);
+    indices_buf_.buf = index_buf;
 
     api_ctx->EndSingleTimeCommands(cmd_buf);
     stage_buf.FreeImmediate();

@@ -376,8 +376,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
 #endif
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
-        };
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
         color_rts[2].flags = Ren::eTexFlagBits::SRGB;
 
@@ -706,18 +705,18 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             auto &skinning = fg_builder_.AddNode("SKINNING");
 
             FgResRef skin_vtx_res =
-                skinning.AddStorageReadonlyInput(ctx_.default_skin_vertex_buf(), Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(persistent_data.skin_vertex_buf, Ren::eStageBits::ComputeShader);
             FgResRef in_skin_transforms_res =
                 skinning.AddStorageReadonlyInput(common_buffers.skin_transforms_res, Ren::eStageBits::ComputeShader);
             FgResRef in_shape_keys_res =
                 skinning.AddStorageReadonlyInput(common_buffers.shape_keys_res, Ren::eStageBits::ComputeShader);
             FgResRef delta_buf_res =
-                skinning.AddStorageReadonlyInput(ctx_.default_delta_buf(), Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(persistent_data.delta_buf, Ren::eStageBits::ComputeShader);
 
             FgResRef vtx_buf1_res =
-                skinning.AddStorageOutput(ctx_.default_vertex_buf1(), Ren::eStageBits::ComputeShader);
+                skinning.AddStorageOutput(persistent_data.vertex_buf1, Ren::eStageBits::ComputeShader);
             FgResRef vtx_buf2_res =
-                skinning.AddStorageOutput(ctx_.default_vertex_buf2(), Ren::eStageBits::ComputeShader);
+                skinning.AddStorageOutput(persistent_data.vertex_buf2, Ren::eStageBits::ComputeShader);
 
             skinning.make_executor<ExSkinning>(pi_skinning_, p_list_, skin_vtx_res, in_skin_transforms_res,
                                                in_shape_keys_res, delta_buf_res, vtx_buf1_res, vtx_buf2_res);
@@ -891,9 +890,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         { // Shadow maps
             auto &shadow_maps = fg_builder_.AddNode("SHADOW MAPS");
-            FgResRef vtx_buf1_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            FgResRef vtx_buf2_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            FgResRef ndx_buf_res = shadow_maps.AddIndexBufferInput(ctx_.default_indices_buf());
+            FgResRef vtx_buf1_res = shadow_maps.AddVertexBufferInput(persistent_data.vertex_buf1);
+            FgResRef vtx_buf2_res = shadow_maps.AddVertexBufferInput(persistent_data.vertex_buf2);
+            FgResRef ndx_buf_res = shadow_maps.AddIndexBufferInput(persistent_data.indices_buf);
 
             FgResRef shared_data_res = shadow_maps.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
@@ -977,9 +976,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         if (list.render_settings.enable_zfill && !list.render_settings.debug_culling) {
             auto &depth_fill = fg_builder_.AddNode("DEPTH FILL");
 
-            FgResRef vtx_buf1 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            FgResRef vtx_buf2 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            FgResRef ndx_buf = depth_fill.AddIndexBufferInput(ctx_.default_indices_buf());
+            FgResRef vtx_buf1 = depth_fill.AddVertexBufferInput(persistent_data.vertex_buf1);
+            FgResRef vtx_buf2 = depth_fill.AddVertexBufferInput(persistent_data.vertex_buf2);
+            FgResRef ndx_buf = depth_fill.AddIndexBufferInput(persistent_data.indices_buf);
 
             FgResRef shared_data_res = depth_fill.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
@@ -1190,9 +1189,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_sh_geo_instances_res, stages);
             }
             data->materials_buf = debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, stages);
-            data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stages);
-            data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stages);
-            data->ndx_buf = debug_rt.AddStorageReadonlyInput(ctx_.default_indices_buf(), stages);
+            data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf1, stages);
+            data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf2, stages);
+            data->ndx_buf = debug_rt.AddStorageReadonlyInput(persistent_data.indices_buf, stages);
             data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights_res, stages);
             data->shadowmap_tex = debug_rt.AddTextureInput(shadow_map_tex_, stages);
             data->ltc_luts_tex = debug_rt.AddTextureInput(ltc_luts_, stages);

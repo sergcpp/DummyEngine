@@ -148,8 +148,6 @@ class Buffer : public RefCounter {
     void Fill(uint32_t dst_offset, uint32_t size, uint32_t data, CommandBuffer cmd_buf);
     void UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf);
 
-    void Print(ILog *log);
-
     mutable eResState resource_state = eResState::Undefined;
 };
 

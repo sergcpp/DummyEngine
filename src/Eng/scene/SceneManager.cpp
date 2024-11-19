@@ -284,6 +284,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_load_scene_str);
 
     Ren::ILog *log = ren_ctx_.log();
+    Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
     log->Info("SceneManager: Loading scene!");
     {
@@ -293,6 +294,17 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         scene_data_.textures.reserve(16384);
         StartTextureLoaderThread();
     }
+
+    scene_data_.persistent_data.vertex_buf1 =
+        scene_data_.buffers.Insert("VtxBuf1", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+    scene_data_.persistent_data.vertex_buf2 =
+        scene_data_.buffers.Insert("VtxBuf2", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+    scene_data_.persistent_data.skin_vertex_buf =
+        scene_data_.buffers.Insert("SkinVtxBuf", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+    scene_data_.persistent_data.delta_buf =
+        scene_data_.buffers.Insert("DeltaBuf", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+    scene_data_.persistent_data.indices_buf =
+        scene_data_.buffers.Insert("NdxBuf", api_ctx, Ren::eBufType::VertexIndices, 16 * 1024 * 1024, 4);
 
     std::map<std::string, Ren::Vec4f> decals_textures;
 
@@ -710,8 +722,6 @@ void Eng::SceneManager::ClearScene() {
 
     scene_data_.name = {};
 
-    ren_ctx_.default_vertex_buf1()->Print(ren_ctx_.log());
-
     for (auto &obj : scene_data_.objects) {
         while (obj.comp_mask) {
             const long i = GetFirstBit(obj.comp_mask);
@@ -728,10 +738,12 @@ void Eng::SceneManager::ClearScene() {
     }
 
     scene_data_.env = {};
+    scene_data_.persistent_data.Clear();
 
     assert(scene_data_.meshes.empty());
     assert(scene_data_.materials.empty());
     assert(scene_data_.textures.empty());
+    assert(scene_data_.buffers.empty());
 
     scene_data_.objects.clear();
     scene_data_.name_to_object.clear();
@@ -744,8 +756,6 @@ void Eng::SceneManager::ClearScene() {
     for (auto &range : scene_data_.mat_update_ranges) {
         range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
     }
-
-    scene_data_.persistent_data.Clear();
 
     changed_objects_.clear();
     last_changed_objects_.clear();
@@ -1351,19 +1361,21 @@ Ren::MeshRef Eng::SceneManager::LoadMesh(std::string_view name, std::istream *da
                                          Ren::eMeshLoadStatus *load_status) {
     Ren::MeshRef ref = scene_data_.meshes.FindByName(name);
     if (!ref) {
-        ref = scene_data_.meshes.Insert(name, data, on_mat_load, ren_ctx_.api_ctx(), ren_ctx_.default_vertex_buf1(),
-                                        ren_ctx_.default_vertex_buf2(), ren_ctx_.default_indices_buf(),
-                                        ren_ctx_.default_skin_vertex_buf(), ren_ctx_.default_delta_buf(), load_status,
-                                        ren_ctx_.log());
+        ref = scene_data_.meshes.Insert(
+            name, data, on_mat_load, ren_ctx_.api_ctx(), scene_data_.persistent_data.vertex_buf1,
+            scene_data_.persistent_data.vertex_buf2, scene_data_.persistent_data.indices_buf,
+            scene_data_.persistent_data.skin_vertex_buf, scene_data_.persistent_data.delta_buf, load_status,
+            ren_ctx_.log());
     } else {
         if (ref->ready()) {
             if (load_status) {
                 (*load_status) = Ren::eMeshLoadStatus::Found;
             }
         } else if (data) {
-            ref->Init(data, on_mat_load, ren_ctx_.api_ctx(), ren_ctx_.default_vertex_buf1(),
-                      ren_ctx_.default_vertex_buf2(), ren_ctx_.default_indices_buf(),
-                      ren_ctx_.default_skin_vertex_buf(), ren_ctx_.default_delta_buf(), load_status, ren_ctx_.log());
+            ref->Init(data, on_mat_load, ren_ctx_.api_ctx(), scene_data_.persistent_data.vertex_buf1,
+                      scene_data_.persistent_data.vertex_buf2, scene_data_.persistent_data.indices_buf,
+                      scene_data_.persistent_data.skin_vertex_buf, scene_data_.persistent_data.delta_buf, load_status,
+                      ren_ctx_.log());
         }
     }
 

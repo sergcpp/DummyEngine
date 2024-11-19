@@ -296,8 +296,8 @@ class SceneManager {
 
     std::vector<char> temp_buf;
 
-    bool cur_lm_indir_ = false;
-    uint32_t cur_lm_obj_ = 0;
+    //bool cur_lm_indir_ = false;
+    //uint32_t cur_lm_obj_ = 0;
 
     // PT temp data
     // std::vector<Ray::color_rgba_t> pt_lm_direct_, pt_lm_indir_, pt_lm_indir_sh_[4];

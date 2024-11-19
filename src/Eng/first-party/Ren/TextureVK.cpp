@@ -2302,10 +2302,10 @@ void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture1D::Texture1D(std::string_view name, BufferRef buf, const eTexFormat format, const uint32_t offset,
+Ren::Texture1D::Texture1D(std::string_view name, const BufferRef &buf, const eTexFormat format, const uint32_t offset,
                           const uint32_t size, ILog *log)
     : name_(name) {
-    Init(std::move(buf), format, offset, size, log);
+    Init(buf, format, offset, size, log);
 }
 
 Ren::Texture1D::~Texture1D() { Free(); }
@@ -2319,6 +2319,7 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
 
     Free();
 
+    api_ctx_ = rhs.buf_->api_ctx();
     buf_ = std::move(rhs.buf_);
     params_ = std::exchange(rhs.params_, {});
     name_ = std::move(rhs.name_);
@@ -2327,7 +2328,7 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
+void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
                           ILog *log) {
     Free();
 
@@ -2340,18 +2341,19 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
     const VkResult res = buf->api_ctx()->vkCreateBufferView(buf->api_ctx()->device, &view_info, nullptr, &buf_view_);
     assert(res == VK_SUCCESS);
 
-    buf_ = std::move(buf);
+    api_ctx_ = buf->api_ctx();
+    buf_ = buf;
     params_.offset = offset;
     params_.size = size;
     params_.format = format;
 }
 
 void Ren::Texture1D::Free() {
-    if (buf_) {
-        buf_->api_ctx()->buf_views_to_destroy[buf_->api_ctx()->backend_frame].push_back(buf_view_);
+    if (buf_view_) {
+        api_ctx_->buf_views_to_destroy[api_ctx_->backend_frame].push_back(buf_view_);
         buf_view_ = {};
-        buf_ = {};
     }
+    buf_ = WeakBufferRef{};
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

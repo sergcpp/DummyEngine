@@ -86,9 +86,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
     { // depth peel pass
         auto &oit_depth_peel = fg_builder_.AddNode("OIT DEPTH PEEL");
-        const FgResRef vtx_buf1 = oit_depth_peel.AddVertexBufferInput(ctx_.default_vertex_buf1());
-        const FgResRef vtx_buf2 = oit_depth_peel.AddVertexBufferInput(ctx_.default_vertex_buf2());
-        const FgResRef ndx_buf = oit_depth_peel.AddIndexBufferInput(ctx_.default_indices_buf());
+        const FgResRef vtx_buf1 = oit_depth_peel.AddVertexBufferInput(persistent_data.vertex_buf1);
+        const FgResRef vtx_buf2 = oit_depth_peel.AddVertexBufferInput(persistent_data.vertex_buf2);
+        const FgResRef ndx_buf = oit_depth_peel.AddIndexBufferInput(persistent_data.indices_buf);
 
         const FgResRef materials_buf =
             oit_depth_peel.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
@@ -125,9 +125,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
     { // schedule reflection rays
         auto &oit_schedule = fg_builder_.AddNode("OIT SCHEDULE");
 
-        const FgResRef vtx_buf1 = oit_schedule.AddVertexBufferInput(ctx_.default_vertex_buf1());
-        const FgResRef vtx_buf2 = oit_schedule.AddVertexBufferInput(ctx_.default_vertex_buf2());
-        const FgResRef ndx_buf = oit_schedule.AddIndexBufferInput(ctx_.default_indices_buf());
+        const FgResRef vtx_buf1 = oit_schedule.AddVertexBufferInput(persistent_data.vertex_buf1);
+        const FgResRef vtx_buf2 = oit_schedule.AddVertexBufferInput(persistent_data.vertex_buf2);
+        const FgResRef ndx_buf = oit_schedule.AddIndexBufferInput(persistent_data.indices_buf);
 
         const FgResRef materials_buf =
             oit_schedule.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
@@ -366,9 +366,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
             data->geo_data = rt_refl.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_refl.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
-            data->vtx_buf1 = rt_refl.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
-            data->vtx_buf2 = rt_refl.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
-            data->ndx_buf = rt_refl.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
+            data->vtx_buf1 = rt_refl.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
+            data->vtx_buf2 = rt_refl.AddStorageReadonlyInput(persistent_data.vertex_buf2, stage);
+            data->ndx_buf = rt_refl.AddStorageReadonlyInput(persistent_data.indices_buf, stage);
             data->shared_data = rt_refl.AddUniformBufferInput(common_buffers.shared_data_res, stage);
             data->depth_tex = rt_refl.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_refl.AddTextureInput(frame_textures.normal, stage);
@@ -469,9 +469,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             const std::string pass_name = "OIT BLEND #" + std::to_string(i);
 
             auto &oit_blend_layer = fg_builder_.AddNode(pass_name);
-            const FgResRef vtx_buf1 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            const FgResRef vtx_buf2 = oit_blend_layer.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            const FgResRef ndx_buf = oit_blend_layer.AddIndexBufferInput(ctx_.default_indices_buf());
+            const FgResRef vtx_buf1 = oit_blend_layer.AddVertexBufferInput(persistent_data.vertex_buf1);
+            const FgResRef vtx_buf2 = oit_blend_layer.AddVertexBufferInput(persistent_data.vertex_buf2);
+            const FgResRef ndx_buf = oit_blend_layer.AddIndexBufferInput(persistent_data.indices_buf);
 
             const FgResRef materials_buf =
                 oit_blend_layer.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);

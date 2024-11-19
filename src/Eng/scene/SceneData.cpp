@@ -10,6 +10,11 @@ Eng::PersistentGpuData::PersistentGpuData() = default;
 Eng::PersistentGpuData::~PersistentGpuData() { Clear(); }
 
 void Eng::PersistentGpuData::Clear() {
+    vertex_buf1 = vertex_buf2 = skin_vertex_buf = delta_buf = indices_buf = {};
+    stoch_lights_buf = stoch_lights_nodes_buf = {};
+    rt_tlas_buf = rt_sh_tlas_buf = {};
+    hwrt = {};
+    swrt.rt_prim_indices_buf = swrt.rt_blas_buf = {};
 #if defined(USE_VK_RENDER)
     if (textures_descr_pool) {
         Ren::ApiContext *api_ctx = textures_descr_pool->api_ctx();

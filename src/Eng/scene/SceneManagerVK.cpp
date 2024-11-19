@@ -51,7 +51,8 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
     if (!pers_data.materials_buf) {
-        pers_data.materials_buf = ren_ctx_.LoadBuffer("Materials Buffer", Ren::eBufType::Storage, req_mat_buf_size);
+        pers_data.materials_buf =
+            scene_data_.buffers.Insert("Materials Buffer", api_ctx, Ren::eBufType::Storage, req_mat_buf_size);
     }
 
     if (pers_data.materials_buf->size() < req_mat_buf_size) {
@@ -218,7 +219,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     for (uint32_t i = update_range.first; i < update_range.second; ++i) {
         const uint32_t rel_i = i - update_range.first;
 
-        //const uint32_t set_index = i / materials_per_descriptor;
+        // const uint32_t set_index = i / materials_per_descriptor;
         const uint32_t arr_offset = i % materials_per_descriptor;
 
         const Ren::Material *mat = scene_data_.materials.GetOrNull(i);
@@ -267,7 +268,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 
             const uint32_t set_index = i / materials_per_descriptor;
             const uint32_t arr_offset = i % materials_per_descriptor;
-            //const uint32_t arr_count = (materials_per_descriptor - arr_offset);
+            // const uint32_t arr_count = (materials_per_descriptor - arr_offset);
 
             VkWriteDescriptorSet descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = scene_data_.persistent_data.textures_descr_sets[ren_ctx_.backend_frame()][set_index];
@@ -467,7 +468,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
         std::string buf_name =
             "RT BLAS Buffer #" + std::to_string(scene_data_.persistent_data.hwrt.rt_blas_buffers.size());
         scene_data_.persistent_data.hwrt.rt_blas_buffers.emplace_back(
-            ren_ctx_.LoadBuffer(buf_name, Ren::eBufType::AccStructure, buf_size));
+            scene_data_.buffers.Insert(buf_name, api_ctx, Ren::eBufType::AccStructure, buf_size));
         const uint16_t pool_index = scene_data_.persistent_data.hwrt.rt_blas_mem_alloc.AddPool(buf_size);
         if (pool_index != scene_data_.persistent_data.hwrt.rt_blas_buffers.size() - 1) {
             ren_ctx_.log()->Error("Invalid pool index!");
@@ -537,8 +538,8 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
 
     VkAccelerationStructureBuildGeometryInfoKHR tlas_build_info = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
-    tlas_build_info.flags =
-        VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV;
+    tlas_build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                            VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
     tlas_build_info.geometryCount = 1;
     tlas_build_info.pGeometries = &tlas_geo;
     tlas_build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
@@ -550,13 +551,13 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
     api_ctx->vkGetAccelerationStructureBuildSizesKHR(api_ctx->device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
                                                      &tlas_build_info, &max_instance_count, &size_info);
 
-    scene_data_.persistent_data.rt_tlas_buf =
-        ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
-    scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer("TLAS Shadow Buf", Ren::eBufType::AccStructure,
-                                                                     uint32_t(size_info.accelerationStructureSize));
+    scene_data_.persistent_data.rt_tlas_buf = scene_data_.buffers.Insert(
+        "TLAS Buf", api_ctx, Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
+    scene_data_.persistent_data.rt_sh_tlas_buf = scene_data_.buffers.Insert(
+        "TLAS Shadow Buf", api_ctx, Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
 
-    Ren::BufferRef tlas_scratch_buf =
-        ren_ctx_.LoadBuffer("TLAS Scratch Buf", Ren::eBufType::Storage, uint32_t(size_info.buildScratchSize));
+    Ren::BufferRef tlas_scratch_buf = scene_data_.buffers.Insert("TLAS Scratch Buf", api_ctx, Ren::eBufType::Storage,
+                                                                 uint32_t(size_info.buildScratchSize));
 
     { // Main TLAS
         VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};

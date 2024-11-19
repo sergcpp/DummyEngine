@@ -499,15 +499,6 @@ void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void
     resource_state = eResState::CopyDst;
 }
 
-void Ren::Buffer::Print(ILog *log) {
-#if 0
-    log->Info("=================================================================");
-    log->Info("Buffer %s, %f MB, %i nodes", name_.c_str(), float(size_) / (1024.0f * 1024.0f), int(nodes_.size()));
-    PrintNode(0, "", true, log);
-    log->Info("=================================================================");
-#endif
-}
-
 void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
                              const uint32_t size, CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;

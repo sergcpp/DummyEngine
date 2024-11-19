@@ -1007,9 +1007,9 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     using Stg = Ren::eStageBits;
 
     auto &gbuf_fill = fg_builder_.AddNode("GBUFFER FILL");
-    const FgResRef vtx_buf1 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const FgResRef vtx_buf2 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const FgResRef ndx_buf = gbuf_fill.AddIndexBufferInput(ctx_.default_indices_buf());
+    const FgResRef vtx_buf1 = gbuf_fill.AddVertexBufferInput(persistent_data.vertex_buf1);
+    const FgResRef vtx_buf2 = gbuf_fill.AddVertexBufferInput(persistent_data.vertex_buf2);
+    const FgResRef ndx_buf = gbuf_fill.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
@@ -1051,9 +1051,9 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     using Stg = Ren::eStageBits;
 
     auto &opaque = fg_builder_.AddNode("OPAQUE");
-    const FgResRef vtx_buf1 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const FgResRef vtx_buf2 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const FgResRef ndx_buf = opaque.AddIndexBufferInput(ctx_.default_indices_buf());
+    const FgResRef vtx_buf1 = opaque.AddVertexBufferInput(persistent_data.vertex_buf1);
+    const FgResRef vtx_buf2 = opaque.AddVertexBufferInput(persistent_data.vertex_buf2);
+    const FgResRef ndx_buf = opaque.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
@@ -1109,9 +1109,9 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
     using Stg = Ren::eStageBits;
 
     auto &transparent = fg_builder_.AddNode("TRANSPARENT");
-    const FgResRef vtx_buf1 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const FgResRef vtx_buf2 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const FgResRef ndx_buf = transparent.AddIndexBufferInput(ctx_.default_indices_buf());
+    const FgResRef vtx_buf1 = transparent.AddVertexBufferInput(persistent_data.vertex_buf1);
+    const FgResRef vtx_buf2 = transparent.AddVertexBufferInput(persistent_data.vertex_buf2);
+    const FgResRef ndx_buf = transparent.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf =
         transparent.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
@@ -1265,9 +1265,9 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
     using Stg = Ren::eStageBits;
 
     auto &emissive = fg_builder_.AddNode("EMISSIVE");
-    const FgResRef vtx_buf1 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const FgResRef vtx_buf2 = emissive.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const FgResRef ndx_buf = emissive.AddIndexBufferInput(ctx_.default_indices_buf());
+    const FgResRef vtx_buf1 = emissive.AddVertexBufferInput(persistent_data.vertex_buf1);
+    const FgResRef vtx_buf2 = emissive.AddVertexBufferInput(persistent_data.vertex_buf2);
+    const FgResRef ndx_buf = emissive.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = emissive.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)

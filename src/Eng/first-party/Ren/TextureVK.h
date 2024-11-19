@@ -152,7 +152,8 @@ void CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, uint32_t src_le
 void ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf);
 
 class Texture1D : public RefCounter {
-    BufferRef buf_;
+    ApiContext *api_ctx_ = nullptr;
+    WeakBufferRef buf_;
     Texture1DParams params_;
     String name_;
 
@@ -161,7 +162,8 @@ class Texture1D : public RefCounter {
     void Free();
 
   public:
-    Texture1D(std::string_view name, BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
+    Texture1D(std::string_view name, const BufferRef &buf, eTexFormat format, uint32_t offset, uint32_t size,
+              ILog *log);
     Texture1D(const Texture1D &rhs) = delete;
     Texture1D(Texture1D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture1D();
@@ -175,7 +177,7 @@ class Texture1D : public RefCounter {
 
     const String &name() const { return name_; }
 
-    void Init(BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
+    void Init(const BufferRef &buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
 };
 
 class Texture3D : public RefCounter {

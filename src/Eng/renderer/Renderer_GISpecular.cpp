@@ -385,9 +385,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             data->geo_data = rt_refl.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_refl.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
-            data->vtx_buf1 = rt_refl.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
-            data->vtx_buf2 = rt_refl.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
-            data->ndx_buf = rt_refl.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
+            data->vtx_buf1 = rt_refl.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
+            data->vtx_buf2 = rt_refl.AddStorageReadonlyInput(persistent_data.vertex_buf2, stage);
+            data->ndx_buf = rt_refl.AddStorageReadonlyInput(persistent_data.indices_buf, stage);
             data->shared_data = rt_refl.AddUniformBufferInput(common_buffers.shared_data_res, stage);
             data->noise_tex = rt_refl.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_refl.AddTextureInput(frame_textures.depth, stage);

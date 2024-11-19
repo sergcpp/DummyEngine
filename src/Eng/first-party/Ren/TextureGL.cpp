@@ -1196,10 +1196,10 @@ void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture1D::Texture1D(std::string_view name, BufferRef buf, const eTexFormat format, const uint32_t offset,
+Ren::Texture1D::Texture1D(std::string_view name, const BufferRef &buf, const eTexFormat format, const uint32_t offset,
                           const uint32_t size, ILog *log)
     : name_(name) {
-    Init(std::move(buf), format, offset, size, log);
+    Init(buf, format, offset, size, log);
 }
 
 Ren::Texture1D::~Texture1D() { Free(); }
@@ -1221,7 +1221,7 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
+void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
                           ILog *log) {
     Free();
 
@@ -1236,7 +1236,7 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
     glBindTexture(GL_TEXTURE_BUFFER, 0);
 
     handle_ = {uint32_t(tex_id), TextureHandleCounter++};
-    buf_ = std::move(buf);
+    buf_ = buf;
     params_.offset = offset;
     params_.size = size;
     params_.format = format;

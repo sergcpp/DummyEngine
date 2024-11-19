@@ -204,13 +204,14 @@ struct PersistentGpuData {
     Ren::Tex1DRef instance_buf_tbo;
     Ren::BufferRef materials_buf;
     Ren::BufferRef stoch_lights_buf, stoch_lights_nodes_buf;
+    Ren::BufferRef vertex_buf1, vertex_buf2, skin_vertex_buf, delta_buf, indices_buf;
 #if defined(USE_VK_RENDER)
     std::unique_ptr<Ren::DescrPool> textures_descr_pool;
     VkDescriptorSetLayout textures_descr_layout = VK_NULL_HANDLE;
     std::unique_ptr<Ren::DescrPool> rt_textures_descr_pool, rt_inline_textures_descr_pool;
     VkDescriptorSetLayout rt_textures_descr_layout = VK_NULL_HANDLE, rt_inline_textures_descr_layout = VK_NULL_HANDLE;
     Ren::SmallVector<VkDescriptorSet, 1024> textures_descr_sets[4];
-    VkDescriptorSet rt_textures_descr_sets[4], rt_inline_textures_descr_sets[4];
+    VkDescriptorSet rt_textures_descr_sets[4] = {}, rt_inline_textures_descr_sets[4] = {};
 #elif defined(USE_GL_RENDER)
     Ren::BufferRef textures_buf;
 #endif
@@ -249,6 +250,7 @@ struct PersistentGpuData {
 struct SceneData {
     Ren::String name;
 
+    Ren::BufferStorage buffers;
     Ren::Texture2DStorage textures;
     Ren::MaterialStorage materials;
     std::vector<uint32_t> material_changes;

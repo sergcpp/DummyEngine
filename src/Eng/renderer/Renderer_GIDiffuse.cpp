@@ -428,8 +428,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             data->geo_data = rt_gi.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_gi.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
-            data->vtx_buf1 = rt_gi.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
-            data->ndx_buf = rt_gi.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
+            data->vtx_buf1 = rt_gi.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
+            data->ndx_buf = rt_gi.AddStorageReadonlyInput(persistent_data.indices_buf, stage);
             data->shared_data = rt_gi.AddUniformBufferInput(common_buffers.shared_data_res, stage);
             data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_gi.AddTextureInput(frame_textures.depth, stage);
@@ -490,8 +490,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             data->geo_data = sample_lights.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);
             data->materials = sample_lights.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::ComputeShader);
-            data->vtx_buf1 = sample_lights.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), Stg::ComputeShader);
-            data->ndx_buf = sample_lights.AddStorageReadonlyInput(ctx_.default_indices_buf(), Stg::ComputeShader);
+            data->vtx_buf1 = sample_lights.AddStorageReadonlyInput(persistent_data.vertex_buf1, Stg::ComputeShader);
+            data->ndx_buf = sample_lights.AddStorageReadonlyInput(persistent_data.indices_buf, Stg::ComputeShader);
             data->tlas_buf = sample_lights.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, Stg::ComputeShader);
 
             if (!ctx_.capabilities.hwrt) {
