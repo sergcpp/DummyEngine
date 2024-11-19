@@ -122,6 +122,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
                          uint32_t subpass_index, ILog *log) {
     Destroy();
 
+    log->Info("Initializing pipeline %s...", prog->name().c_str());
+
     api_ctx_ = api_ctx;
     type_ = ePipelineType::Graphics;
 
@@ -345,6 +347,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
 
 bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::optional<int> subgroup_size) {
     Destroy();
+
+    log->Info("Initializing pipeline %s...", prog->name().c_str());
 
     ePipelineType type = ePipelineType::Undefined;
 
