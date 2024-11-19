@@ -393,7 +393,7 @@ jobs:
   #         bin-name: "DummyAppVK"
   #         bin-dir: "linux-x86_64-vk"
   #         out-dir: "linux-x86_64-vk-amd-img-output"
-  #         test-args: "-d AMD --pt_nohwrt"
+  #         test-args: "-d AMD"
   #     - name: Upload artifacts
   #       uses: actions/upload-artifact@v3
   #       if: always()

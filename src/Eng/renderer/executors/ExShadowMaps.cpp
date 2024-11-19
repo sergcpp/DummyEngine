@@ -18,7 +18,44 @@ void Eng::ExShadowMaps::Execute(FgBuilder &builder) {
 
 void Eng::ExShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
                                  FgAllocBuf &ndx_buf, FgAllocTex &shadowmap_tex) {
-    const Ren::RenderTarget depth_target = {shadowmap_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+    const int buf1_stride = 16, buf2_stride = 16;
+
+    { // VAO for solid shadow pass (uses position attribute only)
+        const Ren::VtxAttribDesc attribs[] = {
+            {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+        if (!vi_depth_pass_solid_.Setup(attribs, ndx_buf.ref->handle())) {
+            ctx.log()->Error("ExShadowMaps: vi_depth_pass_solid_ init failed!");
+        }
+    }
+
+    { // VAO for solid shadow pass of vegetation (uses position and secondary uv attributes)
+        const Ren::VtxAttribDesc attribs[] = {
+            {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf2.ref->handle(), VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+        if (!vi_depth_pass_vege_solid_.Setup(attribs, ndx_buf.ref->handle())) {
+            ctx.log()->Error("ExShadowMaps: vi_depth_pass_vege_solid_ init failed!");
+        }
+    }
+
+    { // VAO for alpha-tested shadow pass (uses position and uv attributes)
+        const Ren::VtxAttribDesc attribs[] = {
+            {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1.ref->handle(), VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
+        if (!vi_depth_pass_transp_.Setup(attribs, ndx_buf.ref->handle())) {
+            ctx.log()->Error("ExShadowMaps: vi_depth_pass_transp_ init failed!");
+        }
+    }
+
+    { // VAO for transparent shadow pass of vegetation (uses position, primary and
+      // secondary uv attributes)
+        const Ren::VtxAttribDesc attribs[] = {
+            {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1.ref->handle(), VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+            {vtx_buf2.ref->handle(), VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+        if (!vi_depth_pass_vege_transp_.Setup(attribs, ndx_buf.ref->handle())) {
+            ctx.log()->Error("ExShadowMaps: depth_pass_vege_transp_vao_ init failed!");
+        }
+    }
 
     if (!initialized) {
 #if defined(USE_GL_RENDER)
@@ -34,8 +71,7 @@ void Eng::ExShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAll
             "internal/shadow.frag.glsl");
         assert(shadow_vege_solid_prog->ready());
         Ren::ProgramRef shadow_transp_prog = sh.LoadProgram(
-            ctx,
-            bindless ? "internal/shadow@ALPHATEST.vert.glsl" : "internal/shadow@ALPHATEST;NO_BINDLESS.vert.glsl",
+            ctx, bindless ? "internal/shadow@ALPHATEST.vert.glsl" : "internal/shadow@ALPHATEST;NO_BINDLESS.vert.glsl",
             bindless ? "internal/shadow@ALPHATEST.frag.glsl" : "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(shadow_transp_prog->ready());
         Ren::ProgramRef shadow_vege_transp_prog = sh.LoadProgram(
@@ -45,47 +81,10 @@ void Eng::ExShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAll
             bindless ? "internal/shadow@ALPHATEST.frag.glsl" : "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl");
         assert(shadow_vege_transp_prog->ready());
 
+        const Ren::RenderTarget depth_target = {shadowmap_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+
         if (!rp_depth_only_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {
             ctx.log()->Error("[ExShadowMaps::LazyInit]: Failed to init depth only pass!");
-        }
-
-        const int buf1_stride = 16, buf2_stride = 16;
-
-        { // VAO for solid shadow pass (uses position attribute only)
-            const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-            if (!vi_depth_pass_solid_.Setup(attribs, ndx_buf.ref->handle())) {
-                ctx.log()->Error("ExShadowMaps: vi_depth_pass_solid_ init failed!");
-            }
-        }
-
-        { // VAO for solid shadow pass of vegetation (uses position and secondary uv attributes)
-            const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf2.ref->handle(), VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_depth_pass_vege_solid_.Setup(attribs, ndx_buf.ref->handle())) {
-                ctx.log()->Error("ExShadowMaps: vi_depth_pass_vege_solid_ init failed!");
-            }
-        }
-
-        { // VAO for alpha-tested shadow pass (uses position and uv attributes)
-            const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref->handle(), VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
-            if (!vi_depth_pass_transp_.Setup(attribs, ndx_buf.ref->handle())) {
-                ctx.log()->Error("ExShadowMaps: vi_depth_pass_transp_ init failed!");
-            }
-        }
-
-        { // VAO for transparent shadow pass of vegetation (uses position, primary and
-          // secondary uv attributes)
-            const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref->handle(), VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-                {vtx_buf2.ref->handle(), VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_depth_pass_vege_transp_.Setup(attribs, ndx_buf.ref->handle())) {
-                ctx.log()->Error("ExShadowMaps: depth_pass_vege_transp_vao_ init failed!");
-            }
         }
 
         { // solid/transp
@@ -141,7 +140,6 @@ void Eng::ExShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAll
                 ctx.log()->Error("[ExShadowMaps::LazyInit]: Failed to initialize pipeline!");
             }
         }
-
         initialized = true;
     }
 

@@ -135,6 +135,8 @@ class GSBaseState : public Eng::ViewerState {
     void Clear_PT();
     void Draw_PT(const Ren::Tex2DRef &target);
 
+    void ReloadSceneResources();
+
     int WriteAndValidateCaptureResult();
 
   public:

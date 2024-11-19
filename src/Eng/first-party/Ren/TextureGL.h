@@ -45,8 +45,6 @@ class Texture2D : public RefCounter {
     bool ready_ = false;
     String name_;
 
-    void Free();
-
     void InitFromRAWData(const Buffer *sbuf, int data_off, const Tex2DParams &p, ILog *log);
     void InitFromTGAFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log);
     void InitFromDDSFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log);
@@ -77,6 +75,9 @@ class Texture2D : public RefCounter {
     Texture2D(const Texture2D &rhs) = delete;
     Texture2D(Texture2D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture2D();
+
+    void Free();
+    void FreeImmediate() { Free(); }
 
     Texture2D &operator=(const Texture2D &rhs) = delete;
     Texture2D &operator=(Texture2D &&rhs) noexcept;
@@ -129,14 +130,15 @@ class Texture1D : public RefCounter {
     Texture1DParams params_;
     String name_;
 
-    void Free();
-
   public:
     Texture1D(std::string_view name, const BufferRef &buf, eTexFormat format, uint32_t offset, uint32_t size,
               ILog *log);
     Texture1D(const Texture1D &rhs) = delete;
     Texture1D(Texture1D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture1D();
+
+    void Free();
+    void FreeImmediate() { Free(); }
 
     Texture1D &operator=(const Texture1D &rhs) = delete;
     Texture1D &operator=(Texture1D &&rhs) noexcept;

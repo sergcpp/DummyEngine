@@ -72,10 +72,6 @@ struct AssetCache {
 };
 } // namespace SceneManagerInternal
 
-// TODO: remove this!!!
-#include <Ren/RenderPass.h>
-#include <Ren/VertexInput.h>
-
 namespace Eng {
 struct path_config_t {
     const char *models_path = "./assets_pc/models/";
@@ -138,6 +134,28 @@ class SceneManager {
     void LoadScene(const JsObjectP &js_scene);
     void SaveScene(JsObjectP &js_scene);
     void ClearScene();
+
+    void LoadEnvMap();
+    void ReleaseEnvMap(bool immediate = false);
+
+    void AllocGICache();
+    void ReleaseGICache(bool immediate = false);
+
+    void Alloc_TLAS();
+    void Release_TLAS(bool immediate = false);
+
+    void AllocMeshBuffers();
+    void LoadMeshBuffers();
+    void ReleaseMeshBuffers(bool immediate = false);
+
+    void RebuildLightTree();
+    void ReleaseLightTree(bool immediate = false);
+
+    void AllocInstanceBuffer();
+    void ReleaseInstanceBuffer(bool immediate = false);
+
+    void AllocMaterialsBuffer();
+    void ReleaseMaterialsBuffer(bool immediate = false);
 
     void LoadProbeCache();
 
@@ -221,7 +239,6 @@ class SceneManager {
     void Alloc_SWRT_TLAS();
 
     void RebuildSceneBVH();
-    void RebuildLightTree();
     void RemoveNode(uint32_t node_index);
 
     Ren::Context &ren_ctx_;

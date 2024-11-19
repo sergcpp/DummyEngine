@@ -50,11 +50,6 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     const uint32_t max_mat_count = scene_data_.materials.capacity();
     const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
-    if (!pers_data.materials_buf) {
-        pers_data.materials_buf =
-            scene_data_.buffers.Insert("Materials Buffer", api_ctx, Ren::eBufType::Storage, req_mat_buf_size);
-    }
-
     if (pers_data.materials_buf->size() < req_mat_buf_size) {
         pers_data.materials_buf->Resize(req_mat_buf_size);
     }
@@ -465,7 +460,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
     if (mem_alloc.offset == 0xffffffff) {
         // allocate one more buffer
         const uint32_t buf_size = std::max(next_power_of_two(uint32_t(compact_size)), Eng::RtBLASChunkSize);
-        std::string buf_name =
+        const std::string buf_name =
             "RT BLAS Buffer #" + std::to_string(scene_data_.persistent_data.hwrt.rt_blas_buffers.size());
         scene_data_.persistent_data.hwrt.rt_blas_buffers.emplace_back(
             scene_data_.buffers.Insert(buf_name, api_ctx, Ren::eBufType::AccStructure, buf_size));
@@ -555,9 +550,6 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
         "TLAS Buf", api_ctx, Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
     scene_data_.persistent_data.rt_sh_tlas_buf = scene_data_.buffers.Insert(
         "TLAS Shadow Buf", api_ctx, Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
-
-    Ren::BufferRef tlas_scratch_buf = scene_data_.buffers.Insert("TLAS Scratch Buf", api_ctx, Ren::eBufType::Storage,
-                                                                 uint32_t(size_info.buildScratchSize));
 
     { // Main TLAS
         VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};

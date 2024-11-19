@@ -246,6 +246,8 @@ class Context {
     int WriteTimestamp(bool start);
     uint64_t GetTimestampIntervalDurationUs(int query_start, int query_end) const;
 
+    void WaitIdle();
+
 #if defined(USE_GL_RENDER)
     struct { // NOLINT
         float max_anisotropy = 0;

@@ -7,14 +7,9 @@
 
 Eng::PersistentGpuData::PersistentGpuData() = default;
 
-Eng::PersistentGpuData::~PersistentGpuData() { Clear(); }
+Eng::PersistentGpuData::~PersistentGpuData() { Release(); }
 
-void Eng::PersistentGpuData::Clear() {
-    vertex_buf1 = vertex_buf2 = skin_vertex_buf = delta_buf = indices_buf = {};
-    stoch_lights_buf = stoch_lights_nodes_buf = {};
-    rt_tlas_buf = rt_sh_tlas_buf = {};
-    hwrt = {};
-    swrt.rt_prim_indices_buf = swrt.rt_blas_buf = {};
+void Eng::PersistentGpuData::Release() {
 #if defined(USE_VK_RENDER)
     if (textures_descr_pool) {
         Ren::ApiContext *api_ctx = textures_descr_pool->api_ctx();
@@ -34,10 +29,24 @@ void Eng::PersistentGpuData::Clear() {
     textures_descr_pool = {};
     rt_textures_descr_pool = {};
     rt_inline_textures_descr_pool = {};
-    instance_buf = {};
 #elif defined(USE_GL_RENDER)
     textures_buf = {};
 #endif
-    materials_buf = {};
     pipelines.clear();
+    instance_buf = {};
+    materials_buf = {};
+    vertex_buf1 = vertex_buf2 = skin_vertex_buf = delta_buf = indices_buf = {};
+    stoch_lights_buf = stoch_lights_nodes_buf = {};
+    rt_tlas_buf = rt_sh_tlas_buf = {};
+    hwrt = {};
+    swrt = {};
+
+    rt_tlas = {};
+    rt_sh_tlas = {};
+
+    probe_ray_data = {};
+    probe_irradiance = {};
+    probe_distance = {};
+    probe_offset = {};
+    probe_volumes.clear();
 }

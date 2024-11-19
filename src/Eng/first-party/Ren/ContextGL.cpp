@@ -240,6 +240,11 @@ uint64_t Ren::Context::GetTimestampIntervalDurationUs(const int query_beg, const
                     1000.0f);
 }
 
+void Ren::Context::WaitIdle() {
+    glFlush();
+    glFinish();
+}
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif

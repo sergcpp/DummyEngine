@@ -69,6 +69,8 @@ Ren::eResState to_ren_state(const Ray::eGPUResState state) {
         return Ren::eResState::CopyDst;
     case Ray::eGPUResState::CopySrc:
         return Ren::eResState::CopySrc;
+    default:
+        break;
     }
     assert(false);
     return Ren::eResState::Undefined;
@@ -90,6 +92,8 @@ Ray::eGPUResState to_ray_state(const Ren::eResState state) {
         return Ray::eGPUResState::CopyDst;
     case Ren::eResState::CopySrc:
         return Ray::eGPUResState::CopySrc;
+    default:
+        break;
     }
     assert(false);
     return Ray::eGPUResState(-1);
@@ -324,6 +328,7 @@ void GSBaseState::Enter() {
             ray_scene_.reset();
             ray_renderer_.reset();
             pt_result_ = {};
+            ReloadSceneResources();
         }
         return true;
     });
@@ -1186,7 +1191,7 @@ void GSBaseState::InitRenderer_PT() {
         if (!viewer_->app_params.device_name.empty()) {
             s.preferred_device = viewer_->app_params.device_name.c_str();
         }
-        s.use_hwrt = !viewer_->app_params.pt_nohwrt;
+        s.use_hwrt = !viewer_->app_params.nohwrt;
         s.validation_level = viewer_->app_params.validation_level;
 #if defined(USE_VK_RENDER)
         Ren::ApiContext *api_ctx = ren_ctx_->api_ctx();
@@ -1281,8 +1286,24 @@ void GSBaseState::InitRenderer_PT() {
 }
 
 void GSBaseState::InitScene_PT() {
-    const Eng::SceneData &scene_data = scene_manager_->scene_data();
+    Eng::SceneData &scene_data = scene_manager_->scene_data();
     const Eng::render_settings_t &settings = renderer_->settings;
+
+    const auto *transforms = (Eng::Transform *)scene_data.comp_store[Eng::CompTransform]->SequentialData();
+    auto *drawables = (Eng::Drawable *)scene_data.comp_store[Eng::CompDrawable]->SequentialData();
+    auto *acc_structs = (Eng::AccStructure *)scene_data.comp_store[Eng::CompAccStructure]->SequentialData();
+    const auto *lights_src = (Eng::LightSource *)scene_data.comp_store[Eng::CompLightSource]->SequentialData();
+
+    { // Release GPU resources
+        ren_ctx_->WaitIdle();
+        scene_manager_->ReleaseEnvMap(true /* immediate */);
+        scene_manager_->ReleaseGICache(true /* immediate */);
+        scene_manager_->Release_TLAS(true /* immediate */);
+        scene_manager_->ReleaseLightTree(true /* immediate */);
+        scene_manager_->ReleaseMeshBuffers(true /* immediate */);
+        scene_manager_->ReleaseMaterialsBuffer(true /* immediate */);
+        scene_manager_->ReleaseInstanceBuffer(true /* immediate */);
+    }
 
     ray_scene_ = std::unique_ptr<Ray::SceneBase>(ray_renderer_->CreateScene());
     { // Setup environment
@@ -1424,11 +1445,6 @@ void GSBaseState::InitScene_PT() {
         return tex_it->second;
     };
 
-    const auto *transforms = (Eng::Transform *)scene_data.comp_store[Eng::CompTransform]->SequentialData();
-    const auto *drawables = (Eng::Drawable *)scene_data.comp_store[Eng::CompDrawable]->SequentialData();
-    const auto *acc_structs = (Eng::AccStructure *)scene_data.comp_store[Eng::CompAccStructure]->SequentialData();
-    const auto *lights_src = (Eng::LightSource *)scene_data.comp_store[Eng::CompLightSource]->SequentialData();
-
     for (const Eng::SceneObject &obj : scene_data.objects) {
         const uint32_t drawable_flags = Eng::CompDrawableBit | Eng::CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
@@ -1436,9 +1452,10 @@ void GSBaseState::InitScene_PT() {
             const Ren::Mesh *mesh = dr.mesh.get();
             assert(mesh->type() == Ren::eMeshType::Simple);
             Ren::Span<const float> attribs = mesh->attribs();
-            const int vtx_count = int(mesh->attribs_buf1().size / 16);
+            assert((attribs.size() % 13) == 0);
+            const int vtx_count = int(attribs.size() / 13);
             Ren::Span<const uint32_t> indices = mesh->indices();
-            const int ndx_count = int(mesh->indices_buf().size / sizeof(uint32_t));
+            const int ndx_count = int(indices.size());
 
             Ray::MeshHandle mesh_handle = Ray::InvalidMeshHandle;
 
@@ -1903,6 +1920,35 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
                                      Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().gamma,
                                      scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
                                      target, false, true);
+    }
+}
+
+void GSBaseState::ReloadSceneResources() {
+    using namespace GSBaseStateInternal;
+
+    // wait for backgroud thread iteration
+    if (USE_TWO_THREADS) {
+        std::unique_lock<std::mutex> lock(mtx_);
+        while (notified_) {
+            thr_done_.wait(lock);
+        }
+    }
+
+    // clear outdated draw data
+    main_view_lists_[0].Clear();
+    main_view_lists_[1].Clear();
+
+    scene_manager_->LoadEnvMap();
+    scene_manager_->AllocGICache();
+    scene_manager_->Alloc_TLAS();
+    scene_manager_->RebuildLightTree();
+    scene_manager_->LoadMeshBuffers();
+    scene_manager_->AllocMaterialsBuffer();
+    scene_manager_->AllocInstanceBuffer();
+
+    if (USE_TWO_THREADS) {
+        notified_ = true;
+        thr_notify_.notify_one();
     }
 }
 

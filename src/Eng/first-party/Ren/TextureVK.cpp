@@ -421,6 +421,24 @@ void Ren::Texture2D::Free() {
 
         handle_ = {};
         params.format = eTexFormat::Undefined;
+        ready_ = false;
+    }
+}
+
+void Ren::Texture2D::FreeImmediate() {
+    if (params.format != eTexFormat::Undefined && !bool(params.flags & eTexFlagBits::NoOwnership)) {
+        for (VkImageView view : handle_.views) {
+            if (view) {
+                api_ctx_->vkDestroyImageView(api_ctx_->device, view, nullptr);
+            }
+        }
+        api_ctx_->vkDestroyImage(api_ctx_->device, handle_.img, nullptr);
+        api_ctx_->vkDestroySampler(api_ctx_->device, handle_.sampler, nullptr);
+        alloc_.Release();
+
+        handle_ = {};
+        params.format = eTexFormat::Undefined;
+        ready_ = false;
     }
 }
 
@@ -2308,7 +2326,21 @@ Ren::Texture1D::Texture1D(std::string_view name, const BufferRef &buf, const eTe
     Init(buf, format, offset, size, log);
 }
 
-Ren::Texture1D::~Texture1D() { Free(); }
+void Ren::Texture1D::Free() {
+    if (buf_view_) {
+        api_ctx_->buf_views_to_destroy[api_ctx_->backend_frame].push_back(buf_view_);
+        buf_view_ = {};
+    }
+    buf_ = WeakBufferRef{};
+}
+
+void Ren::Texture1D::FreeImmediate() {
+    if (buf_view_) {
+        api_ctx_->vkDestroyBufferView(api_ctx_->device, buf_view_, nullptr);
+        buf_view_ = {};
+    }
+    buf_ = WeakBufferRef{};
+}
 
 Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
     if (this == &rhs) {
@@ -2346,14 +2378,6 @@ void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const u
     params_.offset = offset;
     params_.size = size;
     params_.format = format;
-}
-
-void Ren::Texture1D::Free() {
-    if (buf_view_) {
-        api_ctx_->buf_views_to_destroy[api_ctx_->backend_frame].push_back(buf_view_);
-        buf_view_ = {};
-    }
-    buf_ = WeakBufferRef{};
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

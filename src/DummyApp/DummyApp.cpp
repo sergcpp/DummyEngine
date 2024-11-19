@@ -40,8 +40,6 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             out_params.psnr = strtod(argv[i], nullptr);
         } else if (strcmp(argv[i], "--pt") == 0) {
             out_params.pt = true;
-        } else if (strcmp(arg, "--pt_nohwrt") == 0) {
-            out_params.pt_nohwrt = true;
         } else if (strcmp(argv[i], "--pt_nodenoise") == 0) {
             out_params.pt_denoise = false;
         } else if (strcmp(arg, "--pt_max_samples") == 0 && (i + 1 < argc)) {

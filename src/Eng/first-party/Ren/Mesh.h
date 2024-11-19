@@ -155,6 +155,9 @@ class Mesh : public RefCounter {
               BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
               BufferRef &delta_buf, eMeshLoadStatus *load_status, ILog *log);
 
+    void InitBufferData(ApiContext *api_ctx, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf);
+    void ReleaseBufferData();
+
     std::unique_ptr<IAccStructure> blas;
 };
 

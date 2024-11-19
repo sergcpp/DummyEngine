@@ -29,12 +29,15 @@ Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view 
     tex_id_ = uint32_t(tex_id);
 }
 
-Ren::Texture2DArray::~Texture2DArray() {
+void Ren::Texture2DArray::Free() {
     if (tex_id_ != 0xffffffff) {
-        auto tex_id = (GLuint)tex_id_;
+        auto tex_id = GLuint(tex_id_);
         glDeleteTextures(1, &tex_id);
+        tex_id_ = 0xffffffff;
     }
 }
+
+void Ren::Texture2DArray::FreeImmediate() { Free(); }
 
 Ren::Texture2DArray &Ren::Texture2DArray::operator=(Texture2DArray &&rhs) noexcept {
     if (this == &rhs) {

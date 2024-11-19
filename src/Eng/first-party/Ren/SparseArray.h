@@ -16,7 +16,8 @@ template <typename T> class SparseArray {
     static_assert(sizeof(T) >= sizeof(uint32_t), "!");
 
   public:
-    explicit SparseArray(uint32_t initial_capacity = 0)
+    SparseArray() : SparseArray(0) {}
+    explicit SparseArray(const uint32_t initial_capacity)
         : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
         if (initial_capacity) {
             reserve(initial_capacity);
@@ -47,7 +48,6 @@ template <typename T> class SparseArray {
     }
 
     SparseArray(SparseArray &&rhs) noexcept : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
-
         ctrl_ = std::exchange(rhs.ctrl_, nullptr);
         data_ = std::exchange(rhs.data_, nullptr);
 

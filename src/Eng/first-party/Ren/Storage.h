@@ -107,6 +107,16 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
     }
     ~StrongRef() { Release(); }
 
+    uint32_t strong_refs() const {
+        const T &p = storage_->at(index_);
+        return p.ctrl_->strong_refs;
+    }
+
+    uint32_t weak_refs() const {
+        const T &p = storage_->at(index_);
+        return p.ctrl_->weak_refs;
+    }
+
     StrongRef(const StrongRef &rhs) {
         storage_ = rhs.storage_;
         index_ = rhs.index_;

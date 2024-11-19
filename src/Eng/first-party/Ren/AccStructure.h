@@ -13,6 +13,9 @@ struct ApiContext;
 class IAccStructure {
   public:
     virtual ~IAccStructure() {}
+
+    virtual void Free() {}
+    virtual void FreeImmediate() { Free(); }
 };
 
 #if defined(USE_VK_RENDER)
@@ -39,8 +42,8 @@ class AccStructureVK : public IAccStructure {
 
     [[nodiscard]] bool Init(ApiContext *api_ctx, VkAccelerationStructureKHR handle);
 
-    void Free();
-    void FreeImmediate();
+    void Free() override;
+    void FreeImmediate() override;
 
     eResState resource_state = eResState::Undefined;
 };

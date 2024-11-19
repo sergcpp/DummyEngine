@@ -10,7 +10,10 @@ class Texture2DArray {
     Texture2DArray() = default;
     Texture2DArray(ApiContext *api_ctx, std::string_view name, int w, int h, int layer_count, eTexFormat format,
                    eTexFilter filter, eTexUsageBits usage);
-    ~Texture2DArray();
+    ~Texture2DArray() { Free(); }
+
+    void Free();
+    void FreeImmediate();
 
     Texture2DArray(const Texture2DArray &rhs) = delete;
     Texture2DArray(Texture2DArray &&rhs) noexcept { (*this) = std::move(rhs); }

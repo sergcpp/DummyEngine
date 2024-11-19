@@ -379,47 +379,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
     }
 
-    const uint32_t vertex_count = attribs_size / sizeof(orig_vertex_t);
-
-    attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
-    attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
-    indices_buf_.size = index_data_size;
-
-    const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
-    auto stage_buf = Buffer{"Temp Stage Buf", api_ctx, eBufType::Upload, total_mem_required};
-
-    { // Update staging buffer
-        auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map());
-        auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
-        assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
-        auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
-        assert(uintptr_t(index_data) % alignof(uint32_t) == 0);
-
-        const auto *orig_vertices = reinterpret_cast<const orig_vertex_t *>(attribs_.data());
-        for (uint32_t i = 0; i < vertex_count; i++) {
-            pack_vertex_data1(orig_vertices[i], vertices_data1[i]);
-            pack_vertex_data2(orig_vertices[i], vertices_data2[i]);
-        }
-        memcpy(index_data, indices_.data(), indices_buf_.size);
-        stage_buf.Unmap();
-    }
-
-    CommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
-
-    attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, &stage_buf, cmd_buf, 0 /* offset */);
-    attribs_buf1_.buf = vertex_buf1;
-
-    attribs_buf2_.sub =
-        vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
-    attribs_buf2_.buf = vertex_buf2;
-
-    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf,
-                                                 attribs_buf1_.size + attribs_buf2_.size);
-    indices_buf_.buf = index_buf;
-    assert(attribs_buf1_.sub.offset == attribs_buf2_.sub.offset && "Offsets do not match!");
-
-    api_ctx->EndSingleTimeCommands(cmd_buf);
-    stage_buf.FreeImmediate();
+    InitBufferData(api_ctx, vertex_buf1, vertex_buf2, index_buf);
 
     ready_ = true;
 }
@@ -724,6 +684,60 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     stage_buf.FreeImmediate();
 
     ready_ = true;
+}
+
+void Ren::Mesh::InitBufferData(ApiContext *api_ctx, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
+                               BufferRef &index_buf) {
+    const uint32_t vertex_count = uint32_t(attribs_.size() * sizeof(float)) / sizeof(orig_vertex_t);
+
+    attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
+    attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
+    indices_buf_.size = uint32_t(indices_.size() * sizeof(uint32_t));
+
+    const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
+    auto stage_buf = Buffer{"Temp Stage Buf", api_ctx, eBufType::Upload, total_mem_required};
+
+    { // Update staging buffer
+        auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map());
+        auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
+        assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
+        auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
+        assert(uintptr_t(index_data) % alignof(uint32_t) == 0);
+
+        const auto *orig_vertices = reinterpret_cast<const orig_vertex_t *>(attribs_.data());
+        for (uint32_t i = 0; i < vertex_count; i++) {
+            pack_vertex_data1(orig_vertices[i], vertices_data1[i]);
+            pack_vertex_data2(orig_vertices[i], vertices_data2[i]);
+        }
+        memcpy(index_data, indices_.data(), indices_buf_.size);
+        stage_buf.Unmap();
+    }
+
+    { // Copy buffer data
+        CommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
+
+        attribs_buf1_.sub =
+            vertex_buf1->AllocSubRegion(attribs_buf1_.size, 16, name_, &stage_buf, cmd_buf, 0 /* offset */);
+        attribs_buf1_.buf = vertex_buf1;
+
+        attribs_buf2_.sub =
+            vertex_buf2->AllocSubRegion(attribs_buf2_.size, 16, name_, &stage_buf, cmd_buf, attribs_buf1_.size);
+        attribs_buf2_.buf = vertex_buf2;
+
+        indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, 4, name_, &stage_buf, cmd_buf,
+                                                     attribs_buf1_.size + attribs_buf2_.size);
+        indices_buf_.buf = index_buf;
+        assert(attribs_buf1_.sub.offset == attribs_buf2_.sub.offset && "Offsets do not match!");
+
+        api_ctx->EndSingleTimeCommands(cmd_buf);
+        stage_buf.FreeImmediate();
+    }
+}
+
+void Ren::Mesh::ReleaseBufferData() {
+    attribs_buf1_ = {};
+    attribs_buf2_ = {};
+    indices_buf_ = {};
 }
 
 #ifdef _MSC_VER

@@ -103,11 +103,21 @@ Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view 
     sampler_.Init(api_ctx_, params);
 }
 
-Ren::Texture2DArray::~Texture2DArray() {
+void Ren::Texture2DArray::Free() {
     if (img_ != VK_NULL_HANDLE) {
         api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(img_view_);
         api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(img_);
         api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(mem_);
+        img_ = VK_NULL_HANDLE;
+    }
+}
+
+void Ren::Texture2DArray::FreeImmediate() {
+    if (img_ != VK_NULL_HANDLE) {
+        api_ctx_->vkDestroyImageView(api_ctx_->device, img_view_, nullptr);
+        api_ctx_->vkDestroyImage(api_ctx_->device, img_, nullptr);
+        api_ctx_->vkFreeMemory(api_ctx_->device, mem_, nullptr);
+        img_ = VK_NULL_HANDLE;
     }
 }
 
@@ -117,11 +127,7 @@ Ren::Texture2DArray &Ren::Texture2DArray::operator=(Texture2DArray &&rhs) noexce
     format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
     filter_ = std::exchange(rhs.filter_, eTexFilter::NoFilter);
 
-    if (img_ != VK_NULL_HANDLE) {
-        api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(img_view_);
-        api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(img_);
-        api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(mem_);
-    }
+    Free();
 
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     img_ = std::exchange(rhs.img_, {});

@@ -440,6 +440,8 @@ uint64_t Ren::Context::GetTimestampIntervalDurationUs(const int query_beg, const
                     api_ctx_->phys_device_limits.timestampPeriod / 1000.0f);
 }
 
+void Ren::Context::WaitIdle() { api_ctx_->vkDeviceWaitIdle(api_ctx_->device); }
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif

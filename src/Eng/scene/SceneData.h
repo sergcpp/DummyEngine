@@ -244,7 +244,7 @@ struct PersistentGpuData {
 
     PersistentGpuData(PersistentGpuData &&rhs) noexcept = delete;
 
-    void Clear();
+    void Release();
 };
 
 struct SceneData {

@@ -49,7 +49,6 @@ struct AppParams {
     bool nosubgroup = false;
     bool pt = false;
     bool pt_denoise = true;
-    bool pt_nohwrt = false;
     bool postprocess = true;
     bool freeze_sky = false;
     int pt_max_samples = 128;

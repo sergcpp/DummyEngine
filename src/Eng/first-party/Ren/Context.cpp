@@ -472,15 +472,15 @@ void Ren::Context::ReleaseBuffers() {
 
 void Ren::Context::InitDefaultBuffers() {
     default_vertex_buf1_ =
-        buffers_.Insert("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+        buffers_.Insert("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_vertex_buf2_ =
-        buffers_.Insert("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+        buffers_.Insert("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_skin_vertex_buf_ =
-        buffers_.Insert("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+        buffers_.Insert("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_delta_buf_ =
-        buffers_.Insert("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
+        buffers_.Insert("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_indices_buf_ =
-        buffers_.Insert("default_ndx_buf", api_ctx_.get(), eBufType::VertexIndices, 16 * 1024 * 1024, 4);
+        buffers_.Insert("default_ndx_buf", api_ctx_.get(), eBufType::VertexIndices, 1 * 1024 * 1024, 4);
 }
 
 void Ren::Context::ReleaseDefaultBuffers() {

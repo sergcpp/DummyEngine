@@ -1532,3 +1532,16 @@ void Eng::SceneManager::RebuildLightTree() {
         nodes_buf_stage.FreeImmediate();
     }
 }
+
+void Eng::SceneManager::ReleaseLightTree(const bool immediate) {
+    if (immediate) {
+        if (scene_data_.persistent_data.stoch_lights_buf) {
+            scene_data_.persistent_data.stoch_lights_buf->FreeImmediate();
+        }
+        if (scene_data_.persistent_data.stoch_lights_nodes_buf) {
+            scene_data_.persistent_data.stoch_lights_nodes_buf->FreeImmediate();
+        }
+    }
+    scene_data_.persistent_data.stoch_lights_buf = {};
+    scene_data_.persistent_data.stoch_lights_nodes_buf = {};
+}

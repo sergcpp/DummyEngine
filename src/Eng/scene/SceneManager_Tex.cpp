@@ -601,7 +601,7 @@ void Eng::SceneManager::InvalidateTexture(const Ren::Tex2DRef &ref) {
     SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, ref);
 }
 
-void Eng::SceneManager::StartTextureLoaderThread(int requests_count, int mip_levels_per_request) {
+void Eng::SceneManager::StartTextureLoaderThread(const int requests_count, const int mip_levels_per_request) {
     for (int i = 0; i < requests_count; i++) {
         TextureRequestPending &req = io_pending_tex_.emplace_back();
         req.buf = std::make_unique<TextureUpdateFileBuf>(ren_ctx_.api_ctx());

@@ -17,11 +17,6 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     const uint32_t max_mat_count = scene_data_.materials.capacity();
     const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
-    if (!scene_data_.persistent_data.materials_buf) {
-        scene_data_.persistent_data.materials_buf =
-            ren_ctx_.LoadBuffer("Materials Buffer", Ren::eBufType::Storage, req_mat_buf_size);
-    }
-
     if (scene_data_.persistent_data.materials_buf->size() < req_mat_buf_size) {
         scene_data_.persistent_data.materials_buf->Resize(req_mat_buf_size);
     }
