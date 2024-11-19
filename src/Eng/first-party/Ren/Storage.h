@@ -14,7 +14,7 @@ template <typename T> class Storage : public SparseArray<T> {
 
     Storage(const Storage &rhs) = delete;
 
-    template <class... Args> StrongRef<T, Storage> Add(Args &&...args) {
+    template <class... Args> StrongRef<T, Storage> Insert(Args &&...args) {
         const uint32_t index = SparseArray<T>::emplace(std::forward<Args>(args)...);
 
         bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);

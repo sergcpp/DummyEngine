@@ -45,7 +45,7 @@ void test_storage() {
         Storage<MyObj> my_obj_storage;
         int counter = 0;
 
-        auto ref1 = my_obj_storage.Add("obj", &counter);
+        auto ref1 = my_obj_storage.Insert("obj", &counter);
         require(counter == 1);
         ref1 = {};
         require(counter == 0);
@@ -55,7 +55,7 @@ void test_storage() {
         Storage<MyObj> my_obj_storage;
         int counter = 0;
 
-        auto ref1 = my_obj_storage.Add("obj1", &counter);
+        auto ref1 = my_obj_storage.Insert("obj1", &counter);
         require(counter == 1);
         auto ref2 = ref1;
         require(counter == 1);
@@ -64,7 +64,7 @@ void test_storage() {
         ref2 = {};
         require(counter == 0);
 
-        ref1 = my_obj_storage.Add("obj2", &counter);
+        ref1 = my_obj_storage.Insert("obj2", &counter);
         require(counter == 1);
         ref2 = std::move(ref1);
         require(counter == 1);

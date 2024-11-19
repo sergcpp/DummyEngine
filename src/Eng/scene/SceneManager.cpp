@@ -1351,10 +1351,10 @@ Ren::MeshRef Eng::SceneManager::LoadMesh(std::string_view name, std::istream *da
                                          Ren::eMeshLoadStatus *load_status) {
     Ren::MeshRef ref = scene_data_.meshes.FindByName(name);
     if (!ref) {
-        ref = scene_data_.meshes.Add(name, data, on_mat_load, ren_ctx_.api_ctx(), ren_ctx_.default_vertex_buf1(),
-                                     ren_ctx_.default_vertex_buf2(), ren_ctx_.default_indices_buf(),
-                                     ren_ctx_.default_skin_vertex_buf(), ren_ctx_.default_delta_buf(), load_status,
-                                     ren_ctx_.log());
+        ref = scene_data_.meshes.Insert(name, data, on_mat_load, ren_ctx_.api_ctx(), ren_ctx_.default_vertex_buf1(),
+                                        ren_ctx_.default_vertex_buf2(), ren_ctx_.default_indices_buf(),
+                                        ren_ctx_.default_skin_vertex_buf(), ren_ctx_.default_delta_buf(), load_status,
+                                        ren_ctx_.log());
     } else {
         if (ref->ready()) {
             if (load_status) {
@@ -1377,8 +1377,8 @@ Ren::MaterialRef Eng::SceneManager::LoadMaterial(std::string_view name, std::str
                                                  const Ren::sampler_load_callback &on_sampler_load) {
     Ren::MaterialRef ref = scene_data_.materials.FindByName(name);
     if (!ref) {
-        ref = scene_data_.materials.Add(name, mat_src, status, on_pipes_load, on_tex_load, on_sampler_load,
-                                        ren_ctx_.log());
+        ref = scene_data_.materials.Insert(name, mat_src, status, on_pipes_load, on_tex_load, on_sampler_load,
+                                           ren_ctx_.log());
     } else {
         if (ref->ready()) {
             if (status) {
@@ -1395,8 +1395,8 @@ Ren::Tex2DRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<co
                                              const Ren::Tex2DParams &p, Ren::eTexLoadStatus *load_status) {
     Ren::Tex2DRef ref = scene_data_.textures.FindByName(name);
     if (!ref) {
-        ref = scene_data_.textures.Add(name, ren_ctx_.api_ctx(), data, p, ren_ctx_.default_mem_allocs(), load_status,
-                                       ren_ctx_.log());
+        ref = scene_data_.textures.Insert(name, ren_ctx_.api_ctx(), data, p, ren_ctx_.default_mem_allocs(), load_status,
+                                          ren_ctx_.log());
     } else {
         if (load_status) {
             (*load_status) = Ren::eTexLoadStatus::Found;
