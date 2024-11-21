@@ -138,7 +138,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     }
 
     rast_state.depth.test_enabled = true;
-    if ((*p_list_)->render_settings.enable_zfill && !(*p_list_)->render_settings.debug_wireframe) {
+    if (!(*p_list_)->render_settings.debug_wireframe) {
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
     } else {
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::LEqual);

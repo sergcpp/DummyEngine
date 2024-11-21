@@ -9,15 +9,6 @@
 #pragma warning(disable : 4996)
 #endif
 
-namespace Ren {
-GLuint LoadShader(GLenum shader_type, const char *source, ILog *log);
-#ifndef __ANDROID__
-GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *log);
-#endif
-
-void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_count, ILog *log);
-} // namespace Ren
-
 Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
                       ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *status, ILog *log) {
     name_ = String{name};
@@ -122,6 +113,8 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
         (*status) = eProgLoadStatus::SetToDefault;
         return;
     }
+
+    log->Info("Initializing program %s...", name_.c_str());
 
     GLuint program = glCreateProgram();
     if (program) {

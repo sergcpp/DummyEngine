@@ -243,7 +243,6 @@ enum class eDebugFrame : uint8_t { Off, Simple, Full };
 struct render_settings_t {
     union {
         struct {
-            bool enable_zfill : 1;
             bool enable_culling : 1;
             bool enable_ssao : 1;
             bool enable_lightmap : 1;

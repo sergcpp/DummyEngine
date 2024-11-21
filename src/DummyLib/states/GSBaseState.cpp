@@ -328,11 +328,6 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_ui_->RegisterCommand("r_zfill", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        renderer_->settings.enable_zfill = !renderer_->settings.enable_zfill;
-        return true;
-    });
-
     cmdline_ui_->RegisterCommand("r_mode", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args[1].val > 0.5) {
             renderer_->settings.render_mode = Eng::eRenderMode::Forward;

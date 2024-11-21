@@ -973,7 +973,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         // Depth prepass
         //
-        if (list.render_settings.enable_zfill && !list.render_settings.debug_culling) {
+        if (!list.render_settings.debug_culling) {
             auto &depth_fill = fg_builder_.AddNode("DEPTH FILL");
 
             FgResRef vtx_buf1 = depth_fill.AddVertexBufferInput(persistent_data.vertex_buf1);
@@ -1021,8 +1021,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         FgResRef depth_down_2x, depth_hierarchy_tex;
 
-        if (list.render_settings.enable_zfill &&
-            (list.render_settings.enable_ssao ||
+        if ((list.render_settings.enable_ssao ||
              list.render_settings.reflections_quality != eReflectionsQuality::Off) &&
             !list.render_settings.debug_wireframe) {
             // TODO: get rid of this (or use on low spec only)
@@ -1097,8 +1096,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // Additional forward pass (for custom-shaded objects)
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         } else {
-            const bool use_ssao = (list.render_settings.enable_zfill || list.render_settings.enable_ssao) &&
-                                  !list.render_settings.debug_wireframe;
+            const bool use_ssao = list.render_settings.enable_ssao && !list.render_settings.debug_wireframe;
             if (use_ssao) {
                 AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
             } else {
