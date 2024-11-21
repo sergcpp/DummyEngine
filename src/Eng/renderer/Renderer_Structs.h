@@ -248,7 +248,6 @@ struct render_settings_t {
             bool enable_lightmap : 1;
             bool enable_lights : 1;
             bool enable_decals : 1;
-            bool enable_probes : 1;
             bool enable_motion_blur : 1;
             bool enable_dof : 1;
             bool enable_bloom : 1;
