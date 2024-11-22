@@ -142,11 +142,11 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
     SmallVector<VkImageMemoryBarrier, 32> img_barriers;
 
     for (const TransitionInfo &tr : transitions) {
-        if (tr.p_buf) {
+        if (std::holds_alternative<const Buffer *>(tr.p_res)) {
             eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_buf->resource_state;
+                old_state = std::get<const Buffer *>(tr.p_res)->resource_state;
                 if (old_state == tr.new_state && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
@@ -159,7 +159,7 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.buffer = tr.p_buf->vk_handle();
+            new_barrier.buffer = std::get<const Buffer *>(tr.p_res)->vk_handle();
             // transition whole buffer for now
             new_barrier.offset = 0;
             new_barrier.size = VK_WHOLE_SIZE;
@@ -168,13 +168,13 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             dst_stages |= VKPipelineStagesForState(tr.new_state);
 
             if (tr.update_internal_state) {
-                tr.p_buf->resource_state = tr.new_state;
+                std::get<const Buffer *>(tr.p_res)->resource_state = tr.new_state;
             }
-        } else if (tr.p_tex) {
+        } else if (std::holds_alternative<const Texture2D *>(tr.p_res)) {
             eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_tex->resource_state;
+                old_state = std::get<const Texture2D *>(tr.p_res)->resource_state;
                 if (old_state == tr.new_state && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
@@ -196,10 +196,10 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             }
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = tr.p_tex->handle().img;
-            if (IsDepthStencilFormat(tr.p_tex->params.format)) {
+            new_barrier.image = std::get<const Texture2D *>(tr.p_res)->handle().img;
+            if (IsDepthStencilFormat(std::get<const Texture2D *>(tr.p_res)->params.format)) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-            } else if (IsDepthFormat(tr.p_tex->params.format)) {
+            } else if (IsDepthFormat(std::get<const Texture2D *>(tr.p_res)->params.format)) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             } else {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -214,13 +214,13 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             dst_stages |= VKPipelineStagesForState(tr.new_state);
 
             if (tr.update_internal_state) {
-                tr.p_tex->resource_state = tr.new_state;
+                std::get<const Texture2D *>(tr.p_res)->resource_state = tr.new_state;
             }
-        } else if (tr.p_3dtex) {
+        } else if (std::holds_alternative<const Texture3D *>(tr.p_res)) {
             eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_3dtex->resource_state;
+                old_state = std::get<const Texture3D *>(tr.p_res)->resource_state;
                 if (old_state != eResState::Undefined && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
@@ -235,7 +235,7 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(tr.new_state));
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = tr.p_3dtex->handle().img;
+            new_barrier.image = std::get<const Texture3D *>(tr.p_res)->handle().img;
             new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             // transition whole image for now
             new_barrier.subresourceRange.baseMipLevel = 0;
@@ -247,13 +247,13 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             dst_stages |= VKPipelineStagesForState(tr.new_state);
 
             if (tr.update_internal_state) {
-                tr.p_3dtex->resource_state = tr.new_state;
+                std::get<const Texture3D *>(tr.p_res)->resource_state = tr.new_state;
             }
-        } else if (tr.p_tex2darr) {
+        } else if (std::holds_alternative<const Texture2DArray *>(tr.p_res)) {
             eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_tex2darr->resource_state;
+                old_state = std::get<const Texture2DArray *>(tr.p_res)->resource_state;
                 if (old_state == tr.new_state && !IsRWState(old_state)) {
                     // transition is not needed
                     continue;
@@ -268,10 +268,10 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(tr.new_state));
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = tr.p_tex2darr->img();
-            if (IsDepthStencilFormat(tr.p_tex2darr->format())) {
+            new_barrier.image = std::get<const Texture2DArray *>(tr.p_res)->img();
+            if (IsDepthStencilFormat(std::get<const Texture2DArray *>(tr.p_res)->format())) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-            } else if (IsDepthFormat(tr.p_tex2darr->format())) {
+            } else if (IsDepthFormat(std::get<const Texture2DArray *>(tr.p_res)->format())) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             } else {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -286,7 +286,7 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
             dst_stages |= VKPipelineStagesForState(tr.new_state);
 
             if (tr.update_internal_state) {
-                tr.p_tex2darr->resource_state = tr.new_state;
+                std::get<const Texture2DArray *>(tr.p_res)->resource_state = tr.new_state;
             }
         }
     }

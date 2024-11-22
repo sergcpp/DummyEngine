@@ -40,129 +40,116 @@ static_assert(COUNT_OF(g_resource_states) == int(eResState::_Count), "!");
 
 D3D12_RESOURCE_STATES Ray::Dx::DXResourceState(const eResState state) { return g_resource_states[int(state)]; }
 
-// Ray::Dx::eStageBits Ray::Dx::StageBitsForState(const eResState state) { return g_stage_bits_per_state[int(state)]; }
-
-// VkImageLayout Ray::Vk::VKImageLayoutForState(const eResState state) { return g_image_layout_per_state_vk[int(state)];
-// }
-
-// uint32_t Ray::Vk::VKAccessFlagsForState(const eResState state) { return g_access_flags_per_state_vk[int(state)]; }
-
-// uint32_t Ray::Vk::VKPipelineStagesForState(const eResState state) { return
-// g_pipeline_stages_per_state_vk[int(state)]; }
-
 void Ray::Dx::TransitionResourceStates(ID3D12GraphicsCommandList *cmd_buf, const eStageBits src_stages_mask,
                                        const eStageBits dst_stages_mask, Span<const TransitionInfo> transitions) {
     SmallVector<D3D12_RESOURCE_BARRIER, 64> barriers;
 
-    for (const TransitionInfo &transition : transitions) {
-        if (transition.p_tex && transition.p_tex->ready()) {
-            eResState old_state = transition.old_state;
+    for (const TransitionInfo &tr : transitions) {
+        if (tr.type == eResType::Tex2D && tr.p_tex->ready()) {
+            eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = transition.p_tex->resource_state;
-                if (old_state == transition.new_state && old_state != eResState::UnorderedAccess) {
+                old_state = tr.p_tex->resource_state;
+                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
             }
 
             auto &new_barrier = barriers.emplace_back();
-            if (old_state != transition.new_state) {
+            if (old_state != tr.new_state) {
                 new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                new_barrier.Transition.pResource = transition.p_tex->handle().img;
+                new_barrier.Transition.pResource = tr.p_tex->handle().img;
                 new_barrier.Transition.StateBefore = DXResourceState(old_state);
-                new_barrier.Transition.StateAfter = DXResourceState(transition.new_state);
+                new_barrier.Transition.StateAfter = DXResourceState(tr.new_state);
                 new_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             } else {
                 new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-                new_barrier.UAV.pResource = transition.p_tex->handle().img;
+                new_barrier.UAV.pResource = tr.p_tex->handle().img;
             }
 
-            if (transition.update_internal_state) {
-                transition.p_tex->resource_state = transition.new_state;
+            if (tr.update_internal_state) {
+                tr.p_tex->resource_state = tr.new_state;
             }
-        } else if (transition.p_3dtex) {
-            eResState old_state = transition.old_state;
+        } else if (tr.type == eResType::Tex3D) {
+            eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = transition.p_3dtex->resource_state;
-                if (old_state != eResState::Undefined && old_state == transition.new_state &&
-                    old_state != eResState::UnorderedAccess) {
+                old_state = tr.p_3dtex->resource_state;
+                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
             }
 
             auto &new_barrier = barriers.emplace_back();
-            if (old_state != transition.new_state) {
+            if (old_state != tr.new_state) {
                 new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                new_barrier.Transition.pResource = transition.p_3dtex->handle().img;
+                new_barrier.Transition.pResource = tr.p_3dtex->handle().img;
                 new_barrier.Transition.StateBefore = DXResourceState(old_state);
-                new_barrier.Transition.StateAfter = DXResourceState(transition.new_state);
+                new_barrier.Transition.StateAfter = DXResourceState(tr.new_state);
                 new_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             } else {
                 new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-                new_barrier.UAV.pResource = transition.p_3dtex->handle().img;
+                new_barrier.UAV.pResource = tr.p_3dtex->handle().img;
             }
 
-            if (transition.update_internal_state) {
-                transition.p_3dtex->resource_state = transition.new_state;
+            if (tr.update_internal_state) {
+                tr.p_3dtex->resource_state = tr.new_state;
             }
-        } else
-            if (transition.p_buf && *transition.p_buf) {
-                eResState old_state = transition.old_state;
-                if (old_state == eResState::Undefined) {
-                    // take state from resource itself
-                    old_state = transition.p_buf->resource_state;
-                    if (old_state == transition.new_state && old_state != eResState::UnorderedAccess) {
-                        // transition is not needed
-                        continue;
-                    }
-                }
-
-                auto &new_barrier = barriers.emplace_back();
-                if (old_state != transition.new_state) {
-                    new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                    new_barrier.Transition.pResource = transition.p_buf->dx_resource();
-                    new_barrier.Transition.StateBefore = DXResourceState(old_state);
-                    new_barrier.Transition.StateAfter = DXResourceState(transition.new_state);
-                    new_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                } else {
-                    new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-                    new_barrier.UAV.pResource = transition.p_buf->dx_resource();
-                }
-
-                if (transition.update_internal_state) {
-                    transition.p_buf->resource_state = transition.new_state;
-                }
-            } else if (transition.p_tex_arr && transition.p_tex_arr->page_count()) {
-                eResState old_state = transition.old_state;
-                if (old_state == eResState::Undefined) {
-                    // take state from resource itself
-                    old_state = transition.p_tex_arr->resource_state;
-                    if (old_state != eResState::Undefined && old_state == transition.new_state &&
-                        old_state != eResState::UnorderedAccess) {
-                        // transition is not needed
-                        continue;
-                    }
-                }
-
-                auto &new_barrier = barriers.emplace_back();
-                if (old_state != transition.new_state) {
-                    new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                    new_barrier.Transition.pResource = transition.p_tex_arr->dx_resource();
-                    new_barrier.Transition.StateBefore = DXResourceState(old_state);
-                    new_barrier.Transition.StateAfter = DXResourceState(transition.new_state);
-                    new_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-                } else {
-                    new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-                    new_barrier.UAV.pResource = transition.p_tex_arr->dx_resource();
-                }
-
-                if (transition.update_internal_state) {
-                    transition.p_tex_arr->resource_state = transition.new_state;
+        } else if (tr.type == eResType::Buffer && *tr.p_buf) {
+            eResState old_state = tr.old_state;
+            if (old_state == eResState::Undefined) {
+                // take state from resource itself
+                old_state = tr.p_buf->resource_state;
+                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess) {
+                    // transition is not needed
+                    continue;
                 }
             }
+
+            auto &new_barrier = barriers.emplace_back();
+            if (old_state != tr.new_state) {
+                new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                new_barrier.Transition.pResource = tr.p_buf->dx_resource();
+                new_barrier.Transition.StateBefore = DXResourceState(old_state);
+                new_barrier.Transition.StateAfter = DXResourceState(tr.new_state);
+                new_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            } else {
+                new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+                new_barrier.UAV.pResource = tr.p_buf->dx_resource();
+            }
+
+            if (tr.update_internal_state) {
+                tr.p_buf->resource_state = tr.new_state;
+            }
+        } else if (tr.type == eResType::TexAtlas && tr.p_tex_arr->page_count()) {
+            eResState old_state = tr.old_state;
+            if (old_state == eResState::Undefined) {
+                // take state from resource itself
+                old_state = tr.p_tex_arr->resource_state;
+                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess) {
+                    // transition is not needed
+                    continue;
+                }
+            }
+
+            auto &new_barrier = barriers.emplace_back();
+            if (old_state != tr.new_state) {
+                new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                new_barrier.Transition.pResource = tr.p_tex_arr->dx_resource();
+                new_barrier.Transition.StateBefore = DXResourceState(old_state);
+                new_barrier.Transition.StateAfter = DXResourceState(tr.new_state);
+                new_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+            } else {
+                new_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+                new_barrier.UAV.pResource = tr.p_tex_arr->dx_resource();
+            }
+
+            if (tr.update_internal_state) {
+                tr.p_tex_arr->resource_state = tr.new_state;
+            }
+        }
     }
 
     if (!barriers.empty()) {

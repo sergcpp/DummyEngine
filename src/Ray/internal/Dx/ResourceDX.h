@@ -70,24 +70,24 @@ enum class eResState : uint8_t {
 
 const eResState ResStateForClear = eResState::UnorderedAccess;
 
-//VkImageLayout VKImageLayoutForState(eResState state);
-//uint32_t VKAccessFlagsForState(eResState state);
-//uint32_t VKPipelineStagesForState(eResState state);
-
 D3D12_RESOURCE_STATES DXResourceState(eResState state);
-
-eStageBits StageBitsForState(eResState state);
 
 class Buffer;
 class Texture2D;
 class Texture3D;
 class TextureAtlas;
 
+enum class eResType : uint8_t { Undefined, Tex2D, Tex3D, TexAtlas, Buffer };
+
 struct TransitionInfo {
-    const Texture2D *p_tex = nullptr;
-    const Texture3D *p_3dtex = nullptr;
-    const TextureAtlas *p_tex_arr = nullptr;
-    const Buffer *p_buf = nullptr;
+    union {
+        const Texture2D *p_tex;
+        const Texture3D *p_3dtex;
+        const TextureAtlas *p_tex_arr;
+        const Buffer *p_buf;
+    };
+
+    eResType type = eResType::Undefined;
 
     eResState old_state = eResState::Undefined;
     eResState new_state = eResState::Undefined;
@@ -96,16 +96,17 @@ struct TransitionInfo {
 
     TransitionInfo() = default;
     TransitionInfo(const Texture2D *_p_tex, eResState _new_state)
-        : p_tex(_p_tex), new_state(_new_state), update_internal_state(true) {}
+        : p_tex(_p_tex), type(eResType::Tex2D), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const Texture3D *_p_tex, eResState _new_state)
-        : p_3dtex(_p_tex), new_state(_new_state), update_internal_state(true) {}
+        : p_3dtex(_p_tex), type(eResType::Tex3D), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const TextureAtlas *_p_tex_arr, eResState _new_state)
-        : p_tex_arr(_p_tex_arr), new_state(_new_state), update_internal_state(true) {}
+        : p_tex_arr(_p_tex_arr), type(eResType::TexAtlas), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const Buffer *_p_buf, eResState _new_state)
-        : p_buf(_p_buf), new_state(_new_state), update_internal_state(true) {}
+        : p_buf(_p_buf), type(eResType::Buffer), new_state(_new_state), update_internal_state(true) {}
 };
+static_assert(sizeof(TransitionInfo) <= 16, "!");
 
-void TransitionResourceStates(ID3D12GraphicsCommandList *cmd_buf, eStageBits src_stages_mask, eStageBits dst_stages_mask,
-                              Span<const TransitionInfo> transitions);
-} // namespace Vk
+void TransitionResourceStates(ID3D12GraphicsCommandList *cmd_buf, eStageBits src_stages_mask,
+                              eStageBits dst_stages_mask, Span<const TransitionInfo> transitions);
+} // namespace Dx
 } // namespace Ray

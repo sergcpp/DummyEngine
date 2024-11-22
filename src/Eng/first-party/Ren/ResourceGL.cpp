@@ -7,13 +7,13 @@ void Ren::TransitionResourceStates(ApiContext *api_context, CommandBuffer cmd_bu
                                    const eStageBits dst_stages_mask, Span<const TransitionInfo> transitions) {
     GLbitfield mem_barrier_bits = 0;
 
-    for (int i = 0; i < int(transitions.size()); i++) {
-        if (transitions[i].p_tex) {
-            eResState old_state = transitions[i].old_state;
+    for (const TransitionInfo &tr : transitions) {
+        if (std::holds_alternative<const Texture2D *>(tr.p_res)) {
+            eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = transitions[i].p_tex->resource_state;
-                if (old_state != eResState::Undefined && old_state == transitions[i].new_state) {
+                old_state = std::get<const Texture2D *>(tr.p_res)->resource_state;
+                if (old_state == tr.new_state) {
                     // transition is not needed
                     continue;
                 }
@@ -23,34 +23,34 @@ void Ren::TransitionResourceStates(ApiContext *api_context, CommandBuffer cmd_bu
                 mem_barrier_bits |= GL_SHADER_IMAGE_ACCESS_BARRIER_BIT;
             }
 
-            if (transitions[i].update_internal_state) {
-                transitions[i].p_tex->resource_state = transitions[i].new_state;
+            if (tr.update_internal_state) {
+                std::get<const Texture2D *>(tr.p_res)->resource_state = tr.new_state;
             }
-        } else if (transitions[i].p_buf) {
-            eResState old_state = transitions[i].old_state;
+        } else if (std::holds_alternative<const Buffer *>(tr.p_res)) {
+            eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = transitions[i].p_buf->resource_state;
-                if (old_state == transitions[i].new_state) {
+                old_state = std::get<const Buffer *>(tr.p_res)->resource_state;
+                if (old_state == tr.new_state) {
                     // transition is not needed
                     continue;
                 }
             }
 
             if (old_state == eResState::UnorderedAccess) {
-                if (transitions[i].p_buf->type() == eBufType::VertexAttribs) {
+                if (std::get<const Buffer *>(tr.p_res)->type() == eBufType::VertexAttribs) {
                     mem_barrier_bits |= GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT;
-                } else if (transitions[i].p_buf->type() == eBufType::VertexIndices) {
+                } else if (std::get<const Buffer *>(tr.p_res)->type() == eBufType::VertexIndices) {
                     mem_barrier_bits |= GL_ELEMENT_ARRAY_BARRIER_BIT;
-                } else if (transitions[i].p_buf->type() == eBufType::Uniform) {
+                } else if (std::get<const Buffer *>(tr.p_res)->type() == eBufType::Uniform) {
                     mem_barrier_bits |= GL_UNIFORM_BARRIER_BIT;
-                } else if (transitions[i].p_buf->type() == eBufType::Storage) {
+                } else if (std::get<const Buffer *>(tr.p_res)->type() == eBufType::Storage) {
                     mem_barrier_bits |= GL_SHADER_STORAGE_BARRIER_BIT;
                 }
             }
 
-            if (transitions[i].update_internal_state) {
-                transitions[i].p_buf->resource_state = transitions[i].new_state;
+            if (tr.update_internal_state) {
+                std::get<const Buffer *>(tr.p_res)->resource_state = tr.new_state;
             }
         }
     }

@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <variant>
+
 #include "Fwd.h"
 #include "Span.h"
 
@@ -80,10 +82,7 @@ class Texture3D;
 class Texture2DArray;
 
 struct TransitionInfo {
-    const Texture2D *p_tex = nullptr;
-    const Texture3D *p_3dtex = nullptr;
-    const Buffer *p_buf = nullptr;
-    const Texture2DArray *p_tex2darr = nullptr;
+    std::variant<const Texture2D *, const Texture3D *, const Buffer *, const Texture2DArray *> p_res;
 
     eResState old_state = eResState::Undefined;
     eResState new_state = eResState::Undefined;
@@ -92,13 +91,13 @@ struct TransitionInfo {
 
     TransitionInfo() = default;
     TransitionInfo(const Buffer *_p_buf, const eResState _new_state)
-        : p_buf(_p_buf), new_state(_new_state), update_internal_state(true) {}
+        : p_res(_p_buf), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const Texture2D *_p_tex, const eResState _new_state)
-        : p_tex(_p_tex), new_state(_new_state), update_internal_state(true) {}
+        : p_res(_p_tex), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const Texture3D *_p_tex, const eResState _new_state)
-        : p_3dtex(_p_tex), new_state(_new_state), update_internal_state(true) {}
+        : p_res(_p_tex), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const Texture2DArray *_p_tex2darr, const eResState _new_state)
-        : p_tex2darr(_p_tex2darr), new_state(_new_state), update_internal_state(true) {}
+        : p_res(_p_tex2darr), new_state(_new_state), update_internal_state(true) {}
 };
 
 void TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, eStageBits src_stages_mask,
