@@ -33,10 +33,11 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    { // transition targets if needed
+    { // transition resources if required
         VkPipelineStageFlags src_stages = 0, dst_stages = 0;
 
         Ren::SmallVector<VkImageMemoryBarrier, 16> img_barriers;
+        Ren::SmallVector<VkBufferMemoryBarrier, 4> buf_barriers;
 
         for (const auto &b : bindings) {
             if (b.trg == Ren::eBindTarget::Tex2DSampled) {
@@ -94,13 +95,64 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
             depth_rt.ref->resource_state = Ren::eResState::DepthWrite;
         }
 
+        if (ctx_->default_vertex_buf1()->resource_state != Ren::eResState::VertexBuffer) {
+            auto &new_barrier = buf_barriers.emplace_back();
+            new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+            new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(ctx_->default_vertex_buf1()->resource_state);
+            new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::VertexBuffer);
+            new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.buffer = ctx_->default_vertex_buf1()->vk_handle();
+            new_barrier.offset = VkDeviceSize{0};
+            new_barrier.size = VkDeviceSize{ctx_->default_vertex_buf1()->size()};
+
+            src_stages |= Ren::VKPipelineStagesForState(ctx_->default_vertex_buf1()->resource_state);
+            dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::VertexBuffer);
+
+            ctx_->default_vertex_buf1()->resource_state = Ren::eResState::VertexBuffer;
+        }
+
+        if (ctx_->default_vertex_buf2()->resource_state != Ren::eResState::VertexBuffer) {
+            auto &new_barrier = buf_barriers.emplace_back();
+            new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+            new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(ctx_->default_vertex_buf2()->resource_state);
+            new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::VertexBuffer);
+            new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.buffer = ctx_->default_vertex_buf2()->vk_handle();
+            new_barrier.offset = VkDeviceSize{0};
+            new_barrier.size = VkDeviceSize{ctx_->default_vertex_buf2()->size()};
+
+            src_stages |= Ren::VKPipelineStagesForState(ctx_->default_vertex_buf2()->resource_state);
+            dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::VertexBuffer);
+
+            ctx_->default_vertex_buf2()->resource_state = Ren::eResState::VertexBuffer;
+        }
+
+        if (ctx_->default_indices_buf()->resource_state != Ren::eResState::IndexBuffer) {
+            auto &new_barrier = buf_barriers.emplace_back();
+            new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+            new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(ctx_->default_indices_buf()->resource_state);
+            new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::IndexBuffer);
+            new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.buffer = ctx_->default_indices_buf()->vk_handle();
+            new_barrier.offset = VkDeviceSize{0};
+            new_barrier.size = VkDeviceSize{ctx_->default_indices_buf()->size()};
+
+            src_stages |= Ren::VKPipelineStagesForState(ctx_->default_indices_buf()->resource_state);
+            dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::IndexBuffer);
+
+            ctx_->default_indices_buf()->resource_state = Ren::eResState::IndexBuffer;
+        }
+
         src_stages &= ctx_->api_ctx()->supported_stages_mask;
         dst_stages &= ctx_->api_ctx()->supported_stages_mask;
 
-        if (!img_barriers.empty()) {
-            ctx_->api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                                  dst_stages, 0, 0, nullptr, 0, nullptr, uint32_t(img_barriers.size()),
-                                                  img_barriers.data());
+        if (!img_barriers.empty() || !buf_barriers.empty()) {
+            ctx_->api_ctx()->vkCmdPipelineBarrier(
+                cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0, nullptr,
+                uint32_t(buf_barriers.size()), buf_barriers.data(), uint32_t(img_barriers.size()), img_barriers.data());
         }
     }
 

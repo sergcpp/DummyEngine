@@ -37,6 +37,7 @@ VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT f
     ignore |= (location == 0x0000000079de34d4); // dynamic rendering support is incomplete
     ignore |= (location == 0x00000000804d79d3); // requiredSubgroupSizeStages is ignored
     ignore |= (location == 0x00000000a5625282); // cooperative matrix type must be A Type
+    ignore |= (location == 0x0000000024b5c69f); // forcing vertexPipelineStoresAndAtomics to VK_TRUE
     if (!ignore) {
         ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
     }
