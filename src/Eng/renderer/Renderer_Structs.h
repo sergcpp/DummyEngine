@@ -8,7 +8,7 @@
 #include <Ren/SmallVector.h>
 
 #include <Ren/Buffer.h>
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/VK.h>
 #endif
 
@@ -438,10 +438,10 @@ struct RTObjInstance {
 static_assert(sizeof(RTObjInstance) == 64 + 24, "!");
 
 struct BindlessTextureData {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     Ren::Span<const VkDescriptorSet> textures_descr_sets;
     VkDescriptorSet rt_textures_descr_set, rt_inline_textures_descr_set;
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     Ren::WeakBufferRef textures_buf;
 #endif
 };

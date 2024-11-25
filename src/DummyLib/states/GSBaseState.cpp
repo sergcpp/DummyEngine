@@ -34,7 +34,7 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/VKCtx.h>
 #endif
 
@@ -726,7 +726,7 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Transfer;
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         params.flags = Ren::eTexFlagBits::SRGB;
 #endif
 
@@ -1193,7 +1193,7 @@ void GSBaseState::InitRenderer_PT() {
         }
         s.use_hwrt = !viewer_->app_params.nohwrt;
         s.validation_level = viewer_->app_params.validation_level;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         Ren::ApiContext *api_ctx = ren_ctx_->api_ctx();
         s.vk_device.instance = api_ctx->instance;
         s.vk_device.physical_device = api_ctx->physical_device;
@@ -1687,7 +1687,7 @@ void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, 
 
     const float desired_exposure = log2f(renderer_->readback_exposure());
     if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 0.5f) {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
             ray_renderer_->set_command_buffer(
                 Ray::GpuCommandBuffer{ren_ctx_->current_cmd_buf(), ren_ctx_->backend_frame()});
@@ -1728,7 +1728,7 @@ void GSBaseState::Clear_PT() {
             ctx.Clear();
         }
     }
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
         ray_renderer_->set_command_buffer(
             Ray::GpuCommandBuffer{ren_ctx_->current_cmd_buf(), ren_ctx_->backend_frame()});
@@ -1740,7 +1740,7 @@ void GSBaseState::Clear_PT() {
 void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
     using namespace GSBaseStateInternal;
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
         ray_renderer_->set_command_buffer(
             Ray::GpuCommandBuffer{ren_ctx_->current_cmd_buf(), ren_ctx_->backend_frame()});
@@ -1888,7 +1888,7 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         }
     }
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
         const Ray::GpuImage pt_image = ray_renderer_->get_native_raw_pixels();
         if (!pt_result_) {
@@ -1981,7 +1981,7 @@ int GSBaseState::WriteAndValidateCaptureResult() {
     }
 
     const bool flip_y =
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         true;
 #else
         false;

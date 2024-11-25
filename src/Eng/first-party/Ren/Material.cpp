@@ -104,7 +104,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                 if (*p != '-') {
                     break;
                 }
-#if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
+#if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
                 p = q + 1;
                 q = strpbrk(p, delims);
                 v_shader_names.emplace_back(p, q);

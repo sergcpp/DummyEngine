@@ -50,17 +50,17 @@ set(UTILS_SOURCES   utils/DialogController.h
                     utils/Log.cpp)
 
 
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     set(STATES_SOURCES ${STATES_SOURCES}
                         states/GSUITest3GL.cpp
                         #states/GSVideoTestGL.cpp
         )
-elseif(${RENDERER} STREQUAL "VK")
+elseif(${REN_BACKEND} STREQUAL "VK")
     set(STATES_SOURCES ${STATES_SOURCES}
                         states/GSUITest3VK.cpp
                         #states/GSVideoTestVK.cpp
         )
-elseif(${RENDERER} STREQUAL "SW")
+elseif(${REN_BACKEND} STREQUAL "SW")
 
 endif()
 

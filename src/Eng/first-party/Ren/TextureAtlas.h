@@ -25,7 +25,7 @@ class TextureAtlas {
 
     int resx() const { return splitter_.resx(); }
     int resy() const { return splitter_.resy(); }
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkDescriptorImageInfo vk_desc_image_info(const int view_index = 0,
                                              VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const {
         VkDescriptorImageInfo ret;
@@ -34,7 +34,7 @@ class TextureAtlas {
         ret.imageLayout = layout;
         return ret;
     }
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     uint32_t tex_id(const int i) const { return tex_ids_[i]; }
 #endif
     ApiContext *api_ctx() { return api_ctx_; }
@@ -48,7 +48,7 @@ class TextureAtlas {
     // create mipmaps, compress etc.
     void Finalize(CommandBuffer cmd_buf);
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     eResState resource_state = eResState::Undefined;
 #endif
   private:
@@ -59,7 +59,7 @@ class TextureAtlas {
                                             eTexFormat::Undefined, eTexFormat::Undefined, eTexFormat::Undefined,
                                             eTexFormat::Undefined, eTexFormat::Undefined};
     eTexFilter filter_ = eTexFilter::NoFilter;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkImage img_[MaxTextureCount] = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
                                      VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
     VkDeviceMemory mem_[MaxTextureCount] = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
@@ -67,7 +67,7 @@ class TextureAtlas {
     VkImageView img_view_[MaxTextureCount] = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
     Sampler sampler_;
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     uint32_t tex_ids_[MaxTextureCount] = {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
                                           0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
 #endif

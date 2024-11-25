@@ -7,7 +7,7 @@
 
 void Eng::ExBuildAccStructures::Execute(FgBuilder &builder) {
     if (builder.ctx().capabilities.hwrt) {
-#if !defined(USE_GL_RENDER)
+#if !defined(REN_GL_BACKEND)
         Execute_HWRT(builder);
 #endif
     } else {

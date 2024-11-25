@@ -44,7 +44,7 @@ class ProbeStorage {
     int reserved_temp_layer_ = -1;
     SmallVector<int, 32> free_indices_;
     TexHandle handle_;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     MemAllocation alloc_;
 #endif
 

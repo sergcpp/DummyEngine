@@ -142,7 +142,7 @@ set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExUpdateAccBuffers.h
                         renderer/executors/ExUpdateAccBuffers.cpp)
 
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                          renderer/PrimDrawGL.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
@@ -167,7 +167,7 @@ if(${RENDERER} STREQUAL "GL")
                             renderer/executors/ExShadowMapsGL.cpp
                             renderer/executors/ExSkinningGL.cpp
                             renderer/executors/ExTransparentGL.cpp)
-elseif(${RENDERER} STREQUAL "VK")
+elseif(${REN_BACKEND} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                          renderer/PrimDrawVK.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
@@ -194,7 +194,7 @@ elseif(${RENDERER} STREQUAL "VK")
                             renderer/executors/ExSkinningVK.cpp
                             renderer/executors/ExTransparentVK.cpp
                             renderer/executors/ExUpdateAccBuffersVK.cpp)
-elseif(${RENDERER} STREQUAL "SW")
+elseif(${REN_BACKEND} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                          renderer/RendererSW.cpp)
 endif()

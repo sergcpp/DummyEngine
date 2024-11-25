@@ -14,7 +14,7 @@ class ExOpaque final : public FgExecutor {
     Ren::RenderPass rp_opaque_;
     Ren::Framebuffer opaque_draw_fb_[Ren::MaxFramesInFlight][2];
     int fb_to_use_ = 0;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkDescriptorSetLayout descr_set_layout_ = VK_NULL_HANDLE;
 #endif
 
@@ -56,7 +56,7 @@ class ExOpaque final : public FgExecutor {
                   FgAllocTex &depth_tex);
     void DrawOpaque(FgBuilder &builder);
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     void InitDescrSetLayout();
 #endif
   public:

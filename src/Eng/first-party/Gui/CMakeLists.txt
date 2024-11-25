@@ -66,13 +66,13 @@ set(SOURCE_FILES    BaseElement.h
                     Utils.h
                     Utils.cpp)
 
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     set(SOURCE_FILES    ${SOURCE_FILES}
                         RendererGL.cpp)
-elseif(${RENDERER} STREQUAL "SW")
+elseif(${REN_BACKEND} STREQUAL "SW")
     set(SOURCE_FILES    ${SOURCE_FILES}
                         RendererSW.cpp)
-elseif(${RENDERER} STREQUAL "VK")
+elseif(${REN_BACKEND} STREQUAL "VK")
     set(SOURCE_FILES    ${SOURCE_FILES}
                         RendererVK.cpp)
 endif()

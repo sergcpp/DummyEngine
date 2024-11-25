@@ -3,7 +3,7 @@
 #include <Ren/Texture.h>
 #include <Sys/AsyncFileReader.h>
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/VKCtx.h>
 #endif
 
@@ -17,7 +17,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
         : api_ctx_(api_ctx), stage_buf_("Tex Upload Buf", api_ctx, Ren::eBufType::Upload, 768) {
         Realloc(24 * 1024 * 1024);
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         VkFence new_fence;
@@ -41,7 +41,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
     ~TextureUpdateFileBuf() override {
         Free();
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         VkCommandBuffer _cmd_buf = reinterpret_cast<VkCommandBuffer>(cmd_buf);
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &_cmd_buf);
 #endif

@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <istream>
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include "VKCtx.h"
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
 #include "GLCtx.h"
 #endif
 
@@ -96,7 +96,7 @@ void Ren::Context::ReleaseMaterials() {
     materials_.clear();
 }
 
-#if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
+#if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
 Ren::ShaderRef Ren::Context::LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type,
                                             eShaderLoadStatus *load_status) {
     ShaderRef ref = shaders_.FindByName(name);
@@ -114,7 +114,7 @@ Ren::ShaderRef Ren::Context::LoadShaderGLSL(std::string_view name, std::string_v
     return ref;
 }
 
-#if defined(USE_VK_RENDER) || !defined(__ANDROID__)
+#if defined(REN_VK_BACKEND) || !defined(__ANDROID__)
 Ren::ShaderRef Ren::Context::LoadShaderSPIRV(std::string_view name, Span<const uint8_t> shader_data, eShaderType type,
                                              eShaderLoadStatus *load_status) {
     ShaderRef ref = shaders_.FindByName(name);
@@ -168,7 +168,7 @@ Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef cs_re
     return ref;
 }
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 Ren::ProgramRef Ren::Context::LoadProgram2(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref,
                                            ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref,
                                            eProgLoadStatus *load_status) {
@@ -203,7 +203,7 @@ void Ren::Context::ReleasePrograms() {
     }
     log_->Error("---------REMAINING PROGRAMS--------");
     for ([[maybe_unused]] const Program &p : programs_) {
-#if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#if defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
         log_->Error("%s %i", p.name().c_str(), int(p.id()));
 #endif
     }

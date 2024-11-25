@@ -1579,7 +1579,7 @@ void Eng::FgBuilder::Execute() {
 
     BuildResourceLinkedLists();
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     rast_state_.Apply();
 #endif
 
@@ -1591,7 +1591,7 @@ void Eng::FgBuilder::Execute() {
         OPTICK_GPU_EVENT("Execute Node");
         OPTICK_TAG("Node Name", cur_node->name().data());
 
-#if !defined(NDEBUG) && defined(USE_GL_RENDER)
+#if !defined(NDEBUG) && defined(REN_GL_BACKEND)
         Ren::ResetGLState();
 #endif
 

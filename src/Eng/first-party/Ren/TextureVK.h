@@ -7,7 +7,7 @@
 #include "MemoryAllocator.h"
 #include "TextureParams.h"
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include "VK.h"
 #endif
 

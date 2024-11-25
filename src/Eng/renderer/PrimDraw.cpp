@@ -5,7 +5,7 @@
 #include "Renderer_Structs.h"
 
 namespace PrimDrawInternal {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 extern const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
 extern const float fs_quad_norm_uvs[] = {0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f};
 #else

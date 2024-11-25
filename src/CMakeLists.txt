@@ -69,7 +69,7 @@ endif()
 add_subdirectory(DummyApp)
 add_subdirectory(DummyLib)
 add_subdirectory(Eng)
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     add_subdirectory(Modl)
 endif()
 add_subdirectory(Ray)
@@ -79,7 +79,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_target_properties(DummyApp
                       DummyLib PROPERTIES FOLDER App)
 
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     set_target_properties(ModlAppGL PROPERTIES FOLDER App)
 endif()
 

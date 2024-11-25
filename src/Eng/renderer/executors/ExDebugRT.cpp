@@ -7,7 +7,7 @@
 void Eng::ExDebugRT::Execute(FgBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-#if !defined(USE_GL_RENDER)
+#if !defined(REN_GL_BACKEND)
     if (builder.ctx().capabilities.hwrt) {
         Execute_HWRT(builder);
     } else
@@ -19,7 +19,7 @@ void Eng::ExDebugRT::Execute(FgBuilder &builder) {
 
 void Eng::ExDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         if (ctx.capabilities.hwrt) {
             Ren::ProgramRef debug_hwrt_prog =
                 sh.LoadProgram2(ctx, "internal/rt_debug.rgen.glsl", "internal/rt_debug@GI_CACHE.rchit.glsl",

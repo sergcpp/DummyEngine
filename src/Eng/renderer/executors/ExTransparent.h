@@ -16,7 +16,7 @@ class ExTransparent final : public FgExecutor {
     Ren::RenderPass rp_transparent_;
     Ren::Framebuffer transparent_draw_fb_[Ren::MaxFramesInFlight][2], color_only_fb_[2], resolved_fb_, moments_fb_;
     int fb_to_use_ = 0;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkDescriptorSetLayout descr_set_layout_ = VK_NULL_HANDLE;
 #endif
 
@@ -66,7 +66,7 @@ class ExTransparent final : public FgExecutor {
     void DrawTransparent_OIT_MomentBased(FgBuilder &builder);
     void DrawTransparent_OIT_WeightedBlended(FgBuilder &builder);
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     void InitDescrSetLayout();
 #endif
 

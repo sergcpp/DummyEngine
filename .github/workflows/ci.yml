@@ -19,7 +19,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows-ninja
         with:
-          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "windows-x86_64-gl"
       - name: Upload artifacts
@@ -42,7 +42,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows-ninja
         with:
-          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "windows-x86_64-vk"
       - name: Upload artifacts
@@ -65,7 +65,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "linux-x86_64-gl"
       - name: Upload artifacts
@@ -88,7 +88,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "linux-x86_64-vk"
       - name: Upload artifacts
@@ -111,7 +111,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-macos
         with:
-          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
+          cmake-args: "-DREN_BACKEND=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
           config: "Release"
           bin-dir: "macos-x86_64-vk"
       - name: Upload artifacts

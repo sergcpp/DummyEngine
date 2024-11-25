@@ -458,7 +458,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 data->swrt.prim_ndx_buf =
                     rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
                 data->swrt.mesh_instances_buf = rt_gi.AddStorageReadonlyInput(rt_obj_instances_res, stage);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
                 data->swrt.textures_buf = rt_gi.AddStorageReadonlyInput(bindless.textures_buf, stage);
 #endif
             }
@@ -502,7 +502,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     sample_lights.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, Stg::ComputeShader);
                 data->swrt.mesh_instances_buf =
                     sample_lights.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
                 data->swrt.textures_buf =
                     sample_lights.AddStorageReadonlyInput(bindless.textures_buf, Stg::ComputeShader);
 #endif

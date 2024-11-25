@@ -61,7 +61,7 @@ struct RenderTargetInfo {
     RenderTargetInfo(WeakTex2DRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
         : format(_ref->params.format), samples(_ref->params.samples), flags(_ref->params.flags),
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
           layout(eImageLayout(VKImageLayoutForState(_ref->resource_state))),
 #endif
           load(_load), store(_store), stencil_load(_stencil_load), stencil_store(_stencil_store) {
@@ -69,7 +69,7 @@ struct RenderTargetInfo {
     RenderTargetInfo(const Texture2D *tex, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
         : format(tex->params.format), samples(tex->params.samples), flags(tex->params.flags),
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
           layout(eImageLayout(VKImageLayoutForState(tex->resource_state))),
 #endif
           load(_load), store(_store), stencil_load(_stencil_load), stencil_store(_stencil_store) {
@@ -83,7 +83,7 @@ struct RenderTargetInfo {
             format = rt.ref->params.format;
             samples = rt.ref->params.samples;
             flags = rt.ref->params.flags;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
             layout = eImageLayout(VKImageLayoutForState(rt.ref->resource_state));
 #endif
             load = rt.load;
@@ -99,7 +99,7 @@ struct RenderTargetInfo {
 inline bool operator==(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
     const auto &p = rhs.ref->params;
     return lhs.format == p.format && lhs.samples == p.samples &&
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
            lhs.layout == eImageLayout(VKImageLayoutForState(rhs.ref->resource_state)) &&
 #endif
            lhs.load == rhs.load && lhs.store == rhs.store && lhs.stencil_load == rhs.stencil_load &&
@@ -112,7 +112,7 @@ inline bool operator!=(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
 
 class RenderPass {
     ApiContext *api_ctx_ = nullptr;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkRenderPass handle_ = {};
 #endif
 
@@ -131,7 +131,7 @@ class RenderPass {
     RenderPass &operator=(const RenderPass &rhs) = delete;
     RenderPass &operator=(RenderPass &&rhs) noexcept;
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     [[nodiscard]] VkRenderPass handle() const { return handle_; }
 #endif
 

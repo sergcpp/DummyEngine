@@ -33,7 +33,7 @@ void Eng::ExOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBu
         }
 
         api_ctx_ = ctx.api_ctx();
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         InitDescrSetLayout();
 #endif
 

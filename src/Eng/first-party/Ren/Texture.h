@@ -21,11 +21,11 @@ int BlockLenFromGLInternalFormat(uint32_t gl_internal_format);
 void ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params);
 } // namespace Ren
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #include "TextureGL.h"
-#elif defined(USE_VK_RENDER)
+#elif defined(REN_VK_BACKEND)
 #include "TextureVK.h"
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
 #include "TextureSW.h"
 #endif
 

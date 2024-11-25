@@ -154,9 +154,9 @@ void test_mesh() {
         auto on_pipelines_needed = [&test](const uint32_t flags, std::string_view arg1, std::string_view arg2,
                                            std::string_view arg3, std::string_view arg4,
                                            SmallVectorImpl<PipelineRef> &out_pipelines) {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
             Attribute _attrs[] = {{}};
             Uniform _unifs[] = {{}};
             return test.LoadProgramSW(name, nullptr, nullptr, 0, _attrs, _unifs, &status);

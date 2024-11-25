@@ -155,13 +155,13 @@ struct RastState {
         Vec4i rect;
     } scissor;
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     void Apply() const { Apply(nullptr); }
     void ApplyChanged(const RastState &ref) const { Apply(&ref); }
 #endif
 
   private:
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     void Apply(const RastState *ref) const;
 #endif
 };

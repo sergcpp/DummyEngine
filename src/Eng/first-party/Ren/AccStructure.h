@@ -18,7 +18,7 @@ class IAccStructure {
     virtual void FreeImmediate() { Free(); }
 };
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 class AccStructureVK : public IAccStructure {
     ApiContext *api_ctx_ = nullptr;
     VkAccelerationStructureKHR handle_ = {};

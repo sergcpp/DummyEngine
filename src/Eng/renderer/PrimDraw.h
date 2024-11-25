@@ -9,7 +9,7 @@
 #include <Ren/Texture.h>
 #include <Ren/VertexInput.h>
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/DescriptorPool.h>
 #endif
 
@@ -32,7 +32,7 @@ class PrimDraw {
     Ren::VertexInput fs_quad_vtx_input_, sphere_vtx_input_;
 
     Ren::Context *ctx_ = nullptr;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     Ren::SmallVector<Ren::RenderPass, 128> render_passes_;
     Ren::SmallVector<Ren::Pipeline, 128> pipelines_[int(ePrim::_Count)];
 

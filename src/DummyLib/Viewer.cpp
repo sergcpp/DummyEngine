@@ -17,7 +17,7 @@
 #include <Ren/MVec.h>
 #include <Sys/ThreadPool.h>
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/VKCtx.h>
 
 #include <optick/optick.h>
@@ -25,7 +25,7 @@
 namespace Ren {
 extern bool ignore_optick_errors;
 }
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
 #include <Ren/GLCtx.h>
 #endif
 
@@ -118,7 +118,7 @@ Ray::ILog *Viewer::ray_log() { return log_; }
 void Viewer::Frame() {
     Ren::ApiContext *api_ctx = ren_ctx()->api_ctx();
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     api_ctx->vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE,
                              UINT64_MAX);
     api_ctx->vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
@@ -171,7 +171,7 @@ void Viewer::Frame() {
                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
                                           &layout_transition_barrier);
         }
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     // Make sure all operations have finished
     api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
     api_ctx->in_flight_fences[api_ctx->backend_frame] = {};
@@ -181,7 +181,7 @@ void Viewer::Frame() {
 
         state_manager_->Draw();
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         { // change layout from  attachment_optimal to present_src
             VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             layout_transition_barrier.srcAccessMask =
@@ -245,7 +245,7 @@ void Viewer::Frame() {
     if (res != VK_SUCCESS && res != VK_ERROR_OUT_OF_DATE_KHR) {
         ren_ctx()->log()->Error("Failed to present queue!");
     }
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     api_ctx->in_flight_fences[api_ctx->backend_frame] = Ren::MakeFence();
 #endif
     api_ctx->backend_frame = (api_ctx->backend_frame + 1) % Ren::MaxFramesInFlight;

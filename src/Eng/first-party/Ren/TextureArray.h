@@ -31,11 +31,11 @@ class Texture2DArray {
 
     eTexFormat format() const { return format_; }
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkImage img() const { return img_; }
     VkImageView img_view() const { return img_view_; }
     const Sampler &sampler() const { return sampler_; }
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     uint32_t id() const { return tex_id_; }
 #endif
     ApiContext *api_ctx() { return api_ctx_; }
@@ -54,12 +54,12 @@ class Texture2DArray {
     int layer_count_ = 0;
     eTexFormat format_ = eTexFormat::Undefined;
     eTexFilter filter_ = eTexFilter::NoFilter;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkImage img_ = VK_NULL_HANDLE;
     VkDeviceMemory mem_ = VK_NULL_HANDLE;
     VkImageView img_view_ = VK_NULL_HANDLE;
     Sampler sampler_;
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     uint32_t tex_id_ = 0xffffffff;
 #endif
 };

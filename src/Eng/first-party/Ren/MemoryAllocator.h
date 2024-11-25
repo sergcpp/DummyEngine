@@ -5,7 +5,7 @@
 #include "FreelistAlloc.h"
 #include "SmallVector.h"
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 typedef uint32_t VkFlags;
 typedef VkFlags VkMemoryPropertyFlags;
 typedef struct VkDeviceMemory_T *VkDeviceMemory;
@@ -22,9 +22,9 @@ struct ApiContext;
 class MemoryAllocator;
 
 struct MemHeap {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkDeviceMemory mem = {};
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     void *mem = nullptr;
 #endif
     uint32_t size = 0xffffffff;
@@ -84,7 +84,7 @@ class MemoryAllocator {
     MemoryAllocator &operator=(const MemoryAllocator &rhs) = delete;
     MemoryAllocator &operator=(MemoryAllocator &&rhs) = default;
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     [[nodiscard]] VkDeviceMemory mem(int i) const { return pools_[i].mem; }
 #endif
     [[nodiscard]] uint32_t mem_type_index() const { return mem_type_index_; }
@@ -108,7 +108,7 @@ class MemoryAllocators {
           max_pool_size_(max_pool_size) {}
 
     MemAllocation Allocate(uint32_t alignment, uint32_t size, uint32_t mem_type_index);
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     MemAllocation Allocate(const VkMemoryRequirements &mem_req, VkMemoryPropertyFlags desired_mem_flags);
 #endif
 };

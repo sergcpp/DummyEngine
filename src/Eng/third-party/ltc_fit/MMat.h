@@ -497,7 +497,7 @@ void PerspectiveProjection(Mat<T, 4, 4> &m, const T fov, const T aspect, const T
     m[1][0] = m[1][2] = m[1][3] = T(0);
 
     m[2][0] = m[2][1] = T(0);
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     m[2][2] = zfar / (znear - zfar);
 #else
     m[2][2] = -(zfar + znear) / (zfar - znear);
@@ -505,7 +505,7 @@ void PerspectiveProjection(Mat<T, 4, 4> &m, const T fov, const T aspect, const T
     m[2][3] = T(-1);
 
     m[3][0] = m[3][1] = T(0);
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     m[3][2] = -(zfar * znear) / (zfar - znear);
 #else
     m[3][2] = -2 * (zfar * znear) / (zfar - znear);
@@ -544,14 +544,14 @@ void OrthographicProjection(Mat<T, 4, 4> &m, const T left, const T right, const 
 
     m[0][0] = T(2) * r_width;
     m[1][1] = T(2) * r_height;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     m[2][2] = -r_depth;
 #else
     m[2][2] = -T(2) * r_depth;
 #endif
     m[3][0] = -(right + left) * r_width;
     m[3][1] = -(top + bottom) * r_height;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     m[3][2] = -nnear * r_depth;
 #else
     m[3][2] = -(ffar + nnear) * r_depth;

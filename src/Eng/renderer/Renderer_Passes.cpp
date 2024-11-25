@@ -1012,7 +1012,7 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     const FgResRef ndx_buf = gbuf_fill.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     const FgResRef textures_buf = gbuf_fill.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
     const FgResRef textures_buf = {};
@@ -1056,7 +1056,7 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     const FgResRef ndx_buf = opaque.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     const FgResRef textures_buf = opaque.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
     const FgResRef textures_buf = {};
@@ -1115,7 +1115,7 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
 
     const FgResRef materials_buf =
         transparent.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     const FgResRef textures_buf = transparent.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
     const FgResRef textures_buf = {};
@@ -1270,7 +1270,7 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
     const FgResRef ndx_buf = emissive.AddIndexBufferInput(persistent_data.indices_buf);
 
     const FgResRef materials_buf = emissive.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     const FgResRef textures_buf = emissive.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
     const FgResRef textures_buf = {};

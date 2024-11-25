@@ -1,10 +1,10 @@
 #pragma once
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #include "SamplerGL.h"
-#elif defined(USE_VK_RENDER)
+#elif defined(REN_VK_BACKEND)
 #include "SamplerVK.h"
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
 #endif
 
 namespace Ren {

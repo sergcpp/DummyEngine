@@ -92,7 +92,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
         const FgResRef materials_buf =
             oit_depth_peel.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         const FgResRef textures_buf = oit_depth_peel.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
         const FgResRef textures_buf = {};
@@ -131,7 +131,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
         const FgResRef materials_buf =
             oit_schedule.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         const FgResRef textures_buf = oit_schedule.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
         const FgResRef textures_buf = {};
@@ -394,7 +394,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                     rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
                 data->swrt.mesh_instances_buf = rt_refl.AddStorageReadonlyInput(rt_obj_instances_res, stage);
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
                 data->swrt.textures_buf = rt_refl.AddStorageReadonlyInput(bindless.textures_buf, stage);
 #endif
             }
@@ -475,7 +475,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
             const FgResRef materials_buf =
                 oit_blend_layer.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
             const FgResRef textures_buf =
                 oit_blend_layer.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else

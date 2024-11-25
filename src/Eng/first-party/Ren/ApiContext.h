@@ -1,7 +1,7 @@
 #pragma once
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include "VKCtx.h"
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
 #include "GLCtx.h"
 #endif

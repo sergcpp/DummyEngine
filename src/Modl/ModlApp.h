@@ -76,7 +76,7 @@ class ModlApp {
     HGLRC gl_ctx_ = {};
 #endif
     LogStdout log_;
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;
     uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_skin_vertex_buffer_ = 0, last_delta_buffer_ = 0,
              last_index_buffer_ = 0;

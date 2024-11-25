@@ -51,7 +51,7 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
         }
 
         api_ctx_ = ctx.api_ctx();
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         InitDescrSetLayout();
 #endif
 
@@ -81,7 +81,7 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
         ctx.log()->Error("ExTransparent: transparent_draw_fb_ init failed!");
     }
 
-#if !defined(USE_VK_RENDER)
+#if !defined(REN_VK_BACKEND)
     if (!color_only_fb_[fb_to_use_].Setup(ctx.api_ctx(), {}, color_tex.desc.w, color_tex.desc.h, color_tex.ref,
                                           depth_tex.ref, depth_tex.ref, false, ctx.log())) {
         ctx.log()->Error("ExTransparent: color_only_fb_ init failed!");

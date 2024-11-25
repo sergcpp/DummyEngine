@@ -130,7 +130,7 @@ void Eng::ViewerBase::Frame() {
 
 void Eng::ViewerBase::Quit() { terminated = true; }
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 
 #include <Ren/VKCtx.h>
 

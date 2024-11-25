@@ -8,18 +8,18 @@ namespace Ren {
 struct ApiContext;
 enum class eWaitResult { Success, Timeout, Fail };
 class SyncFence {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     ApiContext *api_ctx_ = nullptr;
     VkFence fence_ = {};
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     void *sync_ = nullptr;
 #endif
 
   public:
     SyncFence() = default;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     SyncFence(ApiContext *api_ctx, VkFence fence) : api_ctx_(api_ctx), fence_(fence) {}
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     SyncFence(void *sync) : sync_(sync) {}
 #endif
     ~SyncFence();
@@ -29,14 +29,14 @@ class SyncFence {
     SyncFence &operator=(const SyncFence &rhs) = delete;
     SyncFence &operator=(SyncFence &&rhs) noexcept;
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     operator bool() const { return fence_ != VkFence{}; }
     [[nodiscard]] VkFence fence() const { return fence_; }
 
     [[nodiscard]] bool signaled() const;
 
     bool Reset();
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     operator bool() const { return sync_ != nullptr; }
 #endif
 

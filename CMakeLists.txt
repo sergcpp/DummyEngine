@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.1)
 
-set(RENDERER "VK" CACHE STRING "Render backend")
+set(REN_BACKEND "VK" CACHE STRING "Render backend")
 
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     project(DummyGL)
-elseif(${RENDERER} STREQUAL "VK")
+elseif(${REN_BACKEND} STREQUAL "VK")
     project(DummyVK)
-elseif(${RENDERER} STREQUAL "SW")
+elseif(${REN_BACKEND} STREQUAL "SW")
     project(DummySW)
 endif()
 

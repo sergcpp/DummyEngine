@@ -80,15 +80,15 @@ class Context {
         default_indices_buf_;
     std::unique_ptr<MemoryAllocators> default_memory_allocs_;
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     std::unique_ptr<DescrMultiPoolAlloc> default_descr_alloc_[MaxFramesInFlight];
 #endif
 
     TextureAtlasArray texture_atlas_;
 
-#if defined(USE_VK_RENDER) || defined(USE_GL_RENDER)
+#if defined(REN_VK_BACKEND) || defined(REN_GL_BACKEND)
     std::unique_ptr<ApiContext> api_ctx_;
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
     SWcontext *sw_ctx_;
 #endif
 
@@ -106,9 +106,9 @@ class Context {
     int w() const { return w_; }
     int h() const { return h_; }
 
-#if defined(USE_VK_RENDER) || defined(USE_GL_RENDER)
+#if defined(REN_VK_BACKEND) || defined(REN_GL_BACKEND)
     ApiContext *api_ctx() { return api_ctx_.get(); }
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
 
 #endif
 
@@ -161,7 +161,7 @@ class Context {
     void ReleaseMaterials();
 
     /*** Program ***/
-#if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
+#if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
     ShaderRef LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type,
                              eShaderLoadStatus *load_status);
 #ifndef __ANDROID__
@@ -172,12 +172,12 @@ class Context {
     ProgramRef LoadProgram(std::string_view name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
                            ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *load_status);
     ProgramRef LoadProgram(std::string_view name, ShaderRef cs_source, eProgLoadStatus *load_status);
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
     ProgramRef LoadProgramSW(std::string_view name, void *vs_shader, void *fs_shader, int num_fvars,
                              const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *load_status);
 #endif
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     ProgramRef LoadProgram2(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
                             ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *load_status);
 #endif
@@ -248,7 +248,7 @@ class Context {
 
     void WaitIdle();
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     struct { // NOLINT
         float max_anisotropy = 0;
         int max_vertex_input = 0, max_vertex_output = 0;
@@ -266,7 +266,7 @@ class Context {
     } capabilities;
 
     static bool IsExtensionSupported(const char *ext);
-#elif defined(USE_VK_RENDER)
+#elif defined(REN_VK_BACKEND)
     struct { // NOLINT
         float max_anisotropy = 0;
         int max_vertex_input = 0, max_vertex_output = 0;
@@ -284,12 +284,12 @@ class Context {
         bool dynamic_rendering = false;
         bool subgroup = false;
     } capabilities;
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
     int max_uniform_vec4 = 0;
 #endif
 };
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 void ResetGLState();
 void CheckError(const char *op, ILog *log);
 #endif

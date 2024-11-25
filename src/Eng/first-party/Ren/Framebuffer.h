@@ -11,10 +11,10 @@
 namespace Ren {
 class Framebuffer {
     ApiContext *api_ctx_ = nullptr;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkFramebuffer handle_ = {};
     VkRenderPass renderpass_ = {};
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     uint32_t id_ = 0;
 #endif
     struct Attachment {
@@ -39,10 +39,10 @@ class Framebuffer {
     Framebuffer &operator=(const Framebuffer &rhs) = delete;
     Framebuffer &operator=(Framebuffer &&rhs) noexcept;
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     [[nodiscard]] VkFramebuffer handle() const { return handle_; }
     [[nodiscard]] VkRenderPass renderpass() const { return renderpass_; }
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     uint32_t id() const { return id_; }
 #endif
 

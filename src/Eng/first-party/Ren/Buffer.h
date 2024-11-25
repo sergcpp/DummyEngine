@@ -41,26 +41,26 @@ enum class eBufType : uint8_t {
 };
 
 struct BufHandle {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkBuffer buf = {};
-#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
     uint32_t id = 0;
 #endif
     uint32_t generation = 0;
 
     operator bool() const {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         return buf != VkBuffer{};
-#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
         return id != 0;
 #endif
     }
 };
 inline bool operator==(const BufHandle lhs, const BufHandle rhs) {
     return
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         lhs.buf == rhs.buf &&
-#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
         lhs.id == rhs.id &&
 #endif
         lhs.generation == rhs.generation;
@@ -85,7 +85,7 @@ class Buffer : public RefCounter {
     String name_;
     std::unique_ptr<FreelistAlloc> sub_alloc_;
     MemAllocation alloc_;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     MemoryAllocators *mem_allocs_ = nullptr;
     VkDeviceMemory dedicated_mem_ = {};
 #endif
@@ -117,11 +117,11 @@ class Buffer : public RefCounter {
 
     [[nodiscard]] BufHandle handle() const { return handle_; }
     [[nodiscard]] ApiContext *api_ctx() const { return api_ctx_; }
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     [[nodiscard]] VkBuffer vk_handle() const { return handle_.buf; }
     [[nodiscard]] VkDeviceMemory mem() const { return dedicated_mem_; }
     [[nodiscard]] VkDeviceAddress vk_device_address() const;
-#elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
     [[nodiscard]] uint32_t id() const { return handle_.id; }
 #endif
     [[nodiscard]] uint32_t generation() const { return handle_.generation; }
@@ -157,7 +157,7 @@ void CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t 
 bool UpdateBuffer(Buffer &dst, uint32_t dst_offset, uint32_t data_size, const void *data, Buffer &stage,
                   uint32_t map_offset, uint32_t map_size, CommandBuffer cmd_buf);
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 void GLUnbindBufferUnits(int start, int count);
 #endif
 

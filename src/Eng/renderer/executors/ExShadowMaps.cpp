@@ -58,7 +58,7 @@ void Eng::ExShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAll
     }
 
     if (!initialized) {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
         const bool bindless = true;

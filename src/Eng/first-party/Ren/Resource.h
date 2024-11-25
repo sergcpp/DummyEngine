@@ -68,7 +68,7 @@ enum class eResState : uint8_t {
     _Count
 };
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 int VKImageLayoutForState(eResState state);
 uint32_t VKAccessFlagsForState(eResState state);
 uint32_t VKPipelineStagesForState(eResState state);

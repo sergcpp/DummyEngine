@@ -58,7 +58,7 @@ void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
         const bool bindless = true;

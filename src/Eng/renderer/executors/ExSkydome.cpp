@@ -55,7 +55,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
         {Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT,
          *std::get<const Ren::Texture3D *>(noise3d_tex._ref)}};
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     static const Ren::Vec3f axises[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{-1.0f, 0.0f, 0.0f},
                                         Ren::Vec3f{0.0f, 1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
                                         Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, -1.0f}};

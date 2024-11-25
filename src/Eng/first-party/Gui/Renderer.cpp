@@ -47,7 +47,7 @@ bool Gui::Renderer::Init() {
         if (ctx_.capabilities.spirv) {
             eShaderLoadStatus sh_status;
             ui_vs_ref = ctx_.LoadShaderSPIRV("__ui_vs__",
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
                                              ui_vert_spv,
 #else
                                              ui_vert_spv_ogl,
@@ -58,7 +58,7 @@ bool Gui::Renderer::Init() {
                 return false;
             }
             ui_fs_ref = ctx_.LoadShaderSPIRV("__ui_fs__",
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
                                              ui_frag_spv,
 #else
                                              ui_frag_spv_ogl,

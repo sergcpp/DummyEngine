@@ -19,7 +19,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "windows-x86_64-gl"
       - name: Upload artifacts
@@ -42,7 +42,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Debug"
           bin-dir: "windows-x86_64-gl"
   build-windows-x86_64-gl-dev:
@@ -60,7 +60,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=GL -DCMAKE_UNITY_BUILD=ON"
           config: "RelWithDebInfo"
           bin-dir: "windows-x86_64-gl"
   build-windows-x86_64-gl-asan:
@@ -78,7 +78,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Asan"
           bin-dir: "windows-x86_64-gl-asan"
       - name: Upload artifacts
@@ -101,7 +101,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "windows-x86_64-vk"
       - name: Upload artifacts
@@ -124,7 +124,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Debug"
           bin-dir: "windows-x86_64-vk"
   build-windows-x86_64-vk-dev:
@@ -142,7 +142,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "RelWithDebInfo"
           bin-dir: "windows-x86_64-vk"
   build-windows-x86_64-vk-asan:
@@ -160,7 +160,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows
         with:
-          cmake-args: "-A x64 -DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-A x64 -DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Asan"
           bin-dir: "windows-x86_64-vk-asan"
       - name: Upload artifacts
@@ -183,7 +183,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "linux-x86_64-gl"
       - name: Upload artifacts
@@ -206,7 +206,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Debug"
           bin-dir: "linux-x86_64-gl"
   build-linux-x86_64-gl-dev:
@@ -224,7 +224,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=GL -DCMAKE_UNITY_BUILD=ON"
           config: "RelWithDebInfo"
           bin-dir: "linux-x86_64-gl"
   build-linux-x86_64-vk-rel:
@@ -242,7 +242,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "linux-x86_64-vk"
       - name: Upload artifacts
@@ -265,7 +265,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Debug"
           bin-dir: "linux-x86_64-vk"
   build-linux-x86_64-vk-dev:
@@ -283,7 +283,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "RelWithDebInfo"
           bin-dir: "linux-x86_64-vk"
   build-macos-universal-vk-rel:
@@ -301,7 +301,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-macos
         with:
-          cmake-args: '-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+          cmake-args: '-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
           config: "Release"
           bin-dir: "macos-universal-vk"
       - name: Upload artifacts

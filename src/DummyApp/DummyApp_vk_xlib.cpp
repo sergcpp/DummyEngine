@@ -5,9 +5,9 @@
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global"); // NOLINT
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #include <Ren/GL.h>
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
 
 #endif
 
@@ -142,7 +142,7 @@ int DummyApp::Run(int argc, char *argv[]) {
 
         this->Frame();
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         uint64_t swap_start = Sys::GetTimeUs();
         glXSwapBuffers(dpy_, win_);
         uint64_t swap_end = Sys::GetTimeUs();
@@ -152,7 +152,7 @@ int DummyApp::Run(int argc, char *argv[]) {
             swap_interval->start_timepoint_us = swap_start;
             swap_interval->end_timepoint_us = swap_end;
         }
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
         // TODO
 #endif
         __itt_frame_end_v3(__g_itt_domain, nullptr);

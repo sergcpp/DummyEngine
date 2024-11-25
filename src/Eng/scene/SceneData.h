@@ -171,7 +171,7 @@ class CompStorage {
 };
 } // namespace Eng
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/DescriptorPool.h>
 #endif
 
@@ -205,14 +205,14 @@ struct PersistentGpuData {
     Ren::BufferRef materials_buf;
     Ren::BufferRef stoch_lights_buf, stoch_lights_nodes_buf;
     Ren::BufferRef vertex_buf1, vertex_buf2, skin_vertex_buf, delta_buf, indices_buf;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     std::unique_ptr<Ren::DescrPool> textures_descr_pool;
     VkDescriptorSetLayout textures_descr_layout = VK_NULL_HANDLE;
     std::unique_ptr<Ren::DescrPool> rt_textures_descr_pool, rt_inline_textures_descr_pool;
     VkDescriptorSetLayout rt_textures_descr_layout = VK_NULL_HANDLE, rt_inline_textures_descr_layout = VK_NULL_HANDLE;
     Ren::SmallVector<VkDescriptorSet, 1024> textures_descr_sets[4];
     VkDescriptorSet rt_textures_descr_sets[4] = {}, rt_inline_textures_descr_sets[4] = {};
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     Ren::BufferRef textures_buf;
 #endif
     Ren::PipelineStorage pipelines;

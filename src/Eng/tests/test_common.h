@@ -124,12 +124,12 @@ class LogErr final : public Ren::ILog, public Snd::ILog {
 #include <Windows.h>
 #elif defined(__linux__)
 #include <X11/Xlib.h>
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #include <GL/glx.h>
 
 typedef GLXContext (*GLXCREATECONTEXTATTIBSARBPROC)(Display *, GLXFBConfig, GLXContext, Bool, const int *);
 typedef void (*GLXSWAPINTERVALEXTPROC)(Display *dpy, GLXDrawable drawable, int interval);
-#elif defined(USE_VK_RENDER)
+#elif defined(REN_VK_BACKEND)
 namespace Ren {
 extern Display *g_dpy;
 extern Window g_win;
@@ -138,7 +138,7 @@ extern Window g_win;
 #endif
 
 class TestContext : public Ren::Context {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #if defined(_WIN32)
     HWND hWnd;
     HDC hDC;
@@ -155,7 +155,7 @@ class TestContext : public Ren::Context {
     TestContext(const int w, const int h, std::string_view device_name, const int validation_level, const bool nohwrt,
                 const bool nosubgroup, Ren::ILog *log)
         : log_(log) {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #if defined(_WIN32)
         WNDCLASSEX window_class = {};
         window_class.cbSize = sizeof(WNDCLASSEX);
@@ -290,7 +290,7 @@ class TestContext : public Ren::Context {
     }
 
     ~TestContext() {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #if defined(_WIN32)
         wglMakeCurrent(NULL, NULL);
         ReleaseDC(hWnd, hDC);

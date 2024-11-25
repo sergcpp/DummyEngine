@@ -207,12 +207,12 @@ bool SkipAssetForCurrentBuild(const Ren::Bitmask<Eng::eAssetFlags> flags) {
         return true;
     }
 #endif
-#if !defined(USE_GL_RENDER)
+#if !defined(REN_GL_BACKEND)
     if (flags & Eng::eAssetFlags::GLOnly) {
         return true;
     }
 #endif
-#if !defined(USE_VK_RENDER)
+#if !defined(REN_VK_BACKEND)
     if (flags & Eng::eAssetFlags::VKOnly) {
         return true;
     }

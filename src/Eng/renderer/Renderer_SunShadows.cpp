@@ -187,7 +187,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 rt_shadows.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
             data->swrt.mesh_instances_buf = rt_shadows.AddStorageReadonlyInput(rt_obj_instances_res, stage);
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
             data->swrt.textures_buf = rt_shadows.AddStorageReadonlyInput(bindless.textures_buf, stage);
 #endif
         }

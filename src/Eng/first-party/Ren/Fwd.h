@@ -4,7 +4,7 @@
 #include "Log.h"
 #include "Storage.h"
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 typedef uint64_t VkDeviceAddress;
 typedef uint32_t VkFlags;
 typedef VkFlags VkMemoryPropertyFlags;
@@ -25,7 +25,7 @@ typedef struct VkDescriptorSetLayout_T *VkDescriptorSetLayout;
 typedef struct VkImage_T *VkImage;
 typedef struct VkImageView_T *VkImageView;
 typedef struct VkSampler_T *VkSampler;
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
 typedef struct VkTraceRaysIndirectCommandKHR {
     uint32_t width;
     uint32_t height;
@@ -34,7 +34,7 @@ typedef struct VkTraceRaysIndirectCommandKHR {
 #endif
 
 namespace Ren {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 class AccStructureVK;
 using CommandBuffer = VkCommandBuffer;
 #else

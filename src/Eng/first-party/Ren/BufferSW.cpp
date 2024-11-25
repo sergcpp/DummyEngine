@@ -4,9 +4,9 @@
 
 #include <algorithm>
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #include "GL.h"
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
 #include "SW/SW.h"
 #endif
 
@@ -15,7 +15,7 @@ Ren::Buffer::Buffer(std::string_view name, eBufferType type, uint32_t initial_si
     nodes_.emplace_back();
     nodes_.back().size = initial_size;
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     buf_id_ = 0xffffffff;
 #endif
 
@@ -23,7 +23,7 @@ Ren::Buffer::Buffer(std::string_view name, eBufferType type, uint32_t initial_si
 }
 
 Ren::Buffer::~Buffer() {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     if (buf_id_ != 0xffffffff) {
         auto gl_buf = (GLuint)buf_id_;
         glDeleteBuffers(1, &gl_buf);
@@ -35,13 +35,13 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     RefCounter::operator=(std::move((RefCounter &)rhs));
 
     if (buf_id_ == 0xffffffff) {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         auto buf = (GLuint)buf_id_;
         glDeleteBuffers(1, &buf);
 #endif
     }
 
-#if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
+#if defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
     buf_id_ = rhs.buf_id_;
     rhs.buf_id_ = 0xffffffff;
 #endif
@@ -177,10 +177,10 @@ uint32_t Ren::Buffer::Alloc(uint32_t req_size, const void *init_data) {
         assert(n.size == req_size);
 
         if (init_data) {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
             glBindBuffer(GL_ARRAY_BUFFER, (GLuint)buf_id_);
             glBufferSubData(GL_ARRAY_BUFFER, n.offset, n.size, init_data);
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
             swBindBuffer(SW_ARRAY_BUFFER, (SWuint)buf_id_);
             swBufferSubData(SW_ARRAY_BUFFER, n.offset, n.size, init_data);
 #endif
@@ -209,7 +209,7 @@ void Ren::Buffer::Resize(uint32_t new_size) {
         size_ *= 2;
     }
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     GLuint gl_buffer;
     glGenBuffers(1, &gl_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, gl_buffer);
@@ -228,7 +228,7 @@ void Ren::Buffer::Resize(uint32_t new_size) {
     }
 
     buf_id_ = (uint32_t)gl_buffer;
-#elif defined(USE_SW_RENDER)
+#elif defined(REN_SW_BACKEND)
     SWuint sw_buffer = swCreateBuffer();
     swBindBuffer(SW_ARRAY_BUFFER, sw_buffer);
     swBufferData(SW_ARRAY_BUFFER, size_, nullptr);

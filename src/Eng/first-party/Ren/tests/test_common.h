@@ -74,13 +74,13 @@ inline bool operator==(float val, const Approx &app) {
 #undef max
 #elif defined(__linux__)
 #include <X11/Xlib.h>
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 #include <GL/glx.h>
 
 typedef GLXContext (*GLXCREATECONTEXTATTIBSARBPROC)(Display *, GLXFBConfig, GLXContext,
                                                     Bool, const int *);
 typedef void (*GLXSWAPINTERVALEXTPROC)(Display *dpy, GLXDrawable drawable, int interval);
-#elif defined(USE_VK_RENDER)
+#elif defined(REN_VK_BACKEND)
 namespace Ren {
 extern Display  *g_dpy;
 extern Window    g_win;
@@ -96,7 +96,7 @@ class TestContext : public Ren::Context {
 #else
     Display         *dpy_ = nullptr;
     Window          win_ = {};
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     GLXContext      gl_ctx_main_ = {};
 #endif
 #endif
@@ -123,7 +123,7 @@ class TestContext : public Ren::Context {
 
         hDC = GetDC(hWnd);
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         PIXELFORMATDESCRIPTOR pfd;
         memset(&pfd, 0, sizeof(pfd));
         pfd.nSize = sizeof(pfd);
@@ -152,7 +152,7 @@ class TestContext : public Ren::Context {
             throw std::runtime_error("dpy is null!");
         }
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         static const int attribute_list[] = {GLX_X_RENDERABLE,
                                              True,
                                              GLX_DRAWABLE_TYPE,
@@ -237,7 +237,7 @@ class TestContext : public Ren::Context {
 
         glXMakeCurrent(dpy_, win_, gl_ctx_main_);
         glViewport(0, 0, 256, 256);
-#elif defined(USE_VK_RENDER)
+#elif defined(REN_VK_BACKEND)
         const int screen = XDefaultScreen(dpy_);
         Visual *visual = XDefaultVisual(dpy_, screen);
         const int depth  = DefaultDepth(dpy_, screen);
@@ -268,7 +268,7 @@ class TestContext : public Ren::Context {
 
     ~TestContext() {
 #if defined(_WIN32)
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         wglMakeCurrent(NULL, NULL);
         ReleaseDC(hWnd, hDC);
         wglDeleteContext(hRC);
@@ -276,12 +276,12 @@ class TestContext : public Ren::Context {
         DestroyWindow(hWnd);
         UnregisterClass("TestClass", GetModuleHandle(nullptr));
 #else
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         glXMakeCurrent(dpy_, None, nullptr);
         glXDestroyContext(dpy_, gl_ctx_main_);
 #endif
         XDestroyWindow(dpy_, win_);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         XCloseDisplay(dpy_);
 #endif
 #endif

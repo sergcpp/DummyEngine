@@ -38,7 +38,7 @@ enum class eBindTarget : uint16_t {
     _Count
 };
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
 uint32_t GLBindTarget(eBindTarget binding);
 extern int g_param_buf_binding;
 #endif
@@ -51,7 +51,7 @@ struct OpaqueHandle {
         const Texture1D *tex_buf;
         const ProbeStorage *cube_arr;
         const Texture2DArray *tex2d_arr;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         const AccStructureVK *acc_struct;
 #endif
     };
@@ -68,7 +68,7 @@ struct OpaqueHandle {
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
     OpaqueHandle(const Texture2DArray &_tex2d_arr) : tex2d_arr(&_tex2d_arr) {}
     OpaqueHandle(const Sampler &_sampler) : sampler(&_sampler) {}
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     OpaqueHandle(const AccStructureVK &_acc_struct) : acc_struct(&_acc_struct) {}
 #endif
 };
@@ -90,7 +90,7 @@ struct Binding {
 };
 static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *), "!");
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 [[nodiscard]] VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
                                                    Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc,
                                                    ILog *log);

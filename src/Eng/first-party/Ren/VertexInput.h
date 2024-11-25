@@ -23,7 +23,7 @@ inline bool operator==(const VtxAttribDesc &lhs, const VtxAttribDesc &rhs) {
 }
 
 class VertexInput {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     uint32_t gl_vao_ = 0;
 #endif
   public:
@@ -38,11 +38,11 @@ class VertexInput {
     VertexInput &operator=(const VertexInput &rhs) = delete;
     VertexInput &operator=(VertexInput &&rhs) noexcept;
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     void BindBuffers(ApiContext *api_ctx, VkCommandBuffer cmd_buf, uint32_t index_offset, int index_type) const;
     void FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDescription, 4> &out_bindings,
                             SmallVectorImpl<VkVertexInputAttributeDescription, 4> &out_attribs) const;
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     uint32_t gl_vao() const { return gl_vao_; }
 #endif
 

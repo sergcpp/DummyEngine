@@ -6,9 +6,9 @@
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/VKCtx.h>
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
 #include <Ren/GLCtx.h>
 #endif
 #include <Snd/Context.h>
@@ -70,7 +70,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
 
     LogErr log;
     TestContext ren_ctx(ref_w, ref_h, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
     require_return(g_device_name.empty() ||
                    Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, g_device_name.data()));
@@ -293,7 +293,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
     params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Transfer;
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     params.flags = Ren::eTexFlagBits::SRGB;
 #endif
 
@@ -303,7 +303,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     auto begin_frame = [&ren_ctx]() {
         Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         api_ctx->vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE,
                                  UINT64_MAX);
         api_ctx->vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
@@ -323,7 +323,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
 
         api_ctx->vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame],
                                      api_ctx->query_pools[api_ctx->backend_frame], 0, Ren::MaxTimestampQueries);
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
         // Make sure all operations have finished
         api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
         api_ctx->in_flight_fences[api_ctx->backend_frame] = {};
@@ -335,7 +335,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     auto end_frame = [&ren_ctx]() {
         Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         api_ctx->vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
 
         const int prev_frame = (api_ctx->backend_frame + Ren::MaxFramesInFlight - 1) % Ren::MaxFramesInFlight;
@@ -366,7 +366,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         api_ctx->render_finished_semaphore_is_set[api_ctx->backend_frame] = true;
         api_ctx->render_finished_semaphore_is_set[prev_frame] = false;
 
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
         api_ctx->in_flight_fences[api_ctx->backend_frame] = Ren::MakeFence();
 #endif
         api_ctx->backend_frame = (api_ctx->backend_frame + 1) % Ren::MaxFramesInFlight;
@@ -439,7 +439,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     double mse = 0.0;
 
     const bool flip_y =
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         true;
 #else
         false;

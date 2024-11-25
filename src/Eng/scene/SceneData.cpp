@@ -1,6 +1,6 @@
 #include "SceneData.h"
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 #include <Ren/DescriptorPool.h>
 #include <Ren/VKCtx.h>
 #endif
@@ -10,7 +10,7 @@ Eng::PersistentGpuData::PersistentGpuData() = default;
 Eng::PersistentGpuData::~PersistentGpuData() { Release(); }
 
 void Eng::PersistentGpuData::Release() {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     if (textures_descr_pool) {
         Ren::ApiContext *api_ctx = textures_descr_pool->api_ctx();
         api_ctx->vkDestroyDescriptorSetLayout(api_ctx->device, textures_descr_layout, nullptr);
@@ -29,7 +29,7 @@ void Eng::PersistentGpuData::Release() {
     textures_descr_pool = {};
     rt_textures_descr_pool = {};
     rt_inline_textures_descr_pool = {};
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     textures_buf = {};
 #endif
     pipelines.clear();

@@ -41,16 +41,16 @@ set(SOURCE_FILES main.cpp
                  test_texture.cpp
                  test_utils.cpp)
 
-if(${RENDERER} STREQUAL "VK")
+if(${REN_BACKEND} STREQUAL "VK")
     set(SOURCE_FILES ${SOURCE_FILES}
                      test_programVK.cpp)
-elseif(${RENDERER} STREQUAL "GL")
+elseif(${REN_BACKEND} STREQUAL "GL")
     set(SOURCE_FILES ${SOURCE_FILES}
                      test_programGL.cpp)
-elseif(${RENDERER} STREQUAL "SW")
+elseif(${REN_BACKEND} STREQUAL "SW")
     set(SOURCE_FILES ${SOURCE_FILES}
                      test_programSW.cpp)
-elseif(${RENDERER} STREQUAL "VK")
+elseif(${REN_BACKEND} STREQUAL "VK")
 
 endif()
 

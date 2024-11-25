@@ -461,7 +461,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     ditem_to_decal_.realloc(MAX_DECALS_TOTAL);
     allocated_shadow_regions_.realloc(MAX_SHADOWMAPS_TOTAL);
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
     Ren::g_param_buf_binding = BIND_PUSH_CONSTANT_BUF;
 #endif
 }
@@ -657,11 +657,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     BindlessTextureData bindless_tex;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     bindless_tex.textures_descr_sets = persistent_data.textures_descr_sets[ctx_.backend_frame()];
     bindless_tex.rt_textures_descr_set = persistent_data.rt_textures_descr_sets[ctx_.backend_frame()];
     bindless_tex.rt_inline_textures_descr_set = persistent_data.rt_inline_textures_descr_sets[ctx_.backend_frame()];
-#elif defined(USE_GL_RENDER)
+#elif defined(REN_GL_BACKEND)
     bindless_tex.textures_buf = persistent_data.textures_buf;
 #endif
 
@@ -903,7 +903,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef materials_buf_res =
                 shadow_maps.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
             FgResRef textures_buf_res =
                 shadow_maps.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
 #else
@@ -989,7 +989,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef materials_buf_res =
                 depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
             FgResRef textures_buf_res =
                 depth_fill.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
 #else
@@ -1204,7 +1204,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(rt_obj_instances_res, stages);
                 data->swrt.rt_tlas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_tlas_buf, stages);
 
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
                 data->swrt.textures_buf = debug_rt.AddStorageReadonlyInput(bindless_tex.textures_buf, stages);
 #endif
             }
@@ -1235,7 +1235,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             resolved_color = frame_textures.color;
         }
 
-#if defined(USE_GL_RENDER) && 0 // gl-only for now
+#if defined(REN_GL_BACKEND) && 0 // gl-only for now
         const bool apply_dof = (list.render_flags & EnableDOF) && list.draw_cam.focus_near_mul > 0.0f &&
                                list.draw_cam.focus_far_mul > 0.0f && ((list.render_flags & DebugWireframe) == 0);
 
@@ -1716,7 +1716,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         ctx_.LoadBuffer("Image upload buf", Ren::eBufType::Upload, 4 * w * h * sizeof(float));
     uint8_t *stage_data = temp_upload_buf->Map();
     for (int y = 0; y < h; ++y) {
-#if defined(USE_GL_RENDER)
+#if defined(REN_GL_BACKEND)
         memcpy(&stage_data[(h - y - 1) * 4 * w * sizeof(float)], &data[y * 4 * stride * sizeof(float)],
                4 * w * sizeof(float));
 #else

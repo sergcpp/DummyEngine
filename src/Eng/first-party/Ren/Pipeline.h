@@ -40,7 +40,7 @@ class Pipeline : public RefCounter {
     eTexFormat depth_format_ = eTexFormat::Undefined;
     ProgramRef prog_;
     const VertexInput *vtx_input_ = nullptr;
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkPipelineLayout layout_ = {};
     VkPipeline handle_ = {};
 
@@ -81,7 +81,7 @@ class Pipeline : public RefCounter {
     eTexFormat depth_format() const { return depth_format_; }
 
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
     VkPipelineLayout layout() const { return layout_; }
     VkPipeline handle() const { return handle_; }
 

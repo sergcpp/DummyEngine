@@ -25,9 +25,9 @@ else(WIN32)
         #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -msse2 -mfma -mavx512f -mavx512bw -mavx512dq")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
     endif()
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     set(LIBS GL)
-elseif(${RENDERER} STREQUAL "VK")
+elseif(${REN_BACKEND} STREQUAL "VK")
     if(APPLE)
         set(LIBS ${METAL_LIB})
     else(APPLE)
@@ -112,7 +112,7 @@ set(SOURCE_FILES AccStructure.h
                  Utils_NEON.cpp
                  VertexInput.h)
 
-if(${RENDERER} STREQUAL "GL")
+if(${REN_BACKEND} STREQUAL "GL")
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferGL.cpp
                      ContextGL.cpp
@@ -149,7 +149,7 @@ if(${RENDERER} STREQUAL "GL")
     else(WIN32)
         set(LIBS ${LIBS} SPIRV-Reflect)
     ENDIF(WIN32)
-elseif(${RENDERER} STREQUAL "SW")
+elseif(${REN_BACKEND} STREQUAL "SW")
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferSW.cpp
                      ContextSW.cpp
@@ -157,7 +157,7 @@ elseif(${RENDERER} STREQUAL "SW")
                      ProgramSW.cpp
                      TextureSW.h
                      TextureSW.cpp)
-elseif(${RENDERER} STREQUAL "VK")
+elseif(${REN_BACKEND} STREQUAL "VK")
     set(SOURCE_FILES ${SOURCE_FILES}
                      AccStructureVK.cpp
                      BufferVK.cpp
@@ -220,10 +220,10 @@ set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 #set_source_files_properties(VKCtx.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(Ren STATIC ${REN_SOURCE_FILES})
-if(${RENDERER} STREQUAL "GL")
-    target_compile_definitions(Ren PUBLIC USE_GL_RENDER)
-elseif(${RENDERER} STREQUAL "VK")
-    target_compile_definitions(Ren PUBLIC USE_VK_RENDER)
+if(${REN_BACKEND} STREQUAL "GL")
+    target_compile_definitions(Ren PUBLIC REN_GL_BACKEND)
+elseif(${REN_BACKEND} STREQUAL "VK")
+    target_compile_definitions(Ren PUBLIC REN_VK_BACKEND)
     if(WIN32)
         target_compile_definitions(Ren PUBLIC VK_USE_PLATFORM_WIN32_KHR)
     else(WIN32)
@@ -233,8 +233,8 @@ elseif(${RENDERER} STREQUAL "VK")
             target_compile_definitions(Ren PUBLIC VK_USE_PLATFORM_XLIB_KHR)
         endif(APPLE)
     endif(WIN32)
-elseif(${RENDERER} STREQUAL "SW")
-    target_compile_definitions(Ren PUBLIC USE_SW_RENDER)
+elseif(${REN_BACKEND} STREQUAL "SW")
+    target_compile_definitions(Ren PUBLIC REN_SW_BACKEND)
 endif()
 target_link_libraries(Ren SW ${LIBS})
 target_include_directories(Ren PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party)

@@ -107,7 +107,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     return ret;
 }
 
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
 Ren::ProgramRef Eng::ShaderLoader::LoadProgram2(Ren::Context &ctx, std::string_view raygen_name,
                                                 std::string_view closesthit_name, std::string_view anyhit_name,
                                                 std::string_view miss_name, std::string_view intersection_name) {
@@ -166,7 +166,7 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
     Ren::eShaderLoadStatus status;
     Ren::ShaderRef ret = ctx.LoadShaderGLSL(name, {}, type, &status);
     if (!ret->ready()) {
-#if defined(USE_VK_RENDER)
+#if defined(REN_VK_BACKEND)
         if (ctx.capabilities.spirv) {
             std::string spv_name = SHADERS_PATH;
             spv_name += name;
