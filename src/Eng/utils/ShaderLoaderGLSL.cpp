@@ -34,33 +34,3 @@ std::string Eng::ShaderLoader::ReadGLSLContent(std::string_view name, Ren::ILog 
 
     return temp_buf;
 }
-
-Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, std::string_view name, const Param *params) {
-    using namespace ShaderLoaderInternal;
-
-    temp_param_str_.clear();
-    temp_param_def_.clear();
-
-    temp_param_str_ += name;
-    if (temp_param_str_.length() < 10) {
-        return {};
-    }
-
-    const Ren::eShaderType type = ShaderTypeFromName(temp_param_str_);
-    if (type == Ren::eShaderType::_Count) {
-        ctx.log()->Error("Shader name is not correct (%s)", name.data());
-    }
-
-    ParamsToString(params, temp_param_str_, temp_param_def_);
-
-    Ren::eShaderLoadStatus status;
-    Ren::ShaderRef ret = ctx.LoadShaderGLSL(temp_param_str_, {}, type, &status);
-    if (!ret->ready()) {
-        const std::string shader_src = ReadGLSLContent(name, ctx.log());
-        ret->Init(shader_src, type, &status, ctx.log());
-        if (status == Ren::eShaderLoadStatus::SetToDefault) {
-            ctx.log()->Error("Error loading shader %s", name.data());
-        }
-    }
-    return ret;
-}

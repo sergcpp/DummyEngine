@@ -652,6 +652,8 @@ void GSDrawTest::UpdateAnim(const uint64_t dt_us) {
                 invalidate_view_ = true;
             }
             break;
+        default:
+            break;
         }
     }
 

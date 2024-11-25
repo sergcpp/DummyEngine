@@ -247,7 +247,6 @@ set(UTILS_SOURCES utils/FlowControl.h
                   utils/ShaderLoader.h
                   utils/ShaderLoader.cpp
                   utils/ShaderLoaderGLSL.cpp
-                  utils/ShaderLoaderSPIRV.cpp
                   #utils/VideoPlayer.h
                   #utils/VideoPlayer.cpp
     )

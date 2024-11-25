@@ -6,24 +6,10 @@
 
 namespace Eng {
 class ShaderLoader {
-    std::string temp_param_str_, temp_param_def_;
-
     static std::string ReadGLSLContent(std::string_view name, Ren::ILog *log);
 
   public:
-    ShaderLoader();
-
-    struct Param {
-        const char *key;
-        const char *val;
-    };
-
-    static int ParamsToString(const Param *params, std::string &out_str, std::string &out_def);
-    static int ParamsStringToDef(const char *params, std::string &out_def);
-
 #if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
-    Ren::ShaderRef LoadGLSL(Ren::Context &ctx, std::string_view name, const Param *params);
-
     Ren::ProgramRef LoadProgram(Ren::Context &ctx, std::string_view vs_name, std::string_view fs_name,
                                 std::string_view tcs_name = {}, std::string_view tes_name = {},
                                 std::string_view gs_name = {});

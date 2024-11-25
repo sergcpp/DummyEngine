@@ -42,80 +42,6 @@ Ren::eShaderType ShaderTypeFromName(std::string_view name) {
 }
 } // namespace ShaderLoaderInternal
 
-Eng::ShaderLoader::ShaderLoader() {
-    temp_param_str_.reserve(1024);
-    temp_param_def_.reserve(4096);
-}
-
-int Eng::ShaderLoader::ParamsToString(const Param *params, std::string &out_str, std::string &out_def) {
-    const Param *param = params;
-    while (param->key) {
-        out_str += out_str.empty() ? '@' : ';';
-        out_def += "#define ";
-        out_str += param->key;
-        out_def += param->key;
-        if (param->val) {
-            out_str += "=";
-            out_str += param->val;
-            out_def += " ";
-            out_def += param->val;
-        }
-        out_def += '\n';
-        ++param;
-    }
-    return int(param - params);
-}
-
-int Eng::ShaderLoader::ParamsStringToDef(const char *params, std::string &out_def) {
-    if (!params || params[0] != '@') {
-        return 0;
-    }
-
-    int count = 0;
-
-    const char *p1 = params + 1;
-    const char *p2 = p1 + 1;
-    while (*p2) {
-        if (*p2 == '=') {
-            out_def += "#define ";
-            out_def += std::string(p1, p2);
-            out_def += " ";
-
-            p1 = p2 + 1;
-            while (p2 && *p2 && *p2 != ';') {
-                ++p2;
-            }
-
-            out_def += std::string(p1, p2);
-            out_def += '\n';
-
-            if (*p2) {
-                p1 = ++p2;
-            }
-            ++count;
-        } else if (*p2 == ';') {
-            out_def += "#define ";
-            out_def += std::string(p1, p2);
-            out_def += '\n';
-            p1 = ++p2;
-            ++count;
-        }
-
-        if (*p2) {
-            ++p2;
-        }
-    }
-
-    if (p1 != p2) {
-        out_def += "#define ";
-        out_def += std::string(p1, p2);
-        out_def += '\n';
-        ++count;
-    }
-
-    return count;
-}
-
 Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_view vs_name, std::string_view fs_name,
                                                std::string_view tcs_name, std::string_view tes_name,
                                                std::string_view gs_name) {
@@ -240,8 +166,6 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
     Ren::eShaderLoadStatus status;
     Ren::ShaderRef ret = ctx.LoadShaderGLSL(name, {}, type, &status);
     if (!ret->ready()) {
-        temp_param_def_.clear();
-
 #if defined(USE_VK_RENDER)
         if (ctx.capabilities.spirv) {
             std::string spv_name = SHADERS_PATH;
