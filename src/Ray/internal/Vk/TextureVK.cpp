@@ -177,7 +177,7 @@ bool EndsWith(const std::string &str1, const char *str2);
 
 Ray::eTexUsage Ray::Vk::TexUsageFromState(const eResState state) { return g_tex_usage_per_state[int(state)]; }
 
-Ray::Vk::Texture2D::Texture2D(const char *name, Context *ctx, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+Ray::Vk::Texture2D::Texture2D(const char *name, Context *ctx, const Tex2DParams &p, MemAllocators *mem_allocs,
                               ILog *log)
     : ctx_(ctx), name_(name) {
     Init(p, mem_allocs, log);
@@ -185,14 +185,14 @@ Ray::Vk::Texture2D::Texture2D(const char *name, Context *ctx, const Tex2DParams 
 
 Ray::Vk::Texture2D::Texture2D(const char *name, Context *ctx, const void *data, const uint32_t size,
                               const Tex2DParams &p, Buffer &stage_buf, VkCommandBuffer cmd_buf,
-                              MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+                              MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : ctx_(ctx), name_(name) {
     Init(data, size, p, stage_buf, cmd_buf, mem_allocs, load_status, log);
 }
 
 Ray::Vk::Texture2D::Texture2D(const char *name, Context *ctx, const void *data[6], const int size[6],
                               const Tex2DParams &p, Buffer &stage_buf, VkCommandBuffer cmd_buf,
-                              MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+                              MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : ctx_(ctx), name_(name) {
     Init(data, size, p, stage_buf, cmd_buf, mem_allocs, load_status, log);
 }
@@ -219,13 +219,13 @@ Ray::Vk::Texture2D &Ray::Vk::Texture2D::operator=(Texture2D &&rhs) noexcept {
     return (*this);
 }
 
-void Ray::Vk::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *mem_allocs, ILog *log) {
+void Ray::Vk::Texture2D::Init(const Tex2DParams &p, MemAllocators *mem_allocs, ILog *log) {
     InitFromRAWData(nullptr, 0, nullptr, mem_allocs, p, log);
     ready_ = true;
 }
 
 void Ray::Vk::Texture2D::Init(const void *data, const uint32_t size, const Tex2DParams &p, Buffer &sbuf,
-                              VkCommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+                              VkCommandBuffer cmd_buf, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
                               ILog *log) {
     if (!data) {
         uint8_t *stage_data = sbuf.Map();
@@ -255,7 +255,7 @@ void Ray::Vk::Texture2D::Init(const void *data, const uint32_t size, const Tex2D
 }
 
 void Ray::Vk::Texture2D::Init(const void *data[6], const int size[6], const Tex2DParams &p, Buffer &sbuf,
-                              VkCommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+                              VkCommandBuffer cmd_buf, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
                               ILog *log) {
     if (!data) {
         uint8_t *stage_data = sbuf.Map();
@@ -318,7 +318,7 @@ void Ray::Vk::Texture2D::Free() {
 
 bool Ray::Vk::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
                                  const eTexBlock block, const bool is_srgb, VkCommandBuffer cmd_buf,
-                                 MemoryAllocators *mem_allocs, ILog *log) {
+                                 MemAllocators *mem_allocs, ILog *log) {
     VkImage new_image = VK_NULL_HANDLE;
     VkImageView new_image_view = VK_NULL_HANDLE;
     MemAllocation new_alloc = {};
@@ -559,8 +559,8 @@ bool Ray::Vk::Texture2D::Realloc(const int w, const int h, int mip_count, const 
     return true;
 }
 
-void Ray::Vk::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, VkCommandBuffer cmd_buf,
-                                         MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
+void Ray::Vk::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, VkCommandBuffer cmd_buf, MemAllocators *mem_allocs,
+                                         const Tex2DParams &p, ILog *log) {
     Free();
 
     handle_.generation = TextureHandleCounter++;
@@ -790,7 +790,7 @@ void Ray::Vk::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, VkCommandBu
 }
 
 void Ray::Vk::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], VkCommandBuffer cmd_buf,
-                                         MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
+                                         MemAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -1275,7 +1275,7 @@ void Ray::Vk::Texture1D::Free() {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ray::Vk::Texture3D::Texture3D(const char *name, Context *ctx, const Tex3DParams &params, MemoryAllocators *mem_allocs,
+Ray::Vk::Texture3D::Texture3D(const char *name, Context *ctx, const Tex3DParams &params, MemAllocators *mem_allocs,
                               ILog *log)
     : name_(name), ctx_(ctx) {
     Init(params, mem_allocs, log);
@@ -1301,7 +1301,7 @@ Ray::Vk::Texture3D &Ray::Vk::Texture3D::operator=(Texture3D &&rhs) noexcept {
     return (*this);
 }
 
-void Ray::Vk::Texture3D::Init(const Tex3DParams &p, MemoryAllocators *mem_allocs, ILog *log) {
+void Ray::Vk::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog *log) {
     Free();
 
     handle_.generation = TextureHandleCounter++;

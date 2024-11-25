@@ -288,7 +288,7 @@ Ray::Dx::Renderer::Renderer(const settings_t &s, ILog *log) {
         params.sampling.filter = eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = eTexWrap::ClampToEdge;
 
-        tonemap_lut_ = Texture3D{"Tonemap LUT", ctx_.get(), params, ctx_->default_memory_allocs(), ctx_->log()};
+        tonemap_lut_ = Texture3D{"Tonemap LUT", ctx_.get(), params, ctx_->default_mem_allocs(), ctx_->log()};
     }
 
     Renderer::Resize(s.w, s.h);
