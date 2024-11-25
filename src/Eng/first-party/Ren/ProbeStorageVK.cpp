@@ -14,7 +14,7 @@ Ren::ProbeStorage::ProbeStorage() = default;
 
 Ren::ProbeStorage::~ProbeStorage() { Destroy(); }
 
-bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs, const eTexFormat format,
+bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eTexFormat format,
                                const int res, const int capacity, ILog *log) {
     const int mip_count = CalcMipCount(res, res, 16, eTexFilter::Bilinear);
 
@@ -355,7 +355,7 @@ void Ren::ProbeStorage::Destroy() {
         }
         api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(handle_.img);
         api_ctx_->samplers_to_destroy[api_ctx_->backend_frame].push_back(handle_.sampler);
-        api_ctx_->allocs_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
+        api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
 
         handle_ = {};
         format_ = eTexFormat::Undefined;

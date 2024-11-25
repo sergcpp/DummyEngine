@@ -151,20 +151,20 @@ extern const VkCompareOp g_vk_compare_ops[];
 extern const float AnisotropyLevel;
 } // namespace Ren
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p,
-                          MemoryAllocators *mem_allocs, ILog *log)
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *mem_allocs,
+                          ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(p, mem_allocs, log);
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
-                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+                          MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(data, p, mem_allocs, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
-                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+                          MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(data, p, mem_allocs, load_status, log);
 }
@@ -193,7 +193,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *mem_allocs, ILog *log) {
+void Ren::Texture2D::Init(const Tex2DParams &p, MemAllocators *mem_allocs, ILog *log) {
     InitFromRAWData(nullptr, 0, nullptr, mem_allocs, p, log);
     ready_ = true;
 }
@@ -294,7 +294,7 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
     ready_ = true;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     if (data.empty()) {
         auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload, 4};
@@ -344,7 +344,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Memory
     }
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemoryAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
         auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload, 4};
@@ -417,7 +417,7 @@ void Ren::Texture2D::Free() {
         }
         api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(handle_.img);
         api_ctx_->samplers_to_destroy[api_ctx_->backend_frame].push_back(handle_.sampler);
-        api_ctx_->allocs_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
+        api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
 
         handle_ = {};
         params.format = eTexFormat::Undefined;
@@ -444,7 +444,7 @@ void Ren::Texture2D::FreeImmediate() {
 
 bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
                              const eTexBlock block, const bool is_srgb, CommandBuffer cmd_buf,
-                             MemoryAllocators *mem_allocs, ILog *log) {
+                             MemAllocators *mem_allocs, ILog *log) {
     VkImage new_image = VK_NULL_HANDLE;
     VkImageView new_image_view = VK_NULL_HANDLE;
     MemAllocation new_alloc = {};
@@ -706,7 +706,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     return true;
 }
 
-void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
+void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemAllocators *mem_allocs,
                                      const Tex2DParams &p, ILog *log) {
     Free();
 
@@ -961,7 +961,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
     }
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, MemoryAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const Tex2DParams &p,
                                      ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
@@ -992,7 +992,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, MemoryAllocators 
     sbuf.FreeImmediate();
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemoryAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const Tex2DParams &p,
                                      ILog *log) {
     Free();
 
@@ -1167,7 +1167,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemoryAllocators 
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemoryAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const Tex2DParams &p,
                                      ILog *log) {
     KTXHeader header;
     memcpy(&header, data.data(), sizeof(KTXHeader));
@@ -1309,7 +1309,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemoryAllocators 
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
+void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cmd_buf, MemAllocators *mem_allocs,
                                      const Tex2DParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
@@ -1523,7 +1523,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], MemoryAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const Tex2DParams &p,
                                      ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
@@ -1564,7 +1564,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], MemoryAllocato
     sbuf.FreeImmediate();
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemoryAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const Tex2DParams &p,
                                      ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
@@ -1819,7 +1819,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemoryAllocato
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemoryAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const Tex2DParams &p,
                                      ILog *log) {
     Free();
 
@@ -2382,8 +2382,8 @@ void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const u
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params,
-                          MemoryAllocators *mem_allocs, ILog *log)
+Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs,
+                          ILog *log)
     : name_(name), api_ctx_(ctx) {
     Init(params, mem_allocs, log);
 }
@@ -2408,7 +2408,7 @@ Ren::Texture3D &Ren::Texture3D::operator=(Texture3D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture3D::Init(const Tex3DParams &p, MemoryAllocators *mem_allocs, ILog *log) {
+void Ren::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog *log) {
     Free();
 
     handle_.generation = TextureHandleCounter++;
@@ -2545,7 +2545,7 @@ void Ren::Texture3D::Free() {
         }
         api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(handle_.img);
         api_ctx_->samplers_to_destroy[api_ctx_->backend_frame].push_back(handle_.sampler);
-        api_ctx_->allocs_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
+        api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
 
         handle_ = {};
         params.format = eTexFormat::Undefined;

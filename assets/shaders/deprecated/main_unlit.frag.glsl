@@ -7,8 +7,6 @@
 #include "../internal/_fs_common.glsl"
 #include "../internal/texturing_common.glsl"
 
-#define LIGHT_ATTEN_CUTOFF 0.004
-
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = BIND_MAT_TEX0) uniform sampler2D g_diff_tex;
 layout(binding = BIND_MAT_TEX1) uniform sampler2D g_norm_tex;

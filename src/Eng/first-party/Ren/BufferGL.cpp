@@ -50,7 +50,7 @@ GLbitfield GetGLBufStorageFlags(const eBufType type) {
 int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(const std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
-                    const uint32_t size_alignment, MemoryAllocators *mem_allocs)
+                    const uint32_t size_alignment, MemAllocators *mem_allocs)
     : name_(name), api_ctx_(api_ctx), type_(type), size_(0), size_alignment_(size_alignment) {
     Resize(initial_size);
 }

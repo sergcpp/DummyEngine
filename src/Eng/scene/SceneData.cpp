@@ -25,6 +25,7 @@ void Eng::PersistentGpuData::Release() {
         for (auto &descr_set : rt_textures_descr_sets) {
             descr_set = VK_NULL_HANDLE;
         }
+        api_ctx->allocators_to_release[api_ctx->backend_frame].push_back(std::move(mem_allocs));
     }
     textures_descr_pool = {};
     rt_textures_descr_pool = {};
@@ -49,4 +50,5 @@ void Eng::PersistentGpuData::Release() {
     probe_distance = {};
     probe_offset = {};
     probe_volumes.clear();
+
 }

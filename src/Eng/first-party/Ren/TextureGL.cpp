@@ -213,20 +213,20 @@ extern const float AnisotropyLevel;
 
 static_assert(sizeof(GLsync) == sizeof(void *), "!");
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemoryAllocators *,
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *,
                           ILog *log)
     : name_(name) {
     Init(p, nullptr, log);
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
-                          MemoryAllocators *, eTexLoadStatus *load_status, ILog *log)
+                          MemAllocators *, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, p, nullptr, load_status, log);
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
-                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+                          MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, p, nullptr, load_status, log);
 }
@@ -253,7 +253,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
 
 uint64_t Ren::Texture2D::GetBindlessHandle() const { return glGetTextureHandleARB(GLuint(handle_.id)); }
 
-void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *, ILog *log) {
+void Ren::Texture2D::Init(const Tex2DParams &p, MemAllocators *, ILog *log) {
     InitFromRAWData(nullptr, 0, p, log);
     ready_ = true;
 }
@@ -266,7 +266,7 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
     ready_ = true;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     if (data.empty()) {
         auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, 4};
@@ -305,7 +305,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Memory
     }
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemoryAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
         auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, 4};
@@ -376,7 +376,7 @@ void Ren::Texture2D::Free() {
 
 void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
                              const eTexBlock block, const bool is_srgb, CommandBuffer cmd_buf,
-                             MemoryAllocators *mem_allocs, ILog *log) {
+                             MemAllocators *mem_allocs, ILog *log) {
     GLuint tex_id;
     glCreateTextures(samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG
@@ -1253,7 +1253,7 @@ void Ren::Texture1D::Free() {
 ////////////////////////////////////////////////////////////////////////////////////////
 
 Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params,
-                          MemoryAllocators *mem_allocs, ILog *log)
+                          MemAllocators *mem_allocs, ILog *log)
     : name_(name), api_ctx_(ctx) {
     Init(params, mem_allocs, log);
 }
@@ -1277,7 +1277,7 @@ Ren::Texture3D &Ren::Texture3D::operator=(Texture3D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture3D::Init(const Tex3DParams &p, MemoryAllocators *mem_allocs, ILog *log) {
+void Ren::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog *log) {
     Free();
 
     GLuint tex_id;

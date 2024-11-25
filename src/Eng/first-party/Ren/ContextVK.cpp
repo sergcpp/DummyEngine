@@ -76,7 +76,7 @@ Ren::Context::~Context() {
             api_ctx_->vkDestroyQueryPool(api_ctx_->device, api_ctx_->query_pools[i], nullptr);
         }
 
-        default_memory_allocs_ = {};
+        default_mem_allocs_ = {};
 
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &api_ctx_->setup_cmd_buf);
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, MaxFramesInFlight,
@@ -224,9 +224,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
 
     capabilities.subgroup &= !nosubgroup;
 
-    default_memory_allocs_ =
-        std::make_unique<MemoryAllocators>("Default Allocs", api_ctx_.get(), 32 * 1024 * 1024 /* initial_block_size */,
-                                           1.5f /* growth_factor */, 128 * 1024 * 1024 /* max_pool_size */);
+    default_mem_allocs_ =
+        std::make_unique<MemAllocators>("Default Allocs", api_ctx_.get(), 1 * 1024 * 1024 /* initial_block_size */,
+                                        1.5f /* growth_factor */, 128 * 1024 * 1024 /* max_pool_size */);
 
     InitDefaultBuffers();
 

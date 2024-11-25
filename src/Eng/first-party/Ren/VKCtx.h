@@ -78,7 +78,8 @@ struct ApiContext {
     std::vector<VkImage> images_to_destroy[MaxFramesInFlight];
     std::vector<VkImageView> image_views_to_destroy[MaxFramesInFlight];
     std::vector<VkSampler> samplers_to_destroy[MaxFramesInFlight];
-    std::vector<MemAllocation> allocs_to_free[MaxFramesInFlight];
+    std::vector<MemAllocation> allocations_to_free[MaxFramesInFlight];
+    std::vector<std::unique_ptr<MemAllocators>> allocators_to_release[MaxFramesInFlight];
     std::vector<VkBuffer> bufs_to_destroy[MaxFramesInFlight];
     std::vector<VkBufferView> buf_views_to_destroy[MaxFramesInFlight];
     std::vector<VkDeviceMemory> mem_to_free[MaxFramesInFlight];

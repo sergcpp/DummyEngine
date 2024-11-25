@@ -290,6 +290,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     {
         StopTextureLoaderThread();
         ClearScene();
+        scene_data_.persistent_data.mem_allocs =
+            std::make_unique<Ren::MemAllocators>("Scene Mem Allocs", api_ctx, 16 * 1024 * 1024 /* initial_block_size */,
+                                                 1.5f /* growth_factor */, 128 * 1024 * 1024 /* max_pool_size */);
         // Temp. solution (prevent reallocation)
         scene_data_.textures.reserve(16384);
         StartTextureLoaderThread();
@@ -634,8 +637,8 @@ void Eng::SceneManager::LoadEnvMap() {
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        scene_data_.env.env_map =
-            ren_ctx_.LoadTextureCube("Sky Envmap", _black_cube, p, ren_ctx_.default_mem_allocs(), &status);
+        scene_data_.env.env_map = ren_ctx_.LoadTextureCube("Sky Envmap", _black_cube, p,
+                                                           scene_data_.persistent_data.mem_allocs.get(), &status);
     } else if (!scene_data_.env.env_map_name.empty()) {
         Sys::AssetFile in_file(std::string(paths_.textures_path) + scene_data_.env.env_map_name.c_str());
         [[maybe_unused]] const size_t in_file_size = in_file.size();
@@ -671,7 +674,7 @@ void Eng::SceneManager::LoadEnvMap() {
 
         Ren::eTexLoadStatus load_status;
         scene_data_.env.env_map =
-            ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_mem_allocs(), &load_status);
+            ren_ctx_.LoadTextureCube("EnvCubemap", data, p, scene_data_.persistent_data.mem_allocs.get(), &load_status);
     } else {
         static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128},
                                                  {255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128}};
@@ -688,8 +691,8 @@ void Eng::SceneManager::LoadEnvMap() {
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        scene_data_.env.env_map =
-            ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p, ren_ctx_.default_mem_allocs(), &status);
+        scene_data_.env.env_map = ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p,
+                                                           scene_data_.persistent_data.mem_allocs.get(), &status);
     }
 }
 
@@ -1555,14 +1558,14 @@ Ren::Tex2DRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<co
                                              const Ren::Tex2DParams &p, Ren::eTexLoadStatus *load_status) {
     Ren::Tex2DRef ref = scene_data_.textures.FindByName(name);
     if (!ref) {
-        ref = scene_data_.textures.Insert(name, ren_ctx_.api_ctx(), data, p, ren_ctx_.default_mem_allocs(), load_status,
-                                          ren_ctx_.log());
+        ref = scene_data_.textures.Insert(name, ren_ctx_.api_ctx(), data, p,
+                                          scene_data_.persistent_data.mem_allocs.get(), load_status, ren_ctx_.log());
     } else {
         if (load_status) {
             (*load_status) = Ren::eTexLoadStatus::Found;
         }
         if (!ref->ready() && !data.empty()) {
-            ref->Init(data, p, ren_ctx_.default_mem_allocs(), load_status, ren_ctx_.log());
+            ref->Init(data, p, scene_data_.persistent_data.mem_allocs.get(), load_status, ren_ctx_.log());
         }
     }
 

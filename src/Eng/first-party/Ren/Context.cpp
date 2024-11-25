@@ -211,7 +211,7 @@ void Ren::Context::ReleasePrograms() {
     programs_.clear();
 }
 
-Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
+Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const Tex3DParams &p, MemAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
     Tex3DRef ref = textures_3D_.FindByName(name);
     if (!ref) {
@@ -226,7 +226,7 @@ Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const Tex3DPara
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const Tex2DParams &p, MemAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
@@ -257,7 +257,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const TexHandle
 }
 
 Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
-                                          MemoryAllocators *mem_allocs, eTexLoadStatus *load_status) {
+                                          MemAllocators *mem_allocs, eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
         ref = textures_2D_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
@@ -271,7 +271,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint
 }
 
 Ren::Tex2DRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
-                                            MemoryAllocators *mem_allocs, eTexLoadStatus *load_status) {
+                                            MemAllocators *mem_allocs, eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
         ref = textures_2D_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
@@ -434,7 +434,7 @@ void Ren::Context::ReleaseAnims() {
 }
 
 Ren::BufferRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const uint32_t initial_size,
-                                        const uint32_t size_alignment, MemoryAllocators *mem_allocs) {
+                                        const uint32_t size_alignment, MemAllocators *mem_allocs) {
     Ren::BufferRef ref = buffers_.FindByName(name);
     if (!ref) {
         ref = buffers_.Insert(name, api_ctx_.get(), type, initial_size, size_alignment, mem_allocs);

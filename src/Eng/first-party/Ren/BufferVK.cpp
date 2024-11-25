@@ -59,7 +59,7 @@ uint32_t FindMemoryType(uint32_t search_from, const VkPhysicalDeviceMemoryProper
 int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
-                    const uint32_t size_alignment, MemoryAllocators *mem_allocs)
+                    const uint32_t size_alignment, MemAllocators *mem_allocs)
     : api_ctx_(api_ctx), name_(name), mem_allocs_(mem_allocs), type_(type), size_(0), size_alignment_(size_alignment) {
     Resize(initial_size);
 }
@@ -358,7 +358,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
             // destroy previous buffer
             api_ctx_->bufs_to_destroy[api_ctx_->backend_frame].push_back(handle_.buf);
             if (alloc_) {
-                api_ctx_->allocs_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
+                api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
             }
             if (dedicated_mem_) {
                 api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(dedicated_mem_);
@@ -377,7 +377,7 @@ void Ren::Buffer::Free() {
     if (handle_.buf != VK_NULL_HANDLE) {
         api_ctx_->bufs_to_destroy[api_ctx_->backend_frame].push_back(handle_.buf);
         if (alloc_) {
-            api_ctx_->allocs_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
+            api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
         }
         if (dedicated_mem_) {
             api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(dedicated_mem_);

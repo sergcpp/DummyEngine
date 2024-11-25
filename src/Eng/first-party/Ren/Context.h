@@ -78,7 +78,7 @@ class Context {
 
     BufferRef default_vertex_buf1_, default_vertex_buf2_, default_skin_vertex_buf_, default_delta_buf_,
         default_indices_buf_;
-    std::unique_ptr<MemoryAllocators> default_memory_allocs_;
+    std::unique_ptr<MemAllocators> default_mem_allocs_;
 
 #if defined(REN_VK_BACKEND)
     std::unique_ptr<DescrMultiPoolAlloc> default_descr_alloc_[MaxFramesInFlight];
@@ -125,7 +125,7 @@ class Context {
     BufferRef default_skin_vertex_buf() const { return default_skin_vertex_buf_; }
     BufferRef default_delta_buf() const { return default_delta_buf_; }
     BufferRef default_indices_buf() const { return default_indices_buf_; }
-    MemoryAllocators *default_mem_allocs() { return default_memory_allocs_.get(); }
+    MemAllocators *default_mem_allocs() { return default_mem_allocs_.get(); }
     DescrMultiPoolAlloc *default_descr_alloc() const;
 
     void BegSingleTimeCommands(CommandBuffer cmd_buf);
@@ -187,18 +187,18 @@ class Context {
     void ReleasePrograms();
 
     /*** Texture 3D ***/
-    Tex3DRef LoadTexture3D(std::string_view name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
+    Tex3DRef LoadTexture3D(std::string_view name, const Tex3DParams &p, MemAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
 
     /*** Texture 2D ***/
-    Tex2DRef LoadTexture2D(std::string_view name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+    Tex2DRef LoadTexture2D(std::string_view name, const Tex2DParams &p, MemAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
     Tex2DRef LoadTexture2D(std::string_view name, const TexHandle &handle, const Tex2DParams &p, MemAllocation &&alloc,
                            eTexLoadStatus *load_status);
     Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
-                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
+                           MemAllocators *mem_allocs, eTexLoadStatus *load_status);
     Tex2DRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
-                             MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
+                             MemAllocators *mem_allocs, eTexLoadStatus *load_status);
 
     void VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback);
     int NumTexturesNotReady();
@@ -227,7 +227,7 @@ class Context {
 
     /*** Buffers ***/
     BufferRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size, uint32_t size_alignment = 1,
-                         MemoryAllocators *mem_allocs = nullptr);
+                         MemAllocators *mem_allocs = nullptr);
     BufferRef LoadBuffer(std::string_view name, eBufType type, const BufHandle &handle, MemAllocation &&alloc,
                          uint32_t initial_size, uint32_t size_alignment = 1);
     void ReleaseBuffers();

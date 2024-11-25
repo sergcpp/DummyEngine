@@ -86,7 +86,7 @@ class Buffer : public RefCounter {
     std::unique_ptr<FreelistAlloc> sub_alloc_;
     MemAllocation alloc_;
 #if defined(REN_VK_BACKEND)
-    MemoryAllocators *mem_allocs_ = nullptr;
+    MemAllocators *mem_allocs_ = nullptr;
     VkDeviceMemory dedicated_mem_ = {};
 #endif
     eBufType type_ = eBufType::Undefined;
@@ -99,7 +99,7 @@ class Buffer : public RefCounter {
   public:
     Buffer() = default;
     Buffer(std::string_view name, ApiContext *api_ctx, eBufType type, uint32_t initial_size,
-           uint32_t size_alignment = 1, MemoryAllocators *mem_allocs = nullptr);
+           uint32_t size_alignment = 1, MemAllocators *mem_allocs = nullptr);
     Buffer(std::string_view name, ApiContext *api_ctx, eBufType type, const BufHandle &handle, MemAllocation &&alloc,
            uint32_t initial_size, uint32_t size_alignment = 1)
         : api_ctx_(api_ctx), handle_(handle), name_(name), alloc_(std::move(alloc)), type_(type), size_(initial_size),

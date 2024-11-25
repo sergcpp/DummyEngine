@@ -52,7 +52,8 @@ void Eng::SceneManager::TextureLoaderProc() {
                     return true;
                 }
 
-                if (requested_textures_.empty() || scene_data_.estimated_texture_mem.load() > tex_memory_limit_.load()) {
+                if (requested_textures_.empty() ||
+                    scene_data_.estimated_texture_mem.load() > tex_memory_limit_.load()) {
                     return false;
                 }
 
@@ -353,7 +354,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                                                                  : req->mip_count_to_init;
                 req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format, req->orig_block,
                                   bool(p.flags & Ren::eTexFlagBits::SRGB), stage_buf->cmd_buf,
-                                  ren_ctx_.default_mem_allocs(), ren_ctx_.log());
+                                  scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
                 initialized_mips = req->ref->initialized_mips();
 
@@ -420,7 +421,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
 
             req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
                              bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(),
-                             ren_ctx_.default_mem_allocs(), ren_ctx_.log());
+                             scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
             SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
@@ -655,8 +656,8 @@ void Eng::SceneManager::ForceTextureReload() {
         }
 
         it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
-                    bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(), ren_ctx_.default_mem_allocs(),
-                    ren_ctx_.log());
+                    bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(),
+                    scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 

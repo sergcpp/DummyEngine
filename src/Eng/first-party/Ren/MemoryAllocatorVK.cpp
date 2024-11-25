@@ -29,9 +29,8 @@ void Ren::MemAllocation::Release() {
     }
 }
 
-Ren::MemoryAllocator::MemoryAllocator(const std::string_view name, ApiContext *api_ctx,
-                                      const uint32_t initial_block_size, uint32_t mem_type_index,
-                                      const float growth_factor, const uint32_t max_pool_size)
+Ren::MemAllocator::MemAllocator(const std::string_view name, ApiContext *api_ctx, const uint32_t initial_block_size,
+                                uint32_t mem_type_index, const float growth_factor, const uint32_t max_pool_size)
     : name_(name), api_ctx_(api_ctx), growth_factor_(growth_factor), max_pool_size_(max_pool_size),
       mem_type_index_(mem_type_index) {
 
@@ -39,13 +38,13 @@ Ren::MemoryAllocator::MemoryAllocator(const std::string_view name, ApiContext *a
     AllocateNewPool(initial_block_size);
 }
 
-Ren::MemoryAllocator::~MemoryAllocator() {
+Ren::MemAllocator::~MemAllocator() {
     for (MemHeap &pool : pools_) {
         api_ctx_->vkFreeMemory(api_ctx_->device, pool.mem, nullptr);
     }
 }
 
-bool Ren::MemoryAllocator::AllocateNewPool(const uint32_t size) {
+bool Ren::MemAllocator::AllocateNewPool(const uint32_t size) {
     VkMemoryAllocateInfo mem_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     mem_alloc_info.allocationSize = VkDeviceSize(size);
     mem_alloc_info.memoryTypeIndex = mem_type_index_;
@@ -69,7 +68,7 @@ bool Ren::MemoryAllocator::AllocateNewPool(const uint32_t size) {
     return res == VK_SUCCESS;
 }
 
-Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t alignment, const uint32_t size) {
+Ren::MemAllocation Ren::MemAllocator::Allocate(const uint32_t alignment, const uint32_t size) {
     auto allocation = alloc_.Alloc(alignment, size);
 
     if (allocation.block == 0xffffffff) {
@@ -95,12 +94,12 @@ Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t alignment, cons
     return new_alloc;
 }
 
-void Ren::MemoryAllocator::Free(const uint32_t block) {
+void Ren::MemAllocator::Free(const uint32_t block) {
     alloc_.Free(block);
     assert(alloc_.IntegrityCheck());
 }
 
-Ren::MemAllocation Ren::MemoryAllocators::Allocate(uint32_t alignment, uint32_t size, uint32_t mem_type_index) {
+Ren::MemAllocation Ren::MemAllocators::Allocate(uint32_t alignment, uint32_t size, uint32_t mem_type_index) {
     if (mem_type_index == 0xffffffff) {
         return {};
     }
@@ -122,8 +121,8 @@ Ren::MemAllocation Ren::MemoryAllocators::Allocate(uint32_t alignment, uint32_t 
     return allocators_[alloc_index].Allocate(alignment, size);
 }
 
-Ren::MemAllocation Ren::MemoryAllocators::Allocate(const VkMemoryRequirements &mem_req,
-                                                   const VkMemoryPropertyFlags desired_mem_flags) {
+Ren::MemAllocation Ren::MemAllocators::Allocate(const VkMemoryRequirements &mem_req,
+                                                const VkMemoryPropertyFlags desired_mem_flags) {
     uint32_t mem_type_index =
         FindMemoryType(0, &api_ctx_->mem_properties, mem_req.memoryTypeBits, desired_mem_flags, uint32_t(mem_req.size));
     while (mem_type_index != 0xffffffff) {

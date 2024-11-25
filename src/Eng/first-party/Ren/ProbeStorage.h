@@ -28,7 +28,7 @@ class ProbeStorage {
 
     TexHandle handle() const { return handle_; }
 
-    bool Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs, eTexFormat format, int res, int capacity, ILog *log);
+    bool Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, eTexFormat format, int res, int capacity, ILog *log);
 
     bool SetPixelData(int level, int layer, int face, eTexFormat format, const uint8_t *data, int data_len, ILog *log);
     bool GetPixelData(int level, int layer, int face, int buf_size, uint8_t *out_pixels, ILog *log) const;
