@@ -19,6 +19,15 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 
+    [[maybe_unused]] const int buf1_stride = 16, buf2_stride = 16;
+
+    { // VAO for simple and skinned meshes
+        const Ren::VtxAttribDesc attribs[] = {{vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+        if (!vi_simple_.Setup(attribs, ndx_buf.ref)) {
+            ctx.log()->Error("[ExOITDepthPeel::LazyInit]: vi_simple_ init failed!");
+        }
+    }
+
     if (!initialized) {
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
@@ -38,15 +47,6 @@ void Eng::ExOITDepthPeel::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgA
 
         if (!rp_depth_peel_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {
             ctx.log()->Error("[ExOITDepthPeel::LazyInit]: Failed to init render pass!");
-        }
-
-        [[maybe_unused]] const int buf1_stride = 16, buf2_stride = 16;
-
-        { // VAO for simple and skinned meshes
-            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-            if (!vi_simple_.Setup(attribs, ndx_buf.ref)) {
-                ctx.log()->Error("[ExOITDepthPeel::LazyInit]: vi_simple_ init failed!");
-            }
         }
 
         { // simple and skinned

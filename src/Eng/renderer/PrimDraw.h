@@ -38,9 +38,9 @@ class PrimDraw {
 
     const Ren::RenderPass *FindOrCreateRenderPass(Ren::Span<const Ren::RenderTarget> color_targets,
                                                   Ren::RenderTarget depth_target);
-    const Ren::Pipeline *FindOrCreatePipeline(ePrim prim, Ren::ProgramRef p, const Ren::RenderPass *rp,
+    const Ren::Pipeline *FindOrCreatePipeline(ePrim prim, const Ren::ProgramRef &p, const Ren::RenderPass *rp,
                                               Ren::Span<const Ren::RenderTarget> color_targets,
-                                              Ren::RenderTarget depth_target, const Ren::RastState *rs);
+                                              Ren::RenderTarget depth_target, const Ren::RastState &rs);
 #endif
     Ren::SmallVector<Ren::Framebuffer, 128> framebuffers_;
 

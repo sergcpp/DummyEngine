@@ -131,6 +131,7 @@ class GSBaseState : public Eng::ViewerState {
 
     void InitRenderer_PT();
     void InitScene_PT();
+    Ray::TextureHandle LoadTexture_PT(std::string_view name, bool is_srgb, bool is_YCoCg);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, float fov);
     void Clear_PT();
     void Draw_PT(const Ren::Tex2DRef &target);

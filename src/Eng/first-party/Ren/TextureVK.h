@@ -105,8 +105,8 @@ class Texture2D : public RefCounter {
     Texture2D &operator=(const Texture2D &rhs) = delete;
     Texture2D &operator=(Texture2D &&rhs) noexcept;
 
-    void Init(const Tex2DParams &params, MemAllocators *mem_allocs, ILog *log);
-    void Init(const TexHandle &handle, const Tex2DParams &params, MemAllocation &&alloc, ILog *log);
+    void Init(const Tex2DParams &p, MemAllocators *mem_allocs, ILog *log);
+    void Init(const TexHandle &handle, const Tex2DParams &p, MemAllocation &&alloc, ILog *log);
     void Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
               ILog *log);
     void Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,

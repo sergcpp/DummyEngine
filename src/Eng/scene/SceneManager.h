@@ -148,6 +148,8 @@ class SceneManager {
     void LoadMeshBuffers();
     void ReleaseMeshBuffers(bool immediate = false);
 
+    void ReleaseTextures(bool immediate = false);
+
     void RebuildLightTree();
     void ReleaseLightTree(bool immediate = false);
 

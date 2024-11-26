@@ -22,6 +22,30 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 
+    const int buf1_stride = 16, buf2_stride = 16;
+
+    { // VAO for simple and skinned meshes
+        const Ren::VtxAttribDesc attribs[] = {
+            // Attributes from buffer 1
+            {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
+        if (!vi_simple_.Setup(attribs, ndx_buf.ref)) {
+            ctx.log()->Error("[ExEmissive::LazyInit]: vi_simple_ init failed!");
+        }
+    }
+
+    { // VAO for vegetation meshes (uses additional vertex color attribute)
+        const Ren::VtxAttribDesc attribs[] = {
+            // Attributes from buffer 1
+            {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+            // Attributes from buffer 2
+            {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+        if (!vi_vegetation_.Setup(attribs, ndx_buf.ref)) {
+            ctx.log()->Error("[ExEmissive::LazyInit]: vi_vegetation_ init failed!");
+        }
+    }
+
     if (!initialized) {
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
@@ -42,30 +66,6 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
         const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());
         if (!res) {
             ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize render pass!");
-        }
-
-        const int buf1_stride = 16, buf2_stride = 16;
-
-        { // VAO for simple and skinned meshes
-            const Ren::VtxAttribDesc attribs[] = {
-                // Attributes from buffer 1
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
-            if (!vi_simple_.Setup(attribs, ndx_buf.ref)) {
-                ctx.log()->Error("[ExEmissive::LazyInit]: vi_simple_ init failed!");
-            }
-        }
-
-        { // VAO for vegetation meshes (uses additional vertex color attribute)
-            const Ren::VtxAttribDesc attribs[] = {
-                // Attributes from buffer 1
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-                // Attributes from buffer 2
-                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_vegetation_.Setup(attribs, ndx_buf.ref)) {
-                ctx.log()->Error("[ExEmissive::LazyInit]: vi_vegetation_ init failed!");
-            }
         }
 
         { // simple and skinned

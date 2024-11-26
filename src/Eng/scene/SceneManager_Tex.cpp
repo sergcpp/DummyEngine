@@ -613,15 +613,16 @@ void Eng::SceneManager::StartTextureLoaderThread(const int requests_count, const
 }
 
 void Eng::SceneManager::StopTextureLoaderThread() {
-    { // stop texture loading thread
-        std::unique_lock<std::mutex> lock(tex_requests_lock_);
-        tex_loader_stop_ = true;
-        tex_loader_cnd_.notify_one();
+    if (!tex_loader_stop_) {
+        { // stop texture loading thread
+            std::unique_lock<std::mutex> lock(tex_requests_lock_);
+            tex_loader_stop_ = true;
+            tex_loader_cnd_.notify_one();
+        }
+        assert(tex_loader_thread_.joinable());
+        tex_loader_thread_.join();
     }
-
-    assert(tex_loader_thread_.joinable());
-    tex_loader_thread_.join();
-    for (int i = 0; i < int(io_pending_tex_.size()); i++) {
+    for (int i = 0; i < int(io_pending_tex_.size()); ++i) {
         size_t bytes_read = 0;
         io_pending_tex_[i].ev.GetResult(true /* block */, &bytes_read);
         io_pending_tex_[i].state = eRequestState::Idle;
@@ -681,5 +682,49 @@ void Eng::SceneManager::ForceTextureReload() {
     StartTextureLoaderThread();
 }
 
-#undef NEXT_REQ_NDX
-#undef PREV_REQ_NDX
+void Eng::SceneManager::ReleaseTextures(const bool immediate) {
+    StopTextureLoaderThread();
+    assert(immediate);
+
+    auto new_alloc = std::make_unique<Ren::MemAllocators>(
+        "Scene Mem Allocs", ren_ctx_.api_ctx(), 16 * 1024 * 1024 /* initial_block_size */, 1.5f /* growth_factor */,
+        128 * 1024 * 1024 /* max_pool_size */);
+
+    Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
+
+    std::vector<Ren::TransitionInfo> img_transitions;
+    img_transitions.reserve(scene_data_.textures.size());
+
+    // Reset textures to 1x1
+    for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
+        Ren::Tex2DParams p = it->params;
+
+        p.w = p.h = 1;
+        p.mip_count = 1;
+
+        it->FreeImmediate();
+        Ren::eTexLoadStatus status;
+        it->Init(Ren::Span<const uint8_t>{}, p, new_alloc.get(), &status, ren_ctx_.log());
+
+        img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
+
+        TextureRequest req;
+        req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};
+
+        SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
+
+        requested_textures_.push_back(std::move(req));
+    }
+
+    if (!img_transitions.empty()) {
+        TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, img_transitions);
+    }
+
+    ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+    scene_data_.persistent_data.mem_allocs = std::move(new_alloc);
+
+    fill(begin(scene_data_.texture_mem_buckets), end(scene_data_.texture_mem_buckets), 0);
+    scene_data_.tex_mem_bucket_index = 0;
+    scene_data_.estimated_texture_mem = 0;
+}

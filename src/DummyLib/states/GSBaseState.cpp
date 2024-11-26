@@ -1076,7 +1076,7 @@ void GSBaseState::BackgroundProc() {
     }
 }
 
-void GSBaseState::UpdateFrame(int list_index) {
+void GSBaseState::UpdateFrame(const int list_index) {
     { // Update loop using fixed timestep
         OPTICK_EVENT("Update Loop");
         Eng::InputManager *input_manager = viewer_->input_manager();
@@ -1184,6 +1184,18 @@ void GSBaseState::UpdateFrame(int list_index) {
 
 void GSBaseState::InitRenderer_PT() {
     if (!ray_renderer_) {
+        { // Release GPU resources
+            ren_ctx_->WaitIdle();
+            scene_manager_->ReleaseEnvMap(true /* immediate */);
+            scene_manager_->ReleaseGICache(true /* immediate */);
+            scene_manager_->Release_TLAS(true /* immediate */);
+            scene_manager_->ReleaseLightTree(true /* immediate */);
+            scene_manager_->ReleaseMeshBuffers(true /* immediate */);
+            scene_manager_->ReleaseTextures(true /* immediate */);
+            scene_manager_->ReleaseMaterialsBuffer(true /* immediate */);
+            scene_manager_->ReleaseInstanceBuffer(true /* immediate */);
+        }
+
         Ray::settings_t s;
         s.w = ren_ctx_->w();
         s.h = ren_ctx_->h();
@@ -1294,17 +1306,6 @@ void GSBaseState::InitScene_PT() {
     auto *acc_structs = (Eng::AccStructure *)scene_data.comp_store[Eng::CompAccStructure]->SequentialData();
     const auto *lights_src = (Eng::LightSource *)scene_data.comp_store[Eng::CompLightSource]->SequentialData();
 
-    { // Release GPU resources
-        ren_ctx_->WaitIdle();
-        scene_manager_->ReleaseEnvMap(true /* immediate */);
-        scene_manager_->ReleaseGICache(true /* immediate */);
-        scene_manager_->Release_TLAS(true /* immediate */);
-        scene_manager_->ReleaseLightTree(true /* immediate */);
-        scene_manager_->ReleaseMeshBuffers(true /* immediate */);
-        scene_manager_->ReleaseMaterialsBuffer(true /* immediate */);
-        scene_manager_->ReleaseInstanceBuffer(true /* immediate */);
-    }
-
     ray_scene_ = std::unique_ptr<Ray::SceneBase>(ray_renderer_->CreateScene());
     { // Setup environment
         Ray::environment_desc_t env_desc;
@@ -1401,46 +1402,8 @@ void GSBaseState::InitScene_PT() {
         }
         auto tex_it = loaded_textures.find(tex.name().c_str());
         if (tex_it == loaded_textures.end()) {
-            const int data_len = GetMipDataLenBytes(tex.params.w, tex.params.h, tex.params.format, tex.params.block);
-            Ren::Buffer temp_stage_buf("Temp staging buf", ren_ctx_->api_ctx(), Ren::eBufType::Readback, data_len);
-            Ren::CommandBuffer cmd_buf = ren_ctx_->BegTempSingleTimeCommands();
-            tex.CopyTextureData(temp_stage_buf, cmd_buf, 0, data_len);
-            const Ren::TransitionInfo transitions[] = {{&tex, Ren::eResState::ShaderResource}};
-            TransitionResourceStates(ren_ctx_->api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
-            ren_ctx_->EndTempSingleTimeCommands(cmd_buf);
-
-            Ray::tex_desc_t tex_desc;
-            switch (tex.params.format) {
-            case Ren::eTexFormat::BC1:
-                tex_desc.format = Ray::eTextureFormat::BC1;
-                break;
-            case Ren::eTexFormat::BC3:
-                tex_desc.format = Ray::eTextureFormat::BC3;
-                break;
-            case Ren::eTexFormat::BC4:
-                tex_desc.format = Ray::eTextureFormat::BC4;
-                break;
-            case Ren::eTexFormat::BC5:
-                tex_desc.format = Ray::eTextureFormat::BC5;
-                break;
-            default:
-                assert(false);
-            }
-            tex_desc.w = tex.params.w;
-            tex_desc.h = tex.params.h;
-            tex_desc.name = tex.name().c_str();
-            tex_desc.is_srgb = is_srgb;
-            tex_desc.is_YCoCg = is_YCoCg;
-            tex_desc.reconstruct_z = true;
-
-            const uint8_t *mapped_ptr = temp_stage_buf.Map();
-            tex_desc.data = {mapped_ptr, temp_stage_buf.size()};
-
-            const Ray::TextureHandle new_tex = ray_scene_->AddTexture(tex_desc);
+            const Ray::TextureHandle new_tex = LoadTexture_PT(tex.name().c_str(), is_srgb, is_YCoCg);
             tex_it = loaded_textures.emplace(tex.name().c_str(), new_tex).first;
-
-            temp_stage_buf.Unmap();
-            temp_stage_buf.FreeImmediate();
         }
         return tex_it->second;
     };
@@ -1671,6 +1634,47 @@ void GSBaseState::InitScene_PT() {
     }
     using namespace std::placeholders;
     ray_scene_->Finalize(std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3));
+}
+
+Ray::TextureHandle GSBaseState::LoadTexture_PT(const std::string_view name, const bool is_srgb, const bool is_YCoCg) {
+    const std::string tex_path = std::string("assets_pc/textures/") + std::string(name);
+    std::ifstream in_file(tex_path, std::ios::binary);
+
+    Ren::DDSHeader header = {};
+    in_file.read((char *)&header, sizeof(Ren::DDSHeader));
+
+    Ren::Tex2DParams temp_params;
+    Ren::ParseDDSHeader(header, &temp_params);
+
+    Ray::tex_desc_t tex_desc;
+    switch (temp_params.format) {
+    case Ren::eTexFormat::BC1:
+        tex_desc.format = Ray::eTextureFormat::BC1;
+        break;
+    case Ren::eTexFormat::BC3:
+        tex_desc.format = Ray::eTextureFormat::BC3;
+        break;
+    case Ren::eTexFormat::BC4:
+        tex_desc.format = Ray::eTextureFormat::BC4;
+        break;
+    case Ren::eTexFormat::BC5:
+        tex_desc.format = Ray::eTextureFormat::BC5;
+        break;
+    default:
+        assert(false);
+    }
+    tex_desc.w = temp_params.w;
+    tex_desc.h = temp_params.h;
+    tex_desc.name = name.data();
+    tex_desc.is_srgb = is_srgb;
+    tex_desc.is_YCoCg = is_YCoCg;
+    tex_desc.reconstruct_z = true;
+
+    std::vector<uint8_t> data(header.dwPitchOrLinearSize);
+    in_file.read((char *)data.data(), header.dwPitchOrLinearSize);
+    tex_desc.data = data;
+
+    return ray_scene_->AddTexture(tex_desc);
 }
 
 void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, const float fov) {
@@ -1943,6 +1947,7 @@ void GSBaseState::ReloadSceneResources() {
     scene_manager_->Alloc_TLAS();
     scene_manager_->RebuildLightTree();
     scene_manager_->LoadMeshBuffers();
+    scene_manager_->StartTextureLoaderThread();
     scene_manager_->AllocMaterialsBuffer();
     scene_manager_->AllocInstanceBuffer();
 

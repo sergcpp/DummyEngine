@@ -12,6 +12,22 @@ extern const VkAttachmentStoreOp vk_store_ops[];
 
 namespace PrimDrawInternal {
 extern const int SphereIndicesCount;
+
+bool pipeline_compare(const Ren::Pipeline &pi, const Ren::ProgramRef &p, const Ren::RenderPass *rp,
+                      Ren::Span<const Ren::RenderTarget> color_targets, const Ren::RenderTarget depth_target,
+                      const Ren::RastState &rs) {
+    if (pi.prog() == p && pi.render_pass() == rp && pi.rast_state() == rs) {
+        bool formats_match = (color_targets.size() == pi.color_formats().size());
+        for (int j = 0; j < color_targets.size() && formats_match; ++j) {
+            formats_match &= color_targets[j].ref->params.format == pi.color_formats()[j];
+        }
+        if (depth_target) {
+            formats_match &= (depth_target.ref->params.format == pi.depth_format());
+        }
+        return true;
+    }
+    return false;
+}
 } // namespace PrimDrawInternal
 
 Eng::PrimDraw::~PrimDraw() {}
@@ -157,7 +173,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
     }
 
     if (ctx_->capabilities.dynamic_rendering) {
-        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, nullptr, color_rts, depth_rt, &new_rast_state);
+        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, nullptr, color_rts, depth_rt, new_rast_state);
         assert(pipeline);
 
         Ren::SmallVector<VkRenderingAttachmentInfoKHR, 4> color_attachments;
@@ -232,7 +248,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         const Ren::Framebuffer *fb =
             FindOrCreateFramebuffer(rp, color_rts, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
                                     new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{});
-        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, rp, {}, {}, &new_rast_state);
+        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, rp, {}, {}, new_rast_state);
 
         VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         render_pass_begin_info.renderPass = rp->handle();
@@ -304,24 +320,21 @@ const Ren::RenderPass *Eng::PrimDraw::FindOrCreateRenderPass(Ren::Span<const Ren
     return &new_render_pass;
 }
 
-const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(const ePrim prim, Ren::ProgramRef p, const Ren::RenderPass *rp,
+const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(const ePrim prim, const Ren::ProgramRef &p,
+                                                         const Ren::RenderPass *rp,
                                                          Ren::Span<const Ren::RenderTarget> color_targets,
                                                          const Ren::RenderTarget depth_target,
-                                                         const Ren::RastState *rs) {
+                                                         const Ren::RastState &rs) {
+    using namespace PrimDrawInternal;
+
+    const Ren::Pipeline *same_prog = nullptr;
+
     // TODO: binary search
     for (size_t i = 0; i < pipelines_[int(prim)].size(); ++i) {
-        if (pipelines_[int(prim)][i].prog() == p && pipelines_[int(prim)][i].render_pass() == rp &&
-            pipelines_[int(prim)][i].rast_state() == *rs) {
-
-            bool formats_match = (color_targets.size() == pipelines_[int(prim)][i].color_formats().size());
-            for (int j = 0; j < color_targets.size() && formats_match; ++j) {
-                formats_match &= color_targets[j].ref->params.format == pipelines_[int(prim)][i].color_formats()[j];
-            }
-
-            if (depth_target) {
-                formats_match &= (depth_target.ref->params.format == pipelines_[int(prim)][i].depth_format());
-            }
-
+        if (pipelines_[int(prim)][i].prog() == p) {
+            same_prog = &pipelines_[int(prim)][i];
+        }
+        if (pipeline_compare(pipelines_[int(prim)][i], p, rp, color_targets, depth_target, rs)) {
             return &pipelines_[int(prim)][i];
         }
     }
@@ -330,20 +343,18 @@ const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(const ePrim prim, Ren::
     Ren::Pipeline &new_pipeline = pipelines_[int(prim)].emplace_back();
 
     const Ren::VertexInput *vtx_input = (prim == ePrim::Quad) ? &fs_quad_vtx_input_ : &sphere_vtx_input_;
-
     if (rp) {
-        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), vtx_input, rp, 0, ctx_->log())) {
+        if (!new_pipeline.Init(api_ctx, rs, p, vtx_input, rp, 0, ctx_->log())) {
             ctx_->log()->Error("Failed to initialize pipeline!");
             pipelines_[int(prim)].pop_back();
             return nullptr;
         }
     } else {
-        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), vtx_input, color_targets, depth_target, 0, ctx_->log())) {
+        if (!new_pipeline.Init(api_ctx, rs, p, vtx_input, color_targets, depth_target, 0, ctx_->log())) {
             ctx_->log()->Error("Failed to initialize pipeline!");
             pipelines_[int(prim)].pop_back();
             return nullptr;
         }
     }
-
     return &new_pipeline;
 }
