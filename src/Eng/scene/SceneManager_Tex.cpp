@@ -690,19 +690,18 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
         "Scene Mem Allocs", ren_ctx_.api_ctx(), 16 * 1024 * 1024 /* initial_block_size */, 1.5f /* growth_factor */,
         128 * 1024 * 1024 /* max_pool_size */);
 
-    Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
-
     std::vector<Ren::TransitionInfo> img_transitions;
     img_transitions.reserve(scene_data_.textures.size());
 
     // Reset textures to 1x1
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
         Ren::Tex2DParams p = it->params;
-
         p.w = p.h = 1;
         p.mip_count = 1;
 
         it->FreeImmediate();
+
+        // Initialize with fallback color
         Ren::eTexLoadStatus status;
         it->Init(Ren::Span<const uint8_t>{}, p, new_alloc.get(), &status, ren_ctx_.log());
 
@@ -717,10 +716,10 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
     }
 
     if (!img_transitions.empty()) {
+        Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
         TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, img_transitions);
+        ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
     }
-
-    ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 
     scene_data_.persistent_data.mem_allocs = std::move(new_alloc);
 

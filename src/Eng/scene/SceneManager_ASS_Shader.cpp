@@ -11,7 +11,7 @@
 #include <glslx/glslx.h>
 
 namespace SceneManagerInternal {
-bool SkipAssetForCurrentBuild(Ren::Bitmask<Eng::eAssetFlags> flags);
+bool SkipAssetForCurrentBuild(Ren::Bitmask<Eng::eAssetBuildFlags> flags);
 }
 
 extern "C" {
@@ -184,11 +184,11 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     std::string prep_glsl_file = out_file;
                     prep_glsl_file.insert(ext_pos, perm);
 
-                    Ren::Bitmask<eAssetFlags> flags;
+                    Ren::Bitmask<eAssetBuildFlags> flags;
                     if (sh_output == eShaderOutput::GLSL) {
-                        flags |= eAssetFlags::GLOnly;
+                        flags |= eAssetBuildFlags::GLOnly;
                     } else {
-                        flags |= eAssetFlags::VKOnly;
+                        flags |= eAssetBuildFlags::VKOnly;
                     }
 
                     std::string output_file = prep_glsl_file;
@@ -198,10 +198,10 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         if (sh_output == eShaderOutput::VK_SPIRV) {
                             if (EnableOptimization) {
                                 output_file.replace(n + 1, 4, "spv");
-                                flags |= eAssetFlags::ReleaseOnly;
+                                flags |= eAssetBuildFlags::ReleaseOnly;
                             } else {
                                 output_file.replace(n + 1, 4, "spv_dbg");
-                                flags |= eAssetFlags::DebugOnly;
+                                flags |= eAssetBuildFlags::DebugOnly;
                             }
                         }
                     }

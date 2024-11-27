@@ -90,11 +90,11 @@ struct assets_context_t {
     std::mutex cache_mtx;
 };
 
-enum class eAssetFlags : uint32_t { DebugOnly, ReleaseOnly, GLOnly, VKOnly };
+enum class eAssetBuildFlags : uint32_t { DebugOnly, ReleaseOnly, GLOnly, VKOnly };
 
 struct asset_output_t {
     std::string name;
-    Ren::Bitmask<eAssetFlags> flags;
+    Ren::Bitmask<eAssetBuildFlags> flags;
 };
 
 class SceneManager {
@@ -116,6 +116,8 @@ class SceneManager {
 
     void set_tex_memory_limit(const size_t limit) { tex_memory_limit_ = limit; }
 
+    void set_load_flags(const Ren::Bitmask<eSceneLoadFlags> load_flags) { scene_data_.load_flags = load_flags; }
+
     Eng::SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
     uint32_t FindObject(std::string_view name) {
@@ -131,7 +133,7 @@ class SceneManager {
     }
     void InvalidateTexture(const Ren::Tex2DRef &ref);
 
-    void LoadScene(const JsObjectP &js_scene);
+    void LoadScene(const JsObjectP &js_scene, Ren::Bitmask<eSceneLoadFlags> load_flags = SceneLoadAll);
     void SaveScene(JsObjectP &js_scene);
     void ClearScene();
 

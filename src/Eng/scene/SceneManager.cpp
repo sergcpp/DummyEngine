@@ -278,7 +278,7 @@ void Eng::SceneManager::RegisterComponent(const uint32_t index, CompStorage *sto
     component_post_load_[index] = post_init;
 }
 
-void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
+void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<eSceneLoadFlags> load_flags) {
     using namespace SceneManagerConstants;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_load_scene_str);
@@ -295,7 +295,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
                                                  1.5f /* growth_factor */, 128 * 1024 * 1024 /* max_pool_size */);
         // Temp. solution (prevent reallocation)
         scene_data_.textures.reserve(16384);
-        StartTextureLoaderThread();
+        if (load_flags & eSceneLoadFlags::Textures) {
+            StartTextureLoaderThread();
+        }
     }
 
     AllocMeshBuffers();
@@ -308,6 +310,8 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     } else {
         throw std::runtime_error("Level has no name!");
     }
+
+    scene_data_.load_flags = load_flags;
 
     /*{ // load lightmaps
         std::string lm_base_tex_name = "lightmaps/";
@@ -481,7 +485,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
     RebuildSceneBVH();
     RebuildMaterialTextureGraph();
-    RebuildLightTree();
+    if (load_flags & eSceneLoadFlags::LightTree) {
+        RebuildLightTree();
+    }
 
     AllocMaterialsBuffer();
     AllocInstanceBuffer();
@@ -1709,8 +1715,11 @@ bool Eng::SceneManager::Serve(const int texture_budget) {
     scene_data_.decals_atlas.Finalize(ren_ctx_.current_cmd_buf());
 
     EstimateTextureMemory(texture_budget);
-    bool finished = ProcessPendingTextures(texture_budget);
+    bool finished = true;
 
+    if (scene_data_.load_flags & eSceneLoadFlags::Textures) {
+        finished &= ProcessPendingTextures(texture_budget);
+    }
     if (scene_data_.persistent_data.materials_buf) {
         finished &= UpdateMaterialsBuffer();
     }

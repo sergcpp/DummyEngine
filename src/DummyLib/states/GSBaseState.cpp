@@ -653,36 +653,15 @@ bool GSBaseState::LoadScene(std::string_view name) {
         }
     }
 
-    /*{ // Load probe cache data from file
-        std::string cache_file =
-#if defined(__ANDROID__)
-            "assets/textures/probes_cache/";
-#else
-            "assets_pc/textures/probes_cache/";
-#endif
-        cache_file += name;
-
-        Sys::AssetFile in_cache(cache_file.c_str());
-
-        if (in_cache) {
-            const size_t cache_size = in_cache.size();
-
-            std::unique_ptr<uint8_t[]> cache_data(new uint8_t[cache_size]);
-            in_cache.Read((char *)&cache_data[0], cache_size);
-
-            Sys::MemBuf mem(&cache_data[0], cache_size);
-            std::istream in_stream(&mem);
-
-            if (!js_probe_cache.Read(in_stream)) {
-                js_probe_cache.elements.clear();
-            }
-        }
-    }*/
-
     OnPreloadScene(js_scene);
 
     try {
-        scene_manager_->LoadScene(js_scene);
+        Ren::Bitmask<Eng::eSceneLoadFlags> load_flags = Eng::SceneLoadAll;
+        if (viewer_->app_params.pt) {
+            load_flags &= ~Ren::Bitmask<Eng::eSceneLoadFlags>{Eng::eSceneLoadFlags::Textures};
+            load_flags &= ~Ren::Bitmask<Eng::eSceneLoadFlags>{Eng::eSceneLoadFlags::LightTree};
+        }
+        scene_manager_->LoadScene(js_scene, load_flags);
     } catch (std::exception &e) {
         log_->Info("Error loading scene: %s", e.what());
     }
@@ -1361,6 +1340,8 @@ void GSBaseState::InitScene_PT() {
         cam_desc.fwd[0] = cam_desc.fwd[1] = 0;
         cam_desc.fwd[2] = -1;
         cam_desc.fov = scene_manager_->main_cam().angle();
+        cam_desc.clip_start = scene_manager_->main_cam().near();
+        cam_desc.clip_end = scene_manager_->main_cam().far();
         cam_desc.shift[0] = scene_manager_->main_cam().sensor_shift()[0];
         cam_desc.shift[1] = scene_manager_->main_cam().sensor_shift()[1];
 
@@ -1394,7 +1375,7 @@ void GSBaseState::InitScene_PT() {
     std::map<std::string, Ray::MaterialHandle> loaded_materials;
     std::map<std::string, Ray::TextureHandle> loaded_textures;
 
-    auto load_texture = [&](const Ren::Texture2D &tex, bool is_srgb = false, bool is_YCoCg = false) {
+    auto load_texture = [&](const Ren::Texture2D &tex, const bool is_srgb = false, const bool is_YCoCg = false) {
         if (tex.name() == "default_basecolor.dds" || tex.name() == "default_normalmap.dds" ||
             tex.name() == "default_roughness.dds" || tex.name() == "default_metallic.dds" ||
             tex.name() == "default_opacity.dds") {
@@ -1942,6 +1923,7 @@ void GSBaseState::ReloadSceneResources() {
     main_view_lists_[0].Clear();
     main_view_lists_[1].Clear();
 
+    scene_manager_->set_load_flags(Eng::SceneLoadAll);
     scene_manager_->LoadEnvMap();
     scene_manager_->AllocGICache();
     scene_manager_->Alloc_TLAS();

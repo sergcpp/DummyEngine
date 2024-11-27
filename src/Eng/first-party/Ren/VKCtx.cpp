@@ -1183,24 +1183,30 @@ VkCommandBuffer Ren::ApiContext::BegSingleTimeCommands() {
     alloc_info.commandBufferCount = 1;
 
     VkCommandBuffer command_buf = {};
-    vkAllocateCommandBuffers(device, &alloc_info, &command_buf);
+    VkResult res = vkAllocateCommandBuffers(device, &alloc_info, &command_buf);
+    assert(res == VK_SUCCESS);
 
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    vkBeginCommandBuffer(command_buf, &begin_info);
+    res = vkBeginCommandBuffer(command_buf, &begin_info);
+    assert(res == VK_SUCCESS);
+
     return command_buf;
 }
 
 void Ren::ApiContext::EndSingleTimeCommands(VkCommandBuffer command_buf) {
-    vkEndCommandBuffer(command_buf);
+    VkResult res = vkEndCommandBuffer(command_buf);
+    assert(res == VK_SUCCESS);
 
     VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buf;
 
-    vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphics_queue);
+    res = vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+    assert(res == VK_SUCCESS);
+    res = vkQueueWaitIdle(graphics_queue);
+    assert(res == VK_SUCCESS);
 
     vkFreeCommandBuffers(device, temp_command_pool, 1, &command_buf);
 }

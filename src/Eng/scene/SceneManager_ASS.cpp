@@ -197,23 +197,23 @@ template <typename TP> std::time_t to_time_t(TP tp) {
     return system_clock::to_time_t(sctp);
 }
 
-bool SkipAssetForCurrentBuild(const Ren::Bitmask<Eng::eAssetFlags> flags) {
+bool SkipAssetForCurrentBuild(const Ren::Bitmask<Eng::eAssetBuildFlags> flags) {
 #if defined(NDEBUG)
-    if (flags & Eng::eAssetFlags::DebugOnly) {
+    if (flags & Eng::eAssetBuildFlags::DebugOnly) {
         return true;
     }
 #else
-    if (flags & Eng::eAssetFlags::ReleaseOnly) {
+    if (flags & Eng::eAssetBuildFlags::ReleaseOnly) {
         return true;
     }
 #endif
 #if !defined(REN_GL_BACKEND)
-    if (flags & Eng::eAssetFlags::GLOnly) {
+    if (flags & Eng::eAssetBuildFlags::GLOnly) {
         return true;
     }
 #endif
 #if !defined(REN_VK_BACKEND)
-    if (flags & Eng::eAssetFlags::VKOnly) {
+    if (flags & Eng::eAssetBuildFlags::VKOnly) {
         return true;
     }
 #endif
@@ -252,7 +252,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
             const JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
             for (const auto &output : js_outputs.elements) {
-                const Ren::Bitmask<Eng::eAssetFlags> flags = Ren::Bitmask<Eng::eAssetFlags>{
+                const Ren::Bitmask<Eng::eAssetBuildFlags> flags = Ren::Bitmask<Eng::eAssetBuildFlags>{
                     uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
                 if (SkipAssetForCurrentBuild(flags)) {
                     continue;
@@ -290,7 +290,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                 if (js_in_file_hash.val == in_hash_str) {
                     JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
                     for (auto &output : js_outputs.elements) {
-                        const Ren::Bitmask<Eng::eAssetFlags> flags = Ren::Bitmask<Eng::eAssetFlags>{
+                        const Ren::Bitmask<Eng::eAssetBuildFlags> flags = Ren::Bitmask<Eng::eAssetBuildFlags>{
                             uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
                         if (SkipAssetForCurrentBuild(flags)) {
                             continue;
@@ -886,8 +886,8 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         initialize();
     }
 
-    //Sys::ThreadPool additional_threads(8);
-    //ctx.p_threads = &additional_threads;
+    // Sys::ThreadPool additional_threads(8);
+    // ctx.p_threads = &additional_threads;
 
     if (p_threads) {
         std::deque<std::future<void>> events;

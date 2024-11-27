@@ -248,8 +248,13 @@ struct PersistentGpuData {
     void Release();
 };
 
+enum class eSceneLoadFlags : uint32_t { Textures, LightTree };
+const Ren::Bitmask<eSceneLoadFlags> SceneLoadAll =
+    Ren::Bitmask<eSceneLoadFlags>{eSceneLoadFlags::Textures} | eSceneLoadFlags::LightTree;
+
 struct SceneData {
     Ren::String name;
+    Ren::Bitmask<eSceneLoadFlags> load_flags;
 
     Ren::BufferStorage buffers;
     Ren::Texture2DStorage textures;
