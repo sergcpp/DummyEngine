@@ -8,7 +8,7 @@
 
 #include "../DummyLib/Viewer.h"
 
-const char *DummyApp::Version() const { return "v0.1.0-unknown-commit"; }
+const char *DummyApp::Version() const { return "v0.2.0-unknown-commit"; }
 
 void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_params) {
     for (int i = 1; i < argc; i++) {
