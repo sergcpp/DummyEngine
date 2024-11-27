@@ -1375,7 +1375,8 @@ void GSBaseState::InitScene_PT() {
     std::map<std::string, Ray::MaterialHandle> loaded_materials;
     std::map<std::string, Ray::TextureHandle> loaded_textures;
 
-    auto load_texture = [&](const Ren::Texture2D &tex, const bool is_srgb = false, const bool is_YCoCg = false) {
+    auto load_texture = [&](const Ren::Texture2D &tex, const bool is_srgb = false, const bool is_YCoCg = false,
+                            const bool use_mips = true) {
         if (tex.name() == "default_basecolor.dds" || tex.name() == "default_normalmap.dds" ||
             tex.name() == "default_roughness.dds" || tex.name() == "default_metallic.dds" ||
             tex.name() == "default_opacity.dds") {
@@ -1383,7 +1384,7 @@ void GSBaseState::InitScene_PT() {
         }
         auto tex_it = loaded_textures.find(tex.name().c_str());
         if (tex_it == loaded_textures.end()) {
-            const Ray::TextureHandle new_tex = LoadTexture_PT(tex.name().c_str(), is_srgb, is_YCoCg);
+            const Ray::TextureHandle new_tex = LoadTexture_PT(tex.name().c_str(), is_srgb, is_YCoCg, use_mips);
             tex_it = loaded_textures.emplace(tex.name().c_str(), new_tex).first;
         }
         return tex_it->second;
@@ -1470,7 +1471,7 @@ void GSBaseState::InitScene_PT() {
                         if (front_mat->textures.size() > 5) {
                             mat_desc.emission_texture = load_texture(*front_mat->textures[5], true, true);
                         }
-                        mat_desc.normal_map = load_texture(*front_mat->textures[1]);
+                        mat_desc.normal_map = load_texture(*front_mat->textures[1], false, false, false);
 
                         const Ray::MaterialHandle new_mat = ray_scene_->AddMaterial(mat_desc);
                         mat_it = loaded_materials.emplace(mat_name, new_mat).first;
@@ -1617,7 +1618,8 @@ void GSBaseState::InitScene_PT() {
     ray_scene_->Finalize(std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3));
 }
 
-Ray::TextureHandle GSBaseState::LoadTexture_PT(const std::string_view name, const bool is_srgb, const bool is_YCoCg) {
+Ray::TextureHandle GSBaseState::LoadTexture_PT(const std::string_view name, const bool is_srgb, const bool is_YCoCg,
+                                               const bool use_mips) {
     const std::string tex_path = std::string("assets_pc/textures/") + std::string(name);
     std::ifstream in_file(tex_path, std::ios::binary);
 
@@ -1646,6 +1648,7 @@ Ray::TextureHandle GSBaseState::LoadTexture_PT(const std::string_view name, cons
     }
     tex_desc.w = temp_params.w;
     tex_desc.h = temp_params.h;
+    tex_desc.mips_count = use_mips ? temp_params.mip_count : 1;
     tex_desc.name = name.data();
     tex_desc.is_srgb = is_srgb;
     tex_desc.is_YCoCg = is_YCoCg;
