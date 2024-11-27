@@ -53,6 +53,7 @@ runs:
         mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/fonts
         mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/staircase
         mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/mat_test
+        mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/staircase
         mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/mat_test
         mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/internal
         mkdir -p $WORK_DIR/staircase-win-x86_64-vk/assets_pc/models/staircase
