@@ -1,0 +1,1 @@
+DummyAppVK.exe -s scenes/sponza.json -w 1920 -h 1080 --pt
