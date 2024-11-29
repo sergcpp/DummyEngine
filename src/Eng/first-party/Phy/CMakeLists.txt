@@ -23,7 +23,8 @@ ELSE(WIN32)
     endif()
 ENDIF(WIN32)
 
-set(SOURCE_FILES    Body.h
+set(SOURCE_FILES    AlignedAlloc.h
+                    Body.h
                     Body.cpp
                     Bounds.h
                     BVHSplit.h
@@ -43,6 +44,10 @@ set(SOURCE_FILES    Body.h
 
 list(APPEND PHY_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
+
+if(MSVC)
+    list(APPEND PHY_SOURCE_FILES _CustomTypes.natvis)
+endif(MSVC)
 
 add_library(Phy STATIC ${PHY_SOURCE_FILES})
 target_link_libraries(Phy ${LIBS})

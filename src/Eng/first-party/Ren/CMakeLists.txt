@@ -44,6 +44,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in ${CMAKE_CURRENT_SOURCE_DI
 
 set(SOURCE_FILES AccStructure.h
                  AccStructure.cpp
+                 AlignedAlloc.h
                  Anim.h
                  Anim.cpp
                  ApiContext.h

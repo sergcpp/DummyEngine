@@ -27,7 +27,7 @@ class VertexInput {
     uint32_t gl_vao_ = 0;
 #endif
   public:
-    SmallVector<VtxAttribDesc, 8> attribs;
+    SmallVector<VtxAttribDesc, 4> attribs;
     BufHandle elem_buf;
 
     VertexInput();
@@ -40,8 +40,11 @@ class VertexInput {
 
 #if defined(REN_VK_BACKEND)
     void BindBuffers(ApiContext *api_ctx, VkCommandBuffer cmd_buf, uint32_t index_offset, int index_type) const;
-    void FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDescription, 4> &out_bindings,
-                            SmallVectorImpl<VkVertexInputAttributeDescription, 4> &out_attribs) const;
+    void FillVKDescriptions(
+        SmallVectorImpl<VkVertexInputBindingDescription, aligned_allocator<VkVertexInputBindingDescription, 4>>
+            &out_bindings,
+        SmallVectorImpl<VkVertexInputAttributeDescription, aligned_allocator<VkVertexInputAttributeDescription, 4>>
+            &out_attribs) const;
 #elif defined(REN_GL_BACKEND)
     uint32_t gl_vao() const { return gl_vao_; }
 #endif

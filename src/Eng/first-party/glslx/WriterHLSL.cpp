@@ -131,7 +131,7 @@ bool is_scalar_type(const ast_type *_type) {
 }
 
 int get_variable_size(const ast_variable *v, const int array_dim) {
-    if (v->is_array && v->array_sizes.size() > array_dim && v->array_sizes[array_dim]) {
+    if (v->is_array && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
         int count = 0;
         if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
             count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;
@@ -1828,7 +1828,7 @@ int glslx::WriterHLSL::Calc_VariableSize(const ast_variable *v) {
 int glslx::WriterHLSL::Write_ByteaddressBufLoads(const byteaddress_buf_t &buf, const int offset,
                                                  const std::string &prefix, int array_dim, const ast_variable *v,
                                                  std::ostream &out_stream) {
-    if (v->is_array && v->array_sizes.size() > array_dim && v->array_sizes[array_dim]) {
+    if (v->is_array && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
         int count = 0;
         if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
             count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;
@@ -2003,7 +2003,7 @@ int glslx::WriterHLSL::Write_ByteaddressBufStores(const byteaddress_buf_t &buf, 
 int glslx::WriterHLSL::Write_ByteaddressBufStores(const byteaddress_buf_t &buf, const int offset,
                                                   const std::string &prefix, int array_dim, const ast_variable *v,
                                                   std::ostream &out_stream) {
-    if (v->is_array && v->array_sizes.size() > array_dim && v->array_sizes[array_dim]) {
+    if (v->is_array && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
         int count = 0;
         if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
             count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;

@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Net
-	branch = update_21_10
-	commit = 6b3177ba99a3e7fecf6d039427683b4937a5ae99
+	branch = update_29_11
+	commit = 5eb0f8a38c6a34feba824330711d07a1850aeb18
 	method = merge
 	cmdver = 0.4.6
-	parent = 1f7a51bebdfad595050af54d09979408a405bfda
+	parent = ef4bd7535db1c2281d9146b24eb662ea108e91a6

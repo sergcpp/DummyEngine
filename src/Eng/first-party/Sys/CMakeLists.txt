@@ -34,7 +34,8 @@ ELSE(WIN32)
     endif()
 ENDIF(WIN32)
 
-set(SOURCE_FILES AssetFile.h
+set(SOURCE_FILES AlignedAlloc.h
+                 AssetFile.h
                  AssetFile.cpp
                  AssetFileIO.h
                  AssetFileIO.cpp

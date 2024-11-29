@@ -34,7 +34,8 @@ ELSE(WIN32)
     endif()
 ENDIF(WIN32)
 
-set(SOURCE_FILES    BaseElement.h
+set(SOURCE_FILES    AlignedAlloc.h
+                    BaseElement.h
                     BaseElement.cpp
                     BitmapFont.h
                     BitmapFont.cpp

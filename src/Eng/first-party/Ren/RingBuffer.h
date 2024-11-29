@@ -5,45 +5,9 @@
 
 #include <atomic>
 
+#include "AlignedAlloc.h"
+
 namespace Ren {
-#ifndef REN_ALIGNED_MALLOC_DEFINED
-inline void *aligned_malloc(size_t size, size_t alignment) {
-    while (alignment < sizeof(void *)) {
-        alignment *= 2;
-    }
-    const size_t space = size + (alignment - 1) + sizeof(void *);
-    if (space > PTRDIFF_MAX) {
-        return nullptr;
-    }
-
-    void *ptr = malloc(space);
-    void *original_ptr = ptr;
-
-    char *ptr_bytes = static_cast<char *>(ptr);
-    ptr_bytes += sizeof(void *);
-
-    size_t off = static_cast<size_t>(reinterpret_cast<uintptr_t>(ptr_bytes) % alignment);
-    if (off) {
-        off = alignment - off;
-    }
-    ptr_bytes += off;
-
-    ptr = static_cast<void *>(ptr_bytes);
-    ptr_bytes -= sizeof(void *);
-
-    memcpy(ptr_bytes, &original_ptr, sizeof(void *));
-
-    return ptr;
-}
-
-inline void aligned_free(void *p) {
-    if (p) {
-        free(static_cast<void **>(p)[-1]);
-    }
-}
-#define REN_ALIGNED_MALLOC_DEFINED
-#endif
-
 template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
     T *buf_;
     size_t head_, tail_; // stored unbounded (should be masked later)

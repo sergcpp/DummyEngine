@@ -5,10 +5,10 @@
 void test_small_vector() {
     printf("Test small_vector       | ");
 
-    static_assert(sizeof(glslx::SmallVectorImpl<int>) <= 16);
+    static_assert(sizeof(Ren::SmallVectorImpl<int>) <= 16);
 
     { // basic usage with trivial type
-        glslx::SmallVector<int, 16> vec;
+        Ren::SmallVector<int, 16> vec;
 
         for (int i = 0; i < 8; i++) {
             vec.push_back(i);
@@ -77,7 +77,7 @@ void test_small_vector() {
             AAA &operator=(AAA &&rhs) = default;
         };
 
-        glslx::SmallVector<AAA, 16> vec;
+        Ren::SmallVector<AAA, 16> vec;
 
         for (int i = 0; i < 8; i++) {
             vec.push_back(AAA{2 * i});
@@ -100,7 +100,7 @@ void test_small_vector() {
     }
 
     { // erase
-        glslx::SmallVector<int, 16> vec;
+        Ren::SmallVector<int, 16> vec;
         for (int i = 0; i < 8; i++) {
             vec.push_back(i);
         }

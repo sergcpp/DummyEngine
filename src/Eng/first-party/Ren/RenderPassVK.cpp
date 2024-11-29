@@ -61,11 +61,11 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
     Destroy();
 
     SmallVector<VkAttachmentDescription, 4> pass_attachments;
-    SmallVector<VkAttachmentReference, 4> color_attachment_refs(_color_rts.size(),
+    SmallVector<VkAttachmentReference, 4> color_attachment_refs(uint32_t(_color_rts.size()),
                                                                 {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED});
     VkAttachmentReference depth_attachment_ref = {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED};
 
-    color_rts.resize(_color_rts.size());
+    color_rts.resize(uint32_t(_color_rts.size()));
     depth_rt = {};
 
     if (_depth_rt) {

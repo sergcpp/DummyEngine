@@ -209,9 +209,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
     }
 
     //
-    // (Re)create framebuffer
+    // (Re)create framebuffers
     //
-    framebuffers_.resize(api_ctx->present_images.size());
+    framebuffers_.resize(uint32_t(api_ctx->present_images.size()));
     if (!framebuffers_[api_ctx->active_present_image].Setup(api_ctx, render_pass_, w, h, ctx_.backbuffer_ref(), {},
                                                             Ren::WeakTex2DRef{}, false, ctx_.log())) {
         ctx_.log()->Error("Failed to create framebuffer!");

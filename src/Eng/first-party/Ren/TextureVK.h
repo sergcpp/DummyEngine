@@ -36,7 +36,7 @@ struct TexHandle {
 
     explicit operator bool() const { return img != VkImage{}; }
 };
-static_assert(sizeof(TexHandle) == 56, "!");
+static_assert(sizeof(TexHandle) == 48, "!");
 inline bool operator==(const TexHandle &lhs, const TexHandle &rhs) {
     return lhs.img == rhs.img && lhs.views == rhs.views && lhs.sampler == rhs.sampler &&
            lhs.generation == rhs.generation;

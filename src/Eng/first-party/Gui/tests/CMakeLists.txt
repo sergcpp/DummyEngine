@@ -15,6 +15,7 @@ ENDIF(MSVC)
 add_executable(test_Gui main.cpp
                         test_common.h
                         test_signal.cpp
+                        test_small_vector.cpp
                         test_span.cpp
                         test_unicode.cpp
                         test_widgets.cpp)
