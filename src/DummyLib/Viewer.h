@@ -3,7 +3,6 @@
 #include <optional>
 #include <string_view>
 
-// #include <Eng/scene/SceneManager.h>
 #include <Eng/ViewerBase.h>
 
 #if defined(__ANDROID__)
@@ -28,8 +27,9 @@ class ILog;
 };
 
 namespace Ren {
-template <typename T, int AlignmentOfT> class SmallVectorImpl;
-}
+template <typename T, size_t Alignment> class aligned_allocator;
+template <typename T, typename Allocator> class SmallVectorImpl;
+} // namespace Ren
 
 namespace Sys {
 class ThreadWorker;
@@ -92,7 +92,8 @@ class Viewer : public Eng::ViewerBase {
     void Frame() override;
 
     static void PrepareAssets(std::string_view platform = "all");
-    static bool HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string, alignof(std::string)> &,
-                               Ren::SmallVectorImpl<Eng::asset_output_t, 8> &);
+    static bool
+    HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
+                   Ren::SmallVectorImpl<std::string, Ren::aligned_allocator<std::string, alignof(std::string)>> &,
+                   Ren::SmallVectorImpl<Eng::asset_output_t, Ren::aligned_allocator<Eng::asset_output_t, 8>> &);
 };
