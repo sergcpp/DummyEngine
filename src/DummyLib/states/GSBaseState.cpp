@@ -1271,8 +1271,12 @@ void GSBaseState::InitRenderer_PT() {
             api_ctx->vkCmdResetQueryPool,
             (Ray::PFN_vkCmdWriteTimestamp)api_ctx->vkCmdWriteTimestamp};
 #endif
-        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
-        ray_renderer_->InitUNetFilter(true /* alias_memory */, unet_props_);
+        using namespace std::placeholders;
+        auto parallel_for =
+            std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, viewer_->threads(), _1, _2, _3);
+
+        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log(), parallel_for));
+        unet_props_ = ray_renderer_->InitUNetFilter(true /* alias_memory */, parallel_for);
     }
 }
 
