@@ -26,6 +26,8 @@ set(STATES_SOURCES  states/BaseState.h
                     states/BaseState.cpp
                     states/DrawTest.h
                     states/DrawTest.cpp
+                    states/LoadingState.h
+                    states/LoadingState.cpp
                     states/PhyTest.h
                     states/PhyTest.cpp
                     states/PlayTest.h
@@ -64,6 +66,12 @@ elseif(${REN_BACKEND} STREQUAL "SW")
 
 endif()
 
+add_custom_target(DummyLib_CreateSymLinks
+                  COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/renderer/shaders
+                                                             ${WORKING_DIRECTORY}/assets/shaders/internal
+                  COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/textures
+                                                             ${WORKING_DIRECTORY}/assets/textures/internal)
+
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES UNITY_GROUP "common")
 source_group("src" FILES ${SOURCE_FILES})
@@ -82,6 +90,7 @@ source_group("src\\utils" FILES ${UTILS_SOURCES})
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DummyLib Eng Ray ${LIBS})
+add_dependencies(DummyLib DummyLib_CreateSymLinks)
 
 set_target_properties(DummyLib PROPERTIES UNITY_BUILD_MODE GROUP)
 

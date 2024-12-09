@@ -117,4 +117,5 @@ set_target_properties(ltc_fit
                       SPIRV-Reflect
                       optick
                       glslx
-                      spirv_compiler PROPERTIES FOLDER _)
+                      spirv_compiler
+                      DummyLib_CreateSymLinks PROPERTIES FOLDER _)

@@ -1,0 +1,368 @@
+[
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/skinning.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gbuffer_shade@SS_SHADOW_ONE.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gbuffer_shade@SS_SHADOW_ONE;NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gbuffer_shade@SS_SHADOW_MANY.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gbuffer_shade@SS_SHADOW_MANY;NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_classify.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_classify@NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_write_indirect_args.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq@NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq@GI_CACHE.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq@GI_CACHE;NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq@LAYERED.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq@LAYERED;NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq@LAYERED;GI_CACHE.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_trace_hq@LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_write_indir_rt_dispatch.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_reproject.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_prefilter.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_prefilter@RELAXED.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_temporal.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_blur.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_stabilization.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_blend@RADIANCE.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_blend@DISTANCE.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_blend@RADIANCE;PARTIAL.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_blend@RADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_blend@DISTANCE;PARTIAL.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_relocate.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_relocate@PARTIAL.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_relocate@RESET.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_classify.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_classify@PARTIAL.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_classify@RESET.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/probe_sample.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gtao_main.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gtao_filter.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gtao_accumulate.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_classify.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_classify@NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_write_indirect_args.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_trace_ss.comp.glsl" ],
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl" ],
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_write_indir_rt_dispatch.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_reproject.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_prefilter.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_prefilter@RELAXED.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_temporal.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_blur.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_stabilization.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/sun_shadows@SS_SHADOW.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/sun_brightness.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_classify.comp.glsl" ],
+        "subgroup_size" : 32,
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl" ],
+        "subgroup_size" : 32,
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_prepare_mask.comp.glsl" ],
+        "subgroup_size" : 32,
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_prepare_mask@NO_SUBGROUP.comp.glsl" ],
+        "subgroup_size" : 32,
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_classify_tiles.comp.glsl" ],
+        "subgroup_size" : 32,
+        "features" : {
+            "subgroup" : true
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_classify_tiles@NO_SUBGROUP.comp.glsl" ],
+        "subgroup_size" : 32,
+        "features" : {
+            "subgroup" : false
+        }
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_filter@PASS_0.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_filter@PASS_1.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_filter.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/rt_shadow_debug.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/bloom_downsample.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/bloom_downsample@TONEMAP.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/bloom_upsample.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/histogram_sample.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/histogram_exposure.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/skydome_upsample.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/debug_velocity.comp.glsl" ]
+    }
+]
