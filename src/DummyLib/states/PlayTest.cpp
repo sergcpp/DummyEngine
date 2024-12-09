@@ -1,4 +1,4 @@
-﻿#include "GSPlayTest.h"
+﻿#include "PlayTest.h"
 
 #include <fstream>
 #include <memory>
@@ -29,7 +29,7 @@
 #include "../widgets/SeqEditUI.h"
 #include "../widgets/WordPuzzleUI.h"
 
-namespace GSPlayTestInternal {
+namespace PlayTestInternal {
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/"
 #else
@@ -38,9 +38,9 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "seq_test.json";
 
 const char SEQ_NAME[] = "test/test_seq.json";
-} // namespace GSPlayTestInternal
+} // namespace PlayTestInternal
 
-GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
+PlayTest::PlayTest(Viewer *viewer) : BaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
 
     cam_ctrl_ = std::make_unique<Eng::FreeCamController>(ren_ctx_->w(), ren_ctx_->h(), 0.3f);
@@ -54,7 +54,7 @@ GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
     dialog_edit_ui_ = std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_);
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
-    dialog_edit_ui_->set_cur_sequence_signal.Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
+    dialog_edit_ui_->set_cur_sequence_signal.Connect<PlayTest, &PlayTest::OnSetCurSequence>(this);
 
     seq_cap_ui_ = std::make_unique<CaptionsUI>(Gui::Vec2f{-1, 0}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_);
     // test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
@@ -77,20 +77,20 @@ GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
         );*/
 }
 
-GSPlayTest::~GSPlayTest() = default;
+PlayTest::~PlayTest() = default;
 
-void GSPlayTest::Enter() {
-    using namespace GSPlayTestInternal;
+void PlayTest::Enter() {
+    using namespace PlayTestInternal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
-    log_->Info("GSUITest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    log_->Info("UITest: Loading scene!");
+    BaseState::LoadScene(SCENE_NAME);
 
     LoadSequence(SEQ_NAME);
 }
 
-void GSPlayTest::LoadSequence(const std::string_view seq_name) {
+void PlayTest::LoadSequence(const std::string_view seq_name) {
     auto read_sequence = [](const std::string_view seq_name, Sys::JsObject &js_seq) {
 #if defined(__ANDROID__)
         const std::string file_name = std::string("assets/scenes/") + std::string(seq_name);
@@ -130,7 +130,7 @@ void GSPlayTest::LoadSequence(const std::string_view seq_name) {
     seq_edit_ui_->set_sequence(test_seq_);
 }
 
-bool GSPlayTest::SaveSequence(const std::string_view seq_name) {
+bool PlayTest::SaveSequence(const std::string_view seq_name) {
     // rotate backup files
     for (int i = 7; i > 0; i--) {
         const std::string name1 = std::string("assets/scenes/") + std::string(seq_name) + std::to_string(i),
@@ -179,10 +179,10 @@ bool GSPlayTest::SaveSequence(const std::string_view seq_name) {
     return true;
 }
 
-void GSPlayTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    using namespace GSPlayTestInternal;
+void PlayTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
+    using namespace PlayTestInternal;
 
-    GSBaseState::OnPostloadScene(js_scene);
+    BaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
         const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -217,10 +217,10 @@ void GSPlayTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     }
 }
 
-void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
-    using namespace GSPlayTestInternal;
+void PlayTest::UpdateAnim(const uint64_t dt_us) {
+    using namespace PlayTestInternal;
 
-    GSBaseState::UpdateAnim(dt_us);
+    BaseState::UpdateAnim(dt_us);
 
     scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
                               Ren::Vec3f{0, 1, 0}, cam_ctrl_->view_fov, Ren::Vec2f{0.0f}, 1, cam_ctrl_->min_exposure,
@@ -234,7 +234,7 @@ void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
     }
 }
 
-void GSPlayTest::OnSetCurSequence(const int id) {
+void PlayTest::OnSetCurSequence(const int id) {
     if (test_seq_) {
         test_seq_->push_caption_signal.clear();
     }
@@ -243,9 +243,9 @@ void GSPlayTest::OnSetCurSequence(const int id) {
     seq_edit_ui_->set_sequence(test_seq_);
 }
 
-void GSPlayTest::Exit() { GSBaseState::Exit(); }
+void PlayTest::Exit() { BaseState::Exit(); }
 
-void GSPlayTest::Draw() {
+void PlayTest::Draw() {
     if (is_playing_) {
         const float cur_time_s = 0.001f * Sys::GetTimeMs();
         if (seq_edit_ui_->timeline_grabbed()) {
@@ -263,15 +263,15 @@ void GSPlayTest::Draw() {
         }
     }
 
-    GSBaseState::Draw();
+    BaseState::Draw();
 }
 
-void GSPlayTest::UpdateFixed(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
+void PlayTest::UpdateFixed(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
 
-void GSPlayTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace GSPlayTestInternal;
+void PlayTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
+    using namespace PlayTestInternal;
 
-    // GSBaseState::DrawUI(r, root);
+    // BaseState::DrawUI(r, root);
 
     dialog_ui_->Draw(r);
     if (dial_edit_mode_ == 0) {
@@ -282,9 +282,9 @@ void GSPlayTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     seq_cap_ui_->Draw(r);
 }
 
-bool GSPlayTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool PlayTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSPlayTestInternal;
+    using namespace PlayTestInternal;
 
     // pt switch for touch controls
     if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
@@ -432,7 +432,7 @@ bool GSPlayTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bo
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt, keys_state);
+        BaseState::HandleInput(evt, keys_state);
     }
 
     return true;

@@ -1,15 +1,15 @@
-#include "GSUITest3.h"
+#include "UITest3.h"
 
 #include <Ren/GL.h>
 
 #include "../widgets/PagedReader.h"
 
-namespace GSUITest3Internal {
+namespace UITest3Internal {
 extern const Ren::Vec2f page_corners_uvs[];
 extern const int page_order_indices[][4];
-} // namespace GSUITest3Internal
+} // namespace UITest3Internal
 
-void GSUITest3::InitBookMaterials() {
+void UITest3::InitBookMaterials() {
     /*assert(page_buf_.w != -1 && page_buf_.h != -1 && "Page framebuffer is not initialized!");
 
     { // register framebuffer texture
@@ -39,8 +39,8 @@ void GSUITest3::InitBookMaterials() {
     }*/
 }
 
-void GSUITest3::RedrawPages(Gui::Renderer *r) {
-    using namespace GSUITest3Internal;
+void UITest3::RedrawPages(Gui::Renderer *r) {
+    using namespace UITest3Internal;
     using Ren::Vec2f;
 
     /*for (int i = 0; i < 4; i++) {

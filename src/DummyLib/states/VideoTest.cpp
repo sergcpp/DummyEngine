@@ -45,7 +45,7 @@ extern const bool VerboseLogging;
 #error "!!!!"
 #endif
 
-GSVideoTest::GSVideoTest(Viewer *viewer) : GSBaseState(viewer) {
+GSVideoTest::GSVideoTest(Viewer *viewer) : BaseState(viewer) {
     // aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
     // decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
 }
@@ -53,10 +53,10 @@ GSVideoTest::GSVideoTest(Viewer *viewer) : GSBaseState(viewer) {
 void GSVideoTest::Enter() {
     using namespace GSVideoTestInternal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
     log_->Info("GSVideoTest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    BaseState::LoadScene(SCENE_NAME);
 
     OpenVideoFiles();
     InitVideoTextures();
@@ -112,7 +112,7 @@ bool GSVideoTest::OpenVideoFiles() {
 }
 
 void GSVideoTest::OnPostloadScene(JsObjectP &js_scene) {
-    GSBaseState::OnPostloadScene(js_scene);
+    BaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -173,7 +173,7 @@ void GSVideoTest::Exit() {
 
     DestroyVideoTextures();
 
-    GSBaseState::Exit();
+    BaseState::Exit();
 }
 
 void GSVideoTest::Draw() {
@@ -195,10 +195,10 @@ void GSVideoTest::Draw() {
     //
     // Draw scene
     //
-    GSBaseState::Draw();
+    BaseState::Draw();
 }
 
-void GSVideoTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { GSBaseState::DrawUI(r, root); }
+void GSVideoTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { BaseState::DrawUI(r, root); }
 
 void GSVideoTest::UpdateFixed(const uint64_t dt_us) {
     using namespace GSVideoTestInternal;
@@ -356,7 +356,7 @@ bool GSVideoTest::HandleInput(const Eng::input_event_t &evt) {
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt);
+        BaseState::HandleInput(evt);
     }
 
     return true;
@@ -379,7 +379,7 @@ void GSVideoTest::UpdateAnim(const uint64_t dt_us) {
 }
 
 void GSVideoTest::SaveScene(JsObjectP &js_scene) {
-    GSBaseState::SaveScene(js_scene);
+    BaseState::SaveScene(js_scene);
 
     const auto &alloc = js_scene.elements.get_allocator();
 

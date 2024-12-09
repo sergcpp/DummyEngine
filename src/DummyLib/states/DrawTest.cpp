@@ -1,4 +1,4 @@
-﻿#include "GSDrawTest.h"
+﻿#include "DrawTest.h"
 
 #include <memory>
 
@@ -28,7 +28,7 @@ extern const int LUT_DIMS;
 extern const uint32_t *transform_luts[];
 } // namespace Ray
 
-namespace GSDrawTestInternal {
+namespace DrawTestInternal {
 Ren::Span<const uint8_t> RayLUTByName(const std::string_view name) {
     const uint32_t *lut_data = nullptr;
     if (name == "agx") {
@@ -53,7 +53,7 @@ Ren::Span<const uint8_t> RayLUTByName(const std::string_view name) {
     return Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(lut_data),
                                     4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS);
 }
-} // namespace GSDrawTestInternal
+} // namespace DrawTestInternal
 
 #include <Ren/Utils.h>
 
@@ -61,12 +61,12 @@ namespace SceneManagerInternal {
 int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
 }
 
-GSDrawTest::GSDrawTest(Viewer *viewer) : GSBaseState(viewer) {}
+DrawTest::DrawTest(Viewer *viewer) : BaseState(viewer) {}
 
-void GSDrawTest::Enter() {
-    using namespace GSDrawTestInternal;
+void DrawTest::Enter() {
+    using namespace DrawTestInternal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
     cmdline_ui_->RegisterCommand("r_printCam", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         log_->Info("View Pos: { %f, %f, %f }", view_origin_[0], view_origin_[1], view_origin_[2]);
@@ -74,12 +74,12 @@ void GSDrawTest::Enter() {
         return true;
     });
 
-    log_->Info("GSDrawTest: Loading scene!");
-    GSBaseState::LoadScene(viewer_->app_params.scene_name);
+    log_->Info("DrawTest: Loading scene!");
+    BaseState::LoadScene(viewer_->app_params.scene_name);
 }
 
-void GSDrawTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
-    GSBaseState::OnPreloadScene(js_scene);
+void DrawTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
+    BaseState::OnPreloadScene(js_scene);
 
 #if 0 // texture compression test
     std::ifstream src_stream("assets/textures/lenna.png",
@@ -300,10 +300,10 @@ void GSDrawTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
     leaf_tree_index_ = 0xffffffff;
 }
 
-void GSDrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    using namespace GSDrawTestInternal;
+void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
+    using namespace DrawTestInternal;
 
-    GSBaseState::OnPostloadScene(js_scene);
+    BaseState::OnPostloadScene(js_scene);
 
     cam_follow_path_.clear();
     cam_follow_point_ = 0;
@@ -500,17 +500,17 @@ void GSDrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     leaf_tree_index_ = scene_manager_->FindObject("leaf_tree");
 }
 
-void GSDrawTest::Exit() { GSBaseState::Exit(); }
+void DrawTest::Exit() { BaseState::Exit(); }
 
-void GSDrawTest::Draw() { GSBaseState::Draw(); }
+void DrawTest::Draw() { BaseState::Draw(); }
 
-void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { GSBaseState::DrawUI(r, root); }
+void DrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { BaseState::DrawUI(r, root); }
 
-void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
-    using namespace GSDrawTestInternal;
+void DrawTest::UpdateFixed(const uint64_t dt_us) {
+    using namespace DrawTestInternal;
 
-    OPTICK_EVENT("GSDrawTest::UpdateFixed");
-    GSBaseState::UpdateFixed(dt_us);
+    OPTICK_EVENT("DrawTest::UpdateFixed");
+    BaseState::UpdateFixed(dt_us);
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
@@ -601,7 +601,7 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     scene.env.wind_turbulence = 2 * Length(scene.env.wind_vec);
 }
 
-void GSDrawTest::UpdateAnim(const uint64_t dt_us) {
+void DrawTest::UpdateAnim(const uint64_t dt_us) {
     using namespace Ren;
 
     OPTICK_EVENT();
@@ -667,14 +667,14 @@ void GSDrawTest::UpdateAnim(const uint64_t dt_us) {
     scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir), Vec3f{0, 1, 0}, view_fov_, view_sensor_shift_,
                               gamma_, min_exposure_, max_exposure_);
 
-    GSBaseState::UpdateAnim(dt_us);
+    BaseState::UpdateAnim(dt_us);
 }
 
-bool GSDrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSDrawTestInternal;
+    using namespace DrawTestInternal;
 
-    const bool handled = GSBaseState::HandleInput(evt, keys_state);
+    const bool handled = BaseState::HandleInput(evt, keys_state);
     if (handled) {
         return true;
     }
@@ -833,8 +833,8 @@ bool GSDrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bo
     return true;
 }
 
-void GSDrawTest::SaveScene(Sys::JsObjectP &js_scene) {
-    GSBaseState::SaveScene(js_scene);
+void DrawTest::SaveScene(Sys::JsObjectP &js_scene) {
+    BaseState::SaveScene(js_scene);
 
     const auto &alloc = js_scene.elements.get_allocator();
 
@@ -877,7 +877,7 @@ void GSDrawTest::SaveScene(Sys::JsObjectP &js_scene) {
     }
 }
 
-void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
+void DrawTest::TestUpdateAnims(const float delta_time_s) {
     Eng::SceneData &scene = scene_manager_->scene_data();
 
     if (wolf_indices_[0] != 0xffffffff) {

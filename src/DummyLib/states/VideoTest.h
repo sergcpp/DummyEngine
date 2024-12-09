@@ -15,7 +15,7 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-#include "GSBaseState.h"
+#include "BaseState.h"
 
 class DebugInfoUI;
 class ViewerStateManager;
@@ -34,7 +34,7 @@ class ThreadPool;
 class ThreadWorker;
 } // namespace Sys
 
-class GSVideoTest final : public GSBaseState {
+class GSVideoTest final : public BaseState {
     std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread_;
 
     int view_pointer_ = 0, move_pointer_ = 0;

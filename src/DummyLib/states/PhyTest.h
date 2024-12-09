@@ -13,7 +13,7 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-#include "GSBaseState.h"
+#include "BaseState.h"
 
 class DebugInfoUI;
 class ViewerStateManager;
@@ -26,7 +26,7 @@ class BitmapFont;
 class Renderer;
 } // namespace Gui
 
-class GSPhyTest final : public GSBaseState {
+class PhyTest final : public BaseState {
     int view_pointer_ = 0, move_pointer_ = 0;
 
     Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
@@ -48,8 +48,8 @@ class GSPhyTest final : public GSBaseState {
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
   public:
-    explicit GSPhyTest(Viewer *viewer);
-    ~GSPhyTest() final = default;
+    explicit PhyTest(Viewer *viewer);
+    ~PhyTest() final = default;
 
     void Enter() override;
     void Exit() override;

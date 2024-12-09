@@ -50,7 +50,7 @@ namespace Sys {
 struct TaskList;
 }
 
-class GSBaseState : public Eng::ViewerState {
+class BaseState : public Eng::ViewerState {
   protected:
     Viewer *viewer_;
     Eng::CmdlineUI *cmdline_ui_ = nullptr;
@@ -141,8 +141,8 @@ class GSBaseState : public Eng::ViewerState {
     int WriteAndValidateCaptureResult();
 
   public:
-    explicit GSBaseState(Viewer *viewer);
-    ~GSBaseState() override;
+    explicit BaseState(Viewer *viewer);
+    ~BaseState() override;
 
     void Enter() override;
     void Exit() override;

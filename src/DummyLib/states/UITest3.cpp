@@ -1,4 +1,4 @@
-﻿#include "GSUITest3.h"
+﻿#include "UITest3.h"
 
 #include <fstream>
 #include <memory>
@@ -19,7 +19,7 @@
 #include "../widgets/FontStorage.h"
 #include "../widgets/PagedReader.h"
 
-namespace GSUITest3Internal {
+namespace UITest3Internal {
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/"
 #else
@@ -38,24 +38,24 @@ const Ren::Vec3f page_corners_pos[] = {
 };
 
 const int page_order_indices[][4] = {{}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, -2, -1}};
-} // namespace GSUITest3Internal
+} // namespace UITest3Internal
 
-GSUITest3::GSUITest3(Viewer *viewer) : GSBaseState(viewer) {
+UITest3::UITest3(Viewer *viewer) : BaseState(viewer) {
     book_main_font_ = viewer->font_storage()->FindFont("book_main_font");
     book_emph_font_ = viewer->font_storage()->FindFont("book_emph_font");
     book_caption_font_ = viewer->font_storage()->FindFont("book_caption_font");
     // book_caption_font_->set_scale(1.25f);
 }
 
-GSUITest3::~GSUITest3() = default;
+UITest3::~UITest3() = default;
 
-void GSUITest3::Enter() {
-    using namespace GSUITest3Internal;
+void UITest3::Enter() {
+    using namespace UITest3Internal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
     log_->Info("GSUITest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    BaseState::LoadScene(SCENE_NAME);
 
     /*test_image_ = std::make_unique<Gui::Image>(
         *ctx_, "assets_pc/textures/test_image.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f
@@ -145,10 +145,10 @@ void GSUITest3::Enter() {
     // render_flags_ &= ~Eng::EnableFxaa;
 }
 
-void GSUITest3::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    using namespace GSUITest3Internal;
+void UITest3::OnPostloadScene(Sys::JsObjectP &js_scene) {
+    using namespace UITest3Internal;
 
-    GSBaseState::OnPostloadScene(js_scene);
+    BaseState::OnPostloadScene(js_scene);
 
     view_dir_ = Ren::Vec3f{0, 0, 1};
     view_fov_ = 45;
@@ -188,10 +188,10 @@ void GSUITest3::OnPostloadScene(Sys::JsObjectP &js_scene) {
     book_index_ = scene_manager_->FindObject("book");
 }
 
-void GSUITest3::UpdateAnim(const uint64_t dt_us) {
-    using namespace GSUITest3Internal;
+void UITest3::UpdateAnim(const uint64_t dt_us) {
+    using namespace UITest3Internal;
 
-    GSBaseState::UpdateAnim(dt_us);
+    BaseState::UpdateAnim(dt_us);
 
     const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
 
@@ -249,20 +249,20 @@ void GSUITest3::UpdateAnim(const uint64_t dt_us) {
     }
 }
 
-void GSUITest3::Exit() { GSBaseState::Exit(); }
+void UITest3::Exit() { BaseState::Exit(); }
 
-void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace GSUITest3Internal;
+void UITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
+    using namespace UITest3Internal;
 
     if (hit_point_screen_.has_value()) {
         paged_reader_->DrawHint(r, hit_point_screen_.value() + Gui::Vec2f{0.0f, 0.05f}, root);
     }
 
-    GSBaseState::DrawUI(r, root);
+    BaseState::DrawUI(r, root);
 }
 
-void GSUITest3::Draw() {
-    using namespace GSUITest3Internal;
+void UITest3::Draw() {
+    using namespace UITest3Internal;
 
     /*if (book_state_ != eBookState::BkClosed) {
         if (book_state_ == eBookState::BkOpened) {
@@ -298,12 +298,12 @@ void GSUITest3::Draw() {
     scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, Ren::Vec2f{0.0f}, 1,
                               min_exposure_, max_exposure_);
 
-    GSBaseState::Draw();
+    BaseState::Draw();
 }
 
-bool GSUITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool UITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSUITest3Internal;
+    using namespace UITest3Internal;
 
     // pt switch for touch controls
     if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
@@ -423,14 +423,14 @@ bool GSUITest3::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt, keys_state);
+        BaseState::HandleInput(evt, keys_state);
     }
 
     return true;
 }
 
-std::optional<Gui::Vec2f> GSUITest3::MapPointToPageFramebuf(const Gui::Vec2f &p) {
-    using namespace GSUITest3Internal;
+std::optional<Gui::Vec2f> UITest3::MapPointToPageFramebuf(const Gui::Vec2f &p) {
+    using namespace UITest3Internal;
     using namespace Ren;
 
     const Camera &cam = scene_manager_->main_cam();

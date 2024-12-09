@@ -1,4 +1,4 @@
-﻿#include "GSUITest2.h"
+﻿#include "UITest2.h"
 
 #include <fstream>
 #include <memory>
@@ -18,16 +18,16 @@
 #include "../utils/Dictionary.h"
 #include "../widgets/FontStorage.h"
 
-namespace GSUITest2Internal {
+namespace UITest2Internal {
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "zenith.json";
-} // namespace GSUITest2Internal
+} // namespace UITest2Internal
 
-GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
+UITest2::UITest2(Viewer *viewer) : BaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
     // dialog_font_->set_scale(1.5f);
 
@@ -47,15 +47,15 @@ GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
                                                         Gui::Vec2f{1.0f, 1.5f}, ui_root_);
 }
 
-GSUITest2::~GSUITest2() = default;
+UITest2::~UITest2() = default;
 
-void GSUITest2::Enter() {
-    using namespace GSUITest2Internal;
+void UITest2::Enter() {
+    using namespace UITest2Internal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
     log_->Info("GSUITest: Loading scene!");
-    // GSBaseState::LoadScene(SCENE_NAME);
+    // BaseState::LoadScene(SCENE_NAME);
 
     /*{
         std::ifstream dict_file("assets_pc/scenes/test/test_dict/de-en.dict",
@@ -78,10 +78,10 @@ void GSUITest2::Enter() {
     zenith_index_ = scene_manager_->FindObject("zenith");
 }
 
-void GSUITest2::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    using namespace GSUITest2Internal;
+void UITest2::OnPostloadScene(Sys::JsObjectP &js_scene) {
+    using namespace UITest2Internal;
 
-    GSBaseState::OnPostloadScene(js_scene);
+    BaseState::OnPostloadScene(js_scene);
 
     Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0, 0, 1};
     float view_fov = 45, min_exposure = -1000, max_exposure = 1000;
@@ -127,10 +127,10 @@ void GSUITest2::OnPostloadScene(Sys::JsObjectP &js_scene) {
                               min_exposure, max_exposure);
 }
 
-void GSUITest2::UpdateAnim(const uint64_t dt_us) {
-    using namespace GSUITest2Internal;
+void UITest2::UpdateAnim(const uint64_t dt_us) {
+    using namespace UITest2Internal;
 
-    GSBaseState::UpdateAnim(dt_us);
+    BaseState::UpdateAnim(dt_us);
 
     const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
     /*test_time_counter_s += delta_time_s;
@@ -169,12 +169,12 @@ void GSUITest2::UpdateAnim(const uint64_t dt_us) {
     }
 }
 
-void GSUITest2::Exit() { GSBaseState::Exit(); }
+void UITest2::Exit() { BaseState::Exit(); }
 
-void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace GSUITest2Internal;
+void UITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
+    using namespace UITest2Internal;
 
-    // GSBaseState::DrawUI(r, root);
+    // BaseState::DrawUI(r, root);
 
     edit_box_->Draw(r);
     results_frame_->Draw(r);
@@ -192,7 +192,7 @@ void GSUITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     }
 }
 
-void GSUITest2::UpdateHint() {
+void UITest2::UpdateHint() {
     const std::string_view line = edit_box_->line_text(0);
 
     results_lines_.clear();
@@ -241,7 +241,7 @@ void GSUITest2::UpdateHint() {
     MutateWord(line, lookup_word);
 }
 
-void GSUITest2::MutateWord(std::string_view in_word, const std::function<void(const char *, int)> &callback) {
+void UITest2::MutateWord(std::string_view in_word, const std::function<void(const char *, int)> &callback) {
     uint32_t unicode_word[128] = {};
     int unicode_word_len = 0;
 
@@ -321,9 +321,9 @@ void GSUITest2::MutateWord(std::string_view in_word, const std::function<void(co
     ctx.mutation_chain[0](ctx, unicode_word, 0);
 }
 
-bool GSUITest2::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool UITest2::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSUITest2Internal;
+    using namespace UITest2Internal;
 
     // pt switch for touch controls
     if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
@@ -416,7 +416,7 @@ bool GSUITest2::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt, keys_state);
+        BaseState::HandleInput(evt, keys_state);
     }
 
     return true;

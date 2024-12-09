@@ -10,58 +10,61 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-#include "GSBaseState.h"
+#include "BaseState.h"
 
 class CaptionsUI;
+class DialogController;
 class DialogEditUI;
 class DialogUI;
 class Dictionary;
 namespace Eng {
 class FreeCamController;
 class ScriptedDialog;
-class ScriptedSequence;
 } // namespace Eng
 class ViewerStateManager;
 class FontStorage;
 class SceneManager;
+class ScriptedSequence;
 class SeqEditUI;
 class WordPuzzleUI;
 
-class GSPlayTest : public GSBaseState {
+class UITest4 final : public BaseState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
-    uint64_t click_time_ms_ = 0;
+    uint64_t click_time_ = 0;
 
     const Gui::BitmapFont *dialog_font_ = {};
     float test_time_counter_s = 0;
 
-    bool is_playing_ = false;
-    float play_started_time_s_ = 0;
-
+    bool use_free_cam_ = true;
     std::unique_ptr<Eng::FreeCamController> cam_ctrl_;
+    std::unique_ptr<DialogController> dial_ctrl_;
 
-    Eng::ScriptedSequence *test_seq_ = nullptr;
     std::unique_ptr<Eng::ScriptedDialog> test_dialog_;
     std::unique_ptr<DialogUI> dialog_ui_;
+    std::unique_ptr<WordPuzzleUI> word_puzzle_;
 
-    int dial_edit_mode_ = 1;
+    int dial_edit_mode_ = 0;
     std::unique_ptr<SeqEditUI> seq_edit_ui_;
     std::unique_ptr<DialogEditUI> dialog_edit_ui_;
     std::unique_ptr<CaptionsUI> seq_cap_ui_;
 
-    void OnPostloadScene(Sys::JsObjectP &js_scene) override;
+    bool trigger_dialog_reload_ = false;
 
-    void OnSetCurSequence(int id);
+    void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
-    void LoadSequence(std::string_view seq_name);
+    void LoadDialog(std::string_view seq_name);
     bool SaveSequence(std::string_view seq_name);
 
+    void OnEditSequence(int id);
+    void OnStartPuzzle(std::string_view puzzle_name);
+
   public:
-    explicit GSPlayTest(Viewer *viewer);
-    ~GSPlayTest() final;
+    explicit UITest4(Viewer *viewer);
+    ~UITest4() final;
 
     void Enter() override;
     void Exit() override;

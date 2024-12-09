@@ -15,7 +15,7 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-#include "GSBaseState.h"
+#include "BaseState.h"
 
 class DebugInfoUI;
 class ViewerStateManager;
@@ -23,7 +23,7 @@ class FontStorage;
 class SceneManager;
 class WordPuzzleUI;
 
-class GSUITest final : public GSBaseState {
+class UITest final : public BaseState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
@@ -45,8 +45,8 @@ class GSUITest final : public GSBaseState {
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
   public:
-    explicit GSUITest(Viewer *viewer);
-    ~GSUITest() final;
+    explicit UITest(Viewer *viewer);
+    ~UITest() final;
 
     void Enter() override;
     void Exit() override;

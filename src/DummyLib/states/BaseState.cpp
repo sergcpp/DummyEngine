@@ -1,4 +1,4 @@
-﻿#include "GSBaseState.h"
+﻿#include "BaseState.h"
 
 #include <cctype>
 
@@ -50,7 +50,7 @@ namespace RendererInternal {
 extern const int TaaSampleCountStatic;
 }
 
-namespace GSBaseStateInternal {
+namespace BaseStateInternal {
 const bool USE_TWO_THREADS = true;
 
 Ren::eResState to_ren_state(const Ray::eGPUResState state) {
@@ -99,10 +99,10 @@ Ray::eGPUResState to_ray_state(const Ren::eResState state) {
     return Ray::eGPUResState(-1);
 }
 
-} // namespace GSBaseStateInternal
+} // namespace BaseStateInternal
 
-GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
-    using namespace GSBaseStateInternal;
+BaseState::BaseState(Viewer *viewer) : viewer_(viewer) {
+    using namespace BaseStateInternal;
 
     cmdline_ui_ = viewer->cmdline_ui();
 
@@ -190,15 +190,15 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
     }
 }
 
-GSBaseState::~GSBaseState() = default;
+BaseState::~BaseState() = default;
 
-void GSBaseState::Enter() {
-    using namespace GSBaseStateInternal;
+void BaseState::Enter() {
+    using namespace BaseStateInternal;
 
     renderer_->InitPipelines();
 
     if (USE_TWO_THREADS) {
-        background_thread_ = std::thread(std::bind(&GSBaseState::BackgroundProc, this));
+        background_thread_ = std::thread(std::bind(&BaseState::BackgroundProc, this));
     }
 
     /*{ // Create temporary buffer to update probes
@@ -610,8 +610,8 @@ void GSBaseState::Enter() {
     UpdateFrame(0);
 }
 
-bool GSBaseState::LoadScene(std::string_view name) {
-    using namespace GSBaseStateInternal;
+bool BaseState::LoadScene(std::string_view name) {
+    using namespace BaseStateInternal;
 
     // wait for backgroud thread iteration
     if (USE_TWO_THREADS) {
@@ -687,7 +687,7 @@ bool GSBaseState::LoadScene(std::string_view name) {
     return true;
 }
 
-void GSBaseState::OnPreloadScene(Sys::JsObjectP &js_scene) {
+void BaseState::OnPreloadScene(Sys::JsObjectP &js_scene) {
     if (!viewer_->app_params.ref_name.empty()) {
         // Incread texture streaming speed if we are capturing
         scene_manager_->StopTextureLoaderThread();
@@ -695,7 +695,7 @@ void GSBaseState::OnPreloadScene(Sys::JsObjectP &js_scene) {
     }
 }
 
-void GSBaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
+void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     // trigger probes update
     probes_dirty_ = false;
 
@@ -752,10 +752,10 @@ void GSBaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 }
 
-void GSBaseState::SaveScene(Sys::JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
+void BaseState::SaveScene(Sys::JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
 
-void GSBaseState::Exit() {
-    using namespace GSBaseStateInternal;
+void BaseState::Exit() {
+    using namespace BaseStateInternal;
 
     if (USE_TWO_THREADS) {
         if (background_thread_.joinable()) {
@@ -766,8 +766,8 @@ void GSBaseState::Exit() {
     }
 }
 
-void GSBaseState::UpdateAnim(const uint64_t dt_us) {
-    OPTICK_EVENT("GSBaseState::UpdateAnim");
+void BaseState::UpdateAnim(const uint64_t dt_us) {
+    OPTICK_EVENT("BaseState::UpdateAnim");
     cmdline_ui_->cursor_blink_us += dt_us;
     if (cmdline_ui_->cursor_blink_us > 1000000) {
         cmdline_ui_->cursor_blink_us = 0;
@@ -794,8 +794,8 @@ void GSBaseState::UpdateAnim(const uint64_t dt_us) {
     }
 }
 
-void GSBaseState::Draw() {
-    using namespace GSBaseStateInternal;
+void BaseState::Draw() {
+    using namespace BaseStateInternal;
 
     OPTICK_GPU_EVENT("Draw");
 
@@ -960,8 +960,8 @@ void GSBaseState::Draw() {
     ui_renderer_->Draw(ren_ctx_->w(), ren_ctx_->h());
 }
 
-void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace GSBaseStateInternal;
+void BaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
+    using namespace BaseStateInternal;
 
     OPTICK_EVENT();
 
@@ -993,7 +993,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     ui_root_->Draw(r);
 }
 
-void GSBaseState::UpdateFixed(const uint64_t dt_us) {
+void BaseState::UpdateFixed(const uint64_t dt_us) {
     physics_manager_->Update(scene_manager_->scene_data(), float(dt_us * 0.000001));
 
     { // invalidate objects updated by physics manager
@@ -1002,9 +1002,9 @@ void GSBaseState::UpdateFixed(const uint64_t dt_us) {
     }
 }
 
-bool GSBaseState::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool BaseState::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSBaseStateInternal;
+    using namespace BaseStateInternal;
 
     const bool handled = ui_root_->HandleInput(evt, keys_state);
     if (handled) {
@@ -1037,7 +1037,7 @@ bool GSBaseState::HandleInput(const Eng::input_event_t &evt, const std::vector<b
     return false;
 }
 
-void GSBaseState::BackgroundProc() {
+void BaseState::BackgroundProc() {
     __itt_thread_set_name("Renderer Frontend Thread");
     OPTICK_FRAME("Renderer Frontend Thread");
 
@@ -1057,7 +1057,7 @@ void GSBaseState::BackgroundProc() {
     }
 }
 
-void GSBaseState::UpdateFrame(const int list_index) {
+void BaseState::UpdateFrame(const int list_index) {
     { // Update loop using fixed timestep
         OPTICK_EVENT("Update Loop");
         Eng::InputManager *input_manager = viewer_->input_manager();
@@ -1163,7 +1163,7 @@ void GSBaseState::UpdateFrame(const int list_index) {
     }
 }
 
-void GSBaseState::InitRenderer_PT() {
+void BaseState::InitRenderer_PT() {
     if (!ray_renderer_) {
         { // Release GPU resources
             ren_ctx_->WaitIdle();
@@ -1282,7 +1282,7 @@ void GSBaseState::InitRenderer_PT() {
     }
 }
 
-void GSBaseState::InitScene_PT() {
+void BaseState::InitScene_PT() {
     Eng::SceneData &scene_data = scene_manager_->scene_data();
     const Eng::render_settings_t &settings = renderer_->settings;
 
@@ -1624,8 +1624,8 @@ void GSBaseState::InitScene_PT() {
     ray_scene_->Finalize(std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3));
 }
 
-Ray::TextureHandle GSBaseState::LoadTexture_PT(const std::string_view name, const bool is_srgb, const bool is_YCoCg,
-                                               const bool use_mips) {
+Ray::TextureHandle BaseState::LoadTexture_PT(const std::string_view name, const bool is_srgb, const bool is_YCoCg,
+                                             const bool use_mips) {
     const std::string tex_path = std::string("assets_pc/textures/") + std::string(name);
     std::ifstream in_file(tex_path, std::ios::binary);
 
@@ -1667,7 +1667,7 @@ Ray::TextureHandle GSBaseState::LoadTexture_PT(const std::string_view name, cons
     return ray_scene_->AddTexture(tex_desc);
 }
 
-void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, const float fov) {
+void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, const float fov) {
     using namespace std::placeholders;
     auto parallel_for = std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3);
 
@@ -1714,8 +1714,8 @@ void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, 
     ray_scene_->SetCamera(Ray::CameraHandle{0}, cam_desc);
 }
 
-void GSBaseState::Clear_PT() {
-    using namespace GSBaseStateInternal;
+void BaseState::Clear_PT() {
+    using namespace BaseStateInternal;
 
     for (auto &ctxs : ray_reg_ctx_) {
         for (auto &ctx : ctxs) {
@@ -1731,8 +1731,8 @@ void GSBaseState::Clear_PT() {
     ray_renderer_->Clear({});
 }
 
-void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
-    using namespace GSBaseStateInternal;
+void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
+    using namespace BaseStateInternal;
 
 #if defined(REN_VK_BACKEND)
     if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
@@ -1917,8 +1917,8 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
     }
 }
 
-void GSBaseState::ReloadSceneResources() {
-    using namespace GSBaseStateInternal;
+void BaseState::ReloadSceneResources() {
+    using namespace BaseStateInternal;
 
     // wait for backgroud thread iteration
     if (USE_TWO_THREADS) {
@@ -1948,7 +1948,7 @@ void GSBaseState::ReloadSceneResources() {
     }
 }
 
-int GSBaseState::WriteAndValidateCaptureResult() {
+int BaseState::WriteAndValidateCaptureResult() {
     Ren::BufferRef stage_buf =
         ren_ctx_->LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * viewer_->width * viewer_->height);
 

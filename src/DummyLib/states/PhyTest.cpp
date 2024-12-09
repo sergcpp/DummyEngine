@@ -1,4 +1,4 @@
-﻿#include "GSPhyTest.h"
+﻿#include "PhyTest.h"
 
 #include <memory>
 
@@ -12,28 +12,28 @@
 #include "../Viewer.h"
 #include "../widgets/FontStorage.h"
 
-namespace GSPhyTestInternal {
+namespace PhyTestInternal {
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "phy_test.json";
-} // namespace GSPhyTestInternal
+} // namespace PhyTestInternal
 
-GSPhyTest::GSPhyTest(Viewer *viewer) : GSBaseState(viewer) {}
+PhyTest::PhyTest(Viewer *viewer) : BaseState(viewer) {}
 
-void GSPhyTest::Enter() {
-    using namespace GSPhyTestInternal;
+void PhyTest::Enter() {
+    using namespace PhyTestInternal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
-    log_->Info("GSPhyTest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    log_->Info("PhyTest: Loading scene!");
+    BaseState::LoadScene(SCENE_NAME);
 }
 
-void GSPhyTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
-    GSBaseState::OnPreloadScene(js_scene);
+void PhyTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
+    BaseState::OnPreloadScene(js_scene);
 
     Sys::JsArrayP &js_objects = js_scene.at("objects").as_arr();
     const auto &alloc = js_scene.elements.get_allocator();
@@ -160,8 +160,8 @@ void GSPhyTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
     }
 }
 
-void GSPhyTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    GSBaseState::OnPostloadScene(js_scene);
+void PhyTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
+    BaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
         const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -199,16 +199,16 @@ void GSPhyTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     view_dir_ = initial_view_dir_;
 }
 
-void GSPhyTest::Exit() { GSBaseState::Exit(); }
+void PhyTest::Exit() { BaseState::Exit(); }
 
-void GSPhyTest::Draw() { GSBaseState::Draw(); }
+void PhyTest::Draw() { BaseState::Draw(); }
 
-void GSPhyTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { GSBaseState::DrawUI(r, root); }
+void PhyTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { BaseState::DrawUI(r, root); }
 
-void GSPhyTest::UpdateFixed(const uint64_t dt_us) {
-    using namespace GSPhyTestInternal;
+void PhyTest::UpdateFixed(const uint64_t dt_us) {
+    using namespace PhyTestInternal;
 
-    GSBaseState::UpdateFixed(dt_us);
+    BaseState::UpdateFixed(dt_us);
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
@@ -227,9 +227,9 @@ void GSPhyTest::UpdateFixed(const uint64_t dt_us) {
     }
 }
 
-bool GSPhyTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool PhyTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSPhyTestInternal;
+    using namespace PhyTestInternal;
 
     // pt switch for touch controls
     if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
@@ -366,13 +366,13 @@ bool GSPhyTest::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt, keys_state);
+        BaseState::HandleInput(evt, keys_state);
     }
 
     return true;
 }
 
-void GSPhyTest::UpdateAnim(const uint64_t dt_us) {
+void PhyTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
@@ -384,8 +384,8 @@ void GSPhyTest::UpdateAnim(const uint64_t dt_us) {
     //        view_dir_[0], view_dir_[1], view_dir_[2]);
 }
 
-void GSPhyTest::SaveScene(Sys::JsObjectP &js_scene) {
-    GSBaseState::SaveScene(js_scene);
+void PhyTest::SaveScene(Sys::JsObjectP &js_scene) {
+    BaseState::SaveScene(js_scene);
 
     const auto &alloc = js_scene.elements.get_allocator();
 

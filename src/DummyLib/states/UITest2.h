@@ -10,7 +10,7 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-#include "GSBaseState.h"
+#include "BaseState.h"
 
 class DebugInfoUI;
 class Dictionary;
@@ -19,7 +19,7 @@ class FontStorage;
 class SceneManager;
 class WordPuzzleUI;
 
-class GSUITest2 : public GSBaseState {
+class UITest2 : public BaseState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
@@ -46,8 +46,8 @@ class GSUITest2 : public GSBaseState {
     static void MutateWord(std::string_view in_word, const std::function<void(const char *, int)> &callback);
 
   public:
-    explicit GSUITest2(Viewer *viewer);
-    ~GSUITest2() final;
+    explicit UITest2(Viewer *viewer);
+    ~UITest2() final;
 
     void Enter() override;
     void Exit() override;

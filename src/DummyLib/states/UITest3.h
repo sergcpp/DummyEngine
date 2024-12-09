@@ -16,7 +16,7 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-#include "GSBaseState.h"
+#include "BaseState.h"
 
 class DebugInfoUI;
 class ViewerStateManager;
@@ -24,7 +24,7 @@ class FontStorage;
 class SceneManager;
 class PagedReader;
 
-class GSUITest3 : public GSBaseState {
+class UITest3 : public BaseState {
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
@@ -72,8 +72,8 @@ class GSUITest3 : public GSBaseState {
     void RedrawPages(Gui::Renderer *r);
 
   public:
-    explicit GSUITest3(Viewer *viewer);
-    ~GSUITest3() final;
+    explicit UITest3(Viewer *viewer);
+    ~UITest3() final;
 
     void Enter() override;
     void Exit() override;

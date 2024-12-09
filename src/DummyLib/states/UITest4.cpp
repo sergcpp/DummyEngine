@@ -1,4 +1,4 @@
-﻿#include "GSUITest4.h"
+﻿#include "UITest4.h"
 
 #include <fstream>
 #include <memory>
@@ -29,7 +29,7 @@
 #include "../widgets/SeqEditUI.h"
 #include "../widgets/WordPuzzleUI.h"
 
-namespace GSUITest4Internal {
+namespace UITest4Internal {
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/"
 #else
@@ -39,9 +39,9 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 
 const char SEQ_NAME[] = "test/test_dialog/0_begin.json";
 // const char SEQ_NAME[] = "test/test_seq.json";
-} // namespace GSUITest4Internal
+} // namespace UITest4Internal
 
-GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
+UITest4::UITest4(Viewer *viewer) : BaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
     // dialog_font_->set_scale(1.5f);
 
@@ -65,24 +65,24 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
     dialog_edit_ui_->set_cur_sequence_signal.Connect<DialogController, &DialogController::SetCurSequence>(
         dial_ctrl_.get());
 
-    dialog_edit_ui_->edit_cur_seq_signal.Connect<GSUITest4, &GSUITest4::OnEditSequence>(this);
+    dialog_edit_ui_->edit_cur_seq_signal.Connect<UITest4, &UITest4::OnEditSequence>(this);
 
     seq_cap_ui_ = std::make_unique<CaptionsUI>(Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_);
     dial_ctrl_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(seq_cap_ui_.get());
     dial_ctrl_->push_choice_signal.Connect<DialogUI, &DialogUI::OnPushChoice>(dialog_ui_.get());
     dial_ctrl_->switch_sequence_signal.Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
-    dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
+    dial_ctrl_->start_puzzle_signal.Connect<UITest4, &UITest4::OnStartPuzzle>(this);
 
     word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Gui::Vec2f{-1}, Gui::Vec2f{2, 1}, ui_root_, *dialog_font_);
     word_puzzle_->puzzle_solved_signal.Connect<DialogController, &DialogController::ContinueChoice>(dial_ctrl_.get());
 }
 
-GSUITest4::~GSUITest4() = default;
+UITest4::~UITest4() = default;
 
-void GSUITest4::Enter() {
-    using namespace GSUITest4Internal;
+void UITest4::Enter() {
+    using namespace UITest4Internal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
     cmdline_ui_->RegisterCommand("dialog", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         LoadDialog(args[1].str.data());
@@ -90,12 +90,12 @@ void GSUITest4::Enter() {
     });
 
     log_->Info("GSUITest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    BaseState::LoadScene(SCENE_NAME);
 
     LoadDialog(SEQ_NAME);
 }
 
-void GSUITest4::LoadDialog(const std::string_view seq_name) {
+void UITest4::LoadDialog(const std::string_view seq_name) {
     auto read_sequence = [](const std::string_view seq_name, Sys::JsObject &js_seq) {
 #if defined(__ANDROID__)
         const std::string file_name = std::string("assets/scenes/") + std::string(seq_name);
@@ -138,7 +138,7 @@ void GSUITest4::LoadDialog(const std::string_view seq_name) {
     use_free_cam_ = false;
 }
 
-bool GSUITest4::SaveSequence(const std::string_view seq_name) {
+bool UITest4::SaveSequence(const std::string_view seq_name) {
     // rotate backup files
     for (int i = 7; i > 0; i--) {
         const std::string name1 = std::string("assets/scenes/") + std::string(seq_name) + std::to_string(i),
@@ -187,12 +187,12 @@ bool GSUITest4::SaveSequence(const std::string_view seq_name) {
     return true;
 }
 
-void GSUITest4::OnEditSequence(const int id) {
+void UITest4::OnEditSequence(const int id) {
     dial_ctrl_->SetCurSequence(id);
     dial_edit_mode_ = 1;
 }
 
-void GSUITest4::OnStartPuzzle(std::string_view puzzle_name) {
+void UITest4::OnStartPuzzle(std::string_view puzzle_name) {
 #if defined(__ANDROID__)
     const std::string file_name = std::string("assets/scenes/") + std::string(puzzle_name);
 #else
@@ -223,10 +223,10 @@ void GSUITest4::OnStartPuzzle(std::string_view puzzle_name) {
     word_puzzle_->Restart();
 }
 
-void GSUITest4::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    using namespace GSUITest4Internal;
+void UITest4::OnPostloadScene(Sys::JsObjectP &js_scene) {
+    using namespace UITest4Internal;
 
-    GSBaseState::OnPostloadScene(js_scene);
+    BaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
         const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -261,10 +261,10 @@ void GSUITest4::OnPostloadScene(Sys::JsObjectP &js_scene) {
     }
 }
 
-void GSUITest4::UpdateAnim(const uint64_t dt_us) {
-    using namespace GSUITest4Internal;
+void UITest4::UpdateAnim(const uint64_t dt_us) {
+    using namespace UITest4Internal;
 
-    GSBaseState::UpdateAnim(dt_us);
+    BaseState::UpdateAnim(dt_us);
 
     seq_cap_ui_->Clear();
     dialog_ui_->Clear();
@@ -280,10 +280,10 @@ void GSUITest4::UpdateAnim(const uint64_t dt_us) {
     }
 }
 
-void GSUITest4::Exit() { GSBaseState::Exit(); }
+void UITest4::Exit() { BaseState::Exit(); }
 
-void GSUITest4::Draw() {
-    using namespace GSUITest4Internal;
+void UITest4::Draw() {
+    using namespace UITest4Internal;
 
     if (trigger_dialog_reload_) {
         LoadDialog(SEQ_NAME);
@@ -299,15 +299,15 @@ void GSUITest4::Draw() {
         seq_edit_ui_->SetTime(float(play_time_s));
     }
 
-    GSBaseState::Draw();
+    BaseState::Draw();
 }
 
-void GSUITest4::UpdateFixed(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
+void UITest4::UpdateFixed(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
 
-void GSUITest4::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace GSUITest4Internal;
+void UITest4::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
+    using namespace UITest4Internal;
 
-    // GSBaseState::DrawUI(r, root);
+    // BaseState::DrawUI(r, root);
 
     dialog_ui_->Draw(r);
     if (dial_edit_mode_ == 0) {
@@ -320,9 +320,9 @@ void GSUITest4::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     word_puzzle_->Draw(r);
 }
 
-bool GSUITest4::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool UITest4::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSUITest4Internal;
+    using namespace UITest4Internal;
 
     // pt switch for touch controls
     if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
@@ -497,7 +497,7 @@ bool GSUITest4::HandleInput(const Eng::input_event_t &evt, const std::vector<boo
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt, keys_state);
+        BaseState::HandleInput(evt, keys_state);
     }
 
     return true;

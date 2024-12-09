@@ -22,24 +22,24 @@ set(WIDGETS_SOURCES widgets/CaptionsUI.h
                     widgets/WordPuzzleUI.h
                     widgets/WordPuzzleUI.cpp)
 
-set(STATES_SOURCES  states/GSBaseState.h
-                    states/GSBaseState.cpp
-                    states/GSDrawTest.h
-                    states/GSDrawTest.cpp
-                    states/GSPhyTest.h
-                    states/GSPhyTest.cpp
-                    states/GSPlayTest.h
-                    states/GSPlayTest.cpp
-                    states/GSUITest.h
-                    states/GSUITest.cpp
-                    states/GSUITest2.h
-                    states/GSUITest2.cpp
-                    states/GSUITest3.h
-                    states/GSUITest3.cpp
-                    states/GSUITest4.h
-                    states/GSUITest4.cpp
-                    #states/GSVideoTest.h
-                    #states/GSVideoTest.cpp
+set(STATES_SOURCES  states/BaseState.h
+                    states/BaseState.cpp
+                    states/DrawTest.h
+                    states/DrawTest.cpp
+                    states/PhyTest.h
+                    states/PhyTest.cpp
+                    states/PlayTest.h
+                    states/PlayTest.cpp
+                    states/UITest.h
+                    states/UITest.cpp
+                    states/UITest2.h
+                    states/UITest2.cpp
+                    states/UITest3.h
+                    states/UITest3.cpp
+                    states/UITest4.h
+                    states/UITest4.cpp
+                    #states/VideoTest.h
+                    #states/VideoTest.cpp
     )
 
 set(UTILS_SOURCES   utils/DialogController.h
@@ -52,13 +52,13 @@ set(UTILS_SOURCES   utils/DialogController.h
 
 if(${REN_BACKEND} STREQUAL "GL")
     set(STATES_SOURCES ${STATES_SOURCES}
-                        states/GSUITest3GL.cpp
-                        #states/GSVideoTestGL.cpp
+                        states/UITest3GL.cpp
+                        #states/VideoTestGL.cpp
         )
 elseif(${REN_BACKEND} STREQUAL "VK")
     set(STATES_SOURCES ${STATES_SOURCES}
-                        states/GSUITest3VK.cpp
-                        #states/GSVideoTestVK.cpp
+                        states/UITest3VK.cpp
+                        #states/VideoTestVK.cpp
         )
 elseif(${REN_BACKEND} STREQUAL "SW")
 

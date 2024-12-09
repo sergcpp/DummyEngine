@@ -13,7 +13,7 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-#include "GSBaseState.h"
+#include "BaseState.h"
 
 class DebugInfoUI;
 class FontStorage;
@@ -24,7 +24,7 @@ class BitmapFont;
 class Renderer;
 } // namespace Gui
 
-class GSDrawTest final : public GSBaseState {
+class DrawTest final : public BaseState {
     int view_pointer_ = 0, move_pointer_ = 0, sun_pointer_ = 0;
 
     Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
@@ -66,8 +66,8 @@ class GSDrawTest final : public GSBaseState {
     void TestUpdateAnims(float delta_time_s);
 
   public:
-    explicit GSDrawTest(Viewer *viewer);
-    ~GSDrawTest() final = default;
+    explicit DrawTest(Viewer *viewer);
+    ~DrawTest() final = default;
 
     void Enter() override;
     void Exit() override;

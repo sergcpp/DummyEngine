@@ -33,7 +33,7 @@ extern bool ignore_optick_errors;
 #include <Sys/Json.h>
 #include <Sys/Time_.h>
 
-#include "states/GSDrawTest.h"
+#include "states/DrawTest.h"
 #include "utils/Dictionary.h"
 #include "utils/Log.h"
 #include "widgets/FontStorage.h"
@@ -108,7 +108,7 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
 
     dictionary_ = std::make_unique<Dictionary>();
 
-    state_manager_->Push(std::make_unique<GSDrawTest>(this));
+    state_manager_->Push(std::make_unique<DrawTest>(this));
 }
 
 Viewer::~Viewer() { state_manager_ = {}; }

@@ -1,4 +1,4 @@
-﻿#include "GSUITest.h"
+﻿#include "UITest.h"
 
 #include <fstream>
 #include <memory>
@@ -20,16 +20,16 @@
 #include "../widgets/FontStorage.h"
 #include "../widgets/WordPuzzleUI.h"
 
-namespace GSUITestInternal {
+namespace UITestInternal {
 #if defined(__ANDROID__)
 const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "corridor.json";
-} // namespace GSUITestInternal
+} // namespace UITestInternal
 
-GSUITest::GSUITest(Viewer *viewer) : GSBaseState(viewer) {
+UITest::UITest(Viewer *viewer) : BaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("dialog_font");
     // dialog_font_->set_scale(1.5f);
 
@@ -37,15 +37,15 @@ GSUITest::GSUITest(Viewer *viewer) : GSBaseState(viewer) {
                                                   ui_root_, *dialog_font_);
 }
 
-GSUITest::~GSUITest() = default;
+UITest::~UITest() = default;
 
-void GSUITest::Enter() {
-    using namespace GSUITestInternal;
+void UITest::Enter() {
+    using namespace UITestInternal;
 
-    GSBaseState::Enter();
+    BaseState::Enter();
 
     log_->Info("GSUITest: Loading scene!");
-    // GSBaseState::LoadScene(SCENE_NAME);
+    // BaseState::LoadScene(SCENE_NAME);
 
 #if defined(__ANDROID__)
     const char *dialog_name = "assets/scenes/test/test_puzzle.json";
@@ -77,10 +77,10 @@ void GSUITest::Enter() {
     word_puzzle_->Restart();
 }
 
-void GSUITest::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    using namespace GSUITestInternal;
+void UITest::OnPostloadScene(Sys::JsObjectP &js_scene) {
+    using namespace UITestInternal;
 
-    GSBaseState::OnPostloadScene(js_scene);
+    BaseState::OnPostloadScene(js_scene);
 
     Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0, 0, 1};
     float view_fov = 45, min_exposure = -1000, max_exposure = 1000;
@@ -137,10 +137,10 @@ void GSUITest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     }
 }
 
-void GSUITest::UpdateAnim(const uint64_t dt_us) {
-    using namespace GSUITestInternal;
+void UITest::UpdateAnim(const uint64_t dt_us) {
+    using namespace UITestInternal;
 
-    GSBaseState::UpdateAnim(dt_us);
+    BaseState::UpdateAnim(dt_us);
 
     const float delta_time_s = dt_us * 0.000001f;
     test_time_counter_s += delta_time_s;
@@ -186,21 +186,21 @@ void GSUITest::UpdateAnim(const uint64_t dt_us) {
     }
 }
 
-void GSUITest::Exit() { GSBaseState::Exit(); }
+void UITest::Exit() { BaseState::Exit(); }
 
-void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace GSUITestInternal;
+void UITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
+    using namespace UITestInternal;
 
-    GSBaseState::DrawUI(r, root);
+    BaseState::DrawUI(r, root);
 
     // dialog_font_->set_scale(std::max(root->size_px()[0] / 1024, 1));
 
     word_puzzle_->Draw(r);
 }
 
-bool GSUITest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
+bool UITest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
     using namespace Ren;
-    using namespace GSUITestInternal;
+    using namespace UITestInternal;
 
     // pt switch for touch controls
     if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
@@ -265,7 +265,7 @@ bool GSUITest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
     }
 
     if (!input_processed) {
-        GSBaseState::HandleInput(evt, keys_state);
+        BaseState::HandleInput(evt, keys_state);
     }
 
     return true;
