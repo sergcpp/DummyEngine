@@ -39,7 +39,7 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
     name_ = std::move(rhs.name_);
     atlas_ = std::exchange(rhs.atlas_, nullptr);
     memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
-    params_ = rhs.params_;
+    params = rhs.params;
     ready_ = std::exchange(rhs.ready_, false);
 
     return (*this);
@@ -146,14 +146,14 @@ bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, Tex2DParams p
     return res;
 }
 
-bool Ren::TextureRegion::InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
-                                         const Tex2DParams &p, TextureAtlasArray *atlas) {
+bool Ren::TextureRegion::InitFromRAWData(const Buffer &sbuf, const int data_off, int const data_len,
+                                         CommandBuffer cmd_buf, const Tex2DParams &p, TextureAtlasArray *atlas) {
     const int res[2] = {p.w, p.h};
     const int node = atlas->Allocate(sbuf, data_off, data_len, cmd_buf, p.format, res, texture_pos_, 1);
     if (node == -1) {
         return false;
     }
     atlas_ = atlas;
-    params_ = p;
+    params = p;
     return true;
 }

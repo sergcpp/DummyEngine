@@ -6,9 +6,9 @@
 #include "../NAT_PMP.h"
 
 void test_pmp() {
-    printf("Test pmp                | ");
-
     using namespace Net;
+
+    printf("Test pmp                | ");
 
     { // Should retrieve external ip first
         PMPSession s1(ePMPProto::UDP, Address(127, 0, 0, 1, 5351), 30000, 30005);

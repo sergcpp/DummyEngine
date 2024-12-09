@@ -10,9 +10,9 @@ static const unsigned char test_tga_img[] = {
     0x56, 0x49, 0x53, 0x49, 0x4f, 0x4e, 0x2d, 0x58, 0x46, 0x49, 0x4c, 0x45, 0x2e, 0x00};
 
 void test_texture() {
-    printf("Test texture            | ");
-
     using namespace Ren;
+
+    printf("Test texture            | ");
 
     { // TGA load
         TestContext test;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include "Buffer.h"
 #include "Fwd.h"
 #include "Program.h"
@@ -62,6 +60,9 @@ class Pipeline : public RefCounter {
 
   public:
     Pipeline() = default;
+    Pipeline(ApiContext *api_ctx, ProgramRef prog, ILog *log, int subgroup_size = -1) {
+        Init(api_ctx, std::move(prog), log, subgroup_size);
+    }
     Pipeline(const Pipeline &rhs) = delete;
     Pipeline(Pipeline &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Pipeline();
@@ -71,6 +72,31 @@ class Pipeline : public RefCounter {
 
     operator bool() const { return api_ctx_ != nullptr; }
 
+    bool operator==(const Pipeline &rhs) const {
+        return rast_state_ == rhs.rast_state_ && render_pass_ == rhs.render_pass_ && prog_ == rhs.prog_ &&
+               vtx_input_ == rhs.vtx_input_;
+    }
+    bool operator!=(const Pipeline &rhs) const {
+        return rast_state_ != rhs.rast_state_ || render_pass_ != rhs.render_pass_ || prog_ != rhs.prog_ ||
+               vtx_input_ != rhs.vtx_input_;
+    }
+    bool operator<(const Pipeline &rhs) const {
+        if (vtx_input_ < rhs.vtx_input_) {
+            return true;
+        } else if (vtx_input_ == rhs.vtx_input_) {
+            if (prog_ < rhs.prog_) {
+                return true;
+            } else if (prog_ == rhs.prog_) {
+                if (render_pass_ < rhs.render_pass_) {
+                    return true;
+                } else if (render_pass_ == rhs.render_pass_) {
+                    return rast_state_ < rhs.rast_state_;
+                }
+            }
+        }
+        return false;
+    }
+
     ePipelineType type() const { return type_; }
     const RastState &rast_state() const { return rast_state_; }
     const RenderPass *render_pass() const { return render_pass_; }
@@ -79,7 +105,6 @@ class Pipeline : public RefCounter {
 
     Span<const eTexFormat> color_formats() const { return color_formats_; }
     eTexFormat depth_format() const { return depth_format_; }
-
 
 #if defined(REN_VK_BACKEND)
     VkPipelineLayout layout() const { return layout_; }
@@ -96,11 +121,11 @@ class Pipeline : public RefCounter {
     bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, const VertexInput *vtx_input,
               Span<const RenderTarget> color_attachments, RenderTarget depth_attachment, uint32_t subpass_index,
               ILog *log);
-    bool Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::optional<int> subgroup_size = {});
+    bool Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, int subgroup_size = -1);
 };
 
-using PipelineRef = StrongRef<Pipeline, SparseArray<Pipeline>>;
-using WeakPipelineRef = WeakRef<Pipeline, SparseArray<Pipeline>>;
-using PipelineStorage = SparseArray<Pipeline>;
+using PipelineRef = StrongRef<Pipeline, SortedStorage<Pipeline>>;
+using WeakPipelineRef = WeakRef<Pipeline, SortedStorage<Pipeline>>;
+using PipelineStorage = SortedStorage<Pipeline>;
 
 } // namespace Ren

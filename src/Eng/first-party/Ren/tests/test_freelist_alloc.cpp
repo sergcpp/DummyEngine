@@ -3,9 +3,9 @@
 #include "../FreelistAlloc.h"
 
 void test_freelist_alloc() {
-    printf("Test freelist_alloc     | ");
-
     using namespace Ren;
+
+    printf("Test freelist_alloc     | ");
 
     { // basic usage
         FreelistAlloc alloc;

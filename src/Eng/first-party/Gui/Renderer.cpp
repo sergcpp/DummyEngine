@@ -45,15 +45,14 @@ bool Gui::Renderer::Init() {
 
         ShaderRef ui_vs_ref, ui_fs_ref;
         if (ctx_.capabilities.spirv) {
-            eShaderLoadStatus sh_status;
             ui_vs_ref = ctx_.LoadShaderSPIRV("__ui_vs__",
 #if defined(REN_VK_BACKEND)
                                              ui_vert_spv,
 #else
                                              ui_vert_spv_ogl,
 #endif
-                                             eShaderType::Vertex, &sh_status);
-            if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
+                                             eShaderType::Vertex);
+            if (!ui_vs_ref->ready()) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile vertex shader!");
                 return false;
             }
@@ -63,28 +62,30 @@ bool Gui::Renderer::Init() {
 #else
                                              ui_frag_spv_ogl,
 #endif
-                                             eShaderType::Fragment, &sh_status);
-            if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
+                                             eShaderType::Fragment);
+            if (!ui_fs_ref->ready()) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile fragment shader!");
                 return false;
             }
         } else {
-            eShaderLoadStatus sh_status;
-            ui_vs_ref = ctx_.LoadShaderGLSL("__ui_vs__", vs_source, eShaderType::Vertex, &sh_status);
-            if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
+#if defined(REN_GL_BACKEND)
+            ui_vs_ref = ctx_.LoadShaderGLSL("__ui_vs__", vs_source, eShaderType::Vertex);
+            if (!ui_vs_ref->ready()) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile vertex shader!");
                 return false;
             }
-            ui_fs_ref = ctx_.LoadShaderGLSL("__ui_fs__", fs_source, eShaderType::Fragment, &sh_status);
-            if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
+            ui_fs_ref = ctx_.LoadShaderGLSL("__ui_fs__", fs_source, eShaderType::Fragment);
+            if (!ui_fs_ref->ready()) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile fragment shader!");
                 return false;
             }
+#else
+            return false;
+#endif
         }
 
-        eProgLoadStatus status;
-        ui_program = ctx_.LoadProgram("__ui_program__", ui_vs_ref, ui_fs_ref, {}, {}, {}, &status);
-        if (status != eProgLoadStatus::CreatedFromData && status != eProgLoadStatus::Found) {
+        ui_program = ctx_.LoadProgram(ui_vs_ref, ui_fs_ref, {}, {}, {});
+        if (!ui_program) {
             ctx_.log()->Error("[Gui::Renderer::Init]: Failed to link program!");
             return false;
         }
@@ -209,8 +210,8 @@ void Gui::Renderer::SubmitVertexData(const int vertex_count, const int index_cou
            ndx_count_[ctx_.next_frontend_frame] <= MaxIndicesPerRange);
 }
 
-void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer, const Vec2f pos[2],
-                                  const Vec2f uvs_px[2]) {
+void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer, const uint8_t color[4],
+                                  const Vec2f pos[2], const Vec2f uvs_px[2]) {
     const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
     Vec4f pos_uvs[2] = {Vec4f{pos[0][0], pos[0][1], uvs_px[0][0] * uvs_scale[0], uvs_px[0][1] * uvs_scale[1]},
                         Vec4f{pos[1][0], pos[1][1], uvs_px[1][0] * uvs_scale[0], uvs_px[1][1] * uvs_scale[1]}};
@@ -235,7 +236,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->pos[0] = pos_uvs[0][0];
     cur_vtx->pos[1] = pos_uvs[0][1];
     cur_vtx->pos[2] = 0;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
+    memcpy(cur_vtx->col, color, 4);
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
@@ -245,7 +246,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->pos[0] = pos_uvs[1][0];
     cur_vtx->pos[1] = pos_uvs[0][1];
     cur_vtx->pos[2] = 0;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
+    memcpy(cur_vtx->col, color, 4);
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[0][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
@@ -255,7 +256,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->pos[0] = pos_uvs[1][0];
     cur_vtx->pos[1] = pos_uvs[1][1];
     cur_vtx->pos[2] = 0;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
+    memcpy(cur_vtx->col, color, 4);
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[1][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
     cur_vtx->uvs[2] = u16_tex_layer;
@@ -265,7 +266,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
     cur_vtx->pos[0] = pos_uvs[0][0];
     cur_vtx->pos[1] = pos_uvs[1][1];
     cur_vtx->pos[2] = 0;
-    cur_vtx->col[0] = cur_vtx->col[1] = cur_vtx->col[2] = cur_vtx->col[3] = 255;
+    memcpy(cur_vtx->col, color, 4);
     cur_vtx->uvs[0] = f32_to_u16(pos_uvs[0][2]);
     cur_vtx->uvs[1] = f32_to_u16(pos_uvs[1][3]);
     cur_vtx->uvs[2] = u16_tex_layer;

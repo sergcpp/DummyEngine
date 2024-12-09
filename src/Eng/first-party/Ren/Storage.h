@@ -1,38 +1,40 @@
 #pragma once
 
+#include <atomic>
+
 #include "HashMap32.h"
+#include "Span.h"
 #include "SparseArray.h"
 
 namespace Ren {
 template <typename T, typename StorageType> class StrongRef;
 
-template <typename T> class Storage : public SparseArray<T> {
+template <typename T> class NamedStorage : public SparseArray<T> {
     HashMap32<String, uint32_t> items_by_name_;
 
   public:
-    Storage() = default;
+    NamedStorage() = default;
+    NamedStorage(const NamedStorage &rhs) = delete;
 
-    Storage(const Storage &rhs) = delete;
-
-    template <class... Args> StrongRef<T, Storage> Insert(Args &&...args) {
+    template <class... Args> StrongRef<T, NamedStorage> Insert(Args &&...args) {
         const uint32_t index = SparseArray<T>::emplace(std::forward<Args>(args)...);
 
-        bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);
+        const bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);
         assert(res);
 
         return {this, index};
     }
 
-    void erase(const uint32_t i) {
-        const String &name = SparseArray<T>::at(i).name();
+    void erase(const uint32_t index) {
+        const String &name = SparseArray<T>::at(index).name();
 
         const bool res = items_by_name_.Erase(name);
         assert(res);
 
-        SparseArray<T>::erase(i);
+        SparseArray<T>::erase(index);
     }
 
-    StrongRef<T, Storage> FindByName(const std::string_view name) {
+    StrongRef<T, NamedStorage> FindByName(const std::string_view name) {
         uint32_t *p_index = items_by_name_.Find(name);
         if (p_index) {
             return {this, *p_index};
@@ -42,9 +44,77 @@ template <typename T> class Storage : public SparseArray<T> {
     }
 };
 
+template <typename T> class SortedStorage : public SparseArray<T> {
+    std::vector<uint32_t> sorted_items_;
+
+  public:
+    SortedStorage() = default;
+    SortedStorage(const SortedStorage &rhs) = delete;
+
+    Span<const uint32_t> sorted_items() const { return sorted_items_; }
+
+    template <class... Args> StrongRef<T, SortedStorage> Insert(Args &&...args) {
+        const uint32_t index = SparseArray<T>::emplace(std::forward<Args>(args)...);
+
+        const auto it = lower_bound(std::begin(sorted_items_), std::end(sorted_items_), index,
+                                    [this](const uint32_t lhs_index, const uint32_t rhs_index) {
+                                        return (*this)[lhs_index] < (*this)[rhs_index];
+                                    });
+        assert(it == std::end(sorted_items_) || (*this)[index] < (*this)[*it]);
+        sorted_items_.insert(it, index);
+
+        return {this, index};
+    }
+
+    void erase(const uint32_t index) {
+        const auto it = lower_bound(std::begin(sorted_items_), std::end(sorted_items_), index,
+                                    [this](const uint32_t lhs_index, const uint32_t rhs_index) {
+                                        return (*this)[lhs_index] < (*this)[rhs_index];
+                                    });
+        assert(it != std::end(sorted_items_) && index == *it);
+        sorted_items_.erase(it);
+
+        SparseArray<T>::erase(index);
+    }
+
+    template <typename F> StrongRef<T, SortedStorage> LowerBound(F &&f) {
+        auto first = std::begin(sorted_items_), last = std::end(sorted_items_);
+
+        int count = int(std::distance(first, last));
+        while (count > 0) {
+            auto it = first;
+            const int step = count / 2;
+            std::advance(it, step);
+
+            if (f((*this)[*it])) {
+                first = ++it;
+                count -= step + 1;
+            } else {
+                count = step;
+            }
+        }
+
+        if (first == std::end(sorted_items_)) {
+            return {};
+        }
+
+        return {this, *first};
+    }
+
+    bool CheckUnique() const {
+        bool unique = true;
+        for (auto it1 = this->begin(); it1 != this->end() && unique; ++it1) {
+            for (auto it2 = std::next(it1); it2 != this->end() && unique; ++it2) {
+                unique &= (*it1 != *it2);
+            }
+        }
+        return unique;
+    }
+};
+
 class RefCounter {
   public:
-    unsigned ref_count() const { return ctrl_->strong_refs; }
+    uint32_t ref_count() const { return ctrl_->strong_refs.load(); }
 
   protected:
     template <typename T, typename StorageType> friend class StrongRef;
@@ -82,8 +152,8 @@ class RefCounter {
 
   private:
     struct CtrlBlock {
-        uint32_t strong_refs;
-        uint32_t weak_refs;
+        std::atomic_uint32_t strong_refs;
+        std::atomic_uint32_t weak_refs;
     };
 
     mutable CtrlBlock *ctrl_;
@@ -91,7 +161,7 @@ class RefCounter {
 
 template <typename T, typename StorageType> class WeakRef;
 
-template <typename T, typename StorageType = Storage<T>> class StrongRef {
+template <typename T, typename StorageType> class StrongRef {
     StorageType *storage_;
     uint32_t index_;
 
@@ -109,12 +179,12 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
     uint32_t strong_refs() const {
         const T &p = storage_->at(index_);
-        return p.ctrl_->strong_refs;
+        return p.ctrl_->strong_refs.load();
     }
 
     uint32_t weak_refs() const {
         const T &p = storage_->at(index_);
-        return p.ctrl_->weak_refs;
+        return p.ctrl_->weak_refs.load();
     }
 
     StrongRef(const StrongRef &rhs) {
@@ -204,11 +274,19 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
     bool operator==(const StrongRef &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
     bool operator!=(const StrongRef &rhs) const { return storage_ != rhs.storage_ || index_ != rhs.index_; }
+    bool operator<(const StrongRef &rhs) const {
+        if (storage_ < rhs.storage_) {
+            return true;
+        } else if (storage_ == rhs.storage_) {
+            return index_ < rhs.index_;
+        }
+        return false;
+    }
 
     void Release() {
         if (storage_) {
             const T &p = storage_->at(index_);
-            if (--p.ctrl_->strong_refs == 0) {
+            if (p.ctrl_->strong_refs.fetch_sub(1) == 1) {
                 storage_->erase(index_);
             }
             storage_ = nullptr;
@@ -217,7 +295,7 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
     }
 };
 
-template <typename T, typename StorageType = Storage<T>> class WeakRef {
+template <typename T, typename StorageType> class WeakRef {
     StorageType *storage_;
     RefCounter::CtrlBlock *ctrl_;
     uint32_t index_;
@@ -244,7 +322,7 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
         }
     }
 
-    WeakRef(const StrongRef<T> &rhs) {
+    WeakRef(const StrongRef<T, StorageType> &rhs) {
         storage_ = rhs.storage_;
         ctrl_ = nullptr;
         index_ = rhs.index_;
@@ -276,7 +354,7 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
         return *this;
     }
 
-    WeakRef &operator=(const StrongRef<T> &rhs) {
+    WeakRef &operator=(const StrongRef<T, StorageType> &rhs) {
         Release();
 
         storage_ = rhs.storage_;
@@ -336,18 +414,20 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
         return &storage_->at(index_);
     }
 
-    explicit operator bool() const { return ctrl_ && ctrl_->strong_refs != 0; }
+    explicit operator bool() const { return ctrl_ && ctrl_->strong_refs.load() != 0; }
 
     uint32_t index() const { return index_; }
 
     bool operator==(const WeakRef &rhs) const { return ctrl_ == rhs.ctrl_ && index_ == rhs.index_; }
     bool operator!=(const WeakRef &rhs) const { return !operator==(rhs); }
-    bool operator==(const StrongRef<T> &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
-    bool operator!=(const StrongRef<T> &rhs) const { return !operator==(rhs); }
+    bool operator==(const StrongRef<T, StorageType> &rhs) const {
+        return storage_ == rhs.storage_ && index_ == rhs.index_;
+    }
+    bool operator!=(const StrongRef<T, StorageType> &rhs) const { return !operator==(rhs); }
 
     void Release() {
         if (ctrl_) {
-            if (--ctrl_->weak_refs == 0 && ctrl_->strong_refs == 0) {
+            if (ctrl_->weak_refs.fetch_sub(1) == 1 && ctrl_->strong_refs.load() == 0) {
                 delete ctrl_;
             }
             storage_ = nullptr;

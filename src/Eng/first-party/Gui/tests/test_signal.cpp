@@ -3,26 +3,20 @@
 #include "../Signal.h"
 
 namespace {
-double static_func(int param1, float param2) {
-    return double(param1) + param2;
-}
+double static_func(int param1, float param2) { return double(param1) + param2; }
 
 class AAA {
-public:
-    double member_func(int param1, float param2) {
-        return double(param1) - param2;
-    }
+  public:
+    double member_func(int param1, float param2) { return double(param1) - param2; }
 
-    double member_const_func(int param1, float param2) const {
-        return double(param1) - 0.5f * param2;
-    }
+    double member_const_func(int param1, float param2) const { return double(param1) - 0.5f * param2; }
 };
-}
+} // namespace
 
 void test_signal() {
-    printf("Test signal             | ");
-
     using namespace Gui;
+
+    printf("Test signal             | ");
 
     { // Delegate bind
 

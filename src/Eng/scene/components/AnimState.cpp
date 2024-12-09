@@ -7,4 +7,4 @@ Eng::AnimState::AnimState() {
     shape_palette_prev = std::make_unique<uint16_t[]>(256);
 }
 
-void Eng::AnimState::Read(const JsObjectP &js_in, AnimState &as) {}
+void Eng::AnimState::Read(const Sys::JsObjectP &js_in, AnimState &as) {}

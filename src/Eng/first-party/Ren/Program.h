@@ -7,3 +7,8 @@
 #elif defined(REN_SW_BACKEND)
 #include "ProgramSW.h"
 #endif
+
+namespace Ren {
+using ProgramRef = StrongRef<Program, SortedStorage<Program>>;
+using ProgramStorage = SortedStorage<Program>;
+}

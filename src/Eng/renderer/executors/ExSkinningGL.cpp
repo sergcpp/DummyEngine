@@ -22,7 +22,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
         const GLuint delta_buf_id = delta_buf.ref->id();
         const GLuint skin_vtx_buf_id = skin_vtx_buf.ref->id();
 
-        glUseProgram(pi_skinning_.prog()->id());
+        glUseProgram(pi_skinning_->prog()->id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_VERTICES_SLOT, skin_vtx_buf_id);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_MATRICES_SLOT, GLuint(skin_transforms_buf.ref->id()));
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_SHAPE_KEYS_SLOT, GLuint(shape_keys_buf.ref->id()));

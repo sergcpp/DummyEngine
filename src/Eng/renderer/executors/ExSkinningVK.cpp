@@ -9,6 +9,8 @@
 #include "../shaders/skinning_interface.h"
 
 void Eng::ExSkinning::Execute(FgBuilder &builder) {
+    LazyInit(builder.ctx(), builder.sh());
+
     FgAllocBuf &skin_vtx_buf = builder.GetReadBuffer(skin_vtx_buf_);
     FgAllocBuf &skin_transforms_buf = builder.GetReadBuffer(skin_transforms_buf_);
     FgAllocBuf &shape_keys_buf = builder.GetReadBuffer(shape_keys_buf_);
@@ -22,7 +24,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
         Ren::ApiContext *api_ctx = ctx.api_ctx();
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-        VkDescriptorSetLayout descr_set_layout = pi_skinning_.prog()->descr_set_layouts()[0];
+        VkDescriptorSetLayout descr_set_layout = pi_skinning_->prog()->descr_set_layouts()[0];
         Ren::DescrSizes descr_sizes;
         descr_sizes.sbuf_count = 6;
         VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
@@ -48,8 +50,8 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
             api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
         }
 
-        api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.handle());
-        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.layout(), 0, 1,
+        api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_->handle());
+        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_->layout(), 0, 1,
                                          &descr_set, 0, nullptr);
 
         for (uint32_t i = 0; i < uint32_t(p_list_->skin_regions.size()); i++) {
@@ -64,7 +66,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
                 uniform_params.uShapeParamsCurr = Ren::Vec4u{0, 0, 0, 0};
                 uniform_params.uShapeParamsPrev = Ren::Vec4u{0, 0, 0, 0};
 
-                api_ctx->vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_skinning_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                             sizeof(Skinning::Params), &uniform_params);
 
                 api_ctx->vkCmdDispatch(
@@ -81,7 +83,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
                 uniform_params.uShapeParamsPrev =
                     Ren::Vec4u{sr.shape_key_offset_prev, sr.shape_key_count_prev, sr.delta_offset, 0};
 
-                api_ctx->vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_skinning_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                             sizeof(Skinning::Params), &uniform_params);
 
                 api_ctx->vkCmdDispatch(

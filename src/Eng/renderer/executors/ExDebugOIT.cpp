@@ -30,10 +30,8 @@ void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
 
 void Eng::ExDebugOIT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef debug_prog = sh.LoadProgram(ctx, "internal/oit_debug.comp.glsl");
-        assert(debug_prog->ready());
-
-        if (!pi_debug_oit_.Init(ctx.api_ctx(), debug_prog, ctx.log())) {
+        Ren::ProgramRef debug_prog = sh.LoadProgram("internal/oit_debug.comp.glsl");
+        if (!pi_debug_oit_.Init(ctx.api_ctx(), std::move(debug_prog), ctx.log())) {
             ctx.log()->Error("ExDebugOIT: Failed to initialize pipeline!");
         }
 

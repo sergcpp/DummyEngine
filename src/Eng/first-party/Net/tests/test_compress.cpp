@@ -5,9 +5,9 @@
 #include "../Compress.h"
 
 void test_compress() {
-    printf("Test compress           | ");
-
     using namespace Net;
+
+    printf("Test compress           | ");
 
     Packet test_buf(1024);
     for (int i = 0; i < 256; i++) {
@@ -24,7 +24,7 @@ void test_compress() {
 
     Packet compr = CompressLZO(test_buf);
 
-    //printf("size before %i, size after %i\n", int(test_buf.size()), int(compr.size()));
+    // printf("size before %i, size after %i\n", int(test_buf.size()), int(compr.size()));
 
     Packet decompr = DecompressLZO(compr);
 

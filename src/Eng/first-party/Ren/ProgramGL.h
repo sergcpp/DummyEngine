@@ -19,23 +19,19 @@
 namespace Ren {
 class ILog;
 
-enum class eProgLoadStatus { Found, SetToDefault, CreatedFromData };
-
 class Program : public RefCounter {
     uint32_t id_ = 0; // native gl name
-    uint32_t flags_ = 0;
     std::array<ShaderRef, int(eShaderType::_Count)> shaders_;
     SmallVector<Attribute, 8> attributes_;
     SmallVector<Uniform, 16> uniforms_;
     SmallVector<UniformBlock, 4> uniform_blocks_;
-    String name_;
 
     void InitBindings(ILog *log);
 
   public:
     Program() = default;
-    Program(std::string_view name, const uint32_t id, const Attribute *attrs, int attrs_count, const Uniform *unifs,
-            int unifs_count, const UniformBlock *unif_blocks, int unif_blocks_count)
+    Program(const uint32_t id, const Attribute *attrs, int attrs_count, const Uniform *unifs, int unifs_count,
+            const UniformBlock *unif_blocks, int unif_blocks_count)
         : id_(id) {
         for (int i = 0; i < attrs_count; i++) {
             attributes_.emplace_back(attrs[i]);
@@ -46,11 +42,10 @@ class Program : public RefCounter {
         for (int i = 0; i < unif_blocks_count; i++) {
             uniform_blocks_.emplace_back(unif_blocks[i]);
         }
-        name_ = String{name};
     }
-    Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-            ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *status, ILog *log);
-    Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
+    Program(ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
+            ShaderRef gs_ref, ILog *log);
+    Program(ApiContext *api_ctx, ShaderRef cs_ref, ILog *log);
 
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -60,12 +55,13 @@ class Program : public RefCounter {
     Program &operator=(Program &&rhs) noexcept;
 
     uint32_t id() const { return id_; }
-    uint32_t flags() const { return flags_; }
-    bool ready() const { return id_ != 0; }
     bool has_tessellation() const {
         return shaders_[int(eShaderType::TesselationControl)] && shaders_[int(eShaderType::TesselationEvaluation)];
     }
-    const String &name() const { return name_; }
+
+    bool operator==(const Program &rhs) const { return shaders_ == rhs.shaders_; }
+    bool operator!=(const Program &rhs) const { return shaders_ != rhs.shaders_; }
+    bool operator<(const Program &rhs) const { return shaders_ < rhs.shaders_; }
 
     const Attribute &attribute(const int i) const { return attributes_[i]; }
     const Attribute &attribute(std::string_view name) const {
@@ -97,13 +93,12 @@ class Program : public RefCounter {
         return uniform_blocks_[0];
     }
 
-    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref,
-              eProgLoadStatus *status, ILog *log);
-    void Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
-};
+    const std::array<ShaderRef, int(eShaderType::_Count)> &shaders() const { return shaders_; }
+    const ShaderRef &shader(eShaderType type) const { return shaders_[int(type)]; }
 
-typedef StrongRef<Program> ProgramRef;
-typedef Storage<Program> ProgramStorage;
+    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref, ILog *log);
+    void Init(ShaderRef cs_ref, ILog *log);
+};
 } // namespace Ren
 
 #ifdef _MSC_VER

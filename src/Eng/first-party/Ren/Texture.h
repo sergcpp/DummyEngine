@@ -30,17 +30,17 @@ void ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params);
 #endif
 
 namespace Ren {
-using Tex3DRef = StrongRef<Texture3D>;
-using WeakTex3DRef = WeakRef<Texture3D>;
-using Texture3DStorage = Storage<Texture3D>;
+using Tex3DRef = StrongRef<Texture3D, NamedStorage<Texture3D>>;
+using WeakTex3DRef = WeakRef<Texture3D, NamedStorage<Texture3D>>;
+using Texture3DStorage = NamedStorage<Texture3D>;
 
-using Tex2DRef = StrongRef<Texture2D>;
-using WeakTex2DRef = WeakRef<Texture2D>;
-using Texture2DStorage = Storage<Texture2D>;
+using Tex2DRef = StrongRef<Texture2D, NamedStorage<Texture2D>>;
+using WeakTex2DRef = WeakRef<Texture2D, NamedStorage<Texture2D>>;
+using Texture2DStorage = NamedStorage<Texture2D>;
 
-using Tex1DRef = StrongRef<Texture1D>;
-using WeakTex1DRef = WeakRef<Texture1D>;
-using Texture1DStorage = Storage<Texture1D>;
+using Tex1DRef = StrongRef<Texture1D, NamedStorage<Texture1D>>;
+using WeakTex1DRef = WeakRef<Texture1D, NamedStorage<Texture1D>>;
+using Texture1DStorage = NamedStorage<Texture1D>;
 
 eTexUsage TexUsageFromState(eResState state);
 } // namespace Ren

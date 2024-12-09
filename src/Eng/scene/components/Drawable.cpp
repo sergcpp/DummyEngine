@@ -6,12 +6,12 @@
 const Ren::Bitmask<Eng::Drawable::eVisibility> Eng::Drawable::DefaultVisMask =
     Ren::Bitmask<eVisibility>{eVisibility::Camera} | eVisibility::Shadow;
 
-void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
+void Eng::Drawable::Read(const Sys::JsObjectP &js_in, Drawable &dr) {
     dr.vis_mask = DefaultVisMask;
 
     if (js_in.Has("visible_to_camera")) {
-        JsLiteral v = js_in.at("visible_to_camera").as_lit();
-        if (v.val == JsLiteralType::True) {
+        Sys::JsLiteral v = js_in.at("visible_to_camera").as_lit();
+        if (v.val == Sys::JsLiteralType::True) {
             dr.vis_mask |= eVisibility::Camera;
         } else {
             dr.vis_mask &= ~Ren::Bitmask(eVisibility::Camera);
@@ -19,8 +19,8 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("visible_to_shadow")) {
-        JsLiteral v = js_in.at("visible_to_shadow").as_lit();
-        if (v.val == JsLiteralType::True) {
+        Sys::JsLiteral v = js_in.at("visible_to_shadow").as_lit();
+        if (v.val == Sys::JsLiteralType::True) {
             dr.vis_mask |= eVisibility::Shadow;
         } else {
             dr.vis_mask &= ~Ren::Bitmask(eVisibility::Shadow);
@@ -28,8 +28,8 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("visible_to_probes")) {
-        JsLiteral v = js_in.at("visible_to_probes").as_lit();
-        if (v.val == JsLiteralType::False) {
+        Sys::JsLiteral v = js_in.at("visible_to_probes").as_lit();
+        if (v.val == Sys::JsLiteralType::False) {
             dr.vis_mask &= ~Ren::Bitmask(eVisibility::Probes);
         }
     }
@@ -39,17 +39,17 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     // }
 
     /*if (js_in.Has("ellipsoids")) {
-        const JsArrayP &js_ellipsoids = js_in.at("ellipsoids").as_arr();
+        const Sys::JsArrayP &js_ellipsoids = js_in.at("ellipsoids").as_arr();
         for (size_t i = 0; i < js_ellipsoids.elements.size(); i++) {
             const JsObjectP &js_ellipsoid = js_ellipsoids[i].as_obj();
 
-            const JsArrayP &js_ellipsoid_offset = js_ellipsoid.at("offset").as_arr();
+            const Sys::JsArrayP &js_ellipsoid_offset = js_ellipsoid.at("offset").as_arr();
             dr.ellipsoids[i].offset[0] = float(js_ellipsoid_offset[0].as_num().val);
             dr.ellipsoids[i].offset[1] = float(js_ellipsoid_offset[1].as_num().val);
             dr.ellipsoids[i].offset[2] = float(js_ellipsoid_offset[2].as_num().val);
             dr.ellipsoids[i].radius = float(js_ellipsoid.at("radius").as_num().val);
 
-            const JsArrayP &js_ellipsoid_axis = js_ellipsoid.at("axis").as_arr();
+            const Sys::JsArrayP &js_ellipsoid_axis = js_ellipsoid.at("axis").as_arr();
             dr.ellipsoids[i].axis[0] = float(js_ellipsoid_axis[0].as_num().val);
             dr.ellipsoids[i].axis[1] = float(js_ellipsoid_axis[1].as_num().val);
             dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num().val);
@@ -63,19 +63,19 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     }*/
 }
 
-void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
+void Eng::Drawable::Write(const Drawable &dr, Sys::JsObjectP &js_out) {
     const auto &alloc = js_out.elements.get_allocator();
 
     if (dr.mesh) {
         // write mesh file name
-        js_out.Insert("mesh_file", JsStringP{dr.mesh->name(), alloc});
+        js_out.Insert("mesh_file", Sys::JsStringP{dr.mesh->name(), alloc});
     }
 
     if (!dr.material_override.empty()) {
-        JsArrayP js_material_override(alloc);
+        Sys::JsArrayP js_material_override(alloc);
 
         for (const auto &mat : dr.material_override) {
-            js_material_override.Push(JsStringP{mat.first->name(), alloc});
+            js_material_override.Push(Sys::JsStringP{mat.first->name(), alloc});
         }
 
         js_out.Insert("material_override", std::move(js_material_override));
@@ -83,44 +83,47 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
 
     // write visibility
     if ((dr.vis_mask & eVisibility::Camera) != (DefaultVisMask & eVisibility::Camera)) {
-        js_out.Insert("visible_to_camera",
-                      JsLiteral((dr.vis_mask & eVisibility::Camera) ? JsLiteralType::True : JsLiteralType::False));
+        js_out.Insert(
+            "visible_to_camera",
+            Sys::JsLiteral((dr.vis_mask & eVisibility::Camera) ? Sys::JsLiteralType::True : Sys::JsLiteralType::False));
     }
     if ((dr.vis_mask & eVisibility::Shadow) != (DefaultVisMask & eVisibility::Shadow)) {
-        js_out.Insert("visible_to_shadow",
-                      JsLiteral((dr.vis_mask & eVisibility::Shadow) ? JsLiteralType::True : JsLiteralType::False));
+        js_out.Insert(
+            "visible_to_shadow",
+            Sys::JsLiteral((dr.vis_mask & eVisibility::Shadow) ? Sys::JsLiteralType::True : Sys::JsLiteralType::False));
     }
     if ((dr.vis_mask & eVisibility::Probes) != (DefaultVisMask & eVisibility::Probes)) {
-        js_out.Insert("visible_to_probes",
-                      JsLiteral((dr.vis_mask & eVisibility::Probes) ? JsLiteralType::True : JsLiteralType::False));
+        js_out.Insert(
+            "visible_to_probes",
+            Sys::JsLiteral((dr.vis_mask & eVisibility::Probes) ? Sys::JsLiteralType::True : Sys::JsLiteralType::False));
     }
 
     /*if (dr.ellipsoids_count) {
-        JsArrayP js_ellipsoids(alloc);
+        Sys::JsArrayP js_ellipsoids(alloc);
 
         for (int i = 0; i < dr.ellipsoids_count; i++) {
-            JsObjectP js_ellipsoid(alloc);
+            Sys::JsObjectP js_ellipsoid(alloc);
 
             { // write offset
-                JsArrayP js_ellipsoid_offset(alloc);
-                js_ellipsoid_offset.Push(JsNumber{dr.ellipsoids[i].offset[0]});
-                js_ellipsoid_offset.Push(JsNumber{dr.ellipsoids[i].offset[1]});
-                js_ellipsoid_offset.Push(JsNumber{dr.ellipsoids[i].offset[2]});
+                Sys::JsArrayP js_ellipsoid_offset(alloc);
+                js_ellipsoid_offset.Push(Sys::JsNumber{dr.ellipsoids[i].offset[0]});
+                js_ellipsoid_offset.Push(Sys::JsNumber{dr.ellipsoids[i].offset[1]});
+                js_ellipsoid_offset.Push(Sys::JsNumber{dr.ellipsoids[i].offset[2]});
                 js_ellipsoid.Push("offset", std::move(js_ellipsoid_offset));
             }
 
-            js_ellipsoid.Push("radius", JsNumber{dr.ellipsoids[i].radius});
+            js_ellipsoid.Push("radius", Sys::JsNumber{dr.ellipsoids[i].radius});
 
             { // write axis
-                JsArrayP js_ellipsoid_axis(alloc);
-                js_ellipsoid_axis.Push(JsNumber{dr.ellipsoids[i].axis[0]});
-                js_ellipsoid_axis.Push(JsNumber{dr.ellipsoids[i].axis[1]});
-                js_ellipsoid_axis.Push(JsNumber{dr.ellipsoids[i].axis[2]});
+                Sys::JsArrayP js_ellipsoid_axis(alloc);
+                js_ellipsoid_axis.Push(Sys::JsNumber{dr.ellipsoids[i].axis[0]});
+                js_ellipsoid_axis.Push(Sys::JsNumber{dr.ellipsoids[i].axis[1]});
+                js_ellipsoid_axis.Push(Sys::JsNumber{dr.ellipsoids[i].axis[2]});
                 js_ellipsoid.Push("axis", std::move(js_ellipsoid_axis));
             }
 
             if (!dr.ellipsoids[i].bone_name.empty()) {
-                js_ellipsoid.Push("bone", JsStringP{dr.ellipsoids[i].bone_name, alloc});
+                js_ellipsoid.Push("bone", Sys::JsStringP{dr.ellipsoids[i].bone_name, alloc});
             }
         }
     }*/

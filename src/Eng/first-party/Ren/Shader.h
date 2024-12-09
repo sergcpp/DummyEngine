@@ -37,7 +37,6 @@ enum class eShaderType : uint8_t {
     _Count
 };
 enum class eShaderSource : uint8_t { GLSL, SPIRV, _Count };
-enum class eShaderLoadStatus { Found, SetToDefault, CreatedFromData, Error };
 } // namespace Ren
 
 #if defined(REN_GL_BACKEND)

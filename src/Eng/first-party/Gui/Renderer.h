@@ -60,7 +60,8 @@ class Renderer {
     void SubmitVertexData(int vertex_count, int index_count);
 
     // Simple drawing functions
-    void PushImageQuad(eDrawMode draw_mode, int tex_layer, const Vec2f pos[2], const Vec2f uvs_px[2]);
+    void PushImageQuad(eDrawMode draw_mode, int tex_layer, const uint8_t color[4], const Vec2f pos[2],
+                       const Vec2f uvs_px[2]);
     void PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4], const Vec4f &p0, const Vec4f &p1,
                   const Vec2f &d0, const Vec2f &d1, const Vec4f &thickness);
     void PushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t color[4], const Vec4f &p0, const Vec4f &p1,

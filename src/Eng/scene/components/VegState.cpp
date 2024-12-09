@@ -2,7 +2,7 @@
 
 #include <Sys/Json.h>
 
-void Eng::VegState::Read(const JsObjectP &js_in, VegState &vs) {
+void Eng::VegState::Read(const Sys::JsObjectP &js_in, VegState &vs) {
     if (js_in.Has("movement_scale")) {
         vs.movement_scale = float(js_in.at("movement_scale").as_num().val);
     } else {
@@ -28,20 +28,20 @@ void Eng::VegState::Read(const JsObjectP &js_in, VegState &vs) {
     }
 }
 
-void Eng::VegState::Write(const VegState &vs, JsObjectP &js_out) {
+void Eng::VegState::Write(const VegState &vs, Sys::JsObjectP &js_out) {
     if (vs.movement_scale != 1.0f) {
-        js_out["movement_scale"] = JsNumber{vs.movement_scale};
+        js_out["movement_scale"] = Sys::JsNumber{vs.movement_scale};
     }
 
     if (vs.tree_mode != 1.0f) {
-        js_out["tree_mode"] = JsNumber{vs.tree_mode};
+        js_out["tree_mode"] = Sys::JsNumber{vs.tree_mode};
     }
 
     if (vs.bend_scale != 1.0f) {
-        js_out["bend_scale"] = JsNumber{vs.bend_scale};
+        js_out["bend_scale"] = Sys::JsNumber{vs.bend_scale};
     }
 
     if (vs.stretch != 0.0f) {
-        js_out["stretch"] = JsNumber{vs.stretch};
+        js_out["stretch"] = Sys::JsNumber{vs.stretch};
     }
 }

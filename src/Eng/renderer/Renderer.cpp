@@ -415,9 +415,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         rast_states_[int(eFwdPipeline::Wireframe)] = rast_state;
     }
 
-    // Compile built-in shaders etc.
-    InitPipelines();
-
     { // shadow map texture
         Ren::Tex2DParams params;
         params.w = SHADOWMAP_WIDTH;
@@ -718,8 +715,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef vtx_buf2_res =
                 skinning.AddStorageOutput(persistent_data.vertex_buf2, Ren::eStageBits::ComputeShader);
 
-            skinning.make_executor<ExSkinning>(pi_skinning_, p_list_, skin_vtx_res, in_skin_transforms_res,
-                                               in_shape_keys_res, delta_buf_res, vtx_buf1_res, vtx_buf2_res);
+            skinning.make_executor<ExSkinning>(p_list_, skin_vtx_res, in_skin_transforms_res, in_shape_keys_res,
+                                               delta_buf_res, vtx_buf1_res, vtx_buf2_res);
         }
 
         //

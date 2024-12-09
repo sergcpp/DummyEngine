@@ -8,9 +8,7 @@
 
 namespace Ren {
 GLuint LoadShader(GLenum shader_type, std::string_view source, ILog *log);
-#ifndef __ANDROID__
 GLuint LoadShader(GLenum shader_type, Span<const uint8_t> data, ILog *log);
-#endif
 
 void ParseGLSLBindings(std::string_view shader_str, SmallVectorImpl<Descr> &attr_bindings,
                        SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
@@ -30,18 +28,16 @@ static_assert(std::size(GLShaderTypes) == int(eShaderType::_Count), "!");
 } // namespace Ren
 
 Ren::Shader::Shader(std::string_view name, ApiContext *api_ctx, std::string_view shader_src, const eShaderType type,
-                    eShaderLoadStatus *status, ILog *log) {
+                    ILog *log) {
     name_ = String{name};
-    Init(shader_src, type, status, log);
+    Init(shader_src, type, log);
 }
 
-#ifndef __ANDROID__
 Ren::Shader::Shader(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> shader_code, const eShaderType type,
-                    eShaderLoadStatus *status, ILog *log) {
+                    ILog *log) {
     name_ = String{name};
-    Init(shader_code, type, status, log);
+    Init(shader_code, type, log);
 }
-#endif
 
 Ren::Shader::~Shader() {
     if (id_) {
@@ -74,27 +70,24 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Shader::Init(std::string_view shader_src, const eShaderType type, eShaderLoadStatus *status, ILog *log) {
-    InitFromGLSL(shader_src, type, status, log);
+void Ren::Shader::Init(std::string_view shader_src, const eShaderType type, ILog *log) {
+    InitFromGLSL(shader_src, type, log);
 }
 
 #ifndef __ANDROID__
-void Ren::Shader::Init(Span<const uint8_t> shader_code, const eShaderType type, eShaderLoadStatus *status, ILog *log) {
-    InitFromSPIRV(shader_code, type, status, log);
+void Ren::Shader::Init(Span<const uint8_t> shader_code, const eShaderType type, ILog *log) {
+    InitFromSPIRV(shader_code, type, log);
 }
 #endif
 
-void Ren::Shader::InitFromGLSL(std::string_view shader_src, const eShaderType type, eShaderLoadStatus *status,
-                               ILog *log) {
+void Ren::Shader::InitFromGLSL(std::string_view shader_src, const eShaderType type, ILog *log) {
     if (shader_src.empty()) {
-        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     }
 
     assert(id_ == 0);
     id_ = LoadShader(GLShaderTypes[int(type)], shader_src, log);
     if (!id_) {
-        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     } else {
 #ifdef ENABLE_GPU_DEBUG
@@ -105,22 +98,17 @@ void Ren::Shader::InitFromGLSL(std::string_view shader_src, const eShaderType ty
     source_ = eShaderSource::GLSL;
 
     ParseGLSLBindings(shader_src, attr_bindings, unif_bindings, blck_bindings, log);
-
-    (*status) = eShaderLoadStatus::CreatedFromData;
 }
 
 #ifndef __ANDROID__
-void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_data, const eShaderType type, eShaderLoadStatus *status,
-                                ILog *log) {
+void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_data, const eShaderType type, ILog *log) {
     if (shader_data.empty()) {
-        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     }
 
     assert(id_ == 0);
     id_ = LoadShader(GLShaderTypes[int(type)], shader_data, log);
     if (!id_) {
-        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     }
 
@@ -162,8 +150,6 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_data, const eShaderTy
     }
 
     spvReflectDestroyShaderModule(&module);
-
-    (*status) = eShaderLoadStatus::CreatedFromData;
 }
 #endif
 

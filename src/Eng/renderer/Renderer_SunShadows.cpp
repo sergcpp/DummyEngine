@@ -152,7 +152,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.frame_index = view_state_.frame_index;
 
-            DispatchCompute(pi_shadow_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_shadow_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -234,7 +234,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             RTShadowDebug::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            DispatchCompute(pi_shadow_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_shadow_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
 
@@ -282,7 +282,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             RTShadowPrepareMask::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            DispatchCompute(pi_shadow_prepare_mask_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_shadow_prepare_mask_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -394,7 +394,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
-            DispatchCompute(pi_shadow_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_shadow_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -460,7 +460,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
-            DispatchCompute(pi_shadow_filter_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_shadow_filter_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -526,7 +526,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
-            DispatchCompute(pi_shadow_filter_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_shadow_filter_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -592,7 +592,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
-            DispatchCompute(pi_shadow_filter_[2], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_shadow_filter_[2], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -669,7 +669,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
         uniform_params.softness_factor /= 2.0f * p_list_->sun_shadow_bounds;
         uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);
 
-        DispatchCompute(pi_sun_shadows_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+        DispatchCompute(*pi_sun_shadows_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                         builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 

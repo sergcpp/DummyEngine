@@ -3,9 +3,9 @@
 #include "../Address.h"
 
 void test_address() {
-    printf("Test address            | ");
-
     using namespace Net;
+
+    printf("Test address            | ");
 
     {
         Address addr;

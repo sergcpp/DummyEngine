@@ -162,8 +162,8 @@ class CompStorage {
 
     [[nodiscard]] virtual int Count() const = 0;
 
-    virtual void ReadFromJs(const JsObjectP &js_obj, void *comp) = 0;
-    virtual void WriteToJs(const void *comp, JsObjectP &js_obj) const = 0;
+    virtual void ReadFromJs(const Sys::JsObjectP &js_obj, void *comp) = 0;
+    virtual void WriteToJs(const void *comp, Sys::JsObjectP &js_obj) const = 0;
 
     // returns contiguous array of data or null if storage does not support it
     [[nodiscard]] virtual const void *SequentialData() const { return nullptr; }

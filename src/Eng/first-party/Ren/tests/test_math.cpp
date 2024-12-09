@@ -3,9 +3,9 @@
 #include "../MMat.h"
 
 void test_math() {
-    printf("Test math               | ");
-
     using namespace Ren;
+
+    printf("Test math               | ");
 
     { // vector usage (1)
         auto v1 = Vec2f{1.0f, 2.0f}, v2 = Vec2f{3.0f, 4.0f};

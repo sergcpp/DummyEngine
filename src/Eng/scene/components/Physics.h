@@ -10,8 +10,8 @@ namespace Eng {
 struct Physics {
     Phy::Body body;
 
-    static void Read(const JsObjectP &js_in, Physics &ph);
-    static void Write(const Physics &ph, JsObjectP &js_out);
+    static void Read(const Sys::JsObjectP &js_in, Physics &ph);
+    static void Write(const Physics &ph, Sys::JsObjectP &js_out);
 
     static std::string_view name() { return "physics"; }
 };

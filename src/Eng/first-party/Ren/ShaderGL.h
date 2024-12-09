@@ -18,19 +18,15 @@ class Shader : public RefCounter {
     eShaderSource source_ = eShaderSource::_Count;
     String name_;
 
-    void InitFromGLSL(std::string_view shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);
-#ifndef __ANDROID__
-    void InitFromSPIRV(Span<const uint8_t> shader_data, eShaderType type, eShaderLoadStatus *status, ILog *log);
-#endif
+    void InitFromGLSL(std::string_view shader_src, eShaderType type, ILog *log);
+    void InitFromSPIRV(Span<const uint8_t> shader_data, eShaderType type, ILog *log);
+
   public:
     SmallVector<Descr, 16> attr_bindings, unif_bindings, blck_bindings;
 
-    Shader(std::string_view name, ApiContext *api_ctx, std::string_view shader_src, eShaderType type,
-           eShaderLoadStatus *status, ILog *log);
-#ifndef __ANDROID__
-    Shader(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> shader_code, eShaderType type,
-           eShaderLoadStatus *status, ILog *log);
-#endif
+    Shader(std::string_view name, ApiContext *api_ctx, std::string_view shader_src, eShaderType type, ILog *log);
+    Shader(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> shader_code, eShaderType type, ILog *log);
+
     Shader(const Shader &rhs) = delete;
     Shader(Shader &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Shader();
@@ -44,12 +40,10 @@ class Shader : public RefCounter {
     eShaderSource source() const { return source_; }
     const String &name() const { return name_; }
 
-    void Init(std::string_view shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);
-#ifndef __ANDROID__
-    void Init(Span<const uint8_t> shader_code, eShaderType type, eShaderLoadStatus *status, ILog *log);
-#endif
+    void Init(std::string_view shader_src, eShaderType type, ILog *log);
+    void Init(Span<const uint8_t> shader_code, eShaderType type, ILog *log);
 };
 
-typedef StrongRef<Shader> ShaderRef;
-typedef Storage<Shader> ShaderStorage;
+using ShaderRef = StrongRef<Shader, NamedStorage<Shader>>;
+using ShaderStorage = NamedStorage<Shader>;
 } // namespace Ren

@@ -11,10 +11,8 @@ void Eng::ExDepthHierarchy::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             return ctx.capabilities.subgroup ? subgroup_shader : nosubgroup_shader;
         };
 
-        Ren::ProgramRef depth_hierarchy_prog =
-            sh.LoadProgram(ctx, subgroup_select("internal/depth_hierarchy@MIPS_7.comp.glsl",
-                                                "internal/depth_hierarchy@MIPS_7;NO_SUBGROUP.comp.glsl"));
-        assert(depth_hierarchy_prog->ready());
+        Ren::ProgramRef depth_hierarchy_prog = sh.LoadProgram(subgroup_select(
+            "internal/depth_hierarchy@MIPS_7.comp.glsl", "internal/depth_hierarchy@MIPS_7;NO_SUBGROUP.comp.glsl"));
 
         if (!pi_depth_hierarchy_.Init(ctx.api_ctx(), std::move(depth_hierarchy_prog), ctx.log())) {
             ctx.log()->Error("ExDepthHierarchy: failed to initialize pipeline!");

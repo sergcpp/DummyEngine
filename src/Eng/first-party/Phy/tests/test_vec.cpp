@@ -3,9 +3,9 @@
 #include "../MVec.h"
 
 void test_vec() {
-    printf("Test vec                | ");
-
     using namespace Phy;
+
+    printf("Test vec                | ");
 
     {
         auto v1 = Vec2f{1, 2}, v2 = Vec2f{3, 4};

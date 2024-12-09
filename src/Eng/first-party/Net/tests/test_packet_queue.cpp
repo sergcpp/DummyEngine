@@ -11,9 +11,9 @@ class PacketQueueTestsFixture {
 };
 
 void test_packet_queue() {
-    printf("Test packet_queue       | ");
-
     using namespace Net;
+
+    printf("Test packet_queue       | ");
 
     { // PacketQueue insert back
         PacketQueueTestsFixture f;

@@ -82,8 +82,8 @@ class AnimSequence : public RefCounter {
     void InterpolateFrames(int fr_0, int fr_1, float t);
 };
 
-typedef StrongRef<AnimSequence> AnimSeqRef;
-typedef Storage<AnimSequence> AnimSeqStorage;
+using AnimSeqRef = StrongRef<AnimSequence, NamedStorage<AnimSequence>>;
+using AnimSeqStorage = NamedStorage<AnimSequence>;
 
 struct AnimLink {
     AnimSeqRef anim;

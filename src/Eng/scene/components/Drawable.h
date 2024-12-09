@@ -26,8 +26,8 @@ struct Drawable {
     } ellipsoids[16];
     int ellipsoids_count = 0;*/
 
-    static void Read(const JsObjectP &js_in, Drawable &dr);
-    static void Write(const Drawable &dr, JsObjectP &js_out);
+    static void Read(const Sys::JsObjectP &js_in, Drawable &dr);
+    static void Write(const Drawable &dr, Sys::JsObjectP &js_out);
 
     static std::string_view name() { return "drawable"; }
 };

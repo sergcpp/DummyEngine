@@ -10,9 +10,9 @@ const int maximum_sequence = 255;
 }
 
 void test_reliable_udp_connection() {
-    printf("Test rel_udp_connection | ");
-
     using namespace Net;
+
+    printf("Test rel_udp_connection | ");
 
     { // Check bit index for sequence
         require(ReliabilitySystem::bit_index_for_sequence(99, 100, maximum_sequence) == 0);

@@ -16,8 +16,8 @@ struct AccStructure {
     std::vector<std::pair<Ren::MaterialRef, Ren::MaterialRef>> material_override;
     float surf_area = 0.0f;
 
-    static void Read(const JsObjectP &js_in, AccStructure &acc);
-    static void Write(const AccStructure &acc, JsObjectP &js_out);
+    static void Read(const Sys::JsObjectP &js_in, AccStructure &acc);
+    static void Write(const AccStructure &acc, Sys::JsObjectP &js_out);
 
     static std::string_view name() { return "acc_structure"; }
 };

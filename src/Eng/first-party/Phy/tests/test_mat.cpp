@@ -3,9 +3,9 @@
 #include "../MMat.h"
 
 void test_mat() {
-    printf("Test mat                | ");
-
     using namespace Phy;
+
+    printf("Test mat                | ");
 
     {
         auto v1 = Mat2f{Vec2f{1, 2}, Vec2f{3, 4}}, v2 = Mat2f{Vec2f{3, 4}, Vec2f{5, 6}};

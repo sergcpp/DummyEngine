@@ -5,9 +5,9 @@
 #include "../HashMap32.h"
 
 void test_hashmap() {
-    printf("Test hashmap            | ");
-
     using namespace Ren;
+
+    printf("Test hashmap            | ");
 
     { // Basic test
         HashMap32<int, double> cont;

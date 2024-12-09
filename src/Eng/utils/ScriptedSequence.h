@@ -3,16 +3,16 @@
 #include <string>
 #include <vector>
 
+#include <Gui/Signal.h>
 #include <Ren/Context.h>
 #include <Snd/Context.h>
-#include <Gui/Signal.h>
 
 namespace Sys {
 template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
-}
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
 using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
+} // namespace Sys
 
 namespace Gui {
 class Renderer;
@@ -23,7 +23,6 @@ class SceneManager;
 struct SceneObject;
 
 enum class eTrackType { Actor, Camera, Invalid };
-
 enum class eActionType { Play, Look, Invalid };
 
 struct SeqAction {
@@ -160,8 +159,8 @@ class ScriptedSequence {
     }
 
     void Clear();
-    bool Load(std::string_view lookup_name, const JsObject &js_seq);
-    void Save(JsObject &js_seq);
+    bool Load(std::string_view lookup_name, const Sys::JsObject &js_seq);
+    void Save(Sys::JsObject &js_seq);
 
     void Reset();
     void Update(double cur_time_s, bool playing);

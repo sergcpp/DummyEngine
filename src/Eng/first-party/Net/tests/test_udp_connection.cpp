@@ -6,9 +6,9 @@
 #include "../UDPConnection.h"
 
 void test_udp_connection() {
-    printf("Test udp_connection     | ");
-
     using namespace Net;
+
+    printf("Test udp_connection     | ");
 
     { // UDPConnection join
         const int server_port = 30000;

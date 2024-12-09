@@ -3,9 +3,9 @@
 #include "../String.h"
 
 void test_string() {
-    printf("Test string             | ");
-
     using namespace Ren;
+
+    printf("Test string             | ");
 
     { // Basic usage
         String s1, s2;

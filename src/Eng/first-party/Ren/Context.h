@@ -161,30 +161,31 @@ class Context {
     void ReleaseMaterials();
 
     /*** Program ***/
+#if defined(REN_GL_BACKEND)
+    ShaderRef LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type);
+#endif
 #if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
-    ShaderRef LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type,
-                             eShaderLoadStatus *load_status);
-#ifndef __ANDROID__
-    ShaderRef LoadShaderSPIRV(std::string_view name, Span<const uint8_t> shader_data, eShaderType type,
-                              eShaderLoadStatus *load_status);
+    ShaderRef LoadShaderSPIRV(std::string_view name, Span<const uint8_t> shader_data, eShaderType type);
 #endif
 
-    ProgramRef LoadProgram(std::string_view name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-                           ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *load_status);
-    ProgramRef LoadProgram(std::string_view name, ShaderRef cs_source, eProgLoadStatus *load_status);
+#if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
+    ProgramRef LoadProgram(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref);
+    ProgramRef LoadProgram(ShaderRef cs_source);
 #elif defined(REN_SW_BACKEND)
-    ProgramRef LoadProgramSW(std::string_view name, void *vs_shader, void *fs_shader, int num_fvars,
-                             const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramSW(void *vs_shader, void *fs_shader, int num_fvars, const Attribute *attrs,
+                             const Uniform *unifs);
 #endif
 
 #if defined(REN_VK_BACKEND)
-    ProgramRef LoadProgram2(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
-                            ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *load_status);
+    ProgramRef LoadProgram2(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
+                            ShaderRef intersection_ref);
 #endif
 
     ProgramRef GetProgram(uint32_t index);
-    int NumProgramsNotReady();
     void ReleasePrograms();
+
+    /*** Pipeline ***/
+    PipelineRef LoadPipeline(ProgramRef prog_ref, int subgroup_size = -1);
 
     /*** Texture 3D ***/
     Tex3DRef LoadTexture3D(std::string_view name, const Tex3DParams &p, MemAllocators *mem_allocs,

@@ -13,7 +13,6 @@ class TextureRegion : public RefCounter {
     String name_;
     TextureAtlasArray *atlas_ = nullptr;
     int texture_pos_[3] = {};
-    Tex2DParams params_;
     bool ready_ = false;
 
     [[nodiscard]] bool InitFromDDSFile(Span<const uint8_t> data, Tex2DParams p, TextureAtlasArray *atlas);
@@ -21,6 +20,8 @@ class TextureRegion : public RefCounter {
                                        const Tex2DParams &p, TextureAtlasArray *atlas);
 
   public:
+    Tex2DParams params;
+
     TextureRegion() = default;
     TextureRegion(std::string_view name, TextureAtlasArray *atlas, const int texture_pos[3]);
     TextureRegion(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p, TextureAtlasArray *atlas,
@@ -35,7 +36,6 @@ class TextureRegion : public RefCounter {
     TextureRegion &operator=(TextureRegion &&rhs) noexcept;
 
     [[nodiscard]] const String &name() const { return name_; }
-    [[nodiscard]] const Tex2DParams &params() const { return params_; }
     [[nodiscard]] int pos(int i) const { return texture_pos_[i]; }
 
     [[nodiscard]] bool ready() const { return ready_; }
@@ -45,6 +45,6 @@ class TextureRegion : public RefCounter {
               TextureAtlasArray *atlas, eTexLoadStatus *load_status);
 };
 
-typedef StrongRef<TextureRegion> TextureRegionRef;
-typedef Storage<TextureRegion> TextureRegionStorage;
+using TextureRegionRef = StrongRef<TextureRegion, NamedStorage<TextureRegion>>;
+using TextureRegionStorage = NamedStorage<TextureRegion>;
 } // namespace Ren

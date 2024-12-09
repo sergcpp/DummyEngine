@@ -6,9 +6,9 @@
 #include "../VertexInput.h"
 
 void test_material() {
-    printf("Test material           | ");
-
     using namespace Ren;
+
+    printf("Test material           | ");
 
     { // Load material
         TestContext test;

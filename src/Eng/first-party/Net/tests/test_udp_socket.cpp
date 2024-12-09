@@ -5,9 +5,9 @@
 #include "../Socket.h"
 
 void test_udp_socket() {
-    printf("Test udp_socket         | ");
-
     using namespace Net;
+
+    printf("Test udp_socket         | ");
 
     { // UDPSocket open/close
         UDPSocket socket;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <optional>
 
 #include <Ren/Common.h>
 #include <Ren/TextureSplitter.h>
@@ -56,6 +57,10 @@ class Renderer {
   public:
     Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
     ~Renderer();
+
+    void InitPipelines();
+
+    PrimDraw &prim_draw() { return prim_draw_; }
 
     int accumulated_frames() const { return accumulated_frames_; }
     void reset_accumulation() { frame_index_ = view_state_.frame_index = accumulated_frames_ = 0; }
@@ -223,33 +228,33 @@ class Renderer {
     PrimDraw prim_draw_;
     uint32_t frame_index_ = 0, accumulated_frames_ = 0;
 
-    Ren::Pipeline pi_skinning_, pi_gbuf_shade_[2];
+    Ren::PipelineRef pi_gbuf_shade_[2];
     // HQ SSR
-    Ren::Pipeline pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2][2];
-    Ren::Pipeline pi_rt_write_indirect_;
+    Ren::PipelineRef pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2][2];
+    Ren::PipelineRef pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_[2], pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
+    Ren::PipelineRef pi_ssr_reproject_, pi_ssr_prefilter_[2], pi_ssr_temporal_, pi_ssr_blur_[2], pi_ssr_stabilization_;
     // GI Cache
-    Ren::Pipeline pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[3], pi_probe_sample_;
+    Ren::PipelineRef pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[3], pi_probe_sample_;
     // GTAO
-    Ren::Pipeline pi_gtao_main_, pi_gtao_filter_, pi_gtao_accumulate_;
+    Ren::PipelineRef pi_gtao_main_, pi_gtao_filter_, pi_gtao_accumulate_;
     // GI
-    Ren::Pipeline pi_gi_classify_, pi_gi_write_indirect_, pi_gi_trace_ss_;
-    Ren::Pipeline pi_gi_rt_write_indirect_;
+    Ren::PipelineRef pi_gi_classify_, pi_gi_write_indirect_, pi_gi_trace_ss_;
+    Ren::PipelineRef pi_gi_rt_write_indirect_;
     // GI Denoiser stuff
-    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_[2], pi_gi_temporal_, pi_gi_blur_[2], pi_gi_stabilization_;
+    Ren::PipelineRef pi_gi_reproject_, pi_gi_prefilter_[2], pi_gi_temporal_, pi_gi_blur_[2], pi_gi_stabilization_;
     // Sun shadows
-    Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
+    Ren::PipelineRef pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
-    Ren::Pipeline pi_sun_brightness_;
+    Ren::PipelineRef pi_sun_brightness_;
     // Bloom
-    Ren::Pipeline pi_bloom_downsample_[2], pi_bloom_upsample_;
+    Ren::PipelineRef pi_bloom_downsample_[2], pi_bloom_upsample_;
     // Autoexposure
-    Ren::Pipeline pi_histogram_sample_, pi_histogram_exposure_;
+    Ren::PipelineRef pi_histogram_sample_, pi_histogram_exposure_;
     // Sky
-    Ren::Pipeline pi_sky_upsample_;
+    Ren::PipelineRef pi_sky_upsample_;
     // Debug
-    Ren::Pipeline pi_debug_velocity_;
+    Ren::PipelineRef pi_debug_velocity_;
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_[2],
         blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_,
@@ -352,8 +357,6 @@ class Renderer {
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 
-    bool InitPipelines();
-    // void InitRendererInternal();
     void UpdatePixelFilterTable(ePixelFilter filter, float filter_width);
 
     // Parallel Jobs

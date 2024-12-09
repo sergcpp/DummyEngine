@@ -131,14 +131,14 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             // total irradiance
             uniform_params.input_offset = 0;
             uniform_params.output_offset = 0;
-            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)][partial],
+            DispatchCompute(*pi_probe_blend_[bool(persistent_data.stoch_lights_buf)][partial],
                             Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
                             &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
 
             // diffuse-only irradiance
             uniform_params.input_offset = PROBE_VOLUME_RES_Y;
             uniform_params.output_offset = PROBE_VOLUMES_COUNT * PROBE_VOLUME_RES_Y;
-            DispatchCompute(pi_probe_blend_[bool(persistent_data.stoch_lights_buf)][partial],
+            DispatchCompute(*pi_probe_blend_[bool(persistent_data.stoch_lights_buf)][partial],
                             Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
                             &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
@@ -191,7 +191,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
 
-            DispatchCompute(pi_probe_blend_[2][partial],
+            DispatchCompute(*pi_probe_blend_[2][partial],
                             Ren::Vec3u{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y}, bindings,
                             &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
@@ -244,7 +244,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
             const int pi_index =
                 persistent_data.probe_volumes[volume_to_update].reset_relocation ? 2 : (partial ? 1 : 0);
-            DispatchCompute(pi_probe_relocate_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_probe_relocate_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
             persistent_data.probe_volumes[volume_to_update].reset_relocation = false;
         });
@@ -296,7 +296,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
             const int pi_index =
                 persistent_data.probe_volumes[volume_to_update].reset_classification ? 2 : (partial ? 1 : 0);
-            DispatchCompute(pi_probe_classify_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_probe_classify_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
             persistent_data.probe_volumes[volume_to_update].reset_classification = false;
         });

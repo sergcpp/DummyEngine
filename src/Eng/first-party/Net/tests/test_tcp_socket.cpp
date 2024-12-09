@@ -6,9 +6,9 @@
 #include "../Socket.h"
 
 void test_tcp_socket() {
-    printf("Test tcp_socket         | ");
-
     using namespace Net;
+
+    printf("Test tcp_socket         | ");
 
     { // TCPSocket open/close
         TCPSocket socket;
@@ -37,9 +37,9 @@ void test_tcp_socket() {
         require(b.Listen());
 
         std::thread thr([&]() {
-            for(int i = 0; i < 1000; ++i) {
+            for (int i = 0; i < 1000; ++i) {
                 if (b.Accept()) {
-                    for(int j = 0; j < 1000; ++j) {
+                    for (int j = 0; j < 1000; ++j) {
                         char buffer[256];
                         int bytes_read = b.Receive(buffer, sizeof(buffer));
                         if (bytes_read) {

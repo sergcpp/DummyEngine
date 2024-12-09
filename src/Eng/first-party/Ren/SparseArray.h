@@ -340,6 +340,7 @@ template <typename T> class SparseArray {
         }
         return end();
     }
+    const_iterator begin() const { return cbegin(); }
 
     const_iterator cbegin() const {
         for (uint32_t i = 0; i < capacity_; i++) {
@@ -351,7 +352,7 @@ template <typename T> class SparseArray {
     }
 
     iterator end() { return iterator(this, capacity_); }
-
+    const_iterator end() const { return cend(); }
     const_iterator cend() const { return const_iterator(this, capacity_); }
 
     iterator iter_at(uint32_t i) { return iterator(this, i); }

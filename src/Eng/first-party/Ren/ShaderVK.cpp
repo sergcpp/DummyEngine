@@ -7,9 +7,6 @@
 #include "SPIRV-Reflect/spirv_reflect.h"
 
 namespace Ren {
-void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
-                       SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
-
 extern const VkShaderStageFlagBits g_shader_stages_vk[] = {
     VK_SHADER_STAGE_VERTEX_BIT,                  // Vert
     VK_SHADER_STAGE_FRAGMENT_BIT,                // Frag
@@ -32,18 +29,11 @@ static_assert(int(eShaderType::ClosestHit) < int(eShaderType::AnyHit), "!");
 static_assert(int(eShaderType::AnyHit) < int(eShaderType::Intersection), "!");
 } // namespace Ren
 
-Ren::Shader::Shader(std::string_view name, ApiContext *api_ctx, std::string_view shader_src, eShaderType type,
-                    eShaderLoadStatus *status, ILog *log) {
-    name_ = String{name};
-    api_ctx_ = api_ctx;
-    Init(shader_src, type, status, log);
-}
-
 Ren::Shader::Shader(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> shader_code, const eShaderType type,
-                    eShaderLoadStatus *status, ILog *log) {
+                    ILog *log) {
     name_ = String{name};
     api_ctx_ = api_ctx;
-    Init(shader_code, type, status, log);
+    Init(shader_code, type, log);
 }
 
 Ren::Shader::~Shader() {
@@ -71,24 +61,21 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Shader::Init(std::string_view shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log) {}
-
-void Ren::Shader::Init(Span<const uint8_t> shader_code, const eShaderType type, eShaderLoadStatus *status, ILog *log) {
-    InitFromSPIRV(shader_code, type, status, log);
-
+void Ren::Shader::Init(Span<const uint8_t> shader_code, const eShaderType type, ILog *log) {
+    InitFromSPIRV(shader_code, type, log);
 #ifdef ENABLE_GPU_DEBUG
-    VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-    name_info.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
-    name_info.objectHandle = uint64_t(module_);
-    name_info.pObjectName = name_.c_str();
-    api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+    if (module_ != VkShaderModule{}) {
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+        name_info.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
+        name_info.objectHandle = uint64_t(module_);
+        name_info.pObjectName = name_.c_str();
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+    }
 #endif
 }
 
-void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderType type, eShaderLoadStatus *status,
-                                ILog *log) {
+void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderType type, ILog *log) {
     if (shader_code.empty()) {
-        (*status) = eShaderLoadStatus::SetToDefault;
         return;
     }
 
@@ -102,7 +89,6 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
         const VkResult res = api_ctx_->vkCreateShaderModule(api_ctx_->device, &create_info, nullptr, &module_);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create shader module!");
-            (*status) = eShaderLoadStatus::Error;
             return;
         }
     }
@@ -111,7 +97,6 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
     const SpvReflectResult res = spvReflectCreateShaderModule(shader_code.size(), shader_code.data(), &module);
     if (res != SPV_REFLECT_RESULT_SUCCESS) {
         log->Error("Failed to reflect shader module!");
-        (*status) = eShaderLoadStatus::Error;
         return;
     }
 
@@ -154,52 +139,5 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
         pc_ranges.push_back({blck.offset, blck.size});
     }
 
-    (*status) = eShaderLoadStatus::CreatedFromData;
     spvReflectDestroyShaderModule(&module);
-}
-
-void Ren::ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
-                            SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log) {
-    const char *delims = " \r\n\t";
-    const char *p = strstr(shader_str, "/*");
-    const char *q = p ? strpbrk(p + 2, delims) : nullptr;
-
-    SmallVectorImpl<Descr> *cur_bind_target = nullptr;
-    for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
-        if (p == q) {
-            p = q + 1;
-            continue;
-        }
-
-        std::string item(p, q);
-        if (item == "/*") {
-            cur_bind_target = nullptr;
-        } else if (item == "*/" && cur_bind_target) {
-            break;
-        } else if (item == "ATTRIBUTES") {
-            cur_bind_target = &attr_bindings;
-        } else if (item == "UNIFORMS") {
-            cur_bind_target = &unif_bindings;
-        } else if (item == "UNIFORM_BLOCKS") {
-            cur_bind_target = &blck_bindings;
-        } else if (cur_bind_target) {
-            p = q + 1;
-            q = strpbrk(p, delims);
-            if (*p != ':') {
-                log->Error("Error parsing shader!");
-            }
-            p = q + 1;
-            q = strpbrk(p, delims);
-            int loc = std::atoi(p);
-
-            Descr &new_item = cur_bind_target->emplace_back();
-            new_item.name = String{item.c_str()};
-            new_item.loc = loc;
-        }
-
-        if (!q) {
-            break;
-        }
-        p = q + 1;
-    }
 }

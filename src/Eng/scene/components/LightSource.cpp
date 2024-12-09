@@ -7,7 +7,7 @@
 #include "../SceneData.h"
 
 namespace Eng::LightSourceInternal {
-const char *g_type_names[] = {"sphere", "rectangle", "disk", "line"};
+static const char *g_type_names[] = {"sphere", "rectangle", "disk", "line"};
 static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::_Count), "!");
 
 float calc_cull_radius(const Ren::Vec3f &col, const float radius) {
@@ -27,15 +27,15 @@ float default_angle(const eLightType type) {
     return angle_deg;
 }
 
-} // namespace Eng
+} // namespace Eng::LightSourceInternal
 
-void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
+void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
     using namespace LightSourceInternal;
 
     ls.type = eLightType::Sphere;
 
     if (js_in.Has("type")) {
-        const JsStringP &js_type = js_in.at("type").as_str();
+        const Sys::JsStringP &js_type = js_in.at("type").as_str();
         for (int i = 0; i < int(eLightType::_Count); ++i) {
             if (js_type.val == g_type_names[i]) {
                 ls.type = eLightType(i);
@@ -46,7 +46,7 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 
     ls.col[0] = ls.col[1] = ls.col[2] = 1.0f;
     if (js_in.Has("color")) {
-        const JsArrayP &js_color = js_in.at("color").as_arr();
+        const Sys::JsArrayP &js_color = js_in.at("color").as_arr();
         ls.col[0] = float(js_color[0].as_num().val);
         ls.col[1] = float(js_color[1].as_num().val);
         ls.col[2] = float(js_color[2].as_num().val);
@@ -54,12 +54,12 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 
     ls.power = 1.0f;
     if (js_in.Has("power")) {
-        const JsNumber &js_power = js_in.at("power").as_num();
+        const Sys::JsNumber &js_power = js_in.at("power").as_num();
         ls.power = float(js_power.val);
     }
 
     if (js_in.Has("offset")) {
-        const JsArrayP &js_offset = js_in.at("offset").as_arr();
+        const Sys::JsArrayP &js_offset = js_in.at("offset").as_arr();
 
         ls.offset[0] = float(js_offset[0].as_num().val);
         ls.offset[1] = float(js_offset[1].as_num().val);
@@ -68,20 +68,20 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 
     ls.radius = 1.0f;
     if (js_in.Has("radius")) {
-        const JsNumber &js_radius = js_in.at("radius").as_num();
+        const Sys::JsNumber &js_radius = js_in.at("radius").as_num();
         ls.radius = float(js_radius.val);
     }
     ls._radius = ls.radius;
 
     ls.width = 1.0f;
     if (js_in.Has("width")) {
-        const JsNumber &js_width = js_in.at("width").as_num();
+        const Sys::JsNumber &js_width = js_in.at("width").as_num();
         ls.width = float(js_width.val);
     }
 
     ls.height = 1.0f;
     if (js_in.Has("height")) {
-        const JsNumber &js_height = js_in.at("height").as_num();
+        const Sys::JsNumber &js_height = js_in.at("height").as_num();
         ls.height = float(js_height.val);
     }
 
@@ -101,14 +101,14 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     }
 
     if (js_in.Has("cull_offset")) {
-        const JsNumber &js_cull_offset = js_in.at("cull_offset").as_num();
+        const Sys::JsNumber &js_cull_offset = js_in.at("cull_offset").as_num();
         ls.cull_offset = float(js_cull_offset.val);
     } else {
         ls.cull_offset = 0.1f;
     }
 
     if (js_in.Has("cull_radius")) {
-        const JsNumber &js_cull_radius = js_in.at("cull_radius").as_num();
+        const Sys::JsNumber &js_cull_radius = js_in.at("cull_radius").as_num();
         ls.cull_radius = float(js_cull_radius.val);
     } else {
         ls.cull_radius = calc_cull_radius(ls.col, ls.radius);
@@ -117,7 +117,7 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     ls.dir[0] = ls.dir[2] = 0.0f;
     ls.dir[1] = -1.0f;
     if (js_in.Has("direction")) {
-        const JsArrayP &js_dir = js_in.at("direction").as_arr();
+        const Sys::JsArrayP &js_dir = js_in.at("direction").as_arr();
 
         ls.dir[0] = float(js_dir[0].as_num().val);
         ls.dir[1] = float(js_dir[1].as_num().val);
@@ -126,7 +126,7 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 
     ls.angle_deg = default_angle(ls.type);
     if (js_in.Has("spot_angle")) {
-        const JsNumber &js_spot_angle = js_in.at("spot_angle").as_num();
+        const Sys::JsNumber &js_spot_angle = js_in.at("spot_angle").as_num();
         ls.angle_deg = float(js_spot_angle.val);
     }
 
@@ -138,33 +138,33 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 
     ls.spot_blend = 0.0f;
     if (js_in.Has("spot_blend")) {
-        const JsNumber &js_spot_blend = js_in.at("spot_blend").as_num();
+        const Sys::JsNumber &js_spot_blend = js_in.at("spot_blend").as_num();
         ls.spot_blend = float(js_spot_blend.val);
     }
 
     ls.sky_portal = false;
     if (js_in.Has("sky_portal")) {
-        const JsLiteral &js_sky_portal = js_in.at("sky_portal").as_lit();
-        ls.sky_portal = (js_sky_portal.val == JsLiteralType::True);
+        const Sys::JsLiteral &js_sky_portal = js_in.at("sky_portal").as_lit();
+        ls.sky_portal = (js_sky_portal.val == Sys::JsLiteralType::True);
     }
 
     ls.cast_shadow = false;
     if (js_in.Has("cast_shadow")) {
-        ls.cast_shadow = js_in.at("cast_shadow").as_lit().val == JsLiteralType::True;
+        ls.cast_shadow = js_in.at("cast_shadow").as_lit().val == Sys::JsLiteralType::True;
     }
 
     ls.affect_diffuse = true;
     if (js_in.Has("affect_diffuse")) {
-        ls.affect_diffuse = js_in.at("affect_diffuse").as_lit().val == JsLiteralType::True;
+        ls.affect_diffuse = js_in.at("affect_diffuse").as_lit().val == Sys::JsLiteralType::True;
     }
 
     ls.affect_specular = true;
     if (js_in.Has("affect_specular")) {
-        ls.affect_specular = js_in.at("affect_specular").as_lit().val == JsLiteralType::True;
+        ls.affect_specular = js_in.at("affect_specular").as_lit().val == Sys::JsLiteralType::True;
     }
 
     if (js_in.Has("shadow_bias")) {
-        const JsArrayP &js_shadow_bias = js_in.at("shadow_bias").as_arr();
+        const Sys::JsArrayP &js_shadow_bias = js_in.at("shadow_bias").as_arr();
         ls.shadow_bias[0] = float(js_shadow_bias.at(0).as_num().val);
         ls.shadow_bias[1] = float(js_shadow_bias.at(1).as_num().val);
     } else {
@@ -173,13 +173,13 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     }
 }
 
-void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
+void Eng::LightSource::Write(const LightSource &ls, Sys::JsObjectP &js_out) {
     using namespace LightSourceInternal;
 
     const auto &alloc = js_out.elements.get_allocator();
 
     { // Write type
-        JsStringP js_type(alloc);
+        Sys::JsStringP js_type(alloc);
 
         js_type.val = g_type_names[int(ls.type)];
 
@@ -187,89 +187,89 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
     }
 
     if (ls.col[0] != 1.0f || ls.col[1] != 1.0f || ls.col[2] != 1.0f) { // Write color
-        JsArrayP js_color(alloc);
+        Sys::JsArrayP js_color(alloc);
 
-        js_color.Push(JsNumber{ls.col[0]});
-        js_color.Push(JsNumber{ls.col[1]});
-        js_color.Push(JsNumber{ls.col[2]});
+        js_color.Push(Sys::JsNumber{ls.col[0]});
+        js_color.Push(Sys::JsNumber{ls.col[1]});
+        js_color.Push(Sys::JsNumber{ls.col[2]});
 
         js_out.Insert("color", std::move(js_color));
     }
 
     if (ls.power != 1.0f) {
-        js_out.Insert("power", JsNumber{ls.power});
+        js_out.Insert("power", Sys::JsNumber{ls.power});
     }
 
     if (ls.offset[0] != 0.0f || ls.offset[1] != 0.0f || ls.offset[2] != 0.0f) {
-        JsArrayP js_offset(alloc);
+        Sys::JsArrayP js_offset(alloc);
 
-        js_offset.Push(JsNumber{ls.offset[0]});
-        js_offset.Push(JsNumber{ls.offset[1]});
-        js_offset.Push(JsNumber{ls.offset[2]});
+        js_offset.Push(Sys::JsNumber{ls.offset[0]});
+        js_offset.Push(Sys::JsNumber{ls.offset[1]});
+        js_offset.Push(Sys::JsNumber{ls.offset[2]});
 
         js_out.Insert("offset", std::move(js_offset));
     }
 
     if (ls.radius != 1.0f && ls.type != eLightType::Rect) {
-        js_out.Insert("radius", JsNumber{ls.radius});
+        js_out.Insert("radius", Sys::JsNumber{ls.radius});
     }
 
     if (ls.width != 1.0f) {
-        js_out.Insert("width", JsNumber{ls.width});
+        js_out.Insert("width", Sys::JsNumber{ls.width});
     }
 
     if (ls.height != 1.0f) {
-        js_out.Insert("height", JsNumber{ls.height});
+        js_out.Insert("height", Sys::JsNumber{ls.height});
     }
 
     if (ls.dir[0] != 0.0f || ls.dir[1] != -1.0f || ls.dir[2] != 0.0f) {
-        JsArrayP js_dir(alloc);
+        Sys::JsArrayP js_dir(alloc);
 
-        js_dir.Push(JsNumber{ls.dir[0]});
-        js_dir.Push(JsNumber{ls.dir[1]});
-        js_dir.Push(JsNumber{ls.dir[2]});
+        js_dir.Push(Sys::JsNumber{ls.dir[0]});
+        js_dir.Push(Sys::JsNumber{ls.dir[1]});
+        js_dir.Push(Sys::JsNumber{ls.dir[2]});
 
         js_out.Insert("direction", std::move(js_dir));
     }
 
     const float cull_radius = calc_cull_radius(ls.col, ls.radius);
     if (ls.cull_radius != cull_radius) {
-        js_out.Insert("cull_radius", JsNumber{ls.cull_radius});
+        js_out.Insert("cull_radius", Sys::JsNumber{ls.cull_radius});
     }
 
     if (ls.angle_deg != default_angle(ls.type)) {
-        js_out.Insert("spot_angle", JsNumber{ls.angle_deg});
+        js_out.Insert("spot_angle", Sys::JsNumber{ls.angle_deg});
     }
 
     if (ls.spot_blend != 0.0f) {
-        js_out.Insert("spot_blend", JsNumber{ls.spot_blend});
+        js_out.Insert("spot_blend", Sys::JsNumber{ls.spot_blend});
     }
 
     if (ls.cull_offset != 0.1f) {
-        js_out.Insert("cull_offset", JsNumber{ls.cull_offset});
+        js_out.Insert("cull_offset", Sys::JsNumber{ls.cull_offset});
     }
 
     if (ls.sky_portal) {
-        js_out.Insert("sky_portal", JsLiteral{JsLiteralType::True});
+        js_out.Insert("sky_portal", Sys::JsLiteral{Sys::JsLiteralType::True});
     }
 
     if (ls.cast_shadow) {
-        js_out.Insert("cast_shadow", JsLiteral{JsLiteralType::True});
+        js_out.Insert("cast_shadow", Sys::JsLiteral{Sys::JsLiteralType::True});
     }
 
     if (!ls.affect_diffuse) {
-        js_out.Insert("affect_diffuse", JsLiteral{JsLiteralType::False});
+        js_out.Insert("affect_diffuse", Sys::JsLiteral{Sys::JsLiteralType::False});
     }
 
     if (!ls.affect_specular) {
-        js_out.Insert("affect_specular", JsLiteral{JsLiteralType::False});
+        js_out.Insert("affect_specular", Sys::JsLiteral{Sys::JsLiteralType::False});
     }
 
     if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {
-        JsArrayP js_shadow_bias(alloc);
+        Sys::JsArrayP js_shadow_bias(alloc);
 
-        js_shadow_bias.Push(JsNumber{ls.shadow_bias[0]});
-        js_shadow_bias.Push(JsNumber{ls.shadow_bias[1]});
+        js_shadow_bias.Push(Sys::JsNumber{ls.shadow_bias[0]});
+        js_shadow_bias.Push(Sys::JsNumber{ls.shadow_bias[1]});
 
         js_out.Insert("shadow_bias", std::move(js_shadow_bias));
     }

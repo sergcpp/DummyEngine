@@ -161,6 +161,6 @@ class Mesh : public RefCounter {
     std::unique_ptr<IAccStructure> blas;
 };
 
-typedef StrongRef<Mesh> MeshRef;
-typedef Storage<Mesh> MeshStorage;
+using MeshRef = StrongRef<Mesh, NamedStorage<Mesh>>;
+using MeshStorage = NamedStorage<Mesh>;
 } // namespace Ren

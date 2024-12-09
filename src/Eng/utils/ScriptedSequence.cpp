@@ -35,7 +35,7 @@ void Eng::ScriptedSequence::Clear() {
     choices_count_ = 0;
 }
 
-bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObject &js_seq) {
+bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     Clear();
@@ -45,15 +45,15 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
     }
 
     if (js_seq.Has("name")) {
-        const JsString &js_name = js_seq.at("name").as_str();
+        const Sys::JsString &js_name = js_seq.at("name").as_str();
         name_ = js_name.val;
     }
 
     if (js_seq.Has("tracks")) {
-        const JsArray &js_tracks = js_seq.at("tracks").as_arr();
+        const Sys::JsArray &js_tracks = js_seq.at("tracks").as_arr();
         tracks_.reserve(js_tracks.Size());
-        for (const JsElement &js_track_el : js_tracks.elements) {
-            const JsObject &js_track = js_track_el.as_obj();
+        for (const Sys::JsElement &js_track_el : js_tracks.elements) {
+            const Sys::JsObject &js_track = js_track_el.as_obj();
 
             tracks_.emplace_back();
             Track &track = tracks_.back();
@@ -62,7 +62,7 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
             track.type = eTrackType::Invalid;
             track.target = js_track.at("target").as_str().val;
 
-            const JsString &js_track_type = js_track.at("type").as_str();
+            const Sys::JsString &js_track_type = js_track.at("type").as_str();
             for (int i = 0; i < int(eTrackType::Invalid); i++) {
                 if (js_track_type.val == TrackTypeNames[i]) {
                     track.type = eTrackType(i);
@@ -75,20 +75,20 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 return false;
             }
 
-            const JsArray &js_track_actions = js_track.at("actions").as_arr();
+            const Sys::JsArray &js_track_actions = js_track.at("actions").as_arr();
 
             track.action_start = int(actions_.size());
             track.action_count = int(js_track_actions.Size());
             actions_.reserve(actions_.size() + track.action_count);
 
-            for (const JsElement &js_act_el : js_track_actions.elements) {
-                const JsObject &js_action = js_act_el.as_obj();
+            for (const Sys::JsElement &js_act_el : js_track_actions.elements) {
+                const Sys::JsObject &js_action = js_act_el.as_obj();
 
                 actions_.emplace_back();
                 SeqAction &action = actions_.back();
                 action.type = eActionType::Invalid;
 
-                const JsString &js_action_type = js_action.at("type").as_str();
+                const Sys::JsString &js_action_type = js_action.at("type").as_str();
                 for (int i = 0; i < int(eActionType::Invalid); i++) {
                     if (js_action_type.val == ActionTypeNames[i]) {
                         action.type = eActionType(i);
@@ -112,14 +112,14 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 }
 
                 if (js_action.Has("pos_beg")) {
-                    const JsArray &js_pos_beg = js_action.at("pos_beg").as_arr();
+                    const Sys::JsArray &js_pos_beg = js_action.at("pos_beg").as_arr();
 
                     action.pos_beg[0] = float(js_pos_beg[0].as_num().val);
                     action.pos_beg[1] = float(js_pos_beg[1].as_num().val);
                     action.pos_beg[2] = float(js_pos_beg[2].as_num().val);
 
                     if (js_action.Has("pos_end")) {
-                        const JsArray &js_pos_end = js_action.at("pos_end").as_arr();
+                        const Sys::JsArray &js_pos_end = js_action.at("pos_end").as_arr();
 
                         action.pos_end[0] = float(js_pos_end[0].as_num().val);
                         action.pos_end[1] = float(js_pos_end[1].as_num().val);
@@ -133,14 +133,14 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 }
 
                 if (js_action.Has("rot_beg")) {
-                    const JsArray &js_rot_beg = js_action.at("rot_beg").as_arr();
+                    const Sys::JsArray &js_rot_beg = js_action.at("rot_beg").as_arr();
 
                     action.rot_beg[0] = float(js_rot_beg[0].as_num().val);
                     action.rot_beg[1] = float(js_rot_beg[1].as_num().val);
                     action.rot_beg[2] = float(js_rot_beg[2].as_num().val);
 
                     if (js_action.Has("rot_end")) {
-                        const JsArray &js_rot_end = js_action.at("rot_end").as_arr();
+                        const Sys::JsArray &js_rot_end = js_action.at("rot_end").as_arr();
 
                         action.rot_end[0] = float(js_rot_end[0].as_num().val);
                         action.rot_end[1] = float(js_rot_end[1].as_num().val);
@@ -154,7 +154,7 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 }
 
                 if (js_action.Has("anim")) {
-                    const JsString &js_action_anim = js_action.at("anim").as_str();
+                    const Sys::JsString &js_action_anim = js_action.at("anim").as_str();
                     const std::string anim_path = std::string(MODELS_PATH) + js_action_anim.val;
 
                     Sys::AssetFile in_file(anim_path);
@@ -174,12 +174,12 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 }
 
                 if (js_action.Has("caption")) {
-                    const JsString &js_caption = js_action.at("caption").as_str();
+                    const Sys::JsString &js_caption = js_action.at("caption").as_str();
                     action.caption = js_caption.val;
                 }
 
                 if (js_action.Has("sound")) {
-                    const JsString &js_action_sound = js_action.at("sound").as_str();
+                    const Sys::JsString &js_action_sound = js_action.at("sound").as_str();
                     const auto &name = js_action_sound.val;
                     // check if sound was alpready loaded
                     Snd::eBufLoadStatus status;
@@ -228,15 +228,15 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 }
 
                 if (js_action.Has("sound_offset")) {
-                    const JsNumber &js_action_sound_off = js_action.at("sound_offset").as_num();
+                    const Sys::JsNumber &js_action_sound_off = js_action.at("sound_offset").as_num();
                     action.sound_offset = js_action_sound_off.val;
                 } else {
                     action.sound_offset = 0.0;
                 }
 
                 if (js_action.Has("dof")) {
-                    const JsLiteral js_action_dof = js_action.at("dof").as_lit();
-                    action.dof = (js_action_dof.val == JsLiteralType::True);
+                    const Sys::JsLiteral js_action_dof = js_action.at("dof").as_lit();
+                    action.dof = (js_action_dof.val == Sys::JsLiteralType::True);
                 } else {
                     action.dof = false;
                 }
@@ -252,13 +252,13 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
     }
 
     if (js_seq.Has("ending")) {
-        const JsObject &js_ending = js_seq.at("ending").as_obj();
+        const Sys::JsObject &js_ending = js_seq.at("ending").as_obj();
         end_time_ = js_ending.at("time_point").as_num().val;
 
         if (js_ending.Has("choices")) {
-            const JsArray &js_choices = js_ending.at("choices").as_arr();
-            for (const JsElement &js_choice_el : js_choices.elements) {
-                const JsObject &js_choice = js_choice_el.as_obj();
+            const Sys::JsArray &js_choices = js_ending.at("choices").as_arr();
+            for (const Sys::JsElement &js_choice_el : js_choices.elements) {
+                const Sys::JsObject &js_choice = js_choice_el.as_obj();
 
                 SeqChoice &choice = choices_[choices_count_++];
 
@@ -271,14 +271,14 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                 choice.seq_name = js_choice.at("sequence").as_str().val;
 
                 if (js_choice.Has("puzzle")) {
-                    const JsString &js_choice_puz = js_choice.at("puzzle").as_str();
+                    const Sys::JsString &js_choice_puz = js_choice.at("puzzle").as_str();
                     choice.puzzle_name = js_choice_puz.val;
                 }
             }
         }
 
         if (js_ending.Has("choice_align")) {
-            const JsString &js_choice_align = js_ending.at("choice_align").as_str();
+            const Sys::JsString &js_choice_align = js_ending.at("choice_align").as_str();
             if (js_choice_align.val == "left") {
                 choice_align_ = eChoiceAlign::Left;
             } else if (js_choice_align.val == "right") {
@@ -296,83 +296,83 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
     return true;
 }
 
-void Eng::ScriptedSequence::Save(JsObject &js_seq) {
+void Eng::ScriptedSequence::Save(Sys::JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     { // write name
-        js_seq.Insert("name", JsString{name_});
+        js_seq.Insert("name", Sys::JsString{name_});
     }
 
     { // write tracks
-        JsArray js_tracks;
+        Sys::JsArray js_tracks;
         for (const Track &track : tracks_) {
-            JsObject js_track;
-            js_track.Insert("name", JsString{track.name});
-            js_track.Insert("type", JsString{TrackTypeNames[int(track.type)]});
-            js_track.Insert("target", JsString{track.target});
+            Sys::JsObject js_track;
+            js_track.Insert("name", Sys::JsString{track.name});
+            js_track.Insert("type", Sys::JsString{TrackTypeNames[int(track.type)]});
+            js_track.Insert("target", Sys::JsString{track.target});
 
             { // write actions
-                JsArray js_actions;
+                Sys::JsArray js_actions;
 
                 for (int i = track.action_start; i < track.action_start + track.action_count; i++) {
                     const SeqAction &action = actions_[i];
 
-                    JsObject js_action;
-                    js_action.Insert("type", JsString{ActionTypeNames[int(action.type)]});
-                    js_action.Insert("time_beg", JsNumber{action.time_beg});
-                    js_action.Insert("time_end", JsNumber{action.time_end});
+                    Sys::JsObject js_action;
+                    js_action.Insert("type", Sys::JsString{ActionTypeNames[int(action.type)]});
+                    js_action.Insert("time_beg", Sys::JsNumber{action.time_beg});
+                    js_action.Insert("time_end", Sys::JsNumber{action.time_end});
                     { // write start pos
-                        JsArray js_pos_beg;
-                        js_pos_beg.Push(JsNumber{action.pos_beg[0]});
-                        js_pos_beg.Push(JsNumber{action.pos_beg[1]});
-                        js_pos_beg.Push(JsNumber{action.pos_beg[2]});
+                        Sys::JsArray js_pos_beg;
+                        js_pos_beg.Push(Sys::JsNumber{action.pos_beg[0]});
+                        js_pos_beg.Push(Sys::JsNumber{action.pos_beg[1]});
+                        js_pos_beg.Push(Sys::JsNumber{action.pos_beg[2]});
                         js_action.Insert("pos_beg", std::move(js_pos_beg));
                     }
                     if (action.pos_end[0] != action.pos_beg[0] || action.pos_end[1] != action.pos_beg[1] ||
                         action.pos_end[2] != action.pos_beg[2]) {
-                        JsArray js_pos_end;
-                        js_pos_end.Push(JsNumber{action.pos_end[0]});
-                        js_pos_end.Push(JsNumber{action.pos_end[1]});
-                        js_pos_end.Push(JsNumber{action.pos_end[2]});
+                        Sys::JsArray js_pos_end;
+                        js_pos_end.Push(Sys::JsNumber{action.pos_end[0]});
+                        js_pos_end.Push(Sys::JsNumber{action.pos_end[1]});
+                        js_pos_end.Push(Sys::JsNumber{action.pos_end[2]});
                         js_action.Insert("pos_end", std::move(js_pos_end));
                     }
                     { // write start rot
-                        JsArray js_rot_beg;
-                        js_rot_beg.Push(JsNumber{action.rot_beg[0]});
-                        js_rot_beg.Push(JsNumber{action.rot_beg[1]});
-                        js_rot_beg.Push(JsNumber{action.rot_beg[2]});
+                        Sys::JsArray js_rot_beg;
+                        js_rot_beg.Push(Sys::JsNumber{action.rot_beg[0]});
+                        js_rot_beg.Push(Sys::JsNumber{action.rot_beg[1]});
+                        js_rot_beg.Push(Sys::JsNumber{action.rot_beg[2]});
                         js_action.Insert("rot_beg", std::move(js_rot_beg));
                     }
                     if (action.rot_end[0] != action.rot_beg[0] || action.rot_end[1] != action.rot_beg[1] ||
                         action.rot_end[2] != action.rot_beg[2]) {
-                        JsArray js_rot_end;
-                        js_rot_end.Push(JsNumber{action.rot_end[0]});
-                        js_rot_end.Push(JsNumber{action.rot_end[1]});
-                        js_rot_end.Push(JsNumber{action.rot_end[2]});
+                        Sys::JsArray js_rot_end;
+                        js_rot_end.Push(Sys::JsNumber{action.rot_end[0]});
+                        js_rot_end.Push(Sys::JsNumber{action.rot_end[1]});
+                        js_rot_end.Push(Sys::JsNumber{action.rot_end[2]});
                         js_action.Insert("rot_end", std::move(js_rot_end));
                     }
                     if (action.anim_ref) {
-                        js_action.Insert("anim", JsString{action.anim_ref->name()});
+                        js_action.Insert("anim", Sys::JsString{action.anim_ref->name()});
                     }
                     if (!action.caption.empty()) {
-                        js_action.Insert("caption", JsString{action.caption});
+                        js_action.Insert("caption", Sys::JsString{action.caption});
                     }
 
                     if (action.sound_ref) {
-                        js_action.Insert("sound", JsString{action.sound_ref->name()});
+                        js_action.Insert("sound", Sys::JsString{action.sound_ref->name()});
                     }
 
                     if (std::abs(action.sound_offset) > 0.001) {
-                        js_action.Insert("sound_offset", JsNumber{action.sound_offset});
+                        js_action.Insert("sound_offset", Sys::JsNumber{action.sound_offset});
                     }
 
                     if (action.dof) {
-                        js_action.Insert("dof", JsLiteral{JsLiteralType::True});
+                        js_action.Insert("dof", Sys::JsLiteral{Sys::JsLiteralType::True});
                     }
 
                     if (action.fade_beg != 0.0f || action.fade_end != 0.0f) {
-                        js_action.Insert("fade_beg", JsNumber{(double)action.fade_beg});
-                        js_action.Insert("fade_end", JsNumber{(double)action.fade_end});
+                        js_action.Insert("fade_beg", Sys::JsNumber{(double)action.fade_beg});
+                        js_action.Insert("fade_end", Sys::JsNumber{(double)action.fade_end});
                     }
 
                     js_actions.Push(std::move(js_action));
@@ -387,28 +387,28 @@ void Eng::ScriptedSequence::Save(JsObject &js_seq) {
     }
 
     { // write ending
-        JsObject js_ending;
-        js_ending.Insert("time_point", JsNumber{end_time_});
+        Sys::JsObject js_ending;
+        js_ending.Insert("time_point", Sys::JsNumber{end_time_});
 
-        JsArray js_choices;
+        Sys::JsArray js_choices;
         for (int i = 0; i < choices_count_; i++) {
             const SeqChoice &choice = choices_[i];
 
-            JsObject js_choice;
-            js_choice.Insert("key", JsString{choice.key});
+            Sys::JsObject js_choice;
+            js_choice.Insert("key", Sys::JsString{choice.key});
             if (!choice.text.empty()) {
-                js_choice.Insert("text", JsString{choice.text});
+                js_choice.Insert("text", Sys::JsString{choice.text});
             }
-            js_choice.Insert("sequence", JsString{choice.seq_name});
+            js_choice.Insert("sequence", Sys::JsString{choice.seq_name});
             if (!choice.puzzle_name.empty()) {
-                js_choice.Insert("puzzle", JsString{choice.puzzle_name});
+                js_choice.Insert("puzzle", Sys::JsString{choice.puzzle_name});
             }
             js_choices.Push(std::move(js_choice));
         }
         js_ending.Insert("choices", std::move(js_choices));
 
         if (choice_align_ != eChoiceAlign::Center) {
-            js_ending.Insert("choice_align", JsString{choice_align_ == eChoiceAlign::Left ? "left" : "right"});
+            js_ending.Insert("choice_align", Sys::JsString{choice_align_ == eChoiceAlign::Left ? "left" : "right"});
         }
 
         js_seq.Insert("ending", std::move(js_ending));

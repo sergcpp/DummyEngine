@@ -71,8 +71,8 @@ template <typename T> class DefaultCompStorage : public Eng::CompStorage {
 
     [[nodiscard]] int Count() const override { return int(data_.size()); }
 
-    void ReadFromJs(const JsObjectP &js_obj, void *comp) override { T::Read(js_obj, *(T *)comp); }
-    void WriteToJs(const void *comp, JsObjectP &js_obj) const override { T::Write(*(T *)comp, js_obj); }
+    void ReadFromJs(const Sys::JsObjectP &js_obj, void *comp) override { T::Read(js_obj, *(T *)comp); }
+    void WriteToJs(const void *comp, Sys::JsObjectP &js_obj) const override { T::Write(*(T *)comp, js_obj); }
 
     [[nodiscard]] const void *SequentialData() const override { return data_.data(); }
     [[nodiscard]] void *SequentialData() override { return data_.data(); }
@@ -278,7 +278,7 @@ void Eng::SceneManager::RegisterComponent(const uint32_t index, CompStorage *sto
     component_post_load_[index] = post_init;
 }
 
-void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<eSceneLoadFlags> load_flags) {
+void Eng::SceneManager::LoadScene(const Sys::JsObjectP &js_scene, const Ren::Bitmask<eSceneLoadFlags> load_flags) {
     using namespace SceneManagerConstants;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_load_scene_str);
@@ -305,7 +305,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<
     std::map<std::string, Ren::Vec4f> decals_textures;
 
     if (js_scene.Has("name")) {
-        const JsStringP &js_name = js_scene.at("name").as_str();
+        const Sys::JsStringP &js_name = js_scene.at("name").as_str();
         scene_data_.name = Ren::String{js_name.val.c_str()};
     } else {
         throw std::runtime_error("Level has no name!");
@@ -346,9 +346,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<
         }
     }*/
 
-    const JsArrayP &js_objects = js_scene.at("objects").as_arr();
-    for (const JsElementP &js_elem : js_objects.elements) {
-        const JsObjectP &js_obj = js_elem.as_obj();
+    const Sys::JsArrayP &js_objects = js_scene.at("objects").as_arr();
+    for (const Sys::JsElementP &js_elem : js_objects.elements) {
+        const Sys::JsObjectP &js_obj = js_elem.as_obj();
 
         SceneObject &obj = scene_data_.objects.emplace_back();
 
@@ -356,10 +356,10 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<
                                   Ren::Vec3f{std::numeric_limits<float>::lowest()}};
 
         for (const auto &js_comp : js_obj.elements) {
-            if (js_comp.second.type() != JsType::Object) {
+            if (js_comp.second.type() != Sys::JsType::Object) {
                 continue;
             }
-            const JsObjectP &js_comp_obj = js_comp.second.as_obj();
+            const Sys::JsObjectP &js_comp_obj = js_comp.second.as_obj();
             const auto &js_comp_name = js_comp.first;
 
             for (unsigned i = 0; i < MAX_COMPONENT_TYPES; i++) {
@@ -392,7 +392,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<
         tr->UpdateBBox();
 
         if (js_obj.Has("name")) {
-            const JsStringP &js_name = js_obj.at("name").as_str();
+            const Sys::JsStringP &js_name = js_obj.at("name").as_str();
             obj.name = Ren::String{js_name.val.c_str()};
             scene_data_.name_to_object[obj.name] = uint32_t(scene_data_.objects.size() - 1);
         }
@@ -406,16 +406,16 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<
     }
 
     if (js_scene.Has("environment")) {
-        const JsObjectP &js_env = js_scene.at("environment").as_obj();
+        const Sys::JsObjectP &js_env = js_scene.at("environment").as_obj();
         if (js_env.Has("sun_dir")) {
-            const JsArrayP &js_dir = js_env.at("sun_dir").as_arr();
+            const Sys::JsArrayP &js_dir = js_env.at("sun_dir").as_arr();
 
             const double x = js_dir.at(0).as_num().val, y = js_dir.at(1).as_num().val, z = js_dir.at(2).as_num().val;
 
             scene_data_.env.sun_dir = Ren::Vec3f{float(x), float(y), float(z)};
             scene_data_.env.sun_dir = Normalize(scene_data_.env.sun_dir);
         } else if (js_env.Has("sun_rot")) {
-            const JsArrayP &js_rot = js_env.at("sun_rot").as_arr();
+            const Sys::JsArrayP &js_rot = js_env.at("sun_rot").as_arr();
 
             const float rot[3] = {float(js_rot.at(0).as_num().val) * Ren::Pi<float>() / 180.0f,
                                   float(js_rot.at(1).as_num().val) * Ren::Pi<float>() / 180.0f,
@@ -432,34 +432,34 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<
             scene_data_.env.sun_dir[2] = sun_dir[2];
         }
         if (js_env.Has("sun_col")) {
-            const JsArrayP &js_col = js_env.at("sun_col").as_arr();
+            const Sys::JsArrayP &js_col = js_env.at("sun_col").as_arr();
 
             const double r = js_col.at(0).as_num().val, g = js_col.at(1).as_num().val, b = js_col.at(2).as_num().val;
 
             scene_data_.env.sun_col = Ren::Vec3f{float(r), float(g), float(b)};
         }
         if (js_env.Has("sun_angle")) {
-            const JsNumber &js_sun_softness = js_env.at("sun_angle").as_num();
+            const Sys::JsNumber &js_sun_softness = js_env.at("sun_angle").as_num();
             scene_data_.env.sun_angle = float(js_sun_softness.val);
         }
         if (js_env.Has("env_col")) {
-            const JsArrayP &js_col = js_env.at("env_col").as_arr();
+            const Sys::JsArrayP &js_col = js_env.at("env_col").as_arr();
 
             const double r = js_col.at(0).as_num().val, g = js_col.at(1).as_num().val, b = js_col.at(2).as_num().val;
 
             scene_data_.env.env_col = Ren::Vec3f{float(r), float(g), float(b)};
         }
         if (js_env.Has("env_map")) {
-            const JsStringP &js_env_map = js_env.at("env_map").as_str();
+            const Sys::JsStringP &js_env_map = js_env.at("env_map").as_str();
             scene_data_.env.env_map_name = Ren::String{js_env_map.val.c_str()};
         }
         if (js_env.Has("env_map_rot")) {
-            const JsNumber &js_env_map_rot = js_env.at("env_map_rot").as_num();
+            const Sys::JsNumber &js_env_map_rot = js_env.at("env_map_rot").as_num();
             scene_data_.env.env_map_rot = float(js_env_map_rot.val) * Ren::Pi<float>() / 180.0f;
         }
 
         if (js_env.Has("sun_shadow_bias")) {
-            const JsArrayP &js_sun_shadow_bias = js_env.at("sun_shadow_bias").as_arr();
+            const Sys::JsArrayP &js_sun_shadow_bias = js_env.at("sun_shadow_bias").as_arr();
             scene_data_.env.sun_shadow_bias[0] = float(js_sun_shadow_bias.at(0).as_num().val);
             scene_data_.env.sun_shadow_bias[1] = float(js_sun_shadow_bias.at(1).as_num().val);
         } else {
@@ -497,57 +497,57 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene, const Ren::Bitmask<
     __itt_task_end(__g_itt_domain);
 }
 
-void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
+void Eng::SceneManager::SaveScene(Sys::JsObjectP &js_scene) {
     using namespace SceneManagerConstants;
 
     auto alloc = js_scene.get_allocator();
     // write name
-    js_scene.Insert("name", JsStringP(scene_data_.name, alloc));
+    js_scene.Insert("name", Sys::JsStringP(scene_data_.name, alloc));
 
     { // write environment
-        JsObjectP js_env(alloc);
+        Sys::JsObjectP js_env(alloc);
 
         { // write sun direction
-            JsArrayP js_sun_dir(alloc);
-            js_sun_dir.Push(JsNumber(scene_data_.env.sun_dir[0]));
-            js_sun_dir.Push(JsNumber(scene_data_.env.sun_dir[1]));
-            js_sun_dir.Push(JsNumber(scene_data_.env.sun_dir[2]));
+            Sys::JsArrayP js_sun_dir(alloc);
+            js_sun_dir.Push(Sys::JsNumber(scene_data_.env.sun_dir[0]));
+            js_sun_dir.Push(Sys::JsNumber(scene_data_.env.sun_dir[1]));
+            js_sun_dir.Push(Sys::JsNumber(scene_data_.env.sun_dir[2]));
 
             js_env.Insert("sun_dir", std::move(js_sun_dir));
         }
 
         { // write sun color
-            JsArrayP js_sun_col(alloc);
-            js_sun_col.Push(JsNumber(scene_data_.env.sun_col[0]));
-            js_sun_col.Push(JsNumber(scene_data_.env.sun_col[1]));
-            js_sun_col.Push(JsNumber(scene_data_.env.sun_col[2]));
+            Sys::JsArrayP js_sun_col(alloc);
+            js_sun_col.Push(Sys::JsNumber(scene_data_.env.sun_col[0]));
+            js_sun_col.Push(Sys::JsNumber(scene_data_.env.sun_col[1]));
+            js_sun_col.Push(Sys::JsNumber(scene_data_.env.sun_col[2]));
 
             js_env.Insert("sun_col", std::move(js_sun_col));
         }
 
         { // write sun softness
-            js_env.Insert("sun_angle", JsNumber(scene_data_.env.sun_angle));
+            js_env.Insert("sun_angle", Sys::JsNumber(scene_data_.env.sun_angle));
         }
         if (Length2(scene_data_.env.env_col) > FLT_EPSILON) {
-            JsArrayP js_env_col(alloc);
-            js_env_col.Push(JsNumber(scene_data_.env.env_col[0]));
-            js_env_col.Push(JsNumber(scene_data_.env.env_col[1]));
-            js_env_col.Push(JsNumber(scene_data_.env.env_col[2]));
+            Sys::JsArrayP js_env_col(alloc);
+            js_env_col.Push(Sys::JsNumber(scene_data_.env.env_col[0]));
+            js_env_col.Push(Sys::JsNumber(scene_data_.env.env_col[1]));
+            js_env_col.Push(Sys::JsNumber(scene_data_.env.env_col[2]));
 
             js_env.Insert("env_col", std::move(js_env_col));
         }
         if (scene_data_.env.env_map->name() != "dummy_white_cube") {
-            js_env.Insert("env_map", JsStringP{scene_data_.env.env_map_name, alloc});
+            js_env.Insert("env_map", Sys::JsStringP{scene_data_.env.env_map_name, alloc});
         }
         if (scene_data_.env.env_map_rot != 0.0f) {
-            js_env.Insert("env_map_rot", JsNumber(scene_data_.env.env_map_rot * 180.0f / Ren::Pi<float>()));
+            js_env.Insert("env_map_rot", Sys::JsNumber(scene_data_.env.env_map_rot * 180.0f / Ren::Pi<float>()));
         }
 
         if (scene_data_.env.sun_shadow_bias[0] != DefaultSunShadowBias[0] ||
             scene_data_.env.sun_shadow_bias[1] != DefaultSunShadowBias[1]) { // write sun shadow bias
-            JsArrayP js_sun_shadow_bias(alloc);
-            js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[0]));
-            js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[1]));
+            Sys::JsArrayP js_sun_shadow_bias(alloc);
+            js_sun_shadow_bias.Push(Sys::JsNumber(scene_data_.env.sun_shadow_bias[0]));
+            js_sun_shadow_bias.Push(Sys::JsNumber(scene_data_.env.sun_shadow_bias[1]));
 
             js_env.Insert("sun_shadow_bias", std::move(js_sun_shadow_bias));
         }
@@ -556,19 +556,19 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
     }
 
     { // write objects
-        JsArrayP js_objects(alloc);
+        Sys::JsArrayP js_objects(alloc);
 
         const CompStorage *const *comp_storage = scene_data_.comp_store;
 
         for (const SceneObject &obj : scene_data_.objects) {
-            JsObjectP js_obj(alloc);
+            Sys::JsObjectP js_obj(alloc);
 
             for (unsigned i = 0; i < MAX_COMPONENT_TYPES; i++) {
                 if (obj.comp_mask & (1u << i)) {
                     const uint32_t comp_id = obj.components[i];
                     const void *p_comp = comp_storage[i]->Get(comp_id);
 
-                    JsObjectP js_comp(alloc);
+                    Sys::JsObjectP js_comp(alloc);
                     comp_storage[i]->WriteToJs(p_comp, js_comp);
 
                     js_obj.Insert(comp_storage[i]->name(), std::move(js_comp));
@@ -1073,13 +1073,13 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     }
 }
 
-void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadDrawable(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
     auto *dr = (Drawable *)comp;
 
     if (js_comp_obj.Has("mesh_file")) {
-        const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
+        const Sys::JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
         Ren::eMeshLoadStatus status;
         dr->mesh = LoadMesh(js_mesh_file_name.val, nullptr, nullptr, &status);
@@ -1114,21 +1114,21 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
     }
 
     if (js_comp_obj.Has("material_override")) {
-        const JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
-        for (const JsElementP &js_mat_el : js_materials.elements) {
+        const Sys::JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
+        for (const Sys::JsElementP &js_mat_el : js_materials.elements) {
             auto front_back_mats = OnLoadMaterial(js_mat_el.as_str().val);
             dr->material_override.push_back(std::move(front_back_mats));
         }
     }
 
     if (js_comp_obj.Has("anims")) {
-        const JsArrayP &js_anims = js_comp_obj.at("anims").as_arr();
+        const Sys::JsArrayP &js_anims = js_comp_obj.at("anims").as_arr();
 
         assert(dr->mesh->type() == Ren::eMeshType::Skeletal);
         Ren::Skeleton *skel = dr->mesh->skel();
 
         for (const auto &js_anim : js_anims.elements) {
-            const JsStringP &js_anim_name = js_anim.as_str();
+            const Sys::JsStringP &js_anim_name = js_anim.as_str();
             const std::string anim_path = std::string(paths_.models_path) + js_anim_name.val.c_str();
 
             Sys::AssetFile in_file(anim_path.c_str());
@@ -1169,12 +1169,12 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
     obj_bbox[1] = Max(obj_bbox[1], dr->mesh->bbox_max());
 }
 
-void Eng::SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadOccluder(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
     auto *occ = (Occluder *)comp;
 
-    const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
+    const Sys::JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
     Ren::eMeshLoadStatus status;
     occ->mesh = LoadMesh(js_mesh_file_name.val, nullptr, nullptr, &status);
@@ -1201,7 +1201,7 @@ void Eng::SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *com
     obj_bbox[1] = Max(obj_bbox[1], occ->mesh->bbox_max());
 }
 
-void Eng::SceneManager::PostloadLightmap(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadLightmap(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
     auto *lm = (Lightmap *)comp;
@@ -1219,7 +1219,7 @@ void Eng::SceneManager::PostloadLightmap(const JsObjectP &js_comp_obj, void *com
     };
 }
 
-void Eng::SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadLightSource(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     auto *ls = (LightSource *)comp;
 
     // Compute bounding box of light source
@@ -1269,11 +1269,11 @@ void Eng::SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *
     obj_bbox[1] = Max(obj_bbox[1], ls_transform.bbox_max_ws);
 }
 
-void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadDecal(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     auto *de = (Decal *)comp;
 
     if (js_comp_obj.Has("mask")) {
-        const JsStringP &js_mask = js_comp_obj.at("mask").as_str();
+        const Sys::JsStringP &js_mask = js_comp_obj.at("mask").as_str();
 
         const Ren::Vec4f *mask_tr = scene_data_.decals_textures.Find(js_mask.val.c_str());
         if (!mask_tr) {
@@ -1285,7 +1285,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
     }
 
     if (js_comp_obj.Has("diff")) {
-        const JsStringP &js_diff = js_comp_obj.at("diff").as_str();
+        const Sys::JsStringP &js_diff = js_comp_obj.at("diff").as_str();
 
         const Ren::Vec4f *diff_tr = scene_data_.decals_textures.Find(js_diff.val.c_str());
         if (!diff_tr) {
@@ -1297,7 +1297,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
     }
 
     if (js_comp_obj.Has("norm")) {
-        const JsStringP &js_norm = js_comp_obj.at("norm").as_str();
+        const Sys::JsStringP &js_norm = js_comp_obj.at("norm").as_str();
 
         const Ren::Vec4f *norm_tr = scene_data_.decals_textures.Find(js_norm.val.c_str());
         if (!norm_tr) {
@@ -1309,7 +1309,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
     }
 
     if (js_comp_obj.Has("spec")) {
-        const JsStringP &js_spec = js_comp_obj.at("spec").as_str();
+        const Sys::JsStringP &js_spec = js_comp_obj.at("spec").as_str();
 
         const Ren::Vec4f *spec_tr = scene_data_.decals_textures.Find(js_spec.val.c_str());
         if (!spec_tr) {
@@ -1338,7 +1338,7 @@ void Eng::SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, 
     }
 }
 
-void Eng::SceneManager::PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadLightProbe(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     auto *pr = (LightProbe *)comp;
 
     // pr->layer_index = scene_data_.probe_storage.Allocate();
@@ -1348,19 +1348,19 @@ void Eng::SceneManager::PostloadLightProbe(const JsObjectP &js_comp_obj, void *c
     obj_bbox[1] = Max(obj_bbox[1], pr->offset + Ren::Vec3f{pr->radius});
 }
 
-void Eng::SceneManager::PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadSoundSource(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     auto *snd = (SoundSource *)comp;
 
     const Ren::Vec3f center = 0.5f * (obj_bbox[0] + obj_bbox[1]);
     snd->snd_src.Init(1.0f, ValuePtr(center));
 }
 
-void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+void Eng::SceneManager::PostloadAccStructure(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
     auto *acc = (AccStructure *)comp;
 
-    const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
+    const Sys::JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
     Ren::eMeshLoadStatus status;
     acc->mesh = LoadMesh(js_mesh_file_name.val, nullptr, nullptr, &status);
@@ -1384,8 +1384,8 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
     }
 
     if (js_comp_obj.Has("material_override")) {
-        const JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
-        for (const JsElementP &js_mat_el : js_materials.elements) {
+        const Sys::JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
+        for (const Sys::JsElementP &js_mat_el : js_materials.elements) {
             auto front_back_mats = OnLoadMaterial(js_mat_el.as_str().val);
             acc->material_override.push_back(std::move(front_back_mats));
         }
@@ -1464,7 +1464,7 @@ void Eng::SceneManager::OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std:
                                         Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
     using namespace SceneManagerConstants;
 
-    const Ren::ProgramRef ret = sh_.LoadProgram(ren_ctx_, v_shader, f_shader, tc_shader, te_shader);
+    const Ren::ProgramRef ret = sh_.LoadProgram(v_shader, f_shader, tc_shader, te_shader);
     init_pipelines_(ret, flags, scene_data_.persistent_data.pipelines, out_pipelines);
 }
 

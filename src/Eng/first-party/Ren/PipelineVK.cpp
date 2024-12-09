@@ -122,7 +122,17 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
                          uint32_t subpass_index, ILog *log) {
     Destroy();
 
-    log->Info("Initializing pipeline %s...", prog->name().c_str());
+    std::string pipeline_name;
+    for (const ShaderRef &sh : prog->shaders()) {
+        if (!sh) {
+            continue;
+        }
+        if (!pipeline_name.empty()) {
+            pipeline_name += "&";
+        }
+        pipeline_name += sh->name();
+    }
+    log->Info("Initializing pipeline %s", pipeline_name.c_str());
 
     api_ctx_ = api_ctx;
     type_ = ePipelineType::Graphics;
@@ -345,17 +355,27 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
                 subpass_index, log);
 }
 
-bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::optional<int> subgroup_size) {
+bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, const int subgroup_size) {
     Destroy();
 
-    log->Info("Initializing pipeline %s...", prog->name().c_str());
+    std::string pipeline_name;
+    for (const ShaderRef &sh : prog->shaders()) {
+        if (!sh) {
+            continue;
+        }
+        if (!pipeline_name.empty()) {
+            pipeline_name += "&";
+        }
+        pipeline_name += sh->name();
+    }
+    log->Info("Initializing pipeline %s", pipeline_name.c_str());
 
     ePipelineType type = ePipelineType::Undefined;
 
     SmallVector<VkPipelineShaderStageCreateInfo, int(eShaderType::_Count)> shader_stage_create_info;
     VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroup_size_info = {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
-    subgroup_size_info.requiredSubgroupSize = subgroup_size.value_or(0);
+    subgroup_size_info.requiredSubgroupSize = subgroup_size == -1 ? 0 : subgroup_size;
 
     int hit_group_index = -1;
     for (int i = 0; i < int(eShaderType::_Count); ++i) {
@@ -425,7 +445,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::o
         stage_info.pName = "main";
         stage_info.pSpecializationInfo = nullptr;
 
-        if (api_ctx->subgroup_size_control_supported && subgroup_size.has_value()) {
+        if (api_ctx->subgroup_size_control_supported && subgroup_size != -1) {
             stage_info.pNext = &subgroup_size_info;
         }
     }

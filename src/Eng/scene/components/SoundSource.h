@@ -11,8 +11,8 @@ struct SoundSource {
     uint32_t bone_index;
     Snd::String bone_name;
 
-    static void Read(const JsObjectP &js_in, SoundSource &ls);
-    static void Write(const SoundSource &ls, JsObjectP &js_out);
+    static void Read(const Sys::JsObjectP &js_in, SoundSource &ls);
+    static void Write(const SoundSource &ls, Sys::JsObjectP &js_out);
 
     static std::string_view name() { return "sound"; }
 };

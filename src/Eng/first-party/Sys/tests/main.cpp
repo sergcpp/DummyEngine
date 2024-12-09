@@ -8,8 +8,8 @@ void test_async_file();
 void test_inplace_function();
 void test_json();
 void test_scope_exit();
+void test_small_vector();
 void test_thread_pool();
-void test_vector();
 
 int main() {
     printf("Sys Version: %s\n", Sys::Version());
@@ -20,7 +20,7 @@ int main() {
     test_inplace_function();
     test_json();
     test_scope_exit();
+    test_small_vector();
     test_thread_pool();
-    test_vector();
 }
 

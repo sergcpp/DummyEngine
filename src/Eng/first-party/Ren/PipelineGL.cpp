@@ -7,7 +7,7 @@ Ren::Pipeline &Ren::Pipeline::operator=(Pipeline &&rhs) noexcept = default;
 void Ren::Pipeline::Destroy() {}
 
 bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog,
-                         const VertexInput *vtx_input, const RenderPass *render_pass, uint32_t subpass_index,
+                         const VertexInput *vtx_input, const RenderPass *render_pass, const uint32_t,
                          ILog *log) {
     type_ = ePipelineType::Graphics;
     rast_state_ = rast_state;
@@ -16,7 +16,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
     return true;
 }
 
-bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::optional<int>) {
+bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, const int) {
     Destroy();
 
     type_ = ePipelineType::Compute;

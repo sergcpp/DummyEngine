@@ -20,14 +20,10 @@
 namespace Ren {
 class ILog;
 
-enum class eProgLoadStatus { Found, SetToDefault, CreatedFromData };
-
 class Program : public RefCounter {
-    uint32_t flags_ = 0;
     std::array<ShaderRef, int(eShaderType::_Count)> shaders_;
     SmallVector<Attribute, 8> attributes_;
     SmallVector<Uniform, 16> uniforms_;
-    String name_;
 
     ApiContext *api_ctx_ = nullptr;
     SmallVector<VkDescriptorSetLayout, 4> descr_set_layouts_;
@@ -40,11 +36,11 @@ class Program : public RefCounter {
 
   public:
     Program() = default;
-    Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-            ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *status, ILog *log);
-    Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
-    Program(std::string_view name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref,
-            ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log, int);
+    Program(ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
+            ShaderRef gs_ref, ILog *log);
+    Program(ApiContext *api_ctx, ShaderRef cs_ref, ILog *log);
+    Program(ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
+            ShaderRef miss_ref, ShaderRef intersection_ref, ILog *log, int);
 
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -53,18 +49,13 @@ class Program : public RefCounter {
     Program &operator=(const Program &rhs) = delete;
     Program &operator=(Program &&rhs) noexcept;
 
-    uint32_t flags() const { return flags_; }
-    bool ready() const {
-        return (shaders_[int(eShaderType::Vertex)] && shaders_[int(eShaderType::Fragment)]) ||
-               shaders_[int(eShaderType::Compute)] ||
-               (shaders_[int(eShaderType::RayGen)] &&
-                (shaders_[int(eShaderType::ClosestHit)] || shaders_[int(eShaderType::AnyHit)]) &&
-                shaders_[int(eShaderType::Miss)]);
-    }
     bool has_tessellation() const {
         return shaders_[int(eShaderType::TesselationControl)] && shaders_[int(eShaderType::TesselationEvaluation)];
     }
-    const String &name() const { return name_; }
+
+    bool operator==(const Program &rhs) const { return shaders_ == rhs.shaders_; }
+    bool operator!=(const Program &rhs) const { return shaders_ != rhs.shaders_; }
+    bool operator<(const Program &rhs) const { return shaders_ < rhs.shaders_; }
 
     const Attribute &attribute(const int i) const { return attributes_[i]; }
     const Attribute &attribute(std::string_view name) const {
@@ -86,20 +77,17 @@ class Program : public RefCounter {
         return uniforms_[0];
     }
 
+    const std::array<ShaderRef, int(eShaderType::_Count)> &shaders() const { return shaders_; }
     const ShaderRef &shader(eShaderType type) const { return shaders_[int(type)]; }
 
     Span<const VkDescriptorSetLayout> descr_set_layouts() const { return descr_set_layouts_; }
     Span<const VkPushConstantRange> pc_ranges() const { return pc_ranges_; }
 
-    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref,
-              eProgLoadStatus *status, ILog *log);
-    void Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
+    void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref, ILog *log);
+    void Init(ShaderRef cs_ref, ILog *log);
     void Init2(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
-               ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
+               ShaderRef intersection_ref, ILog *log);
 };
-
-typedef StrongRef<Program> ProgramRef;
-typedef Storage<Program> ProgramStorage;
 } // namespace Ren
 
 #ifdef _MSC_VER

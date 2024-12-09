@@ -19,8 +19,8 @@ struct VegState {
 
     static constexpr float WindNoiseLfScale = 128.0f;
 
-    static void Read(const JsObjectP &js_in, VegState &vs);
-    static void Write(const VegState &vs, JsObjectP &js_out);
+    static void Read(const Sys::JsObjectP &js_in, VegState &vs);
+    static void Write(const VegState &vs, Sys::JsObjectP &js_out);
 
     static std::string_view name() { return "veg_state"; }
 };

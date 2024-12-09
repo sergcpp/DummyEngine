@@ -13,7 +13,7 @@ Gui::Image9Patch::Image9Patch(Ren::Context &ctx, std::string_view tex_name, cons
     : Image(ctx, tex_name, pos, size, parent), offset_px_(offset_px), frame_scale_(frame_scale) {}
 
 void Gui::Image9Patch::Draw(Renderer *r) {
-    const Ren::Tex2DParams &p = tex_->params();
+    const Ren::Tex2DParams &p = tex_->params;
     const int tex_layer = tex_->pos(2);
 
     const Vec2f offset_norm = offset_px_ * dims_[1] / Vec2f{dims_px_[1]};
@@ -41,19 +41,19 @@ void Gui::Image9Patch::Draw(Renderer *r) {
 
     { // 1
         const Vec2f _pos[2] = {pos[0], pos[2]}, _uvs[2] = {Vec2f{uvs[0][0], uvs[0][1]}, Vec2f{uvs[2][0], uvs[2][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     { // 2
         const Vec2f _pos[2] = {Vec2f{pos[2][0], pos[0][1]}, Vec2f{pos[3][0], pos[2][1]}},
                     _uvs[2] = {Vec2f{uvs[2][0], uvs[0][1]}, Vec2f{uvs[3][0], uvs[2][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     { // 3
         const Vec2f _pos[2] = {Vec2f{pos[3][0], pos[0][1]}, Vec2f{pos[1][0], pos[2][1]}},
                     _uvs[2] = {Vec2f{uvs[3][0], uvs[0][1]}, Vec2f{uvs[1][0], uvs[2][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     // middle part
@@ -61,18 +61,18 @@ void Gui::Image9Patch::Draw(Renderer *r) {
     { // 4
         const Vec2f _pos[2] = {Vec2f{pos[0][0], pos[2][1]}, Vec2f{pos[2][0], pos[3][1]}},
                     _uvs[2] = {Vec2f{uvs[0][0], uvs[2][1]}, Vec2f{uvs[2][0], uvs[3][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     { // 5
         const Vec2f _pos[2] = {pos[2], pos[3]}, _uvs[2] = {uvs[2], uvs[3]};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     { // 6
         const Vec2f _pos[2] = {Vec2f{pos[3][0], pos[2][1]}, Vec2f{pos[1][0], pos[3][1]}},
                     _uvs[2] = {Vec2f{uvs[3][0], uvs[2][1]}, Vec2f{uvs[1][0], uvs[3][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     // top part
@@ -80,17 +80,17 @@ void Gui::Image9Patch::Draw(Renderer *r) {
     { // 7
         const Vec2f _pos[2] = {Vec2f{pos[0][0], pos[3][1]}, Vec2f{pos[2][0], pos[1][1]}},
                     _uvs[2] = {Vec2f{uvs[0][0], uvs[3][1]}, Vec2f{uvs[2][0], uvs[1][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     { // 8
         const Vec2f _pos[2] = {Vec2f{pos[2][0], pos[3][1]}, Vec2f{pos[3][0], pos[1][1]}},
                     _uvs[2] = {Vec2f{uvs[2][0], uvs[3][1]}, Vec2f{uvs[3][0], uvs[1][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 
     { // 9
         const Vec2f _pos[2] = {pos[3], pos[1]}, _uvs[2] = {Vec2f{uvs[3][0], uvs[3][1]}, Vec2f{uvs[1][0], uvs[1][1]}};
-        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, _pos, _uvs);
+        r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, _pos, _uvs);
     }
 }

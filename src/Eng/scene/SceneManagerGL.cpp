@@ -100,7 +100,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             }
 
             int k = 0;
-            for (; k < mat->params.size(); ++k) {
+            for (; k < int(mat->params.size()); ++k) {
                 material_data[rel_i].params[k] = mat->params[k];
             }
             for (; k < MAX_MATERIAL_PARAMS; ++k) {

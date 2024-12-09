@@ -28,54 +28,41 @@ void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, Fg
         const bool bindless = true;
 #endif
 
-        prog_oit_blit_depth_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_oit_depth.frag.glsl");
-        assert(prog_oit_blit_depth_->ready());
+        prog_oit_blit_depth_ = sh.LoadProgram("internal/blit.vert.glsl", "internal/blit_oit_depth.frag.glsl");
 
         Ren::ProgramRef oit_blend_simple_prog[4] = {
             sh.LoadProgram(
-                ctx, bindless ? "internal/oit_blend_layer.vert.glsl" : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
+                bindless ? "internal/oit_blend_layer.vert.glsl" : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
                 bindless ? "internal/oit_blend_layer.frag.glsl" : "internal/oit_blend_layer@NO_BINDLESS.frag.glsl"),
-            sh.LoadProgram(
-                ctx, bindless ? "internal/oit_blend_layer.vert.glsl" : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
-                bindless ? "internal/oit_blend_layer@SPECULAR.frag.glsl"
-                         : "internal/oit_blend_layer@SPECULAR;NO_BINDLESS.frag.glsl"),
-            sh.LoadProgram(
-                ctx, bindless ? "internal/oit_blend_layer.vert.glsl" : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
-                bindless ? "internal/oit_blend_layer@GI_CACHE.frag.glsl"
-                         : "internal/oit_blend_layer@GI_CACHE;NO_BINDLESS.frag.glsl"),
-            sh.LoadProgram(
-                ctx, bindless ? "internal/oit_blend_layer.vert.glsl" : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
-                bindless ? "internal/oit_blend_layer@GI_CACHE;SPECULAR.frag.glsl"
-                         : "internal/oit_blend_layer@GI_CACHE;SPECULAR;NO_BINDLESS.frag.glsl")};
-        assert(oit_blend_simple_prog[0]->ready());
-        assert(oit_blend_simple_prog[1]->ready());
-        assert(oit_blend_simple_prog[2]->ready());
-        assert(oit_blend_simple_prog[3]->ready());
+            sh.LoadProgram(bindless ? "internal/oit_blend_layer.vert.glsl"
+                                    : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/oit_blend_layer@SPECULAR.frag.glsl"
+                                    : "internal/oit_blend_layer@SPECULAR;NO_BINDLESS.frag.glsl"),
+            sh.LoadProgram(bindless ? "internal/oit_blend_layer.vert.glsl"
+                                    : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/oit_blend_layer@GI_CACHE.frag.glsl"
+                                    : "internal/oit_blend_layer@GI_CACHE;NO_BINDLESS.frag.glsl"),
+            sh.LoadProgram(bindless ? "internal/oit_blend_layer.vert.glsl"
+                                    : "internal/oit_blend_layer@NO_BINDLESS.vert.glsl",
+                           bindless ? "internal/oit_blend_layer@GI_CACHE;SPECULAR.frag.glsl"
+                                    : "internal/oit_blend_layer@GI_CACHE;SPECULAR;NO_BINDLESS.frag.glsl")};
         Ren::ProgramRef oit_blend_vegetation_prog[4] = {
-            sh.LoadProgram(ctx,
-                           bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
+            sh.LoadProgram(bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
                                     : "internal/oit_blend_layer@VEGETATION;NO_BINDLESS.vert.glsl",
                            bindless ? "internal/oit_blend_layer.frag.glsl"
                                     : "internal/oit_blend_layer@NO_BINDLESS.frag.glsl"),
-            sh.LoadProgram(ctx,
-                           bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
+            sh.LoadProgram(bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
                                     : "internal/oit_blend_layer@VEGETATION;NO_BINDLESS.vert.glsl",
                            bindless ? "internal/oit_blend_layer@SPECULAR.frag.glsl"
                                     : "internal/oit_blend_layer@SPECULAR;NO_BINDLESS.frag.glsl"),
-            sh.LoadProgram(ctx,
-                           bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
+            sh.LoadProgram(bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
                                     : "internal/oit_blend_layer@VEGETATION;NO_BINDLESS.vert.glsl",
                            bindless ? "internal/oit_blend_layer@GI_CACHE.frag.glsl"
                                     : "internal/oit_blend_layer@GI_CACHE;NO_BINDLESS.frag.glsl"),
-            sh.LoadProgram(ctx,
-                           bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
+            sh.LoadProgram(bindless ? "internal/oit_blend_layer@VEGETATION.vert.glsl"
                                     : "internal/oit_blend_layer@VEGETATION;NO_BINDLESS.vert.glsl",
                            bindless ? "internal/oit_blend_layer@GI_CACHE;SPECULAR.frag.glsl"
                                     : "internal/oit_blend_layer@GI_CACHE;SPECULAR;NO_BINDLESS.frag.glsl")};
-        assert(oit_blend_vegetation_prog[0]->ready());
-        assert(oit_blend_vegetation_prog[1]->ready());
-        assert(oit_blend_vegetation_prog[2]->ready());
-        assert(oit_blend_vegetation_prog[3]->ready());
 
         if (!rp_oit_blend_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log())) {
             ctx.log()->Error("[ExOITBlendLayer::LazyInit]: Failed to init render pass!");

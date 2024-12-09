@@ -17,9 +17,9 @@ std::vector<int> GenTestData(int size) {
 } // namespace
 
 void test_sparse_array() {
-    printf("Test sparse_array       | ");
-
     using namespace Ren;
+
+    printf("Test sparse_array       | ");
 
     { // reserve method
         SparseArray<int> s1;

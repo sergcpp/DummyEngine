@@ -10,7 +10,7 @@ namespace Ren {
 class ILog;
 
 class Texture2D;
-using Tex2DRef = StrongRef<Texture2D>;
+using Tex2DRef = StrongRef<Texture2D, NamedStorage<Texture2D>>;
 
 struct ApiContext {
     void *vulkan_module = {};

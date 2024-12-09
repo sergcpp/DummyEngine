@@ -3,9 +3,9 @@
 #include "../VarContainer.h"
 
 void test_var() {
-    printf("Test var                | ");
-
     using namespace Net;
+
+    printf("Test var                | ");
 
     { // Var test1
         Var<int> v1 = {"V1"};
@@ -75,7 +75,7 @@ void test_var() {
             require(cnt.size() == 4);
             pack = cnt.Pack();
             require(pack.size() == sizeof(VarContainer::int_type) * 2 + 2 * 4 * sizeof(VarContainer::int_type) +
-                                      2 * sizeof(int) + sizeof(float) + sizeof(S1));
+                                       2 * sizeof(int) + sizeof(float) + sizeof(S1));
         }
 
         v1 = 11;

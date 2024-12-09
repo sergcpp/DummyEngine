@@ -43,7 +43,7 @@ Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level
 
     input_manager_ = std::make_unique<InputManager>();
 
-    shader_loader_ = std::make_unique<ShaderLoader>();
+    shader_loader_ = std::make_unique<ShaderLoader>(*ren_ctx_);
 
     flow_control_ = std::make_unique<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
 

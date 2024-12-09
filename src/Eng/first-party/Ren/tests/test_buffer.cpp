@@ -7,9 +7,9 @@
 #include "../Utils.h"
 
 void test_buffer() {
-    printf("Test buffer             | ");
-
     using namespace Ren;
+
+    printf("Test buffer             | ");
 
     { // Test suballocation
         TestContext test;

@@ -42,7 +42,7 @@ VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT f
         ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
     }
     return VK_FALSE;
-}
+} 
 
 const std::pair<uint32_t, const char *> KnownVendors[] = {
     {0x1002, "AMD"}, {0x10DE, "NVIDIA"}, {0x8086, "INTEL"}, {0x13B5, "ARM"}};

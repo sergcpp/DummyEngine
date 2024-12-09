@@ -13,8 +13,8 @@ struct Lightmap {
     // normalized position and size of lightmap region
     Ren::Vec4f xform;
 
-    static void Read(const JsObjectP &js_in, Lightmap &lm);
-    static void Write(const Lightmap &lm, JsObjectP &js_out);
+    static void Read(const Sys::JsObjectP &js_in, Lightmap &lm);
+    static void Write(const Lightmap &lm, Sys::JsObjectP &js_out);
 
     static std::string_view name() { return "lightmap"; }
 };

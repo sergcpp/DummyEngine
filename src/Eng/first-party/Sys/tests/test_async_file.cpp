@@ -8,6 +8,8 @@
 #include "../AsyncFileReader.h"
 
 void test_async_file() {
+    using namespace Sys;
+
     printf("Test async_file         | ");
 
     const char *test_file_name = "test.bin";
@@ -27,10 +29,10 @@ void test_async_file() {
     }
 
     { // read file (blocking 1)
-        Sys::AsyncFileReader reader;
-        Sys::DefaultFileReadBuf buf;
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
 
-        require(reader.ReadFileBlocking(test_file_name, 0 /* read_offset */, Sys::WholeFile, buf));
+        require(reader.ReadFileBlocking(test_file_name, 0 /* read_offset */, WholeFile, buf));
         require(buf.data_len() == test_file_size);
 
         for (size_t i = 0; i < buf.data_len(); i += 1000) {
@@ -43,11 +45,11 @@ void test_async_file() {
         const size_t file_data_buf_size = test_file_size;
         file_data_buf = std::make_unique<char[]>(file_data_buf_size);
 
-        Sys::AsyncFileReader reader;
+        AsyncFileReader reader;
 
         size_t file_size = file_data_buf_size;
-        require(reader.ReadFileBlocking(test_file_name, 0 /* read_offset */, Sys::WholeFile, file_data_buf.get(),
-                                        file_size));
+        require(
+            reader.ReadFileBlocking(test_file_name, 0 /* read_offset */, WholeFile, file_data_buf.get(), file_size));
         require(file_size == test_file_size);
 
         for (size_t i = 0; i < file_size; i += 1000) {
@@ -56,14 +58,14 @@ void test_async_file() {
     }
 
     { // read file (non-blocking 1)
-        Sys::AsyncFileReader reader;
-        Sys::DefaultFileReadBuf buf;
-        Sys::FileReadEvent event;
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        FileReadEvent event;
 
-        require(reader.ReadFileNonBlocking(test_file_name, 0 /* read_offset */, Sys::WholeFile, buf, event));
+        require(reader.ReadFileNonBlocking(test_file_name, 0 /* read_offset */, WholeFile, buf, event));
 
         size_t bytes_read;
-        require(event.GetResult(true, &bytes_read) == Sys::eFileReadResult::Successful);
+        require(event.GetResult(true, &bytes_read) == eFileReadResult::Successful);
 
         require(bytes_read == test_file_size);
         require(buf.data_len() == test_file_size);
@@ -74,14 +76,14 @@ void test_async_file() {
     }
 
     { // read file (non-blocking 2)
-        Sys::AsyncFileReader reader;
-        Sys::DefaultFileReadBuf buf;
-        Sys::FileReadEvent event;
+        AsyncFileReader reader;
+        DefaultFileReadBuf buf;
+        FileReadEvent event;
 
-        require(reader.ReadFileNonBlocking(test_file_name, 0 /* read_offset */, Sys::WholeFile, buf, event));
+        require(reader.ReadFileNonBlocking(test_file_name, 0 /* read_offset */, WholeFile, buf, event));
 
         size_t bytes_read;
-        while (event.GetResult(false /* block */, &bytes_read) == Sys::eFileReadResult::Pending) {
+        while (event.GetResult(false /* block */, &bytes_read) == eFileReadResult::Pending) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 

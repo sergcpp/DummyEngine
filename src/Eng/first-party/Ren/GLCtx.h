@@ -7,7 +7,7 @@
 
 namespace Ren {
 class Texture2D;
-using Tex2DRef = StrongRef<Texture2D>;
+using Tex2DRef = StrongRef<Texture2D, NamedStorage<Texture2D>>;
 
 struct ApiContext {
     SmallVector<SyncFence, MaxFramesInFlight> in_flight_fences;

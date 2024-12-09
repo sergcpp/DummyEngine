@@ -63,20 +63,20 @@ class Texture2DAtlas;
 class TextureSplitter;
 class VertexInput;
 
-using AnimSeqRef = StrongRef<AnimSequence>;
-using BufferRef = StrongRef<Buffer>;
-using WeakBufferRef = WeakRef<Buffer>;
-using MaterialRef = StrongRef<Material>;
-using MeshRef = StrongRef<Mesh>;
-using PipelineRef = StrongRef<Pipeline, SparseArray<Pipeline>>;
-using ProgramRef = StrongRef<Program>;
+using AnimSeqRef = StrongRef<AnimSequence, NamedStorage<AnimSequence>>;
+using BufferRef = StrongRef<Buffer, NamedStorage<Buffer>>;
+using WeakBufferRef = WeakRef<Buffer, NamedStorage<Buffer>>;
+using MaterialRef = StrongRef<Material, NamedStorage<Material>>;
+using MeshRef = StrongRef<Mesh, NamedStorage<Mesh>>;
+using PipelineRef = StrongRef<Pipeline, SortedStorage<Pipeline>>;
+using ProgramRef = StrongRef<Program, SortedStorage<Program>>;
 using SamplerRef = StrongRef<Sampler, SparseArray<Sampler>>;
 using WeakSamplerRef = WeakRef<Sampler, SparseArray<Sampler>>;
-using ShaderRef = StrongRef<Shader>;
-using Tex2DRef = StrongRef<Texture2D>;
-using WeakTex2DRef = WeakRef<Texture2D>;
-using Tex1DRef = StrongRef<Texture1D>;
-using WeakTex1DRef = WeakRef<Texture1D>;
+using ShaderRef = StrongRef<Shader, NamedStorage<Shader>>;
+using Tex2DRef = StrongRef<Texture2D, NamedStorage<Texture2D>>;
+using WeakTex2DRef = WeakRef<Texture2D, NamedStorage<Texture2D>>;
+using Tex1DRef = StrongRef<Texture1D, NamedStorage<Texture1D>>;
+using WeakTex1DRef = WeakRef<Texture1D, NamedStorage<Texture1D>>;
 
 const char *Version();
 } // namespace Ren

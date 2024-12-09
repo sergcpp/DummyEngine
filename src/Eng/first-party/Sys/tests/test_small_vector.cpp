@@ -3,12 +3,14 @@
 #include "../SmallVector.h"
 
 void test_small_vector() {
+    using namespace Sys;
+
     printf("Test small_vector       | ");
 
-    static_assert(sizeof(Sys::SmallVectorImpl<int>) <= 16);
+    static_assert(sizeof(SmallVectorImpl<int>) <= 16);
 
     { // basic usage with trivial type
-        Sys::SmallVector<int, 16> vec;
+        SmallVector<int, 16> vec;
 
         for (int i = 0; i < 8; i++) {
             vec.push_back(i);
@@ -77,7 +79,7 @@ void test_small_vector() {
             AAA &operator=(AAA &&rhs) = default;
         };
 
-        Sys::SmallVector<AAA, 16> vec;
+        SmallVector<AAA, 16> vec;
 
         for (int i = 0; i < 8; i++) {
             vec.push_back(AAA{2 * i});
@@ -100,7 +102,7 @@ void test_small_vector() {
     }
 
     { // erase
-        Sys::SmallVector<int, 16> vec;
+        SmallVector<int, 16> vec;
         for (int i = 0; i < 8; i++) {
             vec.push_back(i);
         }

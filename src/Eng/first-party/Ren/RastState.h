@@ -189,7 +189,26 @@ inline bool operator==(const RastState &lhs, const RastState &rhs) {
            lhs.depth_bias == rhs.depth_bias && lhs.viewport == rhs.viewport &&
            lhs.scissor.enabled == rhs.scissor.enabled && lhs.scissor.rect == rhs.scissor.rect;
 }
-
-// inline bool operator<(const RastState &lhs, const RastState &rhs) {}
+inline bool operator!=(const RastState &lhs, const RastState &rhs) { return !operator==(lhs, rhs); }
+inline bool operator<(const RastState &lhs, const RastState &rhs) {
+    if (lhs.poly < rhs.poly) {
+        return true;
+    } else if (lhs.poly == rhs.poly) {
+        if (lhs.depth < rhs.depth) {
+            return true;
+        } else if (lhs.depth == rhs.depth) {
+            if (lhs.blend < rhs.blend) {
+                return true;
+            } else if (lhs.blend == rhs.blend) {
+                if (lhs.stencil < rhs.stencil) {
+                    return true;
+                } else if (lhs.stencil == rhs.stencil) {
+                    return lhs.depth_bias < rhs.depth_bias;
+                }
+            }
+        }
+    }
+    return false;
+}
 
 } // namespace Ren

@@ -3,9 +3,9 @@
 #include "../Storage.h"
 
 void test_storage() {
-    printf("Test storage            | ");
-
     using namespace Ren;
+
+    printf("Test storage            | ");
 
     class MyObj : public RefCounter {
         String name_;
@@ -42,7 +42,7 @@ void test_storage() {
     };
 
     { // test create/delete
-        Storage<MyObj> my_obj_storage;
+        NamedStorage<MyObj> my_obj_storage;
         int counter = 0;
 
         auto ref1 = my_obj_storage.Insert("obj", &counter);
@@ -52,7 +52,7 @@ void test_storage() {
     }
 
     { // test copy/move reference
-        Storage<MyObj> my_obj_storage;
+        NamedStorage<MyObj> my_obj_storage;
         int counter = 0;
 
         auto ref1 = my_obj_storage.Insert("obj1", &counter);
@@ -70,6 +70,41 @@ void test_storage() {
         require(counter == 1);
         ref2 = {};
         require(counter == 0);
+    }
+
+    class MyObj2 : public RefCounter {
+      public:
+        int val;
+
+        explicit MyObj2(int _val) : val(_val) {}
+
+        bool operator==(const MyObj2 &rhs) const { return val == rhs.val; }
+        bool operator==(const int rhs_val) const { return val == rhs_val; }
+        bool operator<(const MyObj2 &rhs) const { return val < rhs.val; }
+        bool operator<(const int rhs_val) const { return val < rhs_val; }
+    };
+
+    { // sorted storage
+        SortedStorage<MyObj2> test_storage;
+
+        auto ref1 = test_storage.Insert(0);
+        auto ref2 = test_storage.Insert(42);
+        auto ref3 = test_storage.Insert(11);
+
+        auto ref4 = test_storage.LowerBound([](const MyObj2 &item) { return item.val < 11; });
+        require(bool(ref4));
+        require(*ref4 == 11);
+
+        auto ref5 = test_storage.LowerBound([](const MyObj2 &item) { return item.val < 41; });
+        require(bool(ref5));
+        require(*ref5 == 42);
+
+        auto ref6 = test_storage.LowerBound([](const MyObj2 &item) { return item.val < 43; });
+        require(!bool(ref6));
+
+        require(test_storage.sorted_items()[0] == 0);
+        require(test_storage.sorted_items()[1] == 2);
+        require(test_storage.sorted_items()[2] == 1);
     }
 
     printf("OK\n");

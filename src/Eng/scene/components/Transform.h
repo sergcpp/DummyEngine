@@ -26,8 +26,8 @@ struct Transform {
         UpdateInvMatrix();
     }
 
-    static void Read(const JsObjectP &js_in, Transform &tr);
-    static void Write(const Transform &tr, JsObjectP &js_out);
+    static void Read(const Sys::JsObjectP &js_in, Transform &tr);
+    static void Write(const Transform &tr, Sys::JsObjectP &js_out);
 
     static std::string_view name() { return "transform"; }
 };

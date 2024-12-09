@@ -12,6 +12,8 @@
 #include "../PoolAlloc.h"
 
 void test_alloc() {
+    using namespace Sys;
+
     printf("Test alloc              | ");
 
     { // Basic usage
@@ -19,7 +21,7 @@ void test_alloc() {
         for (int i = 0; i < 256; i++) {
             buf[i] = (char)i;
         }
-        Sys::MonoAlloc<char> my_alloc(buf, sizeof(buf));
+        MonoAlloc<char> my_alloc(buf, sizeof(buf));
 
         char *p1 = my_alloc.allocate(64);
         require(p1 != nullptr);
@@ -39,9 +41,9 @@ void test_alloc() {
     { // Usage with stl
 
         char buf[512];
-        Sys::MonoAlloc<char> my_alloc(buf, sizeof(buf));
+        MonoAlloc<char> my_alloc(buf, sizeof(buf));
 
-        std::vector<int, Sys::MonoAlloc<int>> vec(my_alloc);
+        std::vector<int, MonoAlloc<int>> vec(my_alloc);
         vec.reserve(4);
 
         vec.push_back(1);
@@ -49,14 +51,14 @@ void test_alloc() {
         vec.push_back(3);
         vec.push_back(4);
 
-        std::list<int, Sys::MonoAlloc<int>> list(my_alloc);
+        std::list<int, MonoAlloc<int>> list(my_alloc);
 
         list.push_back(1);
         list.push_back(2);
         list.push_back(3);
         list.push_back(4);
 
-        std::basic_string<char, std::char_traits<char>, Sys::MonoAlloc<char>> str(my_alloc);
+        std::basic_string<char, std::char_traits<char>, MonoAlloc<char>> str(my_alloc);
 
         str.append("test");
         str.append("string");
@@ -88,9 +90,9 @@ void test_alloc() {
 
     { // Usage with binary tree
         char buf[16 * 1024];
-        Sys::MonoAlloc<char> my_alloc(buf, sizeof(buf));
+        MonoAlloc<char> my_alloc(buf, sizeof(buf));
 
-        Sys::BinaryTree<int, std::less<int>, Sys::MonoAlloc<int>> tree(std::less<int>(), my_alloc);
+        BinaryTree<int, std::less<int>, MonoAlloc<int>> tree(std::less<int>(), my_alloc);
 
         for (int i = 0; i < 100; i++) {
             tree.push(i);
@@ -115,7 +117,7 @@ void test_alloc() {
     }
 
     { // Pool alloc usage
-        Sys::PoolAllocator allocator(4, 255);
+        PoolAllocator allocator(4, 255);
 
         int *pointers[512];
 
@@ -142,7 +144,7 @@ void test_alloc() {
     }
 
     { // Multi-pool alloc
-        Sys::MultiPoolAllocator<uint8_t> allocator(32, 512);
+        MultiPoolAllocator<uint8_t> allocator(32, 512);
 
         uint8_t *pointers[16][256];
 
@@ -185,9 +187,9 @@ void test_alloc() {
     }
 
     { // Multi-pool alloc stl usage
-        Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+        MultiPoolAllocator<char> my_alloc(32, 512);
 
-        std::vector<int, Sys::MultiPoolAllocator<int>> vec(my_alloc);
+        std::vector<int, MultiPoolAllocator<int>> vec(my_alloc);
         vec.reserve(4);
 
         vec.push_back(1);
@@ -195,14 +197,14 @@ void test_alloc() {
         vec.push_back(3);
         vec.push_back(4);
 
-        std::list<int, Sys::MultiPoolAllocator<int>> list(my_alloc);
+        std::list<int, MultiPoolAllocator<int>> list(my_alloc);
 
         list.push_back(1);
         list.push_back(2);
         list.push_back(3);
         list.push_back(4);
 
-        std::basic_string<char, std::char_traits<char>, Sys::MultiPoolAllocator<char>> str(my_alloc);
+        std::basic_string<char, std::char_traits<char>, MultiPoolAllocator<char>> str(my_alloc);
 
         str.append("test");
         str.append("string");

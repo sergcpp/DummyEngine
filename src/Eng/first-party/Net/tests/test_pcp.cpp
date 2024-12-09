@@ -6,9 +6,9 @@
 #include "../NAT_PCP.h"
 
 void test_pcp() {
-    printf("Test pcp                | ");
-
     using namespace Net;
+
+    printf("Test pcp                | ");
 
     { // Request read/write
         char buf[128];
@@ -55,8 +55,7 @@ void test_pcp() {
         }
         {
             PCPRequest req;
-            req.MakePeerRequest(ePCPProto::UDP, 12345, 17891, 7200, external_address, 55765, remote_address,
-                                nonce);
+            req.MakePeerRequest(ePCPProto::UDP, 12345, 17891, 7200, external_address, 55765, remote_address, nonce);
 
             int sz = req.Write(buf, sizeof(buf));
             require(sz != -1);
@@ -99,8 +98,8 @@ void test_pcp() {
         }
         {
             PCPResponse resp;
-            resp.MakeMapResponse(ePCPProto::UDP, ePCPResCode::Success, 12345, 17891, 7200, 120,
-                                 external_address, nonce);
+            resp.MakeMapResponse(ePCPProto::UDP, ePCPResCode::Success, 12345, 17891, 7200, 120, external_address,
+                                 nonce);
 
             int sz = resp.Write(buf, sizeof(buf));
             require(sz != -1);
@@ -117,8 +116,8 @@ void test_pcp() {
         }
         {
             PCPResponse resp;
-            resp.MakePeerResponse(ePCPProto::UDP, ePCPResCode::Success, 12345, 17891, 7200, 120,
-                                  external_address, 61478, remote_address, nonce);
+            resp.MakePeerResponse(ePCPProto::UDP, ePCPResCode::Success, 12345, 17891, 7200, 120, external_address,
+                                  61478, remote_address, nonce);
 
             int sz = resp.Write(buf, sizeof(buf));
             require(sz != -1);
@@ -178,8 +177,8 @@ void test_pcp() {
             PCPRequest req;
             if ((size = pcp_server.Receive(sender, recv_buf, sizeof(recv_buf))) && req.Read(recv_buf, size)) {
                 PCPResponse resp;
-                resp.MakeMapResponse(ePCPProto::UDP, ePCPResCode::Success, 30000, 30001, 7200, 100,
-                                     external_address, req.nonce());
+                resp.MakeMapResponse(ePCPProto::UDP, ePCPResCode::Success, 30000, 30001, 7200, 100, external_address,
+                                     req.nonce());
 
                 size = resp.Write(recv_buf, sizeof(recv_buf));
                 pcp_server.Send(s1.local_addr(), &resp, size);

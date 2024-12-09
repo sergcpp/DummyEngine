@@ -42,6 +42,7 @@ enum eImgTest { NoShadow, NoGI, NoGI_RTShadow, NoDiffGI, NoDiffGI_RTShadow, MedD
 
 void run_image_test(std::string_view test_name, const double min_psnr, const eImgTest img_test = eImgTest::NoShadow) {
     using namespace std::chrono;
+    using namespace Eng;
 
     const auto start_time = high_resolution_clock::now();
 
@@ -84,60 +85,60 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         return;
     }
 
-    Eng::ShaderLoader shader_loader;
-    Eng::Random rand(0);
+    ShaderLoader shader_loader(ren_ctx);
+    Random rand(0);
     Sys::ThreadPool threads(1);
-    auto renderer = std::make_unique<Eng::Renderer>(ren_ctx, shader_loader, rand, threads);
+    auto renderer = std::make_unique<Renderer>(ren_ctx, shader_loader, rand, threads);
+    renderer->InitPipelines();
 
     renderer->settings.enable_bloom = false;
     renderer->settings.enable_shadow_jitter = true;
     renderer->settings.enable_aberration = false;
     renderer->settings.enable_purkinje = false;
-    renderer->settings.taa_mode = Eng::eTAAMode::Static;
-    renderer->settings.pixel_filter = Eng::ePixelFilter::Box;
-    renderer->settings.gi_cache_update_mode = Eng::eGICacheUpdateMode::Full;
+    renderer->settings.taa_mode = eTAAMode::Static;
+    renderer->settings.pixel_filter = ePixelFilter::Box;
+    renderer->settings.gi_cache_update_mode = eGICacheUpdateMode::Full;
 
     if (img_test == eImgTest::NoShadow) {
-        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Off;
-        renderer->settings.shadows_quality = Eng::eShadowsQuality::Off;
-        renderer->settings.gi_quality = Eng::eGIQuality::Off;
-        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.reflections_quality = eReflectionsQuality::Off;
+        renderer->settings.shadows_quality = eShadowsQuality::Off;
+        renderer->settings.gi_quality = eGIQuality::Off;
+        renderer->settings.sky_quality = eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoGI) {
-        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Off;
-        renderer->settings.gi_quality = Eng::eGIQuality::Off;
-        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.reflections_quality = eReflectionsQuality::Off;
+        renderer->settings.gi_quality = eGIQuality::Off;
+        renderer->settings.sky_quality = eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoGI_RTShadow) {
-        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Off;
-        renderer->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-        renderer->settings.gi_quality = Eng::eGIQuality::Off;
-        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.reflections_quality = eReflectionsQuality::Off;
+        renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
+        renderer->settings.gi_quality = eGIQuality::Off;
+        renderer->settings.sky_quality = eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoDiffGI) {
-        renderer->settings.gi_quality = Eng::eGIQuality::Off;
-        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.gi_quality = eGIQuality::Off;
+        renderer->settings.sky_quality = eSkyQuality::Medium;
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
-        renderer->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-        renderer->settings.gi_quality = Eng::eGIQuality::Off;
-        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
+        renderer->settings.gi_quality = eGIQuality::Off;
+        renderer->settings.sky_quality = eSkyQuality::Medium;
     } else if (img_test == eImgTest::MedDiffGI) {
-        renderer->settings.gi_quality = Eng::eGIQuality::Medium;
-        renderer->settings.sky_quality = Eng::eSkyQuality::Medium;
+        renderer->settings.gi_quality = eGIQuality::Medium;
+        renderer->settings.sky_quality = eSkyQuality::Medium;
     } else if (img_test == eImgTest::Full_Ultra) {
-        renderer->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-        renderer->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
-        renderer->settings.gi_quality = Eng::eGIQuality::Ultra;
-        renderer->settings.sky_quality = Eng::eSkyQuality::Ultra;
-        renderer->settings.transparency_quality = Eng::eTransparencyQuality::Ultra;
+        renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
+        renderer->settings.reflections_quality = eReflectionsQuality::Raytraced_High;
+        renderer->settings.gi_quality = eGIQuality::Ultra;
+        renderer->settings.sky_quality = eSkyQuality::Ultra;
+        renderer->settings.transparency_quality = eTransparencyQuality::Ultra;
     }
 
-    Eng::path_config_t paths;
-    Eng::SceneManager scene_manager(ren_ctx, shader_loader, nullptr, threads, paths);
+    path_config_t paths;
+    SceneManager scene_manager(ren_ctx, shader_loader, nullptr, threads, paths);
 
     using namespace std::placeholders;
-    scene_manager.SetPipelineInitializer(
-        std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
+    scene_manager.SetPipelineInitializer(std::bind(&Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
 
     Sys::MultiPoolAllocator<char> alloc(32, 512);
-    JsObjectP js_scene(alloc);
+    Sys::JsObjectP js_scene(alloc);
 
     { // Load scene data from file
         const std::string scene_name = "assets_pc/scenes/" + std::string(test_name) + ".json";
@@ -159,45 +160,45 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     float view_fov = 45.0f, gamma = 1.0f, min_exposure = 0.0f, max_exposure = 0.0f;
 
     if (js_scene.Has("camera")) {
-        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
+        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             view_pos[0] = float(js_orig.at(0).as_num().val);
             view_pos[1] = float(js_orig.at(1).as_num().val);
             view_pos[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             view_dir[0] = float(js_dir.at(0).as_num().val);
             view_dir[1] = float(js_dir.at(1).as_num().val);
             view_dir[2] = float(js_dir.at(2).as_num().val);
         }
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = js_cam.at("fov").as_num();
+            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov = float(js_fov.val);
         }
 
         if (js_cam.Has("gamma")) {
-            const JsNumber &js_gamma = js_cam.at("gamma").as_num();
+            const Sys::JsNumber &js_gamma = js_cam.at("gamma").as_num();
             gamma = float(js_gamma.val);
         }
 
         if (js_cam.Has("min_exposure")) {
-            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            const Sys::JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
             min_exposure = float(js_min_exposure.val);
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure = float(js_max_exposure.val);
         }
 
         if (js_cam.Has("view_transform")) {
-            const JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
+            const Sys::JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
             if (js_view_transform.val == "agx") {
-                renderer->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer->settings.tonemap_mode = eTonemapMode::LUT;
                 renderer->SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
                                         Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(__agx),
                                                                  reinterpret_cast<const uint8_t *>(__agx) +
@@ -208,7 +209,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
 
     scene_manager.LoadScene(js_scene);
     { // test serialization
-        JsObjectP js_scene_out(alloc);
+        Sys::JsObjectP js_scene_out(alloc);
         if (js_scene.Has("camera")) {
             js_scene_out["camera"] = js_scene["camera"];
         }
@@ -222,53 +223,52 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     // Create required staging buffers
     //
     Ren::BufferRef instance_indices_stage_buf = ren_ctx.LoadBuffer(
-        "Instance Indices (Upload)", Ren::eBufType::Upload, Eng::InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef skin_transforms_stage_buf = ren_ctx.LoadBuffer(
-        "Skin Transforms (Upload)", Ren::eBufType::Upload, Eng::SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef shape_keys_stage_buf = ren_ctx.LoadBuffer("Shape Keys (Stage)", Ren::eBufType::Upload,
-                                                             Eng::ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
+        "Instance Indices (Upload)", Ren::eBufType::Upload, InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef skin_transforms_stage_buf = ren_ctx.LoadBuffer("Skin Transforms (Upload)", Ren::eBufType::Upload,
+                                                                  SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef shape_keys_stage_buf =
+        ren_ctx.LoadBuffer("Shape Keys (Stage)", Ren::eBufType::Upload, ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef cells_stage_buf =
-        ren_ctx.LoadBuffer("Cells (Upload)", Ren::eBufType::Upload, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Cells (Upload)", Ren::eBufType::Upload, CellsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_cells_stage_buf =
-        ren_ctx.LoadBuffer("RT Cells (Upload)", Ren::eBufType::Upload, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("RT Cells (Upload)", Ren::eBufType::Upload, CellsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef items_stage_buf =
-        ren_ctx.LoadBuffer("Items (Upload)", Ren::eBufType::Upload, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Items (Upload)", Ren::eBufType::Upload, ItemsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_items_stage_buf =
-        ren_ctx.LoadBuffer("RT Items (Upload)", Ren::eBufType::Upload, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("RT Items (Upload)", Ren::eBufType::Upload, ItemsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef lights_stage_buf =
-        ren_ctx.LoadBuffer("Lights (Upload)", Ren::eBufType::Upload, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Lights (Upload)", Ren::eBufType::Upload, LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
-        ren_ctx.LoadBuffer("Decals (Upload)", Ren::eBufType::Upload, Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_geo_instances_stage_buf = ren_ctx.LoadBuffer(
-        "RT Geo Instances (Upload)", Ren::eBufType::Upload, Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_sh_geo_instances_stage_buf =
-        ren_ctx.LoadBuffer("RT Shadow Geo Instances (Upload)", Ren::eBufType::Upload,
-                           Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Decals (Upload)", Ren::eBufType::Upload, DecalsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_geo_instances_stage_buf = ren_ctx.LoadBuffer("RT Geo Instances (Upload)", Ren::eBufType::Upload,
+                                                                   RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_sh_geo_instances_stage_buf = ren_ctx.LoadBuffer(
+        "RT Shadow Geo Instances (Upload)", Ren::eBufType::Upload, RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx.capabilities.hwrt) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
-                                                        Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                        HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
-                                                           Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                           HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
     } else if (ren_ctx.capabilities.swrt) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
-                                                        Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                        SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
-                                                           Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                           SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_tlas_nodes_stage_buf = ren_ctx.LoadBuffer("SWRT TLAS Nodes (Upload)", Ren::eBufType::Upload,
-                                                     Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+                                                     SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_tlas_nodes_stage_buf = ren_ctx.LoadBuffer("SWRT Shadow TLAS Nodes (Upload)", Ren::eBufType::Upload,
-                                                        Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+                                                        SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
-    Ren::BufferRef shared_data_stage_buf = ren_ctx.LoadBuffer("Shared Data (Upload)", Ren::eBufType::Upload,
-                                                              Eng::SharedDataBlockSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef shared_data_stage_buf =
+        ren_ctx.LoadBuffer("Shared Data (Upload)", Ren::eBufType::Upload, SharedDataBlockSize * Ren::MaxFramesInFlight);
 
     //
     // Initialize draw list
     //
-    Eng::DrawList draw_list;
+    DrawList draw_list;
     draw_list.Init(shared_data_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf, shape_keys_stage_buf,
                    cells_stage_buf, rt_cells_stage_buf, items_stage_buf, rt_items_stage_buf, lights_stage_buf,
                    decals_stage_buf, rt_geo_instances_stage_buf, rt_sh_geo_instances_stage_buf,
@@ -372,7 +372,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         api_ctx->backend_frame = (api_ctx->backend_frame + 1) % Ren::MaxFramesInFlight;
     };
 
-    // renderer.settings.taa_mode = Eng::eTAAMode::Dynamic;
+    // renderer.settings.taa_mode = eTAAMode::Dynamic;
 
     // Make sure all textures are loaded
     bool finished = false;
@@ -389,7 +389,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     }
 
     draw_list.frame_index = 0;
-    // renderer->settings.taa_mode = Eng::eTAAMode::Static;
+    // renderer->settings.taa_mode = eTAAMode::Static;
     // draw_list.render_settings = renderer->settings;
     renderer->reset_accumulation();
 

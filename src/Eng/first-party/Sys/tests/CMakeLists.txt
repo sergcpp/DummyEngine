@@ -20,8 +20,7 @@ add_executable(test_Sys main.cpp
                         test_json.cpp
                         test_scope_exit.cpp
                         test_small_vector.cpp
-                        test_thread_pool.cpp
-                        test_vector.cpp)
+                        test_thread_pool.cpp)
 
 target_link_libraries(test_Sys Sys ${LIBS})
 

@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  <Type Name="JsElementT&lt;*&gt;">
-    <DisplayString Condition="type_ == JsType::Literal">{(JsLiteral&amp;)data_}</DisplayString>
-	<DisplayString Condition="type_ == JsType::Number">{(JsNumber&amp;)data_}</DisplayString>
-	<DisplayString Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(JsStringP&amp;)data_}</DisplayString>
-	<DisplayString Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(JsString&amp;)data_}</DisplayString>
-	<DisplayString Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(JsArrayP&amp;)data_}</DisplayString>
-	<DisplayString Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(JsArray&amp;)data_}</DisplayString>
-	<DisplayString Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(JsObjectP&amp;)data_}</DisplayString>
-	<DisplayString Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(JsObject&amp;)data_}</DisplayString>
+  <Type Name="Sys::JsElementT&lt;*&gt;">
+    <DisplayString Condition="type_ == Sys::JsType::Literal">{(Sys::JsLiteral&amp;)data_}</DisplayString>
+    <DisplayString Condition="type_ == Sys::JsType::Number">{(Sys::JsNumber&amp;)data_}</DisplayString>
+    <DisplayString Condition="type_ == Sys::JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(Sys::JsStringP&amp;)data_}</DisplayString>
+    <DisplayString Condition="type_ == Sys::JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(Sys::JsString&amp;)data_}</DisplayString>
+    <DisplayString Condition="type_ == Sys::JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(Sys::JsArrayP&amp;)data_}</DisplayString>
+    <DisplayString Condition="type_ == Sys::JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(Sys::JsArray&amp;)data_}</DisplayString>
+    <DisplayString Condition="type_ == Sys::JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(Sys::JsObjectP&amp;)data_}</DisplayString>
+    <DisplayString Condition="type_ == Sys::JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(Sys::JsObject&amp;)data_}</DisplayString>
     <Expand>
       <Item Name="[type]" ExcludeView="simple">type_</Item>
       <Item Name="[literal]" Condition="type_ == JsType::Literal">(JsLiteral&amp;)data_</Item>
-	  <Item Name="[number]" Condition="type_ == JsType::Number">(JsNumber&amp;)data_</Item>
-	  <Item Name="[string]" Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsStringP&amp;)data_</Item>
-	  <Item Name="[string]" Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsString&amp;)data_</Item>
-	  <Item Name="[array]" Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsArrayP&amp;)data_</Item>
-	  <Item Name="[array]" Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsArray&amp;)data_</Item>
+	    <Item Name="[number]" Condition="type_ == JsType::Number">(JsNumber&amp;)data_</Item>
+	    <Item Name="[string]" Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsStringP&amp;)data_</Item>
+	    <Item Name="[string]" Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsString&amp;)data_</Item>
+	    <Item Name="[array]" Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsArrayP&amp;)data_</Item>
+	    <Item Name="[array]" Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsArray&amp;)data_</Item>
       <Item Name="[object]" Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsObjectP&amp;)data_</Item>
       <Item Name="[object]" Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsObject&amp;)data_</Item>
     </Expand>

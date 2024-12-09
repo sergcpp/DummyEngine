@@ -18,8 +18,8 @@ class AnimState {
 
     AnimState();
 
-    static void Read(const JsObjectP &js_in, AnimState &as);
-    static void Write(const AnimState &as, JsObjectP &js_out) {}
+    static void Read(const Sys::JsObjectP &js_in, AnimState &as);
+    static void Write(const AnimState &as, Sys::JsObjectP &js_out) {}
 
     static std::string_view name() { return "anim_state"; }
 };

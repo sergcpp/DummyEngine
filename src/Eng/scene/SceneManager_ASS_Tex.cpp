@@ -18,10 +18,6 @@ extern "C" {
 
 #include "../utils/Load.h"
 
-// faster than std::min/max in debug
-#define _MIN(x, y) ((x) < (y) ? (x) : (y))
-#define _MAX(x, y) ((x) < (y) ? (y) : (x))
-
 namespace SceneManagerInternal {
 void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int channels, uint8_t out_color[4]) {
     uint32_t sum[4] = {};
@@ -119,8 +115,8 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int
                         }
                         if (x1 >= 0) {
                             const float delx = -rad * inv_width;
-                            const int y1 = _MAX(y - rad + 1, 0);
-                            const int y2 = _MIN(y + rad - 1, height - 1);
+                            const int y1 = std::max(y - rad + 1, 0);
+                            const int y2 = std::min(y + rad - 1, height - 1);
                             for (int dy = y1; dy <= y2; dy++) {
                                 const float dely = (dy - y) * inv_height;
                                 const float r2 = delx * delx + dely * dely;
@@ -139,8 +135,8 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int
                         }
                         if (x2 < width) {
                             const float delx = rad * inv_width;
-                            const int y1 = _MAX(y - rad + 1, 0);
-                            const int y2 = _MIN(y + rad - 1, height - 1);
+                            const int y1 = std::max(y - rad + 1, 0);
+                            const int y2 = std::min(y + rad - 1, height - 1);
                             for (int dy = y1; dy <= y2; dy++) {
                                 const float dely = (dy - y) * inv_height;
                                 const float r2 = delx * delx + dely * dely;
@@ -159,8 +155,8 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int
                         }
                         if (y1 >= 0) {
                             const float dely = -rad * inv_height;
-                            const int x1 = _MAX(x - rad, 0);
-                            const int x2 = _MIN(x + rad, width - 1);
+                            const int x1 = std::max(x - rad, 0);
+                            const int x2 = std::min(x + rad, width - 1);
                             for (int dx = x1; dx <= x2; dx++) {
                                 const float delx = (dx - x) * inv_width;
                                 const float r2 = delx * delx + dely * dely;
@@ -179,8 +175,8 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int
                         }
                         if (y2 < height) {
                             const float dely = rad * inv_height;
-                            const int x1 = _MAX(x - rad, 0);
-                            const int x2 = _MIN(x + rad, width - 1);
+                            const int x1 = std::max(x - rad, 0);
+                            const int x2 = std::min(x + rad, width - 1);
                             for (int dx = x1; dx <= x2; dx++) {
                                 const float delx = (dx - x) * inv_width;
                                 const float r2 = delx * delx + dely * dely;
@@ -197,7 +193,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int
                 ratio = std::sqrt(ratio / MaxRatio);
 
                 // store in green channel
-                out_conemap[4 * (y * width + x) + 1] = uint8_t(_MAX(255.0f * ratio + 0.5f, 1.0f));
+                out_conemap[4 * (y * width + x) + 1] = uint8_t(std::max(255.0f * ratio + 0.5f, 1.0f));
             }
         }
     };
@@ -1175,7 +1171,7 @@ bool Eng::SceneManager::WriteProbeCache(const char *out_folder, const char *scen
         assert(lprobe);
 
         if (lprobe->layer_index != -1) {
-            JsArray js_probe_faces;
+            Sys::JsArray js_probe_faces;
 
             std::string out_file_name;
 
@@ -1220,6 +1216,3 @@ bool Eng::SceneManager::WriteProbeCache(const char *out_folder, const char *scen
 
     return true;
 }
-
-#undef _MIN
-#undef _MAX

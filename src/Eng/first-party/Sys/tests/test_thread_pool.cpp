@@ -6,6 +6,8 @@
 #include "../ThreadPool.h"
 
 void test_thread_pool() {
+    using namespace Sys;
+
     printf("Test thread_pool        | ");
 
     //
@@ -27,7 +29,7 @@ void test_thread_pool() {
     // 'Keep close' sorting: [A][B][E][C][F][H][D][G][I][J]
 
     { // test normal sorting
-        Sys::TaskList task_list;
+        TaskList task_list;
 
         bool A_finished = false, B_finished = false, C_finished = false, D_finished = false, E_finished = false,
              F_finished = false, G_finished = false, H_finished = false, I_finished = false, J_finished = false;
@@ -95,7 +97,7 @@ void test_thread_pool() {
 
         require(task_list.tasks_order[9] == J_id);
 
-        Sys::ThreadPool threads(16);
+        ThreadPool threads(16);
         threads.Enqueue(std::move(task_list)).wait();
 
         require(A_finished && B_finished && C_finished && D_finished && E_finished && F_finished && G_finished &&
@@ -103,7 +105,7 @@ void test_thread_pool() {
     }
 
     { // test 'close' sorting
-        Sys::TaskList task_list;
+        TaskList task_list;
 
         bool A_finished = false, B_finished = false, C_finished = false, D_finished = false, E_finished = false,
              F_finished = false, G_finished = false, H_finished = false, I_finished = false, J_finished = false;
@@ -168,7 +170,7 @@ void test_thread_pool() {
         require(task_list.tasks_order[8] == I_id);
         require(task_list.tasks_order[9] == J_id);
 
-        Sys::ThreadPool threads(16);
+        ThreadPool threads(16);
         threads.Enqueue(std::move(task_list)).wait();
 
         require(A_finished && B_finished && C_finished && D_finished && E_finished && F_finished && G_finished &&
@@ -178,7 +180,7 @@ void test_thread_pool() {
     { // parallel for wrapper
         int data[128] = {};
 
-        Sys::ThreadPool threads(16);
+        ThreadPool threads(16);
         threads.ParallelFor(0, 64, [&](const int i) { ++data[i]; });
         threads.ParallelFor(64, 128, [&](const int i) { ++data[i]; });
 

@@ -3,11 +3,11 @@
 #include "../Utils.h"
 
 void test_unicode() {
-    printf("Test unicode            | ");
-
     using namespace Gui;
 
-    const char test_str1[] = u8"z\u6c34\U0001d10b";
+    printf("Test unicode            | ");
+
+    static const char test_str1[] = u8"z\u6c34\U0001d10b";
 
     { // utf8 -> unicode
         int pos = 0;

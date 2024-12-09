@@ -66,6 +66,6 @@ class Material : public RefCounter {
               const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load, ILog *log);
 };
 
-// typedef StrongRef<Material> MaterialRef;
-typedef Storage<Material> MaterialStorage;
+using MaterialRef = StrongRef<Material, NamedStorage<Material>>;
+using MaterialStorage = NamedStorage<Material>;
 } // namespace Ren

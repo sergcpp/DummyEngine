@@ -43,9 +43,11 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
 
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
 
-    VkDescriptorSetLayout descr_set_layout = p->descr_set_layouts()[0];
-    VkDescriptorSet descr_set =
-        PrepareDescriptorSet(api_ctx, descr_set_layout, bindings, ctx_->default_descr_alloc(), ctx_->log());
+    VkDescriptorSet descr_set = {};
+    if (!p->descr_set_layouts().empty()) {
+        VkDescriptorSetLayout descr_set_layout = p->descr_set_layouts()[0];
+        descr_set = PrepareDescriptorSet(api_ctx, descr_set_layout, bindings, ctx_->default_descr_alloc(), ctx_->log());
+    }
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
@@ -216,8 +218,10 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         const VkRect2D scissor = {{0, 0}, {uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])}};
         api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
-                                         0, nullptr);
+        if (descr_set) {
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1,
+                                             &descr_set, 0, nullptr);
+        }
 
         if (uniform_data) {
             api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
@@ -269,8 +273,10 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         }
         api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
-                                         0, nullptr);
+        if (descr_set) {
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1,
+                                             &descr_set, 0, nullptr);
+        }
 
         if (uniform_data) {
             api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,

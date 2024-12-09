@@ -25,46 +25,37 @@ void Eng::ExRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         };
 
         Ren::ProgramRef rt_gi_prog =
-            sh.LoadProgram(ctx, hwrt_select(subgroup_select("internal/rt_gi_hwrt@GI_CACHE.comp.glsl",
-                                                            "internal/rt_gi_hwrt@GI_CACHE;NO_SUBGROUP.comp.glsl"),
-                                            subgroup_select("internal/rt_gi_swrt@GI_CACHE.comp.glsl",
-                                                            "internal/rt_gi_swrt@GI_CACHE;NO_SUBGROUP.comp.glsl")));
-        assert(rt_gi_prog->ready());
-
+            sh.LoadProgram(hwrt_select(subgroup_select("internal/rt_gi_hwrt@GI_CACHE.comp.glsl",
+                                                       "internal/rt_gi_hwrt@GI_CACHE;NO_SUBGROUP.comp.glsl"),
+                                       subgroup_select("internal/rt_gi_swrt@GI_CACHE.comp.glsl",
+                                                       "internal/rt_gi_swrt@GI_CACHE;NO_SUBGROUP.comp.glsl")));
         if (!pi_rt_gi_[0].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
             ctx.log()->Error("ExRTGI: Failed to initialize pipeline!");
         }
 
         rt_gi_prog = sh.LoadProgram(
-            ctx, hwrt_select(subgroup_select("internal/rt_gi_hwrt@GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                                             "internal/rt_gi_hwrt@GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"),
-                             subgroup_select("internal/rt_gi_swrt@GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                                             "internal/rt_gi_swrt@GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl")));
-        assert(rt_gi_prog->ready());
-
+            hwrt_select(subgroup_select("internal/rt_gi_hwrt@GI_CACHE;STOCH_LIGHTS.comp.glsl",
+                                        "internal/rt_gi_hwrt@GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"),
+                        subgroup_select("internal/rt_gi_swrt@GI_CACHE;STOCH_LIGHTS.comp.glsl",
+                                        "internal/rt_gi_swrt@GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl")));
         if (!pi_rt_gi_[1].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
             ctx.log()->Error("ExRTGI: Failed to initialize pipeline!");
         }
 
         rt_gi_prog = sh.LoadProgram(
-            ctx, hwrt_select(subgroup_select("internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE.comp.glsl",
-                                             "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;NO_SUBGROUP.comp.glsl"),
-                             subgroup_select("internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE.comp.glsl",
-                                             "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;NO_SUBGROUP.comp.glsl")));
-        assert(rt_gi_prog->ready());
-
+            hwrt_select(subgroup_select("internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE.comp.glsl",
+                                        "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;NO_SUBGROUP.comp.glsl"),
+                        subgroup_select("internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE.comp.glsl",
+                                        "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;NO_SUBGROUP.comp.glsl")));
         if (!pi_rt_gi_2bounce_[0].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
             ctx.log()->Error("ExRTGI: Failed to initialize pipeline!");
         }
 
-        rt_gi_prog = sh.LoadProgram(
-            ctx, hwrt_select(
-                     subgroup_select("internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                                     "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"),
-                     subgroup_select("internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl",
-                                     "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl")));
-        assert(rt_gi_prog->ready());
-
+        rt_gi_prog = sh.LoadProgram(hwrt_select(
+            subgroup_select("internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl",
+                            "internal/rt_gi_hwrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl"),
+            subgroup_select("internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS.comp.glsl",
+                            "internal/rt_gi_swrt@TWO_BOUNCES;GI_CACHE;STOCH_LIGHTS;NO_SUBGROUP.comp.glsl")));
         if (!pi_rt_gi_2bounce_[1].Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {
             ctx.log()->Error("ExRTGI: Failed to initialize pipeline!");
         }

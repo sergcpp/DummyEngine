@@ -17,10 +17,6 @@
 // TODO: get rid of this dependency!
 #include "../renderer/Renderer_Structs.h"
 
-template <typename Alloc> struct JsObjectT;
-using JsObject = JsObjectT<std::allocator<char>>;
-using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
-
 namespace Phy {
 struct prim_t;
 struct split_settings_t;
@@ -28,10 +24,11 @@ struct split_settings_t;
 
 namespace Sys {
 template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
-}
-namespace Sys {
+template <typename Alloc> struct JsObjectT;
+using JsObject = JsObjectT<std::allocator<char>>;
+using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 class ThreadPool;
-}
+} // namespace Sys
 
 namespace Snd {
 class Context;
@@ -46,7 +43,7 @@ class ShaderLoader;
 namespace SceneManagerInternal {
 // TODO: remove this from header file
 struct AssetCache {
-    JsObjectP js_db;
+    Sys::JsObjectP js_db;
     Ren::HashMap32<std::string, uint32_t> texture_averages;
 
     explicit AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
@@ -56,15 +53,15 @@ struct AssetCache {
         memcpy(&color, average_color, 4);
         texture_averages.Insert(tex_name, color);
 
-        JsObjectP &js_files = js_db["files"].as_obj();
+        Sys::JsObjectP &js_files = js_db["files"].as_obj();
         const size_t i = js_files.IndexOf(tex_name);
         if (i < js_files.Size()) {
-            JsObjectP &js_file = js_files[i].second.as_obj();
+            Sys::JsObjectP &js_file = js_files[i].second.as_obj();
             if (js_file.Has("color")) {
-                JsNumber &js_color = js_file.at("color").as_num();
+                Sys::JsNumber &js_color = js_file.at("color").as_num();
                 js_color.val = double(color);
             } else {
-                auto js_color = JsNumber{double(color)};
+                auto js_color = Sys::JsNumber{double(color)};
                 js_file.Insert("color", js_color);
             }
         }
@@ -133,8 +130,8 @@ class SceneManager {
     }
     void InvalidateTexture(const Ren::Tex2DRef &ref);
 
-    void LoadScene(const JsObjectP &js_scene, Ren::Bitmask<eSceneLoadFlags> load_flags = SceneLoadAll);
-    void SaveScene(JsObjectP &js_scene);
+    void LoadScene(const Sys::JsObjectP &js_scene, Ren::Bitmask<eSceneLoadFlags> load_flags = SceneLoadAll);
+    void SaveScene(Sys::JsObjectP &js_scene);
     void ClearScene();
 
     void LoadEnvMap();
@@ -166,7 +163,7 @@ class SceneManager {
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov,
                    Ren::Vec2f sensor_shift, float gamma, float min_exposure, float max_exposure);
 
-    using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    using PostLoadFunc = void(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void RegisterComponent(uint32_t index, Eng::CompStorage *storage, const std::function<PostLoadFunc> &post_init);
 
     void SetPipelineInitializer(
@@ -199,14 +196,14 @@ class SceneManager {
                                 const Eng::CompStorage *light_probe_storage, Ren::ILog *log);
 
   private:
-    void PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadLightmap(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadLightSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadDrawable(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadOccluder(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightmap(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightSource(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadDecal(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightProbe(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadSoundSource(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadAccStructure(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
 
     std::pair<Ren::MaterialRef, Ren::MaterialRef> OnLoadMaterial(std::string_view name);
     void OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader, std::string_view f_shader,
@@ -317,8 +314,8 @@ class SceneManager {
 
     std::vector<char> temp_buf;
 
-    //bool cur_lm_indir_ = false;
-    //uint32_t cur_lm_obj_ = 0;
+    // bool cur_lm_indir_ = false;
+    // uint32_t cur_lm_obj_ = 0;
 
     // PT temp data
     // std::vector<Ray::color_rgba_t> pt_lm_direct_, pt_lm_indir_, pt_lm_indir_sh_[4];

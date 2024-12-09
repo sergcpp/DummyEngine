@@ -96,96 +96,72 @@ void Ren::Context::ReleaseMaterials() {
     materials_.clear();
 }
 
+#if defined(REN_GL_BACKEND)
+Ren::ShaderRef Ren::Context::LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type) {
+    ShaderRef ref = shaders_.FindByName(name);
+    if (!ref) {
+        ref = shaders_.Insert(name, api_ctx_.get(), shader_src, type, log_);
+    } else if (!ref->ready() && !shader_src.empty()) {
+        ref->Init(shader_src, type, log_);
+    }
+    return ref;
+}
+#endif
+
 #if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
-Ren::ShaderRef Ren::Context::LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type,
-                                            eShaderLoadStatus *load_status) {
+Ren::ShaderRef Ren::Context::LoadShaderSPIRV(std::string_view name, Span<const uint8_t> shader_data, eShaderType type) {
     ShaderRef ref = shaders_.FindByName(name);
     if (!ref) {
-        ref = shaders_.Insert(name, api_ctx_.get(), shader_src, type, load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eShaderLoadStatus::Found;
-            }
-        } else if (!shader_src.empty()) {
-            ref->Init(shader_src, type, load_status, log_);
-        }
-    }
-    return ref;
-}
-
-#if defined(REN_VK_BACKEND) || !defined(__ANDROID__)
-Ren::ShaderRef Ren::Context::LoadShaderSPIRV(std::string_view name, Span<const uint8_t> shader_data, eShaderType type,
-                                             eShaderLoadStatus *load_status) {
-    ShaderRef ref = shaders_.FindByName(name);
-    if (!ref) {
-        ref = shaders_.Insert(name, api_ctx_.get(), shader_data, type, load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eShaderLoadStatus::Found;
-            }
-        } else if (!shader_data.empty()) {
-            ref->Init(shader_data, type, load_status, log_);
-        }
+        ref = shaders_.Insert(name, api_ctx_.get(), shader_data, type, log_);
+    } else if (!ref->ready() && !shader_data.empty()) {
+        ref->Init(shader_data, type, log_);
     }
     return ref;
 }
 #endif
-#endif
 
-Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
-                                          ShaderRef tes_ref, ShaderRef gs_ref, eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-    if (!ref) {
-        ref = programs_.Insert(name, api_ctx_.get(), std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref),
-                               std::move(tes_ref), std::move(gs_ref), load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eProgLoadStatus::Found;
-            }
-        } else if (!ref->ready() && vs_ref && fs_ref) {
-            ref->Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), std::move(gs_ref),
-                      load_status, log_);
-        }
+Ren::ProgramRef Ren::Context::LoadProgram(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
+                                          ShaderRef gs_ref) {
+    std::array<ShaderRef, int(eShaderType::_Count)> temp_shaders;
+    temp_shaders[int(eShaderType::Vertex)] = vs_ref;
+    temp_shaders[int(eShaderType::Fragment)] = fs_ref;
+    temp_shaders[int(eShaderType::TesselationControl)] = tcs_ref;
+    temp_shaders[int(eShaderType::TesselationEvaluation)] = tes_ref;
+    temp_shaders[int(eShaderType::Geometry)] = gs_ref;
+    ProgramRef ref = programs_.LowerBound([&](const Program &p) { return p.shaders() < temp_shaders; });
+    if (!ref || ref->shaders() != temp_shaders) {
+        assert(vs_ref && fs_ref);
+        ref = programs_.Insert(api_ctx_.get(), std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref),
+                               std::move(tes_ref), std::move(gs_ref), log_);
     }
     return ref;
 }
 
-Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef cs_ref, eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-    if (!ref) {
-        ref = programs_.Insert(name, api_ctx_.get(), std::move(cs_ref), load_status, log_);
-    } else {
-        if (ref->ready()) {
-            if (load_status)
-                *load_status = eProgLoadStatus::Found;
-        } else if (!ref->ready() && cs_ref) {
-            ref->Init(std::move(cs_ref), load_status, log_);
-        }
+Ren::ProgramRef Ren::Context::LoadProgram(ShaderRef cs_ref) {
+    std::array<ShaderRef, int(eShaderType::_Count)> temp_shaders;
+    temp_shaders[int(eShaderType::Compute)] = cs_ref;
+    ProgramRef ref = programs_.LowerBound([&](const Program &p) { return p.shaders() < temp_shaders; });
+    if (!ref || ref->shaders() != temp_shaders) {
+        assert(cs_ref);
+        ref = programs_.Insert(api_ctx_.get(), std::move(cs_ref), log_);
     }
     return ref;
 }
 
 #if defined(REN_VK_BACKEND)
-Ren::ProgramRef Ren::Context::LoadProgram2(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref,
-                                           ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref,
-                                           eProgLoadStatus *load_status) {
-    ProgramRef ref = programs_.FindByName(name);
-    if (!ref) {
-        ref = programs_.Insert(name, api_ctx_.get(), std::move(raygen_ref), std::move(closesthit_ref),
-                               std::move(anyhit_ref), std::move(miss_ref), std::move(intersection_ref), load_status,
-                               log_, 0);
-    } else {
-        if (ref->ready()) {
-            if (load_status) {
-                (*load_status) = eProgLoadStatus::Found;
-            }
-        } else if (!ref->ready() && raygen_ref && (closesthit_ref || anyhit_ref) && miss_ref) {
-            ref->Init2(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
-                       std::move(intersection_ref), load_status, log_);
-        }
+Ren::ProgramRef Ren::Context::LoadProgram2(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
+                                           ShaderRef miss_ref, ShaderRef intersection_ref) {
+    std::array<ShaderRef, int(eShaderType::_Count)> temp_shaders;
+    temp_shaders[int(eShaderType::RayGen)] = raygen_ref;
+    temp_shaders[int(eShaderType::ClosestHit)] = closesthit_ref;
+    temp_shaders[int(eShaderType::AnyHit)] = anyhit_ref;
+    temp_shaders[int(eShaderType::Miss)] = miss_ref;
+    temp_shaders[int(eShaderType::Intersection)] = intersection_ref;
+    ProgramRef ref = programs_.LowerBound([&](const Program &p) { return p.shaders() < temp_shaders; });
+    if (!ref || ref->shaders() != temp_shaders) {
+        assert(raygen_ref);
+        ref = programs_.Insert(api_ctx_.get(), std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref),
+                               std::move(miss_ref), std::move(intersection_ref), log_, 0);
     }
     return ref;
 }
@@ -193,22 +169,39 @@ Ren::ProgramRef Ren::Context::LoadProgram2(std::string_view name, ShaderRef rayg
 
 Ren::ProgramRef Ren::Context::GetProgram(const uint32_t index) { return {&programs_, index}; }
 
-int Ren::Context::NumProgramsNotReady() {
-    return int(std::count_if(programs_.begin(), programs_.end(), [](const Program &p) { return !p.ready(); }));
-}
-
 void Ren::Context::ReleasePrograms() {
     if (programs_.empty()) {
         return;
     }
     log_->Error("---------REMAINING PROGRAMS--------");
-    for ([[maybe_unused]] const Program &p : programs_) {
+    for (const Program &p : programs_) {
+        std::string prog_name;
+        for (const ShaderRef &sh : p.shaders()) {
+            if (!sh) {
+                continue;
+            }
+            if (!prog_name.empty()) {
+                prog_name += "&";
+            }
+            prog_name += sh->name();
+        }
 #if defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
-        log_->Error("%s %i", p.name().c_str(), int(p.id()));
+        log_->Error("%s %i", prog_name.c_str(), int(p.id()));
+#elif defined(REN_VK_BACKEND)
+        log_->Error("%s", prog_name.c_str());
 #endif
     }
     log_->Error("-----------------------------------");
     programs_.clear();
+}
+
+Ren::PipelineRef Ren::Context::LoadPipeline(ProgramRef prog_ref, const int subgroup_size) {
+    PipelineRef ref = pipelines_.LowerBound([&](const Pipeline &pi) { return pi.prog() < prog_ref; });
+    if (!ref || ref->prog() != prog_ref) {
+        assert(prog_ref);
+        ref = pipelines_.Insert(api_ctx_.get(), std::move(prog_ref), log_, subgroup_size);
+    }
+    return ref;
 }
 
 Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const Tex3DParams &p, MemAllocators *mem_allocs,

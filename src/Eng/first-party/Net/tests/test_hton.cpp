@@ -3,9 +3,9 @@
 #include "../Types.h"
 
 void test_hton() {
-    printf("Test hton               | ");
-
     using namespace Net;
+
+    printf("Test hton               | ");
 
     { // uint32_t
         uint32_t v1 = 0x12345678;

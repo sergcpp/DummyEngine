@@ -16,7 +16,6 @@ template <size_t arg1, size_t arg2, size_t... args> struct _compile_time_max<arg
     static const size_t value =
         arg1 >= arg2 ? _compile_time_max<arg1, args...>::value : _compile_time_max<arg2, args...>::value;
 };
-} // namespace Sys
 
 enum class JsType { Invalid = -1, Literal, Number, String, Array, Object };
 enum class JsLiteralType { Undefined, True, False, Null };
@@ -57,9 +56,7 @@ struct JsNumber {
     bool operator==(const JsNumber &rhs) const { return val == rhs.val; }
     bool operator==(const double &rhs) const { return val == rhs; }
 
-    [[nodiscard]] bool Equals(const JsNumber &rhs, const double eps) const {
-        return std::abs(val - rhs.val) < eps;
-    }
+    [[nodiscard]] bool Equals(const JsNumber &rhs, const double eps) const { return std::abs(val - rhs.val) < eps; }
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;
@@ -247,3 +244,4 @@ using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char>>;
 
 using JsElement = JsElementT<std::allocator<char>>;
 using JsElementP = JsElementT<Sys::MultiPoolAllocator<char>>;
+} // namespace Sys

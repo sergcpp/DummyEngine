@@ -4,9 +4,9 @@
 #include "../Types.h"
 
 void test_types() {
-    printf("Test types              | ");
-
     using namespace Net;
+
+    printf("Test types              | ");
 
     // Check endianness conversion
     { // int16

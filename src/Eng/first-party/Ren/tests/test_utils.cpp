@@ -4,12 +4,10 @@
 
 #include "../Utils.h"
 
-#define _ABS(x) ((x) < 0 ? -(x) : (x))
-
 void test_utils() {
-    printf("Test utils              | ");
-
     using namespace Ren;
+
+    printf("Test utils              | ");
 
     std::unique_ptr<uint8_t[]> data_in(new uint8_t[256 * 256 * 256 * 3]);
 
@@ -53,11 +51,11 @@ void test_utils() {
             for (int g = 0; g < 256; g++) {
                 for (int b = 0; b < 256; b++) {
                     int diff = int(*_data_RGB++) - int(*_data_in++);
-                    require(_ABS(diff) <= 2);
+                    require(std::abs(diff) <= 2);
                     diff = int(*_data_RGB++) - int(*_data_in++);
-                    require(_ABS(diff) <= 2);
+                    require(std::abs(diff) <= 2);
                     diff = int(*_data_RGB++) - int(*_data_in++);
-                    require(_ABS(diff) <= 2);
+                    require(std::abs(diff) <= 2);
                 }
             }
         }

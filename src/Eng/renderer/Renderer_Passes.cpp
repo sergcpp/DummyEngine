@@ -42,176 +42,153 @@ static const float GTAORandSamples[32][2] = {
     {0.978491f, 0.693668f}, {0.195222f, 0.323286f}, {0.566908f, 0.055406f}, {0.256133f, 0.988877f}};
 } // namespace RendererInternal
 
-bool Eng::Renderer::InitPipelines() {
-    auto init_pipeline = [&](Ren::Pipeline &pi, std::string_view cs_name,
-                             std::optional<int> subgroup_size = std::nullopt) {
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, cs_name);
-        if (!prog->ready() || !pi.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), subgroup_size)) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-            return false;
-        }
-        return true;
-    };
+void Eng::Renderer::InitPipelines() {
     auto subgroup_select = [this](std::string_view subgroup_shader, std::string_view nosubgroup_shader) {
         return ctx_.capabilities.subgroup ? subgroup_shader : nosubgroup_shader;
     };
 
-    bool success = true;
-
-    success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
-    success &=
-        init_pipeline(pi_gbuf_shade_[0], subgroup_select("internal/gbuffer_shade@SS_SHADOW_ONE.comp.glsl",
+    pi_gbuf_shade_[0] = sh_.LoadPipeline(subgroup_select("internal/gbuffer_shade@SS_SHADOW_ONE.comp.glsl",
                                                          "internal/gbuffer_shade@SS_SHADOW_ONE;NO_SUBGROUP.comp.glsl"));
-    success &=
-        init_pipeline(pi_gbuf_shade_[1],
-                      subgroup_select("internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY.comp.glsl",
-                                      "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY;NO_SUBGROUP.comp.glsl"));
-    success &= init_pipeline(pi_ssr_classify_, subgroup_select("internal/ssr_classify.comp.glsl",
-                                                               "internal/ssr_classify@NO_SUBGROUP.comp.glsl"));
-    success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
-    success &= init_pipeline(pi_ssr_trace_hq_[0][0], subgroup_select("internal/ssr_trace_hq.comp.glsl",
-                                                                     "internal/ssr_trace_hq@NO_SUBGROUP.comp.glsl"));
-    success &=
-        init_pipeline(pi_ssr_trace_hq_[0][1], subgroup_select("internal/ssr_trace_hq@GI_CACHE.comp.glsl",
+    pi_gbuf_shade_[1] =
+        sh_.LoadPipeline(subgroup_select("internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY.comp.glsl",
+                                         "internal/gbuffer_shade@SHADOW_JITTER;SS_SHADOW_MANY;NO_SUBGROUP.comp.glsl"));
+    pi_ssr_classify_ = sh_.LoadPipeline(subgroup_select("internal/ssr_classify.comp.glsl", //
+                                                        "internal/ssr_classify@NO_SUBGROUP.comp.glsl"));
+    pi_ssr_write_indirect_ = sh_.LoadPipeline("internal/ssr_write_indirect_args.comp.glsl");
+    pi_ssr_trace_hq_[0][0] = sh_.LoadPipeline(subgroup_select("internal/ssr_trace_hq.comp.glsl", //
+                                                              "internal/ssr_trace_hq@NO_SUBGROUP.comp.glsl"));
+    pi_ssr_trace_hq_[0][1] = sh_.LoadPipeline(subgroup_select("internal/ssr_trace_hq@GI_CACHE.comp.glsl",
                                                               "internal/ssr_trace_hq@GI_CACHE;NO_SUBGROUP.comp.glsl"));
-    success &=
-        init_pipeline(pi_ssr_trace_hq_[1][0], subgroup_select("internal/ssr_trace_hq@LAYERED.comp.glsl",
+    pi_ssr_trace_hq_[1][0] = sh_.LoadPipeline(subgroup_select("internal/ssr_trace_hq@LAYERED.comp.glsl",
                                                               "internal/ssr_trace_hq@LAYERED;NO_SUBGROUP.comp.glsl"));
-    success &= init_pipeline(pi_ssr_trace_hq_[1][1],
-                             subgroup_select("internal/ssr_trace_hq@LAYERED;GI_CACHE.comp.glsl",
-                                             "internal/ssr_trace_hq@LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl"));
-
-    success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
+    pi_ssr_trace_hq_[1][1] =
+        sh_.LoadPipeline(subgroup_select("internal/ssr_trace_hq@LAYERED;GI_CACHE.comp.glsl",
+                                         "internal/ssr_trace_hq@LAYERED;GI_CACHE;NO_SUBGROUP.comp.glsl"));
+    pi_rt_write_indirect_ = sh_.LoadPipeline("internal/ssr_write_indir_rt_dispatch.comp.glsl");
 
     // Reflections denoising
-    success &= init_pipeline(pi_ssr_reproject_, "internal/ssr_reproject.comp.glsl");
-    success &= init_pipeline(pi_ssr_prefilter_[0], "internal/ssr_prefilter.comp.glsl");
-    success &= init_pipeline(pi_ssr_prefilter_[1], "internal/ssr_prefilter@RELAXED.comp.glsl");
-    success &= init_pipeline(pi_ssr_temporal_, "internal/ssr_temporal.comp.glsl");
-    success &= init_pipeline(pi_ssr_blur_[0], "internal/ssr_blur.comp.glsl");
-    success &= init_pipeline(pi_ssr_blur_[1], "internal/ssr_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
-    success &= init_pipeline(pi_ssr_stabilization_, "internal/ssr_stabilization.comp.glsl");
+    pi_ssr_reproject_ = sh_.LoadPipeline("internal/ssr_reproject.comp.glsl");
+    pi_ssr_prefilter_[0] = sh_.LoadPipeline("internal/ssr_prefilter.comp.glsl");
+    pi_ssr_prefilter_[1] = sh_.LoadPipeline("internal/ssr_prefilter@RELAXED.comp.glsl");
+    pi_ssr_temporal_ = sh_.LoadPipeline("internal/ssr_temporal.comp.glsl");
+    pi_ssr_blur_[0] = sh_.LoadPipeline("internal/ssr_blur.comp.glsl");
+    pi_ssr_blur_[1] = sh_.LoadPipeline("internal/ssr_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
+    pi_ssr_stabilization_ = sh_.LoadPipeline("internal/ssr_stabilization.comp.glsl");
 
     // GI Cache
-    success &= init_pipeline(pi_probe_blend_[0][0], "internal/probe_blend@RADIANCE.comp.glsl");
-    success &= init_pipeline(pi_probe_blend_[1][0], "internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl");
-    success &= init_pipeline(pi_probe_blend_[2][0], "internal/probe_blend@DISTANCE.comp.glsl");
-    success &= init_pipeline(pi_probe_blend_[0][1], "internal/probe_blend@RADIANCE;PARTIAL.comp.glsl");
-    success &= init_pipeline(pi_probe_blend_[1][1], "internal/probe_blend@RADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl");
-    success &= init_pipeline(pi_probe_blend_[2][1], "internal/probe_blend@DISTANCE;PARTIAL.comp.glsl");
-    success &= init_pipeline(pi_probe_relocate_[0], "internal/probe_relocate.comp.glsl");
-    success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate@PARTIAL.comp.glsl");
-    success &= init_pipeline(pi_probe_relocate_[2], "internal/probe_relocate@RESET.comp.glsl");
-    success &= init_pipeline(pi_probe_classify_[0], "internal/probe_classify.comp.glsl");
-    success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify@PARTIAL.comp.glsl");
-    success &= init_pipeline(pi_probe_classify_[2], "internal/probe_classify@RESET.comp.glsl");
-    success &= init_pipeline(pi_probe_sample_, "internal/probe_sample.comp.glsl");
+    pi_probe_blend_[0][0] = sh_.LoadPipeline("internal/probe_blend@RADIANCE.comp.glsl");
+    pi_probe_blend_[1][0] = sh_.LoadPipeline("internal/probe_blend@RADIANCE;STOCH_LIGHTS.comp.glsl");
+    pi_probe_blend_[2][0] = sh_.LoadPipeline("internal/probe_blend@DISTANCE.comp.glsl");
+    pi_probe_blend_[0][1] = sh_.LoadPipeline("internal/probe_blend@RADIANCE;PARTIAL.comp.glsl");
+    pi_probe_blend_[1][1] = sh_.LoadPipeline("internal/probe_blend@RADIANCE;STOCH_LIGHTS;PARTIAL.comp.glsl");
+    pi_probe_blend_[2][1] = sh_.LoadPipeline("internal/probe_blend@DISTANCE;PARTIAL.comp.glsl");
+    pi_probe_relocate_[0] = sh_.LoadPipeline("internal/probe_relocate.comp.glsl");
+    pi_probe_relocate_[1] = sh_.LoadPipeline("internal/probe_relocate@PARTIAL.comp.glsl");
+    pi_probe_relocate_[2] = sh_.LoadPipeline("internal/probe_relocate@RESET.comp.glsl");
+    pi_probe_classify_[0] = sh_.LoadPipeline("internal/probe_classify.comp.glsl");
+    pi_probe_classify_[1] = sh_.LoadPipeline("internal/probe_classify@PARTIAL.comp.glsl");
+    pi_probe_classify_[2] = sh_.LoadPipeline("internal/probe_classify@RESET.comp.glsl");
+    pi_probe_sample_ = sh_.LoadPipeline("internal/probe_sample.comp.glsl");
 
     // GTAO
-    success &= init_pipeline(pi_gtao_main_, "internal/gtao_main.comp.glsl");
-    success &= init_pipeline(pi_gtao_filter_, "internal/gtao_filter.comp.glsl");
-    success &= init_pipeline(pi_gtao_accumulate_, "internal/gtao_accumulate.comp.glsl");
+    pi_gtao_main_ = sh_.LoadPipeline("internal/gtao_main.comp.glsl");
+    pi_gtao_filter_ = sh_.LoadPipeline("internal/gtao_filter.comp.glsl");
+    pi_gtao_accumulate_ = sh_.LoadPipeline("internal/gtao_accumulate.comp.glsl");
 
     // GI
-    success &= init_pipeline(pi_gi_classify_, subgroup_select("internal/gi_classify.comp.glsl",
-                                                              "internal/gi_classify@NO_SUBGROUP.comp.glsl"));
-    success &= init_pipeline(pi_gi_write_indirect_, "internal/gi_write_indirect_args.comp.glsl");
-    success &= init_pipeline(pi_gi_trace_ss_, subgroup_select("internal/gi_trace_ss.comp.glsl",
-                                                              "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl"));
-    success &= init_pipeline(pi_gi_rt_write_indirect_, "internal/gi_write_indir_rt_dispatch.comp.glsl");
-    success &= init_pipeline(pi_gi_reproject_, "internal/gi_reproject.comp.glsl");
-    success &= init_pipeline(pi_gi_prefilter_[0], "internal/gi_prefilter.comp.glsl");
-    success &= init_pipeline(pi_gi_prefilter_[1], "internal/gi_prefilter@RELAXED.comp.glsl");
-    success &= init_pipeline(pi_gi_temporal_, "internal/gi_temporal.comp.glsl");
-    success &= init_pipeline(pi_gi_blur_[0], "internal/gi_blur.comp.glsl");
-    success &= init_pipeline(pi_gi_blur_[1], "internal/gi_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
-    success &= init_pipeline(pi_gi_stabilization_, "internal/gi_stabilization.comp.glsl");
+    pi_gi_classify_ = sh_.LoadPipeline(subgroup_select("internal/gi_classify.comp.glsl", //
+                                                       "internal/gi_classify@NO_SUBGROUP.comp.glsl"));
+    pi_gi_write_indirect_ = sh_.LoadPipeline("internal/gi_write_indirect_args.comp.glsl");
+    pi_gi_trace_ss_ = sh_.LoadPipeline(subgroup_select("internal/gi_trace_ss.comp.glsl", //
+                                                       "internal/gi_trace_ss@NO_SUBGROUP.comp.glsl"));
+    pi_gi_rt_write_indirect_ = sh_.LoadPipeline("internal/gi_write_indir_rt_dispatch.comp.glsl");
+    pi_gi_reproject_ = sh_.LoadPipeline("internal/gi_reproject.comp.glsl");
+    pi_gi_prefilter_[0] = sh_.LoadPipeline("internal/gi_prefilter.comp.glsl");
+    pi_gi_prefilter_[1] = sh_.LoadPipeline("internal/gi_prefilter@RELAXED.comp.glsl");
+    pi_gi_temporal_ = sh_.LoadPipeline("internal/gi_temporal.comp.glsl");
+    pi_gi_blur_[0] = sh_.LoadPipeline("internal/gi_blur.comp.glsl");
+    pi_gi_blur_[1] = sh_.LoadPipeline("internal/gi_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
+    pi_gi_stabilization_ = sh_.LoadPipeline("internal/gi_stabilization.comp.glsl");
 
     // Sun Shadow
-    success &= init_pipeline(pi_sun_shadows_, "internal/sun_shadows@SS_SHADOW.comp.glsl");
-    success &= init_pipeline(pi_sun_brightness_, "internal/sun_brightness.comp.glsl");
-    success &= init_pipeline(
-        pi_shadow_classify_,
-        subgroup_select("internal/rt_shadow_classify.comp.glsl", "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl"),
-        32);
-    success &= init_pipeline(pi_shadow_prepare_mask_,
-                             subgroup_select("internal/rt_shadow_prepare_mask.comp.glsl",
-                                             "internal/rt_shadow_prepare_mask@NO_SUBGROUP.comp.glsl"),
-                             32);
-    success &= init_pipeline(pi_shadow_classify_tiles_,
-                             subgroup_select("internal/rt_shadow_classify_tiles.comp.glsl",
-                                             "internal/rt_shadow_classify_tiles@NO_SUBGROUP.comp.glsl"),
-                             32);
-    success &= init_pipeline(pi_shadow_filter_[0], "internal/rt_shadow_filter@PASS_0.comp.glsl");
-    success &= init_pipeline(pi_shadow_filter_[1], "internal/rt_shadow_filter@PASS_1.comp.glsl");
-    success &= init_pipeline(pi_shadow_filter_[2], "internal/rt_shadow_filter.comp.glsl");
-    success &= init_pipeline(pi_shadow_debug_, "internal/rt_shadow_debug.comp.glsl");
+    pi_sun_shadows_ = sh_.LoadPipeline("internal/sun_shadows@SS_SHADOW.comp.glsl");
+    pi_sun_brightness_ = sh_.LoadPipeline("internal/sun_brightness.comp.glsl");
+    pi_shadow_classify_ = sh_.LoadPipeline(subgroup_select("internal/rt_shadow_classify.comp.glsl", //
+                                                           "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl"),
+                                           32);
+    pi_shadow_prepare_mask_ = sh_.LoadPipeline(subgroup_select("internal/rt_shadow_prepare_mask.comp.glsl",
+                                                               "internal/rt_shadow_prepare_mask@NO_SUBGROUP.comp.glsl"),
+                                               32);
+    pi_shadow_classify_tiles_ =
+        sh_.LoadPipeline(subgroup_select("internal/rt_shadow_classify_tiles.comp.glsl",
+                                         "internal/rt_shadow_classify_tiles@NO_SUBGROUP.comp.glsl"),
+                         32);
+    pi_shadow_filter_[0] = sh_.LoadPipeline("internal/rt_shadow_filter@PASS_0.comp.glsl");
+    pi_shadow_filter_[1] = sh_.LoadPipeline("internal/rt_shadow_filter@PASS_1.comp.glsl");
+    pi_shadow_filter_[2] = sh_.LoadPipeline("internal/rt_shadow_filter.comp.glsl");
+    pi_shadow_debug_ = sh_.LoadPipeline("internal/rt_shadow_debug.comp.glsl");
 
     // Bloom
-    success &= init_pipeline(pi_bloom_downsample_[0], "internal/bloom_downsample.comp.glsl");
-    success &= init_pipeline(pi_bloom_downsample_[1], "internal/bloom_downsample@TONEMAP.comp.glsl");
-    success &= init_pipeline(pi_bloom_upsample_, "internal/bloom_upsample.comp.glsl");
+    pi_bloom_downsample_[0] = sh_.LoadPipeline("internal/bloom_downsample.comp.glsl");
+    pi_bloom_downsample_[1] = sh_.LoadPipeline("internal/bloom_downsample@TONEMAP.comp.glsl");
+    pi_bloom_upsample_ = sh_.LoadPipeline("internal/bloom_upsample.comp.glsl");
 
     // Autoexposure
-    success &= init_pipeline(pi_histogram_sample_, "internal/histogram_sample.comp.glsl");
-    success &= init_pipeline(pi_histogram_exposure_, "internal/histogram_exposure.comp.glsl");
+    pi_histogram_sample_ = sh_.LoadPipeline("internal/histogram_sample.comp.glsl");
+    pi_histogram_exposure_ = sh_.LoadPipeline("internal/histogram_exposure.comp.glsl");
 
     // Sky
-    success &= init_pipeline(pi_sky_upsample_, "internal/skydome_upsample.comp.glsl");
+    pi_sky_upsample_ = sh_.LoadPipeline("internal/skydome_upsample.comp.glsl");
 
     // Debugging
-    success &= init_pipeline(pi_debug_velocity_, "internal/debug_velocity.comp.glsl");
+    pi_debug_velocity_ = sh_.LoadPipeline("internal/debug_velocity.comp.glsl");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    blit_static_vel_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_static_vel.vert.glsl", "internal/blit_static_vel.frag.glsl");
-    success &= blit_static_vel_prog_->ready();
+    bool success = true;
 
-    blit_gauss2_prog_ = sh_.LoadProgram(ctx_, "internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
-    success &= blit_gauss2_prog_->ready();
+    blit_static_vel_prog_ = sh_.LoadProgram("internal/blit_static_vel.vert.glsl", "internal/blit_static_vel.frag.glsl");
+    success &= bool(blit_static_vel_prog_);
 
-    blit_ao_prog_ = sh_.LoadProgram(ctx_, "internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
-    success &= blit_ao_prog_->ready();
+    blit_gauss2_prog_ = sh_.LoadProgram("internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
+    success &= bool(blit_gauss2_prog_);
 
-    blit_bilateral_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
-    success &= blit_bilateral_prog_->ready();
+    blit_ao_prog_ = sh_.LoadProgram("internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
+    success &= bool(blit_ao_prog_);
 
-    blit_taa_prog_[0] = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
+    blit_bilateral_prog_ = sh_.LoadProgram("internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
+    success &= bool(blit_bilateral_prog_);
+
+    blit_taa_prog_[0] = sh_.LoadProgram("internal/blit_taa.vert.glsl",
                                         "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg.frag.glsl");
-    success &= blit_taa_prog_[0]->ready();
+    success &= bool(blit_taa_prog_[0]);
     blit_taa_prog_[1] =
-        sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
+        sh_.LoadProgram("internal/blit_taa.vert.glsl",
                         "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR.frag.glsl");
-    success &= blit_taa_prog_[1]->ready();
+    success &= bool(blit_taa_prog_[1]);
 
     blit_taa_static_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl", "internal/blit_taa@STATIC_ACCUMULATION.frag.glsl");
-    success &= blit_taa_static_prog_->ready();
+        sh_.LoadProgram("internal/blit_taa.vert.glsl", "internal/blit_taa@STATIC_ACCUMULATION.frag.glsl");
+    success &= bool(blit_taa_static_prog_);
 
-    blit_ssr_prog_ = sh_.LoadProgram(ctx_, "internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
-    success &= blit_ssr_prog_->ready();
+    blit_ssr_prog_ = sh_.LoadProgram("internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
+    success &= bool(blit_ssr_prog_);
 
-    blit_ssr_dilate_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_ssr_dilate.vert.glsl", "internal/blit_ssr_dilate.frag.glsl");
-    success &= blit_ssr_dilate_prog_->ready();
+    blit_ssr_dilate_prog_ = sh_.LoadProgram("internal/blit_ssr_dilate.vert.glsl", "internal/blit_ssr_dilate.frag.glsl");
+    success &= bool(blit_ssr_dilate_prog_);
 
     blit_ssr_compose_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose.frag.glsl");
-    success &= blit_ssr_compose_prog_->ready();
+        sh_.LoadProgram("internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose.frag.glsl");
+    success &= bool(blit_ssr_compose_prog_);
 
-    blit_upscale_prog_ = sh_.LoadProgram(ctx_, "internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
-    success &= blit_upscale_prog_->ready();
+    blit_upscale_prog_ = sh_.LoadProgram("internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
+    success &= bool(blit_upscale_prog_);
 
-    blit_down2_prog_ = sh_.LoadProgram(ctx_, "internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
-    success &= blit_down2_prog_->ready();
+    blit_down2_prog_ = sh_.LoadProgram("internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
+    success &= bool(blit_down2_prog_);
 
-    blit_down_depth_prog_ =
-        sh_.LoadProgram(ctx_, "internal/blit_down_depth.vert.glsl", "internal/blit_down_depth.frag.glsl");
-    success &= blit_down_depth_prog_->ready();
-
-    return success;
+    blit_down_depth_prog_ = sh_.LoadProgram("internal/blit_down_depth.vert.glsl", "internal/blit_down_depth.frag.glsl");
+    success &= bool(blit_down_depth_prog_);
 }
 
 void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const PersistentGpuData &persistent_data) {
@@ -906,7 +883,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             uniform_params.img_size = view_state_.scr_res;
             uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
 
-            DispatchCompute(pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -971,7 +948,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
                  *std::get<const Ren::Texture3D *>(noise3d_tex._ref)},
                 {Trg::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
 
-            DispatchCompute(pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+            DispatchCompute(*pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -1255,7 +1232,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
-        DispatchCompute(pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
+        DispatchCompute(*pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
                         sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 }
@@ -1572,7 +1549,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             uniform_params.frustum_info = view_state_.frustum_info;
             uniform_params.view_from_world = view_state_.view_from_world;
 
-            DispatchCompute(pi_gtao_main_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_gtao_main_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
         });
     }
@@ -1615,7 +1592,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
                 Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
                            (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
-            DispatchCompute(pi_gtao_filter_, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(*pi_gtao_filter_, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
         });
     }
     { // accumulation pass
@@ -1666,7 +1643,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             GTAO::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            DispatchCompute(pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
@@ -1906,7 +1883,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
                 (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
 
-            DispatchCompute(pi_bloom_downsample_[mip == 0], grp_count, bindings, &uniform_params,
+            DispatchCompute(*pi_bloom_downsample_[mip == 0], grp_count, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
@@ -1960,7 +1937,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
                 (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
 
-            DispatchCompute(pi_bloom_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_bloom_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.log());
         });
     }
@@ -2005,7 +1982,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             HistogramSample::Params uniform_params = {};
             uniform_params.pre_exposure = view_state_.pre_exposure;
 
-            DispatchCompute(pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
+            DispatchCompute(*pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
@@ -2046,7 +2023,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             uniform_params.max_exposure = max_exposure_;
             uniform_params.exposure_factor = (settings.tonemap_mode != Eng::eTonemapMode::Standard) ? 1.25f : 0.5f;
 
-            DispatchCompute(pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.log());
         });
     }
@@ -2091,7 +2068,7 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
         uniform_params.img_size[0] = view_state_.act_res[0];
         uniform_params.img_size[1] = view_state_.act_res[1];
 
-        DispatchCompute(pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+        DispatchCompute(*pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                         ctx_.default_descr_alloc(), ctx_.log());
     });
 }
