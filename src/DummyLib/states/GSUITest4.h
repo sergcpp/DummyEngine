@@ -52,7 +52,7 @@ class GSUITest4 final : public GSBaseState {
 
     bool trigger_dialog_reload_ = false;
 
-    void OnPostloadScene(JsObjectP &js_scene) override;
+    void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 

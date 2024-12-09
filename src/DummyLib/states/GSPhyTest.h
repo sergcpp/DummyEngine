@@ -40,10 +40,10 @@ class GSPhyTest final : public GSBaseState {
 
     uint64_t click_time_ = 0;
 
-    void OnPreloadScene(JsObjectP &js_scene) override;
-    void OnPostloadScene(JsObjectP &js_scene) override;
+    void OnPreloadScene(Sys::JsObjectP &js_scene) override;
+    void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 
-    void SaveScene(JsObjectP &js_scene) override;
+    void SaveScene(Sys::JsObjectP &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 

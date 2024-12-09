@@ -46,7 +46,7 @@ void WordPuzzleUI::Restart() {
     anim_started_time_s_ = Sys::GetTimeS();
 }
 
-bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
+bool WordPuzzleUI::Load(const Sys::JsObject &js_puzzle) {
     if (!js_puzzle.Has("text")) {
         return false;
     }
@@ -60,13 +60,13 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
 
     std::mt19937 rand_gen(std::random_device{}());
 
-    const JsString &js_text = js_puzzle.at("text").as_str();
+    const Sys::JsString &js_text = js_puzzle.at("text").as_str();
     text_data_ = js_text.val;
 
     if (js_puzzle.Has("options")) {
-        const JsArray &js_options = js_puzzle.at("options").as_arr();
-        for (const JsElement &js_opt_el : js_options.elements) {
-            const JsObject &js_opt = js_opt_el.as_obj();
+        const Sys::JsArray &js_options = js_puzzle.at("options").as_arr();
+        for (const Sys::JsElement &js_opt_el : js_options.elements) {
+            const Sys::JsObject &js_opt = js_opt_el.as_obj();
 
             OptionData &opt_data = text_options_.emplace_back();
             opt_data.var_start = int(option_variants_.size());
@@ -75,9 +75,9 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
             opt_data.var_selected = -1;
             opt_data.is_hover = false;
 
-            const JsArray &js_variants = js_opt.at("variants").as_arr();
-            for (const JsElement &js_var_el : js_variants.elements) {
-                const JsString &js_var = js_var_el.as_str();
+            const Sys::JsArray &js_variants = js_opt.at("variants").as_arr();
+            for (const Sys::JsElement &js_var_el : js_variants.elements) {
+                const Sys::JsString &js_var = js_var_el.as_str();
 
                 option_variants_.push_back(js_var.val);
                 opt_data.var_count++;
@@ -96,15 +96,15 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
     }
 
     if (js_puzzle.Has("hints")) {
-        const JsArray &js_hints = js_puzzle.at("hints").as_arr();
-        for (const JsElement &js_hint_el : js_hints.elements) {
-            const JsObject &js_hint = js_hint_el.as_obj();
+        const Sys::JsArray &js_hints = js_puzzle.at("hints").as_arr();
+        for (const Sys::JsElement &js_hint_el : js_hints.elements) {
+            const Sys::JsObject &js_hint = js_hint_el.as_obj();
 
             HintData &hint_data = text_hints_.emplace_back();
             hint_data.str_index = int(hint_strings_.size());
             hint_data.is_hover = false;
 
-            const JsString &js_hint_en = js_hint.at("en").as_str();
+            const Sys::JsString &js_hint_en = js_hint.at("en").as_str();
             hint_strings_.push_back(js_hint_en.val);
         }
     }

@@ -32,10 +32,10 @@ void GSPhyTest::Enter() {
     GSBaseState::LoadScene(SCENE_NAME);
 }
 
-void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
+void GSPhyTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
     GSBaseState::OnPreloadScene(js_scene);
 
-    JsArrayP &js_objects = js_scene.at("objects").as_arr();
+    Sys::JsArrayP &js_objects = js_scene.at("objects").as_arr();
     const auto &alloc = js_scene.elements.get_allocator();
 
     // Dynamic spheres
@@ -45,39 +45,39 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
             const double xx = double(x - 1LL) * Radius * 1.5;
             const double zz = double(z - 1LL) * Radius * 1.5;
 
-            JsObjectP new_object(alloc);
+            Sys::JsObjectP new_object(alloc);
 
             { // Add empty transform component
-                JsObjectP js_transform(alloc);
+                Sys::JsObjectP js_transform(alloc);
                 { // scale unit sphere to radius
-                    JsArrayP js_scale(alloc);
-                    js_scale.Push(JsNumber{Radius});
-                    js_scale.Push(JsNumber{Radius});
-                    js_scale.Push(JsNumber{Radius});
+                    Sys::JsArrayP js_scale(alloc);
+                    js_scale.Push(Sys::JsNumber{Radius});
+                    js_scale.Push(Sys::JsNumber{Radius});
+                    js_scale.Push(Sys::JsNumber{Radius});
                     js_transform.Insert("scale", std::move(js_scale));
                 }
                 new_object.Insert(Eng::Transform::name(), std::move(js_transform));
             }
 
             { // Add physics component
-                JsObjectP js_physics(alloc);
+                Sys::JsObjectP js_physics(alloc);
 
                 { // position
-                    JsArrayP js_pos(alloc);
-                    js_pos.Push(JsNumber{xx});
-                    js_pos.Push(JsNumber{10.0});
-                    js_pos.Push(JsNumber{zz});
+                    Sys::JsArrayP js_pos(alloc);
+                    js_pos.Push(Sys::JsNumber{xx});
+                    js_pos.Push(Sys::JsNumber{10.0});
+                    js_pos.Push(Sys::JsNumber{zz});
                     js_physics.Insert("pos", std::move(js_pos));
                 }
 
-                js_physics.Insert("inv_mass", JsNumber{1.0});
-                js_physics.Insert("elasticity", JsNumber{0.0});
-                js_physics.Insert("friction", JsNumber{0.5});
+                js_physics.Insert("inv_mass", Sys::JsNumber{1.0});
+                js_physics.Insert("elasticity", Sys::JsNumber{0.0});
+                js_physics.Insert("friction", Sys::JsNumber{0.5});
 
                 { // shape
-                    JsObjectP js_shape(alloc);
-                    js_shape.Insert("type", JsStringP{"sphere", alloc});
-                    js_shape.Insert("radius", JsNumber{Radius});
+                    Sys::JsObjectP js_shape(alloc);
+                    js_shape.Insert("type", Sys::JsStringP{"sphere", alloc});
+                    js_shape.Insert("radius", Sys::JsNumber{Radius});
                     js_physics.Insert("shape", std::move(js_shape));
                 }
 
@@ -85,9 +85,9 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
             }
 
             { // Add drawable component
-                JsObjectP js_drawable(alloc);
-                js_drawable.Insert("mesh_file", JsStringP{"sphere_hi.mesh", alloc});
-                js_drawable.Insert("visible_to_probes", JsLiteral{JsLiteralType::False});
+                Sys::JsObjectP js_drawable(alloc);
+                js_drawable.Insert("mesh_file", Sys::JsStringP{"sphere_hi.mesh", alloc});
+                js_drawable.Insert("visible_to_probes", Sys::JsLiteral{Sys::JsLiteralType::False});
                 new_object.Insert(Eng::Drawable::name(), std::move(js_drawable));
             }
 
@@ -102,39 +102,39 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
             const double xx = double(x - 1LL) * Radius * 0.25;
             const double zz = double(z - 1LL) * Radius * 0.25;
 
-            JsObjectP new_object(alloc);
+            Sys::JsObjectP new_object(alloc);
 
             { // Add empty transform component
-                JsObjectP js_transform(alloc);
+                Sys::JsObjectP js_transform(alloc);
                 { // scale unit sphere to radius
-                    JsArrayP js_scale(alloc);
-                    js_scale.Push(JsNumber{Radius});
-                    js_scale.Push(JsNumber{Radius});
-                    js_scale.Push(JsNumber{Radius});
+                    Sys::JsArrayP js_scale(alloc);
+                    js_scale.Push(Sys::JsNumber{Radius});
+                    js_scale.Push(Sys::JsNumber{Radius});
+                    js_scale.Push(Sys::JsNumber{Radius});
                     js_transform.Insert("scale", std::move(js_scale));
                 }
                 new_object.Insert(Eng::Transform::name(), std::move(js_transform));
             }
 
             { // Add physics component
-                JsObjectP js_physics(alloc);
+                Sys::JsObjectP js_physics(alloc);
 
                 { // position
-                    JsArrayP js_pos(alloc);
-                    js_pos.Push(JsNumber{xx});
-                    js_pos.Push(JsNumber{-Radius});
-                    js_pos.Push(JsNumber{zz});
+                    Sys::JsArrayP js_pos(alloc);
+                    js_pos.Push(Sys::JsNumber{xx});
+                    js_pos.Push(Sys::JsNumber{-Radius});
+                    js_pos.Push(Sys::JsNumber{zz});
                     js_physics.Insert("pos", std::move(js_pos));
                 }
 
-                js_physics.Insert("inv_mass", JsNumber{0.0});
-                js_physics.Insert("elasticity", JsNumber{0.99});
-                js_physics.Insert("friction", JsNumber{0.5});
+                js_physics.Insert("inv_mass", Sys::JsNumber{0.0});
+                js_physics.Insert("elasticity", Sys::JsNumber{0.99});
+                js_physics.Insert("friction", Sys::JsNumber{0.5});
 
                 { // shape
-                    JsObjectP js_shape(alloc);
-                    js_shape.Insert("type", JsStringP{"sphere", alloc});
-                    js_shape.Insert("radius", JsNumber{Radius});
+                    Sys::JsObjectP js_shape(alloc);
+                    js_shape.Insert("type", Sys::JsStringP{"sphere", alloc});
+                    js_shape.Insert("radius", Sys::JsNumber{Radius});
                     js_physics.Insert("shape", std::move(js_shape));
                 }
 
@@ -142,13 +142,13 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
             }
 
             { // Add drawable component
-                JsObjectP js_drawable(alloc);
-                js_drawable.Insert("mesh_file", JsStringP{"sphere_hi.mesh", alloc});
-                js_drawable.Insert("visible_to_probes", JsLiteral{JsLiteralType::False});
+                Sys::JsObjectP js_drawable(alloc);
+                js_drawable.Insert("mesh_file", Sys::JsStringP{"sphere_hi.mesh", alloc});
+                js_drawable.Insert("visible_to_probes", Sys::JsLiteral{Sys::JsLiteralType::False});
 
                 { // Set material to checkerboard
-                    JsArrayP js_material_override(alloc);
-                    js_material_override.Push(JsStringP{"checker.mat", alloc});
+                    Sys::JsArrayP js_material_override(alloc);
+                    js_material_override.Push(Sys::JsStringP{"checker.mat", alloc});
                     js_drawable.Insert("material_override", std::move(js_material_override));
                 }
 
@@ -160,37 +160,37 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
     }
 }
 
-void GSPhyTest::OnPostloadScene(JsObjectP &js_scene) {
+void GSPhyTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     GSBaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
-        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
+        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             initial_view_pos_[0] = float(js_orig.at(0).as_num().val);
             initial_view_pos_[1] = float(js_orig.at(1).as_num().val);
             initial_view_pos_[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
             initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
             initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
         }
 
         if (js_cam.Has("fwd_speed")) {
-            const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
+            const Sys::JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
             max_fwd_speed_ = float(js_fwd_speed.val);
         }
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = js_cam.at("fov").as_num();
+            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov_ = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure_ = float(js_max_exposure.val);
         }
     }
@@ -384,43 +384,40 @@ void GSPhyTest::UpdateAnim(const uint64_t dt_us) {
     //        view_dir_[0], view_dir_[1], view_dir_[2]);
 }
 
-void GSPhyTest::SaveScene(JsObjectP &js_scene) {
+void GSPhyTest::SaveScene(Sys::JsObjectP &js_scene) {
     GSBaseState::SaveScene(js_scene);
 
     const auto &alloc = js_scene.elements.get_allocator();
 
     { // write camera
-        JsObjectP js_camera(alloc);
+        Sys::JsObjectP js_camera(alloc);
 
         { // write view origin
-            JsArrayP js_view_origin(alloc);
-            js_view_origin.Push(JsNumber{initial_view_pos_[0]});
-            js_view_origin.Push(JsNumber{initial_view_pos_[1]});
-            js_view_origin.Push(JsNumber{initial_view_pos_[2]});
+            Sys::JsArrayP js_view_origin(alloc);
+            js_view_origin.Push(Sys::JsNumber{initial_view_pos_[0]});
+            js_view_origin.Push(Sys::JsNumber{initial_view_pos_[1]});
+            js_view_origin.Push(Sys::JsNumber{initial_view_pos_[2]});
 
             js_camera.Insert("view_origin", std::move(js_view_origin));
         }
 
         { // write view direction
-            JsArrayP js_view_dir(alloc);
-            js_view_dir.Push(JsNumber{initial_view_dir_[0]});
-            js_view_dir.Push(JsNumber{initial_view_dir_[1]});
-            js_view_dir.Push(JsNumber{initial_view_dir_[2]});
+            Sys::JsArrayP js_view_dir(alloc);
+            js_view_dir.Push(Sys::JsNumber{initial_view_dir_[0]});
+            js_view_dir.Push(Sys::JsNumber{initial_view_dir_[1]});
+            js_view_dir.Push(Sys::JsNumber{initial_view_dir_[2]});
 
             js_camera.Insert("view_dir", std::move(js_view_dir));
         }
 
-        { // write forward speed
-            js_camera.Insert("fwd_speed", JsNumber{max_fwd_speed_});
-        }
+        // write forward speed
+        js_camera.Insert("fwd_speed", Sys::JsNumber{max_fwd_speed_});
 
-        { // write fov
-            js_camera.Insert("fov", JsNumber{view_fov_});
-        }
+        // write fov
+        js_camera.Insert("fov", Sys::JsNumber{view_fov_});
 
-        { // write max exposure
-            js_camera.Insert("max_exposure", JsNumber{max_exposure_});
-        }
+        // write max exposure
+        js_camera.Insert("max_exposure", Sys::JsNumber{max_exposure_});
 
         js_scene.Insert("camera", std::move(js_camera));
     }

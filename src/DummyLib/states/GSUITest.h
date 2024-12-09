@@ -38,7 +38,7 @@ class GSUITest final : public GSBaseState {
 
     uint32_t sophia_indices_[2] = {0xffffffff};
 
-    void OnPostloadScene(JsObjectP &js_scene) override;
+    void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 
     void UpdateAnim(uint64_t dt_us) override;
 

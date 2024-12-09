@@ -78,7 +78,7 @@ void GSDrawTest::Enter() {
     GSBaseState::LoadScene(viewer_->app_params.scene_name);
 }
 
-void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {
+void GSDrawTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
     GSBaseState::OnPreloadScene(js_scene);
 
 #if 0 // texture compression test
@@ -300,7 +300,7 @@ void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {
     leaf_tree_index_ = 0xffffffff;
 }
 
-void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
+void GSDrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     using namespace GSDrawTestInternal;
 
     GSBaseState::OnPostloadScene(js_scene);
@@ -310,21 +310,21 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
     cam_follow_param_ = 0;
 
     if (js_scene.Has("camera")) {
-        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
+        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             initial_view_pos_[0] = float(js_orig.at(0).as_num().val);
             initial_view_pos_[1] = float(js_orig.at(1).as_num().val);
             initial_view_pos_[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
             initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
             initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
         } else if (js_cam.Has("view_rot")) {
-            const JsArrayP &js_view_rot = js_cam.at("view_rot").as_arr();
+            const Sys::JsArrayP &js_view_rot = js_cam.at("view_rot").as_arr();
 
             auto rx = float(js_view_rot.at(0).as_num().val);
             auto ry = float(js_view_rot.at(1).as_num().val);
@@ -351,38 +351,38 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
         }
 
         if (js_cam.Has("fwd_speed")) {
-            const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
+            const Sys::JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
             max_fwd_speed_ = float(js_fwd_speed.val);
         }
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = js_cam.at("fov").as_num();
+            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov_ = float(js_fov.val);
         }
 
         if (js_cam.Has("gamma")) {
-            const JsNumber &js_gamma = js_cam.at("gamma").as_num();
+            const Sys::JsNumber &js_gamma = js_cam.at("gamma").as_num();
             gamma_ = float(js_gamma.val);
         }
 
         if (js_cam.Has("min_exposure")) {
-            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            const Sys::JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
             min_exposure_ = float(js_min_exposure.val);
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure_ = float(js_max_exposure.val);
         }
 
         if (js_cam.Has("shift")) {
-            const JsArrayP &js_shift = js_cam.at("shift").as_arr();
+            const Sys::JsArrayP &js_shift = js_cam.at("shift").as_arr();
             view_sensor_shift_[0] = float(js_shift[0].as_num().val);
             view_sensor_shift_[1] = float(js_shift[1].as_num().val);
         }
 
         if (js_cam.Has("filter")) {
-            const JsStringP &js_filter = js_cam.at("filter").as_str();
+            const Sys::JsStringP &js_filter = js_cam.at("filter").as_str();
             if (js_filter.val == "box") {
                 renderer_->settings.pixel_filter = Eng::ePixelFilter::Box;
             } else if (js_filter.val == "gaussian") {
@@ -391,14 +391,14 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
                 renderer_->settings.pixel_filter = Eng::ePixelFilter::BlackmanHarris;
                 renderer_->settings.pixel_filter_width = 1.5f;
                 if (js_cam.Has("filter_width")) {
-                    const JsNumber &js_filter_width = js_cam.at("filter_width").as_num();
+                    const Sys::JsNumber &js_filter_width = js_cam.at("filter_width").as_num();
                     renderer_->settings.pixel_filter_width = float(js_filter_width.val);
                 }
             }
         }
 
         if (js_cam.Has("view_transform")) {
-            const JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
+            const Sys::JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
             if (js_view_transform.val == "standard") {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
             } else if (js_view_transform.val == "off") {
@@ -411,11 +411,12 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
         }
 
         if (js_cam.Has("follow_path")) {
-            const JsArrayP &js_points = js_cam.at("follow_path").as_arr();
-            for (const JsElementP &el : js_points.elements) {
-                const JsArrayP &js_point = el.as_arr();
+            const Sys::JsArrayP &js_points = js_cam.at("follow_path").as_arr();
+            for (const Sys::JsElementP &el : js_points.elements) {
+                const Sys::JsArrayP &js_point = el.as_arr();
 
-                const JsNumber &x = js_point.at(0).as_num(), &y = js_point.at(1).as_num(), &z = js_point.at(2).as_num();
+                const Sys::JsNumber &x = js_point.at(0).as_num(), &y = js_point.at(1).as_num(),
+                                    &z = js_point.at(2).as_num();
 
                 cam_follow_path_.emplace_back(float(x.val), float(y.val), float(z.val));
             }
@@ -832,44 +833,44 @@ bool GSDrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bo
     return true;
 }
 
-void GSDrawTest::SaveScene(JsObjectP &js_scene) {
+void GSDrawTest::SaveScene(Sys::JsObjectP &js_scene) {
     GSBaseState::SaveScene(js_scene);
 
     const auto &alloc = js_scene.elements.get_allocator();
 
     { // write camera
-        JsObjectP js_camera(alloc);
+        Sys::JsObjectP js_camera(alloc);
 
         { // write view origin
-            JsArrayP js_view_origin(alloc);
+            Sys::JsArrayP js_view_origin(alloc);
 
-            js_view_origin.Push(JsNumber{initial_view_pos_[0]});
-            js_view_origin.Push(JsNumber{initial_view_pos_[1]});
-            js_view_origin.Push(JsNumber{initial_view_pos_[2]});
+            js_view_origin.Push(Sys::JsNumber{initial_view_pos_[0]});
+            js_view_origin.Push(Sys::JsNumber{initial_view_pos_[1]});
+            js_view_origin.Push(Sys::JsNumber{initial_view_pos_[2]});
 
             js_camera.Insert("view_origin", std::move(js_view_origin));
         }
 
         { // write view direction
-            JsArrayP js_view_dir(alloc);
+            Sys::JsArrayP js_view_dir(alloc);
 
-            js_view_dir.Push(JsNumber{initial_view_dir_[0]});
-            js_view_dir.Push(JsNumber{initial_view_dir_[1]});
-            js_view_dir.Push(JsNumber{initial_view_dir_[2]});
+            js_view_dir.Push(Sys::JsNumber{initial_view_dir_[0]});
+            js_view_dir.Push(Sys::JsNumber{initial_view_dir_[1]});
+            js_view_dir.Push(Sys::JsNumber{initial_view_dir_[2]});
 
             js_camera.Insert("view_dir", std::move(js_view_dir));
         }
 
         { // write forward speed
-            js_camera.Insert("fwd_speed", JsNumber{max_fwd_speed_});
+            js_camera.Insert("fwd_speed", Sys::JsNumber{max_fwd_speed_});
         }
 
         { // write fov
-            js_camera.Insert("fov", JsNumber{view_fov_});
+            js_camera.Insert("fov", Sys::JsNumber{view_fov_});
         }
 
         { // write max exposure
-            js_camera.Insert("max_exposure", JsNumber{max_exposure_});
+            js_camera.Insert("max_exposure", Sys::JsNumber{max_exposure_});
         }
 
         js_scene.Insert("camera", std::move(js_camera));

@@ -119,10 +119,10 @@ class GSBaseState : public Eng::ViewerState {
 
     bool LoadScene(std::string_view name);
 
-    virtual void OnPreloadScene(JsObjectP &js_scene);
-    virtual void OnPostloadScene(JsObjectP &js_scene);
+    virtual void OnPreloadScene(Sys::JsObjectP &js_scene);
+    virtual void OnPostloadScene(Sys::JsObjectP &js_scene);
 
-    virtual void SaveScene(JsObjectP &js_scene);
+    virtual void SaveScene(Sys::JsObjectP &js_scene);
 
     void BackgroundProc();
     void UpdateFrame(int list_index);

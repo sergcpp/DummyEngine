@@ -38,7 +38,7 @@ class GSUITest2 : public GSBaseState {
 
     uint32_t zenith_index_ = 0xffffffff;
 
-    void OnPostloadScene(JsObjectP &js_scene) override;
+    void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 

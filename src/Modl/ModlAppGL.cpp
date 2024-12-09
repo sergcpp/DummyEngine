@@ -588,25 +588,16 @@ void main() {
 }
 )";
 
-    Ren::eShaderLoadStatus sh_status;
-    Ren::ShaderRef diag_vs_ref = ctx_->LoadShaderGLSL("__diag_vs", diag_vs, Ren::eShaderType::Vertex, &sh_status);
-    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+    Ren::ShaderRef diag_vs_ref = ctx_->LoadShaderGLSL("__diag_vs", diag_vs, Ren::eShaderType::Vertex);
     Ren::ShaderRef diag_colored_vs_ref =
-        ctx_->LoadShaderGLSL("__diag_colored_vs", diag_colored_vs, Ren::eShaderType::Vertex, &sh_status);
-    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+        ctx_->LoadShaderGLSL("__diag_colored_vs", diag_colored_vs, Ren::eShaderType::Vertex);
     Ren::ShaderRef diag_skinned_vs_ref =
-        ctx_->LoadShaderGLSL("__diag_skinned_vs", diag_skinned_vs, Ren::eShaderType::Vertex, &sh_status);
-    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-    Ren::ShaderRef diag_fs_ref = ctx_->LoadShaderGLSL("__diag_fs", diag_fs, Ren::eShaderType::Fragment, &sh_status);
-    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+        ctx_->LoadShaderGLSL("__diag_skinned_vs", diag_skinned_vs, Ren::eShaderType::Vertex);
+    Ren::ShaderRef diag_fs_ref = ctx_->LoadShaderGLSL("__diag_fs", diag_fs, Ren::eShaderType::Fragment);
 
-    Ren::eProgLoadStatus status;
-    diag_prog_ = ctx_->LoadProgram("__diag", diag_vs_ref, diag_fs_ref, {}, {}, {}, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_colored_prog_ = ctx_->LoadProgram("__diag_colored", diag_colored_vs_ref, diag_fs_ref, {}, {}, {}, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_skinned_prog_ = ctx_->LoadProgram("__diag_skinned", diag_skinned_vs_ref, diag_fs_ref, {}, {}, {}, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    diag_prog_ = ctx_->LoadProgram(diag_vs_ref, diag_fs_ref, {}, {}, {});
+    diag_colored_prog_ = ctx_->LoadProgram(diag_colored_vs_ref, diag_fs_ref, {}, {}, {});
+    diag_skinned_prog_ = ctx_->LoadProgram(diag_skinned_vs_ref, diag_fs_ref, {}, {}, {});
 
     static const char skinning_cs[] = R"(
             #version 430
@@ -735,12 +726,9 @@ void main() {
             }
         )";
 
-    Ren::ShaderRef skinning_cs_ref =
-        ctx_->LoadShaderGLSL("__skin_cs", skinning_cs, Ren::eShaderType::Compute, &sh_status);
-    assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
+    Ren::ShaderRef skinning_cs_ref = ctx_->LoadShaderGLSL("__skin_cs", skinning_cs, Ren::eShaderType::Compute);
 
-    skinning_prog_ = ctx_->LoadProgram("__skin", skinning_cs_ref, &status);
-    assert(status == Ren::eProgLoadStatus::CreatedFromData);
+    skinning_prog_ = ctx_->LoadProgram(skinning_cs_ref);
 
     ////////////////////////////////////////////////////////////////////////////////////////
 

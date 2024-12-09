@@ -1913,9 +1913,8 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
     }
 
 #if defined(REN_GL_BACKEND)
-    Ren::eProgLoadStatus status;
-    Ren::ProgramRef prog = ctx_->LoadProgram(prog_name, {}, {}, {}, {}, {}, &status);
-    if (!prog->ready()) {
+    Ren::ProgramRef prog = ctx_->LoadProgram({}, {}, {}, {}, {});
+    if (!prog) {
         using namespace std;
 
         Sys::AssetFile vs_file(string("assets_pc/shaders/").append(vs_shader)),
@@ -1933,13 +1932,10 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
         vs_file.Read((char *)vs_src.data(), vs_size);
         fs_file.Read((char *)fs_src.data(), fs_size);
 
-        Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = ctx_->LoadShaderGLSL(vs_shader, vs_src, Ren::eShaderType::Vertex, &sh_status);
-        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
-        Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src, Ren::eShaderType::Fragment, &sh_status);
-        assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
+        Ren::ShaderRef vs_ref = ctx_->LoadShaderGLSL(vs_shader, vs_src, Ren::eShaderType::Vertex);
+        Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src, Ren::eShaderType::Fragment);
 
-        prog = ctx_->LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, {}, &status);
+        prog = ctx_->LoadProgram(vs_ref, fs_ref, {}, {}, {});
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
 

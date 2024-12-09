@@ -3,8 +3,10 @@
 #include <Gui/Image9Patch.h>
 #include <Gui/Signal.h>
 
+namespace Sys {
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
+} // namespace Sys
 
 class WordPuzzleUI : public Gui::BaseElement {
     struct OptionData {
@@ -71,7 +73,7 @@ class WordPuzzleUI : public Gui::BaseElement {
     void Cancel();
     void Restart();
 
-    bool Load(const JsObject &js_puzzle);
+    bool Load(const Sys::JsObject &js_puzzle);
 
     void Resize() override;
 

@@ -195,6 +195,8 @@ GSBaseState::~GSBaseState() = default;
 void GSBaseState::Enter() {
     using namespace GSBaseStateInternal;
 
+    renderer_->InitPipelines();
+
     if (USE_TWO_THREADS) {
         background_thread_ = std::thread(std::bind(&GSBaseState::BackgroundProc, this));
     }
@@ -422,7 +424,7 @@ void GSBaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("save", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         Sys::MultiPoolAllocator<char> alloc(32, 512);
-        JsObjectP out_scene(alloc);
+        Sys::JsObjectP out_scene(alloc);
 
         SaveScene(out_scene);
 
@@ -624,7 +626,7 @@ bool GSBaseState::LoadScene(std::string_view name) {
     main_view_lists_[1].Clear();
 
     Sys::MultiPoolAllocator<char> alloc(32, 512);
-    JsObjectP js_scene(alloc), js_probe_cache(alloc);
+    Sys::JsObjectP js_scene(alloc), js_probe_cache(alloc);
 
     { // Load scene data from file
         std::string scene_file =
@@ -685,7 +687,7 @@ bool GSBaseState::LoadScene(std::string_view name) {
     return true;
 }
 
-void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {
+void GSBaseState::OnPreloadScene(Sys::JsObjectP &js_scene) {
     if (!viewer_->app_params.ref_name.empty()) {
         // Incread texture streaming speed if we are capturing
         scene_manager_->StopTextureLoaderThread();
@@ -693,7 +695,7 @@ void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {
     }
 }
 
-void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
+void GSBaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     // trigger probes update
     probes_dirty_ = false;
 
@@ -750,7 +752,7 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 }
 
-void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
+void GSBaseState::SaveScene(Sys::JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
 
 void GSBaseState::Exit() {
     using namespace GSBaseStateInternal;

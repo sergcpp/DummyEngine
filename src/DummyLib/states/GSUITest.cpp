@@ -52,7 +52,7 @@ void GSUITest::Enter() {
 #else
     const char *dialog_name = "assets_pc/scenes/test/test_puzzle.json";
 #endif
-    JsObject js_script;
+    Sys::JsObject js_script;
 
     { // Load dialog data from file
         Sys::AssetFile in_scene(dialog_name);
@@ -77,7 +77,7 @@ void GSUITest::Enter() {
     word_puzzle_->Restart();
 }
 
-void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
+void GSUITest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     using namespace GSUITestInternal;
 
     GSBaseState::OnPostloadScene(js_scene);
@@ -86,16 +86,16 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
     float view_fov = 45, min_exposure = -1000, max_exposure = 1000;
 
     if (js_scene.Has("camera")) {
-        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
+        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             view_origin[0] = float(js_orig.at(0).as_num().val);
             view_origin[1] = float(js_orig.at(1).as_num().val);
             view_origin[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             view_dir[0] = float(js_dir.at(0).as_num().val);
             view_dir[1] = float(js_dir.at(1).as_num().val);
             view_dir[2] = float(js_dir.at(2).as_num().val);
@@ -107,17 +107,17 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
         }*/
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = js_cam.at("fov").as_num();
+            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov = float(js_fov.val);
         }
 
         if (js_cam.Has("min_exposure")) {
-            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            const Sys::JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
             min_exposure = float(js_min_exposure.val);
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure = float(js_max_exposure.val);
         }
     }

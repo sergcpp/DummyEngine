@@ -30,8 +30,8 @@ SeqCanvasUI::SeqCanvasUI(Ren::Context &ctx, const Gui::BitmapFont &font, const G
                       Gui::Vec2f{-1}, Gui::Vec2f{2}, this),
       element_highlighted_(ctx, "assets_pc/textures/editor/seq_el_highlighted.uncompressed.tga",
                            Gui::Vec2f{12.5f, 1.5f}, 1, Gui::Vec2f{-1}, Gui::Vec2f{2}, this),
-      end_(ctx, "assets_pc/textures/editor/canvas_end.uncompressed.tga", Gui::Vec2f{1.0f, 1.5f}, 1,
-           Gui::Vec2f{-1}, Gui::Vec2f{2}, this) {
+      end_(ctx, "assets_pc/textures/editor/canvas_end.uncompressed.tga", Gui::Vec2f{1.0f, 1.5f}, 1, Gui::Vec2f{-1},
+           Gui::Vec2f{2}, this) {
     SeqCanvasUI::Resize();
 }
 
@@ -59,8 +59,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
             std::string_view target = sequence_->GetTrackTarget(track);
             if (!name.empty() && !target.empty()) {
                 snprintf(str_buf, sizeof(str_buf), "%s|%s", name.data(), target.data());
-                font_.DrawText(r, str_buf, Gui::Vec2f{-1 + border_width, y_coord + font_height}, Gui::ColorBlack,
-                               this);
+                font_.DrawText(r, str_buf, Gui::Vec2f{-1 + border_width, y_coord + font_height}, Gui::ColorBlack, this);
             }
 
             const int actions_count = sequence_->GetActionsCount(track);
@@ -87,7 +86,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                 if (seq_action->sound_wave_tex) {
                     const Ren::TextureRegionRef &t = seq_action->sound_wave_tex;
 
-                    const Ren::Tex2DParams &p = t->params();
+                    const Ren::Tex2DParams &p = t->params;
                     const Gui::Vec2f uvs_px[] = {Gui::Vec2f{float(t->pos(0)), float(t->pos(1))},
                                                  Gui::Vec2f{float(t->pos(0) + p.w), float(t->pos(1) + p.h)}};
                     const int tex_layer = t->pos(2);
@@ -100,7 +99,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
 
                     const Gui::Vec2f pos[2] = {el->dims()[0], el->dims()[0] + el->dims()[1]};
 
-                    r->PushImageQuad(Gui::eDrawMode::Passthrough, tex_layer, pos, uvs_px);
+                    r->PushImageQuad(Gui::eDrawMode::Passthrough, tex_layer, Gui::ColorWhite, pos, uvs_px);
                 }
 
                 const char *type_name = Eng::ScriptedSequence::ActionTypeNames[int(seq_action->type)];
@@ -130,8 +129,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
     if (time_cur_ >= time_range_[0] && time_cur_ <= time_range_[1]) {
         // draw line pointer
         const Gui::Vec2f time_pos = SnapToPixels(Gui::Vec2f{
-            -1 + 2 * (time_cur_ - time_range_[0]) / (time_range_[1] - time_range_[0]) - 10 / dims_px_[1][0],
-            -1});
+            -1 + 2 * (time_cur_ - time_range_[0]) / (time_range_[1] - time_range_[0]) - 10 / dims_px_[1][0], -1});
 
         time_cursor_.ResizeToContent(time_pos);
 

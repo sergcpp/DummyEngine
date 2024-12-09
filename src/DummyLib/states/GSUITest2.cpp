@@ -78,7 +78,7 @@ void GSUITest2::Enter() {
     zenith_index_ = scene_manager_->FindObject("zenith");
 }
 
-void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
+void GSUITest2::OnPostloadScene(Sys::JsObjectP &js_scene) {
     using namespace GSUITest2Internal;
 
     GSBaseState::OnPostloadScene(js_scene);
@@ -87,16 +87,16 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
     float view_fov = 45, min_exposure = -1000, max_exposure = 1000;
 
     if (js_scene.Has("camera")) {
-        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
+        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             view_origin[0] = float(js_orig.at(0).as_num().val);
             view_origin[1] = float(js_orig.at(1).as_num().val);
             view_origin[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             view_dir[0] = float(js_dir.at(0).as_num().val);
             view_dir[1] = float(js_dir.at(1).as_num().val);
             view_dir[2] = float(js_dir.at(2).as_num().val);
@@ -108,17 +108,17 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
         }*/
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = js_cam.at("fov").as_num();
+            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov = float(js_fov.val);
         }
 
         if (js_cam.Has("min_exposure")) {
-            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            const Sys::JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
             min_exposure = float(js_min_exposure.val);
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure = float(js_max_exposure.val);
         }
     }

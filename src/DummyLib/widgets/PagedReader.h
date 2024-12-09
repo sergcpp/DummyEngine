@@ -12,10 +12,10 @@ class BitmapFont;
 
 namespace Sys {
 template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
-}
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
 using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
+} // namespace Sys
 
 class PagedReader : public Gui::BaseElement {
     Ren::ILog *log_;
@@ -68,7 +68,7 @@ class PagedReader : public Gui::BaseElement {
     int page_count() const { return int(chapters_[0][cur_chapter_].pages.size()); }
 
     void Clear();
-    bool LoadBook(const JsObject &js_book, const char *src_lang, const char *trg_lang);
+    bool LoadBook(const Sys::JsObject &js_book, const char *src_lang, const char *trg_lang);
 
     void Resize() override;
 

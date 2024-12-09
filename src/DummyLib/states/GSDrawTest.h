@@ -56,10 +56,10 @@ class GSDrawTest final : public GSBaseState {
     int cam_follow_point_ = -1;
     float cam_follow_param_ = 0;
 
-    void OnPreloadScene(JsObjectP &js_scene) override;
-    void OnPostloadScene(JsObjectP &js_scene) override;
+    void OnPreloadScene(Sys::JsObjectP &js_scene) override;
+    void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 
-    void SaveScene(JsObjectP &js_scene) override;
+    void SaveScene(Sys::JsObjectP &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 

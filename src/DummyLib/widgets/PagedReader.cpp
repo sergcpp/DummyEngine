@@ -39,11 +39,11 @@ void PagedReader::Clear() {
     // cur_text_data_.clear();
 }
 
-bool PagedReader::LoadBook(const JsObject &js_book, const char *src_lang, const char *trg_lang) {
+bool PagedReader::LoadBook(const Sys::JsObject &js_book, const char *src_lang, const char *trg_lang) {
     Clear();
 
     if (js_book.Has("title")) {
-        const JsObject &js_title = js_book.at("title").as_obj();
+        const Sys::JsObject &js_title = js_book.at("title").as_obj();
         if (!js_title.Has(src_lang)) {
             log_->Error("Language %s is missing in title!", src_lang);
             return false;
@@ -53,22 +53,23 @@ bool PagedReader::LoadBook(const JsObject &js_book, const char *src_lang, const 
             return false;
         }
 
-        const JsString &js_src_title = js_title.at(src_lang).as_str(), &js_trg_title = js_title.at(trg_lang).as_str();
+        const Sys::JsString &js_src_title = js_title.at(src_lang).as_str(),
+                            &js_trg_title = js_title.at(trg_lang).as_str();
 
         title_[0] = js_src_title.val;
         title_[1] = js_trg_title.val;
     }
 
     if (js_book.Has("chapters")) {
-        const JsArray &js_chapters = js_book.at("chapters").as_arr();
-        for (const JsElement &js_chapter_el : js_chapters.elements) {
-            const auto &js_chapter = (const JsObject &)js_chapter_el.as_obj();
+        const Sys::JsArray &js_chapters = js_book.at("chapters").as_arr();
+        for (const Sys::JsElement &js_chapter_el : js_chapters.elements) {
+            const auto &js_chapter = (const Sys::JsObject &)js_chapter_el.as_obj();
 
             ChapterData &chapter_src = chapters_[0].emplace_back();
             ChapterData &chapter_trg = chapters_[1].emplace_back();
 
             if (js_chapter.Has("caption")) {
-                const JsObject &js_caption = js_chapter.at("caption").as_obj();
+                const Sys::JsObject &js_caption = js_chapter.at("caption").as_obj();
                 if (!js_caption.Has(src_lang)) {
                     log_->Error("Language %s is missing in caption!", src_lang);
                     return false;
@@ -78,15 +79,15 @@ bool PagedReader::LoadBook(const JsObject &js_book, const char *src_lang, const 
                     return false;
                 }
 
-                const JsString &js_src_caption = js_caption.at(src_lang).as_str(),
-                               &js_trg_caption = js_caption.at(trg_lang).as_str();
+                const Sys::JsString &js_src_caption = js_caption.at(src_lang).as_str(),
+                                    &js_trg_caption = js_caption.at(trg_lang).as_str();
 
                 chapter_src.caption = js_src_caption.val;
                 chapter_trg.caption = js_trg_caption.val;
             }
 
             if (js_chapter.Has("text_data")) {
-                const JsObject &js_data = js_chapter.at("text_data").as_obj();
+                const Sys::JsObject &js_data = js_chapter.at("text_data").as_obj();
 
                 if (!js_data.Has(src_lang)) {
                     log_->Error("Language %s is missing in data!", src_lang);
@@ -97,8 +98,8 @@ bool PagedReader::LoadBook(const JsObject &js_book, const char *src_lang, const 
                     return false;
                 }
 
-                const JsString &js_src_data = js_data.at(src_lang).as_str(),
-                               &js_trg_data = js_data.at(trg_lang).as_str();
+                const Sys::JsString &js_src_data = js_data.at(src_lang).as_str(),
+                                    &js_trg_data = js_data.at(trg_lang).as_str();
 
                 chapter_src.text_data = js_src_data.val;
                 chapter_trg.text_data = js_trg_data.val;

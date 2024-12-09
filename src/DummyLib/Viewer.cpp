@@ -42,7 +42,7 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
     : ViewerBase(w, h, _app_params.validation_level, _app_params.nohwrt, _app_params.nosubgroup, log,
                  _app_params.device_name),
       log_(log), app_params(_app_params) {
-    JsObject main_config;
+    Sys::JsObject main_config;
 
     {
         // load config
@@ -64,12 +64,12 @@ Viewer::Viewer(const int w, const int h, const AppParams &_app_params, ILog *log
         }
     }
 
-    const JsObject &ui_settings = main_config.at("ui_settings").as_obj();
+    const Sys::JsObject &ui_settings = main_config.at("ui_settings").as_obj();
 
     { // load fonts
         font_storage_ = std::make_unique<FontStorage>();
 
-        const JsObject &fonts = ui_settings.at("fonts").as_obj();
+        const Sys::JsObject &fonts = ui_settings.at("fonts").as_obj();
         for (const auto &el : fonts.elements) {
             const std::string &name = el.first;
 
@@ -296,7 +296,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
     std::vector<std::string> translations;
 
     { // parse file and fill dictionary data structures
-        JsObject js_root;
+        Sys::JsObject js_root;
 
         { // read json file
             std::ifstream src_stream(in_file, std::ios::binary);
@@ -306,20 +306,21 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             }
         }
 
-        JsObject &js_tei = js_root.at("TEI").as_obj();
+        Sys::JsObject &js_tei = js_root.at("TEI").as_obj();
 
-        JsObject &js_text = js_tei.at("text").as_obj();
-        JsObject &js_body = js_text.at("body").as_obj();
-        JsArray &js_entries = js_body.at("entry").as_arr();
+        Sys::JsObject &js_text = js_tei.at("text").as_obj();
+        Sys::JsObject &js_body = js_text.at("body").as_obj();
+        Sys::JsArray &js_entries = js_body.at("entry").as_arr();
 
         int index = 0;
-        for (JsElement &js_entry_el : js_entries.elements) {
-            JsObject &js_entry = js_entry_el.as_obj();
-            if (!js_entry.Has("sense"))
+        for (Sys::JsElement &js_entry_el : js_entries.elements) {
+            Sys::JsObject &js_entry = js_entry_el.as_obj();
+            if (!js_entry.Has("sense")) {
                 continue;
+            }
 
-            JsObject &js_form = js_entry.at("form").as_obj();
-            JsString &js_orth = js_form.at("orth").as_str();
+            Sys::JsObject &js_form = js_entry.at("form").as_obj();
+            Sys::JsString &js_orth = js_form.at("orth").as_str();
 
             dict_link_t &link = dict_hashmap[Ren::String{js_orth.val.c_str()}];
             link.entries[link.entries_count++] = (uint32_t)dict_entries.size();
@@ -329,7 +330,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             entry.orth = Ren::String{js_orth.val.c_str()};
 
             if (js_form.Has("pron")) {
-                const JsString &js_pron = js_form.at("pron").as_str();
+                const Sys::JsString &js_pron = js_form.at("pron").as_str();
                 entry.pron = Ren::String{js_pron.val.c_str()};
             }
 
@@ -339,9 +340,9 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             entry.gen = eGramGrpGen::Masculine;
 
             if (js_entry.Has("gramGrp")) {
-                const JsObject &js_gram_grp = js_entry.at("gramGrp").as_obj();
+                const Sys::JsObject &js_gram_grp = js_entry.at("gramGrp").as_obj();
                 if (js_gram_grp.Has("pos")) {
-                    const JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
+                    const Sys::JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
                     if (js_gram_grp_pos.val == "n") {
                         entry.pos = eGramGrpPos::Noun;
                     } else if (js_gram_grp_pos.val == "v") {
@@ -351,17 +352,16 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
                     }
                 }
                 if (js_gram_grp.Has("num")) {
-                    if (js_gram_grp.at("num").type() == JsType::String) {
-                        const JsString &js_gram_grp_num = js_gram_grp.at("num").as_str();
+                    if (js_gram_grp.at("num").type() == Sys::JsType::String) {
+                        const Sys::JsString &js_gram_grp_num = js_gram_grp.at("num").as_str();
                         if (js_gram_grp_num.val == "p") {
                             entry.num = eGramGrpNum::Plural;
                         }
                     }
                 }
                 if (js_gram_grp.Has("gen")) {
-                    if (js_gram_grp.at("gen").type() == JsType::String) {
-
-                        const JsString &js_gram_grp_gen = js_gram_grp.at("gen").as_str();
+                    if (js_gram_grp.at("gen").type() == Sys::JsType::String) {
+                        const Sys::JsString &js_gram_grp_gen = js_gram_grp.at("gen").as_str();
                         if (js_gram_grp_gen.val == "f") {
                             entry.gen = eGramGrpGen::Feminine;
                         } else if (js_gram_grp_gen.val == "n") {
@@ -374,55 +374,55 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             entry.trans_index = (uint32_t)translations.size();
             entry.trans_count = 0;
 
-            if (js_entry.at("sense").type() == JsType::Object) {
-                JsObject &js_sense = js_entry.at("sense").as_obj();
-                JsElement &js_cit_els = js_sense.at("cit");
-                if (js_cit_els.type() == JsType::Array) {
-                    JsArray &js_cits = js_cit_els.as_arr();
-                    for (JsElement &js_cit_el : js_cits.elements) {
-                        JsObject &js_cit = js_cit_el.as_obj();
-                        const JsString &js_cit_type = js_cit.at("-type").as_str();
+            if (js_entry.at("sense").type() == Sys::JsType::Object) {
+                Sys::JsObject &js_sense = js_entry.at("sense").as_obj();
+                Sys::JsElement &js_cit_els = js_sense.at("cit");
+                if (js_cit_els.type() == Sys::JsType::Array) {
+                    Sys::JsArray &js_cits = js_cit_els.as_arr();
+                    for (Sys::JsElement &js_cit_el : js_cits.elements) {
+                        Sys::JsObject &js_cit = js_cit_el.as_obj();
+                        const Sys::JsString &js_cit_type = js_cit.at("-type").as_str();
                         if (js_cit_type.val == "trans") {
-                            JsString &js_quote = js_cit.at("quote").as_str();
+                            Sys::JsString &js_quote = js_cit.at("quote").as_str();
 
                             translations.emplace_back(std::move(js_quote.val));
                             entry.trans_count++;
                         }
                     }
                 } else {
-                    assert(js_cit_els.type() == JsType::Object);
-                    JsObject &js_cit = js_cit_els.as_obj();
-                    const JsString &js_cit_type = js_cit.at("-type").as_str();
+                    assert(js_cit_els.type() == Sys::JsType::Object);
+                    Sys::JsObject &js_cit = js_cit_els.as_obj();
+                    const Sys::JsString &js_cit_type = js_cit.at("-type").as_str();
                     if (js_cit_type.val == "trans") {
-                        JsString &js_quote = js_cit.at("quote").as_str();
+                        Sys::JsString &js_quote = js_cit.at("quote").as_str();
 
                         translations.emplace_back(std::move(js_quote.val));
                         entry.trans_count++;
                     }
                 }
             } else {
-                JsArray &js_senses = js_entry.at("sense").as_arr();
-                for (JsElement &js_sense_el : js_senses.elements) {
-                    JsObject &js_sense = js_sense_el.as_obj();
-                    JsElement &js_cit_els = js_sense.at("cit");
-                    if (js_cit_els.type() == JsType::Array) {
-                        JsArray &js_cits = js_cit_els.as_arr();
-                        for (JsElement &js_cit_el : js_cits.elements) {
-                            JsObject &js_cit = js_cit_el.as_obj();
-                            const JsString &js_cit_type = js_cit.at("-type").as_str();
+                Sys::JsArray &js_senses = js_entry.at("sense").as_arr();
+                for (Sys::JsElement &js_sense_el : js_senses.elements) {
+                    Sys::JsObject &js_sense = js_sense_el.as_obj();
+                    Sys::JsElement &js_cit_els = js_sense.at("cit");
+                    if (js_cit_els.type() == Sys::JsType::Array) {
+                        Sys::JsArray &js_cits = js_cit_els.as_arr();
+                        for (Sys::JsElement &js_cit_el : js_cits.elements) {
+                            Sys::JsObject &js_cit = js_cit_el.as_obj();
+                            const Sys::JsString &js_cit_type = js_cit.at("-type").as_str();
                             if (js_cit_type.val == "trans") {
-                                JsString &js_quote = js_cit.at("quote").as_str();
+                                Sys::JsString &js_quote = js_cit.at("quote").as_str();
 
                                 translations.emplace_back(std::move(js_quote.val));
                                 entry.trans_count++;
                             }
                         }
                     } else {
-                        assert(js_cit_els.type() == JsType::Object);
-                        JsObject &js_cit = js_cit_els.as_obj();
-                        const JsString &js_cit_type = js_cit.at("-type").as_str();
+                        assert(js_cit_els.type() == Sys::JsType::Object);
+                        Sys::JsObject &js_cit = js_cit_els.as_obj();
+                        const Sys::JsString &js_cit_type = js_cit.at("-type").as_str();
                         if (js_cit_type.val == "trans") {
-                            JsString &js_quote = js_cit.at("quote").as_str();
+                            Sys::JsString &js_quote = js_cit.at("quote").as_str();
 
                             translations.emplace_back(std::move(js_quote.val));
                             entry.trans_count++;

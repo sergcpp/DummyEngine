@@ -96,7 +96,7 @@ void GSUITest4::Enter() {
 }
 
 void GSUITest4::LoadDialog(const std::string_view seq_name) {
-    auto read_sequence = [](const std::string_view seq_name, JsObject &js_seq) {
+    auto read_sequence = [](const std::string_view seq_name, Sys::JsObject &js_seq) {
 #if defined(__ANDROID__)
         const std::string file_name = std::string("assets/scenes/") + std::string(seq_name);
 #else
@@ -119,7 +119,7 @@ void GSUITest4::LoadDialog(const std::string_view seq_name) {
         return js_seq.Read(in_stream);
     };
 
-    JsObject js_seq;
+    Sys::JsObject js_seq;
     if (!read_sequence(seq_name, js_seq)) {
         log_->Error("Failed to read sequence %s", seq_name.data());
         return;
@@ -161,7 +161,7 @@ bool GSUITest4::SaveSequence(const std::string_view seq_name) {
         }
     }
 
-    JsObject js_seq;
+    Sys::JsObject js_seq;
     dial_ctrl_->GetCurSequence()->Save(js_seq);
 
     const std::string out_file_name = std::string("assets/scenes/") + std::string(seq_name);
@@ -213,7 +213,7 @@ void GSUITest4::OnStartPuzzle(std::string_view puzzle_name) {
     Sys::MemBuf mem(&puzzle_data[0], puzzle_size);
     std::istream in_stream(&mem);
 
-    JsObject js_puzzle;
+    Sys::JsObject js_puzzle;
     if (!js_puzzle.Read(in_stream)) {
         log_->Error("Failed to parse %s", file_name.c_str());
         return;
@@ -223,39 +223,39 @@ void GSUITest4::OnStartPuzzle(std::string_view puzzle_name) {
     word_puzzle_->Restart();
 }
 
-void GSUITest4::OnPostloadScene(JsObjectP &js_scene) {
+void GSUITest4::OnPostloadScene(Sys::JsObjectP &js_scene) {
     using namespace GSUITest4Internal;
 
     GSBaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
-        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
+        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             cam_ctrl_->view_origin[0] = float(js_orig.at(0).as_num().val);
             cam_ctrl_->view_origin[1] = float(js_orig.at(1).as_num().val);
             cam_ctrl_->view_origin[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             cam_ctrl_->view_dir[0] = float(js_dir.at(0).as_num().val);
             cam_ctrl_->view_dir[1] = float(js_dir.at(1).as_num().val);
             cam_ctrl_->view_dir[2] = float(js_dir.at(2).as_num().val);
         }
 
         if (js_cam.Has("fwd_speed")) {
-            const JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
+            const Sys::JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
             cam_ctrl_->max_fwd_speed = float(js_fwd_speed.val);
         }
 
         if (js_cam.Has("fov")) {
-            const JsNumber &js_fov = js_cam.at("fov").as_num();
+            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
             cam_ctrl_->view_fov = float(js_fov.val);
         }
 
         if (js_cam.Has("max_exposure")) {
-            const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             cam_ctrl_->max_exposure = float(js_max_exposure.val);
         }
     }
