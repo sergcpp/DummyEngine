@@ -57,7 +57,7 @@ extern const VkFormat g_vk_formats[] = {
     VK_FORMAT_UNDEFINED,            // Compressed_ASTC
     VK_FORMAT_UNDEFINED,            // None
 };
-static_assert(sizeof(g_vk_formats) / sizeof(g_vk_formats[0]) == size_t(eTexFormat::_Count), "!");
+static_assert(std::size(g_vk_formats) == size_t(eTexFormat::_Count), "!");
 
 uint32_t TextureHandleCounter = 0;
 

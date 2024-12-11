@@ -4,9 +4,9 @@
 
 namespace Snd {
 const uint32_t g_al_formats[] = {0xffffffff, AL_FORMAT_MONO8, AL_FORMAT_MONO16, AL_FORMAT_STEREO8, AL_FORMAT_STEREO16};
-static_assert(sizeof(g_al_formats) / sizeof(g_al_formats[0]) == size_t(eBufFormat::Count), "!");
+static_assert(std::size(g_al_formats) == size_t(eBufFormat::Count), "!");
 const int g_bytes_per_sample[] = {0, 1, 2, 2, 4};
-static_assert(sizeof(g_bytes_per_sample) / sizeof(g_bytes_per_sample[0]) == size_t(eBufFormat::Count), "!");
+static_assert(std::size(g_bytes_per_sample) == size_t(eBufFormat::Count), "!");
 } // namespace Snd
 
 Snd::Buffer::Buffer(std::string_view name, Span<const uint8_t> data, const BufParams &params,

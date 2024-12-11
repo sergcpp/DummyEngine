@@ -77,7 +77,7 @@ void Eng::ExShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAll
 
         const Ren::RenderTarget depth_target = {shadowmap_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
-        if (!rp_depth_only_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {
+        if (!rp_depth_only_.Setup(ctx.api_ctx(), depth_target, {}, ctx.log())) {
             ctx.log()->Error("[ExShadowMaps::LazyInit]: Failed to init depth only pass!");
         }
 

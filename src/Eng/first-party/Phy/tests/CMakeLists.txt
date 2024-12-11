@@ -4,6 +4,7 @@ project(test_Phy)
 add_executable(test_Phy main.cpp
                         test_mat.cpp
                         test_small_vector.cpp
+                        test_span.cpp
                         test_svol.cpp
                         test_vec.cpp)
 

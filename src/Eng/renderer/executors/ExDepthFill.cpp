@@ -158,18 +158,18 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
                            bindless ? "internal/fillz@OUTPUT_VELOCITY;ALPHATEST.frag.glsl"
                                     : "internal/fillz@OUTPUT_VELOCITY;ALPHATEST;NO_BINDLESS.frag.glsl");
 
-        if (!rp_depth_only_[0].Setup(ctx.api_ctx(), {}, depth_clear_target, ctx.log())) {
+        if (!rp_depth_only_[0].Setup(ctx.api_ctx(), depth_clear_target, {}, ctx.log())) {
             ctx.log()->Error("[ExDepthFill::LazyInit]: Failed to init depth only pass!");
         }
 
-        if (!rp_depth_only_[1].Setup(ctx.api_ctx(), {}, depth_load_target, ctx.log())) {
+        if (!rp_depth_only_[1].Setup(ctx.api_ctx(), depth_load_target, {}, ctx.log())) {
             ctx.log()->Error("[ExDepthFill::LazyInit]: Failed to init depth only pass!");
         }
 
-        if (!rp_depth_velocity_[0].Setup(ctx.api_ctx(), {&velocity_target, 1}, depth_clear_target, ctx.log())) {
+        if (!rp_depth_velocity_[0].Setup(ctx.api_ctx(), depth_clear_target, {&velocity_target, 1}, ctx.log())) {
             ctx.log()->Error("[ExDepthFill::LazyInit]: Failed to init depth-velocity pass!");
         }
-        if (!rp_depth_velocity_[1].Setup(ctx.api_ctx(), {&velocity_target, 1}, depth_load_target, ctx.log())) {
+        if (!rp_depth_velocity_[1].Setup(ctx.api_ctx(), depth_load_target, {&velocity_target, 1}, ctx.log())) {
             ctx.log()->Error("[ExDepthFill::LazyInit]: Failed to init depth-velocity pass!");
         }
 

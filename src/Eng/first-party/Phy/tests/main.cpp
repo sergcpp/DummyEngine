@@ -4,6 +4,7 @@
 #include "../Phy.h"
 
 void test_mat();
+void test_span();
 void test_svol();
 void test_vec();
 
@@ -13,6 +14,7 @@ int main() {
 
     test_mat();
     test_vec();
+    test_span();
     test_svol();
 }
 

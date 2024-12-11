@@ -19,6 +19,8 @@ enum class eImageLayout : uint8_t {
     _Count
 };
 
+inline bool operator<(const eImageLayout lhs, const eImageLayout rhs) { return uint8_t(lhs) < uint8_t(rhs); }
+
 enum class eLoadOp : uint8_t { Load, Clear, DontCare, None, _Count };
 enum class eStoreOp : uint8_t { Store, DontCare, None, _Count };
 
@@ -45,6 +47,43 @@ struct RenderTarget {
 inline bool operator==(const RenderTarget &lhs, const RenderTarget &rhs) {
     return lhs.ref == rhs.ref && lhs.view_index == rhs.view_index && lhs.load == rhs.load && lhs.store == rhs.store &&
            lhs.stencil_load == rhs.stencil_load && lhs.stencil_store == rhs.stencil_store;
+}
+
+inline bool operator==(const eTexFormat lhs, const RenderTarget &rhs) {
+    if (!rhs) {
+        return lhs == eTexFormat::Undefined;
+    }
+    return lhs == rhs.ref->params.format;
+}
+inline bool operator==(const RenderTarget &lhs, const eTexFormat rhs) {
+    if (!lhs) {
+        return eTexFormat::Undefined == rhs;
+    }
+    return lhs.ref->params.format == rhs;
+}
+inline bool operator!=(const eTexFormat lhs, const RenderTarget &rhs) {
+    if (!rhs) {
+        return lhs != eTexFormat::Undefined;
+    }
+    return lhs != rhs.ref->params.format;
+}
+inline bool operator!=(const RenderTarget &lhs, const eTexFormat rhs) {
+    if (!lhs) {
+        return eTexFormat::Undefined != rhs;
+    }
+    return lhs.ref->params.format != rhs;
+}
+inline bool operator<(const eTexFormat lhs, const RenderTarget &rhs) {
+    if (!rhs) {
+        return lhs < eTexFormat::Undefined;
+    }
+    return lhs < rhs.ref->params.format;
+}
+inline bool operator<(const RenderTarget &lhs, const eTexFormat rhs) {
+    if (!lhs) {
+        return eTexFormat::Undefined < rhs;
+    }
+    return lhs.ref->params.format < rhs;
 }
 
 struct RenderTargetInfo {
@@ -97,6 +136,9 @@ struct RenderTargetInfo {
 };
 
 inline bool operator==(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
+    if (!rhs.ref) {
+        return lhs.format == eTexFormat::Undefined;
+    }
     const auto &p = rhs.ref->params;
     return lhs.format == p.format && lhs.samples == p.samples &&
 #if defined(REN_VK_BACKEND)
@@ -105,9 +147,32 @@ inline bool operator==(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
            lhs.load == rhs.load && lhs.store == rhs.store && lhs.stencil_load == rhs.stencil_load &&
            lhs.stencil_store == rhs.stencil_store;
 }
-
-inline bool operator!=(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
-    return !operator==(lhs, rhs);
+inline bool operator!=(const RenderTargetInfo &lhs, const RenderTarget &rhs) { return !operator==(lhs, rhs); }
+inline bool operator<(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
+    if (!rhs.ref) {
+        return lhs.format < eTexFormat::Undefined;
+    }
+    const auto &p = rhs.ref->params;
+#if defined(REN_VK_BACKEND)
+    const eImageLayout rhs_layout = eImageLayout(VKImageLayoutForState(rhs.ref->resource_state));
+#else
+    const eImageLayout rhs_layout = lhs.layout;
+#endif
+    return std::tie(lhs.format, lhs.samples, lhs.layout, lhs.load, lhs.store, lhs.stencil_load, lhs.stencil_store) <
+           std::tie(p.format, p.samples, rhs_layout, rhs.load, rhs.store, rhs.stencil_load, rhs.stencil_store);
+}
+inline bool operator<(const RenderTarget &lhs, const RenderTargetInfo &rhs) {
+    if (!lhs.ref) {
+        return eTexFormat::Undefined < rhs.format;
+    }
+    const auto &p = lhs.ref->params;
+#if defined(REN_VK_BACKEND)
+    const eImageLayout lhs_layout = eImageLayout(VKImageLayoutForState(lhs.ref->resource_state));
+#else
+    const eImageLayout lhs_layout = rhs.layout;
+#endif
+    return std::tie(p.format, p.samples, lhs_layout, lhs.load, lhs.store, lhs.stencil_load, lhs.stencil_store) <
+           std::tie(rhs.format, rhs.samples, rhs.layout, rhs.load, rhs.store, rhs.stencil_load, rhs.stencil_store);
 }
 
 class RenderPass {
@@ -116,7 +181,7 @@ class RenderPass {
     VkRenderPass handle_ = {};
 #endif
 
-    bool Init(ApiContext *api_ctx, Span<const RenderTargetInfo> rts, RenderTargetInfo depth_rt, ILog *log);
+    bool Init(ApiContext *api_ctx, RenderTargetInfo depth_rt, Span<const RenderTargetInfo> rts, ILog *log);
     void Destroy();
 
   public:
@@ -135,9 +200,9 @@ class RenderPass {
     [[nodiscard]] VkRenderPass handle() const { return handle_; }
 #endif
 
-    bool IsCompatibleWith(Span<const RenderTarget> color_rts, RenderTarget depth_rt);
+    bool IsCompatibleWith(RenderTarget depth_rt, Span<const RenderTarget> color_rts);
 
-    bool Setup(ApiContext *api_ctx, Span<const RenderTarget> rts, RenderTarget depth_rt, ILog *log);
-    bool Setup(ApiContext *api_ctx, Span<const RenderTargetInfo> rts, RenderTargetInfo depth_rt, ILog *log);
+    bool Setup(ApiContext *api_ctx, RenderTarget depth_rt, Span<const RenderTarget> rts, ILog *log);
+    bool Setup(ApiContext *api_ctx, RenderTargetInfo depth_rt, Span<const RenderTargetInfo> rts, ILog *log);
 };
 } // namespace Ren

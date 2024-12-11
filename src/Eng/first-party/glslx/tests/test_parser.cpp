@@ -6,6 +6,8 @@
 #include "../WriterGLSL.h"
 
 void test_parser() {
+    using namespace glslx;
+
     printf("Test parser             | ");
 
     { // directives
@@ -13,12 +15,12 @@ void test_parser() {
                                      "#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require\n";
         static const char *expected = source;
 
-        glslx::Parser parser(source, "directives.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "directives.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // uniforms
@@ -27,12 +29,12 @@ void test_parser() {
         static const char expected[] = "uniform float float1;\n"
                                        "uniform float float2 = 10.0;\n";
 
-        glslx::Parser parser(source, "uniforms.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "uniforms.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // interface blocks
@@ -71,12 +73,12 @@ void test_parser() {
                                       "    float w;\n"
                                       "} buffer_data;\n";
 
-        glslx::Parser parser(source, "interface_blocks.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "interface_blocks.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // constants
@@ -95,12 +97,12 @@ void test_parser() {
                                       "const uint test_uint = 2147483648u;\n"
                                       "const uint test_bitneg = 2147483647u;\n";
 
-        glslx::Parser parser(source, "constants.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "constants.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // continuations (comma-separated declarations)
@@ -117,12 +119,12 @@ void test_parser() {
                                       "foo c;\n"
                                       "foo d;\n";
 
-        glslx::Parser parser(source, "continuations.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "continuations.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // sequence
@@ -149,12 +151,12 @@ void test_parser() {
                                        "    (((1, 2), 3), 4);\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "sequence.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "sequence.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // builtin types
@@ -278,12 +280,12 @@ void test_parser() {
                                      "uimageCubeArray test_uimageCubeArray;\n";
         const char *expected = source;
 
-        glslx::Parser parser(source, "builtins.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "builtins.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // comments
@@ -298,12 +300,12 @@ void test_parser() {
                                      "int a;\n";
         static const char expected[] = "int a;\n";
 
-        glslx::Parser parser(source, "comments.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "comments.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // booleans
@@ -319,12 +321,12 @@ void test_parser() {
                                      "}\n";
         static const char *expected = source;
 
-        glslx::Parser parser(source, "booleans.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "booleans.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // int literals
@@ -359,12 +361,12 @@ void test_parser() {
                                        "    uint test_octal = 511;\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "int_literals.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "int_literals.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // float literals
@@ -391,12 +393,12 @@ void test_parser() {
                                        "    float test_float_f_zero = 1.0;\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "float_literals.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "float_literals.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // structures
@@ -460,12 +462,12 @@ void test_parser() {
                                        "    e = d = 1.0;\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "structures.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "structures.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // arrays
@@ -516,12 +518,12 @@ void test_parser() {
                                        "    foo1 bb[1];\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "arrays.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "arrays.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // if statement
@@ -536,12 +538,12 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "if_statement.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "if_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // do statement
@@ -557,12 +559,12 @@ void test_parser() {
                                        "    while (true);\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "do_statement.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "do_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // while statement
@@ -579,12 +581,12 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "while_statement.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "while_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // for statement
@@ -607,12 +609,12 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "for_statement.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "for_statement.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // ternary
@@ -632,12 +634,12 @@ void test_parser() {
                                        "    float z = (a ? (b ? c : d) : w);\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "ternary.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "ternary.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // switch
@@ -684,12 +686,12 @@ void test_parser() {
                                        "    }\n"
                                        "}\n";
 
-        glslx::Parser parser(source, "switch.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "switch.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // vector stuff
@@ -719,12 +721,12 @@ void test_parser() {
             "    return (((0.212670997 * color[0]) + (0.715160012 * color.y)) + (0.0721689984 * color.z));\n"
             "}\n";
 
-        glslx::Parser parser(source, "vector.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "vector.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // assignment inside of expression
@@ -733,12 +735,12 @@ void test_parser() {
                                      "}\n";
         static const char *expected = source;
 
-        glslx::Parser parser(source, "assign.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "assign.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // GL_EXT_control_flow_attributes2
@@ -757,12 +759,12 @@ void test_parser() {
             "}\n";
         static const char *expected = source;
 
-        glslx::Parser parser(source, "control_flow2.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "control_flow2.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // default precision qualifiers
@@ -770,12 +772,12 @@ void test_parser() {
                                      "precision mediump float;\n";
         static const char *expected = source;
 
-        glslx::Parser parser(source, "default_precision.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "default_precision.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // invariant
@@ -785,12 +787,12 @@ void test_parser() {
         static const char *expected = "invariant gl_Position;\n"
                                       "out invariant vec3 Color;\n";
 
-        glslx::Parser parser(source, "default_precision.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Vertex);
+        Parser parser(source, "default_precision.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
     { // line directive
@@ -800,16 +802,16 @@ void test_parser() {
                                      "#line 42\n"
                                      "#error 1111\n";
 
-        glslx::Parser parser(source, "line_directive.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "line_directive.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require(tr_unit == nullptr);
         require(strcmp(parser.error(), "line_directive.glsl:43:12: error: 1111") == 0);
     }
     { // first character invalid
         const char source[] = "`\n";
 
-        glslx::Parser parser(source, "first_character_invalid.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        Parser parser(source, "first_character_invalid.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require(tr_unit == nullptr);
         require(strcmp(parser.error(), "first_character_invalid.glsl:1:1: error: Invalid character encountered") == 0);
     }
@@ -827,13 +829,14 @@ void test_parser() {
                                      "    float gl_CullDistance[];\n"
                                       "} gl_in[];\n";
 
-        glslx::Parser parser(source, "arrayness.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Geometry);
+        Parser parser(source, "arrayness.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Geometry);
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
+
     printf("OK\n");
 }

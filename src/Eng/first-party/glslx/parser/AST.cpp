@@ -18,7 +18,7 @@ const char *g_statement_names[] = {
     "discard",     // Discard
     "ext jump"     // ExtJump
 };
-static_assert(sizeof(g_statement_names) / sizeof(g_statement_names[0]) == int(eStatement::_Count), "!");
+static_assert(std::size(g_statement_names) == int(eStatement::_Count), "!");
 } // namespace glslx
 
 glslx::TrUnit::~TrUnit() {

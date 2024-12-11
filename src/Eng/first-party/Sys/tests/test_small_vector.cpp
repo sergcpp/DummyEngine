@@ -130,5 +130,21 @@ void test_small_vector() {
         require(vec[11] == 15);
     }
 
+    { // comparison operators
+        const SmallVector<int, 8> v1 = {1, 2, 3, 4, 5};
+        const SmallVector<int, 8> v2 = {1, 2, 3, 4, 6};
+        const SmallVector<int, 8> v3 = {1, 2, 3, 4, 5};
+        const SmallVector<int, 8> v4 = {1, 2, 3, 4, 6};
+
+        require(v1 < v2);
+        require(v1 <= v3);
+        require(v2 > v1);
+        require(v2 >= v4);
+        require(v1 == v3);
+        require(v2 == v4);
+        require(v1 != v2);
+        require(v3 != v4);
+    }
+
     printf("OK\n");
 }

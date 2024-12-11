@@ -20,6 +20,17 @@ extern const int SphereIndicesCount = __sphere_indices_count;
 
 // aligned to vertex stride
 const size_t SphereVerticesSize = sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16);
+
+bool framebuffer_eq(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTex2DRef &depth_attachment,
+                    const Ren::WeakTex2DRef &stencil_attachment,
+                    const Ren::Span<const Ren::RenderTarget> color_attachments) {
+    return !fb.Changed(rp, depth_attachment, stencil_attachment, color_attachments);
+}
+bool framebuffer_lt(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTex2DRef &depth_attachment,
+                    const Ren::WeakTex2DRef &stencil_attachment,
+                    const Ren::Span<const Ren::RenderTarget> color_attachments) {
+    return fb.LessThan(rp, depth_attachment, stencil_attachment, color_attachments);
+}
 } // namespace PrimDrawInternal
 
 bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
@@ -154,9 +165,32 @@ void Eng::PrimDraw::CleanUp() {
 }
 
 const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::RenderPass *rp,
-                                                               Ren::Span<const Ren::RenderTarget> color_targets,
-                                                               Ren::RenderTarget depth_target,
-                                                               Ren::RenderTarget stencil_target) {
+                                                               const Ren::RenderTarget depth_target,
+                                                               const Ren::RenderTarget stencil_target,
+                                                               Ren::Span<const Ren::RenderTarget> color_targets) {
+    using namespace PrimDrawInternal;
+
+    Ren::WeakTex2DRef depth_ref = depth_target.ref, stencil_ref = stencil_target.ref;
+
+    int start = 0, count = int(framebuffers_.size());
+    while (count > 0) {
+        const int step = count / 2;
+        const int index = start + step;
+        if (framebuffer_lt(framebuffers_[index], *rp, depth_ref, stencil_ref, color_targets)) {
+            start = index + 1;
+            count -= step + 1;
+        } else {
+            count = step;
+        }
+    }
+
+    if (start < int(framebuffers_.size()) &&
+        framebuffer_eq(framebuffers_[start], *rp, depth_ref, stencil_ref, color_targets)) {
+        return &framebuffers_[start];
+    }
+
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+
     int w = -1, h = -1;
 
     for (const auto &rt : color_targets) {
@@ -166,8 +200,6 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
             break;
         }
     }
-
-    Ren::WeakTex2DRef depth_ref = depth_target.ref, stencil_ref = stencil_target.ref;
 
     if (w == -1 && depth_ref) {
         w = depth_ref->params.w;
@@ -179,20 +211,12 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
         h = stencil_ref->params.h;
     }
 
-    for (size_t i = 0; i < framebuffers_.size(); ++i) {
-        if (!framebuffers_[i].Changed(*rp, depth_ref, stencil_ref, color_targets)) {
-            return &framebuffers_[i];
-        }
-    }
-
-    Ren::ApiContext *api_ctx = ctx_->api_ctx();
-    Ren::Framebuffer &new_framebuffer = framebuffers_.emplace_back();
-
+    Ren::Framebuffer new_framebuffer;
     if (!new_framebuffer.Setup(api_ctx, *rp, w, h, depth_target, stencil_target, color_targets, ctx_->log())) {
         ctx_->log()->Error("Failed to create framebuffer!");
         framebuffers_.pop_back();
         return nullptr;
     }
-
-    return &new_framebuffer;
+    framebuffers_.insert(begin(framebuffers_) + start, std::move(new_framebuffer));
+    return &framebuffers_[start];
 }

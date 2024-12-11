@@ -10,8 +10,12 @@
 #include "../parser/PoolAlloc.h"
 
 void test_pool_alloc() {
+    using namespace glslx;
+
+    printf("Test pool_alloc         | ");
+
     { // Pool alloc usage
-        glslx::PoolAllocator allocator(4, 255);
+        PoolAllocator allocator(4, 255);
 
         int *pointers[512];
 
@@ -38,7 +42,7 @@ void test_pool_alloc() {
     }
 
     { // Multi-pool alloc
-        glslx::MultiPoolAllocator<uint8_t> allocator(32, 512);
+        MultiPoolAllocator<uint8_t> allocator(32, 512);
 
         uint8_t *pointers[16][256];
 
@@ -81,9 +85,9 @@ void test_pool_alloc() {
     }
 
     { // Multi-pool alloc stl usage
-        glslx::MultiPoolAllocator<char> my_alloc(32, 512);
+        MultiPoolAllocator<char> my_alloc(32, 512);
 
-        std::vector<int, glslx::MultiPoolAllocator<int>> vec(my_alloc);
+        std::vector<int, MultiPoolAllocator<int>> vec(my_alloc);
         vec.reserve(4);
 
         vec.push_back(1);
@@ -91,14 +95,14 @@ void test_pool_alloc() {
         vec.push_back(3);
         vec.push_back(4);
 
-        std::list<int, glslx::MultiPoolAllocator<int>> list(my_alloc);
+        std::list<int, MultiPoolAllocator<int>> list(my_alloc);
 
         list.push_back(1);
         list.push_back(2);
         list.push_back(3);
         list.push_back(4);
 
-        std::basic_string<char, std::char_traits<char>, glslx::MultiPoolAllocator<char>> str(my_alloc);
+        std::basic_string<char, std::char_traits<char>, MultiPoolAllocator<char>> str(my_alloc);
 
         str.append("test");
         str.append("string");
@@ -124,4 +128,6 @@ void test_pool_alloc() {
 
         require(str == "teststringmoredatatogoaroundsmallstringoptimization");
     }
+
+    printf("OK\n");
 }

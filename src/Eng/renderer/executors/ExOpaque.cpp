@@ -28,7 +28,7 @@ void Eng::ExOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBu
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-        if (!rp_opaque_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log())) {
+        if (!rp_opaque_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log())) {
             ctx.log()->Error("[ExOpaque::LazyInit]: Failed to init render pass!");
         }
 

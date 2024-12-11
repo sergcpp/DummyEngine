@@ -99,7 +99,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
 
         const Ren::RenderTarget color_targets[] = {
             {color_tex.ref, uint8_t((faceq / 4) + 1), Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, color_targets, {}, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_, {}, color_targets, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
 
         last_updated_faceq_ = faceq;
@@ -228,7 +228,7 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
 
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
                                                 Ren::eLoadOp::Load, Ren::eStoreOp::Store};
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[0], color_targets, depth_target, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[0], depth_target, color_targets, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     } else if (args_->sky_quality == eSkyQuality::High) {
         FgAllocTex &transmittance_lut = builder.GetReadTexture(args_->phys.transmittance_lut);
@@ -254,7 +254,7 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         rast_state.viewport[2] = color_tex.ref->params.w;
         rast_state.viewport[3] = color_tex.ref->params.h;
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[1], color_targets, {}, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_phys_[1], {}, color_targets, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     } else {
         FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
@@ -268,7 +268,7 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
                                                 Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_simple_, color_targets, depth_target, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_skydome_simple_, depth_target, color_targets, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     }
 }

@@ -6,6 +6,8 @@
 #include "../WriterGLSL.h"
 
 void test_fixup() {
+    using namespace glslx;
+
     printf("Test fixup              | ");
 
     static const char source[] =
@@ -49,16 +51,16 @@ void test_fixup() {
                                       "    gl_Position = vec4(0.0, 0.0, 1.0, 1.0);\n"
                                       "}\n";
 
-        glslx::Parser parser(source, "loop_counters.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Vertex);
+        Parser parser(source, "loop_counters.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
-        glslx::fixup_config_t config;
+        fixup_config_t config;
         config.randomize_loop_counters = true;
-        glslx::Fixup(config).Apply(tr_unit.get());
+        Fixup(config).Apply(tr_unit.get());
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
 
@@ -83,17 +85,17 @@ void test_fixup() {
                                       "    gl_Position = vec4(0.0, 0.0, 1.0, 1.0);\n"
                                       "}\n";
 
-        glslx::Parser parser(source, "loop_counters.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Vertex);
+        Parser parser(source, "loop_counters.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
-        glslx::fixup_config_t config;
+        fixup_config_t config;
         config.randomize_loop_counters = false;
         config.remove_const = true;
-        glslx::Fixup(config).Apply(tr_unit.get());
+        Fixup(config).Apply(tr_unit.get());
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
 
@@ -116,17 +118,17 @@ void test_fixup() {
                                       "    gl_Position = vec4(0.0, 0.0, 1.0, 1.0);\n"
                                       "}\n";
 
-        glslx::Parser parser(source, "loop_counters.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Vertex);
+        Parser parser(source, "loop_counters.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
-        glslx::fixup_config_t config;
+        fixup_config_t config;
         config.randomize_loop_counters = false;
         config.remove_ctrl_flow_attributes = true;
-        glslx::Fixup(config).Apply(tr_unit.get());
+        Fixup(config).Apply(tr_unit.get());
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
 
@@ -151,17 +153,17 @@ void test_fixup() {
                                       "    gl_Position = vec4(0.0, 0.0, 1.0, 1.0);\n"
                                       "    gl_Position.y = -gl_Position.y;\n"
                                       "}\n";
-        glslx::Parser parser(source, "flip_y.glsl");
-        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Vertex);
+        Parser parser(source, "flip_y.glsl");
+        std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
-        glslx::fixup_config_t config;
+        fixup_config_t config;
         config.randomize_loop_counters = false;
         config.flip_vertex_y = true;
-        glslx::Fixup(config).Apply(tr_unit.get());
+        Fixup(config).Apply(tr_unit.get());
 
         std::stringstream ss;
-        glslx::WriterGLSL().Write(tr_unit.get(), ss);
+        WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
 

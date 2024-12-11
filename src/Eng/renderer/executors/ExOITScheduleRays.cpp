@@ -62,7 +62,7 @@ void Eng::ExOITScheduleRays::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, 
             bindless ? "internal/oit_schedule_rays@VEGETATION.vert.glsl"
                      : "internal/oit_schedule_rays@VEGETATION;NO_BINDLESS.vert.glsl",
             bindless ? "internal/oit_schedule_rays.frag.glsl" : "internal/oit_schedule_rays@NO_BINDLESS.frag.glsl");
-        if (!rp_oit_schedule_rays_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {
+        if (!rp_oit_schedule_rays_.Setup(ctx.api_ctx(), depth_target, {}, ctx.log())) {
             ctx.log()->Error("[ExOITScheduleRays::LazyInit]: Failed to init render pass!");
         }
 

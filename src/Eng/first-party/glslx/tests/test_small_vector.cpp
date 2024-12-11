@@ -3,12 +3,14 @@
 #include "../SmallVector.h"
 
 void test_small_vector() {
+    using namespace glslx;
+
     printf("Test small_vector       | ");
 
-    static_assert(sizeof(glslx::SmallVectorImpl<int>) <= 16);
+    static_assert(sizeof(SmallVectorImpl<int>) <= 16);
 
     { // basic usage with trivial type
-        glslx::SmallVector<int, 16> vec;
+        SmallVector<int, 16> vec;
 
         for (int i = 0; i < 8; i++) {
             vec.push_back(i);
@@ -77,7 +79,7 @@ void test_small_vector() {
             AAA &operator=(AAA &&rhs) = default;
         };
 
-        glslx::SmallVector<AAA, 16> vec;
+        SmallVector<AAA, 16> vec;
 
         for (int i = 0; i < 8; i++) {
             vec.push_back(AAA{2 * i});
@@ -100,7 +102,7 @@ void test_small_vector() {
     }
 
     { // erase
-        glslx::SmallVector<int, 16> vec;
+        SmallVector<int, 16> vec;
         for (int i = 0; i < 8; i++) {
             vec.push_back(i);
         }
@@ -126,6 +128,22 @@ void test_small_vector() {
         require(vec[9] == 13);
         require(vec[10] == 14);
         require(vec[11] == 15);
+    }
+
+    { // comparison operators
+        const SmallVector<int, 8> v1 = {1, 2, 3, 4, 5};
+        const SmallVector<int, 8> v2 = {1, 2, 3, 4, 6};
+        const SmallVector<int, 8> v3 = {1, 2, 3, 4, 5};
+        const SmallVector<int, 8> v4 = {1, 2, 3, 4, 6};
+
+        require(v1 < v2);
+        require(v1 <= v3);
+        require(v2 > v1);
+        require(v2 >= v4);
+        require(v1 == v3);
+        require(v2 == v4);
+        require(v1 != v2);
+        require(v3 != v4);
     }
 
     printf("OK\n");

@@ -46,6 +46,8 @@ enum class eTexFormat : uint8_t {
     _Count
 };
 
+inline bool operator<(const eTexFormat lhs, const eTexFormat rhs) { return uint8_t(lhs) < uint8_t(rhs); }
+
 inline bool IsDepthFormat(const eTexFormat format) {
     return format == eTexFormat::Depth16 || format == eTexFormat::Depth24Stencil8 ||
            format == eTexFormat::Depth32Stencil8

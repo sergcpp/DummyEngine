@@ -33,20 +33,21 @@ class PrimDraw {
 
     Ren::Context *ctx_ = nullptr;
 #if defined(REN_VK_BACKEND)
-    Ren::SmallVector<Ren::RenderPass, 128> render_passes_;
-    Ren::SmallVector<Ren::Pipeline, 128> pipelines_[int(ePrim::_Count)];
+    std::vector<Ren::RenderPass> render_passes_;
+    std::vector<Ren::Pipeline> pipelines_;
 
-    const Ren::RenderPass *FindOrCreateRenderPass(Ren::Span<const Ren::RenderTarget> color_targets,
-                                                  Ren::RenderTarget depth_target);
+    const Ren::RenderPass *FindOrCreateRenderPass(Ren::RenderTarget depth_target,
+                                                  Ren::Span<const Ren::RenderTarget> color_targets);
     const Ren::Pipeline *FindOrCreatePipeline(ePrim prim, const Ren::ProgramRef &p, const Ren::RenderPass *rp,
+                                              Ren::RenderTarget depth_target,
                                               Ren::Span<const Ren::RenderTarget> color_targets,
-                                              Ren::RenderTarget depth_target, const Ren::RastState &rs);
+                                              const Ren::RastState &rs);
 #endif
-    Ren::SmallVector<Ren::Framebuffer, 128> framebuffers_;
+    std::vector<Ren::Framebuffer> framebuffers_;
 
-    const Ren::Framebuffer *FindOrCreateFramebuffer(const Ren::RenderPass *rp,
-                                                    Ren::Span<const Ren::RenderTarget> color_targets,
-                                                    Ren::RenderTarget depth_target, Ren::RenderTarget stencil_target);
+    const Ren::Framebuffer *FindOrCreateFramebuffer(const Ren::RenderPass *rp, Ren::RenderTarget depth_target,
+                                                    Ren::RenderTarget stencil_target,
+                                                    Ren::Span<const Ren::RenderTarget> color_targets);
 
   public:
     ~PrimDraw();
@@ -54,16 +55,14 @@ class PrimDraw {
     bool LazyInit(Ren::Context &ctx);
     void CleanUp();
 
-    void Reset();
-
     struct RenderTarget {
         Ren::Framebuffer *fb;
         uint32_t clear_bits;
     };
 
-    void DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
-                  Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,
-                  Ren::Span<const Ren::Binding> bindings, const void *uniform_data, int uniform_data_len,
-                  int uniform_data_offset, int instances = 1);
+    void DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::RenderTarget depth_rt,
+                  Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
+                  Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings, const void *uniform_data,
+                  int uniform_data_len, int uniform_data_offset, int instances = 1);
 };
 } // namespace Eng

@@ -4,11 +4,11 @@ Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept = default
 
 void Ren::RenderPass::Destroy() {}
 
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTarget> color_rts, RenderTarget depth_rt, ILog *log) {
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, RenderTarget depth_rt, Span<const RenderTarget> color_rts, ILog *log) {
     return true;
 }
 
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTargetInfo> color_rts, RenderTargetInfo depth_rt,
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, RenderTargetInfo depth_rt, Span<const RenderTargetInfo> color_rts,
                             ILog *log) {
     return true;
 }

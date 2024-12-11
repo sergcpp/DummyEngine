@@ -74,7 +74,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
         {Gui::g_unicode_ampersand, Gui::g_unicode_ampersand + 1},
         {Gui::g_unicode_semicolon, Gui::g_unicode_semicolon + 1},
         {Gui::g_unicode_heart, Gui::g_unicode_heart + 1}};
-    const int glyph_range_count = sizeof(glyph_ranges) / sizeof(glyph_ranges[0]);
+    const int glyph_range_count = std::size(glyph_ranges);
 
     const int total_glyph_count =
         std::accumulate(std::begin(glyph_ranges), std::end(glyph_ranges), 0,

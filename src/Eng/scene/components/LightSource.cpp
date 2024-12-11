@@ -8,7 +8,7 @@
 
 namespace Eng::LightSourceInternal {
 static const char *g_type_names[] = {"sphere", "rectangle", "disk", "line"};
-static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::_Count), "!");
+static_assert(std::size(g_type_names) == int(eLightType::_Count), "!");
 
 float calc_cull_radius(const Ren::Vec3f &col, const float radius) {
     const float brightness = std::max(col[0], std::max(col[1], col[2]));

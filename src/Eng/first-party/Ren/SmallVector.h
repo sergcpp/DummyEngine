@@ -115,6 +115,39 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
         return (*this);
     }
 
+    bool operator==(const SmallVectorImpl &rhs) const {
+        if (size_ != rhs.size_) {
+            return false;
+        }
+        bool eq = true;
+        for (uint32_t i = 0; i < size_ && eq; ++i) {
+            eq &= begin_[i] == rhs.begin_[i];
+        }
+        return eq;
+    }
+    bool operator!=(const SmallVectorImpl &rhs) const {
+        if (size_ != rhs.size_) {
+            return true;
+        }
+        bool neq = false;
+        for (uint32_t i = 0; i < size_ && !neq; ++i) {
+            neq |= begin_[i] != rhs.begin_[i];
+        }
+        return neq;
+    }
+    bool operator<(const SmallVectorImpl &rhs) const {
+        return std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
+    }
+    bool operator<=(const SmallVectorImpl &rhs) const {
+        return !std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
+    }
+    bool operator>(const SmallVectorImpl &rhs) const {
+        return std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
+    }
+    bool operator>=(const SmallVectorImpl &rhs) const {
+        return !std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
+    }
+
     const T *cdata() const noexcept { return begin_; }
     const T *data() const noexcept { return begin_; }
     const T *begin() const noexcept { return begin_; }
@@ -367,4 +400,4 @@ class SmallVector : public SmallVectorImpl<T, Allocator> {
 
     bool is_on_heap() const { return uintptr_t(this->begin()) != uintptr_t(&buffer_[0]); }
 };
-} // namespace glslx
+} // namespace Ren

@@ -1007,7 +1007,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             SSRComposeNew::Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
 
-            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, render_targets, {}, rast_state,
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, {}, render_targets, rast_state,
                                 builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
         }
     });
@@ -1073,7 +1073,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
                 uniform_params.transform =
                     Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0] / 2), float(view_state_.act_res[1] / 2)};
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_prog_, render_targets, {}, rast_state,
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(SSRTrace::Params), 0);
             }
         });
@@ -1122,7 +1122,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
                 SSRDilate::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_dilate_prog_, render_targets, {}, rast_state,
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_dilate_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(SSRDilate::Params), 0);
             }
         });

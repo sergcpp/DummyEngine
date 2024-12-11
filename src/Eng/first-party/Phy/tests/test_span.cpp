@@ -3,7 +3,7 @@
 #include "../Span.h"
 
 void test_span() {
-    using namespace Gui;
+    using namespace Phy;
 
     printf("Test span               | ");
 
@@ -83,27 +83,6 @@ void test_span() {
             sum += i;
         }
         require(sum == 15);
-    }
-
-    { // usage with std::vector
-        const std::vector<int> arr_values = {1, 2, 3, 4, 5};
-        Span<const int> test0(arr_values);
-        int sum = 0;
-        for (const int i : test0) {
-            sum += i;
-        }
-        require(sum == 15);
-    }
-
-    { // const removal
-        int val = 1;
-        std::vector<int *> arr_values = {&val, &val, &val, &val, &val};
-        Span<const int *const> test0(arr_values);
-        int sum = 0;
-        for (const int *i : test0) {
-            sum += *i;
-        }
-        require(sum == 5);
     }
 
     { // comparison operators

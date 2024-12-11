@@ -60,7 +60,7 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
             bindless ? "internal/emissive@VEGETATION.vert.glsl" : "internal/emissive@VEGETATION;NO_BINDLESS.vert.glsl",
             bindless ? "internal/emissive.frag.glsl" : "internal/emissive@NO_BINDLESS.frag.glsl");
 
-        const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());
+        const bool res = rp_main_draw_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log());
         if (!res) {
             ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize render pass!");
         }

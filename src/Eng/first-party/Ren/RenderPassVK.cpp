@@ -23,14 +23,14 @@ extern const VkAttachmentLoadOp vk_load_ops[] = {
     VK_ATTACHMENT_LOAD_OP_DONT_CARE, // DontCare
     VK_ATTACHMENT_LOAD_OP_NONE_EXT   // None
 };
-static_assert((sizeof(vk_load_ops) / sizeof(vk_load_ops[0])) == int(eLoadOp::_Count), "!");
+static_assert(std::size(vk_load_ops) == int(eLoadOp::_Count), "!");
 
 extern const VkAttachmentStoreOp vk_store_ops[] = {
     VK_ATTACHMENT_STORE_OP_STORE,     // Store
     VK_ATTACHMENT_STORE_OP_DONT_CARE, // DontCare
     VK_ATTACHMENT_STORE_OP_NONE_EXT   // None
 };
-static_assert((sizeof(vk_store_ops) / sizeof(vk_store_ops[0])) == int(eStoreOp::_Count), "!");
+static_assert(std::size(vk_store_ops) == int(eStoreOp::_Count), "!");
 
 // make sure we can simply cast these
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT == 1, "!");
@@ -56,7 +56,7 @@ Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
     return (*this);
 }
 
-bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _color_rts, RenderTargetInfo _depth_rt,
+bool Ren::RenderPass::Init(ApiContext *api_ctx, RenderTargetInfo _depth_rt, Span<const RenderTargetInfo> _color_rts,
                            ILog *log) {
     Destroy();
 
@@ -181,33 +181,13 @@ void Ren::RenderPass::Destroy() {
     depth_rt = {};
 }
 
-bool Ren::RenderPass::IsCompatibleWith(Span<const RenderTarget> _color_rts, RenderTarget _depth_rt) {
-    if (_color_rts.size() != color_rts.size() || bool(_depth_rt) != bool(depth_rt)) {
-        return false;
-    }
-
-    for (int i = 0; i < _color_rts.size(); ++i) {
-        if (color_rts[i] != _color_rts[i]) {
-            return false;
-        }
-    }
-
-    if (depth_rt) {
-        if (depth_rt != _depth_rt) {
-            return false;
-        }
-    }
-
-    return true;
+bool Ren::RenderPass::IsCompatibleWith(RenderTarget _depth_rt, Span<const RenderTarget> _color_rts) {
+    return depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts;
 }
 
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTarget> _color_rts, const RenderTarget _depth_rt,
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTarget _depth_rt, Span<const RenderTarget> _color_rts,
                             ILog *log) {
-    if (_color_rts.size() == color_rts.size() &&
-        std::equal(
-            _color_rts.begin(), _color_rts.end(), color_rts.data(),
-            [](const RenderTarget &rt, const RenderTargetInfo &i) { return (!rt.ref && !i) || (rt.ref && i == rt); }) &&
-        ((!_depth_rt.ref && !depth_rt) || (_depth_rt.ref && depth_rt == _depth_rt))) {
+    if (depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts) {
         return true;
     }
 
@@ -216,16 +196,15 @@ bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTarget> _color
         infos.emplace_back(_color_rts[i]);
     }
 
-    return Init(api_ctx, infos, RenderTargetInfo{_depth_rt}, log);
+    return Init(api_ctx, RenderTargetInfo{_depth_rt}, infos, log);
 }
 
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTargetInfo> _color_rts, RenderTargetInfo _depth_rt,
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, RenderTargetInfo _depth_rt, Span<const RenderTargetInfo> _color_rts,
                             ILog *log) {
-    if (_color_rts.size() == color_rts.size() && std::equal(_color_rts.begin(), _color_rts.end(), color_rts.data()) &&
-        ((!_depth_rt && !depth_rt) || (_depth_rt && depth_rt == _depth_rt))) {
+    if (depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts) {
         return true;
     }
-    return Init(api_ctx, _color_rts, _depth_rt, log);
+    return Init(api_ctx, _depth_rt, _color_rts, log);
 }
 
 #undef VERBOSE_LOGGING

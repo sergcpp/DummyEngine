@@ -72,7 +72,7 @@ void Eng::ExGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
                      : "internal/gbuffer_fill@VEGETATION;NO_BINDLESS.vert.glsl",
             bindless ? "internal/gbuffer_fill.frag.glsl" : "internal/gbuffer_fill@NO_BINDLESS.frag.glsl");
 
-        const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());
+        const bool res = rp_main_draw_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log());
         if (!res) {
             ctx.log()->Error("[ExGBufferFill::LazyInit]: Failed to initialize render pass!");
         }

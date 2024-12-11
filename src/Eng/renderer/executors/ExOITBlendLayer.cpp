@@ -64,7 +64,7 @@ void Eng::ExOITBlendLayer::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, Fg
                            bindless ? "internal/oit_blend_layer@GI_CACHE;SPECULAR.frag.glsl"
                                     : "internal/oit_blend_layer@GI_CACHE;SPECULAR;NO_BINDLESS.frag.glsl")};
 
-        if (!rp_oit_blend_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log())) {
+        if (!rp_oit_blend_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log())) {
             ctx.log()->Error("[ExOITBlendLayer::LazyInit]: Failed to init render pass!");
         }
 

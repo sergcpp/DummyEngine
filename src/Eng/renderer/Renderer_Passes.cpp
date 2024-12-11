@@ -1326,7 +1326,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, render_targets, {}, rast_state,
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(SSAO::Params), 0);
             }
         });
@@ -1381,7 +1381,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                 uniform_params.resolution = Ren::Vec2f{float(rast_state.viewport[2]), float(rast_state.viewport[3])};
                 uniform_params.vertical = 0.0f;
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, render_targets, {}, rast_state,
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(Bilateral::Params), 0);
             }
         });
@@ -1436,7 +1436,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                 uniform_params.resolution = Ren::Vec2f{float(rast_state.viewport[2]), float(rast_state.viewport[3])};
                 uniform_params.vertical = 1.0f;
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, render_targets, {}, rast_state,
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(Bilateral::Params), 0);
             }
         });
@@ -1491,7 +1491,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                 uniform_params.resolution = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
                                                        float(view_state_.scr_res[0]), float(view_state_.scr_res[1])};
                 uniform_params.clip_info = view_state_.clip_info;
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_upscale_prog_, render_targets, {}, rast_state,
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_upscale_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(Upscale::Params), 0);
             }
         });
@@ -1696,7 +1696,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
         BlitStaticVel::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_static_vel_prog_, render_targets, depth_target, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_static_vel_prog_, depth_target, render_targets, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(BlitStaticVel::Params), 0);
     });
 }
@@ -1774,11 +1774,10 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
             }
             ++accumulated_frames_;
 
-            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
-                                static_accumulation ? blit_taa_static_prog_
-                                                    : blit_taa_prog_[settings.enable_motion_blur],
-                                render_targets, {}, rast_state, builder.rast_state(), bindings, &uniform_params,
-                                sizeof(TempAA::Params), 0);
+            prim_draw_.DrawPrim(
+                PrimDraw::ePrim::Quad,
+                static_accumulation ? blit_taa_static_prog_ : blit_taa_prog_[settings.enable_motion_blur], {},
+                render_targets, rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(TempAA::Params), 0);
         }
     });
 }
@@ -1824,7 +1823,7 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
 
         const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down_depth_prog_, render_targets, {}, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down_depth_prog_, {}, render_targets, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(DownDepth::Params), 0);
     });
 }

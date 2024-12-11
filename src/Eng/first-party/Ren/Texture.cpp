@@ -23,7 +23,7 @@ static const int g_block_res[][2] = {
     {12, 10}, // _12x10
     {12, 12}  // _12x12
 };
-static_assert(sizeof(g_block_res) / sizeof(g_block_res[0]) == int(eTexBlock::_None), "!");
+static_assert(std::size(g_block_res) == int(eTexBlock::_None), "!");
 
 const eTexUsage g_tex_usage_per_state[] = {
     {},                      // Undefined
@@ -44,7 +44,7 @@ const eTexUsage g_tex_usage_per_state[] = {
     {},                      // BuildASWrite
     {}                       // RayTracing
 };
-static_assert(sizeof(g_tex_usage_per_state) / sizeof(g_tex_usage_per_state[0]) == int(eResState::_Count), "!");
+static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count), "!");
 
 const int g_per_pixel_data_len[] = {
     -1, // Undefined
@@ -85,7 +85,7 @@ const int g_per_pixel_data_len[] = {
     -1, // ASTC
     -1  // None
 };
-static_assert(sizeof(g_per_pixel_data_len) / sizeof(g_per_pixel_data_len[0]) == int(eTexFormat::_Count), "!");
+static_assert(std::size(g_per_pixel_data_len) == int(eTexFormat::_Count), "!");
 } // namespace Ren
 
 int Ren::GetBlockLenBytes(const eTexFormat format, const eTexBlock block) {

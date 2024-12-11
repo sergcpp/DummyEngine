@@ -46,7 +46,7 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-        if (!rp_transparent_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log())) {
+        if (!rp_transparent_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log())) {
             ctx.log()->Error("[ExTransparent::LazyInit]: Failed to init render pass!");
         }
 

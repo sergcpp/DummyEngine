@@ -26,7 +26,7 @@ const eStageBits g_stage_bits_per_state[] = {
     eStageBits::AccStructureBuild,                                                             // BuildASWrite
     eStageBits::RayTracingShader                                                               // RayTracing
 };
-static_assert(sizeof(g_stage_bits_per_state) / sizeof(g_stage_bits_per_state[0]) == int(eResState::_Count), "!");
+static_assert(std::size(g_stage_bits_per_state) == int(eResState::_Count), "!");
 } // namespace Ren
 
 Ren::eStageBits Ren::StageBitsForState(const eResState state) { return g_stage_bits_per_state[int(state)]; }

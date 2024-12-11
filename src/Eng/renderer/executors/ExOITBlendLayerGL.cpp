@@ -88,7 +88,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
 
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, prog_oit_blit_depth_, {}, depth_target, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, prog_oit_blit_depth_, depth_target, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     }
 

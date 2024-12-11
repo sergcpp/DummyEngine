@@ -67,6 +67,45 @@ template <typename T> class Span {
         return p_data_[i];
     }
 
+    template <typename U>
+    bool operator==(const Span<U> &rhs) const {
+        if (size_ != rhs.size()) {
+            return false;
+        }
+        bool eq = true;
+        for (uint32_t i = 0; i < size_ && eq; ++i) {
+            eq &= p_data_[i] == rhs[i];
+        }
+        return eq;
+    }
+    template <typename U>
+    bool operator!=(const Span<U> &rhs) const {
+        if (size_ != rhs.size()) {
+            return true;
+        }
+        bool neq = false;
+        for (uint32_t i = 0; i < size_ && !neq; ++i) {
+            neq |= p_data_[i] != rhs[i];
+        }
+        return neq;
+    }
+    template <typename U>
+    bool operator<(const Span<U> &rhs) const {
+        return std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
+    }
+    template <typename U>
+    bool operator<=(const Span<U> &rhs) const {
+        return !std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
+    }
+    template <typename U>
+    bool operator>(const Span<U> &rhs) const {
+        return std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
+    }
+    template <typename U>
+    bool operator>=(const Span<U> &rhs) const {
+        return !std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
+    }
+
     using iterator = T *;
     using const_iterator = const T *;
 

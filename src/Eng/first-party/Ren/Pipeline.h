@@ -73,12 +73,14 @@ class Pipeline : public RefCounter {
     operator bool() const { return api_ctx_ != nullptr; }
 
     bool operator==(const Pipeline &rhs) const {
-        return rast_state_ == rhs.rast_state_ && render_pass_ == rhs.render_pass_ && prog_ == rhs.prog_ &&
-               vtx_input_ == rhs.vtx_input_;
+        return vtx_input_ == rhs.vtx_input_ && prog_ == rhs.prog_ && render_pass_ == rhs.render_pass_ &&
+               depth_format_ == rhs.depth_format_ && color_formats_ == rhs.color_formats_ &&
+               rast_state_ == rhs.rast_state_;
     }
     bool operator!=(const Pipeline &rhs) const {
-        return rast_state_ != rhs.rast_state_ || render_pass_ != rhs.render_pass_ || prog_ != rhs.prog_ ||
-               vtx_input_ != rhs.vtx_input_;
+        return vtx_input_ != rhs.vtx_input_ || prog_ != rhs.prog_ || render_pass_ != rhs.render_pass_ ||
+               depth_format_ != rhs.depth_format_ || color_formats_ != rhs.color_formats_ ||
+               rast_state_ != rhs.rast_state_;
     }
     bool operator<(const Pipeline &rhs) const {
         if (vtx_input_ < rhs.vtx_input_) {
@@ -90,7 +92,15 @@ class Pipeline : public RefCounter {
                 if (render_pass_ < rhs.render_pass_) {
                     return true;
                 } else if (render_pass_ == rhs.render_pass_) {
-                    return rast_state_ < rhs.rast_state_;
+                    if (depth_format_ < rhs.depth_format_) {
+                        return true;
+                    } else if (depth_format_ == rhs.depth_format_) {
+                        if (color_formats_ < rhs.color_formats_) {
+                            return true;
+                        } else if (color_formats_ == rhs.color_formats_) {
+                            return rast_state_ < rhs.rast_state_;
+                        }
+                    }
                 }
             }
         }

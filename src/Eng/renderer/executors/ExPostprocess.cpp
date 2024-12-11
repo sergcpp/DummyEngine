@@ -54,7 +54,7 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     }
 
     prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_postprocess_prog_[args_->tonemap_mode == 2][output_tex2 != nullptr],
-                        render_targets, {}, rast_state, builder.rast_state(), bindings, &uniform_params,
+                        {}, render_targets, rast_state, builder.rast_state(), bindings, &uniform_params,
                         sizeof(BlitPostprocess::Params), 0);
 }
 

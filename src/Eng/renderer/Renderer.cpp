@@ -387,7 +387,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                                 Ren::eImageLayout::DepthStencilAttachmentOptimal, Ren::eLoadOp::Load,
                                                 Ren::eStoreOp::Store};
 
-        const bool res = rp_main_draw_.Setup(ctx_.api_ctx(), color_rts, depth_rt, ctx_.log());
+        const bool res = rp_main_draw_.Setup(ctx_.api_ctx(), depth_rt, color_rts, ctx_.log());
         if (!res) {
             ctx_.log()->Error("Failed to initialize render pass!");
         }

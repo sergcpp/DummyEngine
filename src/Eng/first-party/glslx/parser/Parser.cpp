@@ -821,7 +821,7 @@ bool glslx::Parser::ParseLayout(top_level_t &current) {
 
             int found = -1;
             qualifier->name = strnew(is_type(eTokType::Identifier) ? tok_.as_identifier : "shared");
-            for (int i = 0; i < sizeof(g_layout_qualifiers) / sizeof(g_layout_qualifiers[0]); ++i) {
+            for (int i = 0; i < std::size(g_layout_qualifiers); ++i) {
                 if (strcmp(qualifier->name, g_layout_qualifiers[i].qualifier) == 0) {
                     found = i;
                     break;

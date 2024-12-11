@@ -33,40 +33,48 @@ void Ren::Framebuffer::Destroy() {
     }
 }
 
-bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
-                               const WeakTex2DRef _stencil_attachment,
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
+                               const WeakTex2DRef &_stencil_attachment,
                                Span<const WeakTex2DRef> _color_attachments) const {
-    if (((!_depth_attachment && !depth_attachment.ref) ||
-         (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
-        ((!_stencil_attachment && !stencil_attachment.ref) ||
-         (_stencil_attachment && _stencil_attachment->handle() == stencil_attachment.handle)) &&
-        _color_attachments.size() == color_attachments.size() &&
-        std::equal(_color_attachments.begin(), _color_attachments.end(), color_attachments.data(),
-                   [](const WeakTex2DRef &lhs, const Attachment &rhs) {
-                       return (!lhs && !rhs.ref) || (lhs && lhs->handle() == rhs.handle);
-                   })) {
-        return false;
-    }
-    return true;
+    return depth_attachment != _depth_attachment || stencil_attachment != _stencil_attachment ||
+           Span<const Attachment>(color_attachments) != _color_attachments;
 }
 
-bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
-                               const WeakTex2DRef _stencil_attachment,
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
+                               const WeakTex2DRef &_stencil_attachment,
                                Span<const RenderTarget> _color_attachments) const {
-    if (((!_depth_attachment && !depth_attachment.ref) ||
-         (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
-        ((!_stencil_attachment && !stencil_attachment.ref) ||
-         (_stencil_attachment && _stencil_attachment->handle() == stencil_attachment.handle)) &&
-        _color_attachments.size() == color_attachments.size() &&
-        std::equal(_color_attachments.begin(), _color_attachments.end(), color_attachments.data(),
-                   [](const RenderTarget &lhs, const Attachment &rhs) {
-                       bool ret = (!lhs.ref && !rhs.ref) || (lhs.ref && lhs.ref->handle() == rhs.handle);
-                       ret &= lhs.view_index == rhs.view_index;
-                       return ret;
-                   })) {
-        return false;
+    return depth_attachment != _depth_attachment || stencil_attachment != _stencil_attachment ||
+           Span<const Attachment>(color_attachments) != _color_attachments;
+}
+
+bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
+                                const WeakTex2DRef &_stencil_attachment,
+                                Span<const WeakTex2DRef> _color_attachments) const {
+    if (depth_attachment < _depth_attachment) {
+        return true;
+    } else if (depth_attachment == _depth_attachment) {
+        if (stencil_attachment < _stencil_attachment) {
+            return true;
+        } else if (stencil_attachment == _stencil_attachment) {
+            return Span<const Attachment>(color_attachments) < _color_attachments;
+        }
     }
-    return true;
+    return false;
+}
+
+bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
+                                const WeakTex2DRef &_stencil_attachment,
+                                Span<const RenderTarget> _color_attachments) const {
+    if (depth_attachment < _depth_attachment) {
+        return true;
+    } else if (depth_attachment == _depth_attachment) {
+        if (stencil_attachment < _stencil_attachment) {
+            return true;
+        } else if (stencil_attachment == _stencil_attachment) {
+            return Span<const Attachment>(color_attachments) < _color_attachments;
+        }
+    }
+    return false;
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
@@ -87,8 +95,9 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         color_targets.emplace_back(_color_attachments[i], eLoadOp::DontCare, eStoreOp::DontCare);
     }
 
-    return Setup(api_ctx, render_pass, w, h, RenderTarget(_depth_attachment, eLoadOp::DontCare, eStoreOp::DontCare),
-                 RenderTarget(_stencil_attachment, eLoadOp::DontCare, eStoreOp::DontCare), color_targets, log);
+    return Setup(
+        api_ctx, render_pass, w, h, RenderTarget(std::move(_depth_attachment), eLoadOp::DontCare, eStoreOp::DontCare),
+        RenderTarget(std::move(_stencil_attachment), eLoadOp::DontCare, eStoreOp::DontCare), color_targets, log);
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
@@ -145,8 +154,8 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         if (_color_targets[i]) {
             if (cube) {
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + GLenum(i),
-                                       target + _color_targets[i].view_index - 1,
-                                       GLuint(_color_targets[i].ref->id()), 0);
+                                       target + _color_targets[i].view_index - 1, GLuint(_color_targets[i].ref->id()),
+                                       0);
             } else {
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target,
                                        GLuint(_color_targets[i].ref->id()), 0);

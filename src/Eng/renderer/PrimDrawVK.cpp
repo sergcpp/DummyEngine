@@ -13,18 +13,49 @@ extern const VkAttachmentStoreOp vk_store_ops[];
 namespace PrimDrawInternal {
 extern const int SphereIndicesCount;
 
-bool pipeline_compare(const Ren::Pipeline &pi, const Ren::ProgramRef &p, const Ren::RenderPass *rp,
-                      Ren::Span<const Ren::RenderTarget> color_targets, const Ren::RenderTarget depth_target,
-                      const Ren::RastState &rs) {
-    if (pi.prog() == p && pi.render_pass() == rp && pi.rast_state() == rs) {
-        bool formats_match = (color_targets.size() == pi.color_formats().size());
-        for (int j = 0; j < color_targets.size() && formats_match; ++j) {
-            formats_match &= color_targets[j].ref->params.format == pi.color_formats()[j];
-        }
-        if (depth_target) {
-            formats_match &= (depth_target.ref->params.format == pi.depth_format());
-        }
+bool pipeline_eq(const Ren::Pipeline &pi, const Ren::VertexInput *vi, const Ren::ProgramRef &p,
+                 const Ren::RenderPass *rp, const Ren::RenderTarget depth_target,
+                 Ren::Span<const Ren::RenderTarget> color_targets, const Ren::RastState &rs) {
+    return pi.vtx_input() == vi && pi.prog() == p && pi.render_pass() == rp && pi.depth_format() == depth_target &&
+           pi.color_formats() == color_targets && pi.rast_state() == rs;
+}
+bool pipeline_lt(const Ren::Pipeline &pi, const Ren::VertexInput *vi, const Ren::ProgramRef &p,
+                 const Ren::RenderPass *rp, const Ren::RenderTarget depth_target,
+                 Ren::Span<const Ren::RenderTarget> color_targets, const Ren::RastState &rs) {
+    if (pi.vtx_input() < vi) {
         return true;
+    } else if (pi.vtx_input() == vi) {
+        if (pi.prog() < p) {
+            return true;
+        } else if (pi.prog() == p) {
+            if (pi.render_pass() < rp) {
+                return true;
+            } else if (pi.render_pass() == rp) {
+                if (pi.depth_format() < depth_target) {
+                    return true;
+                } else if (pi.depth_format() == depth_target) {
+                    if (pi.color_formats() < color_targets) {
+                        return true;
+                    } else if (pi.color_formats() == color_targets) {
+                        return pi.rast_state() < rs;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool renderpass_eq(const Ren::RenderPass &rp, const Ren::RenderTarget depth_target,
+                   Ren::Span<const Ren::RenderTarget> color_targets) {
+    return rp.depth_rt == depth_target && Ren::Span<const Ren::RenderTargetInfo>(rp.color_rts) == color_targets;
+}
+bool renderpass_lt(const Ren::RenderPass &rp, const Ren::RenderTarget depth_target,
+                   Ren::Span<const Ren::RenderTarget> color_targets) {
+    if (rp.depth_rt < depth_target) {
+        return true;
+    } else if (rp.depth_rt == depth_target) {
+        return Ren::Span<const Ren::RenderTargetInfo>(rp.color_rts) < color_targets;
     }
     return false;
 }
@@ -32,10 +63,8 @@ bool pipeline_compare(const Ren::Pipeline &pi, const Ren::ProgramRef &p, const R
 
 Eng::PrimDraw::~PrimDraw() {}
 
-void Eng::PrimDraw::Reset() {}
-
-void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
-                             Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
+void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::RenderTarget depth_rt,
+                             Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
                              Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
                              const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
                              const int instances) {
@@ -175,7 +204,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
     }
 
     if (ctx_->capabilities.dynamic_rendering) {
-        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, nullptr, color_rts, depth_rt, new_rast_state);
+        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, nullptr, depth_rt, color_rts, new_rast_state);
         assert(pipeline);
 
         Ren::SmallVector<VkRenderingAttachmentInfoKHR, 4> color_attachments;
@@ -231,11 +260,11 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         if (prim == ePrim::Quad) {
             pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
 
-            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
-                                      instances,            // instance count
-                                      0,                    // first index
-                                      0,                    // vertex offset
-                                      0);                   // first instance
+            api_ctx->vkCmdDrawIndexed(cmd_buf, 6, // index count
+                                      instances,  // instance count
+                                      0,          // first index
+                                      0,          // vertex offset
+                                      0);         // first instance
         } else if (prim == ePrim::Sphere) {
             pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, sphere_ndx_.offset, VK_INDEX_TYPE_UINT16);
 
@@ -248,10 +277,10 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
 
         api_ctx->vkCmdEndRenderingKHR(cmd_buf);
     } else {
-        const Ren::RenderPass *rp = FindOrCreateRenderPass(color_rts, depth_rt);
+        const Ren::RenderPass *rp = FindOrCreateRenderPass(depth_rt, color_rts);
         const Ren::Framebuffer *fb =
-            FindOrCreateFramebuffer(rp, color_rts, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
-                                    new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{});
+            FindOrCreateFramebuffer(rp, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
+                                    new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{}, color_rts);
         const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, rp, {}, {}, new_rast_state);
 
         VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -305,62 +334,78 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
     }
 }
 
-const Ren::RenderPass *Eng::PrimDraw::FindOrCreateRenderPass(Ren::Span<const Ren::RenderTarget> color_targets,
-                                                             Ren::RenderTarget depth_target) {
-    // TODO: binary search
-    for (size_t i = 0; i < render_passes_.size(); ++i) {
-        if (render_passes_[i].IsCompatibleWith(color_targets, depth_target)) {
-            return &render_passes_[i];
+const Ren::RenderPass *Eng::PrimDraw::FindOrCreateRenderPass(Ren::RenderTarget depth_target,
+                                                             Ren::Span<const Ren::RenderTarget> color_targets) {
+    using namespace PrimDrawInternal;
+
+    int start = 0, count = int(render_passes_.size());
+    while (count > 0) {
+        const int step = count / 2;
+        const int index = start + step;
+        if (renderpass_lt(render_passes_[index], depth_target, color_targets)) {
+            start = index + 1;
+            count -= step + 1;
+        } else {
+            count = step;
         }
     }
 
-    Ren::ApiContext *api_ctx = ctx_->api_ctx();
-    Ren::RenderPass &new_render_pass = render_passes_.emplace_back();
+    if (start < int(render_passes_.size()) && renderpass_eq(render_passes_[start], depth_target, color_targets)) {
+        return &render_passes_[start];
+    }
 
-    if (!new_render_pass.Setup(api_ctx, color_targets, depth_target, ctx_->log())) {
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+
+    Ren::RenderPass new_render_pass;
+    if (!new_render_pass.Setup(api_ctx, depth_target, color_targets, ctx_->log())) {
         ctx_->log()->Error("Failed to setup renderpass!");
         render_passes_.pop_back();
         return nullptr;
     }
-
-    return &new_render_pass;
+    render_passes_.insert(begin(render_passes_) + start, std::move(new_render_pass));
+    return &render_passes_[start];
 }
 
 const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(const ePrim prim, const Ren::ProgramRef &p,
                                                          const Ren::RenderPass *rp,
-                                                         Ren::Span<const Ren::RenderTarget> color_targets,
                                                          const Ren::RenderTarget depth_target,
+                                                         Ren::Span<const Ren::RenderTarget> color_targets,
                                                          const Ren::RastState &rs) {
     using namespace PrimDrawInternal;
 
-    const Ren::Pipeline *same_prog = nullptr;
+    const Ren::VertexInput *vi = (prim == ePrim::Quad) ? &fs_quad_vtx_input_ : &sphere_vtx_input_;
 
-    // TODO: binary search
-    for (size_t i = 0; i < pipelines_[int(prim)].size(); ++i) {
-        if (pipelines_[int(prim)][i].prog() == p) {
-            same_prog = &pipelines_[int(prim)][i];
+    int start = 0, count = int(pipelines_.size());
+    while (count > 0) {
+        const int step = count / 2;
+        const int index = start + step;
+        if (pipeline_lt(pipelines_[index], vi, p, rp, depth_target, color_targets, rs)) {
+            start = index + 1;
+            count -= step + 1;
+        } else {
+            count = step;
         }
-        if (pipeline_compare(pipelines_[int(prim)][i], p, rp, color_targets, depth_target, rs)) {
-            return &pipelines_[int(prim)][i];
-        }
+    }
+
+    if (start < int(pipelines_.size()) && pipeline_eq(pipelines_[start], vi, p, rp, depth_target, color_targets, rs)) {
+        return &pipelines_[start];
     }
 
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
-    Ren::Pipeline &new_pipeline = pipelines_[int(prim)].emplace_back();
-
-    const Ren::VertexInput *vtx_input = (prim == ePrim::Quad) ? &fs_quad_vtx_input_ : &sphere_vtx_input_;
+    Ren::Pipeline new_pipeline;
     if (rp) {
-        if (!new_pipeline.Init(api_ctx, rs, p, vtx_input, rp, 0, ctx_->log())) {
+        if (!new_pipeline.Init(api_ctx, rs, p, vi, rp, 0, ctx_->log())) {
             ctx_->log()->Error("Failed to initialize pipeline!");
-            pipelines_[int(prim)].pop_back();
+            pipelines_.pop_back();
             return nullptr;
         }
     } else {
-        if (!new_pipeline.Init(api_ctx, rs, p, vtx_input, color_targets, depth_target, 0, ctx_->log())) {
+        if (!new_pipeline.Init(api_ctx, rs, p, vi, color_targets, depth_target, 0, ctx_->log())) {
             ctx_->log()->Error("Failed to initialize pipeline!");
-            pipelines_[int(prim)].pop_back();
+            pipelines_.pop_back();
             return nullptr;
         }
     }
-    return &new_pipeline;
+    pipelines_.insert(begin(pipelines_) + start, std::move(new_pipeline));
+    return &pipelines_[start];
 }

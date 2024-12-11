@@ -21,6 +21,56 @@ class Framebuffer {
         WeakTex2DRef ref;
         uint8_t view_index = 0;
         TexHandle handle; // handle is stored to detect texture reallocation
+
+        bool operator==(const WeakTex2DRef &rhs) const {
+            if (!rhs) {
+                return !bool(this->ref);
+            }
+            return this->handle == rhs->handle();
+        }
+        bool operator!=(const WeakTex2DRef &rhs) const { return !operator==(rhs); }
+        bool operator<(const WeakTex2DRef &rhs) const {
+            if (!rhs) {
+                return this->handle < TexHandle();
+            }
+            return this->handle < rhs->handle();
+        }
+        friend bool operator<(const WeakTex2DRef &lhs, const Attachment &rhs) {
+            if (!lhs) {
+                return TexHandle() < rhs.handle;
+            }
+            return lhs->handle() < rhs.handle;
+        }
+
+        bool operator==(const RenderTarget &rhs) const {
+            if (!rhs) {
+                return !bool(this->ref);
+            }
+            return this->handle == rhs.ref->handle() && this->view_index == rhs.view_index;
+        }
+        bool operator!=(const RenderTarget &rhs) const { return !operator==(rhs); }
+        bool operator<(const RenderTarget &rhs) const {
+            if (!rhs) {
+                return this->handle < TexHandle();
+            }
+            if (this->handle < rhs.ref->handle()) {
+                return true;
+            } else if (this->handle == rhs.ref->handle()) {
+                return this->view_index < rhs.view_index;
+            }
+            return false;
+        }
+        friend bool operator<(const RenderTarget &lhs, const Attachment &rhs) {
+            if (!lhs) {
+                return TexHandle() < rhs.handle;
+            }
+            if (lhs.ref->handle() < rhs.handle) {
+                return true;
+            } else if (lhs.ref->handle() == rhs.handle) {
+                return lhs.view_index < rhs.view_index;
+            }
+            return false;
+        }
     };
 
     void Destroy();
@@ -46,10 +96,19 @@ class Framebuffer {
     uint32_t id() const { return id_; }
 #endif
 
-    [[nodiscard]] bool Changed(const RenderPass &render_pass, WeakTex2DRef _depth_attachment,
-                               WeakTex2DRef _stencil_attachment, Span<const WeakTex2DRef> _color_attachments) const;
-    [[nodiscard]] bool Changed(const RenderPass &render_pass, WeakTex2DRef _depth_attachment,
-                               WeakTex2DRef _stencil_attachment, Span<const RenderTarget> _color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
+                               const WeakTex2DRef &stencil_attachment,
+                               Span<const WeakTex2DRef> color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
+                               const WeakTex2DRef &stencil_attachment,
+                               Span<const RenderTarget> color_attachments) const;
+
+    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
+                                const WeakTex2DRef &stencil_attachment,
+                                Span<const WeakTex2DRef> color_attachments) const;
+    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
+                                const WeakTex2DRef &stencil_attachment,
+                                Span<const RenderTarget> color_attachments) const;
 
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTex2DRef depth_attachment,
                WeakTex2DRef stencil_attachment, Span<const WeakTex2DRef> color_attachments, bool is_multisampled,

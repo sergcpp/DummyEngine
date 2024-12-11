@@ -13,16 +13,16 @@ extern const int SphereIndicesCount;
 
 Eng::PrimDraw::~PrimDraw() = default;
 
-void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
-                             Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
+void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::RenderTarget depth_rt,
+                             Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
                              Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
                              const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
                              const int instance_count) {
     using namespace PrimDrawInternal;
 
     const Ren::Framebuffer *fb =
-        FindOrCreateFramebuffer(nullptr, color_rts, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
-                                new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{});
+        FindOrCreateFramebuffer(nullptr, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
+                                new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{}, color_rts);
 
     new_rast_state.ApplyChanged(applied_rast_state);
     applied_rast_state = new_rast_state;

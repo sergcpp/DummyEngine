@@ -42,7 +42,7 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
     const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_probe_debug_, render_targets, depth_target, rast_state,
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_probe_debug_, depth_target, render_targets, rast_state,
                         builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,
                         PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z);
 }
