@@ -167,7 +167,7 @@ void LoadingState::Draw() {
         rast_state.viewport[2] = ren_ctx_->w();
         rast_state.viewport[3] = ren_ctx_->h();
 
-        prim_draw_->DrawPrim(Eng::PrimDraw::ePrim::Quad, blit_loading_prog_, render_targets, {}, rast_state,
+        prim_draw_->DrawPrim(Eng::PrimDraw::ePrim::Quad, blit_loading_prog_, {}, render_targets, rast_state,
                              curr_rast_state_, {}, &uniform_params, sizeof(Loading::Params), 0);
     }
 
