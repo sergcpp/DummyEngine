@@ -217,6 +217,18 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
                     continue;
                 }
             }
+            if (js_features.Has("hwrt")) {
+                const Sys::JsLiteral &js_hwrt = js_features.at("hwrt").as_lit();
+                if ((js_hwrt.val == Sys::JsLiteralType::True) != ren_ctx_->capabilities.hwrt) {
+                    continue;
+                }
+            }
+            if (js_features.Has("swrt")) {
+                const Sys::JsLiteral &js_swrt = js_features.at("swrt").as_lit();
+                if ((js_swrt.val == Sys::JsLiteralType::True) != ren_ctx_->capabilities.swrt) {
+                    continue;
+                }
+            }
         }
         if (js_pi_type.val == "compute") {
             int subgroup_size = -1;
