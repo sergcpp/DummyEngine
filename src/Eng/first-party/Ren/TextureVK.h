@@ -7,9 +7,7 @@
 #include "MemoryAllocator.h"
 #include "TextureParams.h"
 
-#if defined(REN_VK_BACKEND)
 #include "VK.h"
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(push)

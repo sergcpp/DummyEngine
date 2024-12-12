@@ -66,7 +66,7 @@ class ExRTGI final : public FgExecutor {
     bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_rt_gi_[2], pi_rt_gi_2bounce_[2];
+    Ren::PipelineRef pi_rt_gi_[2], pi_rt_gi_2bounce_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

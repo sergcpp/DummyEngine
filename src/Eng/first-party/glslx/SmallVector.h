@@ -333,24 +333,6 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
     }
 };
 
-template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>>
-bool operator==(const SmallVectorImpl<T, Allocator> &lhs, const SmallVectorImpl<T, Allocator> &rhs) {
-    if (lhs.size() != rhs.size()) {
-        return false;
-    }
-    for (const T *lhs_it = lhs.begin(), *rhs_it = rhs.begin(); lhs_it != lhs.end(); ++lhs_it, ++rhs_it) {
-        if (*lhs_it != *rhs_it) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>>
-bool operator!=(const SmallVectorImpl<T, Allocator> &lhs, const SmallVectorImpl<T, Allocator> &rhs) {
-    return operator==(lhs, rhs);
-}
-
 template <typename T, int N, int AlignmentOfT = alignof(T), typename Allocator = aligned_allocator<T, AlignmentOfT>>
 class SmallVector : public SmallVectorImpl<T, Allocator> {
     alignas(AlignmentOfT) char buffer_[sizeof(T) * N];

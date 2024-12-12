@@ -89,8 +89,8 @@ void Eng::ExRTGI::Execute_HWRT(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->tbos[0]);
     }
 
-    const Ren::Pipeline &pi = args_->two_bounce ? (stoch_lights_buf ? pi_rt_gi_2bounce_[1] : pi_rt_gi_2bounce_[0])
-                                                : (stoch_lights_buf ? pi_rt_gi_[1] : pi_rt_gi_[0]);
+    const Ren::Pipeline &pi = args_->two_bounce ? (stoch_lights_buf ? *pi_rt_gi_2bounce_[1] : *pi_rt_gi_2bounce_[0])
+                                                : (stoch_lights_buf ? *pi_rt_gi_[1] : *pi_rt_gi_[0]);
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings,
@@ -230,8 +230,8 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->tbos[0]);
     }
 
-    const Ren::Pipeline &pi = args_->two_bounce ? (stoch_lights_buf ? pi_rt_gi_2bounce_[1] : pi_rt_gi_2bounce_[0])
-                                                : (stoch_lights_buf ? pi_rt_gi_[1] : pi_rt_gi_[0]);
+    const Ren::Pipeline &pi = args_->two_bounce ? (stoch_lights_buf ? *pi_rt_gi_2bounce_[1] : *pi_rt_gi_2bounce_[0])
+                                                : (stoch_lights_buf ? *pi_rt_gi_[1] : *pi_rt_gi_[0]);
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings,

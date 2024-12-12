@@ -51,7 +51,7 @@ class ExRTShadows final : public FgExecutor {
     bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_rt_shadows_;
+    Ren::PipelineRef pi_rt_shadows_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

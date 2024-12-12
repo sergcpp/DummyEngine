@@ -74,7 +74,7 @@ class ExRTReflections final : public FgExecutor {
     bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_rt_reflections_[3], pi_rt_reflections_4bounce_[3];
+    Ren::PipelineRef pi_rt_reflections_[3], pi_rt_reflections_4bounce_[3];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

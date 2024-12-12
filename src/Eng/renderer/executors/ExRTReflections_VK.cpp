@@ -116,19 +116,19 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
     const Ren::Pipeline *pi = nullptr;
     if (args_->four_bounces) {
         if (stoch_lights_buf) {
-            pi = &pi_rt_reflections_4bounce_[2];
+            pi = pi_rt_reflections_4bounce_[2].get();
         } else if (irr_tex) {
-            pi = &pi_rt_reflections_4bounce_[1];
+            pi = pi_rt_reflections_4bounce_[1].get();
         } else {
-            pi = &pi_rt_reflections_4bounce_[0];
+            pi = pi_rt_reflections_4bounce_[0].get();
         }
     } else {
         if (stoch_lights_buf) {
-            pi = &pi_rt_reflections_[2];
+            pi = pi_rt_reflections_[2].get();
         } else if (irr_tex) {
-            pi = &pi_rt_reflections_[1];
+            pi = pi_rt_reflections_[1].get();
         } else {
-            pi = &pi_rt_reflections_[0];
+            pi = pi_rt_reflections_[0].get();
         }
     }
 
@@ -300,19 +300,19 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     const Ren::Pipeline *pi = nullptr;
     if (args_->four_bounces) {
         if (stoch_lights_buf) {
-            pi = &pi_rt_reflections_4bounce_[2];
+            pi = pi_rt_reflections_4bounce_[2].get();
         } else if (irr_tex) {
-            pi = &pi_rt_reflections_4bounce_[1];
+            pi = pi_rt_reflections_4bounce_[1].get();
         } else {
-            pi = &pi_rt_reflections_4bounce_[0];
+            pi = pi_rt_reflections_4bounce_[0].get();
         }
     } else {
         if (stoch_lights_buf) {
-            pi = &pi_rt_reflections_[2];
+            pi = pi_rt_reflections_[2].get();
         } else if (irr_tex) {
-            pi = &pi_rt_reflections_[1];
+            pi = pi_rt_reflections_[1].get();
         } else {
-            pi = &pi_rt_reflections_[0];
+            pi = pi_rt_reflections_[0].get();
         }
     }
 

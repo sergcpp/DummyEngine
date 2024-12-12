@@ -50,8 +50,8 @@ Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
 
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     handle_ = std::exchange(rhs.handle_, {});
-    color_rts = std::move(rhs.color_rts);
     depth_rt = std::exchange(rhs.depth_rt, {});
+    color_rts = std::move(rhs.color_rts);
 
     return (*this);
 }
@@ -65,8 +65,8 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, RenderTargetInfo _depth_rt, Span
                                                                 {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED});
     VkAttachmentReference depth_attachment_ref = {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED};
 
-    color_rts.resize(uint32_t(_color_rts.size()));
     depth_rt = {};
+    color_rts.resize(uint32_t(_color_rts.size()));
 
     if (_depth_rt) {
         const auto att_index = uint32_t(pass_attachments.size());
@@ -177,8 +177,8 @@ void Ren::RenderPass::Destroy() {
         api_ctx_->render_passes_to_destroy[api_ctx_->backend_frame].push_back(handle_);
         handle_ = VK_NULL_HANDLE;
     }
-    color_rts.clear();
     depth_rt = {};
+    color_rts.clear();
 }
 
 bool Ren::RenderPass::IsCompatibleWith(RenderTarget _depth_rt, Span<const RenderTarget> _color_rts) {

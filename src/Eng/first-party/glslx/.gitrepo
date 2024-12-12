@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = glslx
-	branch = small_smallvector
-	commit = fbba054ee7623e035139ee0e62d4a2089ddb86a8
-	parent = c4ac3254bc13ff6e0574b87c7b1eb25673697bbd
+	branch = update_11_12
+	commit = a790313a6eacb0ee541471e6e0dccc1d3c9a8af9
+	parent = 00696206ad8439b1a0aae107cb3061eb442bca34
 	method = merge
 	cmdver = 0.4.6

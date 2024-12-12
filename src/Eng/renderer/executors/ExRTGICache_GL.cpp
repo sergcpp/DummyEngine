@@ -138,7 +138,7 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
                                              args_->probe_volumes[view_state_->volume_to_update].spacing[2], 0.0f);
     uniform_params.quat_rot = view_state_->probe_ray_rotator;
 
-    DispatchCompute(pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update],
+    DispatchCompute(*pi_rt_gi_cache_[stoch_lights_buf != nullptr][args_->partial_update],
                     Ren::Vec3u{(PROBE_TOTAL_RAYS_COUNT / RTGICache::LOCAL_GROUP_SIZE_X),
                                PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z, PROBE_VOLUME_RES_Y},
                     bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(), ctx.log());

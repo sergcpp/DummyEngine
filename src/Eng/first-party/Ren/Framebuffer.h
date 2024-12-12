@@ -93,7 +93,7 @@ class Framebuffer {
     [[nodiscard]] VkFramebuffer handle() const { return handle_; }
     [[nodiscard]] VkRenderPass renderpass() const { return renderpass_; }
 #elif defined(REN_GL_BACKEND)
-    uint32_t id() const { return id_; }
+    [[nodiscard]] uint32_t id() const { return id_; }
 #endif
 
     [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,

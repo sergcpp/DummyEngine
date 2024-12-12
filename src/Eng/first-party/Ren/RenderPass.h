@@ -185,8 +185,8 @@ class RenderPass {
     void Destroy();
 
   public:
-    SmallVector<RenderTargetInfo, 4> color_rts;
     RenderTargetInfo depth_rt;
+    SmallVector<RenderTargetInfo, 4> color_rts;
 
     RenderPass() = default;
     RenderPass(const RenderPass &rhs) = delete;
@@ -195,6 +195,17 @@ class RenderPass {
 
     RenderPass &operator=(const RenderPass &rhs) = delete;
     RenderPass &operator=(RenderPass &&rhs) noexcept;
+
+    bool operator==(const RenderPass &rhs) const { return depth_rt == depth_rt && color_rts == rhs.color_rts; }
+    bool operator!=(const RenderPass &rhs) const { return depth_rt != depth_rt || color_rts != rhs.color_rts; }
+    bool operator<(const RenderPass &rhs) const {
+        if (depth_rt < rhs.depth_rt) {
+            return true;
+        } else if (depth_rt == rhs.depth_rt) {
+            return color_rts < rhs.color_rts;
+        }
+        return false;
+    }
 
 #if defined(REN_VK_BACKEND)
     [[nodiscard]] VkRenderPass handle() const { return handle_; }
