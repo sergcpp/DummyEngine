@@ -44,6 +44,8 @@ runs:
         cp ./assets_pc/materials/mat_test/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/materials/mat_test/
         cp ./assets_pc/models/coffee_maker/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/models/coffee_maker/
         cp ./assets_pc/models/mat_test/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/*.json $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/shaders/
+        cp ./assets_pc/shaders/*.spv $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/shaders/
         cp ./assets_pc/shaders/internal/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/shaders/internal/
         cp ./assets_pc/textures/mat_test/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/textures/mat_test/
         cp ./assets_pc/textures/internal/* $WORK_DIR/coffee_maker-win-x86_64-vk/assets_pc/textures/internal/
@@ -71,6 +73,8 @@ runs:
         cp ./assets_pc/materials/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/materials/mat_test/
         cp ./assets_pc/models/staircase/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/models/staircase/
         cp ./assets_pc/models/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/*.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/
+        cp ./assets_pc/shaders/*.spv $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/
         cp ./assets_pc/shaders/internal/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/internal/
         cp ./assets_pc/textures/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/mat_test/
         cp ./assets_pc/textures/internal/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/internal/
@@ -97,6 +101,8 @@ runs:
         cp ./assets_pc/materials/mat_test/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/materials/mat_test/
         cp ./assets_pc/models/ai043_01/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/models/ai043_01/
         cp ./assets_pc/models/mat_test/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/*.json $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/shaders/
+        cp ./assets_pc/shaders/*.spv $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/shaders/
         cp ./assets_pc/shaders/internal/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/shaders/internal/
         cp ./assets_pc/textures/ai043_01/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/ai043_01/
         cp ./assets_pc/textures/mat_test/* $WORK_DIR/ai043_01-win-x86_64-vk/assets_pc/textures/mat_test/
@@ -124,6 +130,8 @@ runs:
         cp ./assets_pc/materials/mat_test/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/materials/mat_test/
         cp ./assets_pc/models/ai043_06/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/models/ai043_06/
         cp ./assets_pc/models/mat_test/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/*.json $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/shaders/
+        cp ./assets_pc/shaders/*.spv $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/shaders/
         cp ./assets_pc/shaders/internal/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/shaders/internal/
         cp ./assets_pc/textures/ai043_06/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/ai043_06/
         cp ./assets_pc/textures/mat_test/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/mat_test/

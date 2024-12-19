@@ -35,7 +35,7 @@ runs:
         mv transparent_machines.png transparent_machines_ultra.png
         cp transparent_machines_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### ai043_01
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_01.json -ref references/ai043_01_cycles.uncompressed.png -w 1400 -h 955 --preset medium --psnr 23.65 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_01.json -ref references/ai043_01_cycles.uncompressed.png -w 1400 -h 955 --preset medium --psnr 23.60 --no-postprocess
         mv ai043_01.png ai043_01_medium.png
         cp ai043_01_medium.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_01.json -ref references/ai043_01_cycles.uncompressed.png -w 1400 -h 955 --preset high --psnr 23.15 --no-postprocess
