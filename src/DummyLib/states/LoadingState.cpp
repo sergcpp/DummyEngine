@@ -2,6 +2,8 @@
 
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
+#include <Eng/renderer/ParseJs.h>
+#include <Eng/scene/SceneManager.h>
 #include <Eng/utils/ShaderLoader.h>
 #include <Gui/BaseElement.h>
 #include <Gui/BitmapFont.h>
@@ -24,6 +26,7 @@ LoadingState::LoadingState(Viewer *viewer) : viewer_(viewer), alloc_(32, 512), p
     ren_ctx_ = viewer->ren_ctx();
 
     log_ = viewer->log();
+    scene_manager_ = viewer_->scene_manager();
     sh_loader_ = viewer_->shader_loader();
     prim_draw_ = &viewer_->renderer()->prim_draw();
     threads_ = viewer_->threads();
@@ -171,18 +174,17 @@ void LoadingState::Draw() {
                              curr_rast_state_, {}, &uniform_params, sizeof(Loading::Params), 0);
     }
 
-    { // Draw text
-        font_->DrawText(ui_renderer_, loading_text, Gui::Vec2f{-0.5f * text_width, 0.0f}, Gui::ColorWhite, 1.0f,
-                        ui_root_);
-    }
+    font_->DrawText(ui_renderer_, loading_text, Gui::Vec2f{-0.5f * text_width, 0.0f}, Gui::ColorWhite, 1.0f, ui_root_);
 
     ui_renderer_->Draw(ren_ctx_->w(), ren_ctx_->h());
 
 #if defined(REN_VK_BACKEND)
     bool ready = true;
-    for (auto &f : futures_) {
-        ready &= f.wait_for(std::chrono::milliseconds(10)) == std::future_status::ready;
-        if (!ready) {
+    while (!futures_.empty()) {
+        ready &= futures_.back().wait_for(std::chrono::milliseconds(10)) == std::future_status::ready;
+        if (ready) {
+            futures_.pop_back();
+        } else {
             break;
         }
     }
@@ -211,6 +213,18 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
         const Sys::JsArrayP &js_pi_shaders = js_pipeline.at("shaders").as_arr();
         if (js_pipeline.Has("features")) {
             const Sys::JsObjectP &js_features = js_pipeline.at("features").as_obj();
+            if (js_features.Has("bindless")) {
+                const Sys::JsLiteral &js_bindless = js_features.at("bindless").as_lit();
+#if defined(REN_VK_BACKEND)
+                if (js_bindless.val != Sys::JsLiteralType::True) {
+                    continue;
+                }
+#else
+                if ((js_bindless.val == Sys::JsLiteralType::True) != ren_ctx_->capabilities.bindless_texture) {
+                    continue;
+                }
+#endif
+            }
             if (js_features.Has("subgroup")) {
                 const Sys::JsLiteral &js_subgroup = js_features.at("subgroup").as_lit();
                 if ((js_subgroup.val == Sys::JsLiteralType::True) != ren_ctx_->capabilities.subgroup) {
@@ -241,6 +255,67 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
                 [shader_name, subgroup_size, this]() { sh_loader_->LoadPipeline(shader_name, subgroup_size); }));
 #else
             sh_loader_->LoadPipeline(shader_name, subgroup_size);
+#endif
+        } else if (js_pi_type.val == "graphics") {
+            Ren::RastState rast_state;
+            if (js_pipeline.Has("rast_state")) {
+                const Sys::JsObjectP &js_rast_state = js_pipeline.at("rast_state").as_obj();
+                rast_state = Eng::ParseRastState(js_rast_state);
+            }
+
+            Ren::ProgramRef prog =
+                sh_loader_->LoadProgram(js_pi_shaders.at(0).as_str().val, js_pi_shaders.at(1).as_str().val);
+
+            Ren::SmallVector<Ren::VtxAttribDesc, 4> attribs;
+            if (js_pipeline.Has("vertex_input")) {
+                const Sys::JsArrayP &js_vertex_input = js_pipeline.at("vertex_input").as_arr();
+                for (const Sys::JsElementP &el : js_vertex_input.elements) {
+                    const Sys::JsObjectP &js_attrib = el.as_obj();
+
+                    Ren::VtxAttribDesc &desc = attribs.emplace_back();
+                    if (int(js_attrib.at("buf").as_num().val) == 0) {
+                        desc.buf = scene_manager_->scene_data().persistent_data.vertex_buf1;
+                    } else if (int(js_attrib.at("buf").as_num().val) == 1) {
+                        desc.buf = scene_manager_->scene_data().persistent_data.vertex_buf2;
+                    }
+                    desc.loc = uint8_t(js_attrib.at("loc").as_num().val);
+                    desc.size = uint8_t(js_attrib.at("size").as_num().val);
+                    desc.type = Ren::Type(js_attrib.at("type").as_str().val);
+                    desc.stride = uint8_t(js_attrib.at("stride").as_num().val);
+                    desc.offset = uint32_t(js_attrib.at("offset").as_num().val);
+                }
+            }
+
+            Ren::VertexInputRef vtx_input =
+                sh_loader_->LoadVertexInput(attribs, scene_manager_->scene_data().persistent_data.indices_buf);
+
+            Ren::RenderTargetInfo depth_rt;
+            Ren::SmallVector<Ren::RenderTargetInfo, 4> color_rts;
+            if (js_pipeline.Has("render_pass")) {
+                const Sys::JsObjectP &js_render_pass = js_pipeline.at("render_pass").as_obj();
+                if (js_render_pass.Has("depth")) {
+                    const Sys::JsObjectP &js_rt_info = js_render_pass.at("depth").as_obj();
+                    depth_rt = Eng::ParseRTInfo(js_rt_info);
+                    depth_rt.layout = Ren::eImageLayout::DepthStencilAttachmentOptimal;
+                }
+                if (js_render_pass.Has("color")) {
+                    const Sys::JsArrayP &js_color_rts = js_render_pass.at("color").as_arr();
+                    for (const Sys::JsElementP &js_rt : js_color_rts.elements) {
+                        const Sys::JsObjectP &js_rt_info = js_rt.as_obj();
+                        color_rts.push_back(Eng::ParseRTInfo(js_rt_info));
+                        color_rts.back().layout = Ren::eImageLayout::ColorAttachmentOptimal;
+                    }
+                }
+            }
+
+            Ren::RenderPassRef render_pass = sh_loader_->LoadRenderPass(depth_rt, color_rts);
+
+#if defined(REN_VK_BACKEND)
+            futures_.push_back(threads_->Enqueue([rast_state, prog, vtx_input, render_pass, this]() {
+                sh_loader_->LoadPipeline(rast_state, prog, vtx_input, render_pass, 0);
+            }));
+#else
+            sh_loader_->LoadPipeline(rast_state, prog, vtx_input, render_pass, 0);
 #endif
         }
     }

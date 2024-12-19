@@ -14,6 +14,7 @@ namespace Eng {
 class ILog;
 class ShaderLoader;
 class PrimDraw;
+class SceneManager;
 }; // namespace Eng
 namespace Gui {
 class BaseElement;
@@ -31,6 +32,7 @@ class LoadingState : public Eng::ViewerState {
     Viewer *viewer_;
     Ren::Context *ren_ctx_ = nullptr;
     Eng::ILog *log_ = nullptr;
+    Eng::SceneManager *scene_manager_ = nullptr;
     Eng::ShaderLoader *sh_loader_ = nullptr;
     Eng::PrimDraw *prim_draw_ = nullptr;
     Sys::ThreadPool *threads_ = nullptr;
