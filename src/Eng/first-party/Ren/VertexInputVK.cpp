@@ -49,14 +49,14 @@ void Ren::VertexInput::BindBuffers(ApiContext *api_ctx, VkCommandBuffer cmd_buf,
     for (const auto &attr_descr : attribs) {
         int bound_index = -1;
         for (int i = 0; i < int(buffers_to_bind.size()); ++i) {
-            if (buffers_to_bind[i] == attr_descr.buf.buf &&
+            if (buffers_to_bind[i] == attr_descr.buf->vk_handle() &&
                 (attr_descr.offset <= MaxVertexInputAttributeOffset || buffer_offsets[i] == attr_descr.offset)) {
                 bound_index = i;
                 break;
             }
         }
         if (bound_index == -1) {
-            buffers_to_bind.push_back(attr_descr.buf.buf);
+            buffers_to_bind.push_back(attr_descr.buf->vk_handle());
             if (attr_descr.offset > MaxVertexInputAttributeOffset) {
                 buffer_offsets.push_back(attr_descr.offset);
             } else {
@@ -67,9 +67,9 @@ void Ren::VertexInput::BindBuffers(ApiContext *api_ctx, VkCommandBuffer cmd_buf,
     }
 
     api_ctx->vkCmdBindVertexBuffers(cmd_buf, 0, uint32_t(buffers_to_bind.size()), buffers_to_bind.cdata(),
-                           buffer_offsets.cdata());
+                                    buffer_offsets.cdata());
     if (elem_buf) {
-        api_ctx->vkCmdBindIndexBuffer(cmd_buf, elem_buf.buf, VkDeviceSize(index_offset), VkIndexType(index_type));
+        api_ctx->vkCmdBindIndexBuffer(cmd_buf, elem_buf->vk_handle(), VkDeviceSize(index_offset), VkIndexType(index_type));
     }
 }
 
@@ -89,7 +89,7 @@ void Ren::VertexInput::FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDe
         vk_attr.binding = 0xffffffff;
 
         for (uint32_t i = 0; i < uint32_t(bound_buffers.size()); ++i) {
-            if (bound_buffers[i].first == attr_descr.buf &&
+            if (bound_buffers[i].first == attr_descr.buf->handle() &&
                 (attr_descr.offset <= MaxVertexInputAttributeOffset || bound_buffers[i].second == attr_descr.offset)) {
                 vk_attr.binding = i;
                 break;
@@ -108,19 +108,12 @@ void Ren::VertexInput::FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDe
             }
             vk_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-            bound_buffers.emplace_back(attr_descr.buf, attr_descr.offset);
+            bound_buffers.emplace_back(attr_descr.buf->handle(), attr_descr.offset);
         }
     }
 }
 
-bool Ren::VertexInput::Setup(Span<const VtxAttribDesc> _attribs, const BufHandle &_elem_buf) {
-    if (_attribs.size() == attribs.size() && std::equal(_attribs.begin(), _attribs.end(), attribs.data()) &&
-        elem_buf == _elem_buf) {
-        return true;
-    }
-
+void Ren::VertexInput::Init(Span<const VtxAttribDesc> _attribs, const BufferRef &_elem_buf) {
     attribs.assign(_attribs.begin(), _attribs.end());
     elem_buf = _elem_buf;
-
-    return true;
 }

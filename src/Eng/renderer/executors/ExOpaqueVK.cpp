@@ -134,9 +134,9 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
         }
     }
 
-    //if (!(*p_list_)->probe_storage) {
-    //    return;
-    //}
+    // if (!(*p_list_)->probe_storage) {
+    //     return;
+    // }
 
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 10;
@@ -161,8 +161,8 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
         /*const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
                                                 (*p_list_)->probe_storage->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};*/
-        //const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
-        //const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
+        // const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
+        // const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
 
         const VkBufferView lights_buf_view = lights_buf.tbos[0]->view();
         const VkBufferView decals_buf_view = decals_buf.tbos[0]->view();
@@ -370,12 +370,12 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
         uint32_t i = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderPass = rp_opaque_.handle();
-        rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].handle();
+        rp_begin_info.renderPass = rp_opaque_->vk_handle();
+        rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])}};
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        draw_pass_vi_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        draw_pass_vi_->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided1
             Ren::DebugMarker _m(api_ctx, cmd_buf, "ONE-SIDED-1");

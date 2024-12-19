@@ -4,9 +4,26 @@
 
 #include "../../utils/ShaderLoader.h"
 
-void Eng::ExDebugRT::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+Eng::ExDebugRT::ExDebugRT(FgBuilder &builder, const ViewState *view_state, const Ren::IAccStructure *tlas_to_debug,
+                          const BindlessTextureData *bindless_tex, const Args *args) {
+    view_state_ = view_state;
+    tlas_to_debug_ = tlas_to_debug;
+    bindless_tex_ = bindless_tex;
+    args_ = args;
+#if defined(REN_VK_BACKEND)
+    if (builder.ctx().capabilities.hwrt) {
+        Ren::ProgramRef debug_hwrt_prog =
+            builder.sh().LoadProgram2("internal/rt_debug.rgen.glsl", "internal/rt_debug@GI_CACHE.rchit.glsl",
+                                      "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", {});
+        pi_debug_hwrt_ = builder.sh().LoadPipeline(debug_hwrt_prog);
+    } else
+#endif
+    {
+        pi_debug_swrt_ = builder.sh().LoadPipeline("internal/rt_debug_swrt@GI_CACHE.comp.glsl");
+    }
+}
 
+void Eng::ExDebugRT::Execute(FgBuilder &builder) {
 #if !defined(REN_GL_BACKEND)
     if (builder.ctx().capabilities.hwrt) {
         Execute_HWRT(builder);
@@ -14,26 +31,5 @@ void Eng::ExDebugRT::Execute(FgBuilder &builder) {
 #endif
     {
         Execute_SWRT(builder);
-    }
-}
-
-void Eng::ExDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-#if defined(REN_VK_BACKEND)
-        if (ctx.capabilities.hwrt) {
-            Ren::ProgramRef debug_hwrt_prog =
-                sh.LoadProgram2("internal/rt_debug.rgen.glsl", "internal/rt_debug@GI_CACHE.rchit.glsl",
-                                "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", {});
-            if (!pi_debug_hwrt_.Init(ctx.api_ctx(), debug_hwrt_prog, ctx.log())) {
-                ctx.log()->Error("ExDebugRT: Failed to initialize pipeline!");
-            }
-        }
-#endif
-        Ren::ProgramRef debug_swrt_prog = sh.LoadProgram("internal/rt_debug_swrt@GI_CACHE.comp.glsl");
-        if (!pi_debug_swrt_.Init(ctx.api_ctx(), debug_swrt_prog, ctx.log())) {
-            ctx.log()->Error("ExDebugRT: Failed to initialize pipeline!");
-        }
-
-        initialized = true;
     }
 }

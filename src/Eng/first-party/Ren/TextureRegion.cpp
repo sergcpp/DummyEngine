@@ -60,7 +60,7 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, const Tex2DParams &p, Te
 
         Tex2DParams _p;
         _p.w = _p.h = 1;
-        _p.format = eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RGBA8;
         [[maybe_unused]] const bool res = InitFromRAWData(stage_buf, 0, 4, cmd_buf, _p, atlas);
 
         atlas->api_ctx()->EndSingleTimeCommands(cmd_buf);

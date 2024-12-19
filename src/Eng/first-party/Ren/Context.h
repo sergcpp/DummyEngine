@@ -66,6 +66,8 @@ class Context {
     MeshStorage meshes_;
     MaterialStorage materials_;
     ProgramStorage programs_;
+    VertexInputStorage vtx_inputs_;
+    RenderPassStorage render_passes_;
     PipelineStorage pipelines_;
     ShaderStorage shaders_;
     Texture3DStorage textures_3D_;
@@ -184,8 +186,23 @@ class Context {
     ProgramRef GetProgram(uint32_t index);
     void ReleasePrograms();
 
+    /*** VertexInput ***/
+    VertexInputRef LoadVertexInput(Span<const VtxAttribDesc> attribs, const BufferRef &elem_buf);
+
+    /*** RenderPass ***/
+    RenderPassRef LoadRenderPass(const RenderTarget &depth_rt, Span<const RenderTarget> color_rts) {
+        SmallVector<Ren::RenderTargetInfo, 4> infos;
+        for (int i = 0; i < color_rts.size(); ++i) {
+            infos.emplace_back(color_rts[i]);
+        }
+        return LoadRenderPass(Ren::RenderTargetInfo{depth_rt}, infos);
+    }
+    RenderPassRef LoadRenderPass(const RenderTargetInfo &depth_rt, Span<const Ren::RenderTargetInfo> color_rts);
+
     /*** Pipeline ***/
-    PipelineRef LoadPipeline(ProgramRef prog_ref, int subgroup_size = -1);
+    PipelineRef LoadPipeline(const ProgramRef &prog_ref, int subgroup_size = -1);
+    PipelineRef LoadPipeline(const RastState &rast_state, const ProgramRef &prog, const VertexInputRef &vtx_input,
+                             const RenderPassRef &render_pass, uint32_t subpass_index);
 
     /*** Texture 3D ***/
     Tex3DRef LoadTexture3D(std::string_view name, const Tex3DParams &p, MemAllocators *mem_allocs,
@@ -282,7 +299,6 @@ class Context {
         int unif_buf_offset_alignment = 1;
         bool depth24_stencil8_format = false;
         uint32_t max_combined_image_samplers = 16;
-        bool dynamic_rendering = false;
         bool subgroup = false;
     } capabilities;
 #elif defined(REN_SW_BACKEND)

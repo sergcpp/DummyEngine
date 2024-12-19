@@ -3,6 +3,9 @@
 #include <Ren/Context.h>
 
 #include "Renderer_Names.h"
+#include "executors/ExOITBlendLayer.h"
+#include "executors/ExOITDepthPeel.h"
+#include "executors/ExOITScheduleRays.h"
 
 #include "shaders/ssr_trace_hq_interface.h"
 #include "shaders/ssr_write_indir_rt_dispatch_interface.h"
@@ -19,10 +22,6 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
     const int oit_layer_count =
         (settings.transparency_quality == eTransparencyQuality::Ultra) ? OIT_LAYERS_ULTRA : OIT_LAYERS_HIGH;
-    rp_oit_blend_layer_.clear();
-    for (int i = 0; i < oit_layer_count; ++i) {
-        rp_oit_blend_layer_.emplace_back(prim_draw_);
-    }
 
     { // OIT clear
         auto &oit_clear = fg_builder_.AddNode("OIT CLEAR");
@@ -49,7 +48,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             Ren::Tex2DParams params;
             params.w = (view_state_.scr_res[0] / 2);
             params.h = (view_state_.scr_res[1] / 2);
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -113,11 +112,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         frame_textures.depth = oit_depth_peel.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
         oit_depth_buf = oit_depth_peel.AddStorageOutput(oit_depth_buf, Stg::FragmentShader);
 
-        ex_oit_depth_peel_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-                                 &bindless, white_tex, instances_buf, instances_indices_buf, shader_data_buf,
-                                 frame_textures.depth, oit_depth_buf,
-                                 settings.transparency_quality == eTransparencyQuality::Ultra);
-        oit_depth_peel.set_executor(&ex_oit_depth_peel_);
+        oit_depth_peel.make_executor<ExOITDepthPeel>(
+            &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless, white_tex,
+            instances_buf, instances_indices_buf, shader_data_buf, frame_textures.depth, oit_depth_buf);
     }
 
     FgResRef oit_ray_list;
@@ -161,11 +158,10 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             oit_ray_list = oit_schedule.AddStorageOutput("OIT Ray List", desc, Stg::FragmentShader);
         }
 
-        ex_oit_schedule_rays_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-                                    &bindless, noise_tex, white_tex, instances_buf, instances_indices_buf,
-                                    shader_data_buf, frame_textures.depth, oit_depth_buf, oit_rays_counter,
-                                    oit_ray_list);
-        oit_schedule.set_executor(&ex_oit_schedule_rays_);
+        oit_schedule.make_executor<ExOITScheduleRays>(
+            &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless, noise_tex,
+            white_tex, instances_buf, instances_indices_buf, shader_data_buf, frame_textures.depth, oit_depth_buf,
+            oit_rays_counter, oit_ray_list);
     }
 
     FgResRef indir_disp_buf;
@@ -529,13 +525,12 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             back_color = oit_blend_layer.AddTextureInput(back_color, Stg::FragmentShader);
             back_depth = oit_blend_layer.AddTextureInput(back_depth, Stg::FragmentShader);
 
-            rp_oit_blend_layer_[i].Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf,
-                                         textures_buf, &bindless, cells_buf, items_buf, lights_buf, decals_buf,
-                                         noise_tex, white_tex, shadow_map, ltc_luts_tex, env_tex, instances_buf,
-                                         instances_indices_buf, shader_data_buf, frame_textures.depth,
-                                         frame_textures.color, oit_depth_buf, specular_tex, layer_index, irradiance_tex,
-                                         distance_tex, offset_tex, back_color, back_depth);
-            oit_blend_layer.set_executor(&rp_oit_blend_layer_[i]);
+            oit_blend_layer.make_executor<ExOITBlendLayer>(
+                prim_draw_, &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
+                cells_buf, items_buf, lights_buf, decals_buf, noise_tex, white_tex, shadow_map, ltc_luts_tex, env_tex,
+                instances_buf, instances_indices_buf, shader_data_buf, frame_textures.depth, frame_textures.color,
+                oit_depth_buf, specular_tex, layer_index, irradiance_tex, distance_tex, offset_tex, back_color,
+                back_depth);
         }
     }
 

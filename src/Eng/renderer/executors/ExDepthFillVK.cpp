@@ -98,7 +98,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     // Prepare descriptor sets
     //
 
-    VkDescriptorSetLayout simple_descr_set_layout = pi_static_solid_[0].prog()->descr_set_layouts()[0];
+    VkDescriptorSetLayout simple_descr_set_layout = pi_static_solid_[0]->prog()->descr_set_layouts()[0];
     VkDescriptorSet simple_descr_sets[2];
     { // allocate descriptors
         const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
@@ -110,7 +110,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
-    VkDescriptorSetLayout vege_descr_set_layout = pi_vege_static_solid_vel_[0].prog()->descr_set_layouts()[0];
+    VkDescriptorSetLayout vege_descr_set_layout = pi_vege_static_solid_[0]->prog()->descr_set_layouts()[0];
     VkDescriptorSet vege_descr_sets[2];
     { // allocate descriptors
         const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
@@ -137,29 +137,29 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
+        rp_begin_info.renderPass = rp_depth_only_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_static_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, cmd_buf, "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[0].handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[0].layout(), 0,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[0]->layout(), 0,
                                              1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, 0u, &draws_count);
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[1].handle());
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[1]->handle());
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitBackSided, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, cmd_buf, "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[2].handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[2].layout(), 0,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[2]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_solid_[2]->layout(), 0,
                                              1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitTwoSided, &draws_count);
         }
@@ -179,35 +179,21 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_frontsided = nullptr, *pipeline_backsided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_frontsided = &pi_moving_solid_[0];
-            pipeline_backsided = &pi_moving_solid_[1];
-            pipeline_twosided = &pi_moving_solid_[2];
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_frontsided = &pi_static_solid_[0];
-            pipeline_backsided = &pi_static_solid_[1];
-            pipeline_twosided = &pi_static_solid_[2];
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_moving_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_frontsided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_frontsided->layout(), 0,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[0]->layout(), 0,
                                              1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitMoving, &draws_count);
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_backsided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_backsided->layout(), 0,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[1]->layout(), 0,
                                              1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitMoving | BDB::BitBackSided,
                             &draws_count);
@@ -215,8 +201,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[2]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_solid_[2]->layout(), 0,
                                              1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitMoving | BDB::BitTwoSided,
                             &draws_count);
@@ -234,35 +220,35 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
+        rp_begin_info.renderPass = rp_depth_only_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_static_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0].handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0].layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0]->layout(),
+                                             0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest, materials_per_descriptor, bindless_tex_->textures_descr_sets,
                                 &draws_count);
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[1].handle());
-            i = _draw_range_ext(api_ctx, cmd_buf, pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[1]->handle());
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitBackSided, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[2].handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[2].layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, pi_static_transp_[2], zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[2]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[2]->layout(),
+                                             0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_static_transp_[2], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitTwoSided, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
@@ -282,49 +268,35 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_frontsided = nullptr, *pipeline_backsided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_frontsided = &pi_moving_transp_[0];
-            pipeline_backsided = &pi_moving_transp_[1];
-            pipeline_twosided = &pi_moving_transp_[2];
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_frontsided = &pi_static_transp_[0];
-            pipeline_backsided = &pi_static_transp_[1];
-            pipeline_twosided = &pi_static_transp_[2];
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_moving_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_frontsided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_frontsided->layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_frontsided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[0]->layout(),
+                                             0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_moving_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitMoving, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_backsided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_backsided->layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_backsided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[1]->layout(),
+                                             0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_moving_transp_[1], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitMoving | BDB::BitBackSided, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[2]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_moving_transp_[2]->layout(),
+                                             0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_moving_transp_[2], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
@@ -344,38 +316,26 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_only_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_static_solid_vel_[0];
-            pipeline_twosided = &pi_vege_static_solid_vel_[1];
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_static_solid_[0];
-            pipeline_twosided = &pi_vege_static_solid_[1];
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_vege_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_vege_static_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, cmd_buf, "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             2, vege_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_static_solid_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_static_solid_[0]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitsVege, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, cmd_buf, "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             2, vege_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_static_solid_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_static_solid_[1]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitsVege | BDB::BitTwoSided,
                             &draws_count);
         }
@@ -395,39 +355,27 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_moving_solid_vel_[0];
-            pipeline_twosided = &pi_vege_moving_solid_vel_[1];
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_static_solid_[0];
-            pipeline_twosided = &pi_vege_static_solid_[1];
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_vege_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_vege_moving_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             1, vege_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_solid_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_moving_solid_[0]->layout(), 0, 1, vege_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitsVege | BDB::BitMoving,
                             &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             1, vege_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_solid_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_moving_solid_[1]->layout(), 0, 1, vege_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i,
                             BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided, &draws_count);
         }
@@ -447,41 +395,29 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_static_transp_vel_[0];
-            pipeline_twosided = &pi_vege_static_transp_vel_[1];
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_static_transp_[0];
-            pipeline_twosided = &pi_vege_static_transp_[1];
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_vege_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_vege_static_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             2, vege_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_static_transp_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_static_transp_[0]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_vege_static_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             2, vege_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_static_transp_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_static_transp_[1]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_vege_static_transp_[1], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
@@ -501,41 +437,29 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_moving_transp_vel_[0];
-            pipeline_twosided = &pi_vege_moving_transp_vel_[1];
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_vege_static_transp_[0];
-            pipeline_twosided = &pi_vege_static_transp_[1];
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        vi_vege_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        pi_vege_moving_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             2, vege_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_transp_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_moving_transp_[0]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_vege_moving_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             2, vege_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_moving_transp_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_vege_moving_transp_[1]->layout(), 0, 2, vege_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_vege_moving_transp_[1], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided,
                                 materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
@@ -555,40 +479,26 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_static_solid_vel_[0];
-            pipeline_twosided = &pi_skin_static_solid_vel_[1];
-
-            vi_skin_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_static_solid_[0];
-            pipeline_twosided = &pi_skin_static_solid_[1];
-
-            vi_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        pi_skin_static_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             1, simple_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_solid_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_static_solid_[0]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitsSkinned, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             1, simple_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_solid_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_static_solid_[1]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i,
                             BDB::BitsSkinned | BDB::BitTwoSided, &draws_count);
         }
@@ -608,41 +518,27 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_moving_solid_vel_[0];
-            pipeline_twosided = &pi_skin_moving_solid_vel_[1];
-
-            vi_skin_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_static_solid_[0];
-            pipeline_twosided = &pi_skin_static_solid_[1];
-
-            vi_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        pi_skin_moving_solid_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             1, simple_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_solid_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_moving_solid_[0]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i, BDB::BitsSkinned | BDB::BitMoving,
                             &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             1, simple_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_solid_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_moving_solid_[1]->layout(), 0, 1, simple_descr_sets, 0, nullptr);
             i = _draw_range(api_ctx, cmd_buf, zfill_batch_indices, zfill_batches, i,
                             BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided, &draws_count);
         }
@@ -662,43 +558,29 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_static_transp_vel_[0];
-            pipeline_twosided = &pi_skin_static_transp_vel_[1];
-
-            vi_skin_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_static_transp_[0];
-            pipeline_twosided = &pi_skin_static_transp_[1];
-
-            vi_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        pi_skin_static_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_transp_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_static_transp_[0]->layout(), 0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_skin_static_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_static_transp_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_static_transp_[1]->layout(), 0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_skin_static_transp_[1], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
@@ -718,43 +600,29 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
+        rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
+        rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
 
-        Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_moving_transp_vel_[0];
-            pipeline_twosided = &pi_skin_moving_transp_vel_[1];
-
-            vi_skin_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        } else {
-            // Write depth only
-            rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
-            pipeline_onesided = &pi_skin_static_transp_[0];
-            pipeline_twosided = &pi_skin_static_transp_[1];
-
-            vi_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
-        }
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        pi_skin_moving_transp_[0]->vtx_input()->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "ONE-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_transp_[0]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_moving_transp_[0]->layout(), 0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_skin_moving_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving, materials_per_descriptor,
                                 bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
             Ren::DebugMarker _mm(api_ctx, ctx.current_cmd_buf(), "TWO-SIDED");
-            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0,
-                                             2, simple_descr_sets, 0, nullptr);
-            i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_skin_moving_transp_[1]->handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pi_skin_moving_transp_[1]->layout(), 0, 2, simple_descr_sets, 0, nullptr);
+            i = _draw_range_ext(api_ctx, cmd_buf, *pi_skin_moving_transp_[1], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided,
                                 materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }

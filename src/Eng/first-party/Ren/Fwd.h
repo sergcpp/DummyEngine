@@ -68,6 +68,7 @@ using BufferRef = StrongRef<Buffer, NamedStorage<Buffer>>;
 using WeakBufferRef = WeakRef<Buffer, NamedStorage<Buffer>>;
 using MaterialRef = StrongRef<Material, NamedStorage<Material>>;
 using MeshRef = StrongRef<Mesh, NamedStorage<Mesh>>;
+using VertexInputRef = StrongRef<VertexInput, SortedStorage<VertexInput>>;
 using PipelineRef = StrongRef<Pipeline, SortedStorage<Pipeline>>;
 using ProgramRef = StrongRef<Program, SortedStorage<Program>>;
 using SamplerRef = StrongRef<Sampler, SparseArray<Sampler>>;

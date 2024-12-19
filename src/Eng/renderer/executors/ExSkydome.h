@@ -47,7 +47,7 @@ class ExSkydomeCube final : public FgExecutor {
 
     // lazily initialized data
     Ren::ProgramRef prog_skydome_phys_;
-    Ren::Pipeline pi_skydome_downsample_;
+    Ren::PipelineRef pi_skydome_downsample_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 };

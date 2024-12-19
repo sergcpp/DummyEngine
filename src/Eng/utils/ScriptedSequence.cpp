@@ -716,7 +716,7 @@ Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(std::string_view na
     Ren::Tex2DParams p;
     p.w = tex_w;
     p.h = tex_h;
-    p.format = Ren::eTexFormat::RawRGBA8888;
+    p.format = Ren::eTexFormat::RGBA8;
 
     Ren::eTexLoadStatus status;
     Ren::TextureRegionRef ret = ren_ctx_.LoadTextureRegion(name, tex_data, p, &status);

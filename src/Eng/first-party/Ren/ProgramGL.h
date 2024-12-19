@@ -30,8 +30,8 @@ class Program : public RefCounter {
 
   public:
     Program() = default;
-    Program(const uint32_t id, const Attribute *attrs, int attrs_count, const Uniform *unifs, int unifs_count,
-            const UniformBlock *unif_blocks, int unif_blocks_count)
+    Program(const uint32_t id, const Attribute *attrs, const int attrs_count, const Uniform *unifs,
+            const int unifs_count, const UniformBlock *unif_blocks, const int unif_blocks_count)
         : id_(id) {
         for (int i = 0; i < attrs_count; i++) {
             attributes_.emplace_back(attrs[i]);

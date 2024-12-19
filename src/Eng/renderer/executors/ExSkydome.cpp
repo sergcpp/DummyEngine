@@ -150,7 +150,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
                                SkydomeDownsample::LOCAL_GROUP_SIZE_Y,
                            1u};
 
-            DispatchCompute(pi_skydome_downsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_skydome_downsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         }
     }
@@ -167,10 +167,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
 void Eng::ExSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized_) {
         prog_skydome_phys_ = sh.LoadProgram("internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl");
-        Ren::ProgramRef prog = sh.LoadProgram("internal/skydome_downsample.comp.glsl");
-        if (!pi_skydome_downsample_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
-            ctx.log()->Error("ExSkydomeCube: Failed to initialize pipeline!");
-        }
+        pi_skydome_downsample_ = sh.LoadPipeline("internal/skydome_downsample.comp.glsl");
 
         initialized_ = true;
     }

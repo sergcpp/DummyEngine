@@ -5,12 +5,16 @@
 
 #include <Ren/Pipeline.h>
 #include <Ren/Program.h>
+#include <Ren/RenderPass.h>
 #include <Ren/Shader.h>
+#include <Ren/VertexInput.h>
 
 namespace Eng {
 class ShaderLoader {
-    Ren::Context &ctx_;
     std::mutex mtx_;
+    Ren::Context &ctx_;
+    Ren::VertexInputStorage vtx_inputs_;
+    Ren::RenderPassStorage render_passes_;
     Ren::ShaderStorage shaders_;
     Ren::ProgramStorage programs_;
     Ren::PipelineStorage pipelines_;
@@ -22,10 +26,24 @@ class ShaderLoader {
   public:
     ShaderLoader(Ren::Context &ctx) : ctx_(ctx) {
         // prevent reallocation
+        vtx_inputs_.reserve(32);
+        render_passes_.reserve(128);
         shaders_.reserve(2048);
         programs_.reserve(1024);
         pipelines_.reserve(2048);
     }
+
+    Ren::VertexInputRef LoadVertexInput(Ren::Span<const Ren::VtxAttribDesc> attribs, const Ren::BufferRef &elem_buf);
+
+    Ren::RenderPassRef LoadRenderPass(const Ren::RenderTarget &depth_rt, Ren::Span<const Ren::RenderTarget> color_rts) {
+        Ren::SmallVector<Ren::RenderTargetInfo, 4> infos;
+        for (int i = 0; i < color_rts.size(); ++i) {
+            infos.emplace_back(color_rts[i]);
+        }
+        return LoadRenderPass(Ren::RenderTargetInfo{depth_rt}, infos);
+    }
+    Ren::RenderPassRef LoadRenderPass(const Ren::RenderTargetInfo &depth_rt,
+                                      Ren::Span<const Ren::RenderTargetInfo> color_rts);
 
 #if defined(REN_GL_BACKEND) || defined(REN_VK_BACKEND)
     Ren::ProgramRef LoadProgram(std::string_view vs_name, std::string_view fs_name, std::string_view tcs_name = {},
@@ -41,5 +59,9 @@ class ShaderLoader {
 #endif
 
     Ren::PipelineRef LoadPipeline(std::string_view cs_name, int subgroup_size = -1);
+    Ren::PipelineRef LoadPipeline(const Ren::ProgramRef &prog, int subgroup_size = -1);
+    Ren::PipelineRef LoadPipeline(const Ren::RastState &rast_state, const Ren::ProgramRef &prog,
+                                  const Ren::VertexInputRef &vtx_input, const Ren::RenderPassRef &render_pass,
+                                  uint32_t subpass_index);
 };
 } // namespace Eng

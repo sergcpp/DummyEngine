@@ -78,11 +78,11 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::Re
     }
 
     if (prim == ePrim::Quad) {
-        glBindVertexArray(fs_quad_vtx_input_.gl_vao());
+        glBindVertexArray(fs_quad_vtx_input_->GetVAO());
         glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_.offset),
                                 instance_count);
     } else if (prim == ePrim::Sphere) {
-        glBindVertexArray(sphere_vtx_input_.gl_vao());
+        glBindVertexArray(sphere_vtx_input_->GetVAO());
         glDrawElementsInstanced(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
                                 (void *)uintptr_t(sphere_ndx_.offset), instance_count);
     }

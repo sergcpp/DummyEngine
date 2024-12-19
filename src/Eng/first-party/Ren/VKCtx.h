@@ -58,8 +58,6 @@ struct ApiContext {
     VkPhysicalDeviceAccelerationStructurePropertiesKHR acc_props = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
 
-    bool dynamic_rendering_supported = false;
-
     bool renderpass_loadstore_none_supported = false;
 
     bool subgroup_size_control_supported = false;

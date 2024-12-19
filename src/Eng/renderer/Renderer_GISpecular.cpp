@@ -106,7 +106,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             refl_tex = data->out_refl_tex =
@@ -116,7 +116,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = (view_state_.scr_res[0] + 7) / 8;
             params.h = (view_state_.scr_res[1] + 7) / 8;
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -126,7 +126,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         { // blue noise texture
             Ren::Tex2DParams params;
             params.w = params.h = 128;
-            params.format = Ren::eTexFormat::RawRGBA8888;
+            params.format = Ren::eTexFormat::RGBA8;
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex = ssr_classify.AddStorageImageOutput("BN Tex", params, Stg::ComputeShader);
@@ -150,17 +150,17 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             // Initialize texel buffers if needed
             if (!sobol_buf.tbos[0]) {
-                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::RawR32UI,
+                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI,
                                                          0, sobol_buf.ref->size());
             }
             if (!scrambling_tile_buf.tbos[0]) {
                 scrambling_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::RawR32UI,
+                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI,
                                          0, scrambling_tile_buf.ref->size());
             }
             if (!ranking_tile_buf.tbos[0]) {
                 ranking_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::RawR32UI, 0,
+                    ctx_.CreateTexture1D("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
                                          ranking_tile_buf.ref->size());
             }
 
@@ -479,7 +479,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -490,7 +490,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR16F;
+            params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -501,7 +501,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR16F;
+            params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -586,7 +586,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -597,7 +597,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR16F;
+            params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -668,7 +668,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -682,7 +682,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR16F;
+            params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -758,7 +758,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 Ren::Tex2DParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
-                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -885,7 +885,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 Ren::Tex2DParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
-                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1039,7 +1039,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
-            params.format = Ren::eTexFormat::RawRGB10_A2;
+            params.format = Ren::eTexFormat::RGB10_A2;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1094,7 +1094,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
-            params.format = Ren::eTexFormat::RawRGB10_A2;
+            params.format = Ren::eTexFormat::RGB10_A2;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

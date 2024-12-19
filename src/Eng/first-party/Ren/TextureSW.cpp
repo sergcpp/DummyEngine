@@ -63,7 +63,7 @@ void Ren::Texture2D::Init(std::string_view name, const void *data, [[maybe_unuse
         unsigned char cyan[3] = {0, 255, 255};
         Tex2DParams _p;
         _p.w = _p.h = 1;
-        _p.format = RawRGB888;
+        _p.format = RGB8;
         InitFromRAWData(cyan, _p);
         // mark it as not ready
         ready_ = false;
@@ -106,9 +106,9 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p) {
 
     params_ = p;
 
-    if (p.format == RawRGBA8888) {
+    if (p.format == RGBA8) {
         swTexImage2D(SW_RGBA, SW_UNSIGNED_BYTE, p.w, p.h, data);
-    } else if (p.format == RawRGB888) {
+    } else if (p.format == RGB8) {
         swTexImage2D(SW_RGB, SW_UNSIGNED_BYTE, p.w, p.h, data);
     }
 }

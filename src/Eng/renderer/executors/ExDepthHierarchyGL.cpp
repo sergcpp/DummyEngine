@@ -13,9 +13,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
     FgAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
     FgAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
-    LazyInit(builder.ctx(), builder.sh());
-
-    glUseProgram(pi_depth_hierarchy_.prog()->id());
+    glUseProgram(pi_depth_hierarchy_->prog()->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, DepthHierarchy::DEPTH_TEX_SLOT, depth_tex.ref->id());
 
     int i = 0;

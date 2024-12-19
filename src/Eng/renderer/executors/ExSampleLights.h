@@ -55,7 +55,7 @@ class ExSampleLights final : public FgExecutor {
     bool initialized_ = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_sample_lights_;
+    Ren::PipelineRef pi_sample_lights_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

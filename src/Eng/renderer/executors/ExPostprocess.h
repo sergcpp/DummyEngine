@@ -27,25 +27,17 @@ class ExPostprocess final : public FgExecutor {
         float purkinje = 1.0f;
     };
 
-    explicit ExPostprocess(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const ViewState *view_state, const Args *args);
 
-    void Setup(const ViewState *view_state, const Args *args) {
-        view_state_ = view_state;
-        args_ = args;
-    }
     void Execute(FgBuilder &builder) override;
 
   private:
     PrimDraw &prim_draw_;
-    bool initialized = false;
 
-    // lazily initialized data
     Ren::ProgramRef blit_postprocess_prog_[2][2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
     const Args *args_ = nullptr;
-
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 };
 } // namespace Eng

@@ -22,36 +22,34 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 
-    const int buf1_stride = 16, buf2_stride = 16;
-
-    { // VAO for simple and skinned meshes
-        const Ren::VtxAttribDesc attribs[] = {
-            // Attributes from buffer 1
-            {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
-        if (!vi_simple_.Setup(attribs, ndx_buf.ref)) {
-            ctx.log()->Error("[ExEmissive::LazyInit]: vi_simple_ init failed!");
-        }
-    }
-
-    { // VAO for vegetation meshes (uses additional vertex color attribute)
-        const Ren::VtxAttribDesc attribs[] = {
-            // Attributes from buffer 1
-            {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-            // Attributes from buffer 2
-            {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-        if (!vi_vegetation_.Setup(attribs, ndx_buf.ref)) {
-            ctx.log()->Error("[ExEmissive::LazyInit]: vi_vegetation_ init failed!");
-        }
-    }
-
     if (!initialized) {
 #if defined(REN_GL_BACKEND)
         const bool bindless = ctx.capabilities.bindless_texture;
 #else
         const bool bindless = true;
 #endif
+
+        const int buf1_stride = 16, buf2_stride = 16;
+
+        Ren::VertexInputRef vi_simple, vi_vegetation;
+
+        { // VertexInput for simple and skinned meshes
+            const Ren::VtxAttribDesc attribs[] = {
+                // Attributes from buffer 1
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
+            vi_simple = sh.LoadVertexInput(attribs, ndx_buf.ref);
+        }
+
+        { // VertexInput for vegetation meshes (uses additional vertex color attribute)
+            const Ren::VtxAttribDesc attribs[] = {
+                // Attributes from buffer 1
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                // Attributes from buffer 2
+                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            vi_vegetation = sh.LoadVertexInput(attribs, ndx_buf.ref);
+        }
 
         Ren::ProgramRef emissive_simple_prog =
             sh.LoadProgram(bindless ? "internal/emissive.vert.glsl" : "internal/emissive@NO_BINDLESS.vert.glsl",
@@ -60,10 +58,7 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
             bindless ? "internal/emissive@VEGETATION.vert.glsl" : "internal/emissive@VEGETATION;NO_BINDLESS.vert.glsl",
             bindless ? "internal/emissive.frag.glsl" : "internal/emissive@NO_BINDLESS.frag.glsl");
 
-        const bool res = rp_main_draw_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log());
-        if (!res) {
-            ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize render pass!");
-        }
+        Ren::RenderPassRef rp_main_draw = sh.LoadRenderPass(depth_target, color_targets);
 
         { // simple and skinned
             Ren::RastState rast_state;
@@ -73,26 +68,16 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
             rast_state.blend.src_color = rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
             rast_state.blend.dst_color = rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
 
-            if (!pi_simple_[2].Init(ctx.api_ctx(), rast_state, emissive_simple_prog, &vi_simple_, &rp_main_draw_, 0,
-                                    ctx.log())) {
-                ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize pipeline!");
-            }
+            pi_simple_[2] = sh.LoadPipeline(rast_state, emissive_simple_prog, vi_simple, rp_main_draw, 0);
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            if (!pi_simple_[0].Init(ctx.api_ctx(), rast_state, emissive_simple_prog, &vi_simple_, &rp_main_draw_, 0,
-                                    ctx.log())) {
-                ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize pipeline!");
-            }
+            pi_simple_[0] = sh.LoadPipeline(rast_state, emissive_simple_prog, vi_simple, rp_main_draw, 0);
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
 
-            if (!pi_simple_[1].Init(ctx.api_ctx(), rast_state, emissive_simple_prog, &vi_simple_, &rp_main_draw_, 0,
-                                    ctx.log())) {
-                ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize pipeline!");
-            }
+            pi_simple_[1] = sh.LoadPipeline(rast_state, emissive_simple_prog, vi_simple, rp_main_draw, 0);
         }
-
         { // vegetation
             Ren::RastState rast_state;
             rast_state.depth.test_enabled = true;
@@ -101,17 +86,11 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
             rast_state.blend.src_color = rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
             rast_state.blend.dst_color = rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
 
-            if (!pi_vegetation_[1].Init(ctx.api_ctx(), rast_state, emissive_vegetation_prog, &vi_vegetation_,
-                                        &rp_main_draw_, 0, ctx.log())) {
-                ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize pipeline!");
-            }
+            pi_vegetation_[1] = sh.LoadPipeline(rast_state, emissive_vegetation_prog, vi_vegetation, rp_main_draw, 0);
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            if (!pi_vegetation_[0].Init(ctx.api_ctx(), rast_state, emissive_vegetation_prog, &vi_vegetation_,
-                                        &rp_main_draw_, 0, ctx.log())) {
-                ctx.log()->Error("[ExEmissive::LazyInit]: Failed to initialize pipeline!");
-            }
+            pi_vegetation_[0] = sh.LoadPipeline(rast_state, emissive_vegetation_prog, vi_vegetation, rp_main_draw, 0);
         }
 
         initialized = true;
@@ -119,9 +98,9 @@ void Eng::ExEmissive::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAlloc
 
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
-    if (!main_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_main_draw_, depth_tex.desc.w,
-                                                              depth_tex.desc.h, depth_target, depth_target,
-                                                              color_targets, ctx.log())) {
+    if (!main_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *pi_simple_[0]->render_pass(),
+                                                              depth_tex.desc.w, depth_tex.desc.h, depth_target,
+                                                              depth_target, color_targets, ctx.log())) {
         ctx.log()->Error("[ExEmissive::LazyInit]: main_draw_fb_ init failed!");
     }
 }

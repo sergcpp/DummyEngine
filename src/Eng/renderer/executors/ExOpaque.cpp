@@ -28,9 +28,21 @@ void Eng::ExOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBu
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-        if (!rp_opaque_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log())) {
-            ctx.log()->Error("[ExOpaque::LazyInit]: Failed to init render pass!");
+        const int buf1_stride = 16, buf2_stride = 16;
+
+        { // VertexInput for main drawing (uses all attributes)
+            const Ren::VtxAttribDesc attribs[] = {
+                // Attributes from buffer 1
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                // Attributes from buffer 2
+                {vtx_buf2.ref, VTX_NOR_LOC, 4, Ren::eType::Int16_snorm, buf2_stride, 0},
+                {vtx_buf2.ref, VTX_TAN_LOC, 2, Ren::eType::Int16_snorm, buf2_stride, 4 * sizeof(uint16_t)},
+                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+            draw_pass_vi_ = sh.LoadVertexInput(attribs, ndx_buf.ref);
         }
+
+        rp_opaque_ = sh.LoadRenderPass(depth_target, color_targets);
 
         api_ctx_ = ctx.api_ctx();
 #if defined(REN_VK_BACKEND)
@@ -40,24 +52,9 @@ void Eng::ExOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBu
         initialized = true;
     }
 
-    const int buf1_stride = 16, buf2_stride = 16;
-
-    { // VertexInput for main drawing (uses all attributes)
-        const Ren::VtxAttribDesc attribs[] = {
-            // Attributes from buffer 1
-            {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-            // Attributes from buffer 2
-            {vtx_buf2.ref, VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
-            {vtx_buf2.ref, VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)},
-            {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-
-        draw_pass_vi_.Setup(attribs, ndx_buf.ref);
-    }
-
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
-    if (!opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_opaque_, depth_tex.desc.w,
+    if (!opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *rp_opaque_, depth_tex.desc.w,
                                                                 depth_tex.desc.h, depth_target, depth_target,
                                                                 color_targets, ctx.log())) {
         ctx.log()->Error("ExOpaque: opaque_draw_fb_ init failed!");

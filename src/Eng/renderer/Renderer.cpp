@@ -8,8 +8,15 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
+#include "../utils/ShaderLoader.h"
 #include "CDFUtils.h"
 #include "Renderer_Names.h"
+#include "executors/ExDebugOIT.h"
+#include "executors/ExDebugProbes.h"
+#include "executors/ExDebugRT.h"
+#include "executors/ExDepthFill.h"
+#include "executors/ExDepthHierarchy.h"
+#include "executors/ExShadowMaps.h"
 
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
@@ -97,7 +104,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     /*{ // buffer used to sample probes
         FrameBuf::ColorAttachmentDesc desc;
-        desc.format = Ren::eTexFormat::RawRGBA32F;
+        desc.format = Ren::eTexFormat::RGBA32F;
         desc.filter = Ren::eTexFilter::NoFilter;
         desc.wrap = Ren::eTexWrap::ClampToEdge;
         probe_sample_buf_ = FrameBuf("Probe sample", ctx_, 24, 8, &desc, 1, {}, 1, ctx.log());
@@ -108,7 +115,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // dummy 1px textures
         Ren::Tex2DParams p;
         p.w = p.h = 1;
-        p.format = Ren::eTexFormat::RawRGBA8888;
+        p.format = Ren::eTexFormat::RGBA8;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -123,7 +130,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // random 2d halton 8x8
         Ren::Tex2DParams p;
         p.w = p.h = 8;
-        p.format = Ren::eTexFormat::RawRG32F;
+        p.format = Ren::eTexFormat::RG32F;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
 
         Ren::eTexLoadStatus status;
@@ -135,7 +142,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // random 2d directions 4x4
         Ren::Tex2DParams p;
         p.w = p.h = 4;
-        p.format = Ren::eTexFormat::RawRG16;
+        p.format = Ren::eTexFormat::RG16;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
 
         Ren::eTexLoadStatus status;
@@ -163,7 +170,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams p;
         p.w = __cone_rt_lut_res;
         p.h = __cone_rt_lut_res;
-        p.format = Ren::eTexFormat::RawRGBA8888;
+        p.format = Ren::eTexFormat::RGBA8;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -184,7 +191,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::Tex2DParams p;
         p.w = p.h = __brdf_lut_res;
-        p.format = Ren::eTexFormat::RawRG16;
+        p.format = Ren::eTexFormat::RG16;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -220,7 +227,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams p;
         p.w = 8 * 64;
         p.h = 64;
-        p.format = Ren::eTexFormat::RawRGBA32F;
+        p.format = Ren::eTexFormat::RGBA32F;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -241,7 +248,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::Tex2DParams p;
         p.w = p.h = __noise_res;
-        p.format = Ren::eTexFormat::RawRGBA8888Snorm;
+        p.format = Ren::eTexFormat::RGBA8_snorm;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
 
@@ -357,40 +364,36 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
             {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
             // Attributes from buffer 2
-            {vtx_buf2, VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
-            {vtx_buf2, VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
+            {vtx_buf2, VTX_NOR_LOC, 4, Ren::eType::Int16_snorm, buf1_stride, 0},
+            {vtx_buf2, VTX_TAN_LOC, 2, Ren::eType::Int16_snorm, buf1_stride, 4 * sizeof(uint16_t)},
             {vtx_buf2, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
-
-        draw_pass_vi_.Setup(attribs, ndx_buf);
+        draw_pass_vi_ = ctx_.LoadVertexInput(attribs, ndx_buf);
     }
 
     { // RenderPass for main drawing (compatible one)
         Ren::RenderTargetInfo color_rts[] = {
-            {Ren::eTexFormat::RawRGBA16F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+            {Ren::eTexFormat::RGBA16F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
+             Ren::eStoreOp::Store},
 #if USE_OCT_PACKED_NORMALS == 1
-            {Ren::eTexFormat::RawRGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+            {Ren::eTexFormat::RGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
+             Ren::eStoreOp::Store},
 #else
-            {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+            {Ren::eTexFormat::RGBA8, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
+             Ren::eStoreOp::Store},
 #endif
-            {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+            {Ren::eTexFormat::RGBA8, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
+             Ren::eStoreOp::Store}};
 
         color_rts[2].flags = Ren::eTexFlagBits::SRGB;
 
-        const auto depth_format = ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
-                                                                            : Ren::eTexFormat::Depth32Stencil8;
+        const auto depth_format =
+            ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
 
         const Ren::RenderTargetInfo depth_rt = {depth_format, 1 /* samples */,
                                                 Ren::eImageLayout::DepthStencilAttachmentOptimal, Ren::eLoadOp::Load,
                                                 Ren::eStoreOp::Store};
 
-        const bool res = rp_main_draw_.Setup(ctx_.api_ctx(), depth_rt, color_rts, ctx_.log());
-        if (!res) {
-            ctx_.log()->Error("Failed to initialize render pass!");
-        }
+        rp_main_draw_ = sh_.LoadRenderPass(depth_rt, color_rts);
     }
 
     { // Rasterization states for main drawing
@@ -419,7 +422,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams params;
         params.w = SHADOWMAP_WIDTH;
         params.h = SHADOWMAP_HEIGHT;
-        params.format = Ren::eTexFormat::Depth16;
+        params.format = Ren::eTexFormat::D16;
         params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Sampled;
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -910,23 +913,22 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             frame_textures.shadowmap = shadow_maps.AddDepthOutput(shadow_map_tex_);
 
-            ex_shadow_maps_.Setup(&p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
-                                  textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
-                                  frame_textures.shadowmap);
-            shadow_maps.set_executor(&ex_shadow_maps_);
+            shadow_maps.make_executor<ExShadowMaps>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res,
+                                                    vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
+                                                    textures_buf_res, instances_res, instance_indices_res,
+                                                    shared_data_res, noise_tex_res, frame_textures.shadowmap);
         }
 
         frame_textures.depth_params.w = view_state_.scr_res[0];
         frame_textures.depth_params.h = view_state_.scr_res[1];
-        frame_textures.depth_params.format = ctx_.capabilities.depth24_stencil8_format
-                                                 ? Ren::eTexFormat::Depth24Stencil8
-                                                 : Ren::eTexFormat::Depth32Stencil8;
+        frame_textures.depth_params.format =
+            ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
         frame_textures.depth_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         // Main HDR color
         frame_textures.color_params.w = view_state_.scr_res[0];
         frame_textures.color_params.h = view_state_.scr_res[1];
-        frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
+        frame_textures.color_params.format = Ren::eTexFormat::RGBA16F;
         frame_textures.color_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
@@ -934,12 +936,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // 4-component world-space normal (alpha or z is roughness)
             frame_textures.normal_params.w = view_state_.scr_res[0];
             frame_textures.normal_params.h = view_state_.scr_res[1];
-            frame_textures.normal_params.format = Ren::eTexFormat::RawR32UI;
+            frame_textures.normal_params.format = Ren::eTexFormat::R32UI;
             frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             // packed material params
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
-            frame_textures.specular_params.format = Ren::eTexFormat::RawR32UI;
+            frame_textures.specular_params.format = Ren::eTexFormat::R32UI;
             frame_textures.specular_params.flags = {};
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         } else {
@@ -947,15 +949,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.normal_params.w = view_state_.scr_res[0];
             frame_textures.normal_params.h = view_state_.scr_res[1];
 #if USE_OCT_PACKED_NORMALS == 1
-            frame_textures.normal_params.format = Ren::eTexFormat::RawRGB10_A2;
+            frame_textures.normal_params.format = Ren::eTexFormat::RGB10_A2;
 #else
-            frame_textures.normal_params.format = Ren::eTexFormat::RawRGBA8888;
+            frame_textures.normal_params.format = Ren::eTexFormat::RGBA8;
 #endif
             frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             // 4-component specular (alpha is roughness)
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
-            frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
+            frame_textures.specular_params.format = Ren::eTexFormat::RGBA8;
             // frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         }
@@ -963,7 +965,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // 4-component albedo (alpha is unused)
         frame_textures.albedo_params.w = view_state_.scr_res[0];
         frame_textures.albedo_params.h = view_state_.scr_res[1];
-        frame_textures.albedo_params.format = Ren::eTexFormat::RawRGBA8888;
+        frame_textures.albedo_params.format = Ren::eTexFormat::RGBA8;
         // frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1000,17 +1002,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 Ren::Tex2DParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
-                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, params);
             }
 
-            ex_depth_fill_.Setup(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1, vtx_buf2,
-                                 ndx_buf, materials_buf_res, textures_buf_res, &bindless_tex, instances_res,
-                                 instance_indices_res, shared_data_res, noise_tex_res, frame_textures.depth,
-                                 frame_textures.velocity);
-            depth_fill.set_executor(&ex_depth_fill_);
+            depth_fill.make_executor<ExDepthFill>(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1,
+                                                  vtx_buf2, ndx_buf, materials_buf_res, textures_buf_res, &bindless_tex,
+                                                  instances_res, instance_indices_res, shared_data_res, noise_tex_res,
+                                                  frame_textures.depth, frame_textures.velocity);
         }
 
         //
@@ -1036,7 +1037,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                            ExDepthHierarchy::TileSize;
                 params.h = ((view_state_.scr_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
                            ExDepthHierarchy::TileSize;
-                params.format = Ren::eTexFormat::RawR32F;
+                params.format = Ren::eTexFormat::R32F;
                 params.mip_count = ExDepthHierarchy::MipCount;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
                 params.sampling.filter = Ren::eTexFilter::NearestMipmap;
@@ -1045,8 +1046,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", params, Ren::eStageBits::ComputeShader);
             }
 
-            ex_depth_hierarchy_.Setup(fg_builder_, &view_state_, depth_tex, atomic_buf, depth_hierarchy_tex);
-            depth_hierarchy.set_executor(&ex_depth_hierarchy_);
+            depth_hierarchy.make_executor<ExDepthHierarchy>(fg_builder_, &view_state_, depth_tex, atomic_buf,
+                                                            depth_hierarchy_tex);
         }
 
         if (!list.render_settings.debug_wireframe /*&& list.render_settings.taa_mode != eTAAMode::Static*/) {
@@ -1152,8 +1153,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.depth = data->depth_tex = debug_probes.AddDepthOutput(frame_textures.depth);
             frame_textures.color = data->output_tex = debug_probes.AddColorOutput(frame_textures.color);
 
-            ex_debug_probes_.Setup(fg_builder_, list, &view_state_, data);
-            debug_probes.set_executor(&ex_debug_probes_);
+            debug_probes.make_executor<ExDebugProbes>(prim_draw_, fg_builder_, list, &view_state_, data);
         }
 
         if (list.render_settings.debug_oit_layer != -1) {
@@ -1166,8 +1166,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.color = data->output_tex =
                 debug_oit.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::ComputeShader);
 
-            ex_debug_oit_.Setup(fg_builder_, &view_state_, data);
-            debug_oit.set_executor(&ex_debug_oit_);
+            debug_oit.make_executor<ExDebugOIT>(fg_builder_, &view_state_, data);
         }
 
         if (list.render_settings.debug_rt != eDebugRT::Off && list.env.env_map &&
@@ -1215,8 +1214,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stages);
 
             const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlases[int(list.render_settings.debug_rt) - 1];
-            ex_debug_rt_.Setup(fg_builder_, &view_state_, tlas_to_debug, &bindless_tex, data);
-            debug_rt.set_executor(&ex_debug_rt_);
+            debug_rt.make_executor<ExDebugRT>(fg_builder_, &view_state_, tlas_to_debug, &bindless_tex, data);
         }
 
         FgResRef resolved_color;
@@ -1331,7 +1329,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 Ren::Tex2DParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
-                params.format = Ren::eTexFormat::RawRGB888;
+                params.format = Ren::eTexFormat::RGB8;
                 params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1351,8 +1349,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 
-            ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
-            postprocess.set_executor(&ex_postprocess_);
+            postprocess.make_executor<ExPostprocess>(prim_draw_, sh_, &view_state_, &ex_postprocess_args_);
         }
 
         { // Readback exposure
@@ -1391,8 +1388,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         ex_postprocess_args_.fade = list.draw_cam.fade;
 
-        ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
-        postprocess.set_executor(&ex_postprocess_);
+        postprocess.make_executor<ExPostprocess>(prim_draw_, sh_, &view_state_, &ex_postprocess_args_);
     }
 
     fg_builder_.Execute();
@@ -1422,7 +1418,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 }
 
 void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, Ren::Span<const uint8_t> data) {
-    assert(format == Ren::eTexFormat::RawRGB10_A2);
+    assert(format == Ren::eTexFormat::RGB10_A2);
 
     if (data.empty()) {
         // free texture;
@@ -1433,7 +1429,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
         Ren::Tex3DParams params = {};
         params.w = params.h = params.d = res;
         params.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
-        params.format = Ren::eTexFormat::RawRGB10_A2;
+        params.format = Ren::eTexFormat::RGB10_A2;
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1456,7 +1452,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
                                                         {tonemap_lut_.get(), Ren::eResState::CopyDst}};
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
 
-        tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RawRGB10_A2, temp_upload_buf, cmd_buf, 0,
+        tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RGB10_A2, temp_upload_buf, cmd_buf, 0,
                                   data_len);
 
         const Ren::TransitionInfo res_transitions2[] = {{tonemap_lut_.get(), Ren::eResState::ShaderResource}};
@@ -1666,7 +1662,7 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
             Ren::Pipeline &new_pipeline = storage.at(new_index);
 
             const bool res =
-                new_pipeline.Init(ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0, ctx_.log());
+                new_pipeline.Init(ctx_.api_ctx(), rast_state, prog, draw_pass_vi_, rp_main_draw_, 0, ctx_.log());
             if (!res) {
                 ctx_.log()->Error("Failed to initialize pipeline!");
             }
@@ -1707,7 +1703,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
     cached_settings_ = settings;
     cached_rp_index_ = 1;
 
-    assert(format == Ren::eTexFormat::RawRGBA32F);
+    assert(format == Ren::eTexFormat::RGBA32F);
 
     Ren::BufferRef temp_upload_buf =
         ctx_.LoadBuffer("Image upload buf", Ren::eBufType::Upload, 4 * w * h * sizeof(float));
@@ -1750,7 +1746,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             const int w = output_image.ref->params.w;
             const int h = output_image.ref->params.h;
 
-            output_image.ref->SetSubImage(0, 0, 0, w, h, Ren::eTexFormat::RawRGBA32F, *stage_buf.ref,
+            output_image.ref->SetSubImage(0, 0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
                                           builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
         });
 
@@ -1788,8 +1784,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 
-        ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
-        postprocess.set_executor(&ex_postprocess_);
+        postprocess.make_executor<ExPostprocess>(prim_draw_, sh_, &view_state_, &ex_postprocess_args_);
 
         { // Readback exposure
             auto &read_exposure = fg_builder_.AddNode("READ EXPOSURE");
@@ -1861,7 +1856,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::Tex2DRef &result, const int w, c
     cached_settings_ = settings;
     cached_rp_index_ = 1;
 
-    assert(format == Ren::eTexFormat::RawRGBA32F);
+    assert(format == Ren::eTexFormat::RGBA32F);
 
     if (rebuild_renderpasses) {
         const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
@@ -1904,8 +1899,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::Tex2DRef &result, const int w, c
 
         backbuffer_sources_.push_back(ex_postprocess_args_.output_tex);
 
-        ex_postprocess_.Setup(&view_state_, &ex_postprocess_args_);
-        postprocess.set_executor(&ex_postprocess_);
+        postprocess.make_executor<ExPostprocess>(prim_draw_, sh_, &view_state_, &ex_postprocess_args_);
 
         { // Readback exposure
             auto &read_exposure = fg_builder_.AddNode("READ EXPOSURE");

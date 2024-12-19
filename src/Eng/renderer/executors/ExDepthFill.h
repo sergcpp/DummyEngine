@@ -36,28 +36,24 @@ class ExDepthFill final : public FgExecutor {
                   FgAllocBuf &ndx_buf, FgAllocTex &depth_tex, FgAllocTex &velocity_tex);
     void DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2, FgAllocBuf &ndx_buf);
 
-    Ren::RenderPass rp_depth_only_[2], rp_depth_velocity_[2];
+    Ren::RenderPassRef rp_depth_only_[2], rp_depth_velocity_[2];
 
-    Ren::VertexInput vi_solid_, vi_vege_solid_, vi_transp_, vi_vege_transp_, vi_skin_solid_, vi_skin_transp_;
-
-    Ren::Pipeline pi_static_solid_[3], pi_static_transp_[3];
-    Ren::Pipeline pi_moving_solid_[3], pi_moving_transp_[3];
-    Ren::Pipeline pi_vege_static_solid_[2], pi_vege_static_solid_vel_[2];
-    Ren::Pipeline pi_vege_static_transp_[2], pi_vege_static_transp_vel_[2];
-    Ren::Pipeline pi_vege_moving_solid_vel_[2], pi_vege_moving_transp_vel_[2];
-    Ren::Pipeline pi_skin_static_solid_[2], pi_skin_static_solid_vel_[2];
-    Ren::Pipeline pi_skin_static_transp_[2], pi_skin_static_transp_vel_[2];
-    Ren::Pipeline pi_skin_moving_solid_vel_[2], pi_skin_moving_transp_vel_[2];
+    Ren::PipelineRef pi_static_solid_[3], pi_static_transp_[3];
+    Ren::PipelineRef pi_moving_solid_[3], pi_moving_transp_[3];
+    Ren::PipelineRef pi_vege_static_solid_[2], pi_vege_static_transp_[2];
+    Ren::PipelineRef pi_vege_moving_solid_[2], pi_vege_moving_transp_[2];
+    Ren::PipelineRef pi_skin_static_solid_[2], pi_skin_static_transp_[2];
+    Ren::PipelineRef pi_skin_moving_solid_[2], pi_skin_moving_transp_[2];
 
     Ren::Framebuffer depth_fill_fb_[Ren::MaxFramesInFlight][2], depth_fill_vel_fb_[Ren::MaxFramesInFlight][2];
     int fb_to_use_ = 0;
 
   public:
-    void Setup(const DrawList **list, const ViewState *view_state, bool clear_depth, const FgResRef vtx_buf1,
-               const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
-               const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef instances_buf,
-               const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef noise_tex,
-               const FgResRef depth_tex, const FgResRef velocity_tex) {
+    ExDepthFill(const DrawList **list, const ViewState *view_state, bool clear_depth, const FgResRef vtx_buf1,
+                const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
+                const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef instances_buf,
+                const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef noise_tex,
+                const FgResRef depth_tex, const FgResRef velocity_tex) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
         clear_depth_ = clear_depth;

@@ -219,7 +219,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         Ren::Tex2DParams p;
         p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        p.format = Ren::eTexFormat::RawRGBA8888;
+        p.format = Ren::eTexFormat::RGBA8;
         p.w = p.h = 1;
 
         static const uint8_t data[4] = {255, 255, 255, 255};
@@ -263,6 +263,20 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     for (auto &range : scene_data_.mat_update_ranges) {
         range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
     }
+
+    // AllocMeshBuffers();
+    Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
+
+    scene_data_.persistent_data.vertex_buf1 =
+        scene_data_.buffers.Insert("VtxBuf1", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
+    scene_data_.persistent_data.vertex_buf2 =
+        scene_data_.buffers.Insert("VtxBuf2", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
+    scene_data_.persistent_data.skin_vertex_buf =
+        scene_data_.buffers.Insert("SkinVtxBuf", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
+    scene_data_.persistent_data.delta_buf =
+        scene_data_.buffers.Insert("DeltaBuf", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
+    scene_data_.persistent_data.indices_buf =
+        scene_data_.buffers.Insert("NdxBuf", api_ctx, Ren::eBufType::VertexIndices, 128, 4);
 
     StartTextureLoaderThread();
 }
@@ -607,7 +621,7 @@ void Eng::SceneManager::ClearScene() {
     assert(scene_data_.meshes.empty());
     assert(scene_data_.materials.empty());
     assert(scene_data_.textures.empty());
-    assert(scene_data_.buffers.empty());
+    assert(scene_data_.buffers.size() == 5);
 
     scene_data_.objects.clear();
     scene_data_.name_to_object.clear();
@@ -635,7 +649,7 @@ void Eng::SceneManager::LoadEnvMap() {
 
         Ren::Tex2DParams p;
         p.w = p.h = 512;
-        p.format = Ren::eTexFormat::RawRGBA16F;
+        p.format = Ren::eTexFormat::RGBA16F;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Storage |
                    Ren::eTexUsageBits::RenderTarget);
         p.flags = Ren::eTexFlagBits::ExtendedViews;
@@ -673,7 +687,7 @@ void Eng::SceneManager::LoadEnvMap() {
         p.w = w;
         p.h = h;
         p.mip_count = int(header.dwMipMapCount);
-        p.format = Ren::eTexFormat::RawRGB9E5;
+        p.format = Ren::eTexFormat::RGB9_E5;
         p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -692,7 +706,7 @@ void Eng::SceneManager::LoadEnvMap() {
 
         Ren::Tex2DParams p;
         p.w = p.h = 1;
-        p.format = Ren::eTexFormat::RawRGBA8888;
+        p.format = Ren::eTexFormat::RGBA8;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -722,24 +736,24 @@ void Eng::SceneManager::AllocGICache() {
     // TODO: make this temporary FG resource
     scene_data_.persistent_data.probe_ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z,
-        4 * PROBE_VOLUME_RES_Y, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        4 * PROBE_VOLUME_RES_Y, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
     // ~47.8mb
     scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES,
         PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES, 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT,
-        Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        Ren::eTexFormat::RGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
     // ~84.9mb
     scene_data_.persistent_data.probe_distance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES,
-        PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES, PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRG16F,
+        PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES, PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RG16F,
         Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
     // ~0.7mb
     scene_data_.persistent_data.probe_offset = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Offset", PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z,
-        PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::BilinearNoMipmap,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
 
     ClearGICache();
@@ -784,18 +798,11 @@ void Eng::SceneManager::Release_TLAS(const bool immediate) {
 }
 
 void Eng::SceneManager::AllocMeshBuffers() {
-    Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
-
-    scene_data_.persistent_data.vertex_buf1 =
-        scene_data_.buffers.Insert("VtxBuf1", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
-    scene_data_.persistent_data.vertex_buf2 =
-        scene_data_.buffers.Insert("VtxBuf2", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
-    scene_data_.persistent_data.skin_vertex_buf =
-        scene_data_.buffers.Insert("SkinVtxBuf", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
-    scene_data_.persistent_data.delta_buf =
-        scene_data_.buffers.Insert("DeltaBuf", api_ctx, Ren::eBufType::VertexAttribs, 16 * 1024 * 1024, 16);
-    scene_data_.persistent_data.indices_buf =
-        scene_data_.buffers.Insert("NdxBuf", api_ctx, Ren::eBufType::VertexIndices, 16 * 1024 * 1024, 4);
+    scene_data_.persistent_data.vertex_buf1->Resize(16 * 1024 * 1024);
+    scene_data_.persistent_data.vertex_buf2->Resize(16 * 1024 * 1024);
+    scene_data_.persistent_data.skin_vertex_buf->Resize(16 * 1024 * 1024);
+    scene_data_.persistent_data.delta_buf->Resize(16 * 1024 * 1024);
+    scene_data_.persistent_data.indices_buf->Resize(16 * 1024 * 1024);
 }
 
 void Eng::SceneManager::LoadMeshBuffers() {
@@ -870,15 +877,12 @@ void Eng::SceneManager::ReleaseMeshBuffers(const bool immediate) {
     scene_data_.persistent_data.swrt = {};
 
     assert(scene_data_.persistent_data.vertex_buf1.strong_refs() == 1);
-    assert(scene_data_.persistent_data.vertex_buf1.weak_refs() <= 2); // FG holds it
     assert(scene_data_.persistent_data.vertex_buf2.strong_refs() == 1);
-    assert(scene_data_.persistent_data.vertex_buf2.weak_refs() <= 2); // FG holds it
     assert(scene_data_.persistent_data.indices_buf.strong_refs() == 1);
-    assert(scene_data_.persistent_data.indices_buf.weak_refs() <= 2); // FG holds it
 
-    scene_data_.persistent_data.vertex_buf1 = scene_data_.persistent_data.vertex_buf2 =
-        scene_data_.persistent_data.skin_vertex_buf = scene_data_.persistent_data.delta_buf =
-            scene_data_.persistent_data.indices_buf = {};
+    // scene_data_.persistent_data.vertex_buf1 = scene_data_.persistent_data.vertex_buf2 =
+    //     scene_data_.persistent_data.skin_vertex_buf = scene_data_.persistent_data.delta_buf =
+    //         scene_data_.persistent_data.indices_buf = {};
 }
 
 void Eng::SceneManager::AllocInstanceBuffer() {
@@ -886,8 +890,8 @@ void Eng::SceneManager::AllocInstanceBuffer() {
     scene_data_.persistent_data.instance_buf = scene_data_.buffers.Insert(
         "Instance Buf", api_ctx, Ren::eBufType::Texture, uint32_t(sizeof(InstanceData) * MAX_INSTANCES_TOTAL));
     scene_data_.persistent_data.instance_buf_tbo =
-        ren_ctx_.CreateTexture1D("Instances TBO", scene_data_.persistent_data.instance_buf, Ren::eTexFormat::RawRGBA32F,
-                                 0, sizeof(InstanceData) * MAX_INSTANCES_TOTAL);
+        ren_ctx_.CreateTexture1D("Instances TBO", scene_data_.persistent_data.instance_buf, Ren::eTexFormat::RGBA32F, 0,
+                                 sizeof(InstanceData) * MAX_INSTANCES_TOTAL);
     for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
         instance_data_to_update_.push_back(i);
     }

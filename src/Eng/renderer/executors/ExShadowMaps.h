@@ -11,11 +11,8 @@ class ExShadowMaps final : public FgExecutor {
     int w_, h_;
 
     // lazily initialized data
-    Ren::RenderPass rp_depth_only_;
-    Ren::VertexInput vi_depth_pass_solid_, vi_depth_pass_vege_solid_, vi_depth_pass_transp_, vi_depth_pass_vege_transp_;
-
-    Ren::Pipeline pi_solid_[3], pi_transp_[3];
-    Ren::Pipeline pi_vege_solid_, pi_vege_transp_;
+    Ren::PipelineRef pi_solid_[3], pi_transp_[3];
+    Ren::PipelineRef pi_vege_solid_, pi_vege_transp_;
 
     Ren::Framebuffer shadow_fb_;
 
@@ -42,12 +39,11 @@ class ExShadowMaps final : public FgExecutor {
     void DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap_tex);
 
   public:
-    ExShadowMaps(int w, int h) : w_(w), h_(h) {}
-
-    void Setup(const DrawList **p_list, const FgResRef vtx_buf1, const FgResRef vtx_buf2, const FgResRef ndx_buf,
-               const FgResRef materials_buf, const BindlessTextureData *bindless_tex, const FgResRef textures_buf,
-               const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
-               const FgResRef noise_tex, const FgResRef shadowmap_tex) {
+    ExShadowMaps(const int w, const int h, const DrawList **p_list, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
+                 const FgResRef ndx_buf, const FgResRef materials_buf, const BindlessTextureData *bindless_tex,
+                 const FgResRef textures_buf, const FgResRef instances_buf, const FgResRef instance_indices_buf,
+                 const FgResRef shared_data_buf, const FgResRef noise_tex, const FgResRef shadowmap_tex)
+        : w_(w), h_(h) {
         p_list_ = p_list;
         bindless_tex_ = bindless_tex;
 

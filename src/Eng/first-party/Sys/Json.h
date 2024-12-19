@@ -23,10 +23,11 @@ enum class JsLiteralType { Undefined, True, False, Null };
 struct JsFlags {
     unsigned ident_levels : 1;
     unsigned use_new_lines : 1;
-    unsigned use_spaces : 1;
-    unsigned level : 29;
+    unsigned use_identation : 1;
+    unsigned prefer_spaces : 1;
+    unsigned level : 28;
 
-    JsFlags() : ident_levels(1), use_new_lines(1), use_spaces(0), level(0) {}
+    JsFlags() : ident_levels(1), use_new_lines(1), use_identation(1), prefer_spaces(0), level(0) {}
 };
 static_assert(sizeof(JsFlags) == 4, "!");
 

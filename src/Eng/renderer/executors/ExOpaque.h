@@ -10,8 +10,8 @@ class ExOpaque final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::VertexInput draw_pass_vi_;
-    Ren::RenderPass rp_opaque_;
+    Ren::VertexInputRef draw_pass_vi_;
+    Ren::RenderPassRef rp_opaque_;
     Ren::Framebuffer opaque_draw_fb_[Ren::MaxFramesInFlight][2];
     int fb_to_use_ = 0;
 #if defined(REN_VK_BACKEND)

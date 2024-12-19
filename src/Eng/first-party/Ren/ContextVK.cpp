@@ -219,7 +219,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
     log_->Info("============================================================================");
 
     capabilities.hwrt = (api_ctx_->raytracing_supported && api_ctx_->ray_query_supported);
-    capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
+
     CheckDeviceCapabilities();
 
     capabilities.subgroup &= !nosubgroup;
@@ -232,7 +232,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
 
     texture_atlas_ =
         TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",         TextureAtlasWidth,           TextureAtlasHeight,
-                          TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
+                          TextureAtlasLayers, eTexFormat::RGBA8, eTexFilter::BilinearNoMipmap};
 
     for (size_t i = 0; i < api_ctx_->present_images.size(); ++i) {
         char name_buf[24];
@@ -242,14 +242,14 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
         params.w = w;
         params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
-            params.format = eTexFormat::RawRGBA8888;
+            params.format = eTexFormat::RGBA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_SRGB) {
-            params.format = eTexFormat::RawRGBA8888;
+            params.format = eTexFormat::RGBA8;
             params.flags |= eTexFlagBits::SRGB;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {
-            params.format = eTexFormat::RawBGRA8888;
+            params.format = eTexFormat::BGRA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
-            params.format = eTexFormat::RawBGRA8888;
+            params.format = eTexFormat::BGRA8;
             params.flags |= eTexFlagBits::SRGB;
         }
         params.usage = eTexUsageBits::RenderTarget;
@@ -326,11 +326,11 @@ void Ren::Context::Resize(const int w, const int h) {
         params.w = w;
         params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
-            params.format = eTexFormat::RawRGBA8888;
+            params.format = eTexFormat::RGBA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {
-            params.format = eTexFormat::RawBGRA8888;
+            params.format = eTexFormat::BGRA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
-            params.format = eTexFormat::RawBGRA8888;
+            params.format = eTexFormat::BGRA8;
             params.flags |= eTexFlagBits::SRGB;
         }
         params.usage = eTexUsageBits::RenderTarget;

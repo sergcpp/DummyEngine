@@ -46,6 +46,8 @@ Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
         return (*this);
     }
 
+    RefCounter::operator=(static_cast<RefCounter &&>(rhs));
+
     Destroy();
 
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
@@ -56,8 +58,8 @@ Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
     return (*this);
 }
 
-bool Ren::RenderPass::Init(ApiContext *api_ctx, RenderTargetInfo _depth_rt, Span<const RenderTargetInfo> _color_rts,
-                           ILog *log) {
+bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo &_depth_rt,
+                           Span<const RenderTargetInfo> _color_rts, ILog *log) {
     Destroy();
 
     SmallVector<VkAttachmentDescription, 4> pass_attachments;
@@ -181,11 +183,7 @@ void Ren::RenderPass::Destroy() {
     color_rts.clear();
 }
 
-bool Ren::RenderPass::IsCompatibleWith(RenderTarget _depth_rt, Span<const RenderTarget> _color_rts) {
-    return depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts;
-}
-
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTarget _depth_rt, Span<const RenderTarget> _color_rts,
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTarget &_depth_rt, Span<const RenderTarget> _color_rts,
                             ILog *log) {
     if (depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts) {
         return true;
@@ -199,8 +197,8 @@ bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTarget _depth_rt, S
     return Init(api_ctx, RenderTargetInfo{_depth_rt}, infos, log);
 }
 
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, RenderTargetInfo _depth_rt, Span<const RenderTargetInfo> _color_rts,
-                            ILog *log) {
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTargetInfo &_depth_rt,
+                            Span<const RenderTargetInfo> _color_rts, ILog *log) {
     if (depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts) {
         return true;
     }

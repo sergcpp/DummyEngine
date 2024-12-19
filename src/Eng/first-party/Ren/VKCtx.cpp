@@ -505,12 +505,6 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
         }
     }
 
-    if (this->dynamic_rendering_supported) {
-        device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        device_extensions.push_back(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME); // required for dynamic rendering
-        device_extensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);   // required for depth stencil resolve
-    }
-
     if (this->renderpass_loadstore_none_supported) {
         device_extensions.push_back(VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME);
     }
@@ -594,14 +588,6 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
         }
     }
 
-    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR};
-    dynamic_rendering_features.dynamicRendering = VK_TRUE;
-    if (this->dynamic_rendering_supported) {
-        (*pp_next) = &dynamic_rendering_features;
-        pp_next = &dynamic_rendering_features.pNext;
-    }
-
     VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroup_size_control_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT};
     subgroup_size_control_features.subgroupSizeControl = VK_TRUE;
@@ -683,9 +669,9 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
         vkGetPhysicalDeviceProperties(physical_devices[i], &device_properties);
 
         bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false,
-             dynamic_rendering_supported = false, renderpass_loadstore_none_supported = false,
-             subgroup_size_control_supported = false, shader_fp16_supported = false, storage_fp16_supported = false,
-             shader_int64_supported = false, shader_buf_int64_atomics_supported = false, coop_matrix_supported = false;
+             renderpass_loadstore_none_supported = false, subgroup_size_control_supported = false,
+             shader_fp16_supported = false, storage_fp16_supported = false, shader_int64_supported = false,
+             shader_buf_int64_atomics_supported = false, coop_matrix_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -708,8 +694,6 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                     raytracing_supported = true;
                 } else if (strcmp(ext.extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME) == 0) {
                     ray_query_supported = true;
-                } else if (strcmp(ext.extensionName, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) == 0) {
-                    // dynamic_rendering_supported = true;
                 } else if (strcmp(ext.extensionName, VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME) == 0) {
                     renderpass_loadstore_none_supported = true;
                 } else if (strcmp(ext.extensionName, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME) == 0) {
@@ -836,10 +820,6 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 score += 500;
             }
 
-            if (dynamic_rendering_supported) {
-                score += 100;
-            }
-
             if (!preferred_device.empty() && MatchDeviceNames(device_properties.deviceName, preferred_device.data())) {
                 // preferred device found
                 score += 100000;
@@ -860,7 +840,6 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 this->graphics_family_index = graphics_family_index;
                 this->raytracing_supported = (acc_struct_supported && raytracing_supported);
                 this->ray_query_supported = ray_query_supported;
-                this->dynamic_rendering_supported = dynamic_rendering_supported;
                 this->renderpass_loadstore_none_supported = renderpass_loadstore_none_supported;
                 this->subgroup_size_control_supported = subgroup_size_control_supported;
                 this->supported_stages_mask = _supported_stages_mask;

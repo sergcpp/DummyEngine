@@ -167,7 +167,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         char name_buf[] = "Present Image [0]";
 
         Tex2DParams params;
-        params.format = eTexFormat::RawRGBA8888;
+        params.format = eTexFormat::RGBA8;
         params.flags = eTexFlagBits::NoOwnership;
         params.usage = eTexUsageBits::RenderTarget;
 
@@ -177,7 +177,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     texture_atlas_ =
         TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",         TextureAtlasWidth,           TextureAtlasHeight,
-                          TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
+                          TextureAtlasLayers, eTexFormat::RGBA8, eTexFilter::BilinearNoMipmap};
 
     return true;
 }

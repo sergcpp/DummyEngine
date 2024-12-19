@@ -63,12 +63,12 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_hwrt_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_hwrt_->prog()->descr_set_layouts()[0], bindings,
                                          ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.layout(), 0, 2,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_->handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_->layout(), 0, 2,
                                      descr_sets, 0, nullptr);
 
     RTDebug::Params uniform_params;
@@ -76,11 +76,11 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     uniform_params.img_size[1] = view_state_->scr_res[1];
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_hwrt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_hwrt_->layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
                                 sizeof(uniform_params), &uniform_params);
 
-    api_ctx->vkCmdTraceRaysKHR(cmd_buf, pi_debug_hwrt_.rgen_table(), pi_debug_hwrt_.miss_table(),
-                               pi_debug_hwrt_.hit_table(), pi_debug_hwrt_.call_table(),
+    api_ctx->vkCmdTraceRaysKHR(cmd_buf, pi_debug_hwrt_->rgen_table(), pi_debug_hwrt_->miss_table(),
+                               pi_debug_hwrt_->hit_table(), pi_debug_hwrt_->call_table(),
                                uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]), 1);
 }
 
@@ -116,37 +116,37 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
         vtx_buf1.tbos[0] =
-            ctx.CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RawRGBA32F, 0, vtx_buf1.ref->size());
+            ctx.CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F, 0, vtx_buf1.ref->size());
     }
 
     if (!vtx_buf2.tbos[0] || vtx_buf2.tbos[0]->params().size != vtx_buf2.ref->size()) {
-        vtx_buf2.tbos[0] = ctx.CreateTexture1D("Vertex Buf 2 TBO", vtx_buf2.ref, Ren::eTexFormat::RawRGBA32UI, 0,
+        vtx_buf2.tbos[0] = ctx.CreateTexture1D("Vertex Buf 2 TBO", vtx_buf2.ref, Ren::eTexFormat::RGBA32UI, 0,
                                                vtx_buf2.ref->size());
     }
 
     if (!ndx_buf.tbos[0] || ndx_buf.tbos[0]->params().size != ndx_buf.ref->size()) {
         ndx_buf.tbos[0] =
-            ctx.CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::RawR32UI, 0, ndx_buf.ref->size());
+            ctx.CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0, ndx_buf.ref->size());
     }
 
     if (!prim_ndx_buf.tbos[0] || prim_ndx_buf.tbos[0]->params().size != prim_ndx_buf.ref->size()) {
-        prim_ndx_buf.tbos[0] = ctx.CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref, Ren::eTexFormat::RawR32UI, 0,
+        prim_ndx_buf.tbos[0] = ctx.CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
                                                    prim_ndx_buf.ref->size());
     }
 
     if (!rt_blas_buf.tbos[0] || rt_blas_buf.tbos[0]->params().size != rt_blas_buf.ref->size()) {
-        rt_blas_buf.tbos[0] = ctx.CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+        rt_blas_buf.tbos[0] = ctx.CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
                                                   rt_blas_buf.ref->size());
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
                                                   rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
         mesh_instances_buf.tbos[0] =
-            ctx.CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+            ctx.CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RGBA32F, 0,
                                 mesh_instances_buf.ref->size());
     }
 
@@ -190,15 +190,15 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_swrt_.prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_swrt_->prog()->descr_set_layouts()[0], bindings,
                                          ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_.layout(), 0, 2, descr_sets,
-                                     0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_->handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_->layout(), 0, 2,
+                                     descr_sets, 0, nullptr);
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_swrt_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);

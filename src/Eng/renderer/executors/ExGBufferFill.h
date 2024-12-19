@@ -10,12 +10,8 @@ class ExGBufferFill final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::RenderPass rp_main_draw_;
-
-    Ren::VertexInput vi_simple_, vi_vegetation_;
-
-    Ren::Pipeline pi_simple_[3];
-    Ren::Pipeline pi_vegetation_[2];
+    Ren::PipelineRef pi_simple_[3];
+    Ren::PipelineRef pi_vegetation_[2];
 
     Ren::Framebuffer main_draw_fb_[Ren::MaxFramesInFlight][2];
     int fb_to_use_ = 0;

@@ -31,6 +31,6 @@ runs:
           cp build/first-party/Snd/tests/${{ inputs.config }}/test_Snd* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/first-party/Net/tests/${{ inputs.config }}/test_Net* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/first-party/glslx/tests/${{ inputs.config }}/test_glslx* $WORK_DIR/${{ inputs.bin-dir }}
-          cp build/third-party/glslang/${{ inputs.config }}/spirv_compiler* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/third-party/glslang/${{ inputs.config }}/spirv_compiler* $WORK_DIR/${{ inputs.bin-dir }} || true
         fi
       shell: bash

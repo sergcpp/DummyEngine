@@ -57,7 +57,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
 
-    glBindVertexArray(draw_pass_vi_.gl_vao());
+    glBindVertexArray(draw_pass_vi_->GetVAO());
 
     auto &ctx = builder.ctx();
 
@@ -394,17 +394,17 @@ void Eng::ExTransparent::DrawTransparent_OIT_WeightedBlended(FgBuilder &builder)
 { // Buffer that holds moments (used for transparency)
     FrameBuf::ColorAttachmentDesc desc[3];
     { // b0
-        desc[0].format = Ren::eTexFormat::RawR32F;
+        desc[0].format = Ren::eTexFormat::R32F;
         desc[0].filter = Ren::eTexFilter::NoFilter;
         desc[0].repeat = Ren::eTexRepeat::ClampToEdge;
     }
     { // z and z^2
-        desc[1].format = Ren::eTexFormat::RawRG16F;
+        desc[1].format = Ren::eTexFormat::RG16F;
         desc[1].filter = Ren::eTexFilter::NoFilter;
         desc[1].repeat = Ren::eTexRepeat::ClampToEdge;
     }
     { // z^3 and z^4
-        desc[2].format = Ren::eTexFormat::RawRG16F;
+        desc[2].format = Ren::eTexFormat::RG16F;
         desc[2].filter = Ren::eTexFilter::NoFilter;
         desc[2].repeat = Ren::eTexRepeat::ClampToEdge;
     }

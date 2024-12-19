@@ -20,42 +20,39 @@
 namespace Ren {
 extern const VkFormat g_vk_formats[] = {
     VK_FORMAT_UNDEFINED,                // Undefined
-    VK_FORMAT_R8G8B8_UNORM,             // RawRGB888
-    VK_FORMAT_R8G8B8A8_UNORM,           // RawRGBA8888
+    VK_FORMAT_R8G8B8_UNORM,             // RGB8
+    VK_FORMAT_R8G8B8A8_UNORM,           // RGBA8
     VK_FORMAT_R8G8B8A8_SNORM,           // RawRGBA8888Signed
-    VK_FORMAT_B8G8R8A8_UNORM,           // RawBGRA8888
-    VK_FORMAT_R32_SFLOAT,               // RawR32F
-    VK_FORMAT_R16_SFLOAT,               // RawR16F
-    VK_FORMAT_R8_UNORM,                 // RawR8
-    VK_FORMAT_R32_UINT,                 // RawR32UI
-    VK_FORMAT_R8G8_UNORM,               // RawRG88
-    VK_FORMAT_R32G32B32_SFLOAT,         // RawRGB32F
-    VK_FORMAT_R32G32B32A32_SFLOAT,      // RawRGBA32F
-    VK_FORMAT_R32G32B32A32_UINT,        // RawRGBA32UI
-    VK_FORMAT_UNDEFINED,                // RawRGBE8888
-    VK_FORMAT_R16G16B16_SFLOAT,         // RawRGB16F
-    VK_FORMAT_R16G16B16A16_SFLOAT,      // RawRGBA16F
-    VK_FORMAT_R16G16_SNORM,             // RawRG16Snorm
-    VK_FORMAT_R16G16_UNORM,             // RawRG16
-    VK_FORMAT_R16G16_SFLOAT,            // RawRG16F
-    VK_FORMAT_R32G32_SFLOAT,            // RawRG32F
+    VK_FORMAT_B8G8R8A8_UNORM,           // BGRA8
+    VK_FORMAT_R32_SFLOAT,               // R32F
+    VK_FORMAT_R16_SFLOAT,               // R16F
+    VK_FORMAT_R8_UNORM,                 // R8
+    VK_FORMAT_R32_UINT,                 // R32UI
+    VK_FORMAT_R8G8_UNORM,               // RG8
+    VK_FORMAT_R32G32B32_SFLOAT,         // RGB32F
+    VK_FORMAT_R32G32B32A32_SFLOAT,      // RGBA32F
+    VK_FORMAT_R32G32B32A32_UINT,        // RGBA32UI
+    VK_FORMAT_UNDEFINED,                // RGBE8
+    VK_FORMAT_R16G16B16_SFLOAT,         // RGB16F
+    VK_FORMAT_R16G16B16A16_SFLOAT,      // RGBA16F
+    VK_FORMAT_R16G16_SNORM,             // RG16_snorm
+    VK_FORMAT_R16G16_UNORM,             // RG16
+    VK_FORMAT_R16G16_SFLOAT,            // RG16F
+    VK_FORMAT_R32G32_SFLOAT,            // RG32F
     VK_FORMAT_R32G32_UINT,              // RawRG32U
-    VK_FORMAT_A2B10G10R10_UNORM_PACK32, // RawRGB10_A2
-    VK_FORMAT_B10G11R11_UFLOAT_PACK32,  // RawRG11F_B10F
-    VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,   // RawRGB9E5
-    VK_FORMAT_D16_UNORM,                // Depth16
-    VK_FORMAT_D24_UNORM_S8_UINT,        // Depth24Stencil8
-    VK_FORMAT_D32_SFLOAT_S8_UINT,       // Depth32Stencil8
-#ifndef __ANDROID__
-    VK_FORMAT_D32_SFLOAT, // Depth32
-#endif
-    VK_FORMAT_BC1_RGBA_UNORM_BLOCK, // BC1
-    VK_FORMAT_BC2_UNORM_BLOCK,      // BC2
-    VK_FORMAT_BC3_UNORM_BLOCK,      // BC3
-    VK_FORMAT_BC4_UNORM_BLOCK,      // BC4
-    VK_FORMAT_BC5_UNORM_BLOCK,      // BC5
-    VK_FORMAT_UNDEFINED,            // Compressed_ASTC
-    VK_FORMAT_UNDEFINED,            // None
+    VK_FORMAT_A2B10G10R10_UNORM_PACK32, // RGB10_A2
+    VK_FORMAT_B10G11R11_UFLOAT_PACK32,  // RG11F_B10F
+    VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,   // RGB9_E5
+    VK_FORMAT_D16_UNORM,                // D16
+    VK_FORMAT_D24_UNORM_S8_UINT,        // D24_S8
+    VK_FORMAT_D32_SFLOAT_S8_UINT,       // D32_S8
+    VK_FORMAT_D32_SFLOAT,               // D32
+    VK_FORMAT_BC1_RGBA_UNORM_BLOCK,     // BC1
+    VK_FORMAT_BC2_UNORM_BLOCK,          // BC2
+    VK_FORMAT_BC3_UNORM_BLOCK,          // BC3
+    VK_FORMAT_BC4_UNORM_BLOCK,          // BC4
+    VK_FORMAT_BC5_UNORM_BLOCK,          // BC5
+    VK_FORMAT_UNDEFINED                 // ASTC
 };
 static_assert(std::size(g_vk_formats) == size_t(eTexFormat::_Count), "!");
 
@@ -309,7 +306,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAll
         Tex2DParams _p = p;
         _p.w = _p.h = 1;
         _p.mip_count = 1;
-        _p.format = eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RGBA8;
         _p.usage = eTexUsage::Sampled | eTexUsage::Transfer;
 
         InitFromRAWData(&sbuf, 0, cmd_buf, mem_allocs, _p, log);
@@ -358,7 +355,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Mem
 
         Tex2DParams _p = p;
         _p.w = _p.h = 1;
-        _p.format = eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RGBA8;
         _p.usage = eTexUsage::Sampled | eTexUsage::Transfer;
 
         int data_off[6] = {};
@@ -1029,22 +1026,22 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemAllocators *me
         // Try to use least significant bits of FourCC as format
         const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
         if (val == 0x6f) {
-            _p.format = eTexFormat::RawR16F;
+            _p.format = eTexFormat::R16F;
         } else if (val == 0x70) {
-            _p.format = eTexFormat::RawRG16F;
+            _p.format = eTexFormat::RG16F;
         } else if (val == 0x71) {
-            _p.format = eTexFormat::RawRGBA16F;
+            _p.format = eTexFormat::RGBA16F;
         } else if (val == 0x72) {
-            _p.format = eTexFormat::RawR32F;
+            _p.format = eTexFormat::R32F;
         } else if (val == 0x73) {
-            _p.format = eTexFormat::RawRG32F;
+            _p.format = eTexFormat::RG32F;
         } else if (val == 0x74) {
-            _p.format = eTexFormat::RawRGBA32F;
+            _p.format = eTexFormat::RGBA32F;
         } else if (val == 0) {
             if (header.sPixelFormat.dwRGBBitCount == 8) {
-                _p.format = eTexFormat::RawR8;
+                _p.format = eTexFormat::R8;
             } else if (header.sPixelFormat.dwRGBBitCount == 16) {
-                _p.format = eTexFormat::RawRG88;
+                _p.format = eTexFormat::RG8;
                 assert(header.sPixelFormat.dwRBitMask == 0x00ff);
                 assert(header.sPixelFormat.dwGBitMask == 0xff00);
             }
@@ -1572,7 +1569,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators 
     uint32_t data_off[6] = {};
     uint32_t stage_len = 0;
 
-    eTexFormat first_format = eTexFormat::None;
+    eTexFormat first_format = eTexFormat::Undefined;
     eTexBlock first_block = eTexBlock::_None;
     uint32_t first_mip_count = 0;
     int first_block_size_bytes = 0;

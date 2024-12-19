@@ -90,7 +90,7 @@ class Framebuffer {
     Framebuffer &operator=(Framebuffer &&rhs) noexcept;
 
 #if defined(REN_VK_BACKEND)
-    [[nodiscard]] VkFramebuffer handle() const { return handle_; }
+    [[nodiscard]] VkFramebuffer vk_handle() const { return handle_; }
     [[nodiscard]] VkRenderPass renderpass() const { return renderpass_; }
 #elif defined(REN_GL_BACKEND)
     [[nodiscard]] uint32_t id() const { return id_; }

@@ -132,22 +132,15 @@ bool Gui::Renderer::Init() {
                                          Ren::eLoadOp::Load, Ren::eStoreOp::Store};
         rt_info.flags = (p.flags & ~Ren::eTexFlagBits::NoOwnership);
 
-        if (!render_pass_.Setup(ctx_.api_ctx(), {}, {&rt_info, 1}, ctx_.log())) {
-            ctx_.log()->Error("[Gui::Renderer::Init]: Failed to create render pass!");
-            return false;
-        }
+        render_pass_ = ctx_.LoadRenderPass({}, {&rt_info, 1});
     }
 
     { // initialize vertex input
         const Ren::VtxAttribDesc attribs[] = {
-            {vertex_buf_->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, sizeof(vertex_t), offsetof(vertex_t, pos)},
-            {vertex_buf_->handle(), VTX_COL_LOC, 4, Ren::eType::Uint8UNorm, sizeof(vertex_t), offsetof(vertex_t, col)},
-            {vertex_buf_->handle(), VTX_UVS_LOC, 4, Ren::eType::Uint16UNorm, sizeof(vertex_t),
-             offsetof(vertex_t, uvs)}};
-        if (!vtx_input_.Setup(attribs, index_buf_)) {
-            ctx_.log()->Error("[Gui::Renderer::Init]: Failed to initialize vertex input!");
-            return false;
-        }
+            {vertex_buf_, VTX_POS_LOC, 3, Ren::eType::Float32, sizeof(vertex_t), offsetof(vertex_t, pos)},
+            {vertex_buf_, VTX_COL_LOC, 4, Ren::eType::Uint8_unorm, sizeof(vertex_t), offsetof(vertex_t, col)},
+            {vertex_buf_, VTX_UVS_LOC, 4, Ren::eType::Uint16_unorm, sizeof(vertex_t), offsetof(vertex_t, uvs)}};
+        vtx_input_ = ctx_.LoadVertexInput(attribs, index_buf_);
     }
 
     { // create graphics pipeline
@@ -158,7 +151,7 @@ bool Gui::Renderer::Init() {
         rast_state.blend.src_color = rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::SrcAlpha);
         rast_state.blend.dst_color = rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::OneMinusSrcAlpha);
 
-        if (!pipeline_.Init(api_ctx, rast_state, std::move(ui_program), &vtx_input_, &render_pass_, 0, ctx_.log())) {
+        if (!pipeline_.Init(api_ctx, rast_state, std::move(ui_program), vtx_input_, render_pass_, 0, ctx_.log())) {
             ctx_.log()->Error("[Gui::Renderer::Init]: Failed to create graphics pipeline!");
             return false;
         }

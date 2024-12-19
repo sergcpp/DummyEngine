@@ -7,9 +7,13 @@
 #include "../PrimDraw.h"
 #include "../shaders/probe_debug_interface.h"
 
-void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+Eng::ExDebugProbes::ExDebugProbes(PrimDraw &prim_draw, FgBuilder &builder, const DrawList &list,
+                                  const ViewState *view_state, const Args *args)
+    : prim_draw_(prim_draw), view_state_(view_state), args_(args) {
+    prog_probe_debug_ = builder.sh().LoadProgram("internal/probe_debug.vert.glsl", "internal/probe_debug.frag.glsl");
+}
 
+void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
     FgAllocTex &off_tex = builder.GetReadTexture(args_->offset_tex);
     FgAllocTex &irr_tex = builder.GetReadTexture(args_->irradiance_tex);
@@ -45,11 +49,4 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
     prim_draw_.DrawPrim(PrimDraw::ePrim::Sphere, prog_probe_debug_, depth_target, render_targets, rast_state,
                         builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0,
                         PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z);
-}
-
-void Eng::ExDebugProbes::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-        prog_probe_debug_ = sh.LoadProgram("internal/probe_debug.vert.glsl", "internal/probe_debug.frag.glsl");
-        initialized = true;
-    }
 }

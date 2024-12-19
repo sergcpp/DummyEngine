@@ -21,124 +21,117 @@
 namespace Ren {
 const uint32_t g_gl_formats[] = {
     0xffffffff,         // Undefined
-    GL_RGB,             // RawRGB888
-    GL_RGBA,            // RawRGBA8888
+    GL_RGB,             // RGB8
+    GL_RGBA,            // RGBA8
     GL_RGBA,            // RawSignedRGBA8888
-    0xffffffff,         // RawBGRA8888
-    GL_RED,             // RawR32F
-    GL_RED,             // RawR16F
-    GL_RED,             // RawR8
-    GL_RED_INTEGER,     // RawR32UI
-    GL_RG,              // RawRG88
-    GL_RGB,             // RawRGB32F
-    GL_RGBA,            // RawRGBA32F
-    GL_RGBA,            // RawRGBA32UI
-    0xffffffff,         // RawRGBE8888
-    GL_RGB,             // RawRGB16F
-    GL_RGBA,            // RawRGBA16F
-    GL_RG,              // RawRG16Snorm
-    GL_RG,              // RawRG16
-    GL_RG,              // RawRG16F
-    GL_RG,              // RawRG32F
-    GL_RG_INTEGER,      // RawRG32UI
-    GL_RGBA,            // RawRGB10_A2
-    GL_RGB,             // RawRG11F_B10F
-    GL_RGB,             // RawRGB9E5
-    GL_DEPTH_COMPONENT, // Depth16
-    GL_DEPTH_STENCIL,   // Depth24Stencil8
-    GL_DEPTH_STENCIL,   // Depth32Stencil8
-#ifndef __ANDROID__
-    GL_DEPTH_COMPONENT, // Depth32
-#endif
-    0xffffffff, // BC1
-    0xffffffff, // BC2
-    0xffffffff, // BC3
-    0xffffffff, // BC4
-    0xffffffff, // BC5
-    0xffffffff, // ASTC
-    0xffffffff, // None
+    0xffffffff,         // BGRA8
+    GL_RED,             // R32F
+    GL_RED,             // R16F
+    GL_RED,             // R8
+    GL_RED_INTEGER,     // R32UI
+    GL_RG,              // RG8
+    GL_RGB,             // RGB32F
+    GL_RGBA,            // RGBA32F
+    GL_RGBA,            // RGBA32UI
+    0xffffffff,         // RGBE8
+    GL_RGB,             // RGB16F
+    GL_RGBA,            // RGBA16F
+    GL_RG,              // RG16_snorm
+    GL_RG,              // RG16
+    GL_RG,              // RG16F
+    GL_RG,              // RG32F
+    GL_RG_INTEGER,      // RG32UI
+    GL_RGBA,            // RGB10_A2
+    GL_RGB,             // RG11F_B10F
+    GL_RGB,             // RGB9_E5
+    GL_DEPTH_COMPONENT, // D16
+    GL_DEPTH_STENCIL,   // D24_S8
+    GL_DEPTH_STENCIL,   // D32_S8
+    GL_DEPTH_COMPONENT, // D32
+    0xffffffff,         // BC1
+    0xffffffff,         // BC2
+    0xffffffff,         // BC3
+    0xffffffff,         // BC4
+    0xffffffff,         // BC5
+    0xffffffff          // ASTC
 };
 static_assert(std::size(g_gl_formats) == size_t(eTexFormat::_Count), "!");
 
 const uint32_t g_gl_internal_formats[] = {
     0xffffffff,           // Undefined
-    GL_RGB8,              // RawRGB888
-    GL_RGBA8,             // RawRGBA8888
+    GL_RGB8,              // RGB8
+    GL_RGBA8,             // RGBA8
     GL_RGBA8_SNORM,       // RawSignedRGBA8888
-    0xffffffff,           // RawBGRA8888
-    GL_R32F,              // RawR32F
-    GL_R16F,              // RawR16F
-    GL_R8,                // RawR8
-    GL_R32UI,             // RawR32UI
-    GL_RG8,               // RawRG88
-    GL_RGB32F,            // RawRGB32F
-    GL_RGBA32F,           // RawRGBA32F
-    GL_RGBA32UI,          // RawRGBA32UI
-    0xffffffff,           // RawRGBE8888
-    GL_RGB16F,            // RawRGB16F
-    GL_RGBA16F,           // RawRGBA16F
-    GL_RG16_SNORM_EXT,    // RawRG16Snorm
-    GL_RG16_EXT,          // RawRG16
-    GL_RG16F,             // RawRG16F
-    GL_RG32F,             // RawRG32F
-    GL_RG32UI,            // RawRG32UI
-    GL_RGB10_A2,          // RawRGB10_A2
-    GL_R11F_G11F_B10F,    // RawRG11F_B10F
-    GL_RGB9_E5,           // RawRGB9E5
-    GL_DEPTH_COMPONENT16, // Depth16
-    GL_DEPTH24_STENCIL8,  // Depth24Stencil8
-    GL_DEPTH32F_STENCIL8, // Depth32Stencil8
+    0xffffffff,           // BGRA8
+    GL_R32F,              // R32F
+    GL_R16F,              // R16F
+    GL_R8,                // R8
+    GL_R32UI,             // R32UI
+    GL_RG8,               // RG8
+    GL_RGB32F,            // RGB32F
+    GL_RGBA32F,           // RGBA32F
+    GL_RGBA32UI,          // RGBA32UI
+    0xffffffff,           // RGBE8
+    GL_RGB16F,            // RGB16F
+    GL_RGBA16F,           // RGBA16F
+    GL_RG16_SNORM_EXT,    // RG16_snorm
+    GL_RG16_EXT,          // RG16
+    GL_RG16F,             // RG16F
+    GL_RG32F,             // RG32F
+    GL_RG32UI,            // RG32UI
+    GL_RGB10_A2,          // RGB10_A2
+    GL_R11F_G11F_B10F,    // RG11F_B10F
+    GL_RGB9_E5,           // RGB9_E5
+    GL_DEPTH_COMPONENT16, // D16
+    GL_DEPTH24_STENCIL8,  // D24_S8
+    GL_DEPTH32F_STENCIL8, // D32_S8
 #ifndef __ANDROID__
-    GL_DEPTH_COMPONENT32, // Depth32
+    GL_DEPTH_COMPONENT32, // D32
 #endif
     GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  // BC1
     GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,  // BC2
     GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  // BC3
     GL_COMPRESSED_RED_RGTC1_EXT,       // BC4
     GL_COMPRESSED_RED_GREEN_RGTC2_EXT, // BC5
-    0xffffffff,                        // ASTC
-    0xffffffff,                        // None
+    0xffffffff                         // ASTC
 };
 static_assert(std::size(g_gl_internal_formats) == size_t(eTexFormat::_Count), "!");
 
 const uint32_t g_gl_types[] = {
     0xffffffff,                        // Undefined
-    GL_UNSIGNED_BYTE,                  // RawRGB888
-    GL_UNSIGNED_BYTE,                  // RawRGBA8888
+    GL_UNSIGNED_BYTE,                  // RGB8
+    GL_UNSIGNED_BYTE,                  // RGBA8
     GL_BYTE,                           // RawSignedRGBA8888
-    GL_UNSIGNED_BYTE,                  // RawBGRA8888
-    GL_FLOAT,                          // RawR32F
-    GL_HALF_FLOAT,                     // RawR16F
-    GL_UNSIGNED_BYTE,                  // RawR8
-    GL_UNSIGNED_INT,                   // RawR32UI
-    GL_UNSIGNED_BYTE,                  // RawRG88
-    GL_FLOAT,                          // RawRGB32F
-    GL_FLOAT,                          // RawRGBA32F
-    GL_UNSIGNED_INT,                   // RawRGBA32UI
-    0xffffffff,                        // RawRGBE8888
-    GL_HALF_FLOAT,                     // RawRGB16F
-    GL_HALF_FLOAT,                     // RawRGBA16F
-    GL_SHORT,                          // RawRG16Snorm
-    GL_UNSIGNED_SHORT,                 // RawRG16
-    GL_HALF_FLOAT,                     // RawRG16F
-    GL_FLOAT,                          // RawRG32F
-    GL_UNSIGNED_INT,                   // RawRG32UI
-    GL_UNSIGNED_INT_2_10_10_10_REV,    // RawRGB10_A2
-    GL_FLOAT,                          // RawRG11F_B10F
-    GL_UNSIGNED_INT_5_9_9_9_REV,       // RawRGB9E5
-    GL_UNSIGNED_SHORT,                 // Depth16
-    GL_FLOAT_32_UNSIGNED_INT_24_8_REV, // Depth24Stencil8
-    GL_FLOAT,                          // Depth32Stencil8
-#ifndef __ANDROID__
-    GL_UNSIGNED_INT, // Depth32
-#endif
-    0xffffffff, // BC1
-    0xffffffff, // BC2
-    0xffffffff, // BC3
-    0xffffffff, // BC4
-    0xffffffff, // BC5
-    0xffffffff, // ASTC
-    0xffffffff, // None
+    GL_UNSIGNED_BYTE,                  // BGRA8
+    GL_FLOAT,                          // R32F
+    GL_HALF_FLOAT,                     // R16F
+    GL_UNSIGNED_BYTE,                  // R8
+    GL_UNSIGNED_INT,                   // R32UI
+    GL_UNSIGNED_BYTE,                  // RG8
+    GL_FLOAT,                          // RGB32F
+    GL_FLOAT,                          // RGBA32F
+    GL_UNSIGNED_INT,                   // RGBA32UI
+    0xffffffff,                        // RGBE8
+    GL_HALF_FLOAT,                     // RGB16F
+    GL_HALF_FLOAT,                     // RGBA16F
+    GL_SHORT,                          // RG16_snorm
+    GL_UNSIGNED_SHORT,                 // RG16
+    GL_HALF_FLOAT,                     // RG16F
+    GL_FLOAT,                          // RG32F
+    GL_UNSIGNED_INT,                   // RG32UI
+    GL_UNSIGNED_INT_2_10_10_10_REV,    // RGB10_A2
+    GL_FLOAT,                          // RG11F_B10F
+    GL_UNSIGNED_INT_5_9_9_9_REV,       // RGB9_E5
+    GL_UNSIGNED_SHORT,                 // D16
+    GL_FLOAT_32_UNSIGNED_INT_24_8_REV, // D24_S8
+    GL_FLOAT,                          // D32_S8
+    GL_UNSIGNED_INT,                   // D32
+    0xffffffff,                        // BC1
+    0xffffffff,                        // BC2
+    0xffffffff,                        // BC3
+    0xffffffff,                        // BC4
+    0xffffffff,                        // BC5
+    0xffffffff                         // ASTC
 };
 static_assert(std::size(g_gl_types) == size_t(eTexFormat::_Count), "!");
 
@@ -213,8 +206,7 @@ extern const float AnisotropyLevel;
 
 static_assert(sizeof(GLsync) == sizeof(void *), "!");
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *,
-                          ILog *log)
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *, ILog *log)
     : name_(name) {
     Init(p, nullptr, log);
 }
@@ -279,7 +271,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAll
         Tex2DParams _p = p;
         _p.w = _p.h = 1;
         _p.mip_count = 1;
-        _p.format = eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RGBA8;
         InitFromRAWData(&sbuf, 0, _p, log);
         // mark it as not ready
         ready_ = false;
@@ -319,7 +311,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Mem
 
         Tex2DParams _p = p;
         _p.w = _p.h = 1;
-        _p.format = eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RGBA8;
         InitFromRAWData(sbuf, data_off, _p, log);
         // mark it as not ready
         ready_ = false;
@@ -576,22 +568,22 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, const Tex2DParams
         // Try to use least significant bits of FourCC as format
         const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
         if (val == 0x6f) {
-            _p.format = eTexFormat::RawR16F;
+            _p.format = eTexFormat::R16F;
         } else if (val == 0x70) {
-            _p.format = eTexFormat::RawRG16F;
+            _p.format = eTexFormat::RG16F;
         } else if (val == 0x71) {
-            _p.format = eTexFormat::RawRGBA16F;
+            _p.format = eTexFormat::RGBA16F;
         } else if (val == 0x72) {
-            _p.format = eTexFormat::RawR32F;
+            _p.format = eTexFormat::R32F;
         } else if (val == 0x73) {
-            _p.format = eTexFormat::RawRG32F;
+            _p.format = eTexFormat::RG32F;
         } else if (val == 0x74) {
-            _p.format = eTexFormat::RawRGBA32F;
+            _p.format = eTexFormat::RGBA32F;
         } else if (val == 0) {
             if (header.sPixelFormat.dwRGBBitCount == 8) {
-                _p.format = eTexFormat::RawR8;
+                _p.format = eTexFormat::R8;
             } else if (header.sPixelFormat.dwRGBBitCount == 16) {
-                _p.format = eTexFormat::RawRG88;
+                _p.format = eTexFormat::RG8;
                 assert(header.sPixelFormat.dwRBitMask == 0x00ff);
                 assert(header.sPixelFormat.dwGBitMask == 0xff00);
             }
@@ -898,7 +890,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const Tex2DPar
     params.block = first_block;
     initialized_mips_ = 0;
 
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.handle().id);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
     for (int i = 0; i < 6; i++) {
         const DDSHeader *header = reinterpret_cast<const DDSHeader *>(data[i].data());
@@ -990,7 +982,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const Tex2DPar
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
 
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.handle().id);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
     for (int i = 0; i < 6; ++i) {
 #ifndef NDEBUG
@@ -1252,8 +1244,8 @@ void Ren::Texture1D::Free() {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params,
-                          MemAllocators *mem_allocs, ILog *log)
+Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs,
+                          ILog *log)
     : name_(name), api_ctx_(ctx) {
     Init(params, mem_allocs, log);
 }

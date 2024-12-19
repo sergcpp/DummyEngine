@@ -22,7 +22,7 @@ const VkCompareOp g_compare_op_vk[] = {
     VK_COMPARE_OP_EQUAL,           // Equal
     VK_COMPARE_OP_GREATER,         // Greater
     VK_COMPARE_OP_LESS_OR_EQUAL,   // LEqual
-    VK_COMPARE_OP_NOT_EQUAL,       // NotEqual
+    VK_COMPARE_OP_NOT_EQUAL,       // NEqual
     VK_COMPARE_OP_GREATER_OR_EQUAL // GEqual
 };
 static_assert(std::size(g_compare_op_vk) == int(eCompareOp::_Count), "!");
@@ -71,9 +71,9 @@ Ren::Pipeline &Ren::Pipeline::operator=(Pipeline &&rhs) noexcept {
 
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     rast_state_ = std::exchange(rhs.rast_state_, {});
-    render_pass_ = std::exchange(rhs.render_pass_, nullptr);
+    render_pass_ = std::move(rhs.render_pass_);
     prog_ = std::move(rhs.prog_);
-    vtx_input_ = std::exchange(rhs.vtx_input_, nullptr);
+    vtx_input_ = std::move(rhs.vtx_input_);
     layout_ = std::exchange(rhs.layout_, {});
     handle_ = std::exchange(rhs.handle_, {});
 
@@ -103,9 +103,6 @@ void Ren::Pipeline::Destroy() {
         handle_ = VK_NULL_HANDLE;
     }
 
-    color_formats_.clear();
-    depth_format_ = eTexFormat::Undefined;
-
     rt_shader_groups_.clear();
 
     rgen_region_ = {};
@@ -116,10 +113,8 @@ void Ren::Pipeline::Destroy() {
     rt_sbt_buf_ = {};
 }
 
-bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog,
-                         const VertexInput *vtx_input, const RenderPass *render_pass,
-                         Span<const RenderTargetInfo> color_attachments, RenderTargetInfo depth_attachment,
-                         uint32_t subpass_index, ILog *log) {
+bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, VertexInputRef vtx_input,
+                         RenderPassRef render_pass, uint32_t subpass_index, ILog *log) {
     Destroy();
 
     std::string pipeline_name;
@@ -247,7 +242,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         depth_state_ci.maxDepthBounds = 1;
 
         SmallVector<VkPipelineColorBlendAttachmentState, 4> color_blend_attachment_states;
-        for (int i = 0; i < int(color_attachments.size()); ++i) {
+        for (int i = 0; i < int(render_pass->color_rts.size()); ++i) {
             auto &new_state = color_blend_attachment_states.emplace_back();
             new_state.blendEnable = rast_state.blend.enabled ? VK_TRUE : VK_FALSE;
             new_state.colorBlendOp = VK_BLEND_OP_ADD;
@@ -263,7 +258,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
         color_blend_state_ci.logicOpEnable = VK_FALSE;
         color_blend_state_ci.logicOp = VK_LOGIC_OP_CLEAR;
-        color_blend_state_ci.attachmentCount = uint32_t(color_attachments.size());
+        color_blend_state_ci.attachmentCount = uint32_t(render_pass->color_rts.size());
         color_blend_state_ci.pAttachments = color_blend_attachment_states.data();
         color_blend_state_ci.blendConstants[0] = 0;
         color_blend_state_ci.blendConstants[1] = 0;
@@ -294,7 +289,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         pipeline_create_info.pColorBlendState = &color_blend_state_ci;
         pipeline_create_info.pDynamicState = &dynamic_state_ci;
         pipeline_create_info.layout = layout_;
-        pipeline_create_info.renderPass = render_pass ? render_pass->handle() : VK_NULL_HANDLE;
+        pipeline_create_info.renderPass = render_pass ? render_pass->vk_handle() : VK_NULL_HANDLE;
         pipeline_create_info.subpass = subpass_index;
         pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
         pipeline_create_info.basePipelineIndex = 0;
@@ -304,17 +299,15 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
 
         SmallVector<VkFormat, 4> color_attachment_formats;
         if (!render_pass) {
-            for (const auto &att : color_attachments) {
-                color_formats_.push_back(att.format);
+            for (const auto &att : render_pass->color_rts) {
                 color_attachment_formats.push_back(VKFormatFromTexFormat(att.format));
             }
-            depth_format_ = depth_attachment.format;
 
             pipeline_rendering_create_info.colorAttachmentCount = int(color_attachment_formats.size());
             pipeline_rendering_create_info.pColorAttachmentFormats = color_attachment_formats.data();
-            pipeline_rendering_create_info.depthAttachmentFormat = VKFormatFromTexFormat(depth_attachment.format);
+            pipeline_rendering_create_info.depthAttachmentFormat = VKFormatFromTexFormat(render_pass->depth_rt.format);
             pipeline_rendering_create_info.stencilAttachmentFormat =
-                rast_state.stencil.enabled ? VKFormatFromTexFormat(depth_attachment.format) : VK_FORMAT_UNDEFINED;
+                rast_state.stencil.enabled ? VKFormatFromTexFormat(render_pass->depth_rt.format) : VK_FORMAT_UNDEFINED;
 
             pipeline_create_info.pNext = &pipeline_rendering_create_info;
         }
@@ -328,31 +321,11 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
     }
 
     rast_state_ = rast_state;
-    render_pass_ = render_pass;
+    render_pass_ = std::move(render_pass);
     prog_ = std::move(prog);
-    vtx_input_ = vtx_input;
+    vtx_input_ = std::move(vtx_input);
 
     return true;
-}
-
-bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog,
-                         const VertexInput *vtx_input, const RenderPass *render_pass, uint32_t subpass_index,
-                         ILog *log) {
-    return Init(api_ctx, rast_state, std::move(prog), vtx_input, render_pass, render_pass->color_rts, render_pass->depth_rt,
-                subpass_index, log);
-}
-
-bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog,
-                         const VertexInput *vtx_input, Span<const RenderTarget> color_attachments,
-                         RenderTarget depth_attachment, uint32_t subpass_index, ILog *log) {
-
-    SmallVector<RenderTargetInfo, 4> color_infos;
-    for (int i = 0; i < color_attachments.size(); ++i) {
-        color_infos.emplace_back(color_attachments[i]);
-    }
-
-    return Init(api_ctx, rast_state, prog, vtx_input, nullptr, color_infos, RenderTargetInfo{depth_attachment},
-                subpass_index, log);
 }
 
 bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, const int subgroup_size) {
@@ -566,7 +539,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, const 
                 region_to_copy.dstOffset = VkDeviceSize{0};
                 region_to_copy.size = VkDeviceSize{sbt_stage_buf.size()};
 
-                api_ctx->vkCmdCopyBuffer(cmd_buf, sbt_stage_buf.vk_handle(), rt_sbt_buf_.vk_handle(), 1, &region_to_copy);
+                api_ctx->vkCmdCopyBuffer(cmd_buf, sbt_stage_buf.vk_handle(), rt_sbt_buf_.vk_handle(), 1,
+                                         &region_to_copy);
 
                 sbt_stage_buf.resource_state = eResState::CopySrc;
                 rt_sbt_buf_.resource_state = eResState::CopyDst;

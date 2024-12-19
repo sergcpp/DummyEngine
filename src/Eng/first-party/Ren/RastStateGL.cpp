@@ -33,7 +33,7 @@ const uint32_t gl_compare_op[] = {
     GL_EQUAL,    // Equal
     GL_GREATER,  // Greater
     GL_LEQUAL,   // LEqual
-    GL_NOTEQUAL, // NotEqual
+    GL_NOTEQUAL, // NEqual
     GL_GEQUAL    // GEqual
 };
 static_assert(std::size(gl_compare_op) == size_t(eCompareOp::_Count), "!");
@@ -106,7 +106,7 @@ eCompareOp test_func_from_gl_enum(GLenum func) {
     } else if (func == GL_LEQUAL) {
         return eCompareOp::LEqual;
     } else if (func == GL_NOTEQUAL) {
-        return eCompareOp::NotEqual;
+        return eCompareOp::NEqual;
     } else if (func == GL_GEQUAL) {
         return eCompareOp::GEqual;
     }

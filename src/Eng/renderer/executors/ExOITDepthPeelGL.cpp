@@ -43,7 +43,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
 
     if (!out_depth_buf.tbos[0]) {
         out_depth_buf.tbos[0] = builder.ctx().CreateTexture1D("Depth Values Tex", out_depth_buf.ref,
-                                                              Ren::eTexFormat::RawR32UI, 0, out_depth_buf.ref->size());
+                                                              Ren::eTexFormat::R32UI, 0, out_depth_buf.ref->size());
     }
 
     if ((*p_list_)->alpha_blend_start_index == -1) {
@@ -98,13 +98,13 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
     { // Simple meshes
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SIMPLE");
 
-        glBindVertexArray(vi_simple_.gl_vao());
-        glUseProgram(pi_simple_[ultra_][0].prog()->id());
+        glBindVertexArray(pi_simple_[0]->vtx_input()->GetVAO());
+        glUseProgram(pi_simple_[0]->prog()->id());
 
         { // solid one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
+            Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -113,7 +113,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitAlphaBlend,
                                  cur_mat_id, &draws_count);
 
-            rast_state = pi_simple_[ultra_][1].rast_state();
+            rast_state = pi_simple_[1]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -122,11 +122,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitBackSided, cur_mat_id, &draws_count);
         }
-
         { // solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
+            Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -135,11 +134,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitTwoSided, cur_mat_id, &draws_count);
         }
-
         { // moving solid one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
+            Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -148,11 +146,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitMoving, cur_mat_id, &draws_count);
         }
-
         { // moving solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
+            Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -162,11 +159,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
-
         { // alpha-tested one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
+            Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -175,11 +171,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i,
                                  BDB::BitAlphaBlend | BDB::BitAlphaTest, cur_mat_id, &draws_count);
         }
-
         { // alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
+            Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -189,11 +184,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
-
         { // moving alpha-tested one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-ONE-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][0].rast_state();
+            Ren::RastState rast_state = pi_simple_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -203,11 +197,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, DrawMask, cur_mat_id,
                                  &draws_count);
         }
-
         { // moving alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[ultra_][2].rast_state();
+            Ren::RastState rast_state = pi_simple_[2]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());

@@ -3,13 +3,15 @@
 #include <cstdint>
 #include <cstring>
 
+#include <string_view>
+
 #include "MVec.h"
 
 #undef Always
 
 namespace Ren {
 enum class eCullFace : uint8_t { None, Front, Back, _Count };
-enum class eCompareOp : uint8_t { Always, Never, Less, Equal, Greater, LEqual, NotEqual, GEqual, _Count };
+enum class eCompareOp : uint8_t { Always, Never, Less, Equal, Greater, LEqual, NEqual, GEqual, _Count };
 enum class eBlendFactor : uint8_t {
     Zero,
     One,
@@ -25,8 +27,29 @@ enum class eBlendFactor : uint8_t {
 };
 enum class eStencilOp : uint8_t { Keep, Zero, Replace, Incr, Decr, Invert, _Count };
 enum class ePolygonMode : uint8_t { Fill, Line, _Count };
-enum class eDepthBiasMode : uint8_t { Disabled, Static, Dynamic };
+enum class eDepthBiasMode : uint8_t { Disabled, Static, Dynamic, _Count };
 enum class eDepthRangeMode : uint8_t { ZeroToOne, NegOneToOne, _Count };
+
+std::string_view CullFaceName(eCullFace face);
+eCullFace CullFace(std::string_view name);
+
+std::string_view CompareOpName(eCompareOp op);
+eCompareOp CompareOp(std::string_view name);
+
+std::string_view BlendFactorName(eBlendFactor op);
+eBlendFactor BlendFactor(std::string_view name);
+
+std::string_view StencilOpName(eStencilOp op);
+eStencilOp StencilOp(std::string_view name);
+
+std::string_view PolygonModeName(ePolygonMode mode);
+ePolygonMode PolygonMode(std::string_view name);
+
+std::string_view DepthBiasModeName(eDepthBiasMode mode);
+eDepthBiasMode DepthBiasMode(std::string_view name);
+
+std::string_view DepthRangeModeName(eDepthRangeMode mode);
+eDepthRangeMode DepthRangeMode(std::string_view name);
 
 union PolyState {
     struct {
@@ -186,8 +209,9 @@ struct RastState {
 
 inline bool operator==(const RastState &lhs, const RastState &rhs) {
     return lhs.poly == rhs.poly && lhs.depth == rhs.depth && lhs.blend == rhs.blend && lhs.stencil == rhs.stencil &&
-           lhs.depth_bias == rhs.depth_bias && lhs.viewport == rhs.viewport &&
-           lhs.scissor.enabled == rhs.scissor.enabled && lhs.scissor.rect == rhs.scissor.rect;
+           lhs.depth_bias == rhs.depth_bias /*&& lhs.viewport == rhs.viewport &&
+           lhs.scissor.enabled == rhs.scissor.enabled && lhs.scissor.rect == rhs.scissor.rect*/
+        ;
 }
 inline bool operator!=(const RastState &lhs, const RastState &rhs) { return !operator==(lhs, rhs); }
 inline bool operator<(const RastState &lhs, const RastState &rhs) {

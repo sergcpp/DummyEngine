@@ -20,12 +20,9 @@ class ExDebugProbes final : public FgExecutor {
         Ren::Span<const ProbeVolume> probe_volumes;
     };
 
-    ExDebugProbes(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    ExDebugProbes(PrimDraw &prim_draw, FgBuilder &builder, const DrawList &list, const ViewState *view_state,
+                  const Args *args);
 
-    void Setup(FgBuilder &builder, const DrawList &list, const ViewState *view_state, const Args *args) {
-        view_state_ = view_state;
-        args_ = args;
-    }
     void Execute(FgBuilder &builder) override;
 
   private:
@@ -35,8 +32,6 @@ class ExDebugProbes final : public FgExecutor {
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
     const Args *args_ = nullptr;
-
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     // lazily initialized data
     Ren::ProgramRef prog_probe_debug_;

@@ -29,19 +29,11 @@ class PrimDraw {
     Ren::SubAllocation sphere_vtx1_, sphere_vtx2_, sphere_ndx_;
     Ren::SubAllocation temp_vtx1_, temp_vtx2_, temp_ndx_;
 
-    Ren::VertexInput fs_quad_vtx_input_, sphere_vtx_input_;
+    Ren::VertexInputRef fs_quad_vtx_input_, sphere_vtx_input_;
 
     Ren::Context *ctx_ = nullptr;
 #if defined(REN_VK_BACKEND)
-    std::vector<Ren::RenderPass> render_passes_;
-    std::vector<Ren::Pipeline> pipelines_;
-
-    const Ren::RenderPass *FindOrCreateRenderPass(Ren::RenderTarget depth_target,
-                                                  Ren::Span<const Ren::RenderTarget> color_targets);
-    const Ren::Pipeline *FindOrCreatePipeline(ePrim prim, const Ren::ProgramRef &p, const Ren::RenderPass *rp,
-                                              Ren::RenderTarget depth_target,
-                                              Ren::Span<const Ren::RenderTarget> color_targets,
-                                              const Ren::RastState &rs);
+    std::vector<Ren::PipelineRef> pipelines_;
 #endif
     std::vector<Ren::Framebuffer> framebuffers_;
 

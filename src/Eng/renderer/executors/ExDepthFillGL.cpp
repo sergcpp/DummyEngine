@@ -117,13 +117,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     { // solid meshes
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "STATIC-SOLID-SIMPLE");
 
-        glBindVertexArray(vi_solid_.gl_vao());
-        glUseProgram(pi_static_solid_[0].prog()->id());
+        glBindVertexArray(pi_static_solid_[0]->vtx_input()->GetVAO());
+        glUseProgram(pi_static_solid_[0]->prog()->id());
 
         { // one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-            Ren::RastState rast_state = pi_static_solid_[0].rast_state();
+            Ren::RastState rast_state = pi_static_solid_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -131,7 +131,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, 0u, &draws_count);
 
-            rast_state = pi_static_solid_[1].rast_state();
+            rast_state = pi_static_solid_[1]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -143,7 +143,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         { // two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-            Ren::RastState rast_state = pi_static_solid_[2].rast_state();
+            Ren::RastState rast_state = pi_static_solid_[2]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -158,19 +158,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     { // moving solid meshes (depth and velocity)
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "STATIC-SOLID-MOVING");
 
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
-            glUseProgram(pi_moving_solid_[0].prog()->id());
-        } else {
-            // Write depth only
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
-        }
+        glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
+        glUseProgram(pi_moving_solid_[0]->prog()->id());
 
         { // one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-            Ren::RastState rast_state = pi_moving_solid_[0].rast_state();
+            Ren::RastState rast_state = pi_moving_solid_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -182,7 +176,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         { // two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-            Ren::RastState rast_state = pi_moving_solid_[2].rast_state();
+            Ren::RastState rast_state = pi_moving_solid_[2]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -200,13 +194,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "STATIC-ALPHA-SIMPLE");
 
             glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
-            glBindVertexArray(vi_transp_.gl_vao());
-            glUseProgram(pi_static_transp_[0].prog()->id());
+            glBindVertexArray(pi_static_transp_[0]->vtx_input()->GetVAO());
+            glUseProgram(pi_static_transp_[0]->prog()->id());
 
             { // one-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-                Ren::RastState rast_state = pi_static_transp_[0].rast_state();
+                Ren::RastState rast_state = pi_static_transp_[0]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -219,7 +213,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             { // two-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-                Ren::RastState rast_state = pi_static_transp_[2].rast_state();
+                Ren::RastState rast_state = pi_static_transp_[2]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -234,19 +228,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         { // moving meshes (depth and velocity)
             Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "STATIC-ALPHA-MOVING");
 
-            if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-                // Write depth and velocity
-                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
-                glUseProgram(pi_moving_transp_[0].prog()->id());
-            } else {
-                // Write depth only
-                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
-            }
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
+            glUseProgram(pi_moving_transp_[0]->prog()->id());
 
             { // one-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-                Ren::RastState rast_state = pi_moving_transp_[0].rast_state();
+                Ren::RastState rast_state = pi_moving_transp_[0]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -260,7 +248,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             { // two-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-                Ren::RastState rast_state = pi_moving_transp_[2].rast_state();
+                Ren::RastState rast_state = pi_moving_transp_[2]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -275,21 +263,15 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
     { // static solid vegetation
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-SOLID-SIMPLE");
-        glBindVertexArray(vi_vege_solid_.gl_vao());
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            // Write depth and velocity
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
-            glUseProgram(pi_vege_static_solid_vel_[0].prog()->id());
-        } else {
-            // Write depth only
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
-            glUseProgram(pi_vege_static_solid_[0].prog()->id());
-        }
+        glBindVertexArray(pi_vege_static_solid_[0]->vtx_input()->GetVAO());
+
+        glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
+        glUseProgram(pi_vege_static_solid_[0]->prog()->id());
 
         { // one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-            Ren::RastState rast_state = pi_vege_static_solid_vel_[0].rast_state();
+            Ren::RastState rast_state = pi_vege_static_solid_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -301,7 +283,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         { // two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-            Ren::RastState rast_state = pi_vege_static_solid_vel_[1].rast_state();
+            Ren::RastState rast_state = pi_vege_static_solid_[1]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -314,16 +296,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
     { // moving solid vegetation (depth and velocity)
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-SOLID-MOVING");
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            glUseProgram(pi_vege_moving_solid_vel_[0].prog()->id());
-        } else {
-            glUseProgram(pi_vege_static_solid_[0].prog()->id());
-        }
+
+        glUseProgram(pi_vege_moving_solid_[0]->prog()->id());
 
         { // one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-            Ren::RastState rast_state = pi_vege_moving_solid_vel_[0].rast_state();
+            Ren::RastState rast_state = pi_vege_moving_solid_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -336,7 +315,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         { // two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-            Ren::RastState rast_state = pi_vege_moving_solid_vel_[1].rast_state();
+            Ren::RastState rast_state = pi_vege_moving_solid_[1]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -352,17 +331,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
         { // static alpha-tested vegetation (depth and velocity)
             Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-ALPHA-SIMPLE");
-            glBindVertexArray(vi_vege_transp_.gl_vao());
-            if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-                glUseProgram(pi_vege_static_transp_vel_[0].prog()->id());
-            } else {
-                glUseProgram(pi_vege_static_transp_[0].prog()->id());
-            }
+            glBindVertexArray(pi_vege_static_transp_[0]->vtx_input()->GetVAO());
+            glUseProgram(pi_vege_static_transp_[0]->prog()->id());
 
             { // one-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-                Ren::RastState rast_state = pi_vege_static_transp_vel_[0].rast_state();
+                Ren::RastState rast_state = pi_vege_static_transp_[0]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -376,7 +351,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             { // two-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-                Ren::RastState rast_state = pi_vege_static_transp_vel_[1].rast_state();
+                Ren::RastState rast_state = pi_vege_static_transp_[1]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -390,16 +365,12 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
         { // moving alpha-tested vegetation (depth and velocity)
             Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-ALPHA-MOVING");
-            if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-                glUseProgram(pi_vege_moving_transp_vel_[0].prog()->id());
-            } else {
-                glUseProgram(pi_vege_static_transp_[0].prog()->id());
-            }
+            glUseProgram(pi_vege_moving_transp_[0]->prog()->id());
 
             { // one-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-                Ren::RastState rast_state = pi_vege_moving_transp_vel_[0].rast_state();
+                Ren::RastState rast_state = pi_vege_moving_transp_[0]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -413,7 +384,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             { // two-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-                Ren::RastState rast_state = pi_vege_moving_transp_vel_[1].rast_state();
+                Ren::RastState rast_state = pi_vege_moving_transp_[1]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -428,18 +399,14 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
     { // solid skinned meshes (depth and velocity)
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-SOLID-SIMPLE");
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            glBindVertexArray(vi_skin_solid_.gl_vao());
-            glUseProgram(pi_skin_static_solid_vel_[0].prog()->id());
-        } else {
-            glBindVertexArray(vi_solid_.gl_vao());
-            glUseProgram(pi_static_solid_[0].prog()->id());
-        }
+
+        glBindVertexArray(pi_skin_static_solid_[0]->vtx_input()->GetVAO());
+        glUseProgram(pi_skin_static_solid_[0]->prog()->id());
 
         { // one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-            Ren::RastState rast_state = pi_skin_static_solid_vel_[0].rast_state();
+            Ren::RastState rast_state = pi_skin_static_solid_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -451,7 +418,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         { // two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-            Ren::RastState rast_state = pi_skin_static_solid_vel_[1].rast_state();
+            Ren::RastState rast_state = pi_skin_static_solid_[1]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -464,16 +431,12 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
     { // moving solid skinned (depth and velocity)
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-SOLID-MOVING");
-        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-            glUseProgram(pi_skin_moving_solid_vel_[0].prog()->id());
-        } else {
-            glUseProgram(pi_skin_static_solid_[0].prog()->id());
-        }
+        glUseProgram(pi_skin_moving_solid_[0]->prog()->id());
 
         { // one-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-            Ren::RastState rast_state = pi_skin_moving_solid_vel_[0].rast_state();
+            Ren::RastState rast_state = pi_skin_moving_solid_[0]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -486,7 +449,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         { // two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-            Ren::RastState rast_state = pi_skin_moving_solid_vel_[1].rast_state();
+            Ren::RastState rast_state = pi_skin_moving_solid_[1]->rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -502,17 +465,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
         { // simple alpha-tested skinned (depth and velocity)
             Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-ALPHA-SIMPLE");
-            glBindVertexArray(vi_skin_transp_.gl_vao());
-            if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-                glUseProgram(pi_skin_static_transp_vel_[0].prog()->id());
-            } else {
-                glUseProgram(pi_skin_static_transp_[0].prog()->id());
-            }
+            glBindVertexArray(pi_skin_static_transp_[0]->vtx_input()->GetVAO());
+            glUseProgram(pi_skin_static_transp_[0]->prog()->id());
 
             { // one-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-                Ren::RastState rast_state = pi_skin_static_transp_vel_[0].rast_state();
+                Ren::RastState rast_state = pi_skin_static_transp_[0]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -526,7 +485,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             { // two-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-                Ren::RastState rast_state = pi_skin_static_transp_vel_[1].rast_state();
+                Ren::RastState rast_state = pi_skin_static_transp_[1]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -540,16 +499,12 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
         { // moving alpha-tested skinned (depth and velocity)
             Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-ALPHA-MOVING");
-            if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
-                glUseProgram(pi_skin_moving_transp_vel_[0].prog()->id());
-            } else {
-                glUseProgram(pi_skin_static_transp_[0].prog()->id());
-            }
+            glUseProgram(pi_skin_moving_transp_[0]->prog()->id());
 
             { // one-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
-                Ren::RastState rast_state = pi_skin_moving_transp_vel_[0].rast_state();
+                Ren::RastState rast_state = pi_skin_moving_transp_[0]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
@@ -563,7 +518,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             { // two-sided
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
-                Ren::RastState rast_state = pi_skin_moving_transp_vel_[1].rast_state();
+                Ren::RastState rast_state = pi_skin_moving_transp_[1]->rast_state();
                 rast_state.viewport[2] = view_state_->act_res[0];
                 rast_state.viewport[3] = view_state_->act_res[1];
                 rast_state.ApplyChanged(builder.rast_state());

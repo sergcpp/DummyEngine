@@ -95,14 +95,14 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
     { // draw opaque objects
         Ren::DebugMarker _(api_ctx, ctx.current_cmd_buf(), "STATIC-SOLID");
 
-        glBindVertexArray(vi_depth_pass_solid_.gl_vao());
+        glBindVertexArray(pi_solid_[0]->vtx_input()->GetVAO());
 
-        const uint32_t BitFlags[] = {0, BDB::BitBackSided, BDB::BitTwoSided};
+        static const uint32_t BitFlags[] = {0, BDB::BitBackSided, BDB::BitTwoSided};
         for (int pi = 0; pi < 3; ++pi) {
-            glUseProgram(pi_solid_[pi].prog()->id());
+            glUseProgram(pi_solid_[pi]->prog()->id());
 
             Ren::RastState rast_state = builder.rast_state();
-            rast_state.poly.cull = pi_solid_[pi].rast_state().poly.cull;
+            rast_state.poly.cull = pi_solid_[pi]->rast_state().poly.cull;
             rast_state.ApplyChanged(builder.rast_state());
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
@@ -134,7 +134,7 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
     }
 
     // draw opaque vegetation
-    /*glBindVertexArray(vi_depth_pass_vege_solid_.gl_vao());
+    /*glBindVertexArray(vi_depth_pass_vege_solid_->GetVAO());
     glUseProgram(pi_vege_solid_.prog()->id());
 
     for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
@@ -172,15 +172,15 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
     { // draw transparent (alpha-tested) objects
         Ren::DebugMarker _(api_ctx, ctx.current_cmd_buf(), "STATIC-ALPHA");
 
-        glBindVertexArray(vi_depth_pass_transp_.gl_vao());
+        glBindVertexArray(pi_transp_[0]->vtx_input()->GetVAO());
 
-        const uint32_t BitFlags[] = {BDB::BitAlphaTest, BDB::BitAlphaTest | BDB::BitBackSided,
-                                     BDB::BitAlphaTest | BDB::BitTwoSided};
+        static const uint32_t BitFlags[] = {BDB::BitAlphaTest, BDB::BitAlphaTest | BDB::BitBackSided,
+                                            BDB::BitAlphaTest | BDB::BitTwoSided};
         for (int pi = 0; pi < 3; ++pi) {
-            glUseProgram(pi_transp_[pi].prog()->id());
+            glUseProgram(pi_transp_[pi]->prog()->id());
 
             Ren::RastState rast_state = builder.rast_state();
-            rast_state.poly.cull = pi_transp_[pi].rast_state().poly.cull;
+            rast_state.poly.cull = pi_transp_[pi]->rast_state().poly.cull;
             rast_state.ApplyChanged(builder.rast_state());
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
@@ -215,7 +215,7 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
     }
 
     // draw transparent (alpha-tested) vegetation
-    /*glBindVertexArray(vi_depth_pass_vege_transp_.gl_vao());
+    /*glBindVertexArray(vi_depth_pass_vege_transp_->GetVAO());
     glUseProgram(pi_vege_transp_.prog()->id());
 
     for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {

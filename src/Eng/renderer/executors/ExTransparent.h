@@ -12,8 +12,8 @@ class ExTransparent final : public FgExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::VertexInput draw_pass_vi_;
-    Ren::RenderPass rp_transparent_;
+    Ren::VertexInputRef draw_pass_vi_;
+    Ren::RenderPassRef rp_transparent_;
     Ren::Framebuffer transparent_draw_fb_[Ren::MaxFramesInFlight][2], color_only_fb_[2], resolved_fb_, moments_fb_;
     int fb_to_use_ = 0;
 #if defined(REN_VK_BACKEND)

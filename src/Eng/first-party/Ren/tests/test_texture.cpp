@@ -28,7 +28,7 @@ void test_texture() {
         const Tex2DParams &tp = t_ref->params;
         require(tp.w == 1);
         require(tp.h == 1);
-        require(tp.format == eTexFormat::RawRGBA8888);
+        require(tp.format == eTexFormat::RGBA8);
         require(!t_ref->ready());
 
         {
@@ -43,7 +43,7 @@ void test_texture() {
             const Tex2DParams &tp = t_ref3->params;
             require(tp.w == 2);
             require(tp.h == 2);
-            require(tp.format == eTexFormat::RawRGBA8888);
+            require(tp.format == eTexFormat::RGBA8);
             require(t_ref3->ready());
         }
     }

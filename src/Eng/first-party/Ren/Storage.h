@@ -103,9 +103,10 @@ template <typename T> class SortedStorage : public SparseArray<T> {
 
     bool CheckUnique() const {
         bool unique = true;
-        for (auto it1 = this->begin(); it1 != this->end() && unique; ++it1) {
-            for (auto it2 = std::next(it1); it2 != this->end() && unique; ++it2) {
-                unique &= (*it1 != *it2);
+        for (auto it1 = std::begin(sorted_items_); it1 != std::end(sorted_items_) && unique; ++it1) {
+            auto it2 = std::next(it1);
+            if (it2 != std::end(sorted_items_)) {
+                unique &= (*this)[*it1] < (*this)[*it2];
             }
         }
         return unique;
@@ -169,7 +170,7 @@ template <typename T, typename StorageType> class StrongRef {
 
   public:
     StrongRef() : storage_(nullptr), index_(0) {}
-    StrongRef(StorageType *storage, uint32_t index) : storage_(storage), index_(index) {
+    StrongRef(StorageType *storage, const uint32_t index) : storage_(storage), index_(index) {
         if (storage_) {
             const T &p = storage_->at(index_);
             ++p.ctrl_->strong_refs;
@@ -304,7 +305,7 @@ template <typename T, typename StorageType> class WeakRef {
 
   public:
     WeakRef() : storage_(nullptr), ctrl_(nullptr), index_(0) {}
-    WeakRef(StorageType *storage, uint32_t index) : storage_(storage), ctrl_(nullptr), index_(index) {
+    WeakRef(StorageType *storage, const uint32_t index) : storage_(storage), ctrl_(nullptr), index_(index) {
         assert(storage);
         const T &p = storage_->at(index_);
         ctrl_ = p.ctrl_;
@@ -419,11 +420,23 @@ template <typename T, typename StorageType> class WeakRef {
     uint32_t index() const { return index_; }
 
     bool operator==(const WeakRef &rhs) const { return ctrl_ == rhs.ctrl_ && index_ == rhs.index_; }
-    bool operator!=(const WeakRef &rhs) const { return !operator==(rhs); }
-    bool operator==(const StrongRef<T, StorageType> &rhs) const {
-        return storage_ == rhs.storage_ && index_ == rhs.index_;
+    bool operator!=(const WeakRef &rhs) const { return ctrl_ != rhs.ctrl_ || index_ != rhs.index_; }
+    bool operator<(const WeakRef &rhs) const {
+        if (ctrl_ < rhs.ctrl_) {
+            return true;
+        } else if (ctrl_ == rhs.ctrl_) {
+            return index_ < rhs.index_;
+        }
+        return false;
     }
-    bool operator!=(const StrongRef<T, StorageType> &rhs) const { return !operator==(rhs); }
+    bool operator==(const StrongRef<T, StorageType> &rhs) const {
+        const T &p = rhs.storage_->at(rhs.index_);
+        return ctrl_ == p.ctrl_ && index_ == rhs.index_;
+    }
+    bool operator!=(const StrongRef<T, StorageType> &rhs) const {
+        const T &p = rhs.storage_->at(rhs.index_);
+        return ctrl_ != p.ctrl_ || index_ != rhs.index_;
+    }
 
     void Release() {
         if (ctrl_) {

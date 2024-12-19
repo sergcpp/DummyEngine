@@ -48,42 +48,39 @@ static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count), "!");
 
 const int g_per_pixel_data_len[] = {
     -1, // Undefined
-    3,  // RawRGB888
-    4,  // RawRGBA8888
-    4,  // RawRGBA8888Snorm
-    4,  // RawBGRA8888
-    4,  // RawR32F
-    2,  // RawR16F
-    1,  // RawR8
-    4,  // RawR32UI
-    2,  // RawRG88
-    12, // RawRGB32F
-    16, // RawRGBA32F
-    16, // RawRGBA32UI
-    4,  // RawRGBE8888
-    6,  // RawRGB16F
-    8,  // RawRGBA16F
-    4,  // RawRG16Snorm
-    4,  // RawRG16
-    4,  // RawRG16F
-    8,  // RawRG32F
-    8,  // RawRG32UI
-    4,  // RawRGB10_A2
-    4,  // RawRG11F_B10F
-    4,  // RawRGB9E5
-    2,  // Depth16
-    4,  // Depth24Stencil8
-    5,  // Depth32Stencil8
-#ifndef __ANDROID__
-    4, // Depth32
-#endif
+    3,  // RGB8
+    4,  // RGBA8
+    4,  // RGBA8_snorm
+    4,  // BGRA8
+    4,  // R32F
+    2,  // R16F
+    1,  // R8
+    4,  // R32UI
+    2,  // RG8
+    12, // RGB32F
+    16, // RGBA32F
+    16, // RGBA32UI
+    4,  // RGBE8
+    6,  // RGB16F
+    8,  // RGBA16F
+    4,  // RG16_snorm
+    4,  // RG16
+    4,  // RG16F
+    8,  // RG32F
+    8,  // RG32UI
+    4,  // RGB10_A2
+    4,  // RG11F_B10F
+    4,  // RGB9_E5
+    2,  // D16
+    4,  // D24_S8
+    5,  // D32_S8
+    4,  // D32
     -1, // BC1
     -1, // BC2
     -1, // BC3
     -1, // BC4
     -1, // BC5
-    -1, // ASTC
-    -1  // None
+    -1  // ASTC
 };
 static_assert(std::size(g_per_pixel_data_len) == int(eTexFormat::_Count), "!");
 } // namespace Ren
@@ -342,9 +339,9 @@ void Ren::ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params) {
         if (hdr.sPixelFormat.dwFlags & DDPF_RGB) {
             // Uncompressed
             if (hdr.sPixelFormat.dwRGBBitCount == 32) {
-                params->format = eTexFormat::RawRGBA8888;
+                params->format = eTexFormat::RGBA8;
             } else if (hdr.sPixelFormat.dwRGBBitCount == 24) {
-                params->format = eTexFormat::RawRGB888;
+                params->format = eTexFormat::RGB8;
             } else {
                 params->format = eTexFormat::Undefined;
             }

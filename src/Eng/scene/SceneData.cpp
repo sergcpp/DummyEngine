@@ -36,7 +36,12 @@ void Eng::PersistentGpuData::Release() {
     pipelines.clear();
     instance_buf = {};
     materials_buf = {};
-    vertex_buf1 = vertex_buf2 = skin_vertex_buf = delta_buf = indices_buf = {};
+    //vertex_buf1 = vertex_buf2 = skin_vertex_buf = delta_buf = indices_buf = {};
+    vertex_buf1->Free();
+    vertex_buf2->Free();
+    skin_vertex_buf->Free();
+    delta_buf->Free();
+    indices_buf->Free();
     stoch_lights_buf = stoch_lights_nodes_buf = {};
     rt_tlas_buf = rt_sh_tlas_buf = {};
     hwrt = {};

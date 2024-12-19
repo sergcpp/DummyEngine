@@ -11,9 +11,22 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/blit_postprocess_interface.h"
 
-void Eng::ExPostprocess::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const ViewState *view_state, const Args *args)
+    : prim_draw_(prim_draw) {
+    view_state_ = view_state;
+    args_ = args;
 
+    blit_postprocess_prog_[0][0] = sh.LoadProgram("internal/blit_postprocess.vert.glsl",
+                                                  "internal/blit_postprocess@ABERRATION;PURKINJE.frag.glsl");
+    blit_postprocess_prog_[0][1] = sh.LoadProgram(
+        "internal/blit_postprocess.vert.glsl", "internal/blit_postprocess@ABERRATION;PURKINJE;TWO_TARGETS.frag.glsl");
+    blit_postprocess_prog_[1][0] = sh.LoadProgram("internal/blit_postprocess.vert.glsl",
+                                                  "internal/blit_postprocess@ABERRATION;PURKINJE;LUT.frag.glsl");
+    blit_postprocess_prog_[1][1] = sh.LoadProgram("internal/blit_postprocess.vert.glsl",
+                                                  "internal/blit_postprocess@ABERRATION;LUT;TWO_TARGETS.frag.glsl");
+}
+
+void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     FgAllocTex &exposure_tex = builder.GetReadTexture(args_->exposure_tex);
     FgAllocTex &color_tex = builder.GetReadTexture(args_->color_tex);
     FgAllocTex &bloom_tex = builder.GetReadTexture(args_->bloom_tex);
@@ -56,20 +69,4 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_postprocess_prog_[args_->tonemap_mode == 2][output_tex2 != nullptr],
                         {}, render_targets, rast_state, builder.rast_state(), bindings, &uniform_params,
                         sizeof(BlitPostprocess::Params), 0);
-}
-
-void Eng::ExPostprocess::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-        blit_postprocess_prog_[0][0] = sh.LoadProgram("internal/blit_postprocess.vert.glsl",
-                                                      "internal/blit_postprocess@ABERRATION;PURKINJE.frag.glsl");
-        blit_postprocess_prog_[0][1] =
-            sh.LoadProgram("internal/blit_postprocess.vert.glsl",
-                           "internal/blit_postprocess@ABERRATION;PURKINJE;TWO_TARGETS.frag.glsl");
-        blit_postprocess_prog_[1][0] = sh.LoadProgram("internal/blit_postprocess.vert.glsl",
-                                                      "internal/blit_postprocess@ABERRATION;PURKINJE;LUT.frag.glsl");
-        blit_postprocess_prog_[1][1] = sh.LoadProgram("internal/blit_postprocess.vert.glsl",
-                                                      "internal/blit_postprocess@ABERRATION;LUT;TWO_TARGETS.frag.glsl");
-
-        initialized = true;
-    }
 }

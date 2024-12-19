@@ -104,8 +104,8 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ui
 
 void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, const Buffer &init_buf,
                                   const uint32_t init_off, CommandBuffer cmd_buf) {
-    glBindBuffer(GL_COPY_READ_BUFFER, GLuint(init_buf.handle_.id));
-    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
+    glBindBuffer(GL_COPY_READ_BUFFER, GLuint(init_buf.handle_.buf));
+    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.buf));
 
     glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, GLintptr(init_off), GLintptr(offset),
                         GLsizeiptr(size));
@@ -148,31 +148,32 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
     glBufferData(g_gl_buf_targets[int(type_)], size_, nullptr, GetGLBufUsage(type_));
 #endif
 
-    if (handle_.id) {
-        glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
+    if (handle_.buf) {
+        glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.buf));
         glBindBuffer(GL_COPY_WRITE_BUFFER, gl_buffer);
 
         if (keep_content) {
             glCopyBufferSubData(g_gl_buf_targets[int(type_)], GL_COPY_WRITE_BUFFER, 0, 0, old_size);
         }
 
-        auto old_buffer = GLuint(handle_.id);
+        auto old_buffer = GLuint(handle_.buf);
         glDeleteBuffers(1, &old_buffer);
 
         glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
     }
 
-    handle_.id = uint32_t(gl_buffer);
+    handle_.buf = uint32_t(gl_buffer);
     handle_.generation = g_GenCounter++;
 }
 
 void Ren::Buffer::Free() {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
-    if (handle_.id) {
-        auto gl_buf = GLuint(handle_.id);
+    if (handle_.buf) {
+        auto gl_buf = GLuint(handle_.buf);
         glDeleteBuffers(1, &gl_buf);
         handle_ = {};
         size_ = 0;
+        sub_alloc_ = {};
     }
 }
 
@@ -195,7 +196,7 @@ uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const
         buf_map_range_flags |= GLbitfield(GL_MAP_READ_BIT);
     }
 
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.buf));
     auto *ret = (uint8_t *)glMapBufferRange(g_gl_buf_targets[int(type_)], GLintptr(offset), GLsizeiptr(size),
                                             buf_map_range_flags);
     glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
@@ -208,7 +209,7 @@ uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const
 
 void Ren::Buffer::Unmap() {
     assert(mapped_offset_ != 0xffffffff && mapped_ptr_);
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.buf));
     glUnmapBuffer(g_gl_buf_targets[int(type_)]);
     glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
     mapped_offset_ = 0xffffffff;
@@ -216,14 +217,14 @@ void Ren::Buffer::Unmap() {
 }
 
 void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, CommandBuffer cmd_buf) {
-    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
+    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.buf));
     glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED,
                          GL_UNSIGNED_INT, &data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
 void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf) {
-    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
+    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.buf));
     glBufferSubData(GL_COPY_WRITE_BUFFER, GLintptr(dst_offset), size, data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }

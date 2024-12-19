@@ -21,17 +21,11 @@ void Eng::ExSampleLights::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         };
 
         if (ctx.capabilities.hwrt) {
-            Ren::ProgramRef prog = sh.LoadProgram(subgroup_select("internal/sample_lights@HWRT.comp.glsl",
-                                                                  "internal/sample_lights@HWRT;NO_SUBGROUP.comp.glsl"));
-            if (!pi_sample_lights_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
-                ctx.log()->Error("ExSampleLights: Failed to initialize pipeline!");
-            }
+            pi_sample_lights_ = sh.LoadPipeline(subgroup_select("internal/sample_lights@HWRT.comp.glsl",
+                                                                "internal/sample_lights@HWRT;NO_SUBGROUP.comp.glsl"));
         } else {
-            Ren::ProgramRef prog = sh.LoadProgram(
+            pi_sample_lights_ = sh.LoadPipeline(
                 subgroup_select("internal/sample_lights.comp.glsl", "internal/sample_lights@NO_SUBGROUP.comp.glsl"));
-            if (!pi_sample_lights_.Init(ctx.api_ctx(), std::move(prog), ctx.log())) {
-                ctx.log()->Error("ExSampleLights: Failed to initialize pipeline!");
-            }
         }
         initialized_ = true;
     }

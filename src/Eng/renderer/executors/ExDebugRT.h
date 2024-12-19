@@ -42,20 +42,13 @@ class ExDebugRT final : public FgExecutor {
         FgResRef output_tex;
     };
 
-    void Setup(FgBuilder &builder, const ViewState *view_state, const Ren::IAccStructure *tlas_to_debug,
-               const BindlessTextureData *bindless_tex, const Args *args) {
-        view_state_ = view_state;
-        tlas_to_debug_ = tlas_to_debug;
-        bindless_tex_ = bindless_tex;
-        args_ = args;
-    }
+    ExDebugRT(FgBuilder &builder, const ViewState *view_state, const Ren::IAccStructure *tlas_to_debug,
+              const BindlessTextureData *bindless_tex, const Args *args);
+
     void Execute(FgBuilder &builder) override;
 
   private:
-    bool initialized = false;
-
-    // lazily initialized data
-    Ren::Pipeline pi_debug_hwrt_, pi_debug_swrt_;
+    Ren::PipelineRef pi_debug_hwrt_, pi_debug_swrt_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
@@ -64,8 +57,6 @@ class ExDebugRT final : public FgExecutor {
     int depth_w_ = 0, depth_h_ = 0;
 
     const Args *args_ = nullptr;
-
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     void Execute_HWRT(FgBuilder &builder);
     void Execute_SWRT(FgBuilder &builder);

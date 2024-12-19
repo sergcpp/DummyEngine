@@ -111,17 +111,14 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
 
     { // setup quad vertices
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), VTX_POS_LOC, 2, Ren::eType::Float32, 0, quad_vtx1_.offset},
-            {vtx_buf1->handle(), VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
-             uint32_t(quad_vtx1_.offset + 8 * sizeof(float))}};
-
-        fs_quad_vtx_input_.Setup(attribs, ndx_buf);
+            {vtx_buf1, VTX_POS_LOC, 2, Ren::eType::Float32, 0, quad_vtx1_.offset},
+            {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float32, 0, uint32_t(quad_vtx1_.offset + 8 * sizeof(float))}};
+        fs_quad_vtx_input_ = ctx_->LoadVertexInput(attribs, ndx_buf);
     }
 
     { // setup sphere vertices
-        const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, 0, sphere_vtx1_.offset}};
-        sphere_vtx_input_.Setup(attribs, ndx_buf);
+        const Ren::VtxAttribDesc attribs[] = {{vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, 0, sphere_vtx1_.offset}};
+        sphere_vtx_input_ = ctx_->LoadVertexInput(attribs, ndx_buf);
     }
 
     return true;

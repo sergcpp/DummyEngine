@@ -246,7 +246,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
 
         if (!instance_indices_buf.tbos[0]) {
             instance_indices_buf.tbos[0] =
-                ctx.CreateTexture1D("Instance Indices TBO", instance_indices_buf.ref, Ren::eTexFormat::RawRG32UI, 0,
+                ctx.CreateTexture1D("Instance Indices TBO", instance_indices_buf.ref, Ren::eTexFormat::RG32UI, 0,
                                     InstanceIndicesBufChunkSize);
         }
 
@@ -514,7 +514,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!cells_buf.tbos[0]) {
             cells_buf.tbos[0] =
-                ctx.CreateTexture1D("Cells TBO", cells_buf.ref, Ren::eTexFormat::RawRG32UI, 0, CellsBufChunkSize);
+                ctx.CreateTexture1D("Cells TBO", cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*cells_buf.ref, 0, p_list_->cells.count * sizeof(CellData), p_list_->cells.data,
@@ -523,7 +523,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!rt_cells_buf.tbos[0]) {
             rt_cells_buf.tbos[0] =
-                ctx.CreateTexture1D("RT Cells TBO", rt_cells_buf.ref, Ren::eTexFormat::RawRG32UI, 0, CellsBufChunkSize);
+                ctx.CreateTexture1D("RT Cells TBO", rt_cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*rt_cells_buf.ref, 0, p_list_->rt_cells.count * sizeof(CellData), p_list_->rt_cells.data,
@@ -532,7 +532,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!lights_buf.tbos[0]) {
             lights_buf.tbos[0] =
-                ctx.CreateTexture1D("Lights TBO", lights_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, LightsBufChunkSize);
+                ctx.CreateTexture1D("Lights TBO", lights_buf.ref, Ren::eTexFormat::RGBA32F, 0, LightsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*lights_buf.ref, 0, uint32_t(p_list_->lights.size() * sizeof(LightItem)),
@@ -541,7 +541,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!decals_buf.tbos[0]) {
             decals_buf.tbos[0] =
-                ctx.CreateTexture1D("Decals TBO", decals_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, DecalsBufChunkSize);
+                ctx.CreateTexture1D("Decals TBO", decals_buf.ref, Ren::eTexFormat::RGBA32F, 0, DecalsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*decals_buf.ref, 0, uint32_t(p_list_->decals.size() * sizeof(DecalItem)),
@@ -550,7 +550,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!items_buf.tbos[0]) {
             items_buf.tbos[0] =
-                ctx.CreateTexture1D("Items TBO", items_buf.ref, Ren::eTexFormat::RawRG32UI, 0, ItemsBufChunkSize);
+                ctx.CreateTexture1D("Items TBO", items_buf.ref, Ren::eTexFormat::RG32UI, 0, ItemsBufChunkSize);
         }
 
         if (p_list_->items.count) {
@@ -565,7 +565,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!rt_items_buf.tbos[0]) {
             rt_items_buf.tbos[0] =
-                ctx.CreateTexture1D("RT Items TBO", rt_items_buf.ref, Ren::eTexFormat::RawRG32UI, 0, ItemsBufChunkSize);
+                ctx.CreateTexture1D("RT Items TBO", rt_items_buf.ref, Ren::eTexFormat::RG32UI, 0, ItemsBufChunkSize);
         }
 
         if (p_list_->rt_items.count) {
@@ -597,7 +597,7 @@ void Eng::Renderer::InitSkyResources() {
                 Ren::Tex2DParams p;
                 p.w = SKY_TRANSMITTANCE_LUT_W;
                 p.h = SKY_TRANSMITTANCE_LUT_H;
-                p.format = Ren::eTexFormat::RawRGBA32F;
+                p.format = Ren::eTexFormat::RGBA32F;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
                 p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -617,13 +617,13 @@ void Eng::Renderer::InitSkyResources() {
                 }
 
                 sky_transmittance_lut_->SetSubImage(
-                    0, 0, 0, SKY_TRANSMITTANCE_LUT_W, SKY_TRANSMITTANCE_LUT_H, Ren::eTexFormat::RawRGBA32F, stage_buf,
+                    0, 0, 0, SKY_TRANSMITTANCE_LUT_W, SKY_TRANSMITTANCE_LUT_H, Ren::eTexFormat::RGBA32F, stage_buf,
                     ctx_.current_cmd_buf(), 0, 4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
             }
             { // Init multiscatter LUT
                 Ren::Tex2DParams p;
                 p.w = p.h = SKY_MULTISCATTER_LUT_RES;
-                p.format = Ren::eTexFormat::RawRGBA32F;
+                p.format = Ren::eTexFormat::RGBA32F;
                 p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
                 p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -646,7 +646,7 @@ void Eng::Renderer::InitSkyResources() {
                 }
 
                 sky_multiscatter_lut_->SetSubImage(
-                    0, 0, 0, SKY_MULTISCATTER_LUT_RES, SKY_MULTISCATTER_LUT_RES, Ren::eTexFormat::RawRGBA32F, stage_buf,
+                    0, 0, 0, SKY_MULTISCATTER_LUT_RES, SKY_MULTISCATTER_LUT_RES, Ren::eTexFormat::RGBA32F, stage_buf,
                     ctx_.current_cmd_buf(), 0, 4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
             }
             { // Init Moon texture
@@ -720,7 +720,7 @@ void Eng::Renderer::InitSkyResources() {
                 params.w = header.dwWidth;
                 params.h = header.dwHeight;
                 params.d = header.dwDepth;
-                params.format = Ren::eTexFormat::RawR8;
+                params.format = Ren::eTexFormat::R8;
                 params.usage = (Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
                 params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 params.sampling.wrap = Ren::eTexWrap::Repeat;
@@ -735,7 +735,7 @@ void Eng::Renderer::InitSkyResources() {
                 stage_buf.Unmap();
 
                 sky_noise3d_tex_->SetSubImage(0, 0, 0, int(header.dwWidth), int(header.dwHeight), int(header.dwDepth),
-                                              Ren::eTexFormat::RawR8, stage_buf, ctx_.current_cmd_buf(), 0,
+                                              Ren::eTexFormat::R8, stage_buf, ctx_.current_cmd_buf(), 0,
                                               int(data_len));
             }
         }
@@ -801,7 +801,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 Ren::Tex2DParams params;
                 params.w = (view_state_.scr_res[0] + 3) / 4;
                 params.h = (view_state_.scr_res[1] + 3) / 4;
-                params.format = Ren::eTexFormat::RawRGBA16F;
+                params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -846,7 +846,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1296,7 +1296,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
-            params.format = Ren::eTexFormat::RawR8;
+            params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1351,7 +1351,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
-            params.format = Ren::eTexFormat::RawR8;
+            params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1406,7 +1406,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
-            params.format = Ren::eTexFormat::RawR8;
+            params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1462,7 +1462,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             Ren::Tex2DParams params;
             params.w = view_state_.act_res[0];
             params.h = view_state_.act_res[1];
-            params.format = Ren::eTexFormat::RawR8;
+            params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1520,7 +1520,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR8;
+            params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1570,7 +1570,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR8;
+            params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1612,7 +1612,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR8;
+            params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1726,7 +1726,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
         Ren::Tex2DParams params;
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
-        params.format = Ren::eTexFormat::RawRGBA16F;
+        params.format = Ren::eTexFormat::RGBA16F;
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
@@ -1798,7 +1798,7 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
         Ren::Tex2DParams params;
         params.w = view_state_.scr_res[0] / 2;
         params.h = view_state_.scr_res[1] / 2;
-        params.format = Ren::eTexFormat::RawR32F;
+        params.format = Ren::eTexFormat::R32F;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput(DEPTH_DOWN_2X_TEX, params);
@@ -1854,7 +1854,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             Ren::Tex2DParams params;
             params.w = (view_state_.scr_res[0] / 2) >> mip;
             params.h = (view_state_.scr_res[1] / 2) >> mip;
-            params.format = compressed ? Ren::eTexFormat::RawRGBA16F : Ren::eTexFormat::RawRGBA32F;
+            params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1909,7 +1909,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             Ren::Tex2DParams params;
             params.w = (view_state_.scr_res[0] / 2) >> mip;
             params.h = (view_state_.scr_res[1] / 2) >> mip;
-            params.format = compressed ? Ren::eTexFormat::RawRGBA16F : Ren::eTexFormat::RawRGBA32F;
+            params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1952,7 +1952,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
         Ren::Tex2DParams params;
         params.w = EXPOSURE_HISTOGRAM_RES + 1;
         params.h = 1;
-        params.format = Ren::eTexFormat::RawR32UI;
+        params.format = Ren::eTexFormat::R32UI;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         histogram = histogram_clear.AddTransferImageOutput("Exposure Histogram", params);
@@ -2001,7 +2001,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
 
         Ren::Tex2DParams params;
         params.w = params.h = 1;
-        params.format = Ren::eTexFormat::RawR32F;
+        params.format = Ren::eTexFormat::R32F;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         exposure = data->exposure =
             histogram_exposure.AddStorageImageOutput(EXPOSURE_TEX, params, Ren::eStageBits::ComputeShader);
@@ -2044,7 +2044,7 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
         Ren::Tex2DParams params;
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
-        params.format = Ren::eTexFormat::RawRGBA8888;
+        params.format = Ren::eTexFormat::RGBA8;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         output_tex = data->out_color_tex =

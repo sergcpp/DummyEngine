@@ -267,12 +267,12 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         uint32_t bound_descr_id = 0xffffffff;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderPass = rp_transparent_.handle();
-        rp_begin_info.framebuffer = transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].handle();
+        rp_begin_info.renderPass = rp_transparent_->vk_handle();
+        rp_begin_info.framebuffer = transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
         rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])}};
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        draw_pass_vi_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        draw_pass_vi_->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
             const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];

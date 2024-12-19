@@ -55,6 +55,8 @@ set(INPUT_SOURCE_FILES input/InputManager.h
 
 set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/CDFUtils.cpp
+                        renderer/ParseJs.h
+                        renderer/ParseJs.cpp
                         renderer/PrimDraw.h
                         renderer/PrimDraw.cpp
                         renderer/Renderer.h
@@ -315,7 +317,9 @@ else(WIN32)
     endif(APPLE)
 endif(WIN32)
 target_link_libraries(Eng Gui Net Phy Ren Snd Sys stb optick glslx_lib ${ITT_LIB})
-add_dependencies(Eng spirv_compiler)
+if(${REN_BACKEND} STREQUAL "VK")
+    add_dependencies(Eng spirv_compiler)
+endif()
 
 add_subdirectory(tests)
 add_subdirectory(first-party/Gui)
@@ -328,6 +332,8 @@ add_subdirectory(first-party/glslx)
 add_subdirectory(third-party/ltc_fit)
 add_subdirectory(third-party/optick)
 add_subdirectory(third-party/stb)
-add_subdirectory(third-party/glslang)
+if(${REN_BACKEND} STREQUAL "VK")
+    add_subdirectory(third-party/glslang)
+endif()
 target_include_directories(optick PUBLIC first-party/Ren/third-party)
 set_target_properties(glslx PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)

@@ -39,6 +39,8 @@ add_custom_command(TARGET test_Eng
                    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../textures
                                                               ${CMAKE_CURRENT_SOURCE_DIR}/test_data/assets/textures/internal)
 
-add_custom_command(TARGET test_Eng
-                   POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:spirv_compiler> ${CMAKE_CURRENT_LIST_DIR}/test_data)
+if(${REN_BACKEND} STREQUAL "VK")
+    add_custom_command(TARGET test_Eng
+                    POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:spirv_compiler> ${CMAKE_CURRENT_LIST_DIR}/test_data)
+endif()

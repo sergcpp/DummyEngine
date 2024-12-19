@@ -98,7 +98,7 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
             Ren::Tex2DParams p;
             p.w = img_data_w;
             p.h = img_data_h;
-            p.format = Ren::eTexFormat::RawRGBA8888;
+            p.format = Ren::eTexFormat::RGBA8;
             p.sampling.filter =
                 draw_mode_ == eDrawMode::Passthrough ? Ren::eTexFilter::NoFilter : Ren::eTexFilter::BilinearNoMipmap;
             p.sampling.wrap = Ren::eTexWrap::ClampToBorder;

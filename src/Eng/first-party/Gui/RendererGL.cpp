@@ -103,7 +103,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glBindVertexArray(pipeline_.vtx_input()->gl_vao());
+    glBindVertexArray(pipeline_.vtx_input()->GetVAO());
     glUseProgram(pipeline_.prog()->id());
 
     glActiveTexture(GL_TEXTURE0 + TexAtlasSlot);

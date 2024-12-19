@@ -24,6 +24,12 @@ inline bool operator<(const eImageLayout lhs, const eImageLayout rhs) { return u
 enum class eLoadOp : uint8_t { Load, Clear, DontCare, None, _Count };
 enum class eStoreOp : uint8_t { Store, DontCare, None, _Count };
 
+std::string_view LoadOpName(eLoadOp op);
+eLoadOp LoadOp(std::string_view name);
+
+std::string_view StoreOpName(eStoreOp op);
+eStoreOp StoreOp(std::string_view name);
+
 struct RenderTarget {
     WeakTex2DRef ref;
     uint8_t view_index = 0;
@@ -132,6 +138,32 @@ struct RenderTargetInfo {
         }
     }
 
+    bool operator==(const RenderTargetInfo &rhs) const {
+        return format == rhs.format && samples == rhs.samples &&
+#if defined(REN_VK_BACKEND)
+               layout == rhs.layout &&
+#endif
+               load == rhs.load && store == rhs.store && stencil_load == rhs.stencil_load &&
+               stencil_store == rhs.stencil_store;
+    }
+    bool operator!=(const RenderTargetInfo &rhs) const {
+        return format != rhs.format || samples != rhs.samples ||
+#if defined(REN_VK_BACKEND)
+               layout != rhs.layout ||
+#endif
+               load != rhs.load || store != rhs.store || stencil_load != rhs.stencil_load ||
+               stencil_store != rhs.stencil_store;
+    }
+    bool operator<(const RenderTargetInfo &rhs) const {
+#if defined(REN_VK_BACKEND)
+        const eImageLayout rhs_layout = rhs.layout;
+#else
+        const eImageLayout rhs_layout = layout;
+#endif
+        return std::tie(format, samples, layout, load, store, stencil_load, stencil_store) <
+               std::tie(rhs.format, rhs.samples, rhs_layout, rhs.load, rhs.store, rhs.stencil_load, rhs.stencil_store);
+    }
+
     operator bool() const { return format != eTexFormat::Undefined; }
 };
 
@@ -175,13 +207,20 @@ inline bool operator<(const RenderTarget &lhs, const RenderTargetInfo &rhs) {
            std::tie(rhs.format, rhs.samples, rhs.layout, rhs.load, rhs.store, rhs.stencil_load, rhs.stencil_store);
 }
 
-class RenderPass {
+inline bool operator==(const eTexFormat lhs, const RenderTargetInfo &rhs) { return lhs == rhs.format; }
+inline bool operator==(const RenderTargetInfo &lhs, const eTexFormat rhs) { return lhs.format == rhs; }
+inline bool operator!=(const eTexFormat lhs, const RenderTargetInfo &rhs) { return lhs != rhs.format; }
+inline bool operator!=(const RenderTargetInfo &lhs, const eTexFormat rhs) { return lhs.format != rhs; }
+inline bool operator<(const eTexFormat lhs, const RenderTargetInfo &rhs) { return lhs < rhs.format; }
+inline bool operator<(const RenderTargetInfo &lhs, const eTexFormat rhs) { return lhs.format < rhs; }
+
+class RenderPass : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
 #if defined(REN_VK_BACKEND)
     VkRenderPass handle_ = {};
 #endif
 
-    bool Init(ApiContext *api_ctx, RenderTargetInfo depth_rt, Span<const RenderTargetInfo> rts, ILog *log);
+    bool Init(ApiContext *api_ctx, const RenderTargetInfo &depth_rt, Span<const RenderTargetInfo> rts, ILog *log);
     void Destroy();
 
   public:
@@ -189,6 +228,9 @@ class RenderPass {
     SmallVector<RenderTargetInfo, 4> color_rts;
 
     RenderPass() = default;
+    RenderPass(ApiContext *api_ctx, const RenderTargetInfo &depth_rt, Span<const RenderTargetInfo> rts, ILog *log) {
+        Init(api_ctx, depth_rt, rts, log);
+    }
     RenderPass(const RenderPass &rhs) = delete;
     RenderPass(RenderPass &&rhs) noexcept { (*this) = std::move(rhs); }
     ~RenderPass() { Destroy(); }
@@ -196,24 +238,34 @@ class RenderPass {
     RenderPass &operator=(const RenderPass &rhs) = delete;
     RenderPass &operator=(RenderPass &&rhs) noexcept;
 
-    bool operator==(const RenderPass &rhs) const { return depth_rt == depth_rt && color_rts == rhs.color_rts; }
-    bool operator!=(const RenderPass &rhs) const { return depth_rt != depth_rt || color_rts != rhs.color_rts; }
-    bool operator<(const RenderPass &rhs) const {
-        if (depth_rt < rhs.depth_rt) {
+    bool operator==(const RenderPass &rhs) const { return Equals(rhs.depth_rt, rhs.color_rts); }
+    bool operator!=(const RenderPass &rhs) const { return depth_rt != rhs.depth_rt || color_rts != rhs.color_rts; }
+    bool operator<(const RenderPass &rhs) const { return LessThan(rhs.depth_rt, rhs.color_rts); }
+
+#if defined(REN_VK_BACKEND)
+    [[nodiscard]] VkRenderPass vk_handle() const { return handle_; }
+#endif
+
+    bool IsCompatibleWith(const RenderTarget &_depth_rt, Span<const RenderTarget> _color_rts) const {
+        return depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts;
+    }
+    bool Equals(const RenderTargetInfo &_depth_rt, Span<const RenderTargetInfo> _color_rts) const {
+        return depth_rt == _depth_rt && Span<const RenderTargetInfo>(color_rts) == _color_rts;
+    }
+    bool LessThan(const RenderTargetInfo &_depth_rt, Span<const RenderTargetInfo> _color_rts) const {
+        if (depth_rt < _depth_rt) {
             return true;
-        } else if (depth_rt == rhs.depth_rt) {
-            return color_rts < rhs.color_rts;
+        } else if (depth_rt == _depth_rt) {
+            return Span<const RenderTargetInfo>(color_rts) < _color_rts;
         }
         return false;
     }
 
-#if defined(REN_VK_BACKEND)
-    [[nodiscard]] VkRenderPass handle() const { return handle_; }
-#endif
-
-    bool IsCompatibleWith(RenderTarget depth_rt, Span<const RenderTarget> color_rts);
-
-    bool Setup(ApiContext *api_ctx, RenderTarget depth_rt, Span<const RenderTarget> rts, ILog *log);
-    bool Setup(ApiContext *api_ctx, RenderTargetInfo depth_rt, Span<const RenderTargetInfo> rts, ILog *log);
+    bool Setup(ApiContext *api_ctx, const RenderTarget &depth_rt, Span<const RenderTarget> rts, ILog *log);
+    bool Setup(ApiContext *api_ctx, const RenderTargetInfo &depth_rt, Span<const RenderTargetInfo> rts, ILog *log);
 };
+
+using RenderPassRef = StrongRef<RenderPass, SortedStorage<RenderPass>>;
+using WeakRenderPassRef = WeakRef<RenderPass, SortedStorage<RenderPass>>;
+using RenderPassStorage = SortedStorage<RenderPass>;
 } // namespace Ren

@@ -154,17 +154,17 @@ void Eng::SceneManager::TextureLoaderProc() {
                         // Try to use least significant bits of FourCC as format
                         const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
                         if (val == 0x6f) {
-                            req->orig_format = Ren::eTexFormat::RawR16F;
+                            req->orig_format = Ren::eTexFormat::R16F;
                         } else if (val == 0x70) {
-                            req->orig_format = Ren::eTexFormat::RawRG16F;
+                            req->orig_format = Ren::eTexFormat::RG16F;
                         } else if (val == 0x71) {
-                            req->orig_format = Ren::eTexFormat::RawRGBA16F;
+                            req->orig_format = Ren::eTexFormat::RGBA16F;
                         } else if (val == 0x72) {
-                            req->orig_format = Ren::eTexFormat::RawR32F;
+                            req->orig_format = Ren::eTexFormat::R32F;
                         } else if (val == 0x73) {
-                            req->orig_format = Ren::eTexFormat::RawRG32F;
+                            req->orig_format = Ren::eTexFormat::RG32F;
                         } else if (val == 0x74) {
-                            req->orig_format = Ren::eTexFormat::RawRGBA32F;
+                            req->orig_format = Ren::eTexFormat::RGBA32F;
                         }
                     }
                 }

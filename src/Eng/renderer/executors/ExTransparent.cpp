@@ -46,8 +46,20 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-        if (!rp_transparent_.Setup(ctx.api_ctx(), depth_target, color_targets, ctx.log())) {
-            ctx.log()->Error("[ExTransparent::LazyInit]: Failed to init render pass!");
+        rp_transparent_ = sh.LoadRenderPass(depth_target, color_targets);
+
+        [[maybe_unused]] const int buf1_stride = 16, buf2_stride = 16;
+
+        { // VertexInput for main drawing (uses all attributes)
+            const Ren::VtxAttribDesc attribs[] = {
+                // Attributes from buffer 1
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                // Attributes from buffer 2
+                {vtx_buf2.ref, VTX_NOR_LOC, 4, Ren::eType::Int16_snorm, buf1_stride, 0},
+                {vtx_buf2.ref, VTX_TAN_LOC, 2, Ren::eType::Int16_snorm, buf1_stride, 4 * sizeof(uint16_t)},
+                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
+            draw_pass_vi_ = sh.LoadVertexInput(attribs, ndx_buf.ref);
         }
 
         api_ctx_ = ctx.api_ctx();
@@ -58,24 +70,9 @@ void Eng::ExTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
         initialized = true;
     }
 
-    [[maybe_unused]] const int buf1_stride = 16, buf2_stride = 16;
-
-    { // VertexInput for main drawing (uses all attributes)
-        const Ren::VtxAttribDesc attribs[] = {
-            // Attributes from buffer 1
-            {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-            // Attributes from buffer 2
-            {vtx_buf2.ref, VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
-            {vtx_buf2.ref, VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
-            {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
-
-        draw_pass_vi_.Setup(attribs, ndx_buf.ref);
-    }
-
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
-    if (!transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_transparent_, color_tex.desc.w,
+    if (!transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *rp_transparent_, color_tex.desc.w,
                                                                      color_tex.desc.h, depth_target, depth_target,
                                                                      color_targets, ctx.log())) {
         ctx.log()->Error("ExTransparent: transparent_draw_fb_ init failed!");

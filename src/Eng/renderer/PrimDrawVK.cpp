@@ -12,53 +12,6 @@ extern const VkAttachmentStoreOp vk_store_ops[];
 
 namespace PrimDrawInternal {
 extern const int SphereIndicesCount;
-
-bool pipeline_eq(const Ren::Pipeline &pi, const Ren::VertexInput *vi, const Ren::ProgramRef &p,
-                 const Ren::RenderPass *rp, const Ren::RenderTarget depth_target,
-                 Ren::Span<const Ren::RenderTarget> color_targets, const Ren::RastState &rs) {
-    return pi.vtx_input() == vi && pi.prog() == p && pi.render_pass() == rp && pi.depth_format() == depth_target &&
-           pi.color_formats() == color_targets && pi.rast_state() == rs;
-}
-bool pipeline_lt(const Ren::Pipeline &pi, const Ren::VertexInput *vi, const Ren::ProgramRef &p,
-                 const Ren::RenderPass *rp, const Ren::RenderTarget depth_target,
-                 Ren::Span<const Ren::RenderTarget> color_targets, const Ren::RastState &rs) {
-    if (pi.vtx_input() < vi) {
-        return true;
-    } else if (pi.vtx_input() == vi) {
-        if (pi.prog() < p) {
-            return true;
-        } else if (pi.prog() == p) {
-            if (pi.render_pass() < rp) {
-                return true;
-            } else if (pi.render_pass() == rp) {
-                if (pi.depth_format() < depth_target) {
-                    return true;
-                } else if (pi.depth_format() == depth_target) {
-                    if (pi.color_formats() < color_targets) {
-                        return true;
-                    } else if (pi.color_formats() == color_targets) {
-                        return pi.rast_state() < rs;
-                    }
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool renderpass_eq(const Ren::RenderPass &rp, const Ren::RenderTarget depth_target,
-                   Ren::Span<const Ren::RenderTarget> color_targets) {
-    return rp.depth_rt == depth_target && Ren::Span<const Ren::RenderTargetInfo>(rp.color_rts) == color_targets;
-}
-bool renderpass_lt(const Ren::RenderPass &rp, const Ren::RenderTarget depth_target,
-                   Ren::Span<const Ren::RenderTarget> color_targets) {
-    if (rp.depth_rt < depth_target) {
-        return true;
-    } else if (rp.depth_rt == depth_target) {
-        return Ren::Span<const Ren::RenderTargetInfo>(rp.color_rts) < color_targets;
-    }
-    return false;
-}
 } // namespace PrimDrawInternal
 
 Eng::PrimDraw::~PrimDraw() {}
@@ -203,209 +156,64 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Re
         }
     }
 
-    if (ctx_->capabilities.dynamic_rendering) {
-        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, nullptr, depth_rt, color_rts, new_rast_state);
-        assert(pipeline);
+    Ren::RenderPassRef rp = ctx_->LoadRenderPass(depth_rt, color_rts);
+    const Ren::Framebuffer *fb =
+        FindOrCreateFramebuffer(rp.get(), new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
+                                new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{}, color_rts);
 
-        Ren::SmallVector<VkRenderingAttachmentInfoKHR, 4> color_attachments;
-        for (const auto &rt : color_rts) {
-            auto &col_att = color_attachments.emplace_back();
-            col_att = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
-            col_att.imageView = rt.ref->handle().views[0];
-            col_att.imageLayout = VkImageLayout(VKImageLayoutForState(rt.ref->resource_state));
-            col_att.loadOp = Ren::vk_load_ops[int(rt.load)];
-            col_att.storeOp = Ren::vk_store_ops[int(rt.store)];
-        }
-
-        VkRenderingAttachmentInfoKHR depth_attachment = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
-        if (depth_rt) {
-            depth_attachment.imageView = depth_rt.ref->handle().views[0];
-            depth_attachment.imageLayout = VkImageLayout(VKImageLayoutForState(depth_rt.ref->resource_state));
-            depth_attachment.loadOp = Ren::vk_load_ops[int(depth_rt.load)];
-            depth_attachment.storeOp = Ren::vk_store_ops[int(depth_rt.store)];
-        }
-
-        VkRenderingInfoKHR render_info = {VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
-        render_info.renderArea.offset.x = new_rast_state.viewport[0];
-        render_info.renderArea.offset.y = new_rast_state.viewport[1];
-        render_info.renderArea.extent.width = new_rast_state.viewport[2];
-        render_info.renderArea.extent.height = new_rast_state.viewport[3];
-        render_info.layerCount = 1;
-        render_info.colorAttachmentCount = uint32_t(color_attachments.size());
-        render_info.pColorAttachments = color_attachments.data();
-        render_info.pDepthAttachment = depth_rt ? &depth_attachment : nullptr;
-        render_info.pStencilAttachment = new_rast_state.stencil.enabled ? &depth_attachment : nullptr;
-
-        api_ctx->vkCmdBeginRenderingKHR(cmd_buf, &render_info);
-
-        api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
-
-        const VkViewport viewport = {0.0f, 0.0f, float(new_rast_state.viewport[2]), float(new_rast_state.viewport[3]),
-                                     0.0f, 1.0f};
-        api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-
-        const VkRect2D scissor = {{0, 0}, {uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])}};
-        api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
-
-        if (descr_set) {
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1,
-                                             &descr_set, 0, nullptr);
-        }
-
-        if (uniform_data) {
-            api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
-                                        uniform_data_offset, uniform_data_len, uniform_data);
-        }
-
-        if (prim == ePrim::Quad) {
-            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
-
-            api_ctx->vkCmdDrawIndexed(cmd_buf, 6, // index count
-                                      instances,  // instance count
-                                      0,          // first index
-                                      0,          // vertex offset
-                                      0);         // first instance
-        } else if (prim == ePrim::Sphere) {
-            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, sphere_ndx_.offset, VK_INDEX_TYPE_UINT16);
-
-            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(SphereIndicesCount), // index count
-                                      instances,                             // instance count
-                                      0,                                     // first index
-                                      0,                                     // vertex offset
-                                      0);                                    // first instance
-        }
-
-        api_ctx->vkCmdEndRenderingKHR(cmd_buf);
-    } else {
-        const Ren::RenderPass *rp = FindOrCreateRenderPass(depth_rt, color_rts);
-        const Ren::Framebuffer *fb =
-            FindOrCreateFramebuffer(rp, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
-                                    new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{}, color_rts);
-        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, rp, {}, {}, new_rast_state);
-
-        VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        render_pass_begin_info.renderPass = rp->handle();
-        render_pass_begin_info.framebuffer = fb->handle();
-        render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(fb->w), uint32_t(fb->h)}};
-
-        api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-        api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
-
-        const VkViewport viewport = {0.0f, 0.0f, float(new_rast_state.viewport[2]), float(new_rast_state.viewport[3]),
-                                     0.0f, 1.0f};
-        api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-
-        VkRect2D scissor = {{0, 0}, {uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])}};
-        if (new_rast_state.scissor.enabled) {
-            scissor = VkRect2D{{new_rast_state.scissor.rect[0], new_rast_state.scissor.rect[1]},
-                               {uint32_t(new_rast_state.scissor.rect[2]), uint32_t(new_rast_state.scissor.rect[3])}};
-        }
-        api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
-
-        if (descr_set) {
-            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1,
-                                             &descr_set, 0, nullptr);
-        }
-
-        if (uniform_data) {
-            api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
-                                        uniform_data_offset, uniform_data_len, uniform_data);
-        }
-
-        if (prim == ePrim::Quad) {
-            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
-
-            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
-                                      instances,            // instance count
-                                      0,                    // first index
-                                      0,                    // vertex offset
-                                      0);                   // first instance
-        } else if (prim == ePrim::Sphere) {
-            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, sphere_ndx_.offset, VK_INDEX_TYPE_UINT16);
-
-            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(SphereIndicesCount), // index count
-                                      instances,                             // instance count
-                                      0,                                     // first index
-                                      0,                                     // vertex offset
-                                      0);                                    // first instance
-        }
-
-        api_ctx->vkCmdEndRenderPass(cmd_buf);
-    }
-}
-
-const Ren::RenderPass *Eng::PrimDraw::FindOrCreateRenderPass(Ren::RenderTarget depth_target,
-                                                             Ren::Span<const Ren::RenderTarget> color_targets) {
-    using namespace PrimDrawInternal;
-
-    int start = 0, count = int(render_passes_.size());
-    while (count > 0) {
-        const int step = count / 2;
-        const int index = start + step;
-        if (renderpass_lt(render_passes_[index], depth_target, color_targets)) {
-            start = index + 1;
-            count -= step + 1;
-        } else {
-            count = step;
-        }
+    const Ren::VertexInputRef &vi = (prim == ePrim::Quad) ? fs_quad_vtx_input_ : sphere_vtx_input_;
+    const Ren::PipelineRef pipeline = ctx_->LoadPipeline(new_rast_state, p, vi, rp, 0);
+    if (pipeline.strong_refs() == 1) {
+        // keep alive
+        pipelines_.push_back(pipeline);
     }
 
-    if (start < int(render_passes_.size()) && renderpass_eq(render_passes_[start], depth_target, color_targets)) {
-        return &render_passes_[start];
+    VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+    render_pass_begin_info.renderPass = rp->vk_handle();
+    render_pass_begin_info.framebuffer = fb->vk_handle();
+    render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(fb->w), uint32_t(fb->h)}};
+
+    api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+
+    const VkViewport viewport = {0.0f, 0.0f, float(new_rast_state.viewport[2]), float(new_rast_state.viewport[3]),
+                                 0.0f, 1.0f};
+    api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+
+    VkRect2D scissor = {{0, 0}, {uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])}};
+    if (new_rast_state.scissor.enabled) {
+        scissor = VkRect2D{{new_rast_state.scissor.rect[0], new_rast_state.scissor.rect[1]},
+                           {uint32_t(new_rast_state.scissor.rect[2]), uint32_t(new_rast_state.scissor.rect[3])}};
+    }
+    api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+
+    if (descr_set) {
+        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
+                                         0, nullptr);
     }
 
-    Ren::ApiContext *api_ctx = ctx_->api_ctx();
-
-    Ren::RenderPass new_render_pass;
-    if (!new_render_pass.Setup(api_ctx, depth_target, color_targets, ctx_->log())) {
-        ctx_->log()->Error("Failed to setup renderpass!");
-        render_passes_.pop_back();
-        return nullptr;
-    }
-    render_passes_.insert(begin(render_passes_) + start, std::move(new_render_pass));
-    return &render_passes_[start];
-}
-
-const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(const ePrim prim, const Ren::ProgramRef &p,
-                                                         const Ren::RenderPass *rp,
-                                                         const Ren::RenderTarget depth_target,
-                                                         Ren::Span<const Ren::RenderTarget> color_targets,
-                                                         const Ren::RastState &rs) {
-    using namespace PrimDrawInternal;
-
-    const Ren::VertexInput *vi = (prim == ePrim::Quad) ? &fs_quad_vtx_input_ : &sphere_vtx_input_;
-
-    int start = 0, count = int(pipelines_.size());
-    while (count > 0) {
-        const int step = count / 2;
-        const int index = start + step;
-        if (pipeline_lt(pipelines_[index], vi, p, rp, depth_target, color_targets, rs)) {
-            start = index + 1;
-            count -= step + 1;
-        } else {
-            count = step;
-        }
+    if (uniform_data) {
+        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
+                                    uniform_data_offset, uniform_data_len, uniform_data);
     }
 
-    if (start < int(pipelines_.size()) && pipeline_eq(pipelines_[start], vi, p, rp, depth_target, color_targets, rs)) {
-        return &pipelines_[start];
+    if (prim == ePrim::Quad) {
+        pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
+
+        api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
+                                  instances,            // instance count
+                                  0,                    // first index
+                                  0,                    // vertex offset
+                                  0);                   // first instance
+    } else if (prim == ePrim::Sphere) {
+        pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, sphere_ndx_.offset, VK_INDEX_TYPE_UINT16);
+
+        api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(SphereIndicesCount), // index count
+                                  instances,                             // instance count
+                                  0,                                     // first index
+                                  0,                                     // vertex offset
+                                  0);                                    // first instance
     }
 
-    Ren::ApiContext *api_ctx = ctx_->api_ctx();
-    Ren::Pipeline new_pipeline;
-    if (rp) {
-        if (!new_pipeline.Init(api_ctx, rs, p, vi, rp, 0, ctx_->log())) {
-            ctx_->log()->Error("Failed to initialize pipeline!");
-            pipelines_.pop_back();
-            return nullptr;
-        }
-    } else {
-        if (!new_pipeline.Init(api_ctx, rs, p, vi, color_targets, depth_target, 0, ctx_->log())) {
-            ctx_->log()->Error("Failed to initialize pipeline!");
-            pipelines_.pop_back();
-            return nullptr;
-        }
-    }
-    pipelines_.insert(begin(pipelines_) + start, std::move(new_pipeline));
-    return &pipelines_[start];
+    api_ctx->vkCmdEndRenderPass(cmd_buf);
 }

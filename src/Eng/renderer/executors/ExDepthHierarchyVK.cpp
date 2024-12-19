@@ -13,8 +13,6 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
     FgAllocBuf &atomic_buf = builder.GetWriteBuffer(atomic_buf_);
     FgAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
-    LazyInit(builder.ctx(), builder.sh());
-
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
@@ -23,7 +21,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = output_tex.ref->handle().img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view_info.format = Ren::VKFormatFromTexFormat(Ren::eTexFormat::RawR32F);
+        view_info.format = Ren::VKFormatFromTexFormat(Ren::eTexFormat::R32F);
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.levelCount = 1;
         view_info.subresourceRange.baseArrayLayer = 0;
@@ -41,7 +39,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    VkDescriptorSetLayout descr_set_layout = pi_depth_hierarchy_.prog()->descr_set_layouts()[0];
+    VkDescriptorSetLayout descr_set_layout = pi_depth_hierarchy_->prog()->descr_set_layouts()[0];
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 1;
     descr_sizes.store_img_count = output_tex.ref->params.mip_count;
@@ -84,8 +82,8 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
         api_ctx->vkUpdateDescriptorSets(api_ctx->device, 3, descr_writes, 0, nullptr);
     }
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.layout(), 0, 1,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_->handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_->layout(), 0, 1,
                                      &descr_set, 0, nullptr);
 
     const int grp_x =
@@ -98,7 +96,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
         Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1], output_tex.ref->params.mip_count, grp_x * grp_y};
     uniform_params.clip_info = view_state_->clip_info;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_depth_hierarchy_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_depth_hierarchy_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatch(cmd_buf, grp_x, grp_y, 1);

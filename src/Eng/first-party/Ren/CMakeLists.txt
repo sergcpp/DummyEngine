@@ -83,7 +83,9 @@ set(SOURCE_FILES AccStructure.h
                  ProbeStorage.h
                  Program.h
                  RastState.h
+                 RastState.cpp
                  RenderPass.h
+                 RenderPass.cpp
                  Resource.h
                  Resource.cpp
                  RingBuffer.h
@@ -101,12 +103,14 @@ set(SOURCE_FILES AccStructure.h
                  TextureArray.h
                  TextureAtlas.h
                  TextureAtlas.cpp
+                 TextureFormats.inl
                  TextureParams.h
                  TextureParams.cpp
                  TextureRegion.h
                  TextureRegion.cpp
                  TextureSplitter.h
                  TextureSplitter.cpp
+                 Types.inl
                  Utils.h
                  Utils.cpp
                  Utils_AVX.cpp
@@ -174,7 +178,6 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                      ProbeStorageVK.cpp
                      ProgramVK.h
                      ProgramVK.cpp
-                     RastStateVK.cpp
                      RenderPassVK.cpp
                      ResourceVK.cpp
                      SamplerVK.h

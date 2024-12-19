@@ -12,16 +12,8 @@ extern "C" {
 #include "../scene/SceneData.h"
 #include "PrimDraw.h"
 #include "executors/ExBuildAccStructures.h"
-#include "executors/ExDebugOIT.h"
-#include "executors/ExDebugProbes.h"
-#include "executors/ExDebugRT.h"
-#include "executors/ExDepthFill.h"
-#include "executors/ExDepthHierarchy.h"
 #include "executors/ExEmissive.h"
 #include "executors/ExGBufferFill.h"
-#include "executors/ExOITBlendLayer.h"
-#include "executors/ExOITDepthPeel.h"
-#include "executors/ExOITScheduleRays.h"
 #include "executors/ExOpaque.h"
 #include "executors/ExPostprocess.h"
 #include "executors/ExRTGI.h"
@@ -30,7 +22,6 @@ extern "C" {
 #include "executors/ExRTShadows.h"
 #include "executors/ExReadExposure.h"
 #include "executors/ExSampleLights.h"
-#include "executors/ExShadowMaps.h"
 #include "executors/ExSkinning.h"
 #include "executors/ExSkydome.h"
 #include "executors/ExTransparent.h"
@@ -120,8 +111,8 @@ class Renderer {
     eTAAMode taa_mode_ = eTAAMode::Off;
     bool dof_enabled_ = false;
 
-    Ren::VertexInput draw_pass_vi_;
-    Ren::RenderPass rp_main_draw_;
+    Ren::VertexInputRef draw_pass_vi_;
+    Ren::RenderPassRef rp_main_draw_;
     Ren::RastState rast_states_[int(eFwdPipeline::_Count)];
 
     Ren::TextureSplitter shadow_splitter_;
@@ -179,13 +170,13 @@ class Renderer {
     DynArray<ShadReg> allocated_shadow_regions_;
 
 #if defined(__ANDROID__)
-    static const int SHADOWMAP_WIDTH = SHADOWMAP_RES_ANDROID;
+    static constexpr int SHADOWMAP_WIDTH = SHADOWMAP_RES_ANDROID;
 #else
-    static const int SHADOWMAP_WIDTH = SHADOWMAP_RES_PC;
+    static constexpr int SHADOWMAP_WIDTH = SHADOWMAP_RES_PC;
 #endif
-    static const int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
+    static constexpr int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
     // Sun shadow occupies half of atlas
-    static const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
+    static constexpr int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
 
     FgBuilder fg_builder_;
     std::optional<render_settings_t> cached_settings_;
@@ -197,19 +188,13 @@ class Renderer {
     float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
     float pre_exposure_ = 1.0f;
 
-    ExShadowMaps ex_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     ExSkydomeCube ex_skydome_cube_ = ExSkydomeCube{prim_draw_};
     ExSkydomeScreen ex_skydome_ = ExSkydomeScreen{prim_draw_};
-    ExDepthFill ex_depth_fill_;
-    ExDepthHierarchy ex_depth_hierarchy_;
     ExGBufferFill ex_gbuffer_fill_;
     ExOpaque ex_opaque_;
     ExTransparent ex_transparent_ = ExTransparent{prim_draw_};
     ExEmissive ex_emissive_;
-    ExOITDepthPeel ex_oit_depth_peel_;
-    Ren::SmallVector<ExOITBlendLayer, 6> rp_oit_blend_layer_;
 
-    ExOITScheduleRays ex_oit_schedule_rays_;
     ExRTReflections ex_oit_rt_reflections_ = ExRTReflections{true};
     ExRTGI ex_rt_gi_;
     ExRTGICache ex_rt_gi_cache_;
@@ -218,11 +203,6 @@ class Renderer {
     ExSampleLights ex_sample_lights_;
     ExReadExposure ex_read_exposure_;
     ExPostprocess::Args ex_postprocess_args_;
-    ExPostprocess ex_postprocess_ = ExPostprocess{prim_draw_};
-
-    ExDebugProbes ex_debug_probes_ = {prim_draw_};
-    ExDebugRT ex_debug_rt_;
-    ExDebugOIT ex_debug_oit_;
 
     ViewState view_state_;
     PrimDraw prim_draw_;

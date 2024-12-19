@@ -19,7 +19,7 @@
 #include <Gui/Utils.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 46;
+const uint32_t AssetsBuildVersion = 49;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -35,7 +35,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
         return;
     }
 
-    if (format == Ren::eTexFormat::RawRGB888) {
+    if (format == Ren::eTexFormat::RGB8) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
@@ -45,7 +45,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
                 out_data[i++] = 255;
             }
         }
-    } else if (format == Ren::eTexFormat::RawRGBA8888) {
+    } else if (format == Ren::eTexFormat::RGBA8) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
@@ -1491,7 +1491,9 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
     }
 
     Sys::JsFlags flags;
-    flags.use_spaces = 1;
+    flags.use_new_lines = 0;
+    flags.use_identation = 0;
+    flags.prefer_spaces = 0;
     js_root_el.Write(dst_stream, flags);
 
     return true;

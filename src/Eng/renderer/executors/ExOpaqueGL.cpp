@@ -153,7 +153,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
 
-    glBindVertexArray(draw_pass_vi_.gl_vao());
+    glBindVertexArray(draw_pass_vi_->GetVAO());
 
     auto &ctx = builder.ctx();
 

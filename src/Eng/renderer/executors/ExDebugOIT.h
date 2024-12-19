@@ -18,22 +18,16 @@ class ExDebugOIT final : public FgExecutor {
         FgResRef output_tex;
     };
 
-    void Setup(FgBuilder &builder, const ViewState *view_state, const Args *pass_data) {
-        view_state_ = view_state;
-        args_ = pass_data;
-    }
+    ExDebugOIT(FgBuilder &builder, const ViewState *view_state, const Args *pass_data);
+
     void Execute(FgBuilder &builder) override;
 
   private:
-    bool initialized = false;
-
     // lazily initialized data
-    Ren::Pipeline pi_debug_oit_;
+    Ren::PipelineRef pi_debug_oit_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
     const Args *args_ = nullptr;
-
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 };
 } // namespace Eng

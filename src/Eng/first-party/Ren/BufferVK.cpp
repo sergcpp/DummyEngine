@@ -387,6 +387,7 @@ void Ren::Buffer::Free() {
         mem_allocs_ = nullptr;
         dedicated_mem_ = nullptr;
         size_ = 0;
+        sub_alloc_ = {};
     }
 }
 
@@ -401,6 +402,7 @@ void Ren::Buffer::FreeImmediate() {
 
         handle_ = {};
         size_ = 0;
+        sub_alloc_ = {};
     }
 }
 

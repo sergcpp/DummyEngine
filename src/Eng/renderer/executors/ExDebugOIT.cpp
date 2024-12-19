@@ -6,9 +6,13 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/oit_debug_interface.h"
 
-void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+Eng::ExDebugOIT::ExDebugOIT(FgBuilder &builder, const ViewState *view_state, const Args *pass_data) {
+    view_state_ = view_state;
+    args_ = pass_data;
+    pi_debug_oit_ = builder.sh().LoadPipeline("internal/oit_debug.comp.glsl");
+}
 
+void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
     FgAllocBuf &oit_depth_buf = builder.GetReadBuffer(args_->oit_depth_buf);
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
 
@@ -24,17 +28,6 @@ void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
     uniform_params.img_size[1] = view_state_->act_res[1];
     uniform_params.layer_index = args_->layer_index;
 
-    DispatchCompute(pi_debug_oit_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+    DispatchCompute(*pi_debug_oit_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                     builder.ctx().default_descr_alloc(), builder.ctx().log());
-}
-
-void Eng::ExDebugOIT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-        Ren::ProgramRef debug_prog = sh.LoadProgram("internal/oit_debug.comp.glsl");
-        if (!pi_debug_oit_.Init(ctx.api_ctx(), std::move(debug_prog), ctx.log())) {
-            ctx.log()->Error("ExDebugOIT: Failed to initialize pipeline!");
-        }
-
-        initialized = true;
-    }
 }

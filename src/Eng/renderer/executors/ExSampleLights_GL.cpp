@@ -47,45 +47,45 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
 
     if (!random_seq_buf.tbos[0] || random_seq_buf.tbos[0]->params().size != random_seq_buf.ref->size()) {
         random_seq_buf.tbos[0] = builder.ctx().CreateTexture1D(
-            "Random Seq Buf TBO", random_seq_buf.ref, Ren::eTexFormat::RawR32UI, 0, random_seq_buf.ref->size());
+            "Random Seq Buf TBO", random_seq_buf.ref, Ren::eTexFormat::R32UI, 0, random_seq_buf.ref->size());
     }
     if (!lights_buf.tbos[0] || lights_buf.tbos[0]->params().size != lights_buf.ref->size()) {
         lights_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", lights_buf.ref,
-                                                           Ren::eTexFormat::RawRGBA32F, 0, lights_buf.ref->size());
+                                                           Ren::eTexFormat::RGBA32F, 0, lights_buf.ref->size());
     }
     if (!nodes_buf.tbos[0] || nodes_buf.tbos[0]->params().size != nodes_buf.ref->size()) {
         nodes_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
-                                                          Ren::eTexFormat::RawRGBA32F, 0, nodes_buf.ref->size());
+                                                          Ren::eTexFormat::RGBA32F, 0, nodes_buf.ref->size());
     }
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
-        vtx_buf1.tbos[0] = builder.ctx().CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RawRGBA32F,
+        vtx_buf1.tbos[0] = builder.ctx().CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F,
                                                          0, vtx_buf1.ref->size());
     }
 
     if (!ndx_buf.tbos[0] || ndx_buf.tbos[0]->params().size != ndx_buf.ref->size()) {
-        ndx_buf.tbos[0] = builder.ctx().CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::RawR32UI, 0,
+        ndx_buf.tbos[0] = builder.ctx().CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
                                                         ndx_buf.ref->size());
     }
 
     if (!prim_ndx_buf.tbos[0] || prim_ndx_buf.tbos[0]->params().size != prim_ndx_buf.ref->size()) {
         prim_ndx_buf.tbos[0] = builder.ctx().CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref,
-                                                             Ren::eTexFormat::RawR32UI, 0, prim_ndx_buf.ref->size());
+                                                             Ren::eTexFormat::R32UI, 0, prim_ndx_buf.ref->size());
     }
 
     if (!rt_blas_buf.tbos[0] || rt_blas_buf.tbos[0]->params().size != rt_blas_buf.ref->size()) {
-        rt_blas_buf.tbos[0] = builder.ctx().CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RawRGBA32F,
+        rt_blas_buf.tbos[0] = builder.ctx().CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RGBA32F,
                                                             0, rt_blas_buf.ref->size());
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = builder.ctx().CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F,
+        rt_tlas_buf.tbos[0] = builder.ctx().CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RGBA32F,
                                                             0, rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
         mesh_instances_buf.tbos[0] =
-            builder.ctx().CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+            builder.ctx().CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RGBA32F, 0,
                                           mesh_instances_buf.ref->size());
     }
 
@@ -119,6 +119,6 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
     uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(LightItem));
     uniform_params.frame_index = view_state_->frame_index;
 
-    DispatchCompute(pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                         ctx.default_descr_alloc(), ctx.log());
+    DispatchCompute(*pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                    ctx.default_descr_alloc(), ctx.log());
 }

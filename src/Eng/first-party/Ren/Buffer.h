@@ -13,18 +13,12 @@
 namespace Ren {
 class ILog;
 struct ApiContext;
+#define DECORATE(X) X,
 enum class eType : uint8_t {
-    Undefined,
-    Float16,
-    Float32,
-    Uint32,
-    Uint16,
-    Uint16UNorm,
-    Int16SNorm,
-    Uint8UNorm,
-    Int32,
+#include "Types.inl"
     _Count
 };
+#undef DECORATE
 enum class eBufType : uint8_t {
     Undefined,
     VertexAttribs,
@@ -40,11 +34,14 @@ enum class eBufType : uint8_t {
     _Count
 };
 
+std::string_view TypeName(eType type);
+eType Type(std::string_view name);
+
 struct BufHandle {
 #if defined(REN_VK_BACKEND)
     VkBuffer buf = {};
 #elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
-    uint32_t id = 0;
+    uint32_t buf = 0;
 #endif
     uint32_t generation = 0;
 
@@ -52,27 +49,24 @@ struct BufHandle {
 #if defined(REN_VK_BACKEND)
         return buf != VkBuffer{};
 #elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
-        return id != 0;
+        return buf != 0;
 #endif
     }
 };
-inline bool operator==(const BufHandle lhs, const BufHandle rhs) {
-    return
-#if defined(REN_VK_BACKEND)
-        lhs.buf == rhs.buf &&
-#elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
-        lhs.id == rhs.id &&
-#endif
-        lhs.generation == rhs.generation;
+inline bool operator==(const BufHandle &lhs, const BufHandle &rhs) {
+    return lhs.buf == rhs.buf && lhs.generation == rhs.generation;
 }
-
-struct RangeFence {
-    std::pair<uint32_t, uint32_t> range;
-    SyncFence fence;
-
-    RangeFence(const std::pair<uint32_t, uint32_t> _range, SyncFence &&_fence)
-        : range(_range), fence(std::move(_fence)) {}
-};
+inline bool operator!=(const BufHandle &lhs, const BufHandle &rhs) {
+    return lhs.buf != rhs.buf || lhs.generation != rhs.generation;
+}
+inline bool operator<(const BufHandle &lhs, const BufHandle &rhs) {
+    if (lhs.buf < rhs.buf) {
+        return true;
+    } else if (lhs.buf == rhs.buf) {
+        return lhs.generation < rhs.generation;
+    }
+    return false;
+}
 
 struct SubAllocation {
     uint32_t offset = 0xffffffff;
@@ -122,7 +116,7 @@ class Buffer : public RefCounter {
     [[nodiscard]] VkDeviceMemory mem() const { return dedicated_mem_; }
     [[nodiscard]] VkDeviceAddress vk_device_address() const;
 #elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
-    [[nodiscard]] uint32_t id() const { return handle_.id; }
+    [[nodiscard]] uint32_t id() const { return handle_.buf; }
 #endif
     [[nodiscard]] uint32_t generation() const { return handle_.generation; }
     [[nodiscard]] const MemAllocation &mem_alloc() const { return alloc_; }

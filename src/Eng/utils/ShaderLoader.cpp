@@ -42,6 +42,36 @@ Ren::eShaderType ShaderTypeFromName(std::string_view name) {
 }
 } // namespace ShaderLoaderInternal
 
+Ren::VertexInputRef Eng::ShaderLoader::LoadVertexInput(Ren::Span<const Ren::VtxAttribDesc> attribs,
+                                                       const Ren::BufferRef &elem_buf) {
+    std::lock_guard<std::mutex> _(mtx_);
+
+    Ren::VertexInputRef ref = vtx_inputs_.LowerBound([&](const Ren::VertexInput &vi) {
+        if (vi.elem_buf < elem_buf) {
+            return true;
+        } else if (vi.elem_buf == elem_buf) {
+            return Ren::Span<const Ren::VtxAttribDesc>(vi.attribs) < attribs;
+        }
+        return false;
+    });
+    if (!ref || ref->elem_buf != elem_buf || Ren::Span<const Ren::VtxAttribDesc>(ref->attribs) != attribs) {
+        ref = vtx_inputs_.Insert(attribs, elem_buf);
+    }
+    return ref;
+}
+
+Ren::RenderPassRef Eng::ShaderLoader::LoadRenderPass(const Ren::RenderTargetInfo &depth_rt,
+                                                     Ren::Span<const Ren::RenderTargetInfo> color_rts) {
+    std::lock_guard<std::mutex> _(mtx_);
+
+    Ren::RenderPassRef ref =
+        render_passes_.LowerBound([&](const Ren::RenderPass &rp) { return rp.LessThan(depth_rt, color_rts); });
+    if (!ref || !ref->Equals(depth_rt, color_rts)) {
+        ref = render_passes_.Insert(ctx_.api_ctx(), depth_rt, color_rts, ctx_.log());
+    }
+    return ref;
+}
+
 Ren::ProgramRef Eng::ShaderLoader::LoadProgram(std::string_view vs_name, std::string_view fs_name,
                                                std::string_view tcs_name, std::string_view tes_name,
                                                std::string_view gs_name) {
@@ -209,20 +239,44 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(std::string_view name) {
 
 Ren::PipelineRef Eng::ShaderLoader::LoadPipeline(std::string_view cs_name, const int subgroup_size) {
     Ren::ProgramRef prog_ref = LoadProgram(cs_name);
+    return LoadPipeline(prog_ref, subgroup_size);
+}
+
+Ren::PipelineRef Eng::ShaderLoader::LoadPipeline(const Ren::ProgramRef &prog, const int subgroup_size) {
     Ren::PipelineRef ret;
     { // find pipeline
         std::lock_guard<std::mutex> _(mtx_);
-        ret = pipelines_.LowerBound([&](const Ren::Pipeline &pi) { return pi.prog() < prog_ref; });
+        ret = pipelines_.LowerBound([&](const Ren::Pipeline &pi) { return pi.LessThan({}, prog, {}, {}); });
     }
-    if (!ret || ret->prog() != prog_ref) {
-        assert(prog_ref);
-        Ren::Pipeline new_pipeline(ctx_.api_ctx(), std::move(prog_ref), ctx_.log(), subgroup_size);
+    if (!ret || !ret->Equals({}, prog, {}, {})) {
+        assert(prog);
+        Ren::Pipeline new_pipeline(ctx_.api_ctx(), prog, ctx_.log(), subgroup_size);
 
         std::lock_guard<std::mutex> _(mtx_);
         ret = pipelines_.Insert(std::move(new_pipeline));
-        if (ret.strong_refs() == 1) {
-            persistent_pipelines_.push_back(ret);
-        }
+        assert(ret.strong_refs() == 1);
+        persistent_pipelines_.push_back(ret);
+        assert(pipelines_.CheckUnique());
+    }
+    return ret;
+}
+
+Ren::PipelineRef Eng::ShaderLoader::LoadPipeline(const Ren::RastState &rast_state, const Ren::ProgramRef &prog,
+                                                 const Ren::VertexInputRef &vtx_input,
+                                                 const Ren::RenderPassRef &render_pass, const uint32_t subpass_index) {
+    Ren::PipelineRef ret;
+    { // find pipeline
+        std::lock_guard<std::mutex> _(mtx_);
+        ret = pipelines_.LowerBound(
+            [&](const Ren::Pipeline &pi) { return pi.LessThan(rast_state, prog, vtx_input, render_pass); });
+    }
+    if (!ret || !ret->Equals(rast_state, prog, vtx_input, render_pass)) {
+        Ren::Pipeline new_pipeline(ctx_.api_ctx(), rast_state, prog, vtx_input, render_pass, subpass_index, ctx_.log());
+
+        std::lock_guard<std::mutex> _(mtx_);
+        ret = pipelines_.Insert(std::move(new_pipeline));
+        assert(ret.strong_refs() == 1);
+        persistent_pipelines_.push_back(ret);
         assert(pipelines_.CheckUnique());
     }
     return ret;

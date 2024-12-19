@@ -26,122 +26,122 @@
 
 namespace Ren {
 const eTexFormat g_tex_format_from_dxgi_format[] = {
-    eTexFormat::Undefined,        // DXGI_FORMAT_UNKNOWN
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32A32_TYPELESS
-    eTexFormat::RawRGBA32F,       // DXGI_FORMAT_R32G32B32A32_FLOAT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32A32_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32A32_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_FLOAT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_TYPELESS
-    eTexFormat::RawRGBA16F,       // DXGI_FORMAT_R16G16B16A16_FLOAT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32_TYPELESS
-    eTexFormat::RawRG32F,         // DXGI_FORMAT_R32G32_FLOAT
-    eTexFormat::RawRG32UI,        // DXGI_FORMAT_R32G32_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32G8X24_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_D32_FLOAT_S8X24_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_X32_TYPELESS_G8X24_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R10G10B10A2_TYPELESS
-    eTexFormat::RawRGB10_A2,      // DXGI_FORMAT_R10G10B10A2_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R10G10B10A2_UINT
-    eTexFormat::RawRG11F_B10F,    // DXGI_FORMAT_R11G11B10_FLOAT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8B8A8_TYPELESS
-    eTexFormat::RawRGBA8888,      // DXGI_FORMAT_R8G8B8A8_UNORM
-    eTexFormat::RawRGBA8888,      // DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8B8A8_UINT
-    eTexFormat::RawRGBA8888Snorm, // DXGI_FORMAT_R8G8B8A8_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8B8A8_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_TYPELESS
-    eTexFormat::RawRG16F,         // DXGI_FORMAT_R16G16_FLOAT
-    eTexFormat::RawRG16,          // DXGI_FORMAT_R16G16_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_D32_FLOAT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32_FLOAT
-    eTexFormat::RawR32UI,         // DXGI_FORMAT_R32_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R32_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R24G8_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_D24_UNORM_S8_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R24_UNORM_X8_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_X24_TYPELESS_G8_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_TYPELESS
-    eTexFormat::RawRG88,          // DXGI_FORMAT_R8G8_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16_TYPELESS
-    eTexFormat::RawR16F,          // DXGI_FORMAT_R16_FLOAT
-    eTexFormat::Undefined,        // DXGI_FORMAT_D16_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R16_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8_TYPELESS
-    eTexFormat::RawR8,            // DXGI_FORMAT_R8_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8_UINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8_SINT
-    eTexFormat::Undefined,        // DXGI_FORMAT_A8_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R1_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R9G9B9E5_SHAREDEXP
-    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_B8G8_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_G8R8_G8B8_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC1_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC1_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC1_UNORM_SRGB
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC2_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC2_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC2_UNORM_SRGB
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC3_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC3_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC3_UNORM_SRGB
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC4_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC4_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC4_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC5_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC5_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC5_SNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_B5G6R5_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_B5G5R5A1_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8A8_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8X8_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8A8_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
-    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8X8_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC6H_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC6H_UF16
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC6H_SF16
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC7_TYPELESS
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC7_UNORM
-    eTexFormat::Undefined,        // DXGI_FORMAT_BC7_UNORM_SRGB
-    eTexFormat::Undefined,        // DXGI_FORMAT_AYUV
-    eTexFormat::Undefined,        // DXGI_FORMAT_Y410
-    eTexFormat::Undefined,        // DXGI_FORMAT_Y416
-    eTexFormat::Undefined,        // DXGI_FORMAT_NV12
-    eTexFormat::Undefined,        //  DXGI_FORMAT_P010
-    eTexFormat::Undefined,        // DXGI_FORMAT_P016
-    eTexFormat::Undefined,        // DXGI_FORMAT_420_OPAQUE
-    eTexFormat::Undefined,        // DXGI_FORMAT_YUY2
-    eTexFormat::Undefined,        // DXGI_FORMAT_Y210
-    eTexFormat::Undefined,        // DXGI_FORMAT_Y216
-    eTexFormat::Undefined,        // DXGI_FORMAT_NV11
-    eTexFormat::Undefined,        // DXGI_FORMAT_AI44
-    eTexFormat::Undefined,        // DXGI_FORMAT_IA44
-    eTexFormat::Undefined,        // DXGI_FORMAT_P8
-    eTexFormat::Undefined,        // DXGI_FORMAT_A8P8
-    eTexFormat::Undefined,        // DXGI_FORMAT_B4G4R4A4_UNORM = 115
+    eTexFormat::Undefined,   // DXGI_FORMAT_UNKNOWN
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_TYPELESS
+    eTexFormat::RGBA32F,     // DXGI_FORMAT_R32G32B32A32_FLOAT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32A32_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_FLOAT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32B32_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_TYPELESS
+    eTexFormat::RGBA16F,     // DXGI_FORMAT_R16G16B16A16_FLOAT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16B16A16_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32_TYPELESS
+    eTexFormat::RG32F,       // DXGI_FORMAT_R32G32_FLOAT
+    eTexFormat::RG32UI,      // DXGI_FORMAT_R32G32_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G32_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32G8X24_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_D32_FLOAT_S8X24_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_X32_TYPELESS_G8X24_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R10G10B10A2_TYPELESS
+    eTexFormat::RGB10_A2,    // DXGI_FORMAT_R10G10B10A2_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R10G10B10A2_UINT
+    eTexFormat::RG11F_B10F,  // DXGI_FORMAT_R11G11B10_FLOAT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_TYPELESS
+    eTexFormat::RGBA8,       // DXGI_FORMAT_R8G8B8A8_UNORM
+    eTexFormat::RGBA8,       // DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_UINT
+    eTexFormat::RGBA8_snorm, // DXGI_FORMAT_R8G8B8A8_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8B8A8_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_TYPELESS
+    eTexFormat::RG16F,       // DXGI_FORMAT_R16G16_FLOAT
+    eTexFormat::RG16,        // DXGI_FORMAT_R16G16_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16G16_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_D32_FLOAT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32_FLOAT
+    eTexFormat::R32UI,       // DXGI_FORMAT_R32_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R32_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R24G8_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_D24_UNORM_S8_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_X24_TYPELESS_G8_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_TYPELESS
+    eTexFormat::RG8,         // DXGI_FORMAT_R8G8_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16_TYPELESS
+    eTexFormat::R16F,        // DXGI_FORMAT_R16_FLOAT
+    eTexFormat::Undefined,   // DXGI_FORMAT_D16_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R16_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8_TYPELESS
+    eTexFormat::R8,          // DXGI_FORMAT_R8_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8_UINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8_SINT
+    eTexFormat::Undefined,   // DXGI_FORMAT_A8_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R1_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R9G9B9E5_SHAREDEXP
+    eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_B8G8_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_G8R8_G8B8_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC1_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC1_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC1_UNORM_SRGB
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC2_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC2_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC2_UNORM_SRGB
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC3_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC3_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC3_UNORM_SRGB
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC4_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC4_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC4_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC5_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC5_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC5_SNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_B5G6R5_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_B5G5R5A1_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
+    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC6H_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC6H_UF16
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC6H_SF16
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC7_TYPELESS
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC7_UNORM
+    eTexFormat::Undefined,   // DXGI_FORMAT_BC7_UNORM_SRGB
+    eTexFormat::Undefined,   // DXGI_FORMAT_AYUV
+    eTexFormat::Undefined,   // DXGI_FORMAT_Y410
+    eTexFormat::Undefined,   // DXGI_FORMAT_Y416
+    eTexFormat::Undefined,   // DXGI_FORMAT_NV12
+    eTexFormat::Undefined,   // DXGI_FORMAT_P010
+    eTexFormat::Undefined,   // DXGI_FORMAT_P016
+    eTexFormat::Undefined,   // DXGI_FORMAT_420_OPAQUE
+    eTexFormat::Undefined,   // DXGI_FORMAT_YUY2
+    eTexFormat::Undefined,   // DXGI_FORMAT_Y210
+    eTexFormat::Undefined,   // DXGI_FORMAT_Y216
+    eTexFormat::Undefined,   // DXGI_FORMAT_NV11
+    eTexFormat::Undefined,   // DXGI_FORMAT_AI44
+    eTexFormat::Undefined,   // DXGI_FORMAT_IA44
+    eTexFormat::Undefined,   // DXGI_FORMAT_P8
+    eTexFormat::Undefined,   // DXGI_FORMAT_A8P8
+    eTexFormat::Undefined,   // DXGI_FORMAT_B4G4R4A4_UNORM = 115
 };
 static_assert(std::size(g_tex_format_from_dxgi_format) == 116, "!");
 
@@ -270,17 +270,11 @@ const uint8_t _blank_ASTC_block_4x4[] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xF
                                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 const int _blank_ASTC_block_4x4_len = sizeof(_blank_ASTC_block_4x4);
 
-force_inline Vec4f permute(const Vec4f &x) {
-    return Mod(((x * 34.0f) + Vec4f{1.0f}) * x, Vec4f{289.0f});
-}
+force_inline Vec4f permute(const Vec4f &x) { return Mod(((x * 34.0f) + Vec4f{1.0f}) * x, Vec4f{289.0f}); }
 
-force_inline Vec4f taylor_inv_sqrt(const Vec4f &r) {
-    return Vec4f{1.79284291400159f} - 0.85373472095314f * r;
-}
+force_inline Vec4f taylor_inv_sqrt(const Vec4f &r) { return Vec4f{1.79284291400159f} - 0.85373472095314f * r; }
 
-force_inline Vec4f fade(const Vec4f &t) {
-    return t * t * t * (t * (t * 6.0f - Vec4f{15}) + Vec4f{10});
-}
+force_inline Vec4f fade(const Vec4f &t) { return t * t * t * (t * (t * 6.0f - Vec4f{15}) + Vec4f{10}); }
 
 int round_up(int v, int align) { return align * ((v + align - 1) / align); }
 
@@ -438,9 +432,9 @@ bool Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &form
     const uint32_t bpp = img_header[4];
     const uint32_t bytes_per_pixel = bpp / 8;
     if (bpp == 32) {
-        format = eTexFormat::RawRGBA8888;
+        format = eTexFormat::RGBA8;
     } else if (bpp == 24) {
-        format = eTexFormat::RawRGB888;
+        format = eTexFormat::RGB8;
     }
 
     if (out_data && out_size < w * h * bytes_per_pixel) {
@@ -1294,7 +1288,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
 //	by Stefan Gustavson
 //
 float Ren::PerlinNoise(const Vec4f &P) {
-    Vec4f Pi0 = Floor(P);          // Integer part for indexing
+    Vec4f Pi0 = Floor(P);       // Integer part for indexing
     Vec4f Pi1 = Pi0 + Vec4f{1}; // Integer part + 1
     Pi0 = Mod(Pi0, Vec4f{289});
     Pi1 = Mod(Pi1, Vec4f{289});

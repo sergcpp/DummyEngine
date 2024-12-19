@@ -1,69 +1,34 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
 #include "SamplingParams.h"
 
 namespace Ren {
+#define DECORATE(X) X,
 enum class eTexFormat : uint8_t {
-    Undefined,
-    RawRGB888,
-    RawRGBA8888,
-    RawRGBA8888Snorm,
-    RawBGRA8888,
-    RawR32F,
-    RawR16F,
-    RawR8,
-    RawR32UI,
-    RawRG88,
-    RawRGB32F,
-    RawRGBA32F,
-    RawRGBA32UI,
-    RawRGBE8888,
-    RawRGB16F,
-    RawRGBA16F,
-    RawRG16Snorm,
-    RawRG16,
-    RawRG16F,
-    RawRG32F,
-    RawRG32UI,
-    RawRGB10_A2,
-    RawRG11F_B10F,
-    RawRGB9E5,
-    Depth16,
-    Depth24Stencil8,
-    Depth32Stencil8,
-#ifndef __ANDROID__
-    Depth32,
-#endif
-    BC1,
-    BC2,
-    BC3,
-    BC4,
-    BC5,
-    ASTC,
-    None,
+#include "TextureFormats.inl"
     _Count
 };
+#undef DECORATE
 
 inline bool operator<(const eTexFormat lhs, const eTexFormat rhs) { return uint8_t(lhs) < uint8_t(rhs); }
 
+std::string_view TexFormatName(eTexFormat format);
+eTexFormat TexFormat(std::string_view name);
+
 inline bool IsDepthFormat(const eTexFormat format) {
-    return format == eTexFormat::Depth16 || format == eTexFormat::Depth24Stencil8 ||
-           format == eTexFormat::Depth32Stencil8
-#ifndef __ANDROID__
-           || format == eTexFormat::Depth32;
-#else
-        ;
-#endif
+    return format == eTexFormat::D16 || format == eTexFormat::D24_S8 || format == eTexFormat::D32_S8 ||
+           format == eTexFormat::D32;
 }
 
 inline bool IsDepthStencilFormat(const eTexFormat format) {
-    return format == eTexFormat::Depth24Stencil8 || format == eTexFormat::Depth32Stencil8;
+    return format == eTexFormat::D24_S8 || format == eTexFormat::D32_S8;
 }
 
 inline bool IsUnsignedIntegerFormat(const eTexFormat format) {
-    return format == eTexFormat::RawR32UI || format == eTexFormat::RawRG32UI || format == eTexFormat::RawRGBA32UI;
+    return format == eTexFormat::R32UI || format == eTexFormat::RG32UI || format == eTexFormat::RGBA32UI;
 }
 
 bool IsCompressedFormat(const eTexFormat format);

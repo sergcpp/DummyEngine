@@ -212,7 +212,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     // (Re)create framebuffers
     //
     framebuffers_.resize(uint32_t(api_ctx->present_images.size()));
-    if (!framebuffers_[api_ctx->active_present_image].Setup(api_ctx, render_pass_, w, h, ctx_.backbuffer_ref(), {},
+    if (!framebuffers_[api_ctx->active_present_image].Setup(api_ctx, *render_pass_, w, h, ctx_.backbuffer_ref(), {},
                                                             Ren::WeakTex2DRef{}, false, ctx_.log())) {
         ctx_.log()->Error("Failed to create framebuffer!");
     }
@@ -253,8 +253,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
     assert(index_buf_->resource_state == Ren::eResState::IndexBuffer);
 
     VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-    render_pass_begin_info.renderPass = render_pass_.handle();
-    render_pass_begin_info.framebuffer = framebuffers_[api_ctx->active_present_image].handle();
+    render_pass_begin_info.renderPass = render_pass_->vk_handle();
+    render_pass_begin_info.framebuffer = framebuffers_[api_ctx->active_present_image].vk_handle();
     render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(w), uint32_t(h)}};
 
     api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);

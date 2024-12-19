@@ -5,19 +5,18 @@
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void Eng::ExDepthHierarchy::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
-    if (!initialized) {
-        auto subgroup_select = [&ctx](std::string_view subgroup_shader, std::string_view nosubgroup_shader) {
-            return ctx.capabilities.subgroup ? subgroup_shader : nosubgroup_shader;
-        };
+Eng::ExDepthHierarchy::ExDepthHierarchy(FgBuilder &builder, const ViewState *view_state, const FgResRef depth_tex,
+                                        const FgResRef atomic_counter, const FgResRef output_tex) {
+    view_state_ = view_state;
 
-        Ren::ProgramRef depth_hierarchy_prog = sh.LoadProgram(subgroup_select(
-            "internal/depth_hierarchy@MIPS_7.comp.glsl", "internal/depth_hierarchy@MIPS_7;NO_SUBGROUP.comp.glsl"));
+    depth_tex_ = depth_tex;
+    atomic_buf_ = atomic_counter;
+    output_tex_ = output_tex;
 
-        if (!pi_depth_hierarchy_.Init(ctx.api_ctx(), std::move(depth_hierarchy_prog), ctx.log())) {
-            ctx.log()->Error("ExDepthHierarchy: failed to initialize pipeline!");
-        }
+    auto subgroup_select = [&builder](std::string_view subgroup_shader, std::string_view nosubgroup_shader) {
+        return builder.ctx().capabilities.subgroup ? subgroup_shader : nosubgroup_shader;
+    };
 
-        initialized = true;
-    }
+    pi_depth_hierarchy_ = builder.sh().LoadPipeline(subgroup_select(
+        "internal/depth_hierarchy@MIPS_7.comp.glsl", "internal/depth_hierarchy@MIPS_7;NO_SUBGROUP.comp.glsl"));
 }

@@ -7,13 +7,13 @@
 #include "RenderPass.h"
 #include "Span.h"
 #include "TextureParams.h"
+#include "VertexInput.h"
 
 namespace Ren {
 struct ApiContext;
 class RenderPass;
 struct RenderTarget;
 struct RenderTargetInfo;
-class VertexInput;
 
 enum class ePipelineType : uint8_t { Undefined, Graphics, Compute, Raytracing };
 
@@ -33,11 +33,9 @@ class Pipeline : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
     ePipelineType type_ = ePipelineType::Undefined;
     RastState rast_state_;
-    const RenderPass *render_pass_ = nullptr;
-    SmallVector<eTexFormat, 4> color_formats_;
-    eTexFormat depth_format_ = eTexFormat::Undefined;
+    RenderPassRef render_pass_;
     ProgramRef prog_;
-    const VertexInput *vtx_input_ = nullptr;
+    VertexInputRef vtx_input_;
 #if defined(REN_VK_BACKEND)
     VkPipelineLayout layout_ = {};
     VkPipeline handle_ = {};
@@ -54,14 +52,14 @@ class Pipeline : public RefCounter {
 
     void Destroy();
 
-    bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, const VertexInput *vtx_input,
-              const RenderPass *render_pass, Span<const RenderTargetInfo> color_attachments,
-              RenderTargetInfo depth_attachment, uint32_t subpass_index, ILog *log);
-
   public:
     Pipeline() = default;
     Pipeline(ApiContext *api_ctx, ProgramRef prog, ILog *log, int subgroup_size = -1) {
         Init(api_ctx, std::move(prog), log, subgroup_size);
+    }
+    Pipeline(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, VertexInputRef vtx_input,
+             RenderPassRef render_pass, uint32_t subpass_index, ILog *log) {
+        Init(api_ctx, rast_state, prog, vtx_input, render_pass, subpass_index, log);
     }
     Pipeline(const Pipeline &rhs) = delete;
     Pipeline(Pipeline &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -74,33 +72,32 @@ class Pipeline : public RefCounter {
 
     bool operator==(const Pipeline &rhs) const {
         return vtx_input_ == rhs.vtx_input_ && prog_ == rhs.prog_ && render_pass_ == rhs.render_pass_ &&
-               depth_format_ == rhs.depth_format_ && color_formats_ == rhs.color_formats_ &&
                rast_state_ == rhs.rast_state_;
     }
     bool operator!=(const Pipeline &rhs) const {
         return vtx_input_ != rhs.vtx_input_ || prog_ != rhs.prog_ || render_pass_ != rhs.render_pass_ ||
-               depth_format_ != rhs.depth_format_ || color_formats_ != rhs.color_formats_ ||
                rast_state_ != rhs.rast_state_;
     }
     bool operator<(const Pipeline &rhs) const {
-        if (vtx_input_ < rhs.vtx_input_) {
+        return LessThan(rhs.rast_state_, rhs.prog_, rhs.vtx_input_, rhs.render_pass_);
+    }
+
+    bool Equals(const RastState &rast_state, const ProgramRef &prog, const VertexInputRef &vtx_input,
+                const RenderPassRef &render_pass) const {
+        return vtx_input_ == vtx_input && prog_ == prog && render_pass_ == render_pass && rast_state_ == rast_state;
+    }
+    bool LessThan(const RastState &rast_state, const ProgramRef &prog, const VertexInputRef &vtx_input,
+                  const RenderPassRef &render_pass) const {
+        if (vtx_input_ < vtx_input) {
             return true;
-        } else if (vtx_input_ == rhs.vtx_input_) {
-            if (prog_ < rhs.prog_) {
+        } else if (vtx_input_ == vtx_input) {
+            if (prog_ < prog) {
                 return true;
-            } else if (prog_ == rhs.prog_) {
-                if (render_pass_ < rhs.render_pass_) {
+            } else if (prog_ == prog) {
+                if (render_pass_ < render_pass) {
                     return true;
-                } else if (render_pass_ == rhs.render_pass_) {
-                    if (depth_format_ < rhs.depth_format_) {
-                        return true;
-                    } else if (depth_format_ == rhs.depth_format_) {
-                        if (color_formats_ < rhs.color_formats_) {
-                            return true;
-                        } else if (color_formats_ == rhs.color_formats_) {
-                            return rast_state_ < rhs.rast_state_;
-                        }
-                    }
+                } else if (render_pass_ == render_pass) {
+                    return rast_state_ < rast_state;
                 }
             }
         }
@@ -109,12 +106,9 @@ class Pipeline : public RefCounter {
 
     ePipelineType type() const { return type_; }
     const RastState &rast_state() const { return rast_state_; }
-    const RenderPass *render_pass() const { return render_pass_; }
+    const RenderPassRef &render_pass() const { return render_pass_; }
     const ProgramRef &prog() const { return prog_; }
-    const VertexInput *vtx_input() const { return vtx_input_; }
-
-    Span<const eTexFormat> color_formats() const { return color_formats_; }
-    eTexFormat depth_format() const { return depth_format_; }
+    const VertexInputRef &vtx_input() const { return vtx_input_; }
 
 #if defined(REN_VK_BACKEND)
     VkPipelineLayout layout() const { return layout_; }
@@ -126,16 +120,12 @@ class Pipeline : public RefCounter {
     const VkStridedDeviceAddressRegionKHR *call_table() const { return &call_region_; }
 #endif
 
-    bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, const VertexInput *vtx_input,
-              const RenderPass *render_pass, uint32_t subpass_index, ILog *log);
-    bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, const VertexInput *vtx_input,
-              Span<const RenderTarget> color_attachments, RenderTarget depth_attachment, uint32_t subpass_index,
-              ILog *log);
+    bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, VertexInputRef vtx_input,
+              RenderPassRef render_pass, uint32_t subpass_index, ILog *log);
     bool Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, int subgroup_size = -1);
 };
 
 using PipelineRef = StrongRef<Pipeline, SortedStorage<Pipeline>>;
 using WeakPipelineRef = WeakRef<Pipeline, SortedStorage<Pipeline>>;
 using PipelineStorage = SortedStorage<Pipeline>;
-
 } // namespace Ren

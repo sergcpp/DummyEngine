@@ -195,11 +195,47 @@ void Ren::Context::ReleasePrograms() {
     programs_.clear();
 }
 
-Ren::PipelineRef Ren::Context::LoadPipeline(ProgramRef prog_ref, const int subgroup_size) {
-    PipelineRef ref = pipelines_.LowerBound([&](const Pipeline &pi) { return pi.prog() < prog_ref; });
-    if (!ref || ref->prog() != prog_ref) {
+Ren::VertexInputRef Ren::Context::LoadVertexInput(Span<const VtxAttribDesc> attribs, const BufferRef &elem_buf) {
+    VertexInputRef ref = vtx_inputs_.LowerBound([&](const VertexInput &vi) {
+        if (vi.elem_buf < elem_buf) {
+            return true;
+        } else if (vi.elem_buf == elem_buf) {
+            return Span<const VtxAttribDesc>(vi.attribs) < attribs;
+        }
+        return false;
+    });
+    if (!ref || ref->elem_buf != elem_buf || Span<const VtxAttribDesc>(ref->attribs) != attribs) {
+        ref = vtx_inputs_.Insert(attribs, elem_buf);
+    }
+    return ref;
+}
+
+Ren::RenderPassRef Ren::Context::LoadRenderPass(const RenderTargetInfo &depth_rt,
+                                                Span<const RenderTargetInfo> color_rts) {
+    Ren::RenderPassRef ref =
+        render_passes_.LowerBound([&](const Ren::RenderPass &rp) { return rp.LessThan(depth_rt, color_rts); });
+    if (!ref || !ref->Equals(depth_rt, color_rts)) {
+        ref = render_passes_.Insert(api_ctx_.get(), depth_rt, color_rts, log_);
+    }
+    return ref;
+}
+
+Ren::PipelineRef Ren::Context::LoadPipeline(const ProgramRef &prog_ref, const int subgroup_size) {
+    PipelineRef ref = pipelines_.LowerBound([&](const Pipeline &pi) { return pi.LessThan({}, prog_ref, {}, {}); });
+    if (!ref || !ref->Equals({}, prog_ref, {}, {})) {
         assert(prog_ref);
-        ref = pipelines_.Insert(api_ctx_.get(), std::move(prog_ref), log_, subgroup_size);
+        ref = pipelines_.Insert(api_ctx_.get(), prog_ref, log_, subgroup_size);
+    }
+    return ref;
+}
+
+Ren::PipelineRef Ren::Context::LoadPipeline(const RastState &rast_state, const ProgramRef &prog,
+                                            const VertexInputRef &vtx_input, const RenderPassRef &render_pass,
+                                            const uint32_t subpass_index) {
+    Ren::PipelineRef ref = pipelines_.LowerBound(
+        [&](const Ren::Pipeline &pi) { return pi.LessThan(rast_state, prog, vtx_input, render_pass); });
+    if (!ref || !ref->Equals(rast_state, prog, vtx_input, render_pass)) {
+        ref = pipelines_.Insert(api_ctx_.get(), rast_state, prog, vtx_input, render_pass, subpass_index, log_);
     }
     return ref;
 }
