@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 bool Sys::JsLiteral::Read(std::istream &in) {
