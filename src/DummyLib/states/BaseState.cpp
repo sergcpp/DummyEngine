@@ -292,21 +292,21 @@ void BaseState::Enter() {
             if (args[1].val > 3.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
             } else if (args[1].val > 2.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
             } else if (args[1].val > 1.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
-                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
@@ -703,7 +703,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         Ren::Tex2DParams params;
         params.w = viewer_->width;
         params.h = viewer_->height;
-        params.format = Ren::eTexFormat::RawRGBA8888;
+        params.format = Ren::eTexFormat::RGBA8;
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Transfer;
@@ -1893,7 +1893,7 @@ void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
             Ren::Tex2DParams params = {};
             params.w = res_x;
             params.h = res_y;
-            params.format = Ren::eTexFormat::RawRGBA32F;
+            params.format = Ren::eTexFormat::RGBA32F;
             params.flags = Ren::eTexFlagBits::NoOwnership;
 
             Ren::eTexLoadStatus status;
@@ -1902,7 +1902,7 @@ void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
             pt_result_->resource_state = to_ren_state(pt_image.state);
         }
         pt_result_->resource_state = to_ren_state(pt_image.state);
-        renderer_->BlitImageTonemap(pt_result_, res_x, res_y, Ren::eTexFormat::RawRGBA32F,
+        renderer_->BlitImageTonemap(pt_result_, res_x, res_y, Ren::eTexFormat::RGBA32F,
                                     scene_manager_->main_cam().gamma, scene_manager_->main_cam().min_exposure,
                                     scene_manager_->main_cam().max_exposure, target, false, true);
         ray_renderer_->set_native_raw_pixels_state(to_ray_state(pt_result_->resource_state));
@@ -1911,7 +1911,7 @@ void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
     {
         const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
         renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
-                                     Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().gamma,
+                                     Ren::eTexFormat::RGBA32F, scene_manager_->main_cam().gamma,
                                      scene_manager_->main_cam().min_exposure, scene_manager_->main_cam().max_exposure,
                                      target, false, true);
     }

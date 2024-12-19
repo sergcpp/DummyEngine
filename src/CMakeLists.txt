@@ -118,5 +118,7 @@ set_target_properties(ltc_fit
                       SPIRV-Reflect
                       optick
                       glslx
-                      spirv_compiler
                       DummyLib_CreateSymLinks PROPERTIES FOLDER _)
+if(${REN_BACKEND} STREQUAL "VK")
+    set_target_properties(spirv_compiler PROPERTIES FOLDER _)
+endif()

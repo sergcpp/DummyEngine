@@ -102,8 +102,8 @@ class ModlApp {
 
     int shape_key_index_ = -1;
 
-    Ren::VertexInput draw_vi_;
-    Ren::RenderPass rp_draw_;
+    Ren::VertexInputRef draw_vi_;
+    Ren::RenderPassRef rp_draw_;
     Ren::PipelineStorage pipelines_;
 
     enum class eViewMode {

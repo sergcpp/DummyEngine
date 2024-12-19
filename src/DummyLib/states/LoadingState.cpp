@@ -39,7 +39,7 @@ LoadingState::~LoadingState() = default;
 void LoadingState::Enter() {
     Ren::Tex2DParams params;
     params.w = params.h = 1;
-    params.format = Ren::eTexFormat::RawRGBA8888;
+    params.format = Ren::eTexFormat::RGBA8;
 
     Ren::eTexLoadStatus load_status;
     dummy_white_ = ren_ctx_->LoadTextureRegion("dummy_white", Gui::ColorWhite, params, &load_status);

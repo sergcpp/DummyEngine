@@ -41,8 +41,8 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
     const Material *mat = m->groups()[0].front_mat.get();
     ProgramRef p = mat->pipelines[0]->prog();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_handle().id);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_handle().id);
+    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_handle().buf);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_handle().buf);
 
     p = diag_prog_;
     glUniform1f(U_MODE, float(view_mode_));
@@ -93,8 +93,8 @@ void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
     const Material *mat = m->groups()[0].front_mat.get();
     ProgramRef p = mat->pipelines[0]->prog();
 
-    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_handle().id);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_handle().id);
+    glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_handle().buf);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->indices_buf_handle().buf);
 
     p = diag_colored_prog_;
     glUniform1f(U_MODE, float(view_mode_));

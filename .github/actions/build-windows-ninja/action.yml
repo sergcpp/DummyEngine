@@ -48,7 +48,9 @@ runs:
           copy build/src/Eng/first-party/Snd/tests/test_Snd.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Net/tests/test_Net.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/glslx/tests/test_glslx.exe $WORK_DIR/${{ inputs.bin-dir }}
-          copy build/src/Eng/third-party/glslang/spirv_compiler.dll $WORK_DIR/${{ inputs.bin-dir }}
+          if (Test-Path build/src/Eng/third-party/glslang/spirv_compiler.dll) {
+            copy build/src/Eng/third-party/glslang/spirv_compiler.dll $WORK_DIR/${{ inputs.bin-dir }}
+          }
           copy DummyApp*.exe $WORK_DIR/${{ inputs.bin-dir }}
         }
       shell: pwsh

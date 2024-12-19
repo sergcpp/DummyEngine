@@ -605,7 +605,7 @@ int ModlApp::Init(const int w, const int h) {
 
         Ren::Tex2DParams p;
         p.w = p.h = checker_res;
-        p.format = Ren::eTexFormat::RawRGB888;
+        p.format = Ren::eTexFormat::RGB8;
 
         Ren::eTexLoadStatus status;
         checker_tex_ = ctx_->LoadTexture2D("__diag_checker", checker_data, p, ctx_->default_mem_allocs(), &status);
@@ -1936,7 +1936,6 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
         Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src, Ren::eShaderType::Fragment);
 
         prog = ctx_->LoadProgram(vs_ref, fs_ref, {}, {}, {});
-        assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
 
     Ren::RastState rast_state;
@@ -1949,10 +1948,10 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
     const uint32_t new_index = pipelines_.emplace();
     Ren::Pipeline &new_pipeline = pipelines_.at(new_index);
 
-    const bool res = new_pipeline.Init(ctx_->api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, 0, ctx_->log());
+    /*const bool res = new_pipeline.Init(ctx_->api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, 0, ctx_->log());
     if (!res) {
         printf("Failed to initialize pipeline!");
-    }
+    }*/
 
     out_pipelines.emplace_back(&pipelines_, new_index);
 #elif defined(REN_SW_BACKEND)

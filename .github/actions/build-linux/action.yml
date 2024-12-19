@@ -32,7 +32,7 @@ runs:
           cp build/src/Eng/first-party/Snd/tests/test_Snd* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Eng/first-party/Net/tests/test_Net* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Eng/first-party/glslx/tests/test_glslx* $WORK_DIR/${{ inputs.bin-dir }}
-          cp build/src/Eng/third-party/glslang/spirv_compiler* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/third-party/glslang/spirv_compiler* $WORK_DIR/${{ inputs.bin-dir }} || true
           cp DummyApp* $WORK_DIR/${{ inputs.bin-dir }}
         fi
       shell: bash
