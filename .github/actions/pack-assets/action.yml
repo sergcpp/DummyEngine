@@ -76,6 +76,7 @@ runs:
         cp ./assets_pc/shaders/*.json $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/
         cp ./assets_pc/shaders/*.spv $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/
         cp ./assets_pc/shaders/internal/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/shaders/internal/
+        cp ./assets_pc/textures/staircase/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/staircase/
         cp ./assets_pc/textures/mat_test/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/mat_test/
         cp ./assets_pc/textures/internal/* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/internal/
         cp ./assets_pc/textures/default_* $WORK_DIR/staircase-win-x86_64-vk/assets_pc/textures/
