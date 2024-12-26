@@ -12,12 +12,11 @@ extern const VkFormat g_vk_formats[];
 VkFormat ToSRGBFormat(VkFormat format);
 } // namespace Ren
 
-Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res,
+Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
                                 const eTexFormat formats[], const eTexFlags flags[], eTexFilter filter, ILog *log)
     : api_ctx_(api_ctx), splitter_(w, h) {
     filter_ = filter;
-
-    mip_count_ = CalcMipCount(w, h, min_res, filter);
+    mip_count_ = mip_count;
 
     for (int i = 0; i < MaxTextureCount; i++) {
         if (formats[i] == eTexFormat::Undefined) {

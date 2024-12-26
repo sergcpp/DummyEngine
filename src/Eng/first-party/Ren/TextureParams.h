@@ -6,9 +6,9 @@
 #include "SamplingParams.h"
 
 namespace Ren {
-#define DECORATE(X) X,
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ) X,
 enum class eTexFormat : uint8_t {
-#include "TextureFormats.inl"
+#include "TextureFormat.inl"
     _Count
 };
 #undef DECORATE
@@ -33,7 +33,7 @@ inline bool IsUnsignedIntegerFormat(const eTexFormat format) {
 
 bool IsCompressedFormat(const eTexFormat format);
 
-int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
+int CalcMipCount(int w, int h, int min_res);
 
 #if defined(__ANDROID__)
 const eTexFormat DefaultCompressedRGBA = eTexFormat::ASTC;

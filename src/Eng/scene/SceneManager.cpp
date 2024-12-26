@@ -133,7 +133,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         const Ren::eTexFormat formats[] = {Ren::DefaultCompressedRGBA, Ren::eTexFormat::Undefined};
         const Ren::eTexFlags flags[] = {{}};
         scene_data_.decals_atlas =
-            Ren::TextureAtlas{ren_ctx.api_ctx(),          DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, 64, formats, flags,
+            Ren::TextureAtlas{ren_ctx.api_ctx(),          DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, 64, 1, formats, flags,
                               Ren::eTexFilter::Trilinear, ren_ctx_.log()};
     }
 
@@ -218,7 +218,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     { // create white texture
         Ren::Tex2DParams p;
         p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.format = Ren::eTexFormat::RGBA8;
         p.w = p.h = 1;
 
@@ -242,7 +242,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
 
             Ren::Tex2DParams p;
             p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
-            p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            p.sampling.filter = Ren::eTexFilter::Bilinear;
 
             Ren::eTexLoadStatus status;
             error_tex_ = ren_ctx_.LoadTexture2D(name_buf, in_file_data, p, ren_ctx_.default_mem_allocs(), &status);
@@ -736,24 +736,24 @@ void Eng::SceneManager::AllocGICache() {
     // TODO: make this temporary FG resource
     scene_data_.persistent_data.probe_ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z,
-        4 * PROBE_VOLUME_RES_Y, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        4 * PROBE_VOLUME_RES_Y, 1, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
     // ~47.8mb
     scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES,
-        PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES, 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT,
-        Ren::eTexFormat::RGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES, 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1,
+        Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
     // ~84.9mb
     scene_data_.persistent_data.probe_distance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES,
-        PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES, PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RG16F,
-        Ren::eTexFilter::BilinearNoMipmap,
+        PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES, PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1, Ren::eTexFormat::RG16F,
+        Ren::eTexFilter::Bilinear,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
     // ~0.7mb
     scene_data_.persistent_data.probe_offset = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Offset", PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z,
-        PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
 
     ClearGICache();
@@ -1480,7 +1480,7 @@ Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, cons
     memcpy(p.fallback_color, color, 4);
 
     if (bool(p.flags & Ren::eTexFlagBits::NoFilter)) {
-        p.sampling.filter = Ren::eTexFilter::NoFilter;
+        p.sampling.filter = Ren::eTexFilter::Nearest;
     } else {
         p.sampling.filter = Ren::eTexFilter::Trilinear;
     }

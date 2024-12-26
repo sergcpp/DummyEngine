@@ -3,12 +3,11 @@
 #include <algorithm>
 
 namespace Ren {
-#define DECORATE(X) #X,
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ) #X,
 static const std::string_view g_format_names[] = {
-#include "TextureFormats.inl"
+#include "TextureFormat.inl"
 };
 #undef DECORATE
-static_assert(std::size(g_format_names) == int(eTexFormat::_Count));
 } // namespace Ren
 
 std::string_view Ren::TexFormatName(const eTexFormat format) { return g_format_names[uint8_t(format)]; }
@@ -37,27 +36,22 @@ bool Ren::IsCompressedFormat(const eTexFormat format) {
     return false;
 }
 
-int Ren::CalcMipCount(const int w, const int h, const int min_res, eTexFilter filter) {
+int Ren::CalcMipCount(const int w, const int h, const int min_res) {
     int mip_count = 0;
-    if (filter == eTexFilter::Trilinear || filter == eTexFilter::Bilinear || filter == eTexFilter::NearestMipmap) {
-        int max_dim = std::max(w, h);
-        do {
-            mip_count++;
-        } while ((max_dim /= 2) >= min_res);
-    } else {
-        mip_count = 1;
-    }
+    int max_dim = std::max(w, h);
+    do {
+        mip_count++;
+    } while ((max_dim /= 2) >= min_res);
     return mip_count;
 }
 
 int Ren::GetColorChannelCount(const eTexFormat format) {
-    static_assert(int(eTexFormat::_Count) == 34, "Update the list below!");
+    static_assert(int(eTexFormat::_Count) == 33, "Update the list below!");
     switch (format) {
     case eTexFormat::RGBA8:
     case eTexFormat::RGBA8_snorm:
     case eTexFormat::BGRA8:
     case eTexFormat::RGBA32F:
-    case eTexFormat::RGBE8:
     case eTexFormat::RGBA16F:
     case eTexFormat::RGB10_A2:
     case eTexFormat::BC2:

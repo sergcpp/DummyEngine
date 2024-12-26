@@ -87,7 +87,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.w = (view_state_.scr_res[0] + 7) / 8;
             params.h = (view_state_.scr_res[1] + 3) / 4;
             params.format = Ren::eTexFormat::R32UI;
-            params.sampling.filter = Ren::eTexFilter::NoFilter;
+            params.sampling.filter = Ren::eTexFilter::Nearest;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             ray_hits_tex = data->out_ray_hits_tex =
                 rt_shadows.AddStorageImageOutput("SH Ray Hits", params, Stg::ComputeShader);
@@ -96,7 +96,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             Ren::Tex2DParams params;
             params.w = params.h = 128;
             params.format = Ren::eTexFormat::RG8;
-            params.sampling.filter = Ren::eTexFilter::NoFilter;
+            params.sampling.filter = Ren::eTexFilter::Nearest;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex = rt_shadows.AddStorageImageOutput("SH BN Tex", params, Stg::ComputeShader);
         }
@@ -116,13 +116,13 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
             // Initialize texel buffers if needed
             if (!sobol_buf.tbos[0]) {
-                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI,
-                                                         0, sobol_buf.ref->size());
+                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                                         sobol_buf.ref->size());
             }
             if (!scrambling_tile_buf.tbos[0]) {
                 scrambling_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI,
-                                         0, scrambling_tile_buf.ref->size());
+                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                         scrambling_tile_buf.ref->size());
             }
             if (!ranking_tile_buf.tbos[0]) {
                 ranking_tile_buf.tbos[0] =
@@ -212,7 +212,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R8;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             frame_textures.sun_shadow = data->out_result_img =
@@ -337,7 +337,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             repro_results = data->out_repro_results_img =
                 rt_classify_tiles.AddStorageImageOutput("SH Reproj Tex", params, Stg::ComputeShader);
@@ -348,7 +348,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG11F_B10F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             data->out_moments_img =
                 rt_classify_tiles.AddStorageImageOutput("SH Moments Tex", params, Stg::ComputeShader);
@@ -426,7 +426,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result0 = data->out_history_img =
                 rt_filter.AddStorageImageOutput("SH Filter 0 Tex", params, Stg::ComputeShader);
@@ -492,7 +492,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result1 = data->out_history_img =
                 rt_filter.AddStorageImageOutput("SH Filter 1 Tex", params, Stg::ComputeShader);
@@ -558,7 +558,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R8;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result2 = data->out_history_img =
                 rt_filter.AddStorageImageOutput("SH Filter 2 Tex", params, Stg::ComputeShader);
@@ -635,7 +635,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
         params.format = Ren::eTexFormat::R8;
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         shadow_tex = data->out_shadow_tex =
             sun_shadows.AddStorageImageOutput("Sun Shadows", params, Stg::ComputeShader);

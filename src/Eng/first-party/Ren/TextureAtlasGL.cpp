@@ -10,12 +10,10 @@ extern const uint32_t g_gl_mag_filter[];
 extern const uint32_t g_gl_wrap_mode[];
 } // namespace Ren
 
-Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res,
+Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
                                 const eTexFormat formats[], const eTexFlags flags[], eTexFilter filter, ILog *log)
     : splitter_(w, h) {
     filter_ = filter;
-
-    const int mip_count = CalcMipCount(w, h, min_res, filter);
 
     for (int i = 0; i < MaxTextureCount; i++) {
         if (formats[i] == eTexFormat::Undefined) {

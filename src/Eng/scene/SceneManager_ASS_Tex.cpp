@@ -583,7 +583,7 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
 
 bool WriteCubemapDDS(Ren::Span<uint32_t> data[6], const int res, const int channels, const char *out_name) {
     assert(channels == 4);
-    const int mip_count = Ren::CalcMipCount(res, res, 1, Ren::eTexFilter::Bilinear);
+    const int mip_count = Ren::CalcMipCount(res, res, 1);
 
     int total_size = 0;
     for (int i = 0; i < mip_count; ++i) {

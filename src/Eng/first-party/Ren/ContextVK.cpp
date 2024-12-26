@@ -42,7 +42,7 @@ VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT f
         ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
     }
     return VK_FALSE;
-} 
+}
 
 const std::pair<uint32_t, const char *> KnownVendors[] = {
     {0x1002, "AMD"}, {0x10DE, "NVIDIA"}, {0x8086, "INTEL"}, {0x13B5, "ARM"}};
@@ -230,9 +230,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
 
     InitDefaultBuffers();
 
-    texture_atlas_ =
-        TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",         TextureAtlasWidth,           TextureAtlasHeight,
-                          TextureAtlasLayers, eTexFormat::RGBA8, eTexFilter::BilinearNoMipmap};
+    texture_atlas_ = TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",     TextureAtlasWidth,
+                                       TextureAtlasHeight, TextureAtlasLayers,  1,
+                                       eTexFormat::RGBA8,  eTexFilter::Bilinear};
 
     for (size_t i = 0; i < api_ctx_->present_images.size(); ++i) {
         char name_buf[24];

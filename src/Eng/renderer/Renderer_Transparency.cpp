@@ -49,7 +49,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             params.w = (view_state_.scr_res[0] / 2);
             params.h = (view_state_.scr_res[1] / 2);
             params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             oit_specular[i] = data->oit_specular[i] = oit_clear.AddTransferImageOutput(tex_name, params);

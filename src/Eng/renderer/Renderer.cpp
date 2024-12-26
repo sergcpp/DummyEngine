@@ -172,7 +172,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.h = __cone_rt_lut_res;
         p.format = Ren::eTexFormat::RGBA8;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -193,7 +193,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.w = p.h = __brdf_lut_res;
         p.format = Ren::eTexFormat::RG16;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -229,7 +229,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.h = 64;
         p.format = Ren::eTexFormat::RGBA32F;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -250,7 +250,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.w = p.h = __noise_res;
         p.format = Ren::eTexFormat::RGBA8_snorm;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
 
         Ren::eTexLoadStatus status;
         noise_tex_ = ctx_.LoadTexture2D("noise", {(const uint8_t *)&__noise[0], __noise_res * __noise_res * 4}, p,
@@ -424,7 +424,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         params.h = SHADOWMAP_HEIGHT;
         params.format = Ren::eTexFormat::D16;
         params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Sampled;
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.sampling.compare = Ren::eTexCompare::GEqual;
 
@@ -439,7 +439,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::eSamplerLoadStatus status;
         nearest_sampler_ = ctx_.LoadSampler(sampler_params, &status);
 
-        sampler_params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        sampler_params.filter = Ren::eTexFilter::Bilinear;
         linear_sampler_ = ctx_.LoadSampler(sampler_params, &status);
     }
 
@@ -929,7 +929,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         frame_textures.color_params.w = view_state_.scr_res[0];
         frame_textures.color_params.h = view_state_.scr_res[1];
         frame_textures.color_params.format = Ren::eTexFormat::RGBA16F;
-        frame_textures.color_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        frame_textures.color_params.sampling.filter = Ren::eTexFilter::Bilinear;
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
         if (deferred_shading) {
@@ -1040,7 +1040,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 params.format = Ren::eTexFormat::R32F;
                 params.mip_count = ExDepthHierarchy::MipCount;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-                params.sampling.filter = Ren::eTexFilter::NearestMipmap;
+                params.sampling.filter = Ren::eTexFilter::Nearest;
 
                 depth_hierarchy_tex =
                     depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", params, Ren::eStageBits::ComputeShader);
@@ -1330,7 +1330,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGB8;
-                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(output_tex, params);
@@ -1430,7 +1430,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
         params.w = params.h = params.d = res;
         params.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
         params.format = Ren::eTexFormat::RGB10_A2;
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -1734,7 +1734,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             params.w = cur_scr_w;
             params.h = cur_scr_h;
             params.format = format;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
         }

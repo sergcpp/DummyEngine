@@ -18,43 +18,11 @@
 #endif
 
 namespace Ren {
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ) W,
 extern const VkFormat g_vk_formats[] = {
-    VK_FORMAT_UNDEFINED,                // Undefined
-    VK_FORMAT_R8G8B8_UNORM,             // RGB8
-    VK_FORMAT_R8G8B8A8_UNORM,           // RGBA8
-    VK_FORMAT_R8G8B8A8_SNORM,           // RawRGBA8888Signed
-    VK_FORMAT_B8G8R8A8_UNORM,           // BGRA8
-    VK_FORMAT_R32_SFLOAT,               // R32F
-    VK_FORMAT_R16_SFLOAT,               // R16F
-    VK_FORMAT_R8_UNORM,                 // R8
-    VK_FORMAT_R32_UINT,                 // R32UI
-    VK_FORMAT_R8G8_UNORM,               // RG8
-    VK_FORMAT_R32G32B32_SFLOAT,         // RGB32F
-    VK_FORMAT_R32G32B32A32_SFLOAT,      // RGBA32F
-    VK_FORMAT_R32G32B32A32_UINT,        // RGBA32UI
-    VK_FORMAT_UNDEFINED,                // RGBE8
-    VK_FORMAT_R16G16B16_SFLOAT,         // RGB16F
-    VK_FORMAT_R16G16B16A16_SFLOAT,      // RGBA16F
-    VK_FORMAT_R16G16_SNORM,             // RG16_snorm
-    VK_FORMAT_R16G16_UNORM,             // RG16
-    VK_FORMAT_R16G16_SFLOAT,            // RG16F
-    VK_FORMAT_R32G32_SFLOAT,            // RG32F
-    VK_FORMAT_R32G32_UINT,              // RawRG32U
-    VK_FORMAT_A2B10G10R10_UNORM_PACK32, // RGB10_A2
-    VK_FORMAT_B10G11R11_UFLOAT_PACK32,  // RG11F_B10F
-    VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,   // RGB9_E5
-    VK_FORMAT_D16_UNORM,                // D16
-    VK_FORMAT_D24_UNORM_S8_UINT,        // D24_S8
-    VK_FORMAT_D32_SFLOAT_S8_UINT,       // D32_S8
-    VK_FORMAT_D32_SFLOAT,               // D32
-    VK_FORMAT_BC1_RGBA_UNORM_BLOCK,     // BC1
-    VK_FORMAT_BC2_UNORM_BLOCK,          // BC2
-    VK_FORMAT_BC3_UNORM_BLOCK,          // BC3
-    VK_FORMAT_BC4_UNORM_BLOCK,          // BC4
-    VK_FORMAT_BC5_UNORM_BLOCK,          // BC5
-    VK_FORMAT_UNDEFINED                 // ASTC
+#include "TextureFormat.inl"
 };
-static_assert(std::size(g_vk_formats) == size_t(eTexFormat::_Count), "!");
+#undef DECORATE
 
 uint32_t TextureHandleCounter = 0;
 
@@ -447,7 +415,9 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     MemAllocation new_alloc = {};
     eResState new_resource_state = eResState::Undefined;
 
-    mip_count = std::min(mip_count, CalcMipCount(w, h, 1, eTexFilter::Trilinear));
+    if (!mip_count) {
+        mip_count = CalcMipCount(w, h, 1);
+    }
 
     { // create new image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -713,7 +683,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
 
     int mip_count = params.mip_count;
     if (!mip_count) {
-        mip_count = CalcMipCount(p.w, p.h, 1, p.sampling.filter);
+        mip_count = CalcMipCount(p.w, p.h, 1);
     }
 
     { // create image
@@ -1315,7 +1285,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
     params = p;
     initialized_mips_ = 0;
 
-    const int mip_count = CalcMipCount(p.w, p.h, 1, p.sampling.filter);
+    const int mip_count = CalcMipCount(p.w, p.h, 1);
     params.mip_count = mip_count;
 
     { // create image

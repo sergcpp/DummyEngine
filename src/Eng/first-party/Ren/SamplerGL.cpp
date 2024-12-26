@@ -3,30 +3,29 @@
 #include "GL.h"
 
 namespace Ren {
+#define DECORATE(X, Y, Z, W, XX) W,
 extern const uint32_t g_gl_min_filter[] = {
-    GL_NEAREST,               // NoFilter
-    GL_LINEAR_MIPMAP_NEAREST, // Bilinear
-    GL_LINEAR_MIPMAP_LINEAR,  // Trilinear
-    GL_LINEAR,                // BilinearNoMipmap
-    GL_NEAREST_MIPMAP_NEAREST,// NearestMipmap
+#include "TextureFilter.inl"
 };
-static_assert(std::size(g_gl_min_filter) == size_t(eTexFilter::_Count), "!");
+#undef DECORATE
 
+#define DECORATE(X, Y, Z, W, XX) XX,
 extern const uint32_t g_gl_mag_filter[] = {
-    GL_NEAREST, // NoFilter
-    GL_LINEAR,  // Bilinear
-    GL_LINEAR,  // Trilinear
-    GL_LINEAR,  // BilinearNoMipmap
-    GL_NEAREST, // NearestMipmap
+#include "TextureFilter.inl"
 };
-static_assert(std::size(g_gl_mag_filter) == size_t(eTexFilter::_Count), "!");
+#undef DECORATE
 
+#define DECORATE(X, Y, Z) Z,
 extern const uint32_t g_gl_wrap_mode[] = {
-    GL_REPEAT,          // Repeat
-    GL_CLAMP_TO_EDGE,   // ClampToEdge
-    GL_CLAMP_TO_BORDER, // ClampToBorder
+#include "../TextureWrap.inl"
 };
-static_assert(std::size(g_gl_wrap_mode) == size_t(eTexWrap::_Count), "!");
+#undef DECORATE
+
+#define DECORATE(X, Y, Z) Z,
+extern const uint32_t g_gl_compare_func[] = {
+#include "../TextureCompare.inl"
+};
+#undef DECORATE
 
 extern const float AnisotropyLevel = 4;
 } // namespace Ren
@@ -65,6 +64,13 @@ void Ren::Sampler::Init(ApiContext *api_ctx, const SamplingParams params) {
     glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[size_t(params.wrap)]);
     glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[size_t(params.wrap)]);
     glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_R, g_gl_wrap_mode[size_t(params.wrap)]);
+
+    if (params.compare != eTexCompare::None) {
+        glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_FUNC, g_gl_compare_func[int(params.compare)]);
+    } else {
+        glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+    }
 
 #ifndef __ANDROID__
     glSamplerParameterf(new_sampler, GL_TEXTURE_LOD_BIAS, params.lod_bias.to_float());

@@ -19,134 +19,17 @@
 #endif
 
 namespace Ren {
-const uint32_t g_gl_formats[] = {
-    0xffffffff,         // Undefined
-    GL_RGB,             // RGB8
-    GL_RGBA,            // RGBA8
-    GL_RGBA,            // RawSignedRGBA8888
-    0xffffffff,         // BGRA8
-    GL_RED,             // R32F
-    GL_RED,             // R16F
-    GL_RED,             // R8
-    GL_RED_INTEGER,     // R32UI
-    GL_RG,              // RG8
-    GL_RGB,             // RGB32F
-    GL_RGBA,            // RGBA32F
-    GL_RGBA,            // RGBA32UI
-    0xffffffff,         // RGBE8
-    GL_RGB,             // RGB16F
-    GL_RGBA,            // RGBA16F
-    GL_RG,              // RG16_snorm
-    GL_RG,              // RG16
-    GL_RG,              // RG16F
-    GL_RG,              // RG32F
-    GL_RG_INTEGER,      // RG32UI
-    GL_RGBA,            // RGB10_A2
-    GL_RGB,             // RG11F_B10F
-    GL_RGB,             // RGB9_E5
-    GL_DEPTH_COMPONENT, // D16
-    GL_DEPTH_STENCIL,   // D24_S8
-    GL_DEPTH_STENCIL,   // D32_S8
-    GL_DEPTH_COMPONENT, // D32
-    0xffffffff,         // BC1
-    0xffffffff,         // BC2
-    0xffffffff,         // BC3
-    0xffffffff,         // BC4
-    0xffffffff,         // BC5
-    0xffffffff          // ASTC
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ) {XX, YY, ZZ},
+struct {
+    uint32_t format;
+    uint32_t internal_format;
+    uint32_t type;
+} g_gl_formats[] = {
+#include "TextureFormat.inl"
 };
-static_assert(std::size(g_gl_formats) == size_t(eTexFormat::_Count), "!");
+#undef DECORATE
 
-const uint32_t g_gl_internal_formats[] = {
-    0xffffffff,           // Undefined
-    GL_RGB8,              // RGB8
-    GL_RGBA8,             // RGBA8
-    GL_RGBA8_SNORM,       // RawSignedRGBA8888
-    0xffffffff,           // BGRA8
-    GL_R32F,              // R32F
-    GL_R16F,              // R16F
-    GL_R8,                // R8
-    GL_R32UI,             // R32UI
-    GL_RG8,               // RG8
-    GL_RGB32F,            // RGB32F
-    GL_RGBA32F,           // RGBA32F
-    GL_RGBA32UI,          // RGBA32UI
-    0xffffffff,           // RGBE8
-    GL_RGB16F,            // RGB16F
-    GL_RGBA16F,           // RGBA16F
-    GL_RG16_SNORM_EXT,    // RG16_snorm
-    GL_RG16_EXT,          // RG16
-    GL_RG16F,             // RG16F
-    GL_RG32F,             // RG32F
-    GL_RG32UI,            // RG32UI
-    GL_RGB10_A2,          // RGB10_A2
-    GL_R11F_G11F_B10F,    // RG11F_B10F
-    GL_RGB9_E5,           // RGB9_E5
-    GL_DEPTH_COMPONENT16, // D16
-    GL_DEPTH24_STENCIL8,  // D24_S8
-    GL_DEPTH32F_STENCIL8, // D32_S8
-#ifndef __ANDROID__
-    GL_DEPTH_COMPONENT32, // D32
-#endif
-    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  // BC1
-    GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,  // BC2
-    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  // BC3
-    GL_COMPRESSED_RED_RGTC1_EXT,       // BC4
-    GL_COMPRESSED_RED_GREEN_RGTC2_EXT, // BC5
-    0xffffffff                         // ASTC
-};
-static_assert(std::size(g_gl_internal_formats) == size_t(eTexFormat::_Count), "!");
-
-const uint32_t g_gl_types[] = {
-    0xffffffff,                        // Undefined
-    GL_UNSIGNED_BYTE,                  // RGB8
-    GL_UNSIGNED_BYTE,                  // RGBA8
-    GL_BYTE,                           // RawSignedRGBA8888
-    GL_UNSIGNED_BYTE,                  // BGRA8
-    GL_FLOAT,                          // R32F
-    GL_HALF_FLOAT,                     // R16F
-    GL_UNSIGNED_BYTE,                  // R8
-    GL_UNSIGNED_INT,                   // R32UI
-    GL_UNSIGNED_BYTE,                  // RG8
-    GL_FLOAT,                          // RGB32F
-    GL_FLOAT,                          // RGBA32F
-    GL_UNSIGNED_INT,                   // RGBA32UI
-    0xffffffff,                        // RGBE8
-    GL_HALF_FLOAT,                     // RGB16F
-    GL_HALF_FLOAT,                     // RGBA16F
-    GL_SHORT,                          // RG16_snorm
-    GL_UNSIGNED_SHORT,                 // RG16
-    GL_HALF_FLOAT,                     // RG16F
-    GL_FLOAT,                          // RG32F
-    GL_UNSIGNED_INT,                   // RG32UI
-    GL_UNSIGNED_INT_2_10_10_10_REV,    // RGB10_A2
-    GL_FLOAT,                          // RG11F_B10F
-    GL_UNSIGNED_INT_5_9_9_9_REV,       // RGB9_E5
-    GL_UNSIGNED_SHORT,                 // D16
-    GL_FLOAT_32_UNSIGNED_INT_24_8_REV, // D24_S8
-    GL_FLOAT,                          // D32_S8
-    GL_UNSIGNED_INT,                   // D32
-    0xffffffff,                        // BC1
-    0xffffffff,                        // BC2
-    0xffffffff,                        // BC3
-    0xffffffff,                        // BC4
-    0xffffffff,                        // BC5
-    0xffffffff                         // ASTC
-};
-static_assert(std::size(g_gl_types) == size_t(eTexFormat::_Count), "!");
-
-const uint32_t g_gl_compare_func[] = {
-    0xffffffff,  // None
-    GL_LEQUAL,   // LEqual
-    GL_GEQUAL,   // GEqual
-    GL_LESS,     // Less
-    GL_GREATER,  // Greater
-    GL_EQUAL,    // Equal
-    GL_NOTEQUAL, // NotEqual
-    GL_ALWAYS,   // Always
-    GL_NEVER,    // Never
-};
-static_assert(std::size(g_gl_compare_func) == size_t(eTexCompare::_Count), "!");
+extern const uint32_t g_gl_compare_func[];
 
 uint32_t TextureHandleCounter = 0;
 
@@ -376,7 +259,9 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
 #endif
     const GLuint internal_format = GLInternalFormatFromTexFormat(format, is_srgb);
 
-    mip_count = std::min(mip_count, CalcMipCount(w, h, 1, eTexFilter::Trilinear));
+    if (!mip_count) {
+        mip_count = CalcMipCount(w, h, 1);
+    }
 
     // allocate all mip levels
     ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, GLsizei(mip_count), internal_format, GLsizei(w), GLsizei(h));
@@ -467,7 +352,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
 
     auto mip_count = GLsizei(p.mip_count);
     if (!mip_count) {
-        mip_count = GLsizei(CalcMipCount(p.w, p.h, 1, p.sampling.filter));
+        mip_count = GLsizei(CalcMipCount(p.w, p.h, 1));
     }
 
     if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
@@ -740,7 +625,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
     const int w = p.w, h = p.h;
     const eTexFilter f = params.sampling.filter;
 
-    const int mip_count = CalcMipCount(w, h, 1, f);
+    const int mip_count = CalcMipCount(w, h, 1);
     params.mip_count = mip_count;
 
     // allocate all mip levels
@@ -1055,7 +940,7 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
 
         if (!IsCompressedFormat(params.format) &&
             (sampling.filter == eTexFilter::Trilinear || sampling.filter == eTexFilter::Bilinear) &&
-            !custom_mip_filter) {
+            !custom_mip_filter && params.mip_count > 1) {
             if (!initialized_mips_) {
                 log->Error("Error generating mips from uninitilized data!");
             } else if (initialized_mips_ != (1u << 0)) {
@@ -1064,7 +949,7 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
 
             ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
 
-            const int mip_count = CalcMipCount(params.w, params.h, 1, sampling.filter);
+            const int mip_count = CalcMipCount(params.w, params.h, 1);
             initialized_mips_ = (1u << mip_count) - 1;
         }
 
@@ -1335,14 +1220,14 @@ void Ren::Texture3D::SetSubImage(int offsetx, int offsety, int offsetz, int size
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
-uint32_t Ren::GLFormatFromTexFormat(const eTexFormat format) { return g_gl_formats[size_t(format)]; }
+uint32_t Ren::GLFormatFromTexFormat(const eTexFormat format) { return g_gl_formats[size_t(format)].format; }
 
 uint32_t Ren::GLInternalFormatFromTexFormat(const eTexFormat format, const bool is_srgb) {
-    const uint32_t ret = g_gl_internal_formats[size_t(format)];
+    const uint32_t ret = g_gl_formats[size_t(format)].internal_format;
     return is_srgb ? ToSRGBFormat(ret) : ret;
 }
 
-uint32_t Ren::GLTypeFromTexFormat(const eTexFormat format) { return g_gl_types[size_t(format)]; }
+uint32_t Ren::GLTypeFromTexFormat(const eTexFormat format) { return g_gl_formats[size_t(format)].type; }
 
 void Ren::GLUnbindTextureUnits(const int start, const int count) {
     for (int i = start; i < start + count; i++) {

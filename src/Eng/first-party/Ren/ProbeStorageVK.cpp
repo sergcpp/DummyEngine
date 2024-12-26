@@ -16,7 +16,7 @@ Ren::ProbeStorage::~ProbeStorage() { Destroy(); }
 
 bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eTexFormat format,
                                const int res, const int capacity, ILog *log) {
-    const int mip_count = CalcMipCount(res, res, 16, eTexFilter::Bilinear);
+    const int mip_count = CalcMipCount(res, res, 16);
 
     Destroy();
 

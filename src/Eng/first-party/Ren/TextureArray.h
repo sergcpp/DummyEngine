@@ -8,8 +8,8 @@ namespace Ren {
 class Texture2DArray {
   public:
     Texture2DArray() = default;
-    Texture2DArray(ApiContext *api_ctx, std::string_view name, int w, int h, int layer_count, eTexFormat format,
-                   eTexFilter filter, eTexUsageBits usage);
+    Texture2DArray(ApiContext *api_ctx, std::string_view name, int w, int h, int layer_count, int mip_count,
+                   eTexFormat format, eTexFilter filter, eTexUsageBits usage);
     ~Texture2DArray() { Free(); }
 
     void Free();
@@ -53,7 +53,7 @@ class Texture2DArray {
     int mip_count_ = 0;
     int layer_count_ = 0;
     eTexFormat format_ = eTexFormat::Undefined;
-    eTexFilter filter_ = eTexFilter::NoFilter;
+    eTexFilter filter_ = eTexFilter::Nearest;
 #if defined(REN_VK_BACKEND)
     VkImage img_ = VK_NULL_HANDLE;
     VkDeviceMemory mem_ = VK_NULL_HANDLE;

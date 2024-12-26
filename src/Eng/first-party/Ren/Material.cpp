@@ -225,7 +225,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                             sampler_params.wrap = eTexWrap::ClampToEdge;
                         } else if (strncmp(flag, "nofilter", flag_len) == 0) {
                             texture_flags |= eTexFlagBits::NoFilter;
-                            sampler_params.filter = eTexFilter::NoFilter;
+                            sampler_params.filter = eTexFilter::Nearest;
                         } else if (strncmp(flag, "mip_min", flag_len) == 0) {
                             texture_flags |= eTexFlagBits::MIPMin;
                         } else if (strncmp(flag, "mip_max", flag_len) == 0) {

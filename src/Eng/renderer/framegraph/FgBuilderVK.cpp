@@ -163,7 +163,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         { // create new image
             int mip_count = p.mip_count;
             if (!mip_count) {
-                mip_count = CalcMipCount(p.w, p.h, 1, p.sampling.filter);
+                mip_count = Ren::CalcMipCount(p.w, p.h, 1);
             }
 
             VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};

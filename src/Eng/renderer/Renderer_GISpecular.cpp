@@ -107,7 +107,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             refl_tex = data->out_refl_tex =
                 ssr_classify.AddStorageImageOutput("SSR Temp 2", params, Stg::ComputeShader);
@@ -117,7 +117,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = (view_state_.scr_res[0] + 7) / 8;
             params.h = (view_state_.scr_res[1] + 7) / 8;
             params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             avg_refl_tex = data->out_avg_refl_tex =
@@ -127,7 +127,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             Ren::Tex2DParams params;
             params.w = params.h = 128;
             params.format = Ren::eTexFormat::RGBA8;
-            params.sampling.filter = Ren::eTexFilter::NoFilter;
+            params.sampling.filter = Ren::eTexFilter::Nearest;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex = ssr_classify.AddStorageImageOutput("BN Tex", params, Stg::ComputeShader);
         }
@@ -150,13 +150,13 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             // Initialize texel buffers if needed
             if (!sobol_buf.tbos[0]) {
-                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI,
-                                                         0, sobol_buf.ref->size());
+                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                                         sobol_buf.ref->size());
             }
             if (!scrambling_tile_buf.tbos[0]) {
                 scrambling_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI,
-                                         0, scrambling_tile_buf.ref->size());
+                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                         scrambling_tile_buf.ref->size());
             }
             if (!ranking_tile_buf.tbos[0]) {
                 ranking_tile_buf.tbos[0] =
@@ -480,7 +480,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             reproj_refl_tex = data->out_reprojected_tex =
@@ -491,7 +491,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             variance_temp_tex = data->out_variance_tex =
@@ -502,7 +502,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             sample_count_tex = data->out_sample_count_tex =
@@ -587,7 +587,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             prefiltered_refl = data->out_refl_tex =
@@ -598,7 +598,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             variance_temp2_tex = data->out_variance_tex =
@@ -669,7 +669,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             gi_specular_tex = data->out_refl_tex =
@@ -683,7 +683,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             ssr_variance_tex = data->out_variance_tex =
@@ -759,7 +759,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
-                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 gi_specular2_tex = data->out_gi_tex =
@@ -886,7 +886,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
-                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 gi_specular4_tex = data->out_ssr_tex =
@@ -1040,7 +1040,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
             params.format = Ren::eTexFormat::RGB10_A2;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             ssr_temp1 = data->output_tex = ssr_trace.AddColorOutput("SSR Temp 1", params);
@@ -1095,7 +1095,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
             params.format = Ren::eTexFormat::RGB10_A2;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             ssr_temp2 = data->output_tex = ssr_dilate.AddColorOutput("SSR Temp 2", params);

@@ -11,15 +11,14 @@ extern const uint32_t g_gl_wrap_mode[];
 } // namespace Ren
 
 Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
-                                    const int layer_count, const eTexFormat format, const eTexFilter filter,
-                                    const eTexUsage usage)
+                                    const int layer_count, const int mip_count, const eTexFormat format,
+                                    const eTexFilter filter, const eTexUsage usage)
     : api_ctx_(api_ctx), name_(name), w_(w), h_(h), layer_count_(layer_count), format_(format), filter_(filter) {
     GLuint tex_id;
     ren_glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex_id);
 
     // TODO: add srgb here
 
-    const int mip_count = CalcMipCount(w, h, 1, filter);
     ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
                                 GLInternalFormatFromTexFormat(format, false /* is_srgb */), w, h, layer_count);
 
@@ -52,7 +51,7 @@ Ren::Texture2DArray &Ren::Texture2DArray::operator=(Texture2DArray &&rhs) noexce
     mip_count_ = std::exchange(rhs.mip_count_, 0);
     layer_count_ = std::exchange(rhs.layer_count_, 0);
     format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
-    filter_ = std::exchange(rhs.filter_, eTexFilter::NoFilter);
+    filter_ = std::exchange(rhs.filter_, eTexFilter::Nearest);
 
     resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
 

@@ -4,8 +4,8 @@
 #include "Sampler.h"
 #include "SmallVector.h"
 #include "Texture.h"
-#include "TextureSplitter.h"
 #include "TextureArray.h"
+#include "TextureSplitter.h"
 
 namespace Ren {
 class TextureAtlas {
@@ -13,8 +13,8 @@ class TextureAtlas {
     static const int MaxTextureCount = 8;
 
     TextureAtlas() : splitter_(0, 0) {}
-    TextureAtlas(ApiContext *api_ctx, int w, int h, int min_res, const eTexFormat formats[], const eTexFlags flags[],
-                 eTexFilter filter, ILog *log);
+    TextureAtlas(ApiContext *api_ctx, int w, int h, int min_res, int mip_count, const eTexFormat formats[],
+                 const eTexFlags flags[], eTexFilter filter, ILog *log);
     ~TextureAtlas();
 
     TextureAtlas(const TextureAtlas &rhs) = delete;
@@ -40,8 +40,8 @@ class TextureAtlas {
     ApiContext *api_ctx() { return api_ctx_; }
 
     int AllocateRegion(const int res[2], int out_pos[2]);
-    void InitRegion(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format, eTexFlags flags,
-                    int layer, int level, const int pos[2], const int res[2], ILog *log);
+    void InitRegion(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format,
+                    eTexFlags flags, int layer, int level, const int pos[2], const int res[2], ILog *log);
 
     bool Free(const int pos[2]);
 
@@ -58,7 +58,7 @@ class TextureAtlas {
     eTexFormat formats_[MaxTextureCount] = {eTexFormat::Undefined, eTexFormat::Undefined, eTexFormat::Undefined,
                                             eTexFormat::Undefined, eTexFormat::Undefined, eTexFormat::Undefined,
                                             eTexFormat::Undefined, eTexFormat::Undefined};
-    eTexFilter filter_ = eTexFilter::NoFilter;
+    eTexFilter filter_ = eTexFilter::Nearest;
 #if defined(REN_VK_BACKEND)
     VkImage img_[MaxTextureCount] = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
                                      VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
@@ -78,8 +78,8 @@ class TextureAtlas {
 class TextureAtlasArray : public Texture2DArray {
   public:
     TextureAtlasArray() = default;
-    TextureAtlasArray(ApiContext *api_ctx, std::string_view name, int w, int h, int layer_count, eTexFormat format,
-                      eTexFilter filter);
+    TextureAtlasArray(ApiContext *api_ctx, std::string_view name, int w, int h, int layer_count, int mip_count,
+                      eTexFormat format, eTexFilter filter);
 
     TextureAtlasArray(const TextureAtlasArray &rhs) = delete;
     TextureAtlasArray(TextureAtlasArray &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -87,8 +87,8 @@ class TextureAtlasArray : public Texture2DArray {
     TextureAtlasArray &operator=(const TextureAtlasArray &rhs) = delete;
     TextureAtlasArray &operator=(TextureAtlasArray &&rhs) noexcept;
 
-    int Allocate(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format, const int res[2],
-                 int out_pos[3], int border);
+    int Allocate(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format,
+                 const int res[2], int out_pos[3], int border);
     bool Free(const int pos[3]);
 
   private:

@@ -14,12 +14,10 @@ VkImageUsageFlags to_vk_image_usage(eTexUsage usage, eTexFormat format);
 } // namespace Ren
 
 Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
-                                    const int layer_count, const eTexFormat format, const eTexFilter filter,
-                                    const eTexUsageBits usage)
-    : api_ctx_(api_ctx), name_(name), w_(w), h_(h), layer_count_(layer_count), format_(format), filter_(filter) {
-
-    mip_count_ = CalcMipCount(w, h, 1, filter);
-
+                                    const int layer_count, const int mip_count, const eTexFormat format,
+                                    const eTexFilter filter, const eTexUsageBits usage)
+    : api_ctx_(api_ctx), name_(name), w_(w), h_(h), layer_count_(layer_count), mip_count_(mip_count), format_(format),
+      filter_(filter) {
     { // create image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
@@ -125,7 +123,7 @@ Ren::Texture2DArray &Ren::Texture2DArray::operator=(Texture2DArray &&rhs) noexce
     mip_count_ = std::exchange(rhs.mip_count_, 0);
     layer_count_ = std::exchange(rhs.layer_count_, 0);
     format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
-    filter_ = std::exchange(rhs.filter_, eTexFilter::NoFilter);
+    filter_ = std::exchange(rhs.filter_, eTexFilter::Nearest);
 
     Free();
 

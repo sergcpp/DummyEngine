@@ -23,7 +23,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
         GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
 
-    const int mip_count = CalcMipCount(res, res, 16, eTexFilter::Bilinear);
+    const int mip_count = CalcMipCount(res, res, 16);
 
     // allocate all mip levels
     if (IsCompressedFormat(format)) {

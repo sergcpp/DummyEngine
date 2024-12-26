@@ -1,20 +1,33 @@
 #pragma once
 
 #include <cstdint>
+#undef Always
 
 #include "Fixed.h"
 
 namespace Ren {
 using Fixed8 = Fixed<int8_t, 3>;
 
-enum class eTexFilter : uint8_t { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, NearestMipmap, _Count };
-enum class eTexWrap : uint8_t { Repeat, ClampToEdge, ClampToBorder, _Count };
+#define DECORATE(X, Y, Z, W, XX) X,
+enum class eTexFilter : uint8_t {
+#include "TextureFilter.inl"
+};
+#undef DECORATE
 
-#undef Always
-enum class eTexCompare : uint8_t { None, LEqual, GEqual, Less, Greater, Equal, NotEqual, Always, Never, _Count };
+#define DECORATE(X, Y, Z) X,
+enum class eTexWrap : uint8_t {
+#include "TextureWrap.inl"
+};
+#undef DECORATE
+
+#define DECORATE(X, Y, Z) X,
+enum class eTexCompare : uint8_t {
+#include "TextureCompare.inl"
+};
+#undef DECORATE
 
 struct SamplingParams {
-    eTexFilter filter = eTexFilter::NoFilter;
+    eTexFilter filter = eTexFilter::Nearest;
     eTexWrap wrap = eTexWrap::Repeat;
     eTexCompare compare = eTexCompare::None;
     Fixed8 lod_bias;

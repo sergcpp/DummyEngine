@@ -103,13 +103,16 @@ set(SOURCE_FILES AccStructure.h
                  TextureArray.h
                  TextureAtlas.h
                  TextureAtlas.cpp
-                 TextureFormats.inl
+                 TextureCompare.inl
+                 TextureFilter.inl
+                 TextureFormat.inl
                  TextureParams.h
                  TextureParams.cpp
                  TextureRegion.h
                  TextureRegion.cpp
                  TextureSplitter.h
                  TextureSplitter.cpp
+                 TextureWrap.inl
                  Types.inl
                  Utils.h
                  Utils.cpp

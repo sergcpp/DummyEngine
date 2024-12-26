@@ -7,6 +7,15 @@
 #endif
 
 namespace Ren {
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ) {Y, Z},
+struct {
+    int channel_count;
+    int pp_data_len;
+} g_tex_format_info[] = {
+#include "TextureFormat.inl"
+};
+#undef DECORATE
+
 static const int g_block_res[][2] = {
     {4, 4},   // _4x4
     {5, 4},   // _5x4
@@ -45,44 +54,6 @@ const eTexUsage g_tex_usage_per_state[] = {
     {}                       // RayTracing
 };
 static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count), "!");
-
-const int g_per_pixel_data_len[] = {
-    -1, // Undefined
-    3,  // RGB8
-    4,  // RGBA8
-    4,  // RGBA8_snorm
-    4,  // BGRA8
-    4,  // R32F
-    2,  // R16F
-    1,  // R8
-    4,  // R32UI
-    2,  // RG8
-    12, // RGB32F
-    16, // RGBA32F
-    16, // RGBA32UI
-    4,  // RGBE8
-    6,  // RGB16F
-    8,  // RGBA16F
-    4,  // RG16_snorm
-    4,  // RG16
-    4,  // RG16F
-    8,  // RG32F
-    8,  // RG32UI
-    4,  // RGB10_A2
-    4,  // RG11F_B10F
-    4,  // RGB9_E5
-    2,  // D16
-    4,  // D24_S8
-    5,  // D32_S8
-    4,  // D32
-    -1, // BC1
-    -1, // BC2
-    -1, // BC3
-    -1, // BC4
-    -1, // BC5
-    -1  // ASTC
-};
-static_assert(std::size(g_per_pixel_data_len) == int(eTexFormat::_Count), "!");
 } // namespace Ren
 
 int Ren::GetBlockLenBytes(const eTexFormat format, const eTexBlock block) {
@@ -118,8 +89,8 @@ int Ren::GetMipDataLenBytes(const int w, const int h, const eTexFormat format, c
     if (block != eTexBlock::_None) {
         return GetBlockCount(w, h, block) * GetBlockLenBytes(format, block);
     } else {
-        assert(g_per_pixel_data_len[int(format)] != -1);
-        return w * h * g_per_pixel_data_len[int(format)];
+        assert(g_tex_format_info[int(format)].pp_data_len != 0);
+        return w * h * g_tex_format_info[int(format)].pp_data_len;
     }
 }
 
@@ -135,8 +106,8 @@ uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
 
             total_len += uint32_t(block_len) * block_cnt;
         } else {
-            assert(g_per_pixel_data_len[int(params.format)] != -1);
-            total_len += w * h * g_per_pixel_data_len[int(params.format)];
+            assert(g_tex_format_info[int(params.format)].pp_data_len != 0);
+            total_len += w * h * g_tex_format_info[int(params.format)].pp_data_len;
         }
     }
     return params.cube ? 6 * total_len : total_len;
