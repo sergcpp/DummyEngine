@@ -149,11 +149,6 @@ static_assert(COUNT_OF(g_pipeline_stages_per_state_vk) == int(eResState::_Count)
 
 Ray::Vk::eStageBits Ray::Vk::StageBitsForState(const eResState state) { return g_stage_bits_per_state[int(state)]; }
 
-bool Ray::Vk::IsRWState(const eResState state) {
-    return state == eResState::RenderTarget || state == eResState::UnorderedAccess || state == eResState::DepthWrite ||
-           state == eResState::CopyDst || state == eResState::BuildASWrite;
-}
-
 VkImageLayout Ray::Vk::VKImageLayoutForState(const eResState state) { return g_image_layout_per_state_vk[int(state)]; }
 
 uint32_t Ray::Vk::VKAccessFlagsForState(const eResState state) { return g_access_flags_per_state_vk[int(state)]; }
@@ -168,15 +163,16 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
 
     const Context *ctx = nullptr;
 
-    for (const TransitionInfo &tr : transitions) {
-        if (tr.type == eResType::Tex2D && tr.p_tex->ready()) {
-            ctx = tr.p_tex->ctx();
+    for (const TransitionInfo &transition : transitions) {
+        if (transition.p_tex && transition.p_tex->ready()) {
+            ctx = transition.p_tex->ctx();
 
-            eResState old_state = tr.old_state;
+            eResState old_state = transition.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_tex->resource_state;
-                if (old_state == tr.new_state && !IsRWState(old_state)) {
+                old_state = transition.p_tex->resource_state;
+                if (old_state != eResState::Undefined && old_state == transition.new_state &&
+                    old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
@@ -185,15 +181,15 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
             auto &new_barrier = img_barriers.emplace_back();
             new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
-            new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
+            new_barrier.dstAccessMask = VKAccessFlagsForState(transition.new_state);
             new_barrier.oldLayout = VKImageLayoutForState(old_state);
-            new_barrier.newLayout = VKImageLayoutForState(tr.new_state);
+            new_barrier.newLayout = VKImageLayoutForState(transition.new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = tr.p_tex->handle().img;
-            if (IsDepthStencilFormat(tr.p_tex->params.format)) {
+            new_barrier.image = transition.p_tex->handle().img;
+            if (IsDepthStencilFormat(transition.p_tex->params.format)) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-            } else if (IsDepthFormat(tr.p_tex->params.format)) {
+            } else if (IsDepthFormat(transition.p_tex->params.format)) {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             } else {
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -205,19 +201,20 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
             new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
             src_stages |= VKPipelineStagesForState(old_state);
-            dst_stages |= VKPipelineStagesForState(tr.new_state);
+            dst_stages |= VKPipelineStagesForState(transition.new_state);
 
-            if (tr.update_internal_state) {
-                tr.p_tex->resource_state = tr.new_state;
+            if (transition.update_internal_state) {
+                transition.p_tex->resource_state = transition.new_state;
             }
-        } else if (tr.type == eResType::Tex3D) {
-            ctx = tr.p_3dtex->ctx();
+        } else if (transition.p_3dtex) {
+            ctx = transition.p_3dtex->ctx();
 
-            eResState old_state = tr.old_state;
+            eResState old_state = transition.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_3dtex->resource_state;
-                if (old_state == tr.new_state && !IsRWState(old_state)) {
+                old_state = transition.p_3dtex->resource_state;
+                if (old_state != eResState::Undefined && old_state == transition.new_state &&
+                    old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
@@ -226,12 +223,12 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
             auto &new_barrier = img_barriers.emplace_back();
             new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
-            new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
+            new_barrier.dstAccessMask = VKAccessFlagsForState(transition.new_state);
             new_barrier.oldLayout = VKImageLayoutForState(old_state);
-            new_barrier.newLayout = VKImageLayoutForState(tr.new_state);
+            new_barrier.newLayout = VKImageLayoutForState(transition.new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = tr.p_3dtex->handle().img;
+            new_barrier.image = transition.p_3dtex->handle().img;
             new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             // transition whole image for now
             new_barrier.subresourceRange.baseMipLevel = 0;
@@ -240,19 +237,19 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
             new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
             src_stages |= VKPipelineStagesForState(old_state);
-            dst_stages |= VKPipelineStagesForState(tr.new_state);
+            dst_stages |= VKPipelineStagesForState(transition.new_state);
 
-            if (tr.update_internal_state) {
-                tr.p_3dtex->resource_state = tr.new_state;
+            if (transition.update_internal_state) {
+                transition.p_3dtex->resource_state = transition.new_state;
             }
-        } else if (tr.type == eResType::Buffer && *tr.p_buf) {
-            ctx = tr.p_buf->ctx();
+        } else if (transition.p_buf && *transition.p_buf) {
+            ctx = transition.p_buf->ctx();
 
-            eResState old_state = tr.old_state;
+            eResState old_state = transition.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_buf->resource_state;
-                if (old_state == tr.new_state && !IsRWState(old_state)) {
+                old_state = transition.p_buf->resource_state;
+                if (old_state == transition.new_state && old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
@@ -261,28 +258,29 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
             auto &new_barrier = buf_barriers.emplace_back();
             new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
-            new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
+            new_barrier.dstAccessMask = VKAccessFlagsForState(transition.new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.buffer = tr.p_buf->vk_handle();
+            new_barrier.buffer = transition.p_buf->vk_handle();
             // transition whole buffer for now
             new_barrier.offset = 0;
             new_barrier.size = VK_WHOLE_SIZE;
 
             src_stages |= VKPipelineStagesForState(old_state);
-            dst_stages |= VKPipelineStagesForState(tr.new_state);
+            dst_stages |= VKPipelineStagesForState(transition.new_state);
 
-            if (tr.update_internal_state) {
-                tr.p_buf->resource_state = tr.new_state;
+            if (transition.update_internal_state) {
+                transition.p_buf->resource_state = transition.new_state;
             }
-        } else if (tr.type == eResType::TexAtlas && tr.p_tex_arr->page_count()) {
-            ctx = tr.p_tex_arr->ctx();
+        } else if (transition.p_tex_arr && transition.p_tex_arr->page_count()) {
+            ctx = transition.p_tex_arr->ctx();
 
-            eResState old_state = tr.old_state;
+            eResState old_state = transition.old_state;
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
-                old_state = tr.p_tex_arr->resource_state;
-                if (old_state == tr.new_state && !IsRWState(old_state)) {
+                old_state = transition.p_tex_arr->resource_state;
+                if (old_state != eResState::Undefined && old_state == transition.new_state &&
+                    old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
@@ -291,12 +289,12 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
             auto &new_barrier = img_barriers.emplace_back();
             new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
-            new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
+            new_barrier.dstAccessMask = VKAccessFlagsForState(transition.new_state);
             new_barrier.oldLayout = VKImageLayoutForState(old_state);
-            new_barrier.newLayout = VKImageLayoutForState(tr.new_state);
+            new_barrier.newLayout = VKImageLayoutForState(transition.new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = tr.p_tex_arr->vk_image();
+            new_barrier.image = transition.p_tex_arr->vk_image();
             new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
             // transition whole image for now
@@ -306,10 +304,10 @@ void Ray::Vk::TransitionResourceStates(VkCommandBuffer cmd_buf, const eStageBits
             new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
             src_stages |= VKPipelineStagesForState(old_state);
-            dst_stages |= VKPipelineStagesForState(tr.new_state);
+            dst_stages |= VKPipelineStagesForState(transition.new_state);
 
-            if (tr.update_internal_state) {
-                tr.p_tex_arr->resource_state = tr.new_state;
+            if (transition.update_internal_state) {
+                transition.p_tex_arr->resource_state = transition.new_state;
             }
         }
     }

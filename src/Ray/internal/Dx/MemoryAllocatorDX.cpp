@@ -20,8 +20,9 @@ void Ray::Dx::MemAllocation::Release() {
     }
 }
 
-Ray::Dx::MemAllocator::MemAllocator(const char name[32], Context *ctx, const uint32_t initial_pool_size,
-                                    D3D12_HEAP_TYPE heap_type, const float growth_factor, const uint32_t max_pool_size)
+Ray::Dx::MemoryAllocator::MemoryAllocator(const char name[32], Context *ctx, const uint32_t initial_pool_size,
+                                          D3D12_HEAP_TYPE heap_type, const float growth_factor,
+                                          const uint32_t max_pool_size)
     : ctx_(ctx), growth_factor_(growth_factor), max_pool_size_(max_pool_size), heap_type_(heap_type) {
     strcpy(name_, name);
 
@@ -29,13 +30,13 @@ Ray::Dx::MemAllocator::MemAllocator(const char name[32], Context *ctx, const uin
     AllocateNewPool(initial_pool_size);
 }
 
-Ray::Dx::MemAllocator::~MemAllocator() {
+Ray::Dx::MemoryAllocator::~MemoryAllocator() {
     for (MemPool &pool : pools_) {
         pool.heap->Release();
     }
 }
 
-bool Ray::Dx::MemAllocator::AllocateNewPool(const uint32_t size) {
+bool Ray::Dx::MemoryAllocator::AllocateNewPool(const uint32_t size) {
     D3D12_HEAP_DESC heap_desc = {};
     heap_desc.SizeInBytes = size;
     heap_desc.Flags = D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES;
@@ -60,7 +61,7 @@ bool Ray::Dx::MemAllocator::AllocateNewPool(const uint32_t size) {
     return SUCCEEDED(hr);
 }
 
-Ray::Dx::MemAllocation Ray::Dx::MemAllocator::Allocate(const uint32_t alignment, const uint32_t size) {
+Ray::Dx::MemAllocation Ray::Dx::MemoryAllocator::Allocate(const uint32_t alignment, const uint32_t size) {
     auto allocation = alloc_.Alloc(alignment, size);
 
     if (allocation.block == 0xffffffff) {
@@ -86,9 +87,18 @@ Ray::Dx::MemAllocation Ray::Dx::MemAllocator::Allocate(const uint32_t alignment,
     return new_alloc;
 }
 
-void Ray::Dx::MemAllocator::Free(const uint32_t block) {
+void Ray::Dx::MemoryAllocator::Free(const uint32_t block) {
     alloc_.Free(block);
     assert(alloc_.IntegrityCheck());
+}
+
+void Ray::Dx::MemoryAllocators::Print(ILog *log) {
+    /*log->Info("=================================================================");
+    log->Info("MemAllocs %s", name_);
+    for (const auto &alloc : allocators_) {
+        alloc.Print(log);
+    }
+    log->Info("=================================================================");*/
 }
 
 #pragma warning(pop)
