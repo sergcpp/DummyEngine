@@ -704,7 +704,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         params.w = viewer_->width;
         params.h = viewer_->height;
         params.format = Ren::eTexFormat::RGBA8;
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Transfer;
 #if defined(REN_GL_BACKEND)
