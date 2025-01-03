@@ -706,9 +706,9 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         params.format = Ren::eTexFormat::RGBA8;
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Transfer;
+        params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Transfer;
 #if defined(REN_GL_BACKEND)
-        params.flags = Ren::eTexFlagBits::SRGB;
+        params.flags = Ren::eTexFlags::SRGB;
 #endif
 
         Ren::eTexLoadStatus status;
@@ -1894,7 +1894,7 @@ void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
             params.w = res_x;
             params.h = res_y;
             params.format = Ren::eTexFormat::RGBA32F;
-            params.flags = Ren::eTexFlagBits::NoOwnership;
+            params.flags = Ren::eTexFlags::NoOwnership;
 
             Ren::eTexLoadStatus status;
             pt_result_ = ren_ctx_->LoadTexture2D("PT Result Ref", handle, params, {}, &status);
