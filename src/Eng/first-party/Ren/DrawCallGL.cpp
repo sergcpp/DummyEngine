@@ -38,7 +38,7 @@ int g_param_buf_binding;
 
 uint32_t Ren::GLBindTarget(const eBindTarget binding) { return gl_binding_targets[size_t(binding)]; }
 
-void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
+void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
                           const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D || b.trg == eBindTarget::Tex2DSampled) {
@@ -116,7 +116,12 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
     glDispatchCompute(grp_count[0], grp_count[1], grp_count[2]);
 }
 
-void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
+void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
+                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+    DispatchCompute({}, comp_pipeline, grp_count, bindings, uniform_data, uniform_data_len, descr_alloc, log);
+}
+
+void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Buffer &indir_buf,
                                   const uint32_t indir_buf_offset, Span<const Binding> bindings,
                                   const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
                                   ILog *log) {
@@ -155,10 +160,10 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
         }
     }
 
-    Buffer temp_unif_buffer, temp_stage_buffer;
+    Buffer temp_unif_buffer;
     if (uniform_data) {
         temp_unif_buffer = Buffer("Temp uniform buf", nullptr, eBufType::Uniform, uniform_data_len);
-        temp_stage_buffer = Buffer("Temp upload buf", nullptr, eBufType::Upload, uniform_data_len);
+        Buffer temp_stage_buffer = Buffer("Temp upload buf", nullptr, eBufType::Upload, uniform_data_len);
         {
             uint8_t *stage_data = temp_stage_buffer.Map();
             memcpy(stage_data, uniform_data, uniform_data_len);
@@ -173,4 +178,12 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, indir_buf.id());
     glDispatchComputeIndirect(GLintptr(indir_buf_offset));
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, 0);
+}
+
+void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
+                                  const uint32_t indir_buf_offset, Span<const Binding> bindings,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  ILog *log) {
+    DispatchComputeIndirect({}, comp_pipeline, indir_buf, indir_buf_offset, bindings, uniform_data, uniform_data_len,
+                            descr_alloc, log);
 }

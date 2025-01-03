@@ -9,7 +9,7 @@ class Texture2DArray {
   public:
     Texture2DArray() = default;
     Texture2DArray(ApiContext *api_ctx, std::string_view name, int w, int h, int layer_count, int mip_count,
-                   eTexFormat format, eTexFilter filter, eTexUsageBits usage);
+                   eTexFormat format, eTexFilter filter, Bitmask<eTexUsage> usage);
     ~Texture2DArray() { Free(); }
 
     void Free();

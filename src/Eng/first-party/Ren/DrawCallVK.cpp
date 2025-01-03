@@ -230,9 +230,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
     return descr_set;
 }
 
-void Ren::DispatchCompute(const Pipeline &comp_pipeline, const Vec3u grp_count, Span<const Binding> bindings,
-                          const void *uniform_data, const int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
-                          ILog *log) {
+void Ren::DispatchCompute(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Vec3u grp_count,
+                          Span<const Binding> bindings, const void *uniform_data, const int uniform_data_len,
+                          DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     ApiContext *api_ctx = descr_alloc->api_ctx();
 
     VkDescriptorSet descr_set =
@@ -241,8 +241,6 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, const Vec3u grp_count, 
         log->Error("Failed to allocate descriptor set, skipping draw call!");
         return;
     }
-
-    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.handle());
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.layout(), 0, 1, &descr_set,
@@ -256,7 +254,15 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, const Vec3u grp_count, 
     api_ctx->vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);
 }
 
-void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
+void Ren::DispatchCompute(const Pipeline &comp_pipeline, const Vec3u grp_count, Span<const Binding> bindings,
+                          const void *uniform_data, const int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                          ILog *log) {
+    ApiContext *api_ctx = descr_alloc->api_ctx();
+    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+    DispatchCompute(cmd_buf, comp_pipeline, grp_count, bindings, uniform_data, uniform_data_len, descr_alloc, log);
+}
+
+void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Buffer &indir_buf,
                                   const uint32_t indir_buf_offset, Span<const Binding> bindings,
                                   const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
                                   ILog *log) {
@@ -269,8 +275,6 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
         return;
     }
 
-    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
-
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.handle());
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, comp_pipeline.layout(), 0, 1, &descr_set,
                                      0, nullptr);
@@ -281,4 +285,14 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     }
 
     api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_buf.vk_handle(), VkDeviceSize(indir_buf_offset));
+}
+
+void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
+                                  const uint32_t indir_buf_offset, Span<const Binding> bindings,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  ILog *log) {
+    ApiContext *api_ctx = descr_alloc->api_ctx();
+    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+    DispatchComputeIndirect(cmd_buf, comp_pipeline, indir_buf, indir_buf_offset, bindings, uniform_data,
+                            uniform_data_len, descr_alloc, log);
 }

@@ -19,7 +19,7 @@ void test_texture() {
 
         eTexLoadStatus status;
         Tex2DParams p;
-        p.usage = eTexUsage::Sampled | eTexUsage::Transfer;
+        p.usage = Bitmask(eTexUsage::Sampled) | eTexUsage::Transfer;
 
         Tex2DRef t_ref = test.LoadTexture2D("checker.tga", {}, p, test.default_mem_allocs(), &status);
         require(status == eTexLoadStatus::CreatedDefault);

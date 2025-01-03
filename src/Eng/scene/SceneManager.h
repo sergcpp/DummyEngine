@@ -209,7 +209,7 @@ class SceneManager {
     void OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader, std::string_view f_shader,
                          std::string_view tc_shader, std::string_view te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    Ren::Tex2DRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::eTexFlags flags);
+    Ren::Tex2DRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::Bitmask<Ren::eTexFlags> flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
     Ren::MeshRef LoadMesh(std::string_view name, std::istream *data, const Ren::material_load_callback &on_mat_load,
@@ -269,7 +269,6 @@ class SceneManager {
         uint16_t frame_dist = 0;
 
         Ren::eTexFormat orig_format = Ren::eTexFormat::Undefined;
-        Ren::eTexBlock orig_block;
         uint16_t read_offset = 0;
         uint16_t orig_w, orig_h;
         uint8_t orig_mip_count;

@@ -16,11 +16,11 @@ extern const int SphereIndicesCount;
 
 Eng::PrimDraw::~PrimDraw() {}
 
-void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::RenderTarget depth_rt,
-                             Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
-                             Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
-                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
-                             const int instances) {
+void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const Ren::ProgramRef &p,
+                             Ren::RenderTarget depth_rt, Ren::Span<const Ren::RenderTarget> color_rts,
+                             const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,
+                             Ren::Span<const Ren::Binding> bindings, const void *uniform_data,
+                             const int uniform_data_len, const int uniform_data_offset, const int instances) {
     using namespace PrimDrawInternal;
 
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
@@ -30,8 +30,6 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Re
         VkDescriptorSetLayout descr_set_layout = p->descr_set_layouts()[0];
         descr_set = PrepareDescriptorSet(api_ctx, descr_set_layout, bindings, ctx_->default_descr_alloc(), ctx_->log());
     }
-
-    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     { // transition resources if required
         VkPipelineStageFlags src_stages = 0, dst_stages = 0;
@@ -173,6 +171,10 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Re
     render_pass_begin_info.framebuffer = fb->vk_handle();
     render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(fb->w), uint32_t(fb->h)}};
 
+    VkClearValue clear_value = {};
+    render_pass_begin_info.pClearValues = &clear_value;
+    render_pass_begin_info.clearValueCount = 1;
+
     api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
@@ -216,4 +218,15 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Re
     }
 
     api_ctx->vkCmdEndRenderPass(cmd_buf);
+}
+
+void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::RenderTarget depth_rt,
+                             Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
+                             Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
+                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
+                             const int instances) {
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+    DrawPrim(cmd_buf, prim, p, depth_rt, color_rts, new_rast_state, applied_rast_state, bindings, uniform_data,
+             uniform_data_len, uniform_data_offset, instances);
 }

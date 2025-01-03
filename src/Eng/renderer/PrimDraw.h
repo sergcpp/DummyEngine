@@ -52,6 +52,10 @@ class PrimDraw {
         uint32_t clear_bits;
     };
 
+    void DrawPrim(Ren::CommandBuffer cmd_buf, ePrim prim, const Ren::ProgramRef &p, Ren::RenderTarget depth_rt,
+                  Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
+                  Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings, const void *uniform_data,
+                  int uniform_data_len, int uniform_data_offset, int instances = 1);
     void DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::RenderTarget depth_rt,
                   Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
                   Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings, const void *uniform_data,

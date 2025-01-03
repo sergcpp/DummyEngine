@@ -24,6 +24,8 @@ struct TexHandle {
 
     explicit operator bool() const { return id != 0; }
 };
+static_assert(sizeof(TexHandle) == 40, "!");
+
 inline bool operator==(const TexHandle lhs, const TexHandle rhs) {
     return lhs.id == rhs.id && lhs.generation == rhs.generation;
 }
@@ -61,8 +63,7 @@ class Texture2D : public RefCounter {
     uint32_t first_user = 0xffffffff;
 
     Texture2D() = default;
-    Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *mem_allocs,
-              ILog *log);
+    Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *mem_allocs, ILog *log);
     Texture2D(std::string_view name, ApiContext *api_ctx, const TexHandle &handle, const Tex2DParams &_params,
               MemAllocation &&alloc, ILog *log)
         : ready_(true), name_(name) {
@@ -88,11 +89,11 @@ class Texture2D : public RefCounter {
     void Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log);
     void Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
               ILog *log);
-    void Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,
-              eTexLoadStatus *load_status, ILog *log);
+    void Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
+              ILog *log);
 
-    void Realloc(int w, int h, int mip_count, int samples, eTexFormat format, eTexBlock block, bool is_srgb,
-                 CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log);
+    void Realloc(int w, int h, int mip_count, int samples, eTexFormat format, bool is_srgb, CommandBuffer cmd_buf,
+                 MemAllocators *mem_allocs, ILog *log);
 
     [[nodiscard]] TexHandle handle() const { return handle_; }
     [[nodiscard]] uint32_t id() const { return handle_.id; }
@@ -166,8 +167,7 @@ class Texture3D : public RefCounter {
     mutable eResState resource_state = eResState::Undefined;
 
     Texture3D() = default;
-    Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs,
-              ILog *log);
+    Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs, ILog *log);
     Texture3D(const Texture3D &rhs) = delete;
     Texture3D(Texture3D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture3D();

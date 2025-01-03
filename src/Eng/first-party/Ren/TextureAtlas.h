@@ -14,7 +14,7 @@ class TextureAtlas {
 
     TextureAtlas() : splitter_(0, 0) {}
     TextureAtlas(ApiContext *api_ctx, int w, int h, int min_res, int mip_count, const eTexFormat formats[],
-                 const eTexFlags flags[], eTexFilter filter, ILog *log);
+                 const Bitmask<eTexFlags> flags[], eTexFilter filter, ILog *log);
     ~TextureAtlas();
 
     TextureAtlas(const TextureAtlas &rhs) = delete;
@@ -41,7 +41,7 @@ class TextureAtlas {
 
     int AllocateRegion(const int res[2], int out_pos[2]);
     void InitRegion(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format,
-                    eTexFlags flags, int layer, int level, const int pos[2], const int res[2], ILog *log);
+                    Bitmask<eTexFlags> flags, int layer, int level, const int pos[2], const int res[2], ILog *log);
 
     bool Free(const int pos[2]);
 

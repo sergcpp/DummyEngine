@@ -81,8 +81,7 @@ struct Binding {
     OpaqueHandle handle;
 
     Binding() = default;
-    Binding(eBindTarget _trg, int _loc, OpaqueHandle _handle)
-        : trg(_trg), loc(_loc), handle(_handle) {}
+    Binding(eBindTarget _trg, int _loc, OpaqueHandle _handle) : trg(_trg), loc(_loc), handle(_handle) {}
     Binding(eBindTarget _trg, int _loc, size_t _offset, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), handle(_handle) {}
     Binding(eBindTarget _trg, int _loc, size_t _offset, size_t _size, OpaqueHandle _handle)
@@ -96,8 +95,15 @@ static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *), "!");
                                                    ILog *log);
 #endif
 
+void DispatchCompute(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, Vec3u grp_count,
+                     Span<const Binding> bindings, const void *uniform_data, int uniform_data_len,
+                     DescrMultiPoolAlloc *descr_alloc, ILog *log);
 void DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
                      const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
+
+void DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pipeline, const Buffer &indir_buf,
+                             uint32_t indir_buf_offset, Span<const Binding> bindings, const void *uniform_data,
+                             int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
 void DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf, uint32_t indir_buf_offset,
                              Span<const Binding> bindings, const void *uniform_data, int uniform_data_len,
                              DescrMultiPoolAlloc *descr_alloc, ILog *log);

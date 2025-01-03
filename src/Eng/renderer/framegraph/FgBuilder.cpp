@@ -5,7 +5,12 @@
 #include <Ren/TextureArray.h>
 #include <optick/optick.h>
 
+#include "../PrimDraw.h"
+#include "../utils/ShaderLoader.h"
 #include "FgNode.h"
+
+#include "../renderer/shaders/clear_buffer_interface.h"
+#include "../renderer/shaders/clear_image_interface.h"
 
 namespace FgBuilderInternal {
 extern const bool EnableResourceAliasing = true;
@@ -18,6 +23,28 @@ void insert_sorted(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
     }
 }
 } // namespace FgBuilderInternal
+
+Eng::FgBuilder::FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh, PrimDraw &prim_draw)
+    : ctx_(ctx), sh_(sh), prim_draw_(prim_draw), alloc_buf_(new char[AllocBufSize]),
+      alloc_(alloc_buf_.get(), AllocBufSize) {
+    pi_clear_image_[int(Ren::eTexFormat::RGBA8)] = sh.LoadPipeline("internal/clear_image@RGBA8.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::R32F)] = sh.LoadPipeline("internal/clear_image@R32F.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::R16F)] = sh.LoadPipeline("internal/clear_image@R16F.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::R8)] = sh.LoadPipeline("internal/clear_image@R8.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::R32UI)] = sh.LoadPipeline("internal/clear_image@R32UI.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::RG8)] = sh.LoadPipeline("internal/clear_image@RG8.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::RG16F)] = sh.LoadPipeline("internal/clear_image@RG16F.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::RG32F)] = sh.LoadPipeline("internal/clear_image@RG32F.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::RG11F_B10F)] = sh.LoadPipeline("internal/clear_image@RG11F_B10F.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::RGBA32F)] = sh.LoadPipeline("internal/clear_image@RGBA32F.comp.glsl");
+    pi_clear_image_[int(Ren::eTexFormat::RGBA16F)] = sh.LoadPipeline("internal/clear_image@RGBA16F.comp.glsl");
+
+    pi_clear_buffer_ = sh.LoadPipeline("internal/clear_buffer.comp.glsl");
+
+    prog_clear_target_[0] = sh.LoadProgram("internal/blit_clear.vert.glsl", "internal/blit_clear@FLOAT.frag.glsl");
+    prog_clear_target_[1] = sh.LoadProgram("internal/blit_clear.vert.glsl", "internal/blit_clear@UINT.frag.glsl");
+    prog_clear_target_[2] = sh.LoadProgram("internal/blit_clear.vert.glsl", "internal/blit_clear@DEPTH.frag.glsl");
+}
 
 Ren::ILog *Eng::FgBuilder::log() { return ctx_.log(); }
 
@@ -783,9 +810,6 @@ void Eng::FgBuilder::AllocateNeededResources_Simple() {
             continue;
         }
 
-        // Needed to clear the image initially
-        tex.desc.usage |= Ren::eTexUsageBits::Transfer;
-
         if (tex.history_index != -1) {
             FgAllocTex &hist_tex = textures_.at(tex.history_index);
             // combine usage flags
@@ -850,7 +874,17 @@ void Eng::FgBuilder::ClearResources_Simple() {
         std::vector<Ren::TransitionInfo> transitions;
         transitions.reserve(textures_to_clear.size() + buffers_to_clear.size());
         for (const Ren::Tex2DRef &t : textures_to_clear) {
-            transitions.emplace_back(t.get(), Ren::eResState::CopyDst);
+            if (t->params.usage & Ren::eTexUsage::Transfer) {
+                transitions.emplace_back(t.get(), Ren::eResState::CopyDst);
+            } else if (t->params.usage & Ren::eTexUsage::Storage) {
+                transitions.emplace_back(t.get(), Ren::eResState::UnorderedAccess);
+            } else if (t->params.usage & Ren::eTexUsage::RenderTarget) {
+                if (Ren::IsDepthFormat(t->params.format)) {
+                    transitions.emplace_back(t.get(), Ren::eResState::DepthWrite);
+                } else {
+                    transitions.emplace_back(t.get(), Ren::eResState::RenderTarget);
+                }
+            }
         }
         for (const Ren::BufferRef &b : buffers_to_clear) {
             transitions.emplace_back(b.get(), Ren::eResState::CopyDst);
@@ -858,12 +892,27 @@ void Eng::FgBuilder::ClearResources_Simple() {
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
         for (Ren::Tex2DRef &t : textures_to_clear) {
-            // NOTE: we can not really use anything other than zero here
-            const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-            Ren::ClearImage(*t, rgba, cmd_buf);
+            if (t->resource_state == Ren::eResState::CopyDst) {
+                ClearImage_AsTransfer(t, cmd_buf);
+            } else if (t->resource_state == Ren::eResState::UnorderedAccess) {
+                ClearImage_AsStorage(t, cmd_buf);
+            } else if (t->resource_state == Ren::eResState::RenderTarget ||
+                       t->resource_state == Ren::eResState::DepthWrite) {
+                ClearImage_AsTarget(t, cmd_buf);
+            } else {
+                assert(false);
+            }
         }
         for (Ren::BufferRef &b : buffers_to_clear) {
-            b->Fill(0, b->size(), 0, cmd_buf);
+            if (b->resource_state == Ren::eResState::CopyDst) {
+                ClearBuffer_AsTransfer(b, cmd_buf);
+            } else if (b->resource_state == Ren::eResState::UnorderedAccess) {
+                ClearBuffer_AsStorage(b, cmd_buf);
+            } else if (b->resource_state == Ren::eResState::BuildASWrite) {
+                // NOTE: Skipped
+            } else {
+                assert(false);
+            }
         }
 
         ctx_.EndTempSingleTimeCommands(cmd_buf);
@@ -1543,7 +1592,7 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
 void Eng::FgBuilder::Execute() {
     OPTICK_EVENT();
 
-    Ren::DebugMarker exec_marker(ctx_.api_ctx(), ctx_.current_cmd_buf(), "Eng::Framegraph::Execute");
+    Ren::DebugMarker exec_marker(ctx_.api_ctx(), ctx_.current_cmd_buf(), "Eng::FgBuilder::Execute");
 
     // Swap history images
     for (FgAllocTex &tex : textures_) {
@@ -1568,8 +1617,6 @@ void Eng::FgBuilder::Execute() {
         tex.used_in_stages = Ren::eStageBits::None;
         if (tex.ref) {
             tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
-            // Needed to clear the texture initially
-            tex.used_in_stages |= Ren::eStageBits::Transfer;
         } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex._ref)) {
             tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture2DArray *>(tex._ref)->resource_state);
         } else if (std::holds_alternative<const Ren::Texture3D *>(tex._ref)) {
@@ -1754,4 +1801,67 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
 
         tex->used_in_stages |= res.stages;
     }
+}
+
+void Eng::FgBuilder::ClearBuffer_AsTransfer(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf) {
+    buf->Fill(0, buf->size(), 0, cmd_buf);
+}
+
+void Eng::FgBuilder::ClearBuffer_AsStorage(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf) {
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::SBufRW, ClearBuffer::OUT_BUF_SLOT, *buf}};
+
+    assert((buf->size() % 4) == 0);
+
+    const Ren::Vec3u grp_count = Ren::Vec3u{
+        ((buf->size() / 4) + ClearBuffer::LOCAL_GROUP_SIZE_X - 1u) / ClearBuffer::LOCAL_GROUP_SIZE_X, 1u, 1u};
+
+    ClearBuffer::Params uniform_params;
+    uniform_params.data_len = (buf->size() / 4);
+
+    Ren::DispatchCompute(cmd_buf, *pi_clear_buffer_, grp_count, bindings, &uniform_params, sizeof(ClearBuffer::Params),
+                         ctx_.default_descr_alloc(), ctx_.log());
+}
+
+void Eng::FgBuilder::ClearImage_AsTransfer(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
+    // NOTE: we can not really use anything other than zero due to aliasing
+    static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    Ren::ClearImage(*tex, rgba, cmd_buf);
+}
+
+void Eng::FgBuilder::ClearImage_AsStorage(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
+    const Ren::Tex2DParams &p = tex->params;
+
+    const Ren::PipelineRef &pi = pi_clear_image_[int(p.format)];
+    assert(pi);
+
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::Image2D, ClearImage::OUT_IMG_SLOT, *tex}};
+
+    const Ren::Vec3u grp_count =
+        Ren::Vec3u{(p.w + ClearImage::LOCAL_GROUP_SIZE_X - 1u) / ClearImage::LOCAL_GROUP_SIZE_X,
+                   (p.h + ClearImage::LOCAL_GROUP_SIZE_Y - 1u) / ClearImage::LOCAL_GROUP_SIZE_Y, 1u};
+
+    Ren::DispatchCompute(cmd_buf, *pi, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
+}
+
+void Eng::FgBuilder::ClearImage_AsTarget(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
+    const Ren::Tex2DParams &p = tex->params;
+
+    Ren::RenderTarget depth_target;
+    Ren::SmallVector<Ren::RenderTarget, 1> color_target;
+
+    Ren::ProgramRef prog;
+    if (Ren::IsDepthFormat(p.format)) {
+        depth_target = {tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store};
+        prog = prog_clear_target_[2];
+    } else {
+        color_target.emplace_back(tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store);
+        prog = Ren::IsUnsignedIntegerFormat(p.format) ? prog_clear_target_[1] : prog_clear_target_[0];
+    }
+
+    Ren::RastState rast_state;
+    rast_state.viewport = Ren::Vec4i{0, 0, p.w, p.h};
+    rast_state.depth.test_enabled = true;
+
+    prim_draw_.DrawPrim(cmd_buf, PrimDraw::ePrim::Quad, prog, depth_target, color_target, rast_state, rast_state_, {},
+                        nullptr, 0, 0);
 }

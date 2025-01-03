@@ -19,7 +19,8 @@ void test_material() {
             out_pipelines.emplace_back(nullptr, 0);
         };
 
-        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4],
+                                         const Bitmask<eTexFlags> flags) {
             eTexLoadStatus status;
             Tex2DParams p;
             return test.LoadTexture2D(name, {}, p, test.default_mem_allocs(), &status);

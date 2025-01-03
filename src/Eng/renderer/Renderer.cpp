@@ -96,7 +96,7 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
 
 Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads)
     : ctx_(ctx), sh_(sh), rand_(rand), threads_(threads), shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT),
-      fg_builder_(ctx_, sh_) {
+      fg_builder_(ctx_, sh_, prim_draw_) {
     using namespace RendererInternal;
 
     // Culling is done in lower resolution
@@ -116,7 +116,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RGBA8;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -131,7 +131,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams p;
         p.w = p.h = 8;
         p.format = Ren::eTexFormat::RG32F;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
 
         Ren::eTexLoadStatus status;
         rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", {(const uint8_t *)&PMJSamples64[0][0], sizeof(PMJSamples64)}, p,
@@ -143,7 +143,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams p;
         p.w = p.h = 4;
         p.format = Ren::eTexFormat::RG16;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
 
         Ren::eTexLoadStatus status;
         rand2d_dirs_4x4_ =
@@ -171,7 +171,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.w = __cone_rt_lut_res;
         p.h = __cone_rt_lut_res;
         p.format = Ren::eTexFormat::RGBA8;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -192,7 +192,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams p;
         p.w = p.h = __brdf_lut_res;
         p.format = Ren::eTexFormat::RG16;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -228,7 +228,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.w = 8 * 64;
         p.h = 64;
         p.format = Ren::eTexFormat::RGBA32F;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -249,7 +249,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::Tex2DParams p;
         p.w = p.h = __noise_res;
         p.format = Ren::eTexFormat::RGBA8_snorm;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
 
         Ren::eTexLoadStatus status;
@@ -384,10 +384,11 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             {Ren::eTexFormat::RGBA8, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
              Ren::eStoreOp::Store}};
 
-        color_rts[2].flags = Ren::eTexFlagBits::SRGB;
+        color_rts[2].flags = Ren::eTexFlags::SRGB;
 
-        const auto depth_format =
-            ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
+        // const auto depth_format =
+        //     ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
+        const auto depth_format = Ren::eTexFormat::D32_S8;
 
         const Ren::RenderTargetInfo depth_rt = {depth_format, 1 /* samples */,
                                                 Ren::eImageLayout::DepthStencilAttachmentOptimal, Ren::eLoadOp::Load,
@@ -423,7 +424,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         params.w = SHADOWMAP_WIDTH;
         params.h = SHADOWMAP_HEIGHT;
         params.format = Ren::eTexFormat::D16;
-        params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Sampled;
+        params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Sampled;
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.sampling.compare = Ren::eTexCompare::GEqual;
@@ -921,8 +922,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         frame_textures.depth_params.w = view_state_.scr_res[0];
         frame_textures.depth_params.h = view_state_.scr_res[1];
-        frame_textures.depth_params.format =
-            ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
+        frame_textures.depth_params.format = Ren::eTexFormat::D32_S8;
+        // ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
         frame_textures.depth_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         // Main HDR color
@@ -1428,7 +1429,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
     if (!tonemap_lut_) {
         Ren::Tex3DParams params = {};
         params.w = params.h = params.d = res;
-        params.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        params.usage = Ren::Bitmask(Ren::eTexUsage::Sampled) | Ren::eTexUsage::Transfer;
         params.format = Ren::eTexFormat::RGB10_A2;
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;

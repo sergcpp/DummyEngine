@@ -7,32 +7,16 @@
 #endif
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ) {Y, Z},
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) {Y, Z, W, XX},
 struct {
     int channel_count;
     int pp_data_len;
+    int block_x;
+    int block_y;
 } g_tex_format_info[] = {
 #include "TextureFormat.inl"
 };
 #undef DECORATE
-
-static const int g_block_res[][2] = {
-    {4, 4},   // _4x4
-    {5, 4},   // _5x4
-    {5, 5},   // _5x5
-    {6, 5},   // _6x5
-    {6, 6},   // _6x6
-    {8, 5},   // _8x5
-    {8, 6},   // _8x6
-    {8, 8},   // _8x8
-    {10, 5},  // _10x5
-    {10, 6},  // _10x6
-    {10, 8},  // _10x8
-    {10, 10}, // _10x10
-    {12, 10}, // _12x10
-    {12, 12}  // _12x12
-};
-static_assert(std::size(g_block_res) == int(eTexBlock::_None), "!");
 
 const eTexUsage g_tex_usage_per_state[] = {
     {},                      // Undefined
@@ -56,22 +40,18 @@ const eTexUsage g_tex_usage_per_state[] = {
 static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count), "!");
 } // namespace Ren
 
-int Ren::GetBlockLenBytes(const eTexFormat format, const eTexBlock block) {
+int Ren::GetBlockLenBytes(const eTexFormat format) {
     switch (format) {
     case eTexFormat::BC1:
-        assert(block == eTexBlock::_4x4);
         return BlockSize_BC1;
     case eTexFormat::BC2:
     case eTexFormat::BC3:
-        assert(block == eTexBlock::_4x4);
         return BlockSize_BC3;
     case eTexFormat::BC4:
-        assert(block == eTexBlock::_4x4);
         return BlockSize_BC4;
     case eTexFormat::BC5:
-        assert(block == eTexBlock::_4x4);
         return BlockSize_BC5;
-    case eTexFormat::ASTC:
+    case eTexFormat::ASTC_4x4:
         assert(false);
         break;
     default:
@@ -80,14 +60,15 @@ int Ren::GetBlockLenBytes(const eTexFormat format, const eTexBlock block) {
     return -1;
 }
 
-int Ren::GetBlockCount(const int w, const int h, const eTexBlock block) {
-    const int i = int(block);
-    return ((w + g_block_res[i][0] - 1) / g_block_res[i][0]) * ((h + g_block_res[i][1] - 1) / g_block_res[i][1]);
+int Ren::GetBlockCount(const int w, const int h, const eTexFormat format) {
+    const int i = int(format);
+    return ((w + g_tex_format_info[i].block_x - 1) / g_tex_format_info[i].block_x) *
+           ((h + g_tex_format_info[i].block_y - 1) / g_tex_format_info[i].block_y);
 }
 
-int Ren::GetMipDataLenBytes(const int w, const int h, const eTexFormat format, const eTexBlock block) {
-    if (block != eTexBlock::_None) {
-        return GetBlockCount(w, h, block) * GetBlockLenBytes(format, block);
+int Ren::GetMipDataLenBytes(const int w, const int h, const eTexFormat format) {
+    if (IsCompressedFormat(format)) {
+        return GetBlockCount(w, h, format) * GetBlockLenBytes(format);
     } else {
         assert(g_tex_format_info[int(format)].pp_data_len != 0);
         return w * h * g_tex_format_info[int(format)].pp_data_len;
@@ -101,8 +82,8 @@ uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
         const int h = std::max(params.h >> i, 1);
 
         if (IsCompressedFormat(params.format)) {
-            const int block_len = GetBlockLenBytes(params.format, params.block);
-            const int block_cnt = GetBlockCount(w, h, params.block);
+            const int block_len = GetBlockLenBytes(params.format);
+            const int block_cnt = GetBlockCount(w, h, params.format);
 
             total_len += uint32_t(block_len) * block_cnt;
         } else {
@@ -157,7 +138,7 @@ static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC;
 static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD;
 #endif
 
-Ren::eTexFormat Ren::FormatFromGLInternalFormat(const uint32_t gl_internal_format, eTexBlock *block, bool *is_srgb) {
+Ren::eTexFormat Ren::FormatFromGLInternalFormat(const uint32_t gl_internal_format, bool *is_srgb) {
     (*is_srgb) = false;
 
     switch (gl_internal_format) {
@@ -165,104 +146,87 @@ Ren::eTexFormat Ren::FormatFromGLInternalFormat(const uint32_t gl_internal_forma
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-        (*block) = eTexBlock::_4x4;
         return eTexFormat::BC1;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-        (*block) = eTexBlock::_4x4;
         return eTexFormat::BC2;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-        (*block) = eTexBlock::_4x4;
         return eTexFormat::BC3;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_4x4_KHR:
-        (*block) = eTexBlock::_4x4;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_4x4;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_5x4_KHR:
-        (*block) = eTexBlock::_5x4;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_5x4;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_5x5_KHR:
-        (*block) = eTexBlock::_5x5;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_5x5;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_6x5_KHR:
-        (*block) = eTexBlock::_6x5;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_6x5;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_6x6_KHR:
-        (*block) = eTexBlock::_6x6;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_6x6;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_8x5_KHR:
-        (*block) = eTexBlock::_8x5;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_8x5;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_8x6_KHR:
-        (*block) = eTexBlock::_8x6;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_8x6;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_8x8_KHR:
-        (*block) = eTexBlock::_8x8;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_8x8;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x5_KHR:
-        (*block) = eTexBlock::_10x5;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_10x5;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x6_KHR:
-        (*block) = eTexBlock::_10x6;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_10x6;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x8_KHR:
-        (*block) = eTexBlock::_10x8;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_10x8;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x10_KHR:
-        (*block) = eTexBlock::_10x10;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_10x10;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_12x10_KHR:
-        (*block) = eTexBlock::_12x10;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_12x10;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR:
         (*is_srgb) = true;
         [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_12x12_KHR:
-        (*block) = eTexBlock::_12x12;
-        return eTexFormat::ASTC;
+        return eTexFormat::ASTC_12x12;
     default:
         assert(false && "Unsupported format!");
     }
@@ -292,21 +256,15 @@ void Ren::ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params) {
 
     if (hdr.sPixelFormat.dwFourCC == FourCC_BC1_UNORM) {
         params->format = eTexFormat::BC1;
-        params->block = eTexBlock::_4x4;
     } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC2_UNORM) {
         params->format = eTexFormat::BC2;
-        params->block = eTexBlock::_4x4;
     } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC3_UNORM) {
         params->format = eTexFormat::BC3;
-        params->block = eTexBlock::_4x4;
     } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC4_UNORM) {
         params->format = eTexFormat::BC4;
-        params->block = eTexBlock::_4x4;
     } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC5_UNORM) {
         params->format = eTexFormat::BC5;
-        params->block = eTexBlock::_4x4;
     } else {
-        params->block = eTexBlock::_None;
         if (hdr.sPixelFormat.dwFlags & DDPF_RGB) {
             // Uncompressed
             if (hdr.sPixelFormat.dwRGBBitCount == 32) {

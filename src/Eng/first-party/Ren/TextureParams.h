@@ -3,10 +3,11 @@
 #include <cstdint>
 #include <string_view>
 
+#include "Bitmask.h"
 #include "SamplingParams.h"
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ) X,
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) X,
 enum class eTexFormat : uint8_t {
 #include "TextureFormat.inl"
     _Count
@@ -41,54 +42,18 @@ const eTexFormat DefaultCompressedRGBA = eTexFormat::ASTC;
 const eTexFormat DefaultCompressedRGBA = eTexFormat::BC3;
 #endif
 
-enum class eTexBlock : uint8_t {
-    _4x4,
-    _5x4,
-    _5x5,
-    _6x5,
-    _6x6,
-    _8x5,
-    _8x6,
-    _8x8,
-    _10x5,
-    _10x6,
-    _10x8,
-    _10x10,
-    _12x10,
-    _12x12,
-    _None
+enum class eTexFlags : uint8_t {
+    NoOwnership,
+    Signed,
+    SRGB,
+    NoRepeat,
+    MIPMin,
+    MIPMax,
+    NoBias,
+    ExtendedViews
 };
 
-enum class eTexFlagBits : uint16_t {
-    NoOwnership = (1u << 0u),
-    Signed = (1u << 1u),
-    SRGB = (1u << 2u),
-    NoRepeat = (1u << 3u),
-    NoFilter = (1u << 4u),
-    MIPMin = (1u << 5u),
-    MIPMax = (1u << 6u),
-    NoBias = (1u << 7u),
-    ExtendedViews = (1u << 8u)
-};
-using eTexFlags = eTexFlagBits;
-inline eTexFlags operator|(eTexFlags a, eTexFlags b) { return eTexFlags(uint16_t(a) | uint16_t(b)); }
-inline eTexFlags &operator|=(eTexFlags &a, eTexFlags b) { return a = eTexFlags(uint16_t(a) | uint16_t(b)); }
-inline eTexFlags operator&(eTexFlags a, eTexFlags b) { return eTexFlags(uint16_t(a) & uint16_t(b)); }
-inline eTexFlags &operator&=(eTexFlags &a, eTexFlags b) { return a = eTexFlags(uint16_t(a) & uint16_t(b)); }
-inline eTexFlags operator~(eTexFlags a) { return eTexFlags(~uint16_t(a)); }
-
-enum class eTexUsageBits : uint8_t {
-    Transfer = (1u << 0u),
-    Sampled = (1u << 1u),
-    Storage = (1u << 2u),
-    RenderTarget = (1u << 3u)
-};
-using eTexUsage = eTexUsageBits;
-
-inline eTexUsage operator|(eTexUsage a, eTexUsage b) { return eTexUsage(uint8_t(a) | uint8_t(b)); }
-inline eTexUsage &operator|=(eTexUsage &a, eTexUsage b) { return a = eTexUsage(uint8_t(a) | uint8_t(b)); }
-inline eTexUsage operator&(eTexUsage a, eTexUsage b) { return eTexUsage(uint8_t(a) & uint8_t(b)); }
-inline eTexUsage &operator&=(eTexUsage &a, eTexUsage b) { return a = eTexUsage(uint8_t(a) & uint8_t(b)); }
+enum class eTexUsage : uint8_t { Transfer, Sampled, Storage, RenderTarget };
 
 struct Texture1DParams {
     uint32_t offset = 0, size = 0;
@@ -99,17 +64,16 @@ static_assert(sizeof(Texture1DParams) == 12, "!");
 
 struct Tex2DParams {
     uint16_t w = 0, h = 0;
-    eTexFlags flags = {};
+    Bitmask<eTexFlags> flags;
     uint8_t mip_count = 1;
-    eTexUsage usage = {};
+    Bitmask<eTexUsage> usage;
     uint8_t cube = 0;
     uint8_t samples = 1;
     uint8_t fallback_color[4] = {0, 0, 0, 255};
     eTexFormat format = eTexFormat::Undefined;
-    eTexBlock block = eTexBlock::_None;
     SamplingParams sampling;
 };
-static_assert(sizeof(Tex2DParams) == 22, "!");
+static_assert(sizeof(Tex2DParams) == 20, "!");
 
 inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
     return lhs.w == rhs.w && lhs.h == rhs.h && lhs.flags == rhs.flags && lhs.mip_count == rhs.mip_count &&
@@ -121,14 +85,14 @@ inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
 inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) { return !operator==(lhs, rhs); }
 
 struct Tex3DParams {
-    uint16_t w = 0, h = 0, d = 0;
-    eTexFlags flags = {};
-    eTexUsage usage = {};
+    uint16_t w = 0, h = 0;
+    uint8_t d = 0;
+    Bitmask<eTexFlags> flags;
+    Bitmask<eTexUsage> usage;
     eTexFormat format = eTexFormat::Undefined;
-    eTexBlock block = eTexBlock::_None;
     SamplingParams sampling;
 };
-static_assert(sizeof(Tex3DParams) == 18, "!");
+static_assert(sizeof(Tex3DParams) == 14, "!");
 
 inline bool operator==(const Tex3DParams &lhs, const Tex3DParams &rhs) {
     return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.flags == rhs.flags && lhs.usage == rhs.usage &&

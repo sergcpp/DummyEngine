@@ -1,6 +1,8 @@
 #include "FgBuilder.h"
 
 #include <Ren/Context.h>
+#include <Ren/DebugMarker.h>
+#include <Ren/DrawCall.h>
 #include <Ren/ScopeExit.h>
 #include <Ren/VKCtx.h>
 
@@ -12,7 +14,7 @@ VkMemoryPropertyFlags GetVkMemoryPropertyFlags(eBufType type);
 uint32_t FindMemoryType(uint32_t search_from, const VkPhysicalDeviceMemoryProperties *mem_properties,
                         uint32_t mem_type_bits, VkMemoryPropertyFlags desired_mem_flags, VkDeviceSize desired_size);
 VkFormat ToSRGBFormat(VkFormat format);
-VkImageUsageFlags to_vk_image_usage(eTexUsage usage, eTexFormat format);
+VkImageUsageFlags to_vk_image_usage(Bitmask<eTexUsage> usage, eTexFormat format);
 } // namespace Ren
 
 namespace FgBuilderInternal {
@@ -144,8 +146,6 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         }
 
         Ren::Tex2DParams &p = t.desc;
-        // Needed to clear the image initially
-        p.usage |= Ren::eTexUsageBits::Transfer;
         if (t.history_index != -1) {
             // combine usage flags
             FgAllocTex &hist_tex = textures_[t.history_index];
@@ -174,7 +174,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             img_info.mipLevels = mip_count;
             img_info.arrayLayers = 1;
             img_info.format = Ren::VKFormatFromTexFormat(p.format);
-            if (bool(p.flags & Ren::eTexFlagBits::SRGB)) {
+            if (p.flags & Ren::eTexFlags::SRGB) {
                 img_info.format = Ren::ToSRGBFormat(img_info.format);
             }
             img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -504,81 +504,11 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
 
 void Eng::FgBuilder::ClearResources_MemHeaps() {
     Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
+    //
+    // Simulate execution over 2 frames, but perform clear instead of actual work
+    //
     for (int j = 0; j < 2; ++j) {
-        for (int i = 0; i < int(reordered_nodes_.size()); ++i) {
-            const FgNode *node = reordered_nodes_[i];
-
-            std::vector<Ren::TransitionInfo> transitions;
-            std::vector<Ren::Buffer *> bufs_to_clear;
-            std::vector<Ren::Texture2D *> texs_to_clear;
-            for (const FgResource &res : node->output_) {
-                if (res.type == eFgResType::Buffer) {
-                    FgAllocBuf &buf = buffers_.at(res.index);
-                    if (buf.external) {
-                        continue;
-                    }
-
-                    const Ren::MemAllocation &alloc = buf.ref->mem_alloc();
-                    if (alloc.pool == 0xffff) {
-                        // this is dedicated allocation
-                        continue;
-                    }
-                    if (buf.lifetime.first_used_node() == i && buf.ref->resource_state == Ren::eResState::Undefined) {
-                        buf.ref->resource_state = Ren::eResState::Discarded;
-                        for (const FgResRef other : buf.overlaps_with) {
-                            if (other.type == eFgResType::Buffer) {
-                                FgAllocBuf *other_buf = &buffers_.at(other.index);
-                                assert(other_buf->ref->resource_state != Ren::eResState::Discarded);
-                                transitions.emplace_back(other_buf->ref.get(), Ren::eResState::Discarded);
-                            } else if (other.type == eFgResType::Texture) {
-                                FgAllocTex *other_tex = &textures_.at(other.index);
-                                assert(other_tex->ref->resource_state != Ren::eResState::Discarded);
-                                transitions.emplace_back(other_tex->ref.get(), Ren::eResState::Discarded);
-                            }
-                        }
-                        bufs_to_clear.push_back(buf.ref.get());
-                        transitions.emplace_back(buf.ref.get(), Ren::eResState::CopyDst);
-                    }
-                } else if (res.type == eFgResType::Texture) {
-                    FgAllocTex &tex = textures_.at(res.index);
-                    if (tex.external) {
-                        continue;
-                    }
-
-                    const Ren::MemAllocation &alloc = tex.ref->mem_alloc();
-                    if (alloc.pool == 0xffff) {
-                        // this is dedicated allocation
-                        continue;
-                    }
-                    if (tex.lifetime.first_used_node() == i && tex.ref->resource_state == Ren::eResState::Undefined) {
-                        tex.ref->resource_state = Ren::eResState::Discarded;
-                        for (const FgResRef other : tex.overlaps_with) {
-                            if (other.type == eFgResType::Buffer) {
-                                FgAllocBuf *other_buf = &buffers_.at(other.index);
-                                assert(other_buf->ref->resource_state != Ren::eResState::Discarded);
-                                transitions.emplace_back(other_buf->ref.get(), Ren::eResState::Discarded);
-                            } else if (other.type == eFgResType::Texture) {
-                                FgAllocTex *other_tex = &textures_.at(other.index);
-                                assert(other_tex->ref->resource_state != Ren::eResState::Discarded);
-                                transitions.emplace_back(other_tex->ref.get(), Ren::eResState::Discarded);
-                            }
-                        }
-                        texs_to_clear.push_back(tex.ref.get());
-                        transitions.emplace_back(tex.ref.get(), Ren::eResState::CopyDst);
-                    }
-                }
-            }
-
-            TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
-            for (Ren::Buffer *b : bufs_to_clear) {
-                b->Fill(0, b->size(), 0, cmd_buf);
-            }
-            for (Ren::Texture2D *t : texs_to_clear) {
-                // NOTE: we can not really use anything other than zero here
-                const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-                Ren::ClearImage(*t, rgba, cmd_buf);
-            }
-        }
+        Ren::DebugMarker exec_marker(ctx_.api_ctx(), ctx_.current_cmd_buf(), "Eng::FgBuilder::ClearResources_MemHeaps");
 
         // Swap history images
         for (FgAllocTex &tex : textures_) {
@@ -590,24 +520,89 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                 }
             }
         }
+        // Reset resources
+        for (FgAllocBuf &buf : buffers_) {
+            buf._generation = 0;
+            buf.used_in_stages = Ren::eStageBits::None;
+            if (buf.ref) {
+                buf.used_in_stages = StageBitsForState(buf.ref->resource_state);
+            }
+        }
+        for (FgAllocTex &tex : textures_) {
+            tex._generation = 0;
+            tex.used_in_stages = Ren::eStageBits::None;
+            if (tex.ref) {
+                tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
+            } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex._ref)) {
+                tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture2DArray *>(tex._ref)->resource_state);
+            } else if (std::holds_alternative<const Ren::Texture3D *>(tex._ref)) {
+                tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture3D *>(tex._ref)->resource_state);
+            }
+        }
+
+        BuildResourceLinkedLists();
+
+#if defined(REN_GL_BACKEND)
+        rast_state_.Apply();
+#endif
+
+        for (int i = 0; i < int(reordered_nodes_.size()); ++i) {
+            const FgNode *node = reordered_nodes_[i];
+
+            Ren::SmallVector<Ren::TransitionInfo, 32> res_transitions;
+            Ren::eStageBits src_stages = Ren::eStageBits::None;
+            Ren::eStageBits dst_stages = Ren::eStageBits::None;
+
+            std::vector<Ren::BufferRef> bufs_to_clear;
+            std::vector<Ren::Tex2DRef> texs_to_clear;
+
+            // for (const FgResource &res : node->input_) {
+            //     HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
+            // }
+            for (const FgResource &res : node->output_) {
+                if (res.type == eFgResType::Buffer) {
+                    FgAllocBuf &buf = buffers_.at(res.index);
+                    if (buf.external) {
+                        continue;
+                    }
+                    bufs_to_clear.push_back(buf.ref);
+                    HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
+                } else if (res.type == eFgResType::Texture) {
+                    FgAllocTex &tex = textures_.at(res.index);
+                    if (tex.external) {
+                        continue;
+                    }
+                    texs_to_clear.push_back(tex.ref);
+                    HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
+                }
+            }
+            TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions);
+            for (Ren::BufferRef &b : bufs_to_clear) {
+                if (b->resource_state == Ren::eResState::CopyDst) {
+                    ClearBuffer_AsTransfer(b, cmd_buf);
+                } else if (b->resource_state == Ren::eResState::UnorderedAccess) {
+                    ClearBuffer_AsStorage(b, cmd_buf);
+                } else if (b->resource_state == Ren::eResState::BuildASWrite) {
+                    // NOTE: Skipped
+                } else {
+                    assert(false);
+                }
+            }
+            for (Ren::Tex2DRef &t : texs_to_clear) {
+                if (t->resource_state == Ren::eResState::CopyDst) {
+                    ClearImage_AsTransfer(t, cmd_buf);
+                } else if (t->resource_state == Ren::eResState::UnorderedAccess) {
+                    ClearImage_AsStorage(t, cmd_buf);
+                } else if (t->resource_state == Ren::eResState::RenderTarget ||
+                           t->resource_state == Ren::eResState::DepthWrite) {
+                    ClearImage_AsTarget(t, cmd_buf);
+                } else {
+                    assert(false);
+                }
+            }
+        }
     }
     ctx_.EndTempSingleTimeCommands(cmd_buf);
-
-    // Reset to undefined state
-    for (auto it = std::begin(buffers_); it != std::end(buffers_); ++it) {
-        FgAllocBuf &buf = *it;
-        if (buf.external || !buf.lifetime.is_used()) {
-            continue;
-        }
-        buf.ref->resource_state = Ren::eResState::Undefined;
-    }
-    for (auto it = std::begin(textures_); it != std::end(textures_); ++it) {
-        FgAllocTex &tex = *it;
-        if (tex.external || !tex.lifetime.is_used()) {
-            continue;
-        }
-        tex.ref->resource_state = Ren::eResState::Undefined;
-    }
 }
 
 void Eng::FgBuilder::ReleaseMemHeaps() {

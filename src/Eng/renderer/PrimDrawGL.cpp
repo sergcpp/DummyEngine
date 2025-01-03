@@ -13,11 +13,11 @@ extern const int SphereIndicesCount;
 
 Eng::PrimDraw::~PrimDraw() = default;
 
-void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::RenderTarget depth_rt,
-                             Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
-                             Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
-                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
-                             const int instance_count) {
+void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, ePrim prim, const Ren::ProgramRef &p,
+                             const Ren::RenderTarget depth_rt, Ren::Span<const Ren::RenderTarget> color_rts,
+                             const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,
+                             Ren::Span<const Ren::Binding> bindings, const void *uniform_data,
+                             const int uniform_data_len, const int uniform_data_offset, const int instance_count) {
     using namespace PrimDrawInternal;
 
     const Ren::Framebuffer *fb =
@@ -90,4 +90,13 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::Re
 #ifndef NDEBUG
     Ren::ResetGLState();
 #endif
+}
+
+void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::RenderTarget depth_rt,
+                             Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
+                             Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
+                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
+                             const int instance_count) {
+    DrawPrim({}, prim, p, depth_rt, color_rts, new_rast_state, applied_rast_state, bindings, uniform_data,
+             uniform_data_len, uniform_data_offset, instance_count);
 }

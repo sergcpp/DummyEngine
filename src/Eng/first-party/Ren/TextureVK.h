@@ -35,6 +35,7 @@ struct TexHandle {
     explicit operator bool() const { return img != VkImage{}; }
 };
 static_assert(sizeof(TexHandle) == 48, "!");
+
 inline bool operator==(const TexHandle &lhs, const TexHandle &rhs) {
     return lhs.img == rhs.img && lhs.views == rhs.views && lhs.sampler == rhs.sampler &&
            lhs.generation == rhs.generation;
@@ -107,11 +108,11 @@ class Texture2D : public RefCounter {
     void Init(const TexHandle &handle, const Tex2DParams &p, MemAllocation &&alloc, ILog *log);
     void Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
               ILog *log);
-    void Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,
-              eTexLoadStatus *load_status, ILog *log);
+    void Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
+              ILog *log);
 
-    bool Realloc(int w, int h, int mip_count, int samples, eTexFormat format, eTexBlock block, bool is_srgb,
-                 CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log);
+    bool Realloc(int w, int h, int mip_count, int samples, eTexFormat format, bool is_srgb, CommandBuffer cmd_buf,
+                 MemAllocators *mem_allocs, ILog *log);
 
     [[nodiscard]] const TexHandle &handle() const { return handle_; }
     [[nodiscard]] TexHandle &handle() { return handle_; }
@@ -193,8 +194,7 @@ class Texture3D : public RefCounter {
     mutable eResState resource_state = eResState::Undefined;
 
     Texture3D() = default;
-    Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs,
-              ILog *log);
+    Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs, ILog *log);
     Texture3D(const Texture3D &rhs) = delete;
     Texture3D(Texture3D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture3D();

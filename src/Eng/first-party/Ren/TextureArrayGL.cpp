@@ -12,7 +12,7 @@ extern const uint32_t g_gl_wrap_mode[];
 
 Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
                                     const int layer_count, const int mip_count, const eTexFormat format,
-                                    const eTexFilter filter, const eTexUsage usage)
+                                    const eTexFilter filter, const Bitmask<eTexUsage> usage)
     : api_ctx_(api_ctx), name_(name), w_(w), h_(h), layer_count_(layer_count), format_(format), filter_(filter) {
     GLuint tex_id;
     ren_glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex_id);

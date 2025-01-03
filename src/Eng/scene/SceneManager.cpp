@@ -131,7 +131,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
 
     { // Alloc texture for decals atlas
         const Ren::eTexFormat formats[] = {Ren::DefaultCompressedRGBA, Ren::eTexFormat::Undefined};
-        const Ren::eTexFlags flags[] = {{}};
+        const Ren::Bitmask<Ren::eTexFlags> flags[] = {{}};
         scene_data_.decals_atlas =
             Ren::TextureAtlas{ren_ctx.api_ctx(),          DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, 64, 1, formats, flags,
                               Ren::eTexFilter::Trilinear, ren_ctx_.log()};
@@ -217,7 +217,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
 
     { // create white texture
         Ren::Tex2DParams p;
-        p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.format = Ren::eTexFormat::RGBA8;
         p.w = p.h = 1;
@@ -241,7 +241,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
             in_file.Read((char *)&in_file_data[0], in_file_size);
 
             Ren::Tex2DParams p;
-            p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
+            p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
             p.sampling.filter = Ren::eTexFilter::Bilinear;
 
             Ren::eTexLoadStatus status;
@@ -650,9 +650,9 @@ void Eng::SceneManager::LoadEnvMap() {
         Ren::Tex2DParams p;
         p.w = p.h = 512;
         p.format = Ren::eTexFormat::RGBA16F;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Storage |
-                   Ren::eTexUsageBits::RenderTarget);
-        p.flags = Ren::eTexFlagBits::ExtendedViews;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage |
+                  Ren::eTexUsage::RenderTarget;
+        p.flags = Ren::eTexFlags::ExtendedViews;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -688,7 +688,7 @@ void Eng::SceneManager::LoadEnvMap() {
         p.h = h;
         p.mip_count = int(header.dwMipMapCount);
         p.format = Ren::eTexFormat::RGB9_E5;
-        p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -707,7 +707,7 @@ void Eng::SceneManager::LoadEnvMap() {
         Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RGBA8;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -737,24 +737,24 @@ void Eng::SceneManager::AllocGICache() {
     scene_data_.persistent_data.probe_ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z,
         4 * PROBE_VOLUME_RES_Y, 1, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
-        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
     // ~47.8mb
     scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES,
         PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES, 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1,
         Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
-        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
     // ~84.9mb
     scene_data_.persistent_data.probe_distance = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES,
         PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES, PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1, Ren::eTexFormat::RG16F,
         Ren::eTexFilter::Bilinear,
-        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
     // ~0.7mb
     scene_data_.persistent_data.probe_offset = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume Offset", PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z,
         PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
-        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
 
     ClearGICache();
 }
@@ -1473,23 +1473,18 @@ void Eng::SceneManager::OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std:
 }
 
 Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, const uint8_t color[4],
-                                               const Ren::eTexFlags flags) {
+                                               const Ren::Bitmask<Ren::eTexFlags> flags) {
     using namespace SceneManagerConstants;
 
     Ren::Tex2DParams p;
     memcpy(p.fallback_color, color, 4);
-
-    if (bool(p.flags & Ren::eTexFlagBits::NoFilter)) {
-        p.sampling.filter = Ren::eTexFilter::Nearest;
-    } else {
-        p.sampling.filter = Ren::eTexFilter::Trilinear;
-    }
-    if (bool(p.flags & Ren::eTexFlagBits::NoRepeat)) {
+    p.sampling.filter = Ren::eTexFilter::Trilinear;
+    if (p.flags & Ren::eTexFlags::NoRepeat) {
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
     } else {
         p.sampling.wrap = Ren::eTexWrap::Repeat;
     }
-    p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
+    p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
     p.sampling.lod_bias.from_float(-1.0f); // TAA compensation
 
     Ren::eTexLoadStatus status;

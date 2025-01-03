@@ -30,8 +30,6 @@
 #undef None // defined in X.h
 #undef near // defined in minwindef.h
 #undef far
-#undef min
-#undef max
 
 bool Ren::InitGLExtentions(ILog *log) {
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)

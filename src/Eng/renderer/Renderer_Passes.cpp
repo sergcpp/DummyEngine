@@ -597,7 +597,7 @@ void Eng::Renderer::InitSkyResources() {
                 p.w = SKY_TRANSMITTANCE_LUT_W;
                 p.h = SKY_TRANSMITTANCE_LUT_H;
                 p.format = Ren::eTexFormat::RGBA32F;
-                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -623,7 +623,7 @@ void Eng::Renderer::InitSkyResources() {
                 Ren::Tex2DParams p;
                 p.w = p.h = SKY_MULTISCATTER_LUT_RES;
                 p.format = Ren::eTexFormat::RGBA32F;
-                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -654,7 +654,7 @@ void Eng::Renderer::InitSkyResources() {
                 moon_tex.Read((char *)&data[0], moon_tex.size());
 
                 Ren::Tex2DParams p;
-                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
@@ -668,7 +668,7 @@ void Eng::Renderer::InitSkyResources() {
                 weather_tex.Read((char *)&data[0], weather_tex.size());
 
                 Ren::Tex2DParams p;
-                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
@@ -682,7 +682,7 @@ void Eng::Renderer::InitSkyResources() {
                 cirrus_tex.Read((char *)&data[0], cirrus_tex.size());
 
                 Ren::Tex2DParams p;
-                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
@@ -696,8 +696,8 @@ void Eng::Renderer::InitSkyResources() {
                 curl_tex.Read((char *)&data[0], curl_tex.size());
 
                 Ren::Tex2DParams p;
-                p.flags = Ren::eTexFlagBits::SRGB;
-                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.flags = Ren::eTexFlags::SRGB;
+                p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
@@ -720,7 +720,7 @@ void Eng::Renderer::InitSkyResources() {
                 params.h = header.dwHeight;
                 params.d = header.dwDepth;
                 params.format = Ren::eTexFormat::R8;
-                params.usage = (Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+                params.usage = Ren::Bitmask(Ren::eTexUsage::Sampled) | Ren::eTexUsage::Transfer;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::Repeat;
 

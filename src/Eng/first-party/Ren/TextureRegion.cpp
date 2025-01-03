@@ -125,7 +125,7 @@ bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, Tex2DParams p
         p.format = TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
     }
 
-    const int img_data_len = GetMipDataLenBytes(p.w, p.h, p.format, p.block);
+    const int img_data_len = GetMipDataLenBytes(p.w, p.h, p.format);
 
     if (data.size() - offset < img_data_len) {
         return false;

@@ -3,7 +3,7 @@
 #include <algorithm>
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ) #X,
+#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) #X,
 static const std::string_view g_format_names[] = {
 #include "TextureFormat.inl"
 };
@@ -28,7 +28,7 @@ bool Ren::IsCompressedFormat(const eTexFormat format) {
     case eTexFormat::BC3:
     case eTexFormat::BC4:
     case eTexFormat::BC5:
-    case eTexFormat::ASTC:
+    case eTexFormat::ASTC_4x4:
         return true;
     default:
         return false;
@@ -46,7 +46,7 @@ int Ren::CalcMipCount(const int w, const int h, const int min_res) {
 }
 
 int Ren::GetColorChannelCount(const eTexFormat format) {
-    static_assert(int(eTexFormat::_Count) == 33, "Update the list below!");
+    static_assert(int(eTexFormat::_Count) == 46, "Update the list below!");
     switch (format) {
     case eTexFormat::RGBA8:
     case eTexFormat::RGBA8_snorm:

@@ -30,6 +30,9 @@ template <class enum_type, typename = typename std::enable_if<std::is_enum<enum_
     bool operator==(const enum_type rhs) const { return mask_ == to_mask(rhs); }
     bool operator==(const Bitmask rhs) const { return mask_ == rhs.mask_; }
 
+    bool operator!=(const enum_type rhs) const { return mask_ != to_mask(rhs); }
+    bool operator!=(const Bitmask rhs) const { return mask_ != rhs.mask_; }
+
     operator bool() const { return mask_ != 0; }
     explicit operator underlying_type() const { return mask_; }
 

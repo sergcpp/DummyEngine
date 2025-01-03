@@ -94,7 +94,8 @@ void test_mesh() {
                                       std::string_view arg3, std::string_view arg4,
                                       SmallVectorImpl<PipelineRef> &out_pipelines) {};
 
-        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4],
+                                         const Bitmask<eTexFlags> flags) {
             eTexLoadStatus status;
             Tex2DParams p;
             return test.LoadTexture2D(name, {}, p, nullptr, &status);

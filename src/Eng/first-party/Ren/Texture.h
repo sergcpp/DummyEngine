@@ -10,12 +10,12 @@
 namespace Ren {
 class Context;
 
-int GetBlockLenBytes(eTexFormat format, eTexBlock block);
-int GetBlockCount(int w, int h, eTexBlock block);
-int GetMipDataLenBytes(int w, int h, eTexFormat format, eTexBlock block);
+int GetBlockLenBytes(eTexFormat format);
+int GetBlockCount(int w, int h, eTexFormat format);
+int GetMipDataLenBytes(int w, int h, eTexFormat format);
 uint32_t EstimateMemory(const Tex2DParams &params);
 
-eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, eTexBlock *block, bool *is_srgb);
+eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, bool *is_srgb);
 int BlockLenFromGLInternalFormat(uint32_t gl_internal_format);
 
 void ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params);

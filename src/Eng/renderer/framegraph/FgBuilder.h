@@ -13,6 +13,7 @@
 #include <Ren/Fwd.h>
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
+#include <Ren/Pipeline.h>
 #include <Ren/RastState.h>
 #include <Ren/Sampler.h>
 #include <Ren/SmallVector.h>
@@ -24,6 +25,7 @@
 
 namespace Eng {
 class ShaderLoader;
+class PrimDraw;
 
 struct fg_node_slot_t {
     int16_t node_index;
@@ -114,7 +116,8 @@ class FgNode;
 
 class FgBuilder {
     Ren::Context &ctx_;
-    Eng::ShaderLoader &sh_;
+    ShaderLoader &sh_;
+    PrimDraw &prim_draw_; // needed to clear rendertargets
 
     Ren::RastState rast_state_;
 
@@ -143,6 +146,13 @@ class FgBuilder {
     void ReleaseMemHeaps();
     void BuildResourceLinkedLists();
 
+    void ClearBuffer_AsTransfer(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf);
+    void ClearBuffer_AsStorage(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf);
+
+    void ClearImage_AsTransfer(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsStorage(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsTarget(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf);
+
     static const int AllocBufSize = 4 * 1024 * 1024;
     std::unique_ptr<char[]> alloc_buf_;
     Sys::MonoAlloc<char> alloc_;
@@ -159,14 +169,17 @@ class FgBuilder {
     std::vector<Ren::SmallVector<int, 4>> tex_alias_chains_, buf_alias_chains_;
     std::vector<Ren::MemHeap> memory_heaps_;
 
+    Ren::PipelineRef pi_clear_image_[int(Ren::eTexFormat::_Count)];
+    Ren::PipelineRef pi_clear_buffer_;
+    Ren::ProgramRef prog_clear_target_[3];
+
   public:
-    FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh)
-        : ctx_(ctx), sh_(sh), alloc_buf_(new char[AllocBufSize]), alloc_(alloc_buf_.get(), AllocBufSize) {}
+    FgBuilder(Ren::Context &ctx, ShaderLoader &sh, PrimDraw &prim_draw);
     ~FgBuilder() { Reset(); }
 
     Ren::Context &ctx() { return ctx_; }
     Ren::ILog *log();
-    Eng::ShaderLoader &sh() { return sh_; }
+    ShaderLoader &sh() { return sh_; }
 
     Ren::RastState &rast_state() { return rast_state_; }
 

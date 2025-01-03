@@ -10,12 +10,12 @@ namespace Ren {
 extern const VkFormat g_vk_formats[];
 
 VkFormat ToSRGBFormat(VkFormat format);
-VkImageUsageFlags to_vk_image_usage(eTexUsage usage, eTexFormat format);
+VkImageUsageFlags to_vk_image_usage(Bitmask<eTexUsage> usage, eTexFormat format);
 } // namespace Ren
 
 Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
                                     const int layer_count, const int mip_count, const eTexFormat format,
-                                    const eTexFilter filter, const eTexUsageBits usage)
+                                    const eTexFilter filter, const Bitmask<eTexUsage> usage)
     : api_ctx_(api_ctx), name_(name), w_(w), h_(h), layer_count_(layer_count), mip_count_(mip_count), format_(format),
       filter_(filter) {
     { // create image

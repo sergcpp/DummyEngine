@@ -13,7 +13,8 @@ VkFormat ToSRGBFormat(VkFormat format);
 } // namespace Ren
 
 Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
-                                const eTexFormat formats[], const eTexFlags flags[], eTexFilter filter, ILog *log)
+                                const eTexFormat formats[], const Bitmask<eTexFlags> flags[], eTexFilter filter,
+                                ILog *log)
     : api_ctx_(api_ctx), splitter_(w, h) {
     filter_ = filter;
     mip_count_ = mip_count;
@@ -32,7 +33,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             img_info.mipLevels = mip_count_;
             img_info.arrayLayers = 1;
             img_info.format = g_vk_formats[size_t(formats[i])];
-            if (bool(flags[i] & eTexFlagBits::SRGB)) {
+            if (flags[i] & eTexFlags::SRGB) {
                 img_info.format = ToSRGBFormat(img_info.format);
             }
             img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -157,8 +158,8 @@ int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
 }
 
 void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
-                                   const eTexFormat format, const eTexFlags flags, const int layer, const int level,
-                                   const int pos[2], const int res[2], ILog *log) {
+                                   const eTexFormat format, const Bitmask<eTexFlags> flags, const int layer,
+                                   const int level, const int pos[2], const int res[2], ILog *log) {
 #ifndef NDEBUG
     if (level == 0) {
         int _res[2];

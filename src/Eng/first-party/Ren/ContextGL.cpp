@@ -168,8 +168,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
         Tex2DParams params;
         params.format = eTexFormat::RGBA8;
-        params.flags = eTexFlagBits::NoOwnership;
-        params.usage = eTexUsageBits::RenderTarget;
+        params.flags = eTexFlags::NoOwnership;
+        params.usage = Bitmask(eTexUsage::RenderTarget);
 
         api_ctx_->present_image_refs.emplace_back(
             textures_2D_.Insert(name_buf, api_ctx_.get(), TexHandle{}, params, MemAllocation{}, log_));

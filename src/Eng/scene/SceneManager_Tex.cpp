@@ -136,7 +136,6 @@ void Eng::SceneManager::TextureLoaderProc() {
                     Ren::Tex2DParams temp_params;
                     ParseDDSHeader(header, &temp_params);
                     req->orig_format = temp_params.format;
-                    req->orig_block = temp_params.block;
                     req->orig_w = temp_params.w;
                     req->orig_h = temp_params.h;
                     req->orig_mip_count = int(header.dwMipMapCount);
@@ -185,7 +184,7 @@ void Eng::SceneManager::TextureLoaderProc() {
 
             int w = int(req->orig_w), h = int(req->orig_h);
             for (int i = 0; i < req->orig_mip_count; i++) {
-                const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
+                const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format);
 
                 if ((w <= max_load_w && h <= max_load_h) || i == req->orig_mip_count - 1) {
                     if (req->mip_offset_to_init == 0xff) {
@@ -352,8 +351,8 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
 
                 const int new_mip_count = (p.w != 1 || p.h != 1) ? (last_initialized_mip + 1 + req->mip_count_to_init)
                                                                  : req->mip_count_to_init;
-                req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format, req->orig_block,
-                                  bool(p.flags & Ren::eTexFlagBits::SRGB), stage_buf->cmd_buf,
+                req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format,
+                                  (p.flags & Ren::eTexFlags::SRGB), stage_buf->cmd_buf,
                                   scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
                 initialized_mips = req->ref->initialized_mips();
@@ -365,7 +364,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                         ren_ctx_.log()->Error("File %s has not enough data!", tex_name.c_str());
                         break;
                     }
-                    const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
+                    const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format);
 
                     const int mip_index = i - req->mip_offset_to_init;
                     if ((initialized_mips & (1u << mip_index)) == 0) {
@@ -419,9 +418,8 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
             const int w = std::max(p.w >> p.mip_count, 1);
             const int h = std::max(p.h >> p.mip_count, 1);
 
-            req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
-                             bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(),
-                             scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
+            req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, (p.flags & Ren::eTexFlags::SRGB),
+                             ren_ctx_.current_cmd_buf(), scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
             SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
@@ -656,9 +654,8 @@ void Eng::SceneManager::ForceTextureReload() {
             continue;
         }
 
-        it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
-                    bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(),
-                    scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
+        it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, (p.flags & Ren::eTexFlags::SRGB),
+                    ren_ctx_.current_cmd_buf(), scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 
