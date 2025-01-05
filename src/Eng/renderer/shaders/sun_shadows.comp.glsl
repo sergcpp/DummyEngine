@@ -15,6 +15,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = DEPTH_LIN_TEX_SLOT) uniform sampler2D g_depth_lin_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = SHADOW_TEX_VAL_SLOT) uniform sampler2D g_shadow_val_tex;
@@ -25,12 +26,15 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 #define MAX_TRACE_DIST 0.15
 #define MAX_TRACE_STEPS 16
-#define Z_THICKNESS 0.02
-#define STRIDE_PX 3.0
+#define Z_THICKNESS 0.025
+#define STRIDE (3.0 / g_shrd_data.res_and_fres.x)
 
-float LinearDepthTexelFetch(const vec2 hit_pixel) {
-    return LinearizeDepth(texelFetch(g_depth_tex, clamp(ivec2(hit_pixel), ivec2(0), ivec2(g_params.img_size) - 1), 0).x, g_shrd_data.clip_info);
-    //return LinearizeDepth(textureLod(g_depth_tex_px, hit_pixel, 0.0).x, g_shrd_data.clip_info);
+float LinearDepthFetch_Nearest(const vec2 hit_uv) {
+    return LinearizeDepth(textureLod(g_depth_tex, hit_uv, 0.0).x, g_shrd_data.clip_info);
+}
+
+float LinearDepthFetch_Bilinear(const vec2 hit_uv) {
+    return LinearizeDepth(textureLod(g_depth_lin_tex, hit_uv, 0.0).x, g_shrd_data.clip_info);
 }
 
 #include "ss_trace_simple.glsl.inl"
@@ -63,11 +67,6 @@ void main() {
     if (dot_N_L > -0.01) {
         visibility = 1.0;
 
-        const vec2 shadow_offsets = get_shadow_offsets(dot_N_L);
-        vec3 pos_ws_biased = pos_ws;
-        pos_ws_biased += 0.001 * shadow_offsets.x * normal_ws;
-        pos_ws_biased += 0.003 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
-
 #ifdef SS_SHADOW
         if (lin_depth < 30.0) {
             vec2 hit_pixel;
@@ -76,16 +75,16 @@ void main() {
             float occlusion = 0.0;
 
             const float jitter = 0.0;//Bayer4x4(uvec2(icoord), 0);
-            const vec3 pos_vs_biased = (g_shrd_data.view_from_world * vec4(pos_ws_biased, 1.0)).xyz;
+            const vec3 pos_vs = (g_shrd_data.view_from_world * vec4(pos_ws, 1.0)).xyz;
             const vec3 sun_dir_vs = (g_shrd_data.view_from_world * vec4(g_shrd_data.sun_dir.xyz, 0.0)).xyz;
-            if (IntersectRay(pos_vs_biased, sun_dir_vs, jitter, hit_pixel, hit_point)) {
+            if (IntersectRay(pos_vs, sun_dir_vs, jitter, hit_pixel, hit_point)) {
                 occlusion = 1.0;
             }
 
             // view distance falloff
             occlusion *= saturate(30.0 - lin_depth);
             // shadow fadeout
-            occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs_biased)));
+            occlusion *= saturate(10.0 * (MAX_TRACE_DIST - distance(hit_point, pos_vs)));
             // fix shadow terminator
             occlusion *= saturate(abs(8.0 * dot_N_L));
 
@@ -99,6 +98,11 @@ void main() {
             vec2(0.0, 0.5),
             vec2(0.25, 0.5)
         );
+
+        const vec2 shadow_offsets = get_shadow_offsets(dot_N_L);
+        vec3 pos_ws_biased = pos_ws;
+        pos_ws_biased += 0.001 * shadow_offsets.x * normal_ws;
+        pos_ws_biased += 0.003 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
         vec4 g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2;
         [[unroll]] for (int i = 0; i < 4; i++) {

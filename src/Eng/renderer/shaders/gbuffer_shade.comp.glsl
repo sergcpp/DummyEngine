@@ -32,6 +32,7 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = DEPTH_LIN_TEX_SLOT) uniform sampler2D g_depth_lin_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
@@ -53,11 +54,15 @@ layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, lo
 
 #define MAX_TRACE_DIST 0.15
 #define MAX_TRACE_STEPS 16
-#define Z_THICKNESS 0.02
-#define STRIDE_PX 3.0
+#define Z_THICKNESS 0.025
+#define STRIDE (3.0 / g_shrd_data.res_and_fres.x)
 
-float LinearDepthTexelFetch(const vec2 hit_pixel) {
-    return LinearizeDepth(texelFetch(g_depth_tex, clamp(ivec2(hit_pixel), ivec2(0), ivec2(g_params.img_size) - 1), 0).x, g_shrd_data.clip_info);
+float LinearDepthFetch_Nearest(const vec2 hit_uv) {
+    return LinearizeDepth(textureLod(g_depth_tex, hit_uv, 0.0).x, g_shrd_data.clip_info);
+}
+
+float LinearDepthFetch_Bilinear(const vec2 hit_uv) {
+    return LinearizeDepth(textureLod(g_depth_lin_tex, hit_uv, 0.0).x, g_shrd_data.clip_info);
 }
 
 #include "ss_trace_simple.glsl.inl"
@@ -107,13 +112,13 @@ float LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, flo
 
 #ifdef SS_SHADOW_MANY
     if (final_visibility > 0.0 && lin_depth < 30.0) {
-        vec2 hit_pixel;
+        vec2 hit_uv;
         vec3 hit_point;
 
         float occlusion = 0.0;
         const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(litem.shadow_pos_and_tri_index.xyz - P), 0.0)).xyz;
-        if (IntersectRay(pos_vs + 0.005 * vec3(0.0, 0.0, 1.0), light_dir_vs, hash, hit_pixel, hit_point)) {
-            const float shadow_vis = texelFetch(g_albedo_tex, ivec2(hit_pixel), 0).w;
+        if (IntersectRay(pos_vs, light_dir_vs, hash, hit_uv, hit_point)) {
+            const float shadow_vis = textureLod(g_albedo_tex, hit_uv, 0.0).w;
             if (shadow_vis > 0.5) {
                 occlusion = 1.0;
             }
@@ -313,13 +318,13 @@ void main() {
 
 #ifdef SS_SHADOW_ONE
     if (lin_depth < 30.0 && lum(brightest_light_contribution) > 0.0) {
-        vec2 hit_pixel;
+        vec2 hit_uv;
         vec3 hit_point;
 
         float occlusion = 0.0;
         const vec3 light_dir_vs = (g_shrd_data.view_from_world * vec4(normalize(brightest_light_pos - P), 0.0)).xyz;
-        if (IntersectRay(pos_vs + 0.005 * vec3(0.0, 0.0, 1.0), light_dir_vs, hash, hit_pixel, hit_point)) {
-            const float shadow_vis = texelFetch(g_albedo_tex, ivec2(hit_pixel), 0).w;
+        if (IntersectRay(pos_vs, light_dir_vs, hash, hit_uv, hit_point)) {
+            const float shadow_vis = textureLod(g_albedo_tex, hit_uv, 0.0).w;
             if (shadow_vis > 0.5) {
                 occlusion = 1.0;
             }

@@ -50,9 +50,6 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     P0 = 0.5 * P0 + 0.5;
     P1 = 0.5 * P1 + 0.5;
 
-    P0 *= g_shrd_data.res_and_fres.xy;
-    P1 *= g_shrd_data.res_and_fres.xy;
-
     vec2 delta = P1 - P0;
 
     bool permute = false;
@@ -63,9 +60,9 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
         P1 = P1.yx;
     }
 
-    if (abs(delta.x) < 1.0) {
-        return false;
-    }
+    //if (abs(delta.x) < 1.0) {
+    //    return false;
+    //}
 
     float step_dir = sign(delta.x);
     float inv_dx = step_dir / delta.x;
@@ -74,11 +71,9 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     vec3 dQ = (Q1 - Q0) * inv_dx;
     float dk = (k1 - k0) * inv_dx;
 
-#ifdef STRIDE_PX
-    float stride = STRIDE_PX;
-#else
-    float stride = STRIDE * g_shrd_data.res_and_fres.x;
-#endif
+
+    const float stride = STRIDE;
+
     dP *= stride;
     dQ *= stride;
     dk *= stride;
@@ -91,36 +86,25 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     float k = k0;
     float step_count = 0.0;
     float end = P1.x * step_dir;
-    float prev_zmax_estimate = ray_origin_vs.z + 0.0 * Z_THICKNESS;
     hit_pixel = vec2(-1.0, -1.0);
 
-    for (vec2 P = P0;
-        ((P.x * step_dir) <= end) && (step_count < MAX_TRACE_STEPS);
+    for (vec2 P = P0; ((P.x * step_dir) <= end) && (step_count < MAX_TRACE_STEPS);
          P += dP, Q.z += dQ.z, k += dk, step_count += 1.0) {
-
-        float ray_zmin = Q.z / k;
-        //prev_zmax_estimate;
-        // take half of step forward
-        float ray_zmax = (dQ.z * 0.5 + Q.z) / (dk * 0.5 + k);
-        prev_zmax_estimate = ray_zmax;
-
-        //if (ray_zmin > ray_zmax) {
-        //    const float temp = ray_zmin; ray_zmin = ray_zmax; ray_zmax = temp;
-        //}
-
         const vec2 pixel = permute ? P.yx : P;
 
-        const float scene_zmax = -LinearDepthTexelFetch(pixel);
-        const float scene_zmin = scene_zmax - Z_THICKNESS;
+        const float scene_z_nearest = LinearDepthFetch_Nearest(pixel),
+                    scene_z_linear = LinearDepthFetch_Bilinear(pixel);
 
-        if (/*(ray_zmax >= scene_zmin) &&*/ (ray_zmin <= scene_zmax)) {
+        const float scene_z = -max(scene_z_nearest, scene_z_linear); // furthest of two
+        const float ray_z = Q.z / k;
+        if (ray_z < scene_z) {
             hit_pixel = P;
             break;
         }
     }
 
     const vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
-    bool res = all(lessThanEqual(abs(test_pixel - (g_shrd_data.res_and_fres.xy * 0.5)), g_shrd_data.res_and_fres.xy * 0.5));
+    bool res = all(lessThanEqual(abs(test_pixel - 0.5), vec2(0.5)));
 
 #if BSEARCH_STEPS != 0
     if (res) {
@@ -129,7 +113,7 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
         // perform binary search to find intersection more accurately
         for (int i = 0; i < BSEARCH_STEPS; i++) {
             vec2 pixel = permute ? hit_pixel.yx : hit_pixel;
-            float scene_z = -LinearDepthTexelFetch(ivec2(pixel));
+            float scene_z = -LinearDepthFetch_Nearest(ivec2(pixel));
             float ray_z = Q.z / k;
 
             float depth_diff = ray_z - scene_z;
@@ -159,7 +143,10 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
 #endif
 
     { // validate hit
-        const float scene_zmax = -LinearDepthTexelFetch(hit_pixel);
+        const float scene_z_nearest = LinearDepthFetch_Nearest(hit_pixel),
+                    scene_z_linear = LinearDepthFetch_Bilinear(hit_pixel);
+
+        const float scene_zmax = -max(scene_z_nearest, scene_z_linear); // closest of two
         const float scene_zmin = scene_zmax - Z_THICKNESS;
 
         if ((hit_point.z < scene_zmin) || (hit_point.z > scene_zmax)) {

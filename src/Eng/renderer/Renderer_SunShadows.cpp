@@ -651,6 +651,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
         const Ren::Binding bindings[] = {
             {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
             {Trg::Tex2DSampled, SunShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+            {Trg::Tex2DSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
             {Trg::Tex2DSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Trg::Tex2DSampled, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},
             {Trg::Tex2DSampled, SunShadows::SHADOW_TEX_VAL_SLOT, {*shadow_tex.ref, *nearest_sampler_}},

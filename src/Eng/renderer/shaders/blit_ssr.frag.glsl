@@ -20,8 +20,12 @@ layout(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 out_color;
 
-float LinearDepthTexelFetch(vec2 hit_pixel) {
+float LinearDepthFetch_Nearest(vec2 hit_uv) {
     //return texelFetch(g_depth_tex, hit_pixel / 2, 0).r;
+    return 0.0;
+}
+
+float LinearDepthFetch_Bilinear(vec2 hit_uv) {
     return 0.0;
 }
 
@@ -51,12 +55,10 @@ void main() {
     ivec2 c = pix_uvs;
     float jitter = float((c.x + c.y) & 1) * 0.5;
 
-    vec2 hit_pixel;
+    vec2 hit_uv;
     vec3 hit_point;
 
-    if (IntersectRay(ray_origin_vs, refl_ray_vs, jitter, hit_pixel, hit_point)) {
-        hit_pixel /= g_shrd_data.res_and_fres.xy;
-
+    if (IntersectRay(ray_origin_vs, refl_ray_vs, jitter, hit_uv, hit_point)) {
         // reproject hitpoint into a clip space of previous frame
         vec4 hit_prev = g_shrd_data.delta_matrix * vec4(hit_point, 1.0);
 #if defined(VULKAN)
