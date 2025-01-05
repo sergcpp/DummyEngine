@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_03_01
-	commit = a38f85f4f17f44a63ef64a2ed9bf08f5be2a4638
+	branch = lin_sampler
+	commit = 44c5956d1f2a8e2ac656dcd7c13d015f8107a370
 	method = merge
 	cmdver = 0.4.6
-	parent = d1aacd4f5c13c1da912f9d074ed22303239230cb
+	parent = 35eb524b155ce3f83f714e0ed1009b01268b1920
