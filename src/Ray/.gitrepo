@@ -6,7 +6,7 @@
 [subrepo]
 	remote = Ray
 	branch = master
-	commit = fae417c9a63755e58544feae7822e189439f9b72
-	parent = e8a656082c6098522edbb0a9cf06477e7c6ee010
+	commit = 7321f810f235af932806b4f2c650ee6507dd3d42
+	parent = f878ac1f5fbb0aed9147bea50e7e851919626b78
 	method = merge
 	cmdver = 0.4.6
