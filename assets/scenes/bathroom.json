@@ -1,0 +1,254 @@
+{
+    "name": "bathroom",
+    "environment": {
+        "sun_dir": [
+            0.0,
+            -1.0,
+            0.0
+        ],
+        "sun_col": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "sun_angle": 0.1,
+        "env_col": [
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "camera": {
+        "view_origin": [
+            0.17736434936523438,
+            0.9700851440429688,
+            -0.1743793487548828
+        ],
+        "view_rot": [
+            44.54110133247344,
+            90.00000250447816,
+            -90.00000250447816
+        ],
+        "fov": 65.23849721586343,
+        "view_transform": "standard",
+        "filter": "blackman-harris",
+        "filter_width": 1.0,
+        "gamma": 1.0,
+        "min_exposure": 0.0,
+        "max_exposure": 0.0,
+        "fwd_speed": 0.05
+    },
+    "objects": [
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999990463256836,
+                    0.009999990463256836,
+                    0.009999990463256836
+                ]
+            },
+            "drawable": {
+                "mesh_file": "bathroom/Mesh007.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "bathroom/Mesh007.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999990463256836,
+                    0.009999990463256836,
+                    0.009999990463256836
+                ]
+            },
+            "drawable": {
+                "mesh_file": "bathroom/Mesh007_003.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "bathroom/Mesh007_003.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999990463256836,
+                    0.009999990463256836,
+                    0.009999990463256836
+                ]
+            },
+            "drawable": {
+                "mesh_file": "bathroom/Plane_001.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "bathroom/Plane_001.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.232879638671875,
+                    1.879547119140625,
+                    -2.205841064453125
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999990463256836,
+                    0.009999990463256836,
+                    0.009999990463256836
+                ]
+            },
+            "light": {
+                "type": "sphere",
+                "color": [
+                    1.0,
+                    0.2690489888191223,
+                    0.06742499768733978
+                ],
+                "power": 0.10000000149011612,
+                "radius": 0.03657799959182739,
+                "cull_offset": 0.01,
+                "cull_radius": 10.0,
+                "cast_shadow": true,
+                "affect_specular": false,
+                "affect_refraction": false
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -0.9828414916992188,
+                    1.879547119140625,
+                    -2.205841064453125
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999990463256836,
+                    0.009999990463256836,
+                    0.009999990463256836
+                ]
+            },
+            "light": {
+                "type": "sphere",
+                "color": [
+                    1.0,
+                    0.2690489888191223,
+                    0.06742499768733978
+                ],
+                "power": 0.10000000149011612,
+                "radius": 0.03657799959182739,
+                "cull_offset": 0.01,
+                "cull_radius": 10.0,
+                "cast_shadow": true,
+                "affect_specular": false,
+                "affect_refraction": false
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.4883880615234375,
+                    1.879547119140625,
+                    -2.205841064453125
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999990463256836,
+                    0.009999990463256836,
+                    0.009999990463256836
+                ]
+            },
+            "light": {
+                "type": "sphere",
+                "color": [
+                    1.0,
+                    0.2690489888191223,
+                    0.06742499768733978
+                ],
+                "power": 0.10000000149011612,
+                "radius": 0.03657799959182739,
+                "cull_offset": 0.01,
+                "cull_radius": 10.0,
+                "cast_shadow": true,
+                "affect_specular": false,
+                "affect_refraction": false
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.7292022705078125,
+                    1.879547119140625,
+                    -2.205841064453125
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ],
+                "scale": [
+                    0.009999990463256836,
+                    0.009999990463256836,
+                    0.009999990463256836
+                ]
+            },
+            "light": {
+                "type": "sphere",
+                "color": [
+                    1.0,
+                    0.2690489888191223,
+                    0.06742499768733978
+                ],
+                "power": 0.10000000149011612,
+                "radius": 0.03657799959182739,
+                "cull_offset": 0.01,
+                "cull_radius": 10.0,
+                "cast_shadow": true,
+                "affect_specular": false,
+                "affect_refraction": false
+            }
+        }
+    ]
+}

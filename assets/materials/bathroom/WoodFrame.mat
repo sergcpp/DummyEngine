@@ -1,0 +1,14 @@
+pipelines:
+flags:
+    - two_sided
+textures:
+    - bathroom/wood2.tex
+    - default_normalmap.dds
+    - default_roughness.tex
+    - default_metallic.tex
+    - default_opacity.tex
+params:
+    - 1.0 1.0 1.0 0.4472135901451111    # base color, roughness
+    - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
+    - 0.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
+    - 0.0 0.0 0.0 0.0    # transparency, ior/emission color
