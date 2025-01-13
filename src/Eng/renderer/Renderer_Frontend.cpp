@@ -177,7 +177,7 @@ __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("Proces
     }
 
 #define _CROSS(x, y)                                                                                                   \
-    { (x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0] }
+    {(x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0]}
 
 void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam,
                                     DrawList &list) {
@@ -566,7 +566,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         proc_objects_[i.index].li_index = int32_t(list.lights.size());
                         LightItem &ls = list.lights.emplace_back();
 
-                        if (!light.sky_portal) {
+                        if (!(light.flags & eLightFlags::SkyPortal)) {
                             ls.col[0] = light.power * light.col[0] / light.area;
                             ls.col[1] = light.power * light.col[1] / light.area;
                             ls.col[2] = light.power * light.col[2] / light.area;
@@ -577,9 +577,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                         }
                         ls.type_and_flags = uint32_t(light.type);
-                        ls.type_and_flags |= light.sky_portal ? LIGHT_PORTAL_BIT : 0;
-                        ls.type_and_flags |= light.affect_diffuse ? LIGHT_DIFFUSE_BIT : 0;
-                        ls.type_and_flags |= light.affect_specular ? LIGHT_SPECULAR_BIT : 0;
+                        ls.type_and_flags |= (light.flags & eLightFlags::SkyPortal) ? LIGHT_PORTAL_BIT : 0;
+                        ls.type_and_flags |= (light.flags & eLightFlags::AffectDiffuse) ? LIGHT_DIFFUSE_BIT : 0;
+                        ls.type_and_flags |= (light.flags & eLightFlags::AffectSpecular) ? LIGHT_SPECULAR_BIT : 0;
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light._radius;
                         memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -754,7 +754,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     litem_to_lsource_.emplace_back(obj.components[CompLightSource]);
                     LightItem &ls = list.lights.emplace_back();
 
-                    if (!light.sky_portal) {
+                    if (!(light.flags & eLightFlags::SkyPortal)) {
                         ls.col[0] = light.power * light.col[0] / light.area;
                         ls.col[1] = light.power * light.col[1] / light.area;
                         ls.col[2] = light.power * light.col[2] / light.area;
@@ -765,9 +765,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                     }
                     ls.type_and_flags = uint32_t(light.type);
-                    ls.type_and_flags |= light.sky_portal ? LIGHT_PORTAL_BIT : 0;
-                    ls.type_and_flags |= light.affect_diffuse ? LIGHT_DIFFUSE_BIT : 0;
-                    ls.type_and_flags |= light.affect_specular ? LIGHT_SPECULAR_BIT : 0;
+                    ls.type_and_flags |= (light.flags & eLightFlags::SkyPortal) ? LIGHT_PORTAL_BIT : 0;
+                    ls.type_and_flags |= (light.flags & eLightFlags::AffectDiffuse) ? LIGHT_DIFFUSE_BIT : 0;
+                    ls.type_and_flags |= (light.flags & eLightFlags::AffectSpecular) ? LIGHT_SPECULAR_BIT : 0;
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                     ls.radius = light._radius;
                     memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -1297,7 +1297,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         const uint32_t lsource_index = litem_to_lsource_[i];
         const LightSource *ls = &lights_src[lsource_index];
 
-        if (!ls->cast_shadow) {
+        if (!(ls->flags & eLightFlags::CastShadow)) {
             continue;
         }
 
@@ -1327,7 +1327,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 // make large light softer
                 res_index = std::min(res_index + 1, 4);
             }
-            if (!shadows_jitter_enabled && ls->sky_portal) {
+            if (!shadows_jitter_enabled && (ls->flags & eLightFlags::SkyPortal)) {
                 // make portal light softer
                 res_index = std::min(res_index + 1, 4);
             }
@@ -2087,9 +2087,9 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
     for (int j = 0; j < int(list.lights.size()); j++) {
         const LightItem &l = list.lights[j];
         const LightSource *ls = &light_sources[litem_to_lsource[j]];
-        //const float radius = ls->radius;
+        // const float radius = ls->radius;
         const float cull_radius = ls->cull_radius;
-        //const float cap_radius = ls->cap_radius;
+        // const float cap_radius = ls->cap_radius;
 
         eVisResult visible_to_slice = eVisResult::FullyVisible;
 
@@ -2194,7 +2194,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
     }
 
     for (int j = 0; j < int(list.decals.size()); j++) {
-        //const DecalItem &de = list.decals[j];
+        // const DecalItem &de = list.decals[j];
 
         const float bbox_points[8][3] = {BBOX_POINTS(decals_boxes[j].bmin, decals_boxes[j].bmax)};
 

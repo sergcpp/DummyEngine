@@ -2,15 +2,18 @@
 
 #include <string_view>
 
+#include <Ren/Bitmask.h>
 #include <Ren/MMat.h>
 
 #include "Common.h"
 
 namespace Eng {
-enum class eLightType { Sphere, Rect, Disk, Line, _Count };
+enum class eLightType : uint8_t { Sphere, Rect, Disk, Line, _Count };
+enum class eLightFlags : uint8_t { SkyPortal, CastShadow, AffectDiffuse, AffectSpecular, AffectRefraction };
 
 struct LightSource {
     eLightType type;
+    Ren::Bitmask<eLightFlags> flags;
 
     Ren::Vec3f offset;
     float radius;
@@ -20,9 +23,6 @@ struct LightSource {
     float spot_angle, spot_blend, cap_radius;
     float spot_cos;
     float cull_offset, cull_radius;
-    bool sky_portal = false;
-    bool cast_shadow;
-    bool affect_diffuse = true, affect_specular = true, affect_refraction = true;
     float shadow_bias[2];
 
     float width, height;

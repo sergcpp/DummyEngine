@@ -142,30 +142,37 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
         ls.spot_blend = float(js_spot_blend.val);
     }
 
-    ls.sky_portal = false;
+    ls.flags = Ren::Bitmask{eLightFlags::AffectDiffuse} | eLightFlags::AffectSpecular | eLightFlags::AffectRefraction;
+
     if (js_in.Has("sky_portal")) {
         const Sys::JsLiteral &js_sky_portal = js_in.at("sky_portal").as_lit();
-        ls.sky_portal = (js_sky_portal.val == Sys::JsLiteralType::True);
+        if (js_sky_portal.val == Sys::JsLiteralType::True) {
+            ls.flags |= eLightFlags::SkyPortal;
+        }
     }
 
-    ls.cast_shadow = false;
     if (js_in.Has("cast_shadow")) {
-        ls.cast_shadow = js_in.at("cast_shadow").as_lit().val == Sys::JsLiteralType::True;
+        if (js_in.at("cast_shadow").as_lit().val == Sys::JsLiteralType::True) {
+            ls.flags |= eLightFlags::CastShadow;
+        }
     }
 
-    ls.affect_diffuse = true;
     if (js_in.Has("affect_diffuse")) {
-        ls.affect_diffuse = js_in.at("affect_diffuse").as_lit().val == Sys::JsLiteralType::True;
+        if (js_in.at("affect_diffuse").as_lit().val == Sys::JsLiteralType::False) {
+            ls.flags &= ~Ren::Bitmask{eLightFlags::AffectDiffuse};
+        }
     }
 
-    ls.affect_specular = true;
     if (js_in.Has("affect_specular")) {
-        ls.affect_specular = js_in.at("affect_specular").as_lit().val == Sys::JsLiteralType::True;
+        if (js_in.at("affect_specular").as_lit().val == Sys::JsLiteralType::False) {
+            ls.flags &= ~Ren::Bitmask{eLightFlags::AffectSpecular};
+        }
     }
 
-    ls.affect_refraction = true;
     if (js_in.Has("affect_refraction")) {
-        ls.affect_refraction = js_in.at("affect_refraction").as_lit().val == Sys::JsLiteralType::True;
+        if (js_in.at("affect_refraction").as_lit().val == Sys::JsLiteralType::False) {
+            ls.flags &= ~Ren::Bitmask{eLightFlags::AffectRefraction};
+        }
     }
 
     if (js_in.Has("shadow_bias")) {
@@ -254,23 +261,23 @@ void Eng::LightSource::Write(const LightSource &ls, Sys::JsObjectP &js_out) {
         js_out.Insert("cull_offset", Sys::JsNumber{ls.cull_offset});
     }
 
-    if (ls.sky_portal) {
+    if (ls.flags & eLightFlags::SkyPortal) {
         js_out.Insert("sky_portal", Sys::JsLiteral{Sys::JsLiteralType::True});
     }
 
-    if (ls.cast_shadow) {
+    if (ls.flags & eLightFlags::CastShadow) {
         js_out.Insert("cast_shadow", Sys::JsLiteral{Sys::JsLiteralType::True});
     }
 
-    if (!ls.affect_diffuse) {
+    if (!(ls.flags & eLightFlags::AffectDiffuse)) {
         js_out.Insert("affect_diffuse", Sys::JsLiteral{Sys::JsLiteralType::False});
     }
 
-    if (!ls.affect_specular) {
+    if (!(ls.flags & eLightFlags::AffectSpecular)) {
         js_out.Insert("affect_specular", Sys::JsLiteral{Sys::JsLiteralType::False});
     }
 
-    if (!ls.affect_refraction) {
+    if (!(ls.flags & eLightFlags::AffectRefraction)) {
         js_out.Insert("affect_refraction", Sys::JsLiteral{Sys::JsLiteralType::False});
     }
 
