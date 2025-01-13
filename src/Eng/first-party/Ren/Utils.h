@@ -85,26 +85,26 @@ struct KTXHeader { // NOLINT
 };
 static_assert(sizeof(KTXHeader) == 64, "!");
 
-/*	the following constants were copied directly off the MSDN website	*/
+// the following constants were copied directly off the MSDN website
 
-/*	The dwFlags member of the original DDSURFACEDESC2 structure
-        can be set to one or more of the following values.	*/
-#define DDSD_CAPS 0x00000001
-#define DDSD_HEIGHT 0x00000002
-#define DDSD_WIDTH 0x00000004
-#define DDSD_PITCH 0x00000008
-#define DDSD_PIXELFORMAT 0x00001000
-#define DDSD_MIPMAPCOUNT 0x00020000
-#define DDSD_LINEARSIZE 0x00080000
-#define DDSD_DEPTH 0x00800000
+// The dwFlags member of the original DDSURFACEDESC2 structure
+//       can be set to one or more of the following values.
+const uint32_t DDSD_CAPS = 0x00000001;
+const uint32_t DDSD_HEIGHT = 0x00000002;
+const uint32_t DDSD_WIDTH = 0x00000004;
+const uint32_t DDSD_PITCH = 0x00000008;
+const uint32_t DDSD_PIXELFORMAT = 0x00001000;
+const uint32_t DDSD_MIPMAPCOUNT = 0x00020000;
+const uint32_t DDSD_LINEARSIZE = 0x00080000;
+const uint32_t DDSD_DEPTH = 0x00800000;
 
-/*	DirectDraw Pixel Format	*/
-#define DDPF_ALPHAPIXELS 0x00000001
-#define DDPF_FOURCC 0x00000004
-#define DDPF_RGB 0x00000040
+// DirectDraw Pixel Format
+const uint32_t DDPF_ALPHAPIXELS = 0x00000001;
+const uint32_t DDPF_FOURCC = 0x00000004;
+const uint32_t DDPF_RGB = 0x00000040;
 
-/*	The dwCaps1 member of the DDSCAPS2 structure can be
-        set to one or more of the following values.	*/
+// The dwCaps1 member of the DDSCAPS2 structure can be
+//       set to one or more of the following values.
 const uint32_t DDSCAPS_COMPLEX = 0x00000008;
 const uint32_t DDSCAPS_TEXTURE = 0x00001000;
 const uint32_t DDSCAPS_MIPMAP = 0x00400000;

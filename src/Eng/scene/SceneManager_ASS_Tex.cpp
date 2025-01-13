@@ -100,8 +100,8 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(const unsigned char *img_data, int
         for (int y = y_start; y < y_start + TileSize; y++) {
             for (int x = x_start; x < x_start + TileSize; x++) {
                 const float h = out_conemap[4 * (y * width + x) + 0] / 255.0f;
-                //const float dhdx = +(out_conemap[4 * (y * width + x) + 2] / 255.0f - 0.5f) * float(width);
-                //const float dhdy = -(out_conemap[4 * (y * width + x) + 3] / 255.0f - 0.5f) * float(height);
+                // const float dhdx = +(out_conemap[4 * (y * width + x) + 2] / 255.0f - 0.5f) * float(width);
+                // const float dhdy = -(out_conemap[4 * (y * width + x) + 3] / 255.0f - 0.5f) * float(height);
 
                 float min_ratio2 = MaxRatio * MaxRatio;
 
@@ -235,7 +235,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(const unsigned char *img_data, i
             const int x_left = (x - 1 >= 0) ? (x - 1) : (width - 1);
             const int x_right = (x + 1 < width) ? (x + 1) : 0;
 
-            //const float h = img_data[(y * width + x) * channels + 0] / 255.0f;
+            // const float h = img_data[(y * width + x) * channels + 0] / 255.0f;
             const float h_top_left = img_data[(y_top * width + x_left) * channels + 0] / 255.0f;
             const float h_top = img_data[(y_top * width + x) * channels + 0] / 255.0f;
             const float h_top_right = img_data[(y_top * width + x_right) * channels + 0] / 255.0f;
@@ -360,14 +360,14 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     Ren::DDSHeader header = {};
     header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) | (unsigned('S') << 16u) | (unsigned(' ') << 24u);
     header.dwSize = 124;
-    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) | unsigned(DDSD_PIXELFORMAT) |
-                     unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
+    header.dwFlags = Ren::DDSD_CAPS | Ren::DDSD_HEIGHT | Ren::DDSD_WIDTH | Ren::DDSD_PIXELFORMAT |
+                     Ren::DDSD_LINEARSIZE | Ren::DDSD_MIPMAPCOUNT;
     header.dwWidth = widths[0];
     header.dwHeight = heights[0];
     header.dwPitchOrLinearSize = compressed_size_total;
     header.dwMipMapCount = mip_count;
     header.sPixelFormat.dwSize = 32;
-    header.sPixelFormat.dwFlags = DDPF_FOURCC;
+    header.sPixelFormat.dwFlags = Ren::DDPF_FOURCC;
 
     if (channels == 1) {
         header.sPixelFormat.dwFourCC = Ren::FourCC_BC4_UNORM;
@@ -593,14 +593,14 @@ bool WriteCubemapDDS(Ren::Span<uint32_t> data[6], const int res, const int chann
     Ren::DDSHeader header = {};
     header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) | (unsigned('S') << 16u) | (unsigned(' ') << 24u);
     header.dwSize = 124;
-    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) | unsigned(DDSD_PIXELFORMAT) |
-                     unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
+    header.dwFlags = Ren::DDSD_CAPS | Ren::DDSD_HEIGHT | Ren::DDSD_WIDTH | Ren::DDSD_PIXELFORMAT |
+                     Ren::DDSD_LINEARSIZE | Ren::DDSD_MIPMAPCOUNT;
     header.dwWidth = res;
     header.dwHeight = res;
     header.dwPitchOrLinearSize = 6 * total_size;
     header.dwMipMapCount = mip_count;
     header.sPixelFormat.dwSize = 32;
-    header.sPixelFormat.dwFlags = DDPF_FOURCC;
+    header.sPixelFormat.dwFlags = Ren::DDPF_FOURCC;
     header.sPixelFormat.dwFourCC =
         (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('1') << 16u) | (uint32_t('0') << 24u);
 
@@ -1154,7 +1154,7 @@ bool Eng::SceneManager::WriteProbeCache(const char *out_folder, const char *scen
     if (out_file_name_base.back() != '/') {
         out_file_name_base += '/';
     }
-    //const size_t prelude_length = out_file_name_base.length();
+    // const size_t prelude_length = out_file_name_base.length();
     out_file_name_base += scene_name;
 
     std::error_code ec;
