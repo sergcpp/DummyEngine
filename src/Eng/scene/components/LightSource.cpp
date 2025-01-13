@@ -163,6 +163,11 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
         ls.affect_specular = js_in.at("affect_specular").as_lit().val == Sys::JsLiteralType::True;
     }
 
+    ls.affect_refraction = true;
+    if (js_in.Has("affect_refraction")) {
+        ls.affect_refraction = js_in.at("affect_refraction").as_lit().val == Sys::JsLiteralType::True;
+    }
+
     if (js_in.Has("shadow_bias")) {
         const Sys::JsArrayP &js_shadow_bias = js_in.at("shadow_bias").as_arr();
         ls.shadow_bias[0] = float(js_shadow_bias.at(0).as_num().val);
@@ -263,6 +268,10 @@ void Eng::LightSource::Write(const LightSource &ls, Sys::JsObjectP &js_out) {
 
     if (!ls.affect_specular) {
         js_out.Insert("affect_specular", Sys::JsLiteral{Sys::JsLiteralType::False});
+    }
+
+    if (!ls.affect_refraction) {
+        js_out.Insert("affect_refraction", Sys::JsLiteral{Sys::JsLiteralType::False});
     }
 
     if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {

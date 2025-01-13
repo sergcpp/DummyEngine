@@ -1577,6 +1577,7 @@ void BaseState::InitScene_PT() {
                         spot_light_desc.spot_blend = ls.spot_blend;
                         spot_light_desc.diffuse_visibility = ls.affect_diffuse;
                         spot_light_desc.specular_visibility = ls.affect_specular;
+                        spot_light_desc.refraction_visibility = ls.affect_refraction;
                         const Ray::LightHandle new_light = ray_scene_->AddLight(spot_light_desc);
                     } else {
                         Ray::sphere_light_desc_t sphere_light_desc;
@@ -1584,6 +1585,9 @@ void BaseState::InitScene_PT() {
                                3 * sizeof(float));
                         memcpy(sphere_light_desc.position, ValuePtr(pos), 3 * sizeof(float));
                         sphere_light_desc.radius = ls.radius;
+                        sphere_light_desc.diffuse_visibility = ls.affect_diffuse;
+                        sphere_light_desc.specular_visibility = ls.affect_specular;
+                        sphere_light_desc.refraction_visibility = ls.affect_refraction;
                         const Ray::LightHandle new_light = ray_scene_->AddLight(sphere_light_desc);
                     }
                 } else if (ls.type == Eng::eLightType::Rect) {
@@ -1596,6 +1600,7 @@ void BaseState::InitScene_PT() {
                     rect_light_desc.sky_portal = ls.sky_portal;
                     rect_light_desc.diffuse_visibility = ls.affect_diffuse;
                     rect_light_desc.specular_visibility = ls.affect_specular;
+                    rect_light_desc.refraction_visibility = ls.affect_refraction;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(rect_light_desc, ValuePtr(tr.world_from_object));
                 } else if (ls.type == Eng::eLightType::Disk) {
@@ -1605,6 +1610,7 @@ void BaseState::InitScene_PT() {
                     disk_light_desc.size_y = ls.height;
                     disk_light_desc.diffuse_visibility = ls.affect_diffuse;
                     disk_light_desc.specular_visibility = ls.affect_specular;
+                    disk_light_desc.refraction_visibility = ls.affect_refraction;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(disk_light_desc, ValuePtr(tr.world_from_object));
                 } else if (ls.type == Eng::eLightType::Line) {
@@ -1614,6 +1620,7 @@ void BaseState::InitScene_PT() {
                     line_light_desc.height = ls.height;
                     line_light_desc.diffuse_visibility = ls.affect_diffuse;
                     line_light_desc.specular_visibility = ls.affect_specular;
+                    line_light_desc.refraction_visibility = ls.affect_refraction;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(line_light_desc, ValuePtr(tr.world_from_object));
                 }
