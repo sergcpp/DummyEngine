@@ -72,19 +72,19 @@ void main() {
 
 #ifdef VEGETATION
     // load vegetation properties
-    vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
-    vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
+    const vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
+    const vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
 #if !defined(NO_BINDLESS)
-    TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
-    TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
+    const TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
+    const TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // !NO_BINDLESS
-    HierarchyData hdata = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
+    const HierarchyData hdata = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 
-    vec3 obj_pos_ws = model_matrix[3].xyz;
-    vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
-    vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
-    vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
+    const vec3 obj_pos_ws = model_matrix[3].xyz;
+    const vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
+    const vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
+    const vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
 
     vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_nor_ls, vtx_tan_ls, g_noise_tex, wind_scroll, wind_params, wind_vec_ls, hdata);
 #endif // VEGETATION

@@ -279,16 +279,16 @@ force_inline Vec4f fade(const Vec4f &t) { return t * t * t * (t * (t * 6.0f - Ve
 int round_up(int v, int align) { return align * ((v + align - 1) / align); }
 
 // https://registry.khronos.org/OpenGL/extensions/EXT/EXT_texture_shared_exponent.txt
-const int RGB9E5_EXPONENT_BITS = 5;
-const int RGB9E5_MANTISSA_BITS = 9;
-const int RGB9E5_EXP_BIAS = 15;
-const int RGB9E5_MAX_VALID_BIASED_EXP = 31;
+static const int RGB9E5_EXPONENT_BITS = 5;
+static const int RGB9E5_MANTISSA_BITS = 9;
+static const int RGB9E5_EXP_BIAS = 15;
+static const int RGB9E5_MAX_VALID_BIASED_EXP = 31;
 
-const int MAX_RGB9E5_EXP = (RGB9E5_MAX_VALID_BIASED_EXP - RGB9E5_EXP_BIAS);
-const int RGB9E5_MANTISSA_VALUES = (1 << RGB9E5_MANTISSA_BITS);
-const int MAX_RGB9E5_MANTISSA = (RGB9E5_MANTISSA_VALUES - 1);
-const float MAX_RGB9E5 = (((float)MAX_RGB9E5_MANTISSA) / RGB9E5_MANTISSA_VALUES * (1 << MAX_RGB9E5_EXP));
-[[maybe_unused]] const float EPSILON_RGB9E5 = ((1.0f / RGB9E5_MANTISSA_VALUES) / (1 << RGB9E5_EXP_BIAS));
+static const int MAX_RGB9E5_EXP = (RGB9E5_MAX_VALID_BIASED_EXP - RGB9E5_EXP_BIAS);
+static const int RGB9E5_MANTISSA_VALUES = (1 << RGB9E5_MANTISSA_BITS);
+static const int MAX_RGB9E5_MANTISSA = (RGB9E5_MANTISSA_VALUES - 1);
+static const float MAX_RGB9E5 = (((float)MAX_RGB9E5_MANTISSA) / RGB9E5_MANTISSA_VALUES * (1 << MAX_RGB9E5_EXP));
+[[maybe_unused]] static const float EPSILON_RGB9E5 = ((1.0f / RGB9E5_MANTISSA_VALUES) / (1 << RGB9E5_EXP_BIAS));
 
 struct BitsOfIEEE754 {
     unsigned int mantissa : 23;
@@ -354,9 +354,9 @@ rgb9e5 float3_to_rgb9e5(const float rgb[3]) {
         assert(maxm <= MAX_RGB9E5_MANTISSA);
     }
 
-    const int rm = int(floor(rc / denom + 0.5));
-    const int gm = int(floor(gc / denom + 0.5));
-    const int bm = int(floor(bc / denom + 0.5));
+    const int rm = int(floor(rc / denom + 0.5f));
+    const int gm = int(floor(gc / denom + 0.5f));
+    const int bm = int(floor(bc / denom + 0.5f));
 
     assert(rm <= MAX_RGB9E5_MANTISSA);
     assert(gm <= MAX_RGB9E5_MANTISSA);
@@ -1275,10 +1275,32 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
         if (fabsf(v.b[0]) > flt_eps || fabsf(v.b[1]) > flt_eps || fabsf(v.b[2]) > flt_eps) {
             const Vec3f tangent = MakeVec3(v.b);
             Vec3f binormal = Cross(MakeVec3(v.n), tangent);
-            float l = Length(binormal);
+            const float l = Length(binormal);
             if (l > flt_eps) {
                 binormal /= l;
-                memcpy(&v.b[0], &binormal[0], 3 * sizeof(float));
+                memcpy(&v.b[0], ValuePtr(binormal), 3 * sizeof(float));
+            }
+        }
+
+        if (fabsf(v.b[0]) < flt_eps && fabsf(v.b[1]) < flt_eps && fabsf(v.b[2]) < flt_eps) {
+            // Fallback to simple basis
+            Vec3f tangent;
+            if (fabsf(v.n[2]) > 0.0f) {
+                float k = sqrtf(v.n[1] * v.n[1] + v.n[2] * v.n[2]);
+                tangent[0] = 0.0f;
+                tangent[1] = -v.n[2] / k;
+                tangent[2] = v.n[1] / k;
+            } else {
+                float k = sqrtf(v.n[0] * v.n[0] + v.n[1] * v.n[1]);
+                tangent[0] = v.n[1] / k;
+                tangent[1] = -v.n[0] / k;
+                tangent[2] = 0.0f;
+            }
+            Vec3f binormal = Cross(MakeVec3(v.n), tangent);
+            const float l = Length(binormal);
+            if (l > flt_eps) {
+                binormal /= l;
+                memcpy(&v.b[0], ValuePtr(binormal), 3 * sizeof(float));
             }
         }
     }
@@ -1292,8 +1314,8 @@ float Ren::PerlinNoise(const Vec4f &P) {
     Vec4f Pi1 = Pi0 + Vec4f{1}; // Integer part + 1
     Pi0 = Mod(Pi0, Vec4f{289});
     Pi1 = Mod(Pi1, Vec4f{289});
-    const Vec4f Pf0 = Fract(P);         // Fractional part for interpolation
-    const Vec4f Pf1 = Pf0 - Vec4f{1.0}; // Fractional part - 1.0
+    const Vec4f Pf0 = Fract(P);       // Fractional part for interpolation
+    const Vec4f Pf1 = Pf0 - Vec4f{1}; // Fractional part - 1.0
     const auto ix = Vec4f{Pi0[0], Pi1[0], Pi0[0], Pi1[0]};
     const auto iy = Vec4f{Pi0[1], Pi0[1], Pi1[1], Pi1[1]};
     const auto iz0 = Vec4f{Pi0[2]};
@@ -1310,8 +1332,8 @@ float Ren::PerlinNoise(const Vec4f &P) {
     const Vec4f ixy11 = permute(ixy1 + iw1);
 
     Vec4f gx00 = ixy00 / 7.0f;
-    Vec4f gy00 = Floor(gx00) / 7.0;
-    Vec4f gz00 = Floor(gy00) / 6.0;
+    Vec4f gy00 = Floor(gx00) / 7.0f;
+    Vec4f gz00 = Floor(gy00) / 6.0f;
     gx00 = Fract(gx00) - Vec4f{0.5f};
     gy00 = Fract(gy00) - Vec4f{0.5f};
     gz00 = Fract(gz00) - Vec4f{0.5f};
@@ -1323,9 +1345,9 @@ float Ren::PerlinNoise(const Vec4f &P) {
     Vec4f gx01 = ixy01 / 7.0f;
     Vec4f gy01 = Floor(gx01) / 7.0f;
     Vec4f gz01 = Floor(gy01) / 6.0f;
-    gx01 = Fract(gx01) - Vec4f{0.5};
-    gy01 = Fract(gy01) - Vec4f{0.5};
-    gz01 = Fract(gz01) - Vec4f{0.5};
+    gx01 = Fract(gx01) - Vec4f{0.5f};
+    gy01 = Fract(gy01) - Vec4f{0.5f};
+    gz01 = Fract(gz01) - Vec4f{0.5f};
     Vec4f gw01 = Vec4f{0.75f} - Abs(gx01) - Abs(gy01) - Abs(gz01);
     Vec4f sw01 = Step(gw01, Vec4f{0.0f});
     gx01 -= sw01 * (Step(Vec4f{0.0f}, gx01) - Vec4f{0.5f});
@@ -1339,8 +1361,8 @@ float Ren::PerlinNoise(const Vec4f &P) {
     gz10 = Fract(gz10) - Vec4f{0.5};
     Vec4f gw10 = Vec4f{0.75f} - Abs(gx10) - Abs(gy10) - Abs(gz10);
     Vec4f sw10 = Step(gw10, Vec4f{0.0f});
-    gx10 -= sw10 * (Step(Vec4f{0.0}, gx10) - Vec4f{0.5});
-    gy10 -= sw10 * (Step(Vec4f{0.0}, gy10) - Vec4f{0.5});
+    gx10 -= sw10 * (Step(Vec4f{0.0f}, gx10) - Vec4f{0.5});
+    gy10 -= sw10 * (Step(Vec4f{0.0f}, gy10) - Vec4f{0.5});
 
     Vec4f gx11 = ixy11 / 7.0f;
     Vec4f gy11 = Floor(gx11) / 7.0f;
