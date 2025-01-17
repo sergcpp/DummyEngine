@@ -54,7 +54,7 @@ void test_material() {
         test.LoadMaterial("mat1.mat", mat_src, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
 
         require(status == eMatLoadStatus::CreatedFromData);
-        require(m_ref->flags() & eMatFlags::AlphaTest);
+        require(m_ref->flags & eMatFlags::AlphaTest);
         require(m_ref->ready());
         require(m_ref->name() == "mat1.mat");
 

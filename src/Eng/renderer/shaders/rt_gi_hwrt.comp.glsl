@@ -200,7 +200,7 @@ void main() {
         while (rayQueryProceedEXT(rq)) {
             if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
                 if (transp_depth++ < 4) {
-                    // perform alpha test
+                    // perform alpha test, account for alpha blending
                     const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
                     const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
                     const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
@@ -223,6 +223,13 @@ void main() {
                     const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).r;
                     if (alpha < 0.5) {
                         continue;
+                    }
+                    if (mat.params[2].y > 0) {
+                        const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
+                        throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
+                        if (dot(throughput, vec3(0.333)) > 0.1) {
+                            continue;
+                        }
                     }
                 }
                 rayQueryConfirmIntersectionEXT(rq);
@@ -335,7 +342,10 @@ void main() {
             const float transmission = mat.params[2].y;
             const float clearcoat = mat.params[2].z;
             const float clearcoat_roughness = mat.params[2].w;
-            vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+            vec3 emission_color = vec3(0.0);
+            if (transmission < 0.001) {
+                emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+            }
 
             vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
             spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);

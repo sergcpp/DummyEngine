@@ -263,12 +263,14 @@ void main() {
     inter.t = 100.0;
     inter.u = inter.v = 0.0;
 
+    vec3 throughput = vec3(1.0);
+
     int transp_depth = 0;
-    while (transp_depth++ < 4) {
+    while (true) {
         Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
                                 ro, probe_ray_dir, inv_d, (1u << RAY_TYPE_DIFFUSE), 0 /* root_node */, inter);
-        if (inter.mask != 0) {
-            // perform alpha test
+        if (inter.mask != 0 && transp_depth++ < 4) {
+            // perform alpha test, account for alpha blending
             const bool backfacing = (inter.prim_index < 0);
             const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
@@ -310,6 +312,16 @@ void main() {
                 inter.t = 100.0;
                 continue;
             }
+            if (mat.params[2].y > 0) {
+                const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
+                throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
+                if (dot(throughput, vec3(0.333)) > 0.1) {
+                    ro += (inter.t + 0.001) * probe_ray_dir;
+                    inter.mask = 0;
+                    inter.t = 100.0;
+                    continue;
+                }
+            }
     #endif
         }
         break;
@@ -319,8 +331,6 @@ void main() {
     float final_distance = 0.0;
 
     if (inter.mask == 0) {
-        float throughput = 1.0;
-
         // Check portal lights intersection
         for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
             const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
@@ -343,7 +353,7 @@ void main() {
                 if (a1 >= -1.0 && a1 <= 1.0) {
                     const float a2 = dot(light_v, vi);
                     if (a2 >= -1.0 && a2 <= 1.0) {
-                        throughput = 0.0;
+                        throughput = vec3(0.0);
                         break;
                     }
                 }
@@ -455,11 +465,14 @@ void main() {
         const float transmission = mat.params[2].y;
         const float clearcoat = mat.params[2].z;
         const float clearcoat_roughness = mat.params[2].w;
+        vec3 emission_color = vec3(0.0);
+        if (transmission < 0.001) {
 #if defined(BINDLESS_TEXTURES)
-        vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
+            emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
 #else
-        vec3 emission_color = mat.params[3].yzw;
+            emission_color = mat.params[3].yzw;
 #endif
+        }
 
         vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
         spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);

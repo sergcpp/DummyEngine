@@ -30,7 +30,6 @@ using pipelines_load_callback =
                        std::string_view arg4, SmallVectorImpl<PipelineRef> &out_pipelines)>;
 
 class Material : public RefCounter {
-    Bitmask<eMatFlags> flags_;
     bool ready_ = false;
     String name_;
 
@@ -38,6 +37,7 @@ class Material : public RefCounter {
                      const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load, ILog *log);
 
   public:
+    Bitmask<eMatFlags> flags;
     SmallVector<PipelineRef, 4> pipelines;
     SmallVector<Tex2DRef, 4> textures;
     SmallVector<SamplerRef, 4> samplers;
@@ -57,7 +57,6 @@ class Material : public RefCounter {
     Material &operator=(const Material &rhs) = delete;
     Material &operator=(Material &&rhs) noexcept = default;
 
-    Bitmask<eMatFlags> flags() const { return flags_; }
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 

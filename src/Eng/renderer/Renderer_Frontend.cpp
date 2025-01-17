@@ -475,25 +475,24 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                         const MaterialRef &front_mat =
                             (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j].first;
-                        const Bitmask<eMatFlags> front_mat_flags = front_mat->flags();
 
                         __record_textures(list.visible_textures, front_mat.get(), (obj.comp_mask & CompAnimStateBit),
                                           cam_dist_u16);
 
-                        if (!deferred_shading || (front_mat_flags & eMatFlags::CustomShaded)) {
+                        if (!deferred_shading || (front_mat->flags & eMatFlags::CustomShaded)) {
                             CustomDrawBatch &fwd_batch = list.custom_batches.emplace_back();
 
-                            fwd_batch.alpha_blend_bit = (front_mat_flags & eMatFlags::AlphaBlend) ? 1 : 0;
+                            fwd_batch.alpha_blend_bit = (front_mat->flags & eMatFlags::AlphaBlend) ? 1 : 0;
                             fwd_batch.pipe_id = front_mat->pipelines[pipeline_index].index();
-                            fwd_batch.alpha_test_bit = (front_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
-                            fwd_batch.depth_write_bit = (front_mat_flags & eMatFlags::DepthWrite) ? 1 : 0;
-                            fwd_batch.two_sided_bit = (front_mat_flags & eMatFlags::TwoSided) ? 1 : 0;
+                            fwd_batch.alpha_test_bit = (front_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
+                            fwd_batch.depth_write_bit = (front_mat->flags & eMatFlags::DepthWrite) ? 1 : 0;
+                            fwd_batch.two_sided_bit = (front_mat->flags & eMatFlags::TwoSided) ? 1 : 0;
                             if (!ctx_.capabilities.bindless_texture) {
                                 fwd_batch.mat_id = uint32_t(front_mat.index());
                             } else {
                                 fwd_batch.mat_id = 0;
                             }
-                            fwd_batch.cam_dist = (front_mat_flags & eMatFlags::AlphaBlend) ? uint32_t(cam_dist_u8) : 0;
+                            fwd_batch.cam_dist = (front_mat->flags & eMatFlags::AlphaBlend) ? uint32_t(cam_dist_u8) : 0;
                             fwd_batch.indices_offset = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                             fwd_batch.base_vertex = base_vertex;
                             fwd_batch.indices_count = grp.num_indices;
@@ -513,10 +512,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 base_batch.type_bits = BasicDrawBatch::TypeVege;
                             }
 
-                            base_batch.alpha_blend_bit = (front_mat_flags & eMatFlags::AlphaBlend) ? 1 : 0;
-                            base_batch.alpha_test_bit = (front_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
+                            base_batch.alpha_blend_bit = (front_mat->flags & eMatFlags::AlphaBlend) ? 1 : 0;
+                            base_batch.alpha_test_bit = (front_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
                             base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                            base_batch.two_sided_bit = (front_mat_flags & eMatFlags::TwoSided) ? 1 : 0;
+                            base_batch.two_sided_bit = (front_mat->flags & eMatFlags::TwoSided) ? 1 : 0;
                             base_batch.indices_offset = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                             base_batch.base_vertex = base_vertex;
                             base_batch.indices_count = grp.num_indices;
@@ -524,7 +523,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             base_batch.material_index = int32_t(front_mat.index());
                             base_batch.instance_count = 1;
 
-                            if (front_mat_flags & eMatFlags::Emissive) {
+                            if (front_mat->flags & eMatFlags::Emissive) {
                                 BasicDrawBatch &emissive_batch = list.basic_batches.emplace_back(base_batch);
                                 emissive_batch.emissive_bit = 1;
                             }
@@ -537,7 +536,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                                 BasicDrawBatch &back_batch = list.basic_batches.emplace_back(base_batch);
                                 back_batch.back_sided_bit = 1;
-                                back_batch.alpha_test_bit = (back_mat->flags() & eMatFlags::AlphaTest) ? 1 : 0;
+                                back_batch.alpha_test_bit = (back_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
                                 back_batch.material_index = int32_t(back_mat.index());
                             }
                         }
@@ -704,22 +703,17 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
                 const Ren::MaterialRef &back_mat =
                     (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
-                const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags();
-                if (mat_flags & Ren::eMatFlags::AlphaBlend) {
-                    // Include only opaque surfaces
-                    continue;
-                }
 
                 RTGeoInstance &geo = list.rt_geo_instances[0].data[list.rt_geo_instances[0].count++];
                 geo.indices_start = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                 geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
                 assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
                 geo.material_index = front_mat.index();
-                if (!(front_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                if (!(front_mat->flags & Ren::eMatFlags::AlphaTest) && !(front_mat->flags & Ren::eMatFlags::AlphaBlend)) {
                     geo.material_index |= MATERIAL_SOLID_BIT;
                 }
                 geo.material_index |= (back_mat.index() << 16);
-                if (!(back_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                if (!(back_mat->flags & Ren::eMatFlags::AlphaTest) && !(back_mat->flags & Ren::eMatFlags::AlphaBlend)) {
                     geo.material_index |= (MATERIAL_SOLID_BIT << 16);
                 }
                 geo.flags = 0;
@@ -1198,7 +1192,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 const Ren::MaterialRef &back_mat = (j >= acc.material_override.size())
                                                                        ? grp.back_mat
                                                                        : acc.material_override[j].second;
-                                const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags();
+                                const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags;
                                 if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                                     // Include only opaque surfaces
                                     continue;
@@ -1209,11 +1203,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
                                 assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
                                 geo.material_index = front_mat.index();
-                                if (!(front_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                                if (!(front_mat->flags & Ren::eMatFlags::AlphaTest) && !(front_mat->flags & Ren::eMatFlags::AlphaBlend)) {
                                     geo.material_index |= MATERIAL_SOLID_BIT;
                                 }
                                 geo.material_index |= (back_mat.index() << 16);
-                                if (!(back_mat->flags() & Ren::eMatFlags::AlphaTest)) {
+                                if (!(back_mat->flags & Ren::eMatFlags::AlphaTest) && !(back_mat->flags & Ren::eMatFlags::AlphaBlend)) {
                                     geo.material_index |= (MATERIAL_SOLID_BIT << 16);
                                 }
                                 geo.flags = 0;
@@ -1229,10 +1223,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                         const MaterialRef &front_mat =
                             (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j].first;
-                        const Bitmask<eMatFlags> front_mat_flags = front_mat->flags();
 
-                        if ((front_mat_flags & eMatFlags::AlphaBlend) == 0) {
-                            if ((front_mat_flags & eMatFlags::AlphaTest) && front_mat->textures.size() > 4 &&
+                        if ((front_mat->flags & eMatFlags::AlphaBlend) == 0) {
+                            if ((front_mat->flags & eMatFlags::AlphaTest) && front_mat->textures.size() > 4 &&
                                 front_mat->textures[4]) {
                                 // assume only the fourth texture gives transparency
                                 __record_texture(list.visible_textures, front_mat->textures[4], 0, 0xffffu);
@@ -1250,11 +1243,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             const MaterialRef &back_mat =
                                 (j >= dr.material_override.size()) ? grp.back_mat : dr.material_override[j].second;
 
-                            const bool simple_twosided = (front_mat_flags & eMatFlags::TwoSided) ||
-                                                         (!(front_mat_flags & eMatFlags::AlphaTest) &&
-                                                          !(back_mat->flags() & eMatFlags::AlphaTest));
+                            const bool simple_twosided = (front_mat->flags & eMatFlags::TwoSided) ||
+                                                         (!(front_mat->flags & eMatFlags::AlphaTest) &&
+                                                          !(back_mat->flags & eMatFlags::AlphaTest));
 
-                            batch.alpha_test_bit = (front_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
+                            batch.alpha_test_bit = (front_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
                             batch.moving_bit = 0;
                             batch.two_sided_bit = simple_twosided ? 1 : 0;
                             batch.indices_offset =
@@ -1262,15 +1255,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             batch.base_vertex = proc_objects_[i.index].base_vertex;
                             batch.indices_count = grp.num_indices;
                             batch.instance_index = i.index;
-                            batch.material_index = ((front_mat_flags & eMatFlags::AlphaTest) ||
+                            batch.material_index = ((front_mat->flags & eMatFlags::AlphaTest) ||
                                                     (batch.type_bits == BasicDrawBatch::TypeVege))
                                                        ? int32_t(front_mat.index())
                                                        : 0;
                             batch.instance_count = 1;
 
                             if (!simple_twosided && front_mat != back_mat) {
-                                const Bitmask<eMatFlags> back_mat_flags = back_mat->flags();
-                                if ((back_mat_flags & eMatFlags::AlphaTest) && back_mat->textures.size() > 4 &&
+                                if ((back_mat->flags & eMatFlags::AlphaTest) && back_mat->textures.size() > 4 &&
                                     back_mat->textures[4]) {
                                     // assume only the fourth texture gives transparency
                                     __record_texture(list.visible_textures, back_mat->textures[4], 0, 0xffffu);
@@ -1278,7 +1270,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                                 BasicDrawBatch &back_batch = list.shadow_batches.emplace_back(batch);
                                 back_batch.back_sided_bit = 1;
-                                back_batch.alpha_test_bit = (back_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
+                                back_batch.alpha_test_bit = (back_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
                                 back_batch.material_index = int32_t(back_mat.index());
                             }
                         }
@@ -1510,10 +1502,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                                 const MaterialRef &front_mat =
                                     (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j].first;
-                                const Bitmask<eMatFlags> front_mat_flags = front_mat->flags();
 
-                                if ((front_mat_flags & eMatFlags::AlphaBlend) == 0) {
-                                    if ((front_mat_flags & eMatFlags::AlphaTest) && front_mat->textures.size() > 4 &&
+                                if ((front_mat->flags & eMatFlags::AlphaBlend) == 0) {
+                                    if ((front_mat->flags & eMatFlags::AlphaTest) && front_mat->textures.size() > 4 &&
                                         front_mat->textures[4]) {
                                         // assume only the fourth texture gives transparency
                                         __record_texture(list.visible_textures, front_mat->textures[4], 0, 0xffffu);
@@ -1532,11 +1523,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                                                       ? grp.back_mat
                                                                       : dr.material_override[j].second;
 
-                                    const bool simple_twosided = (front_mat_flags & eMatFlags::TwoSided) ||
-                                                                 (!(front_mat_flags & eMatFlags::AlphaTest) &&
-                                                                  !(back_mat->flags() & eMatFlags::AlphaTest));
+                                    const bool simple_twosided = (front_mat->flags & eMatFlags::TwoSided) ||
+                                                                 (!(front_mat->flags & eMatFlags::AlphaTest) &&
+                                                                  !(back_mat->flags & eMatFlags::AlphaTest));
 
-                                    batch.alpha_test_bit = (front_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
+                                    batch.alpha_test_bit = (front_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
                                     batch.moving_bit = 0;
                                     batch.two_sided_bit = simple_twosided ? 1 : 0;
                                     batch.indices_offset =
@@ -1544,15 +1535,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                     batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
                                     batch.indices_count = grp.num_indices;
                                     batch.instance_index = n->prim_index;
-                                    batch.material_index = ((front_mat_flags & eMatFlags::AlphaTest) ||
+                                    batch.material_index = ((front_mat->flags & eMatFlags::AlphaTest) ||
                                                             (batch.type_bits == BasicDrawBatch::TypeVege))
                                                                ? uint32_t(front_mat.index())
                                                                : 0;
                                     batch.instance_count = 1;
 
                                     if (!simple_twosided && front_mat != back_mat) {
-                                        const Bitmask<eMatFlags> back_mat_flags = back_mat->flags();
-                                        if ((back_mat_flags & eMatFlags::AlphaTest) && back_mat->textures.size() > 4 &&
+                                        if ((back_mat->flags & eMatFlags::AlphaTest) && back_mat->textures.size() > 4 &&
                                             back_mat->textures[4]) {
                                             // assume only the fourth texture gives transparency
                                             __record_texture(list.visible_textures, back_mat->textures[4], 0, 0xffffu);
@@ -1560,7 +1550,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                                         BasicDrawBatch &back_batch = list.shadow_batches.emplace_back(batch);
                                         back_batch.back_sided_bit = 1;
-                                        back_batch.alpha_test_bit = (back_mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
+                                        back_batch.alpha_test_bit = (back_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
                                         back_batch.material_index = int32_t(back_mat.index());
                                     }
                                 }

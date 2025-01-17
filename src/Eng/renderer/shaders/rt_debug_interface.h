@@ -14,6 +14,9 @@ struct Params {
 struct RayPayload {
     vec3 col;
     float cone_width;
+    vec3 throughput;
+    float throughput_dist;
+    float closest_dist;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

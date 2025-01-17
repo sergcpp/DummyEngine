@@ -242,10 +242,12 @@ void main() {
                           t_max                     // tMax
                           );
 
+    vec3 throughput = vec3(1.0);
+
     int transp_depth = 0;
     while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
         if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
-            // perform alpha test
+            // perform alpha test, account for alpha blending
             const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
             const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
             const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
@@ -269,6 +271,13 @@ void main() {
             if (alpha >= 0.5) {
                 rayQueryConfirmIntersectionEXT(rq);
             }
+            if (mat.params[2].y > 0) {
+                const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
+                throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
+                if (dot(throughput, vec3(0.333)) <= 0.1) {
+                    rayQueryConfirmIntersectionEXT(rq);
+                }
+            }
         }
     }
 
@@ -276,8 +285,6 @@ void main() {
     float final_distance = 0.0;
 
     if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-        float throughput = 1.0;
-
         // Check portal lights intersection
         for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
             const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
@@ -300,7 +307,7 @@ void main() {
                 if (a1 >= -1.0 && a1 <= 1.0) {
                     const float a2 = dot(light_v, vi);
                     if (a2 >= -1.0 && a2 <= 1.0) {
-                        throughput = 0.0;
+                        throughput = vec3(0.0);
                         break;
                     }
                 }
@@ -393,11 +400,14 @@ void main() {
         const float transmission = mat.params[2].y;
         const float clearcoat = mat.params[2].z;
         const float clearcoat_roughness = mat.params[2].w;
+        vec3 emission_color = vec3(0.0);
+        if (transmission < 0.001) {
 #if defined(BINDLESS_TEXTURES)
-        vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+            emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
 #else
-        vec3 emission_color = mat.params[3].yzw;
+            emission_color = mat.params[3].yzw;
 #endif
+        }
 
         vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
         spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);

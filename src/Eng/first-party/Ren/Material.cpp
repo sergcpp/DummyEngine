@@ -31,10 +31,10 @@ Ren::Material::Material(std::string_view name, Bitmask<eMatFlags> flags, Span<co
     Init(flags, _pipelines, _textures, _samplers, _params, log);
 }
 
-void Ren::Material::Init(const Bitmask<eMatFlags> flags, Span<const PipelineRef> _pipelines,
+void Ren::Material::Init(const Bitmask<eMatFlags> _flags, Span<const PipelineRef> _pipelines,
                          Span<const Tex2DRef> _textures, Span<const SamplerRef> _samplers, Span<const Vec4f> _params,
                          ILog *log) {
-    flags_ = flags;
+    flags = _flags;
     ready_ = true;
 
     pipelines.clear();
@@ -78,11 +78,11 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
     const char *p = mat_src.data();
     const char *q = strpbrk(p + 1, delims);
 
+    flags = {};
     pipelines.clear();
     textures.clear();
     samplers.clear();
     params.clear();
-    flags_ = {};
 
     bool multi_doc = false;
     SmallVector<std::string, 4> v_shader_names, f_shader_names, tc_shader_names, te_shader_names;
@@ -153,17 +153,17 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                 const std::string flag = std::string(p, q);
 
                 if (flag == "alpha_test") {
-                    flags_ |= eMatFlags::AlphaTest;
+                    flags |= eMatFlags::AlphaTest;
                 } else if (flag == "alpha_blend") {
-                    flags_ |= eMatFlags::AlphaBlend;
+                    flags |= eMatFlags::AlphaBlend;
                 } else if (flag == "depth_write") {
-                    flags_ |= eMatFlags::DepthWrite;
+                    flags |= eMatFlags::DepthWrite;
                 } else if (flag == "two_sided") {
-                    flags_ |= eMatFlags::TwoSided;
+                    flags |= eMatFlags::TwoSided;
                 } else if (flag == "emissive") {
-                    flags_ |= eMatFlags::Emissive;
+                    flags |= eMatFlags::Emissive;
                 } else if (flag == "custom_shaded") {
-                    flags_ |= eMatFlags::CustomShaded;
+                    flags |= eMatFlags::CustomShaded;
                 } else {
                     log->Error("Unknown flag %s", flag.c_str());
                 }
@@ -309,7 +309,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
     assert(textures.size() == samplers.size());
 
     for (size_t i = 0; i < v_shader_names.size(); ++i) {
-        on_pipes_load(flags_, v_shader_names[i], f_shader_names[i], tc_shader_names[i], te_shader_names[i], pipelines);
+        on_pipes_load(flags, v_shader_names[i], f_shader_names[i], tc_shader_names[i], te_shader_names[i], pipelines);
     }
 
     ready_ = true;

@@ -463,6 +463,9 @@
             },
             "drawable": {
                 "mesh_file": "ai043_01/Untitled_396.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "ai043_01/Untitled_396.gltf"
             }
         },
         {
@@ -564,6 +567,13 @@
             "drawable": {
                 "mesh_file": "ai043_01/Untitled_360.gltf",
                 "visible_to_shadow": false
+            },
+            "acc_structure": {
+                "mesh_file": "ai043_01/Untitled_360.gltf",
+                "visible_to_shadow": false,
+                "visible_to_diffuse": false,
+                "visible_to_specular": false,
+                "visible_to_refraction": false
             }
         },
         {

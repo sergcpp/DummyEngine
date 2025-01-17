@@ -88,7 +88,7 @@ void main() {
         de_proj = transpose(de_proj);
 
         vec4 pp = de_proj * vec4(g_vtx_pos, 1.0);
-        pp /= pp[3];
+        pp /= pp.w;
 
         vec3 app = abs(pp.xyz);
         vec2 uvs = pp.xy * 0.5 + 0.5;

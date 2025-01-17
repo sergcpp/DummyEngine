@@ -1758,7 +1758,7 @@ bool Eng::SceneManager::UpdateInstanceBuffer() {
     return false;
 }
 
-void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end) {
+void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const uint32_t obj_end) {
     using namespace SceneManagerInternal;
 
     const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();

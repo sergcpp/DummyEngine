@@ -60,6 +60,9 @@
             },
             "drawable": {
                 "mesh_file": "transparent_machines/BEGINNING.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "transparent_machines/BEGINNING.gltf"
             }
         }
     ]

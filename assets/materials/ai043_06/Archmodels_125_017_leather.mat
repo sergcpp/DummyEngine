@@ -6,8 +6,9 @@ textures:
     - ai043_06/Archmodels_125_017_leather_norm.tex
     - ai043_06/Archmodels_125_017_leather_rough.tex
     - default_metallic.tex
+    - default_opacity.tex
 params:
     - 0.02840599976480007 0.02840599976480007 0.030074000358581543 1.0    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
     - 0.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
-    - 0.0 0.0 0.0 0.0    # transparency, ior, unused, unused
+    - 0.0 0.0 0.0 0.0    # transparency, ior/emission color

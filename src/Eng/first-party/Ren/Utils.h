@@ -141,7 +141,7 @@ struct DDSHeader {
     uint32_t dwMipMapCount;
     uint32_t dwReserved1[11];
 
-    /*  DDPIXELFORMAT	*/
+    // DDPIXELFORMAT
     struct {
         uint32_t dwSize;
         uint32_t dwFlags;
@@ -153,7 +153,7 @@ struct DDSHeader {
         uint32_t dwAlphaBitMask;
     } sPixelFormat;
 
-    /*  DDCAPS2	*/
+    // DDCAPS2
     struct {
         uint32_t dwCaps1;
         uint32_t dwCaps2;

@@ -99,7 +99,7 @@ void main() {
     tex_lod += log2(cone_width);
     tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
     tex_lod -= log2(abs(dot(gl_ObjectRayDirectionEXT, tri_normal)));
-    vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
+    const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, tex_lod)));
 
     const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
                               unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
@@ -134,7 +134,10 @@ void main() {
     const float transmission = mat.params[2].y;
     const float clearcoat = mat.params[2].z;
     const float clearcoat_roughness = mat.params[2].w;
-    const vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+    vec3 emission_color = vec3(0.0);
+    if (transmission < 0.001) {
+        emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_EMISSION]), uv, tex_lod)));
+    }
 
     vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
     spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -149,7 +152,7 @@ void main() {
     const float spec_color_lum = lum(approx_spec_col);
 
     const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular,
-                                                            metallic, transmission, clearcoat);
+                                                         metallic, transmission, clearcoat);
 
     const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -163,10 +166,8 @@ void main() {
 
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-    vec3 light_total = vec3(0.0);
-
     vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
-    projected_p /= projected_p[3];
+    projected_p /= projected_p.w;
     projected_p.xy = projected_p.xy * 0.5 + 0.5;
 
     const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
@@ -181,6 +182,7 @@ void main() {
     const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
+    vec3 light_total = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         const uint item_data = texelFetch(g_items_buf, int(i)).x;
         const int li = int(bitfieldExtract(item_data, 0, 12));
@@ -221,9 +223,9 @@ void main() {
 
             pp.xy = pp.xy * 0.5 + vec2(0.5);
             pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
-            #if defined(VULKAN)
-                pp.y = 1.0 - pp.y;
-            #endif // VULKAN
+#if defined(VULKAN)
+            pp.y = 1.0 - pp.y;
+#endif // VULKAN
 
             light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
         }
@@ -276,5 +278,6 @@ void main() {
 #endif
 
     g_pld.col = light_total + emission_color;
+    g_pld.closest_dist = gl_HitTEXT;
 }
 

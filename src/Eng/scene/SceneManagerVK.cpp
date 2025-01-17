@@ -332,19 +332,13 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
             (j >= acc.material_override.size()) ? grp.front_mat.get() : acc.material_override[j].first.get();
         const Ren::Material *back_mat =
             (j >= acc.material_override.size()) ? grp.back_mat.get() : acc.material_override[j].second.get();
-        const Ren::Bitmask<Ren::eMatFlags> front_mat_flags = front_mat->flags();
-
-        if (front_mat_flags & Ren::eMatFlags::AlphaBlend) {
-            // Include only opaque surfaces
-            continue;
-        }
 
         auto &new_geo = geometries.emplace_back();
         new_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
         new_geo.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
         new_geo.flags = 0;
-        if (!(front_mat_flags & Ren::eMatFlags::AlphaTest) && !(back_mat->flags() & Ren::eMatFlags::AlphaTest) &&
-            !(front_mat_flags & Ren::eMatFlags::AlphaBlend) && !(back_mat->flags() & Ren::eMatFlags::AlphaBlend)) {
+        if (!(front_mat->flags & Ren::eMatFlags::AlphaTest) && !(back_mat->flags & Ren::eMatFlags::AlphaTest) &&
+            !(front_mat->flags & Ren::eMatFlags::AlphaBlend) && !(back_mat->flags & Ren::eMatFlags::AlphaBlend)) {
             new_geo.flags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
         }
         new_geo.geometry.triangles = tri_data;

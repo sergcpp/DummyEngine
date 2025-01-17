@@ -63,12 +63,12 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     }
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_hwrt_->prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_->prog()->descr_set_layouts()[0], bindings,
                                          ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_->handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_->layout(), 0, 2,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_->handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_->layout(), 0, 2,
                                      descr_sets, 0, nullptr);
 
     RTDebug::Params uniform_params;
@@ -76,11 +76,11 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     uniform_params.img_size[1] = view_state_->scr_res[1];
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_hwrt_->layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_->layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
                                 sizeof(uniform_params), &uniform_params);
 
-    api_ctx->vkCmdTraceRaysKHR(cmd_buf, pi_debug_hwrt_->rgen_table(), pi_debug_hwrt_->miss_table(),
-                               pi_debug_hwrt_->hit_table(), pi_debug_hwrt_->call_table(),
+    api_ctx->vkCmdTraceRaysKHR(cmd_buf, pi_debug_->rgen_table(), pi_debug_->miss_table(),
+                               pi_debug_->hit_table(), pi_debug_->call_table(),
                                uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]), 1);
 }
 
@@ -190,15 +190,15 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_swrt_->prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_debug_->prog()->descr_set_layouts()[0], bindings,
                                          ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_->handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_->layout(), 0, 2,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_->handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_->layout(), 0, 2,
                                      descr_sets, 0, nullptr);
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_swrt_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                 sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);

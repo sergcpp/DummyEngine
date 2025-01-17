@@ -588,11 +588,6 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 
     for (const Ren::TriGroup &grp : acc.mesh->groups()) {
         const Ren::Material *mat = grp.front_mat.get();
-        const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
-        if (mat_flags & Ren::eMatFlags::AlphaBlend) {
-            // Include only opaque surfaces
-            continue;
-        }
 
         const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
         const uint32_t index_end = index_beg + grp.num_indices;
@@ -1264,11 +1259,11 @@ void Eng::SceneManager::RebuildLightTree() {
             const Ren::MaterialRef &back_mat =
                 (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
 
-            if ((front_mat->flags() & Ren::eMatFlags::Emissive) == 0) {
+            if ((front_mat->flags & Ren::eMatFlags::Emissive) == 0) {
                 continue;
             }
 
-            const bool doublesided = (back_mat->flags() & Ren::eMatFlags::Emissive) != 0;
+            const bool doublesided = (back_mat->flags & Ren::eMatFlags::Emissive) != 0;
 
             const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
             const uint32_t index_end = index_beg + grp.num_indices;

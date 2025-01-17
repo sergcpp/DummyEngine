@@ -16,20 +16,17 @@ layout(location = 0) rayPayloadEXT RayPayload g_pld;
 void main() {
     const vec2 px_center = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
     const vec2 in_uv = px_center / vec2(gl_LaunchSizeEXT.xy);
-    vec2 d = in_uv * 2.0 - 1.0;
-    d.y = -d.y;
+    const vec2 d = in_uv * 2.0 - 1.0;
 
-    vec4 origin = g_shrd_data.world_from_view * vec4(0, 0, 0, 1);
-    origin /= origin.w;
-    vec4 target = g_shrd_data.view_from_clip * vec4(d.xy, 1, 1);
-    target /= target.w;
-    vec4 direction = g_shrd_data.world_from_view * vec4(normalize(target.xyz), 0);
+    const vec3 origin = TransformFromClipSpace(g_shrd_data.world_from_clip, vec4(d.xy, 1, 1));
+    const vec3 target = TransformFromClipSpace(g_shrd_data.world_from_clip, vec4(d.xy, 0, 1));
+    const vec3 direction = normalize(target - origin);
 
     const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
-    const float t_min = 0.001;
-    const float t_max = 1000.0;
 
     g_pld.cone_width = 0.0;
+    g_pld.throughput = vec3(1.0);
+    g_pld.throughput_dist = g_pld.closest_dist = MAX_DIST;
 
     traceRayEXT(g_tlas,                     // topLevel
                 ray_flags,                  // rayFlags
@@ -37,12 +34,16 @@ void main() {
                 0,                          // sbtRecordOffset
                 0,                          // sbtRecordStride
                 0,                          // missIndex
-                origin.xyz,                 // origin
-                t_min,                      // Tmin
-                direction.xyz,              // direction
-                t_max,                      // Tmax
+                origin,                     // origin
+                0.0,                        // Tmin
+                direction,                  // direction
+                distance(origin, target),   // Tmax
                 0                           // payload
                 );
 
-    imageStore(g_out_image, ivec2(gl_LaunchIDEXT.xy), vec4(compress_hdr(g_pld.col, g_shrd_data.cam_pos_and_exp.w), 1.0));
+    if (g_pld.closest_dist < g_pld.throughput_dist) {
+        g_pld.throughput = vec3(1.0);
+    }
+
+    imageStore(g_out_image, ivec2(gl_LaunchIDEXT.xy), vec4(compress_hdr(g_pld.throughput * g_pld.col, g_shrd_data.cam_pos_and_exp.w), 1.0));
 }

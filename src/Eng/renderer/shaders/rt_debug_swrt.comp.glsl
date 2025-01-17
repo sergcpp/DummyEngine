@@ -64,25 +64,6 @@ layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
 layout(binding = OUT_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_image;
 
-int hash(const int x) {
-    uint ret = uint(x);
-    ret = ((ret >> 16) ^ ret) * 0x45d9f3b;
-    ret = ((ret >> 16) ^ ret) * 0x45d9f3b;
-    ret = (ret >> 16) ^ ret;
-    return int(ret);
-}
-
-float construct_float(uint m) {
-    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
-    const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
-
-    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
-    m |= ieeeOne;                          // Add fractional part to 1.0
-
-    const float  f = uintBitsToFloat(m);   // Range [1:2]
-    return f - 1.0;                        // Range [0:1]
-}
-
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
@@ -94,26 +75,26 @@ void main() {
     const vec2 in_uv = px_center / vec2(g_params.img_size);
     const vec2 d = in_uv * 2.0 - 1.0;
 
-    vec4 origin = g_shrd_data.world_from_view * vec4(0, 0, 0, 1);
-    origin /= origin.w;
-    const vec3 target = TransformFromClipSpace(g_shrd_data.view_from_clip, vec4(d.xy, 1, 1));
-    vec4 direction = g_shrd_data.world_from_view * vec4(normalize(target), 0);
-
-    vec3 inv_d = safe_invert(direction.xyz);
+    vec3 origin = TransformFromClipSpace(g_shrd_data.world_from_clip, vec4(d.xy, 1, 1));
+    const vec3 target = TransformFromClipSpace(g_shrd_data.world_from_clip, vec4(d.xy, 0, 1));
+    const vec3 direction = normalize(target - origin);
+    const vec3 inv_d = safe_invert(direction);
 
     hit_data_t inter;
     inter.mask = 0;
     inter.obj_index = inter.prim_index = 0;
     inter.geo_index_count = 0;
-    inter.t = MAX_DIST;
+    inter.t = distance(origin, target);
     inter.u = inter.v = 0.0;
 
+    vec3 throughput = vec3(1.0);
+
     int transp_depth = 0;
-    while (transp_depth++ < 4) {
+    while (true) {
         Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0,
-                                g_vtx_indices, g_prim_indices, origin.xyz, direction.xyz, inv_d, (1u << RAY_TYPE_CAMERA), 0 /* root_node */, inter);
-        if (inter.mask != 0) {
-            // perform alpha test
+                                g_vtx_indices, g_prim_indices, origin, direction, inv_d, (1u << RAY_TYPE_CAMERA), 0 /* root_node */, inter);
+        if (inter.mask != 0 /*&& transp_depth++ < 4*/) {
+            // perform alpha test, account for alpha blending
             const bool backfacing = (inter.prim_index < 0);
             const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
@@ -150,10 +131,20 @@ void main() {
 #if defined(BINDLESS_TEXTURES)
             const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
             if (alpha < 0.5) {
-                origin.xyz += (inter.t + 0.001) * direction.xyz;
+                origin += (inter.t + 0.001) * direction;
                 inter.mask = 0;
                 inter.t = 1000.0;
                 continue;
+            }
+            if (mat.params[2].y > 0) {
+                const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
+                throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
+                if (dot(throughput, vec3(0.333)) > 0.1) {
+                    origin += (inter.t + 0.001) * direction;
+                    inter.mask = 0;
+                    inter.t = 1000.0;
+                    continue;
+                }
             }
 #endif
         }
@@ -162,7 +153,7 @@ void main() {
 
     vec3 final_color;
     if (inter.mask == 0) {
-        const vec3 rotated_dir = rotate_xz(direction.xyz, g_shrd_data.env_col.w);
+        const vec3 rotated_dir = rotate_xz(direction, g_shrd_data.env_col.w);
         final_color = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb;
 
         for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
@@ -173,14 +164,14 @@ void main() {
             const vec3 light_forward = normalize(cross(light_u, light_v));
 
             const float plane_dist = dot(light_forward, light_pos);
-            const float cos_theta = dot(direction.xyz, light_forward);
-            const float t = (plane_dist - dot(light_forward, origin.xyz)) / min(cos_theta, -FLT_EPS);
+            const float cos_theta = dot(direction, light_forward);
+            const float t = (plane_dist - dot(light_forward, origin)) / min(cos_theta, -FLT_EPS);
 
             if (cos_theta < 0.0 && t > 0.0) {
                 light_u /= dot(light_u, light_u);
                 light_v /= dot(light_v, light_v);
 
-                const vec3 p = origin.xyz + direction.xyz * t;
+                const vec3 p = origin + direction * t;
                 const vec3 vi = p - light_pos;
                 const float a1 = dot(light_u, vi);
                 if (a1 >= -1.0 && a1 <= 1.0) {
@@ -210,24 +201,24 @@ void main() {
         const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
         const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
-        uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
-        uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
-        uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
+        const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
+        const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
+        const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
 
-        vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-        vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-        vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+        const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
+        const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
+        const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
 
-        vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
-        vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
-        vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+        const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+        const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+        const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
-        vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
+        const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 #if defined(BINDLESS_TEXTURES)
         mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 1)),
                                                 texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
                                                 texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3))));
-        vec3 direction_obj_space = (inv_transform * vec4(direction.xyz, 0.0)).xyz;
+        vec3 direction_obj_space = (inv_transform * vec4(direction, 0.0)).xyz;
 
         vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), 0).xy;
         float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
@@ -267,8 +258,8 @@ void main() {
                                                   texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6))));
         N = normalize((transform * vec4(N, 0.0)).xyz);
 
-        const vec3 P = origin.xyz + direction.xyz * inter.t;
-        const vec3 I = -direction.xyz;
+        const vec3 P = origin + direction * inter.t;
+        const vec3 I = -direction;
         const float N_dot_V = saturate(dot(N, I));
 
         vec3 tint_color = vec3(0.0);
@@ -295,11 +286,14 @@ void main() {
         const float transmission = mat.params[2].y;
         const float clearcoat = mat.params[2].z;
         const float clearcoat_roughness = mat.params[2].w;
+        vec3 emission_color = vec3(0.0);
+        if (transmission < 0.001) {
 #if defined(BINDLESS_TEXTURES)
-        const vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
+            emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
 #else
-        const vec3 emission_color = mat.params[3].yzw;
+            emission_color = mat.params[3].yzw;
 #endif
+        }
 
         vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
         spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
@@ -331,7 +325,7 @@ void main() {
         vec3 light_total = emission_color;
 
         vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
-        projected_p /= projected_p[3];
+        projected_p /= projected_p.w;
         projected_p.xy = projected_p.xy * 0.5 + 0.5;
 
         const float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
@@ -374,9 +368,9 @@ void main() {
 
                 pp.xy = pp.xy * 0.5 + vec2(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
-                #if defined(VULKAN)
-                    pp.y = 1.0 - pp.y;
-                #endif // VULKAN
+            #if defined(VULKAN)
+                pp.y = 1.0 - pp.y;
+            #endif // VULKAN
 
                 light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
             }
@@ -430,5 +424,5 @@ void main() {
         final_color = light_total;
     }
 
-    imageStore(g_out_image, ivec2(gl_GlobalInvocationID.xy), vec4(compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w), 1.0));
+    imageStore(g_out_image, ivec2(gl_GlobalInvocationID.xy), vec4(compress_hdr(throughput * final_color, g_shrd_data.cam_pos_and_exp.w), 1.0));
 }

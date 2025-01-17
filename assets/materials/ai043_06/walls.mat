@@ -6,8 +6,9 @@ textures:
     - default_normalmap.dds
     - default_roughness.tex
     - default_metallic.tex
+    - default_opacity.tex
 params:
-    - 1.0 1.0 1.0 0.5    # base color, roughness
+    - 0.9774019122123718 0.9774019122123718 0.9774019122123718 0.5    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
     - 0.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness
-    - 0.0 0.0 0.0 0.0    # transparency, ior, unused, unused
+    - 0.0 0.0 0.0 0.0    # transparency, ior/emission color

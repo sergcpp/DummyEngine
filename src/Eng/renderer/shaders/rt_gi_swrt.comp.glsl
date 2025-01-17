@@ -202,52 +202,60 @@ void main() {
         while (true) {
             Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
                                     ro, gi_ray_ws, inv_d, (1u << RAY_TYPE_DIFFUSE), 0 /* root_node */, inter);
-            if (inter.mask != 0) {
-                if (transp_depth++ < 4) {
-                    // perform alpha test
-                    const bool backfacing = (inter.prim_index < 0);
-                    const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
+            if (inter.mask != 0 && transp_depth++ < 4) {
+                // perform alpha test, account for alpha blending
+                const bool backfacing = (inter.prim_index < 0);
+                const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
-                    int i = int(inter.geo_index_count & 0x00ffffffu);
-                    for (; i < int(inter.geo_index_count & 0x00ffffffu) + int((inter.geo_index_count >> 24) & 0xffu); ++i) {
-                        const int tri_start = int(g_geometries[i].indices_start) / 3;
-                        if (tri_start > tri_index) {
-                            break;
-                        }
-                    }
-
-                    const int geo_index = i - 1;
-
-                    const RTGeoInstance geo = g_geometries[geo_index];
-                    const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-                    if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
+                int i = int(inter.geo_index_count & 0x00ffffffu);
+                for (; i < int(inter.geo_index_count & 0x00ffffffu) + int((inter.geo_index_count >> 24) & 0xffu); ++i) {
+                    const int tri_start = int(g_geometries[i].indices_start) / 3;
+                    if (tri_start > tri_index) {
                         break;
                     }
-                    const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+                }
 
-                    const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
-                    const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
-                    const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
+                const int geo_index = i - 1;
 
-                    const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-                    const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-                    const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+                const RTGeoInstance geo = g_geometries[geo_index];
+                const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
+                if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
+                    break;
+                }
+                const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
-                    const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
-                    const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
-                    const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+                const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
+                const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
+                const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
 
-                    const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
-        #if defined(BINDLESS_TEXTURES)
-                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
-                    if (alpha < 0.5) {
+                const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
+                const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
+                const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+
+                const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+                const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+                const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+
+                const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
+    #if defined(BINDLESS_TEXTURES)
+                const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
+                if (alpha < 0.5) {
+                    ro += (inter.t + 0.001) * gi_ray_ws;
+                    inter.mask = 0;
+                    inter.t = 100.0;
+                    continue;
+                }
+                if (mat.params[2].y > 0) {
+                    const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
+                    throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
+                    if (dot(throughput, vec3(0.333)) > 0.1) {
                         ro += (inter.t + 0.001) * gi_ray_ws;
                         inter.mask = 0;
                         inter.t = 100.0;
                         continue;
                     }
-        #endif
                 }
+    #endif
             }
             break;
         }
@@ -380,11 +388,14 @@ void main() {
             const float transmission = mat.params[2].y;
             const float clearcoat = mat.params[2].z;
             const float clearcoat_roughness = mat.params[2].w;
+            vec3 emission_color = vec3(0.0);
+            if (transmission < 0.001) {
 #if defined(BINDLESS_TEXTURES)
-            vec3 emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
+                emission_color = mat.params[3].yzw * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION])), uv, tex_lod)));
 #else
-            vec3 emission_color = mat.params[3].yzw;
+                emission_color = mat.params[3].yzw;
 #endif
+            }
 
             vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
             spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);

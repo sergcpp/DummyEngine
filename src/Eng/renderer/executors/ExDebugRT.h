@@ -48,7 +48,7 @@ class ExDebugRT final : public FgExecutor {
     void Execute(FgBuilder &builder) override;
 
   private:
-    Ren::PipelineRef pi_debug_hwrt_, pi_debug_swrt_;
+    Ren::PipelineRef pi_debug_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

@@ -776,7 +776,7 @@ tex_config_t ParseTextureConfig(const char *in_file) {
         }
     }
     return ret;
-};
+}
 
 bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
     if (strcmp(in_file, "assets/textures/default_normalmap.dds") == 0) {

@@ -18,8 +18,10 @@ layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
 };
 
 layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
-    uint g_indices[];
+    uint g_vtx_indices[];
 };
+
+layout(location = 0) rayPayloadInEXT RayPayload g_pld;
 
 hitAttributeEXT vec2 bary_coord;
 
@@ -31,9 +33,9 @@ void main() {
     }
     const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
-    const uint i0 = g_indices[geo.indices_start + 3 * gl_PrimitiveID + 0];
-    const uint i1 = g_indices[geo.indices_start + 3 * gl_PrimitiveID + 1];
-    const uint i2 = g_indices[geo.indices_start + 3 * gl_PrimitiveID + 2];
+    const uint i0 = g_vtx_indices[geo.indices_start + 3 * gl_PrimitiveID + 0];
+    const uint i1 = g_vtx_indices[geo.indices_start + 3 * gl_PrimitiveID + 1];
+    const uint i2 = g_vtx_indices[geo.indices_start + 3 * gl_PrimitiveID + 2];
 
     const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
     const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
@@ -44,5 +46,12 @@ void main() {
     if (alpha < 0.5) {
         ignoreIntersectionEXT;
     }
+    if (mat.params[2].y > 0) {
+        const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
+        g_pld.throughput = min(g_pld.throughput, 0.8 * mat.params[2].y * alpha * base_color);
+        g_pld.throughput_dist = min(g_pld.throughput_dist, gl_HitTEXT);
+        if (dot(g_pld.throughput, vec3(0.333)) > 0.1) {
+            ignoreIntersectionEXT;
+        }
+    }
 }
-
