@@ -138,4 +138,33 @@ runs:
         cp ./assets_pc/textures/mat_test/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/mat_test/
         cp ./assets_pc/textures/internal/* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/internal/
         cp ./assets_pc/textures/default_* $WORK_DIR/ai043_06-win-x86_64-vk/assets_pc/textures/
+        # bathroom
+        mkdir $WORK_DIR/bathroom-win-x86_64-vk
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/fonts
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/materials/bathroom
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/materials/mat_test
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/textures/bathroom
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/textures/mat_test
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/textures/internal
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/models/bathroom
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/models/mat_test
+        mkdir -p $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/shaders/internal
+        mkdir $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/scenes
+        cp ./${{ inputs.bin-name }} $WORK_DIR/bathroom-win-x86_64-vk/
+        cp ./run_bathroom* $WORK_DIR/bathroom-win-x86_64-vk/
+        cp ./assets_pc/config.json $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/
+        cp ./assets_pc/fonts/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/fonts/
+        cp ./assets_pc/scenes/bathroom.json $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/scenes/mat_test.json $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/scenes/
+        cp ./assets_pc/materials/bathroom/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/materials/bathroom/
+        cp ./assets_pc/materials/mat_test/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/materials/mat_test/
+        cp ./assets_pc/models/bathroom/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/models/bathroom/
+        cp ./assets_pc/models/mat_test/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/models/mat_test/
+        cp ./assets_pc/shaders/*.json $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/shaders/
+        cp ./assets_pc/shaders/*.spv $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/shaders/
+        cp ./assets_pc/shaders/internal/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/shaders/internal/
+        cp ./assets_pc/textures/bathroom/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/textures/bathroom/
+        cp ./assets_pc/textures/mat_test/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/textures/mat_test/
+        cp ./assets_pc/textures/internal/* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/textures/internal/
+        cp ./assets_pc/textures/default_* $WORK_DIR/bathroom-win-x86_64-vk/assets_pc/textures/
       shell: bash

@@ -443,25 +443,31 @@ jobs:
         with:
           bin-name: "DummyAppVK"
           bin-dir: "windows-x86_64-vk"
-      - name: Upload artifacts (1/4)
+      - name: Upload artifacts (1/5)
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: coffee_maker-win-x86_64-vk
           path: coffee_maker-win-x86_64-vk/
-      - name: Upload artifacts (2/4)
+      - name: Upload artifacts (2/5)
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: staircase-win-x86_64-vk
           path: staircase-win-x86_64-vk/
-      - name: Upload artifacts (3/4)
+      - name: Upload artifacts (3/5)
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: bathroom-win-x86_64-vk
+          path: bathroom-win-x86_64-vk/
+      - name: Upload artifacts (4/5)
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: ai043_01-win-x86_64-vk
           path: ai043_01-win-x86_64-vk/
-      - name: Upload artifacts (4/4)
+      - name: Upload artifacts (5/5)
         uses: actions/upload-artifact@v3
         if: always()
         with:

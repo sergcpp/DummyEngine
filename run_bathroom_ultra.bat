@@ -1,0 +1,1 @@
+DummyAppVK.exe -s scenes/bathroom.json -w 678 -h 900 --preset ultra
