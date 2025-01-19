@@ -240,7 +240,7 @@ void main() {
     #if defined(BINDLESS_TEXTURES)
                 const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
                 if (alpha < 0.5) {
-                    ro += (inter.t + 0.001) * gi_ray_ws;
+                    ro += (inter.t + 0.0005) * gi_ray_ws;
                     inter.mask = 0;
                     inter.t = 100.0;
                     continue;
@@ -249,7 +249,7 @@ void main() {
                     const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
                     throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
                     if (dot(throughput, vec3(0.333)) > 0.1) {
-                        ro += (inter.t + 0.001) * gi_ray_ws;
+                        ro += (inter.t + 0.0005) * gi_ray_ws;
                         inter.mask = 0;
                         inter.t = 100.0;
                         continue;

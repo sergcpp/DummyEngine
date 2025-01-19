@@ -311,9 +311,9 @@ void main() {
     #if defined(BINDLESS_TEXTURES)
                 const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
                 if (alpha < 0.5) {
-                    ro += (inter.t + 0.001) * L;
+                    ro += (inter.t + 0.0005) * L;
                     inter.mask = 0;
-                    inter_t -= inter.t + 0.001;
+                    inter_t -= inter.t + 0.0005;
                     inter.t = inter_t;
                     continue;
                 }
