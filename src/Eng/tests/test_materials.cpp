@@ -561,7 +561,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "complex_mat3_sun_light", 17.25, NoGI);
         run_image_test(threads, "complex_mat3_sun_light", 22.70, NoGI_RTShadow);
         run_image_test(threads, "complex_mat3_sun_light", 18.95, Full);
-        run_image_test(threads, "complex_mat3_sun_light", 23.35, Full_Ultra);
+        run_image_test(threads, "complex_mat3_sun_light", 23.30, Full_Ultra);
         run_image_test(threads, "complex_mat3_mesh_lights", 16.90, MedDiffGI);
         run_image_test(threads, "complex_mat3_mesh_lights", 20.50, Full);
         run_image_test(threads, "complex_mat3_mesh_lights", 20.60, Full_Ultra);

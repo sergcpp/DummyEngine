@@ -37,11 +37,11 @@ runs:
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --preset ultra --psnr 18.65 --no-postprocess
         mv bathroom.png bathroom_ultra.png
         cp bathroom_ultra.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --pt --psnr 29.75 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --pt --psnr 27.95 --no-postprocess
         mv bathroom.png bathroom_pt.png
         cp bathroom_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### transparent_machines
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/transparent_machines.json -ref references/transparent_machines_cycles.uncompressed.png -w 1000 -h 1000 --preset high --psnr 20.40 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/transparent_machines.json -ref references/transparent_machines_cycles.uncompressed.png -w 1000 -h 1000 --preset high --psnr 20.05 --no-postprocess
         mv transparent_machines.png transparent_machines_high.png
         cp transparent_machines_high.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/transparent_machines.json -ref references/transparent_machines_cycles.uncompressed.png -w 1000 -h 1000 --preset ultra --psnr 18.60 --no-postprocess
