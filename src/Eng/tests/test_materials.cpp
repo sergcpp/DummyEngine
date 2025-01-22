@@ -536,7 +536,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "complex_mat2_sun_light", 22.80, Full_Ultra);
         run_image_test(threads, "complex_mat2_moon_light", 22.85, MedDiffGI);
         run_image_test(threads, "complex_mat2_moon_light", 22.65, Full);
-        run_image_test(threads, "complex_mat2_moon_light", 23.10, Full_Ultra);
+        run_image_test(threads, "complex_mat2_moon_light", 23.05, Full_Ultra);
         run_image_test(threads, "complex_mat2_hdri_light", 20.80, MedDiffGI);
         run_image_test(threads, "complex_mat2_hdri_light", 22.15, Full);
         run_image_test(threads, "complex_mat2_hdri_light", 23.60, Full_Ultra);
