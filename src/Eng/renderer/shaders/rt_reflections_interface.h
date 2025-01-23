@@ -16,7 +16,7 @@ const int LOCAL_GROUP_SIZE_X = 64;
 const float TEX_LOD_OFFSET_MIN = 1;
 const float TEX_LOD_OFFSET_MAX = 3;
 
-const float RECURSION_ROUGHNESS_THRES = 0.15;
+const float RECURSION_ROUGHNESS_THRES = 0.15f;
 
 const int TLAS_SLOT = 2;
 const int DEPTH_TEX_SLOT = 3;

@@ -559,6 +559,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         if (probe_volume_spacing > last_volume.spacing[0]) {
             volume.spacing = last_volume.spacing[0];
             volume.scroll = Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - volume.origin) / volume.spacing};
+            volume.scroll_diff = Ren::Vec3i(0);
         } else {
             volume.spacing = probe_volume_spacing;
         }
