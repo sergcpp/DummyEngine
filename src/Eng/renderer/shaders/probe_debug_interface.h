@@ -12,6 +12,7 @@ struct Params {
     int _pad2;
     vec4 grid_origin;
     ivec4 grid_scroll;
+    ivec4 grid_scroll_diff;
     vec4 grid_spacing;
 };
 

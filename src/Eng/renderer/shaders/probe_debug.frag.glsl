@@ -15,6 +15,7 @@ layout(location = 1) in flat vec3 g_probe_center;
 layout(location = 2) in flat int g_probe_index;
 layout(location = 3) in flat int g_volume_index;
 layout(location = 4) in flat float g_probe_state;
+layout(location = 5) in flat int g_is_scrolling_probe;
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 
@@ -28,6 +29,9 @@ void main() {
     irradiance *= 2.0 * M_PI;
     if (g_probe_state < 0.5) {
         irradiance *= vec3(1.0, 0.0, 0.0);
+    }
+    if (g_is_scrolling_probe != 0) {
+        irradiance *= vec3(0.0, 1.0, 0.0);
     }
     if (g_probe_state > 1.5) {
         irradiance *= vec3(0.0, 0.0, 1.0);

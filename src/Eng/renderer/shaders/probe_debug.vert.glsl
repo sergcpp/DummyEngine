@@ -25,6 +25,7 @@ layout(location = 1) out flat vec3 g_probe_center;
 layout(location = 2) out flat int g_probe_index;
 layout(location = 3) out flat int g_volume_index;
 layout(location = 4) out flat float g_probe_state;
+layout(location = 5) out flat int g_is_scrolling_probe;
 
 void main() {
     const int probe_index = gl_InstanceIndex;
@@ -38,6 +39,8 @@ void main() {
     g_volume_index = g_params.volume_index;
     const ivec3 scroll_tex_coords = get_probe_texel_coords(scroll_probe_index, g_params.volume_index);
     g_probe_state = texelFetch(g_offset_tex, scroll_tex_coords, 0).w;
+
+    g_is_scrolling_probe = IsScrollingPlaneProbe(g_probe_index, g_params.grid_scroll.xyz, g_params.grid_scroll_diff.xyz) ? 1 : 0;
 
     const float scale = 0.1 * min(g_params.grid_spacing.x, min(g_params.grid_spacing.y, g_params.grid_spacing.z));
     const vec3 vertex_position_ws = probe_center + scale * g_in_vtx_pos;

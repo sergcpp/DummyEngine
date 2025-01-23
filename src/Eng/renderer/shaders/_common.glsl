@@ -58,9 +58,9 @@ vec3 heatmap(float t) {
     return vec3(1.0) - r * r;
 }
 
-float hsum(vec3 v) {
-    return v.x + v.y + v.z;
-}
+float hsum(vec2 v) { return dot(v, vec2(1.0)); }
+float hsum(vec3 v) { return dot(v, vec3(1.0)); }
+float hsum(vec4 v) { return dot(v, vec4(1.0)); }
 
 float rand(vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
