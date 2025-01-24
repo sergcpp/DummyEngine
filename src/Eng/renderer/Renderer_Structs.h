@@ -226,6 +226,8 @@ enum class eTonemapMode : uint8_t { Off, Standard, LUT };
 
 enum class eTAAMode : uint8_t { Off, Dynamic, Static };
 
+enum class eSSAOQuality : uint8_t { Off, High, Ultra };
+
 enum class eGIQuality : uint8_t { Off, Medium, High, Ultra };
 
 enum class eGICacheUpdateMode : uint8_t { Off, Partial, Full };
@@ -244,7 +246,6 @@ struct render_settings_t {
     union {
         struct {
             bool enable_culling : 1;
-            bool enable_ssao : 1;
             bool enable_lightmap : 1;
             bool enable_lights : 1;
             bool enable_decals : 1;
@@ -284,6 +285,7 @@ struct render_settings_t {
     eShadowsQuality shadows_quality = eShadowsQuality::High;
     eTonemapMode tonemap_mode = eTonemapMode::Standard;
     eTAAMode taa_mode = eTAAMode::Dynamic;
+    eSSAOQuality ssao_quality = eSSAOQuality::High;
     eGIQuality gi_quality = eGIQuality::High;
     eGICacheUpdateMode gi_cache_update_mode = eGICacheUpdateMode::Partial;
     eSkyQuality sky_quality = eSkyQuality::High;
@@ -304,9 +306,10 @@ struct render_settings_t {
     bool operator==(const render_settings_t &rhs) const {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
-               gi_quality == rhs.gi_quality && gi_cache_update_mode == rhs.gi_cache_update_mode &&
-               sky_quality == rhs.sky_quality && transparency_quality == rhs.transparency_quality &&
-               debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
+               ssao_quality == rhs.ssao_quality && gi_quality == rhs.gi_quality &&
+               gi_cache_update_mode == rhs.gi_cache_update_mode && sky_quality == rhs.sky_quality &&
+               transparency_quality == rhs.transparency_quality && debug_rt == rhs.debug_rt &&
+               debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
                debug_oit_layer == rhs.debug_oit_layer;
     }
     bool operator!=(const render_settings_t &rhs) const { return !operator==(rhs); }
@@ -321,6 +324,7 @@ struct render_settings_t {
         shadows_quality = eShadowsQuality(std::min(uint8_t(shadows_quality), uint8_t(rhs.shadows_quality)));
         tonemap_mode = eTonemapMode(std::min(uint8_t(tonemap_mode), uint8_t(rhs.tonemap_mode)));
         taa_mode = eTAAMode(std::min(uint8_t(taa_mode), uint8_t(rhs.taa_mode)));
+        ssao_quality = eSSAOQuality(std::min(uint8_t(ssao_quality), uint8_t(rhs.ssao_quality)));
         gi_quality = eGIQuality(std::min(uint8_t(gi_quality), uint8_t(rhs.gi_quality)));
         gi_cache_update_mode =
             eGICacheUpdateMode(std::min(uint8_t(gi_cache_update_mode), uint8_t(rhs.gi_cache_update_mode)));

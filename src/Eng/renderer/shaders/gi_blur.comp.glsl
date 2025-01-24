@@ -103,7 +103,7 @@ const vec3 g_Special8[8] = vec3[8](
 
 // Acos(x) (approximate)
 // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiJhY29zKHgpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjowLCJlcSI6InNxcnQoMS14KSpzcXJ0KDIpIiwiY29sb3IiOiIjRjIwQzBDIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjEiLCIwIiwiMiJdLCJzaXplIjpbMTE1MCw5MDBdfV0-
-#define _AcosApprox(x) (sqrt(2.0) * sqrt(saturate(1.0 - (x))))
+#define _AcosApprox(x) (SQRT_2 * sqrt(saturate(1.0 - (x))))
 
 vec2 GetCombinedWeight(
     float baseWeight,

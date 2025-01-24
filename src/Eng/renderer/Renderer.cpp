@@ -495,7 +495,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         log->Error("[Renderer] Failed to initialize primitive drawing!");
     }
 
-    if (frame_index_ == 0 && settings.taa_mode != eTAAMode::Static) {
+    if (frame_index_ == 0 && list.render_settings.taa_mode != eTAAMode::Static) {
         Ren::CommandBuffer cmd_buf = ctx_.current_cmd_buf();
 
         const Ren::TransitionInfo transitions[] = {{persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
@@ -585,8 +585,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         accumulated_frames_ = 0;
     }
 
-    if (settings.pixel_filter != px_filter_table_filter_ || settings.pixel_filter_width != px_filter_table_width_) {
-        UpdatePixelFilterTable(settings.pixel_filter, settings.pixel_filter_width);
+    if (list.render_settings.pixel_filter != px_filter_table_filter_ ||
+        list.render_settings.pixel_filter_width != px_filter_table_width_) {
+        UpdatePixelFilterTable(list.render_settings.pixel_filter, list.render_settings.pixel_filter_width);
         px_filter_table_filter_ = settings.pixel_filter;
         px_filter_table_width_ = settings.pixel_filter_width;
     }
@@ -615,7 +616,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     if (persistent_data.stoch_lights_buf) {
         view_state_.stochastic_lights_count_cache = persistent_data.stoch_lights_buf->size() / sizeof(LightItem);
     }
-    if (persistent_data.stoch_lights_buf && settings.gi_quality > eGIQuality::Medium) {
+    if (persistent_data.stoch_lights_buf && list.render_settings.gi_quality > eGIQuality::Medium) {
         view_state_.stochastic_lights_count = persistent_data.stoch_lights_buf->size() / sizeof(LightItem);
     }
 
@@ -647,7 +648,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             return (1.0f - t) * data0 + t * data1;
         };
 
-        if (settings.taa_mode == eTAAMode::Static && settings.pixel_filter != ePixelFilter::Box) {
+        if (list.render_settings.taa_mode == eTAAMode::Static &&
+            list.render_settings.pixel_filter != ePixelFilter::Box) {
             jitter[0] = lookup_filter_table(jitter[0]);
             jitter[1] = lookup_filter_table(jitter[1]);
         }
@@ -1021,7 +1023,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         FgResRef depth_down_2x, depth_hierarchy_tex;
 
-        if ((list.render_settings.enable_ssao ||
+        if ((list.render_settings.ssao_quality != eSSAOQuality::Off ||
              list.render_settings.reflections_quality != eReflectionsQuality::Off) &&
             !list.render_settings.debug_wireframe) {
             // TODO: get rid of this (or use on low spec only)
@@ -1064,7 +1066,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddGBufferFillPass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
             // SSAO
-            frame_textures.ssao = AddGTAOPasses(frame_textures.depth, frame_textures.velocity, frame_textures.normal);
+            frame_textures.ssao = AddGTAOPasses(list.render_settings.ssao_quality, frame_textures.depth,
+                                                frame_textures.velocity, frame_textures.normal);
 
             if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) &&
                 list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
@@ -1096,7 +1099,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // Additional forward pass (for custom-shaded objects)
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         } else {
-            const bool use_ssao = list.render_settings.enable_ssao && !list.render_settings.debug_wireframe;
+            const bool use_ssao =
+                list.render_settings.ssao_quality != eSSAOQuality::Off && !list.render_settings.debug_wireframe;
             if (use_ssao) {
                 AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
             } else {

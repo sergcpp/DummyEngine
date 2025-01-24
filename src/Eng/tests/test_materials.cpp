@@ -126,6 +126,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     } else if (img_test == eImgTest::Full_Ultra) {
         renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
         renderer->settings.reflections_quality = eReflectionsQuality::Raytraced_High;
+        renderer->settings.ssao_quality = eSSAOQuality::Ultra;
         renderer->settings.gi_quality = eGIQuality::Ultra;
         renderer->settings.sky_quality = eSkyQuality::Ultra;
         renderer->settings.transparency_quality = eTransparencyQuality::Ultra;
@@ -585,7 +586,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "diff_mat0", 28.50, Full);
         run_image_test(threads, "diff_mat1", 46.55, NoShadow);
         run_image_test(threads, "diff_mat1", 35.70, NoGI);
-        run_image_test(threads, "diff_mat1", 29.75, MedDiffGI);
+        run_image_test(threads, "diff_mat1", 29.70, MedDiffGI);
         run_image_test(threads, "diff_mat1", 26.65, Full);
         run_image_test(threads, "diff_mat2", 45.30, NoShadow);
         run_image_test(threads, "diff_mat2", 36.00, NoGI);
@@ -761,7 +762,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "tint_mat0", 43.20, NoShadow);
         run_image_test(threads, "tint_mat0", 35.95, NoGI);
         run_image_test(threads, "tint_mat0", 34.85, NoDiffGI);
-        run_image_test(threads, "tint_mat0", 28.60, MedDiffGI);
+        run_image_test(threads, "tint_mat0", 28.55, MedDiffGI);
         run_image_test(threads, "tint_mat0", 26.50, Full);
         run_image_test(threads, "tint_mat1", 28.65, NoShadow);
         run_image_test(threads, "tint_mat1", 28.30, NoGI);
@@ -771,7 +772,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "tint_mat2", 40.45, NoShadow);
         run_image_test(threads, "tint_mat2", 34.35, NoGI);
         run_image_test(threads, "tint_mat2", 31.45, NoDiffGI);
-        run_image_test(threads, "tint_mat2", 28.10, MedDiffGI);
+        run_image_test(threads, "tint_mat2", 28.05, MedDiffGI);
         run_image_test(threads, "tint_mat2", 25.55, Full);
         run_image_test(threads, "tint_mat3", 43.90, NoShadow);
         run_image_test(threads, "tint_mat3", 36.25, NoGI);

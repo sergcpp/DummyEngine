@@ -10,25 +10,30 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = DEPTH_HIST_TEX_SLOT) uniform sampler2D g_depth_hist_tex;
 layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity_tex;
 layout(binding = GTAO_TEX_SLOT) uniform sampler2D g_gtao_tex;
 layout(binding = GTAO_HIST_TEX_SLOT) uniform sampler2D g_gtao_hist_tex;
 
 layout(binding = OUT_IMG_SLOT, r8) uniform image2D g_out_img;
 
+float GetEdgeStoppingDepthWeight(float current_depth, float history_depth) {
+    return exp(-abs(current_depth - history_depth) / current_depth * 32.0);
+}
+
 void Accumulate(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const vec2 texel_size = vec2(1.0) / vec2(screen_size);
     const vec2 uvs = (vec2(dispatch_thread_id) + 0.5) * texel_size;
 
-    const vec2 closest_frag = FindClosestFragment_3x3(g_depth_tex, uvs, texel_size).xy;
-    const vec2 closest_vel = textureLod(g_velocity_tex, closest_frag.xy, 0.0).xy * texel_size;
+    const float depth_curr = LinearizeDepth(textureLod(g_depth_tex, uvs, 0.0).x, g_params.clip_info);
+    const vec2 vel = textureLod(g_velocity_tex, uvs, 0.0).xy * texel_size;
+    const float ao_curr = textureLod(g_gtao_tex, uvs, 0.0).x;
 
-    const float ao_curr = texelFetch(g_gtao_tex, dispatch_thread_id, 0).x;
-
-    vec2 hist_uvs = uvs - closest_vel;
-    float ao_hist = ao_curr;
+    vec2 hist_uvs = uvs - vel;
+    float ao_hist = ao_curr, depth_hist = depth_curr;
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
         ao_hist = textureLod(g_gtao_hist_tex, hist_uvs, 0.0).x;
+        depth_hist = LinearizeDepth(textureLod(g_depth_hist_tex, hist_uvs, 0.0).x, g_params.clip_info);
     }
 
     { // neighbourhood clamp
@@ -52,7 +57,7 @@ void Accumulate(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_si
         ao_hist = clamp(ao_hist, ao_min, ao_max);
     }
 
-    const float ao = mix(ao_curr, ao_hist, 0.95);
+    const float ao = mix(ao_curr, ao_hist, 0.95 * GetEdgeStoppingDepthWeight(depth_curr, depth_hist));
     imageStore(g_out_img, dispatch_thread_id, vec4(ao));
 }
 

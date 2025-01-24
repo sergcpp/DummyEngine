@@ -32,7 +32,7 @@ void main() {
     } else {
         if (dmin == d1) {
             g_out_color = textureLod(g_input_tex, norm_uvs, 0.0);
-        }else if (dmin == d2) {
+        } else if (dmin == d2) {
             g_out_color = textureLod(g_input_tex, norm_uvs + vec2(0, texel_size_low.y), 0.0);
         } else if (dmin == d3) {
             g_out_color = textureLod(g_input_tex, norm_uvs + vec2(texel_size_low.x, 0), 0.0);

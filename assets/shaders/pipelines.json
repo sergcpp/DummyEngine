@@ -209,11 +209,23 @@
     },
     {
         "type" : "compute",
+        "shaders" : [ "internal/gtao_main@HALF_RES.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
         "shaders" : [ "internal/gtao_filter.comp.glsl" ]
     },
     {
         "type" : "compute",
+        "shaders" : [ "internal/gtao_filter@HALF_RES.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
         "shaders" : [ "internal/gtao_accumulate.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gtao_upsample.comp.glsl" ]
     },
     {
         "type" : "compute",

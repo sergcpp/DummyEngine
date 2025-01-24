@@ -344,6 +344,17 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_ssao", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        if (args[1].val > 1.5) {
+            renderer_->settings.ssao_quality = Eng::eSSAOQuality::Ultra;
+        } else if (args[1].val > 0.5) {
+            renderer_->settings.ssao_quality = Eng::eSSAOQuality::High;
+        } else {
+            renderer_->settings.ssao_quality = Eng::eSSAOQuality::Off;
+        }
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_gi", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args[1].val > 2.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
@@ -728,6 +739,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         renderer_->settings.sky_quality = Eng::eSkyQuality::High;
         renderer_->settings.transparency_quality = Eng::eTransparencyQuality::High;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::Ultra) {
+        renderer_->settings.ssao_quality = Eng::eSSAOQuality::Ultra;
         renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;

@@ -217,7 +217,7 @@ class Renderer {
     // GI Cache
     Ren::PipelineRef pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[3], pi_probe_sample_;
     // GTAO
-    Ren::PipelineRef pi_gtao_main_, pi_gtao_filter_, pi_gtao_accumulate_;
+    Ren::PipelineRef pi_gtao_main_[2], pi_gtao_filter_[2], pi_gtao_accumulate_, pi_gtao_upsample_;
     // GI
     Ren::PipelineRef pi_gi_classify_, pi_gi_write_indirect_, pi_gi_trace_ss_;
     Ren::PipelineRef pi_gi_rt_write_indirect_;
@@ -294,7 +294,7 @@ class Renderer {
                                    const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
     void AddSSAOPasses(FgResRef depth_down_2x, FgResRef depth_tex, FgResRef &out_ssao);
-    FgResRef AddGTAOPasses(FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex);
+    FgResRef AddGTAOPasses(eSSAOQuality quality, FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex);
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                    FgResRef &inout_velocity_tex);
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,

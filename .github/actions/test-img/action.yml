@@ -107,7 +107,7 @@ runs:
         mv staircase2.png staircase2_pt.png
         cp staircase2_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### Bistro
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 22.05 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 22.00 --freeze-sky --no-postprocess
         mv bistro.png bistro_medium.png
         cp bistro_medium.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset high --psnr 22.55 --freeze-sky --no-postprocess

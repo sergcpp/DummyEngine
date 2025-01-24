@@ -3,6 +3,8 @@
 #include "_cs_common.glsl"
 #include "gtao_interface.h"
 
+#pragma multi_compile _ HALF_RES
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -26,18 +28,22 @@ void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
         return;
     }
-    const float center_depth = texelFetch(g_depth_tex, ivec2(gl_GlobalInvocationID.xy), 0).x;
+
+#ifdef HALF_RES
+    const vec2 pix_uv = (vec2(gl_GlobalInvocationID.xy) + 0.25) / vec2(g_params.img_size);
+#else
+    const vec2 pix_uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(g_params.img_size);
+#endif
+    const float center_depth = textureLod(g_depth_tex, pix_uv, 0.0).x;
     if (center_depth == 0.0) {
         imageStore(g_out_img, ivec2(gl_GlobalInvocationID.xy), vec4(1.0));
         return;
     }
     const float center_depth_lin = LinearizeDepth(center_depth, g_params.clip_info);
-
-    const vec2 pix_uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(g_params.img_size);
     const vec3 center_point_vs = ReconstructViewPosition(pix_uv, g_params.frustum_info, -center_depth_lin, 0.0 /* is_ortho */);
     const vec3 view_dir_vs = normalize(-center_point_vs);
 
-    const vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(gl_GlobalInvocationID.xy), 0).x).xyz;
+    const vec3 center_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_tex, pix_uv, 0.0).x).xyz;
     vec3 center_normal_vs = normalize((g_params.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
 #if defined(VULKAN)
     center_normal_vs.y = -center_normal_vs.y;
@@ -47,7 +53,11 @@ void main() {
     const int DirectionsCount = 1;
 
     const float radius = min(48.0, 128.0 / abs(center_point_vs.z));
+#ifdef HALF_RES
+    const vec2 step_size = 0.5 * radius / (float(StepsCount) * vec2(g_params.img_size));
+#else
     const vec2 step_size = radius / (float(StepsCount) * vec2(g_params.img_size));
+#endif
 
     const float phi_rand = g_params.rand.x + Bayer4x4(gl_GlobalInvocationID.xy, 0);
     const float offset_rand = fract(g_params.rand.y + Bayer4x4(gl_GlobalInvocationID.xy, 1));
@@ -88,16 +98,16 @@ void main() {
         horizons = acos(horizons);
 
         // calculate gamma
-        vec3 bitangent	= normalize(cross(dir, view_dir_vs));
-        vec3 tangent	= cross(view_dir_vs, bitangent);
-        vec3 nx			= center_normal_vs - bitangent * dot(center_normal_vs, bitangent);
+        const vec3 bitangent  = normalize(cross(dir, view_dir_vs));
+        const vec3 tangent    = cross(view_dir_vs, bitangent);
+        const vec3 nx         = center_normal_vs - bitangent * dot(center_normal_vs, bitangent);
 
-        float nnx		= length(nx);
-        float invnnx	= 1.0 / (nnx + 1e-6);			// to avoid division with zero
-        float cosxi		= dot(nx, tangent) * invnnx;	// xi = gamma + PI_HALF
-        float gamma		= acos(cosxi) - 0.5 * M_PI;
-        float cosgamma	= dot(nx, view_dir_vs) * invnnx;
-        float singamma2	= -2.0 * cosxi;					// cos(x + PI_HALF) = -sin(x)
+        const float nnx       = length(nx);
+        const float invnnx    = 1.0 / (nnx + 1e-6);			// to avoid division with zero
+        const float cosxi     = dot(nx, tangent) * invnnx;	// xi = gamma + PI_HALF
+        const float gamma     = acos(cosxi) - 0.5 * M_PI;
+        const float cosgamma  = dot(nx, view_dir_vs) * invnnx;
+        const float singamma2 = -2.0 * cosxi;					// cos(x + PI_HALF) = -sin(x)
 
         // clamp to normal hemisphere
         horizons.x = gamma + max(-horizons.x - gamma, -0.5 * M_PI);

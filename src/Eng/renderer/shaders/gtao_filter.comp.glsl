@@ -4,6 +4,12 @@
 #include "_cs_common.glsl"
 #include "gtao_interface.h"
 
+#pragma multi_compile _ HALF_RES
+
+LAYOUT_PARAMS uniform UniformParams {
+    Params g_params;
+};
+
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = GTAO_TEX_SLOT) uniform sampler2D g_gtao_tex;
 
@@ -32,7 +38,11 @@ void StoreInSharedMemory(const ivec2 idx, const float ao, const float depth) {
 void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 _offset, out float ao, out float depth) {
     dispatch_thread_id += _offset;
     ao = texelFetch(g_gtao_tex, dispatch_thread_id, 0).x;
-    depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
+#ifdef HALF_RES
+    depth = LinearizeDepth(texelFetch(g_depth_tex, 2 * dispatch_thread_id, 0).x, g_params.clip_info);
+#else
+    depth = LinearizeDepth(texelFetch(g_depth_tex, dispatch_thread_id, 0).x, g_params.clip_info);
+#endif
 }
 
 void StoreWithOffset(ivec2 group_thread_id, const ivec2 _offset, const float ao, const float depth) {
@@ -67,7 +77,7 @@ float GetGaussianWeight(float r) {
 }
 
 float GetEdgeStoppingDepthWeight(float center_depth, float neighbor_depth) {
-    return exp(-abs(center_depth - neighbor_depth) * center_depth * 8192.0);
+    return exp(-abs(center_depth - neighbor_depth) / center_depth * 32.0);
 }
 
 void Filter(ivec2 dispatch_thread_id, ivec2 group_thread_id) {

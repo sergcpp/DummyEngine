@@ -91,9 +91,12 @@ void Eng::Renderer::InitPipelines() {
     pi_probe_sample_ = sh_.LoadPipeline("internal/probe_sample.comp.glsl");
 
     // GTAO
-    pi_gtao_main_ = sh_.LoadPipeline("internal/gtao_main.comp.glsl");
-    pi_gtao_filter_ = sh_.LoadPipeline("internal/gtao_filter.comp.glsl");
+    pi_gtao_main_[0] = sh_.LoadPipeline("internal/gtao_main.comp.glsl");
+    pi_gtao_main_[1] = sh_.LoadPipeline("internal/gtao_main@HALF_RES.comp.glsl");
+    pi_gtao_filter_[0] = sh_.LoadPipeline("internal/gtao_filter.comp.glsl");
+    pi_gtao_filter_[1] = sh_.LoadPipeline("internal/gtao_filter@HALF_RES.comp.glsl");
     pi_gtao_accumulate_ = sh_.LoadPipeline("internal/gtao_accumulate.comp.glsl");
+    pi_gtao_upsample_ = sh_.LoadPipeline("internal/gtao_upsample.comp.glsl");
 
     // GI
     pi_gi_classify_ = sh_.LoadPipeline(subgroup_select("internal/gi_classify.comp.glsl", //
@@ -1497,7 +1500,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
     }
 }
 
-Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex) {
+Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef depth_tex, FgResRef velocity_tex,
+                                           FgResRef norm_tex) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -1517,8 +1521,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
 
         { // Output texture
             Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1526,7 +1530,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             gtao_result = data->output_tex = gtao_main.AddStorageImageOutput("GTAO RAW", params, Stg::ComputeShader);
         }
 
-        gtao_main.set_execute_cb([this, data](FgBuilder &builder) {
+        gtao_main.set_execute_cb([this, data, quality](FgBuilder &builder) {
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
 
@@ -1536,22 +1540,28 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
                                              {Trg::Tex2DSampled, GTAO::NORM_TEX_SLOT, *norm_tex.ref},
                                              {Trg::Image2D, GTAO::OUT_IMG_SLOT, *output_tex.ref}};
 
+            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
+                                                                         : uint32_t(view_state_.act_res[0] / 2),
+                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
+                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
             uniform_params.rand[0] = RendererInternal::GTAORandSamples[view_state_.frame_index % 32][0];
             uniform_params.rand[1] = RendererInternal::GTAORandSamples[view_state_.frame_index % 32][1];
             uniform_params.clip_info = view_state_.clip_info;
             uniform_params.frustum_info = view_state_.frustum_info;
             uniform_params.view_from_world = view_state_.view_from_world;
 
-            DispatchCompute(*pi_gtao_main_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            ctx_.default_descr_alloc(), ctx_.log());
+            DispatchCompute(*pi_gtao_main_[quality == eSSAOQuality::High], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
+    // return gtao_result;
     { // filter pass
         auto &gtao_filter = fg_builder_.AddNode("GTAO FILTER");
 
@@ -1567,8 +1577,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
 
         { // Output texture
             Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1577,7 +1587,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
                 gtao_filter.AddStorageImageOutput("GTAO FILTERED", params, Stg::ComputeShader);
         }
 
-        gtao_filter.set_execute_cb([this, data](FgBuilder &builder) {
+        gtao_filter.set_execute_cb([this, data, quality](FgBuilder &builder) {
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
 
@@ -1587,25 +1597,95 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
                                              {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
-            const auto grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
+                                                                         : uint32_t(view_state_.act_res[0] / 2),
+                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
+                                                                         : uint32_t(view_state_.act_res[1] / 2)};
 
-            DispatchCompute(*pi_gtao_filter_, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
+            const auto grp_count =
+                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+
+            GTAO::Params uniform_params;
+            uniform_params.clip_info = view_state_.clip_info;
+
+            DispatchCompute(*pi_gtao_filter_[quality == eSSAOQuality::High], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
+    //return gtao_result;
     { // accumulation pass
         auto &gtao_accumulation = fg_builder_.AddNode("GTAO ACCUMULATE");
 
         struct PassData {
-            FgResRef depth_tex, velocity_tex, ao_tex, ao_hist_tex;
+            FgResRef depth_tex, depth_hist_tex, velocity_tex, ao_tex, ao_hist_tex;
             FgResRef out_ao_tex;
         };
 
         auto *data = gtao_accumulation.AllocNodeData<PassData>();
         data->depth_tex = gtao_accumulation.AddTextureInput(depth_tex, Stg::ComputeShader);
+        data->depth_hist_tex = gtao_accumulation.AddHistoryTextureInput(depth_tex, Stg::ComputeShader);
         data->velocity_tex = gtao_accumulation.AddTextureInput(velocity_tex, Stg::ComputeShader);
         data->ao_tex = gtao_accumulation.AddTextureInput(gtao_result, Stg::ComputeShader);
+
+        { // Final ao
+            Ren::Tex2DParams params;
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gtao_result = data->out_ao_tex =
+                gtao_accumulation.AddStorageImageOutput("GTAO PRE FINAL", params, Stg::ComputeShader);
+        }
+
+        data->ao_hist_tex = gtao_accumulation.AddHistoryTextureInput(gtao_result, Stg::ComputeShader);
+
+        gtao_accumulation.set_execute_cb([this, data, quality](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &depth_hist_tex = builder.GetReadTexture(data->depth_hist_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
+            FgAllocTex &ao_hist_tex = builder.GetReadTexture(data->ao_hist_tex);
+
+            FgAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
+
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, GTAO::DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, GTAO::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                                             {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
+                                             {Trg::Tex2DSampled, GTAO::GTAO_HIST_TEX_SLOT, *ao_hist_tex.ref},
+                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
+
+            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
+                                                                         : uint32_t(view_state_.act_res[0] / 2),
+                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
+                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+
+            GTAO::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
+            uniform_params.clip_info = view_state_.clip_info;
+
+            DispatchCompute(*pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+    if (quality != eSSAOQuality::Ultra) {
+        auto &gtao_upsample = fg_builder_.AddNode("GTAO UPSAMPLE");
+
+        struct PassData {
+            FgResRef depth_tex, ao_tex;
+            FgResRef out_ao_tex;
+        };
+
+        auto *data = gtao_upsample.AllocNodeData<PassData>();
+        data->depth_tex = gtao_upsample.AddTextureInput(depth_tex, Stg::ComputeShader);
+        data->ao_tex = gtao_upsample.AddTextureInput(gtao_result, Stg::ComputeShader);
 
         { // Final ao
             Ren::Tex2DParams params;
@@ -1616,23 +1696,17 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             gtao_result = data->out_ao_tex =
-                gtao_accumulation.AddStorageImageOutput("GTAO FINAL", params, Stg::ComputeShader);
+                gtao_upsample.AddStorageImageOutput("GTAO FINAL", params, Stg::ComputeShader);
         }
 
-        data->ao_hist_tex = gtao_accumulation.AddHistoryTextureInput(gtao_result, Stg::ComputeShader);
-
-        gtao_accumulation.set_execute_cb([this, data](FgBuilder &builder) {
+        gtao_upsample.set_execute_cb([this, data](FgBuilder &builder) {
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
             FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
-            FgAllocTex &ao_hist_tex = builder.GetReadTexture(data->ao_hist_tex);
 
             FgAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                             {Trg::Tex2DSampled, GTAO::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
-                                             {Trg::Tex2DSampled, GTAO::GTAO_HIST_TEX_SLOT, *ao_hist_tex.ref},
                                              {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
             const Ren::Vec3u grp_count =
@@ -1642,7 +1716,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(FgResRef depth_tex, FgResRef velocity
             GTAO::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            DispatchCompute(*pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_gtao_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
