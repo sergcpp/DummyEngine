@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_23_01
-	commit = 46146a82c16d84015cbb05ebafbdd413b3338356
+	branch = gtao_rework
+	commit = 9e92fde96324725d042e35d1a06e2a63eeb6ed17
 	method = merge
 	cmdver = 0.4.6
-	parent = 78549d7b5f571d6041c33f8f8ddbbfb37a32d49f
+	parent = 15dd29c06018e60b0c9d8afd3edf84f60837fc1a
