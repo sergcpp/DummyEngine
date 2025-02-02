@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.5)
 project(Ray)
 
 OPTION(ENABLE_REF_IMPL "Enable reference CPU implementation" ON)

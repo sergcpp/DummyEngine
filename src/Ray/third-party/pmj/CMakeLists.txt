@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.5)
 project(pmj_gen)
 
 include_directories(pmj-cpp)

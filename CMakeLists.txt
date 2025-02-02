@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 set(REN_BACKEND "VK" CACHE STRING "Render backend")
 
