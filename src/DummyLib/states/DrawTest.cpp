@@ -618,10 +618,31 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
 
     // Make sure we use latest camera rotation (reduce lag)
     Vec3f view_dir = view_dir_;
+    int view_pointer = view_pointer_;
     for (const Eng::input_event_t &evt : viewer_->input_manager()->peek_events()) {
         switch (evt.type) {
+        case Eng::eInputEvent::P1Down:
+            if (view_pointer == 0) {
+                view_pointer = 1;
+            }
+            break;
+        case Eng::eInputEvent::P2Down:
+            if (view_pointer == 0) {
+                view_pointer = 2;
+            }
+            break;
+        case Eng::eInputEvent::P1Up:
+            if (view_pointer == 1) {
+                view_pointer = 0;
+            }
+            break;
+        case Eng::eInputEvent::P2Up:
+            if (view_pointer == 2) {
+                view_pointer = 0;
+            }
+            break;
         case Eng::eInputEvent::P1Move:
-            if (view_pointer_ == 1) {
+            if (view_pointer == 1) {
                 auto up = Vec3f{0, 1, 0};
                 Vec3f side = Normalize(Cross(view_dir, up));
                 up = Cross(side, view_dir);
@@ -637,7 +658,7 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
             }
             break;
         case Eng::eInputEvent::P2Move:
-            if (view_pointer_ == 2) {
+            if (view_pointer == 2) {
                 auto up = Vec3f{0, 1, 0};
                 Vec3f side = Normalize(Cross(view_dir, up));
                 up = Cross(side, view_dir);
