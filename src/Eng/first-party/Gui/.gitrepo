@@ -4,9 +4,9 @@
 ; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = Sys
-	branch = update_10_02
-	commit = aca4b4c9c6ecc07f94489cc795945dbc1ea6eb9e
+	remote = Gui
+	branch = master
+	commit = e19c5b76c5e9079213c73ff1d312cad5cfd5bc8e
 	method = merge
 	cmdver = 0.4.6
-	parent = 01acfc4eca77bce75acf130e3dac53b8db9202fd
+	parent = 4cfcadac3e2f47ed6fa9fbd3fd78b6fdef4cf67e
