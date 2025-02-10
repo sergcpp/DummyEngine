@@ -16,13 +16,14 @@ layout(binding = OUT_IMG_SLOT, r8) uniform image2D g_out_img;
 void Upsample(const ivec2 dispatch_thread_id, const ivec2 group_thread_id, const uvec2 screen_size) {
     const vec2 texel_size = vec2(1.0) / vec2(screen_size);
     const vec2 uvs = (vec2(dispatch_thread_id) + 0.5) * texel_size;
+    const vec2 _uvs = (vec2(2 * (dispatch_thread_id / 2)) + 0.5) * texel_size;
 
     const float d0 = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
 
-    const float d1 = abs(d0 - texelFetch(g_depth_tex, 2 * (dispatch_thread_id / 2) + ivec2(+0, +0), 0).x);
-    const float d2 = abs(d0 - texelFetch(g_depth_tex, 2 * (dispatch_thread_id / 2) + ivec2(+0, +2), 0).x);
-    const float d3 = abs(d0 - texelFetch(g_depth_tex, 2 * (dispatch_thread_id / 2) + ivec2(+2, +0), 0).x);
-    const float d4 = abs(d0 - texelFetch(g_depth_tex, 2 * (dispatch_thread_id / 2) + ivec2(+2, +2), 0).x);
+    const float d1 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+0, +0)).x);
+    const float d2 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+0, +2)).x);
+    const float d3 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+2, +0)).x);
+    const float d4 = abs(d0 - textureLodOffset(g_depth_tex, _uvs, 0.0, ivec2(+2, +2)).x);
 
     const float dmin = min(min(d1, d2), min(d3, d4));
 
@@ -31,13 +32,13 @@ void Upsample(const ivec2 dispatch_thread_id, const ivec2 group_thread_id, const
         val = textureLod(g_gtao_tex, uvs, 0.0).x;
     } else {
         if (dmin == d1) {
-            val = texelFetch(g_gtao_tex, (dispatch_thread_id / 2) + ivec2(+0, +0), 0).x;
+            val = textureLodOffset(g_gtao_tex, _uvs, 0.0, ivec2(+0, +0)).x;
         } else if (dmin == d2) {
-            val = texelFetch(g_gtao_tex, (dispatch_thread_id / 2) + ivec2(+0, +1), 0).x;
+            val = textureLodOffset(g_gtao_tex, _uvs, 0.0, ivec2(+0, +1)).x;
         } else if (dmin == d3) {
-            val = texelFetch(g_gtao_tex, (dispatch_thread_id / 2) + ivec2(+1, +0), 0).x;
+            val = textureLodOffset(g_gtao_tex, _uvs, 0.0, ivec2(+1, +0)).x;
         } else if (dmin == d4) {
-            val = texelFetch(g_gtao_tex, (dispatch_thread_id / 2) + ivec2(+1, +1), 0).x;
+            val = textureLodOffset(g_gtao_tex, _uvs, 0.0, ivec2(+1, +1)).x;
         }
     }
 

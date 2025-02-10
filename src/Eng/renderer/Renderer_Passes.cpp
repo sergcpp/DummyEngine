@@ -1561,7 +1561,6 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                             sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
-    // return gtao_result;
     { // filter pass
         auto &gtao_filter = fg_builder_.AddNode("GTAO FILTER");
 
@@ -1607,6 +1606,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                            (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
             uniform_params.clip_info = view_state_.clip_info;
 
             DispatchCompute(*pi_gtao_filter_[quality == eSSAOQuality::High], grp_count, bindings, &uniform_params,

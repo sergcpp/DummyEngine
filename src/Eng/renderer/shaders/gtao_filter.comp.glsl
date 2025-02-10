@@ -36,7 +36,7 @@ void StoreInSharedMemory(const ivec2 idx, const float ao, const float depth) {
 }
 
 void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 _offset, out float ao, out float depth) {
-    dispatch_thread_id += _offset;
+    dispatch_thread_id = clamp(dispatch_thread_id + _offset, ivec2(0), ivec2(g_params.img_size) - 1);
     ao = texelFetch(g_gtao_tex, dispatch_thread_id, 0).x;
 #ifdef HALF_RES
     depth = LinearizeDepth(texelFetch(g_depth_tex, 2 * dispatch_thread_id, 0).x, g_params.clip_info);
