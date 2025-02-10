@@ -15,8 +15,7 @@
         -- Volker Grabsch <vog@notjusthosting.com>
 */
  
-#ifndef SHA1_HPP
-#define SHA1_HPP
+#pragma once
  
 #include <cstdint>
 
@@ -34,28 +33,21 @@ public:
     static std::string from_file(const std::string &filename);
 
 private:
-    typedef unsigned long int uint32;   /* just needs to be at least 32bit */
-    typedef unsigned long long uint64;  /* just needs to be at least 64bit */
- 
-    static const unsigned int DIGEST_INTS = 5;  /* number of 32bit integers per SHA1 digest */
-    static const unsigned int BLOCK_INTS = 16;  /* number of 32bit integers per SHA1 block */
+    static const unsigned int DIGEST_INTS = 5;  // number of 32bit integers per SHA1 digest
+    static const unsigned int BLOCK_INTS = 16;  // number of 32bit integers per SHA1 block
     static const unsigned int BLOCK_BYTES = BLOCK_INTS * 4;
  
-    uint32 digest[DIGEST_INTS];
+    uint32_t digest[DIGEST_INTS];
     std::string buffer;
-    uint64 transforms;
+    uint64_t transforms;
  
     void reset();
-    void transform(uint32 block[BLOCK_BYTES]);
+    void transform(uint32_t block[BLOCK_BYTES]);
     void finish();
  
-    static void buffer_to_block(const std::string &buffer, uint32 block[BLOCK_BYTES]);
+    static void buffer_to_block(const std::string &buffer, uint32_t block[BLOCK_BYTES]);
     static void read(std::istream &is, std::string &s, int max);
 };
  
 std::string sha1(const std::string &string);
 void sha1(const std::string &str, unsigned int digest[5]);
- 
- 
- 
-#endif /* SHA1_HPP */
