@@ -57,19 +57,19 @@ bool Sys::AssetFile::Open(std::string_view file_name, const eOpenMode mode) {
     if (mode == eOpenMode::In) {
 #ifdef __ANDROID__
         if (file_name[0] == '.' && file_name[1] == '/') {
-            file_name += 2;
+            file_name = file_name.substr(2);
         }
 
-        if (strstr(file_name, "assets/") == file_name) {
-            file_name += 7;
+        if (strstr(file_name.data(), "assets/") == file_name.data()) {
+            file_name = file_name.substr(7);
         }
 
         string full_path;
-        if (strstr(file_name, "..")) {
+        if (strstr(file_name.data(), "..")) {
             char path[100];
             char* toks[16];
             int num_toks = 0;
-            strcpy(path, file_name);
+            strcpy(path, file_name.data());
             char* p = strtok(path, "/");
             while (p) {
                 if (strstr(p, "..")) {
@@ -86,11 +86,11 @@ bool Sys::AssetFile::Open(std::string_view file_name, const eOpenMode mode) {
                     full_path.append("/");
                 }
             }
-            file_name = full_path.c_str();
+            file_name = full_path;
         }
 
         asset_file_ =
-            AAssetManager_open(asset_manager_, file_name, AASSET_MODE_STREAMING);
+            AAssetManager_open(asset_manager_, file_name.data(), AASSET_MODE_STREAMING);
         if (asset_file_) {
             size_ = AAsset_getLength(asset_file_);
         } else {
