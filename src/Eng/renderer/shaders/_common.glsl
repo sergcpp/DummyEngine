@@ -255,7 +255,7 @@ vec3 compress_hdr(const vec3 val, const float pre_exposure) {
 }
 
 float sanitize(const float val) {
-    return isnan(val) ? 0.0 : val;
+    return (isnan(val) || isinf(val)) ? 0.0 : val;
 }
 
 vec3 sanitize(const vec3 col) {

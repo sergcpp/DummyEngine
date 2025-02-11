@@ -1379,7 +1379,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         const uint64_t rp_setup_end_us = Sys::GetTimeUs();
         ctx_.log()->Info("Renderpass setup is done in %.2fms", (rp_setup_end_us - rp_setup_beg_us) * 0.001);
     } else {
-        // assert(!(list.render_flags & EnableFxaa));
         //  Use correct backbuffer image (assume topology is not changed)
         //  TODO: get rid of this
         auto &postprocess = *fg_builder_.FindNode("POSTPROCESS");

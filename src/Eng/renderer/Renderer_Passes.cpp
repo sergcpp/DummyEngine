@@ -1613,7 +1613,6 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                             sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
         });
     }
-    //return gtao_result;
     { // accumulation pass
         auto &gtao_accumulation = fg_builder_.AddNode("GTAO ACCUMULATE");
 
