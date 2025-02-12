@@ -71,8 +71,8 @@ void Eng::Renderer::InitPipelines() {
     pi_ssr_prefilter_[0] = sh_.LoadPipeline("internal/ssr_prefilter.comp.glsl");
     pi_ssr_prefilter_[1] = sh_.LoadPipeline("internal/ssr_prefilter@RELAXED.comp.glsl");
     pi_ssr_temporal_ = sh_.LoadPipeline("internal/ssr_temporal.comp.glsl");
-    pi_ssr_blur_[0] = sh_.LoadPipeline("internal/ssr_blur.comp.glsl");
-    pi_ssr_blur_[1] = sh_.LoadPipeline("internal/ssr_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
+    pi_ssr_filter_[0] = sh_.LoadPipeline("internal/ssr_filter.comp.glsl");
+    pi_ssr_filter_[1] = sh_.LoadPipeline("internal/ssr_filter@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
     pi_ssr_stabilization_ = sh_.LoadPipeline("internal/ssr_stabilization.comp.glsl");
 
     // GI Cache
@@ -109,8 +109,8 @@ void Eng::Renderer::InitPipelines() {
     pi_gi_prefilter_[0] = sh_.LoadPipeline("internal/gi_prefilter.comp.glsl");
     pi_gi_prefilter_[1] = sh_.LoadPipeline("internal/gi_prefilter@RELAXED.comp.glsl");
     pi_gi_temporal_ = sh_.LoadPipeline("internal/gi_temporal.comp.glsl");
-    pi_gi_blur_[0] = sh_.LoadPipeline("internal/gi_blur.comp.glsl");
-    pi_gi_blur_[1] = sh_.LoadPipeline("internal/gi_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
+    pi_gi_filter_[0] = sh_.LoadPipeline("internal/gi_filter.comp.glsl");
+    pi_gi_filter_[1] = sh_.LoadPipeline("internal/gi_filter@PER_PIXEL_KERNEL_ROTATION.comp.glsl");
     pi_gi_stabilization_ = sh_.LoadPipeline("internal/gi_stabilization.comp.glsl");
 
     // Sun Shadow

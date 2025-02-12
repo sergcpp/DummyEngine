@@ -141,11 +141,15 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/ssr_blur.comp.glsl" ]
+        "shaders" : [ "internal/ssr_filter@PRE_FILTER.comp.glsl" ]
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/ssr_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl" ]
+        "shaders" : [ "internal/ssr_filter.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/ssr_filter@POST_FILTER.comp.glsl" ]
     },
     {
         "type" : "compute",
@@ -281,11 +285,15 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/gi_blur.comp.glsl" ]
+        "shaders" : [ "internal/gi_filter@PRE_FILTER.comp.glsl" ]
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/gi_blur@PER_PIXEL_KERNEL_ROTATION.comp.glsl" ]
+        "shaders" : [ "internal/gi_filter.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_filter@POST_FILTER.comp.glsl" ]
     },
     {
         "type" : "compute",

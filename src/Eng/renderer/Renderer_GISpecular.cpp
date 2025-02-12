@@ -5,8 +5,8 @@
 #include "shaders/blit_ssr_compose_interface.h"
 #include "shaders/blit_ssr_dilate_interface.h"
 #include "shaders/blit_ssr_interface.h"
-#include "shaders/ssr_blur_interface.h"
 #include "shaders/ssr_classify_interface.h"
+#include "shaders/ssr_filter_interface.h"
 #include "shaders/ssr_prefilter_interface.h"
 #include "shaders/ssr_reproject_interface.h"
 #include "shaders/ssr_stabilization_interface.h"
@@ -731,7 +731,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         FgResRef gi_specular2_tex;
 
         { // Denoiser blur
-            auto &ssr_blur = fg_builder_.AddNode("SSR BLUR");
+            auto &ssr_filter = fg_builder_.AddNode("SSR FILTER");
 
             struct PassData {
                 FgResRef shared_data;
@@ -742,16 +742,16 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 FgResRef out_gi_tex;
             };
 
-            auto *data = ssr_blur.AllocNodeData<PassData>();
-            data->shared_data = ssr_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
-            data->depth_tex = ssr_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-            data->spec_tex = ssr_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
-            data->norm_tex = ssr_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-            data->gi_tex = ssr_blur.AddTextureInput(gi_specular_tex, Stg::ComputeShader);
-            data->sample_count_tex = ssr_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-            data->variance_tex = ssr_blur.AddTextureInput(ssr_variance_tex, Stg::ComputeShader);
-            data->tile_list = ssr_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
-            data->indir_args = ssr_blur.AddIndirectBufferInput(indir_disp_buf);
+            auto *data = ssr_filter.AllocNodeData<PassData>();
+            data->shared_data = ssr_filter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->depth_tex = ssr_filter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+            data->spec_tex = ssr_filter.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
+            data->norm_tex = ssr_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+            data->gi_tex = ssr_filter.AddTextureInput(gi_specular_tex, Stg::ComputeShader);
+            data->sample_count_tex = ssr_filter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+            data->variance_tex = ssr_filter.AddTextureInput(ssr_variance_tex, Stg::ComputeShader);
+            data->tile_list = ssr_filter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
+            data->indir_args = ssr_filter.AddIndirectBufferInput(indir_disp_buf);
             data->indir_args_offset = 3 * sizeof(uint32_t);
 
             { // Final reflection
@@ -763,10 +763,10 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 gi_specular2_tex = data->out_gi_tex =
-                    ssr_blur.AddStorageImageOutput("GI Specular 2", params, Stg::ComputeShader);
+                    ssr_filter.AddStorageImageOutput("GI Specular 2", params, Stg::ComputeShader);
             }
 
-            ssr_blur.set_execute_cb([this, data](FgBuilder &builder) {
+            ssr_filter.set_execute_cb([this, data](FgBuilder &builder) {
                 FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
                 FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
                 FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
@@ -781,22 +781,22 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                    {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Trg::Tex2DSampled, SSRBlur::SPEC_TEX_SLOT, *spec_tex.ref},
-                    {Trg::Tex2DSampled, SSRBlur::NORM_TEX_SLOT, *norm_tex.ref},
-                    {Trg::Tex2DSampled, SSRBlur::REFL_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
-                    {Trg::Tex2DSampled, SSRBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                    {Trg::Tex2DSampled, SSRBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                    {Trg::SBufRO, SSRBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::Image2D, SSRBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+                    {Trg::Tex2DSampled, SSRFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                    {Trg::Tex2DSampled, SSRFilter::SPEC_TEX_SLOT, *spec_tex.ref},
+                    {Trg::Tex2DSampled, SSRFilter::NORM_TEX_SLOT, *norm_tex.ref},
+                    {Trg::Tex2DSampled, SSRFilter::REFL_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
+                    {Trg::Tex2DSampled, SSRFilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                    {Trg::Tex2DSampled, SSRFilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                    {Trg::SBufRO, SSRFilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                    {Trg::Image2D, SSRFilter::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
-                SSRBlur::Params uniform_params;
+                SSRFilter::Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[0];
                 uniform_params.img_size =
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                DispatchComputeIndirect(*pi_ssr_blur_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                DispatchComputeIndirect(*pi_ssr_filter_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                         builder.ctx().log());
             });
@@ -805,7 +805,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         FgResRef gi_specular3_tex;
 
         { // Denoiser blur 2
-            auto &ssr_post_blur = fg_builder_.AddNode("SSR POST BLUR");
+            auto &ssr_post_filter = fg_builder_.AddNode("SSR POST FILTER");
 
             struct PassData {
                 FgResRef shared_data;
@@ -816,21 +816,22 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 FgResRef out_gi_tex;
             };
 
-            auto *data = ssr_post_blur.AllocNodeData<PassData>();
-            data->shared_data = ssr_post_blur.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
-            data->depth_tex = ssr_post_blur.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-            data->spec_tex = ssr_post_blur.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
-            data->norm_tex = ssr_post_blur.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-            data->gi_tex = ssr_post_blur.AddTextureInput(gi_specular2_tex, Stg::ComputeShader);
-            data->sample_count_tex = ssr_post_blur.AddTextureInput(sample_count_tex, Stg::ComputeShader);
-            data->variance_tex = ssr_post_blur.AddTextureInput(ssr_variance_tex, Stg::ComputeShader);
-            data->tile_list = ssr_post_blur.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
-            data->indir_args = ssr_post_blur.AddIndirectBufferInput(indir_disp_buf);
+            auto *data = ssr_post_filter.AllocNodeData<PassData>();
+            data->shared_data =
+                ssr_post_filter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->depth_tex = ssr_post_filter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+            data->spec_tex = ssr_post_filter.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
+            data->norm_tex = ssr_post_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+            data->gi_tex = ssr_post_filter.AddTextureInput(gi_specular2_tex, Stg::ComputeShader);
+            data->sample_count_tex = ssr_post_filter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+            data->variance_tex = ssr_post_filter.AddTextureInput(ssr_variance_tex, Stg::ComputeShader);
+            data->tile_list = ssr_post_filter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
+            data->indir_args = ssr_post_filter.AddIndirectBufferInput(indir_disp_buf);
             data->indir_args_offset = 3 * sizeof(uint32_t);
 
-            gi_specular3_tex = data->out_gi_tex = ssr_post_blur.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
+            gi_specular3_tex = data->out_gi_tex = ssr_post_filter.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
 
-            ssr_post_blur.set_execute_cb([this, data](FgBuilder &builder) {
+            ssr_post_filter.set_execute_cb([this, data](FgBuilder &builder) {
                 FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
                 FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
                 FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
@@ -845,22 +846,22 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                    {Trg::Tex2DSampled, SSRBlur::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Trg::Tex2DSampled, SSRBlur::SPEC_TEX_SLOT, *spec_tex.ref},
-                    {Trg::Tex2DSampled, SSRBlur::NORM_TEX_SLOT, *norm_tex.ref},
-                    {Trg::Tex2DSampled, SSRBlur::REFL_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
-                    {Trg::Tex2DSampled, SSRBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                    {Trg::Tex2DSampled, SSRBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                    {Trg::SBufRO, SSRBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::Image2D, SSRBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+                    {Trg::Tex2DSampled, SSRFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                    {Trg::Tex2DSampled, SSRFilter::SPEC_TEX_SLOT, *spec_tex.ref},
+                    {Trg::Tex2DSampled, SSRFilter::NORM_TEX_SLOT, *norm_tex.ref},
+                    {Trg::Tex2DSampled, SSRFilter::REFL_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
+                    {Trg::Tex2DSampled, SSRFilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                    {Trg::Tex2DSampled, SSRFilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                    {Trg::SBufRO, SSRFilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                    {Trg::Image2D, SSRFilter::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
-                SSRBlur::Params uniform_params;
+                SSRFilter::Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[1];
                 uniform_params.img_size =
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                DispatchComputeIndirect(*pi_ssr_blur_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                DispatchComputeIndirect(*pi_ssr_filter_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                         builder.ctx().log());
             });
