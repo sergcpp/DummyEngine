@@ -796,7 +796,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                DispatchComputeIndirect(*pi_ssr_filter_[0], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                DispatchComputeIndirect(*pi_ssr_filter_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                         builder.ctx().log());
             });
@@ -861,7 +861,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
-                DispatchComputeIndirect(*pi_ssr_filter_[1], *indir_args_buf.ref, data->indir_args_offset, bindings,
+                DispatchComputeIndirect(*pi_ssr_filter_[2], *indir_args_buf.ref, data->indir_args_offset, bindings,
                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                         builder.ctx().log());
             });

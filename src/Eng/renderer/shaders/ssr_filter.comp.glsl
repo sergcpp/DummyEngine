@@ -1,13 +1,17 @@
 #version 430 core
 #extension GL_ARB_shading_language_packing : require
 
+#pragma multi_compile _ PRE_FILTER POST_FILTER
+
+#ifdef POST_FILTER
+    #define PER_PIXEL_KERNEL_ROTATION
+#endif
+
 #include "_cs_common.glsl"
 #include "rt_common.glsl"
 #include "gi_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_filter_interface.h"
-
-#pragma multi_compile _ PER_PIXEL_KERNEL_ROTATION
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
@@ -245,7 +249,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const float PlaneDistSensitivity = 0.001;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, specNonLinearAccumSpeed);
 
-#ifdef PER_PIXEL_KERNEL_ROTATION
+#ifdef POST_FILTER
     const float RadiusScale = 2.0;
 #else
     const float RadiusScale = 1.0;

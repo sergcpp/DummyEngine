@@ -273,19 +273,15 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/gi_prefilter.comp.glsl" ]
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/gi_prefilter@RELAXED.comp.glsl" ]
-    },
-    {
-        "type" : "compute",
         "shaders" : [ "internal/gi_temporal.comp.glsl" ]
     },
     {
         "type" : "compute",
         "shaders" : [ "internal/gi_filter@PRE_FILTER.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
+        "shaders" : [ "internal/gi_filter@PRE_FILTER;RELAXED.comp.glsl" ]
     },
     {
         "type" : "compute",
