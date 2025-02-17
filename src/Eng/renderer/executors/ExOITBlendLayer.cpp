@@ -14,15 +14,15 @@ Eng::ExOITBlendLayer::ExOITBlendLayer(
     const FgResRef color_tex, const FgResRef oit_depth_buf, const FgResRef oit_specular_tex,
     const int depth_layer_index, const FgResRef irradiance_tex, const FgResRef distance_tex, const FgResRef offset_tex,
     const FgResRef back_color_tex, const FgResRef back_depth_tex)
-    : prim_draw_(prim_draw), p_list_(p_list), view_state_(view_state), vtx_buf1_(vtx_buf1), vtx_buf2_(vtx_buf2),
-      ndx_buf_(ndx_buf), materials_buf_(materials_buf), textures_buf_(textures_buf), bindless_tex_(bindless_tex),
-      cells_buf_(cells_buf), items_buf_(items_buf), lights_buf_(lights_buf), decals_buf_(decals_buf),
-      noise_tex_(noise_tex), dummy_white_(dummy_white), shadow_map_(shadow_map), ltc_luts_tex_(ltc_luts_tex),
-      env_tex_(env_tex), instances_buf_(instances_buf), instance_indices_buf_(instance_indices_buf),
-      shared_data_buf_(shared_data_buf), depth_tex_(depth_tex), color_tex_(color_tex), oit_depth_buf_(oit_depth_buf),
-      oit_specular_tex_(oit_specular_tex), depth_layer_index_(depth_layer_index), irradiance_tex_(irradiance_tex),
+    : prim_draw_(prim_draw), view_state_(view_state), bindless_tex_(bindless_tex), p_list_(p_list), vtx_buf1_(vtx_buf1),
+      vtx_buf2_(vtx_buf2), ndx_buf_(ndx_buf), instances_buf_(instances_buf),
+      instance_indices_buf_(instance_indices_buf), shared_data_buf_(shared_data_buf), materials_buf_(materials_buf),
+      textures_buf_(textures_buf), cells_buf_(cells_buf), items_buf_(items_buf), lights_buf_(lights_buf),
+      decals_buf_(decals_buf), noise_tex_(noise_tex), dummy_white_(dummy_white), shadow_map_(shadow_map),
+      ltc_luts_tex_(ltc_luts_tex), env_tex_(env_tex), oit_depth_buf_(oit_depth_buf),
+      depth_layer_index_(depth_layer_index), oit_specular_tex_(oit_specular_tex), irradiance_tex_(irradiance_tex),
       distance_tex_(distance_tex), offset_tex_(offset_tex), back_color_tex_(back_color_tex),
-      back_depth_tex_(back_depth_tex) {}
+      back_depth_tex_(back_depth_tex), depth_tex_(depth_tex), color_tex_(color_tex) {}
 
 void Eng::ExOITBlendLayer::Execute(FgBuilder &builder) {
     FgAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);

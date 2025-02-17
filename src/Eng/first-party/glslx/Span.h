@@ -23,7 +23,6 @@ template <typename T> struct remove_all_const<T *const> {
 };
 
 template <typename T> class Span {
-  protected:
     T *p_data_ = nullptr;
     ptrdiff_t size_ = 0;
 
@@ -36,16 +35,28 @@ template <typename T> class Span {
     Span(T *p_data, const uint32_t size) : p_data_(p_data), size_(size) {}
 #endif
     Span(T *p_begin, T *p_end) : p_data_(p_begin), size_(p_end - p_begin) {}
+
+    template <size_t N>
+    Span(const std::array<typename remove_all_const<T>::type, N> &arr) : Span(arr.data(), arr.size()) {}
+    template <size_t N>
+    Span(const std::array<const typename remove_all_const<T>::type, N> &arr) : Span(arr.data(), arr.size()) {}
+    template <size_t N> Span(std::array<typename std::remove_cv<T>::type, N> &arr) : Span(arr.data(), arr.size()) {}
+
     template <typename Alloc>
-    Span(const std::vector<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), size_t(v.size())) {}
+    Span(const std::vector<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
     template <typename Alloc>
-    Span(std::vector<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), size_t(v.size())) {}
+    Span(const std::vector<const typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+    template <typename Alloc>
+    Span(std::vector<typename std::remove_cv<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+
     template <typename Alloc>
     Span(const SmallVectorImpl<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
     template <typename Alloc>
-    Span(SmallVectorImpl<typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+    Span(const SmallVectorImpl<const typename remove_all_const<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
+    template <typename Alloc>
+    Span(SmallVectorImpl<typename std::remove_cv<T>::type, Alloc> &v) : Span(v.data(), v.size()) {}
 
-    template <size_t N> Span(T (&arr)[N]) : p_data_(arr), size_(N) {}
+    template <size_t N> Span(T (&arr)[N]) : Span(arr, N) {}
 
     template <typename U = typename remove_all_const<T>::type,
               typename = typename std::enable_if<!std::is_same<T, U>::value>::type>
@@ -56,7 +67,11 @@ template <typename T> class Span {
 
     T *data() const { return p_data_; }
     ptrdiff_t size() const { return size_; }
+    ptrdiff_t size_bytes() const { return size_ * sizeof(T); }
     bool empty() const { return size_ == 0; }
+
+    T &front() const { return p_data_[0]; }
+    T &back() const { return p_data_[size_ - 1]; }
 
     T &operator[](const ptrdiff_t i) const {
         assert(i >= 0 && i < size_);
@@ -67,45 +82,6 @@ template <typename T> class Span {
         return p_data_[i];
     }
 
-    template <typename U>
-    bool operator==(const Span<U> &rhs) const {
-        if (size_ != rhs.size()) {
-            return false;
-        }
-        bool eq = true;
-        for (uint32_t i = 0; i < size_ && eq; ++i) {
-            eq &= p_data_[i] == rhs[i];
-        }
-        return eq;
-    }
-    template <typename U>
-    bool operator!=(const Span<U> &rhs) const {
-        if (size_ != rhs.size()) {
-            return true;
-        }
-        bool neq = false;
-        for (uint32_t i = 0; i < size_ && !neq; ++i) {
-            neq |= p_data_[i] != rhs[i];
-        }
-        return neq;
-    }
-    template <typename U>
-    bool operator<(const Span<U> &rhs) const {
-        return std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
-    }
-    template <typename U>
-    bool operator<=(const Span<U> &rhs) const {
-        return !std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
-    }
-    template <typename U>
-    bool operator>(const Span<U> &rhs) const {
-        return std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
-    }
-    template <typename U>
-    bool operator>=(const Span<U> &rhs) const {
-        return !std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
-    }
-
     using iterator = T *;
     using const_iterator = const T *;
 
@@ -113,5 +89,97 @@ template <typename T> class Span {
     iterator end() const { return p_data_ + size_; }
     const_iterator cbegin() const { return p_data_; }
     const_iterator cend() const { return p_data_ + size_; }
+
+    template <typename IterType> class reverse_iterator_t {
+        IterType iter_;
+
+      public:
+        explicit reverse_iterator_t(IterType iter) : iter_(iter) {}
+
+        template <typename U> reverse_iterator_t(reverse_iterator_t<U> &rhs) : iter_(rhs.base()) {}
+
+        template <typename U> operator reverse_iterator_t<U>() { return reverse_iterator_t<U>(iter_); }
+
+        IterType base() const { return iter_; }
+
+        const T &operator*() const { return *(iter_ - 1); }
+        const T *operator->() const { return &*(iter_ - 1); }
+
+        reverse_iterator_t &operator++() {
+            --iter_;
+            return *this;
+        }
+
+        reverse_iterator_t operator++(int) {
+            reverse_iterator_t ret(*this);
+            --iter_;
+            return ret;
+        }
+
+        reverse_iterator_t &operator--() {
+            ++iter_;
+            return *this;
+        }
+
+        reverse_iterator_t operator--(int) {
+            reverse_iterator_t ret(*this);
+            ++iter_;
+            return ret;
+        }
+
+        reverse_iterator_t operator+(ptrdiff_t n) const { return reverse_iterator_t(iter_ - n); }
+        reverse_iterator_t &operator+=(ptrdiff_t n) const {
+            iter_ -= n;
+            return *this;
+        }
+
+        reverse_iterator_t operator-(ptrdiff_t n) const { return reverse_iterator_t(iter_ + n); }
+        reverse_iterator_t &operator-=(ptrdiff_t n) const {
+            iter_ += n;
+            return *this;
+        }
+
+        T &operator[](ptrdiff_t n) const { return iter_[-n - 1]; }
+    };
+
+    using reverse_iterator = reverse_iterator_t<T *>;
+    using const_reverse_iterator = reverse_iterator_t<const T *>;
+
+    reverse_iterator rbegin() const { return reverse_iterator(p_data_ + size_); }
+    reverse_iterator rend() const { return reverse_iterator(p_data_); }
+    const_reverse_iterator crbegin() const { return const_reverse_iterator(p_data_ + size_); }
+    const_reverse_iterator crend() const { return const_reverse_iterator(p_data_); }
+
+    Span<T> first(const size_t n) const { return Span<T>{p_data_, n}; }
+    Span<T> last(const size_t n) const { return Span<T>{p_data_ + size_ - n, n}; }
+    Span<T> subspan(const size_t offset, const size_t count = SIZE_MAX) const {
+        return Span<T>{p_data_ + offset, count != SIZE_MAX ? count : (size_ - offset)};
+    }
 };
+
+template <typename Iter1, typename Iter2>
+bool lexicographical_compare(Iter1 first1, Iter1 last1, Iter2 first2, Iter2 last2) {
+    for (; first1 != last1 && first2 != last2; ++first1, ++first2) {
+        if (*first1 < *first2) {
+            return true;
+        }
+        if (*first2 < *first1) {
+            return false;
+        }
+    }
+    return first1 == last1 && first2 != last2;
+}
+
+template <typename T, typename U> bool operator==(Span<T> lhs, Span<U> rhs) {
+    return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+template <typename T, typename U> bool operator!=(Span<T> lhs, Span<U> rhs) {
+    return lhs.size() != rhs.size() || !std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+template <typename T, typename U> bool operator<(Span<T> lhs, Span<U> rhs) {
+    return lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+}
+template <typename T, typename U> bool operator<=(Span<T> lhs, Span<U> rhs) { return !operator<(rhs, lhs); }
+template <typename T, typename U> bool operator>(Span<T> lhs, Span<U> rhs) { return operator<(rhs, lhs); }
+template <typename T, typename U> bool operator>=(Span<T> lhs, Span<U> rhs) { return !operator<(lhs, rhs); }
 } // namespace glslx

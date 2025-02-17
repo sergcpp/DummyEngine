@@ -587,8 +587,6 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     Ren::Span<const uint32_t> tri_indices = acc.mesh->indices();
 
     for (const Ren::TriGroup &grp : acc.mesh->groups()) {
-        const Ren::Material *mat = grp.front_mat.get();
-
         const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
         const uint32_t index_end = index_beg + grp.num_indices;
 

@@ -1,9 +1,12 @@
 #include "test_common.h"
 
+#include <array>
+#include <vector>
+
 #include "../Span.h"
 
 void test_span() {
-    using namespace Ren;
+    using namespace Snd;
 
     printf("Test span               | ");
 

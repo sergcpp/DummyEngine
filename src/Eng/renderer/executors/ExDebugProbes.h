@@ -27,7 +27,6 @@ class ExDebugProbes final : public FgExecutor {
 
   private:
     PrimDraw &prim_draw_;
-    bool initialized = false;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
