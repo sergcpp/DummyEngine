@@ -5,7 +5,7 @@
 #include <Gui/BitmapFont.h>
 #include <Ren/Context.h>
 #include <Ren/HashMap32.h>
-#include <Ren/ScopeExit.h>
+#include <Sys/ScopeExit.h>
 #include <Sys/Time_.h>
 
 #include "../input/InputManager.h"

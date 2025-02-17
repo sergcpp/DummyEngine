@@ -91,7 +91,6 @@ set(SOURCE_FILES AccStructure.h
                  RingBuffer.h
                  Sampler.h
                  SamplingParams.h
-                 ScopeExit.h
                  Shader.h
                  SmallVector.h
                  Span.h

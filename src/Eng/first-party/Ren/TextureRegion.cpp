@@ -1,7 +1,6 @@
 #include "TextureRegion.h"
 
 #include "ApiContext.h"
-#include "ScopeExit.h"
 #include "TextureAtlas.h"
 #include "Utils.h"
 
