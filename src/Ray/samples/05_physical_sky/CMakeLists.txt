@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.18)
 project(05_physical_sky)
 
 add_executable(05_physical_sky main.cpp)
