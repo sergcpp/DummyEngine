@@ -129,14 +129,6 @@
     },
     {
         "type" : "compute",
-        "shaders" : [ "internal/ssr_prefilter.comp.glsl" ]
-    },
-    {
-        "type" : "compute",
-        "shaders" : [ "internal/ssr_prefilter@RELAXED.comp.glsl" ]
-    },
-    {
-        "type" : "compute",
         "shaders" : [ "internal/ssr_temporal.comp.glsl" ]
     },
     {
