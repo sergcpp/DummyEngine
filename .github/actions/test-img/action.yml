@@ -28,13 +28,13 @@ runs:
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} --prepare_assets pc --norun
         ### bathroom
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --preset medium --psnr 18.10 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --preset medium --psnr 17.95 --no-postprocess
         mv bathroom.png bathroom_medium.png
         cp bathroom_medium.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --preset high --psnr 18.35 --no-postprocess
         mv bathroom.png bathroom_high.png
         cp bathroom_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --preset ultra --psnr 19.85 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --preset ultra --psnr 19.70 --no-postprocess
         mv bathroom.png bathroom_ultra.png
         cp bathroom_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bathroom.json -ref references/bathroom_cycles.uncompressed.png -w 678 -h 900 --pt --psnr 27.95 --no-postprocess
@@ -58,13 +58,13 @@ runs:
         mv ai043_01.png ai043_01_ultra.png
         cp ai043_01_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### Bistro (night)
-        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset medium --psnr 20.60 --freeze-sky --no-postprocess --tex-budget 1024
+        #./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset medium --psnr 20.50 --freeze-sky --no-postprocess --tex-budget 1024
         #mv bistro.png bistro_night_medium.png
         #cp bistro_night_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset high --psnr 22.20 --freeze-sky --no-postprocess --tex-budget 1024
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset high --psnr 22.00 --freeze-sky --no-postprocess --tex-budget 1024
         mv bistro.png bistro_night_high.png
         cp bistro_night_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset ultra --psnr 22.25 --freeze-sky --no-postprocess --tex-budget 1024
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles.uncompressed.png -w 1920 -h 1080 --sun_dir 0 1 0 --exposure 3.25 --preset ultra --psnr 22.00 --freeze-sky --no-postprocess --tex-budget 1024
         mv bistro.png bistro_night_ultra.png
         cp bistro_night_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_night_cycles2.uncompressed.png -w 960 -h 540 --sun_dir 0 1 0 --exposure 3.25 --pt --psnr 26.35 --freeze-sky --no-postprocess
@@ -81,39 +81,39 @@ runs:
         mv coffee_maker.png coffee_maker_ultra.png
         cp coffee_maker_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ### Staircase
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset medium --psnr 29.30 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset medium --psnr 29.45 --no-postprocess
         mv staircase.png staircase_medium.png
         cp staircase_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset high --psnr 29.20 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset high --psnr 29.25 --no-postprocess
         mv staircase.png staircase_high.png
         cp staircase_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset ultra --psnr 29.80 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset ultra --psnr 29.95 --no-postprocess
         mv staircase.png staircase_ultra.png
         cp staircase_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --pt --psnr 35.60 --no-postprocess
         mv staircase.png staircase_pt.png
         cp staircase_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### Staircase (mesh lights)
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset medium --psnr 23.40 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset medium --psnr 23.30 --no-postprocess
         mv staircase2.png staircase2_medium.png
         cp staircase2_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset high --psnr 24.45 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset high --psnr 24.40 --no-postprocess
         mv staircase2.png staircase2_high.png
         cp staircase2_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset ultra --psnr 25.30 --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --preset ultra --psnr 25.25 --no-postprocess
         mv staircase2.png staircase2_ultra.png
         cp staircase2_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/staircase2.json -ref references/staircase_cycles.uncompressed.png -w 720 -h 900 --pt --psnr 35.90 --no-postprocess
         mv staircase2.png staircase2_pt.png
         cp staircase2_pt.png $WORK_DIR/${{ inputs.out-dir }}
         ### Bistro
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 22.00 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset medium --psnr 21.95 --freeze-sky --no-postprocess
         mv bistro.png bistro_medium.png
         cp bistro_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset high --psnr 22.35 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset high --psnr 22.15 --freeze-sky --no-postprocess
         mv bistro.png bistro_high.png
         cp bistro_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset ultra --psnr 25.80 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset ultra --psnr 25.20 --freeze-sky --no-postprocess
         mv bistro.png bistro_ultra.png
         cp bistro_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles2.uncompressed.png -w 960 -h 540 --exposure -11 --pt --psnr 28.20 --freeze-sky --no-postprocess
@@ -123,10 +123,10 @@ runs:
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza_cycles.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset medium --psnr 22.20 --freeze-sky --no-postprocess
         mv sponza.png sponza_medium.png
         cp sponza_medium.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza_cycles.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 22.50 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza_cycles.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset high --psnr 22.40 --freeze-sky --no-postprocess
         mv sponza.png sponza_high.png
         cp sponza_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza_cycles.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 24.50 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza_cycles.uncompressed.png -w 1920 -h 1080 --exposure -8 --preset ultra --psnr 24.40 --freeze-sky --no-postprocess
         mv sponza.png sponza_ultra.png
         cp sponza_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/sponza.json -ref references/sponza_cycles2.uncompressed.png -w 960 -h 540 --exposure -8 --pt --psnr 28.10 --freeze-sky --no-postprocess

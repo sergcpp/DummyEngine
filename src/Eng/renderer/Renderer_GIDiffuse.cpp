@@ -655,7 +655,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     FgResRef prefiltered_gi;
 
     { // Denoiser prefilter
-        auto &gi_prefilter = fg_builder_.AddNode("GI PREFILTER (2)");
+        auto &gi_prefilter = fg_builder_.AddNode("GI PREFILTER");
 
         struct PassData {
             FgResRef shared_data;
@@ -687,7 +687,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             prefiltered_gi = data->out_gi_tex =
-                gi_prefilter.AddStorageImageOutput("GI Diffuse 2", params, Stg::ComputeShader);
+                gi_prefilter.AddStorageImageOutput("GI Diffuse 1", params, Stg::ComputeShader);
         }
 
         gi_prefilter.set_execute_cb([this, data](FgBuilder &builder) {
@@ -809,9 +809,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             GIResolveTemporal::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-            DispatchComputeIndirect(*pi_gi_temporal_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                    builder.ctx().log());
+            DispatchComputeIndirect(*pi_gi_temporal_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
+                                    data->indir_args_offset, bindings, &uniform_params, sizeof(uniform_params),
+                                    builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 

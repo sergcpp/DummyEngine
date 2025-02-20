@@ -1,9 +1,4 @@
 #version 430 core
-#ifndef NO_SUBGROUP
-#extension GL_KHR_shader_subgroup_basic : require
-#extension GL_KHR_shader_subgroup_ballot : require
-#extension GL_KHR_shader_subgroup_arithmetic : require
-#endif
 
 // NOTE: This is not used for now
 #if !USE_FP16
@@ -18,11 +13,7 @@
 #include "taa_common.glsl"
 #include "gi_temporal_interface.h"
 
-#pragma multi_compile _ NO_SUBGROUP
-
-#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_arithmetic))
-#define NO_SUBGROUP
-#endif
+#pragma multi_compile _ RELAXED
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -141,7 +132,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
         f16vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.rgb - fallback_radiance)) * history_clip_weight * 1.4;
-        local_neighborhood.mean.rgb = mix(local_neighborhood.mean.rgb, avg_radiance, 0.2);
+        local_neighborhood.mean.rgb = mix(local_neighborhood.mean.rgb, fallback_radiance, 0.2);
         f16vec3 radiance_min = local_neighborhood.mean.rgb - color_std;
         f16vec3 radiance_max = local_neighborhood.mean.rgb + color_std;
         f16vec4 clipped_old_signal;
@@ -153,8 +144,13 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         new_signal.rgb = mix(new_signal.rgb, fallback_radiance, 1.0 / max(sample_count + 1.0, 1.0));
         // Clip outliers
         {
+#ifdef RELAXED
             const f16vec3 radiance_min = fallback_radiance - color_std * 1.0;
             const f16vec3 radiance_max = fallback_radiance + color_std * 1.0;
+#else
+            const f16vec3 radiance_min = fallback_radiance - color_std * 0.45;
+            const f16vec3 radiance_max = fallback_radiance + color_std * 0.45;
+#endif
             new_signal.rgb = ClipAABB(radiance_min, radiance_max, new_signal.rgb);
         }
         // Blend with history

@@ -1,9 +1,22 @@
 #version 430 core
 #extension GL_ARB_shading_language_packing : require
 
-#pragma multi_compile _ PRE_FILTER POST_FILTER
+// NOTE: This is not used for now
+#if !USE_FP16
+    #define float16_t float
+    #define f16vec2 vec2
+    #define f16vec3 vec3
+    #define f16vec4 vec4
+#endif
 
-#ifdef POST_FILTER
+#pragma multi_compile _ PRE_FILTER POST_FILTER
+#pragma multi_compile _ RELAXED
+
+#if defined(RELAXED) && !defined(PRE_FILTER)
+    #pragma dont_compile
+#endif
+
+#if defined(PRE_FILTER) || defined(POST_FILTER)
     #define PER_PIXEL_KERNEL_ROTATION
 #endif
 
@@ -25,6 +38,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_spec_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
+layout(binding = AVG_REFL_TEX_SLOT) uniform sampler2D g_avg_refl_tex;
 layout(binding = SAMPLE_COUNT_TEX_SLOT) uniform sampler2D g_sample_count_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_tex;
 
@@ -34,11 +48,20 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
 
 layout(binding = OUT_DENOISED_IMG_SLOT, rgba16f) uniform image2D g_out_denoised_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+#define RADIANCE_WEIGHT_BIAS 0.0
+#define RADIANCE_WEIGHT_VARIANCE_K 0.1
 
 #define PREFILTER_NORMAL_SIGMA 512.0
 
-/* fp16 */ float GetEdgeStoppingNormalWeight(/* fp16 */ vec3 normal_p, /* fp16 */ vec3 normal_q) {
+float16_t GetRadianceWeight(const f16vec3 center_radiance, const f16vec3 neighbor_radiance, const float16_t variance) {
+#ifndef RELAXED
+    return max(exp(-(RADIANCE_WEIGHT_BIAS + variance * RADIANCE_WEIGHT_VARIANCE_K) * length(center_radiance - neighbor_radiance)), 1.0e-2);
+#else
+    return 1.0;
+#endif
+}
+
+float16_t GetEdgeStoppingNormalWeight(const f16vec3 normal_p, const f16vec3 normal_q) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), PREFILTER_NORMAL_SIGMA);
 }
 
@@ -235,16 +258,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     //boost *= 1.0 - pow(dot(center_normal_vs, view_dir_vs), 5.0);
     //boost *= smc;
 
-    float specNonLinearAccumSpeed = 1.0 / (1.0 + (1.0 - boost) * sample_count);
-
-    const float RadiusBias = 1.0;
-    const float MaxBlurRadius = 45.0;
-    // Blur radius - main
-    float blur_radius = smc * MaxBlurRadius * (1.0 + 2.0 * boost) / 3.0;
-    blur_radius *= mix( hitDistFactorRelaxedByError, hitDistFactorAdditionallyRelaxedByRoughness, specNonLinearAccumSpeed);
-    blur_radius = min(blur_radius, minBlurRadius);
-
-    //float accumulation_speed = 1.0 / max(sample_count, 1.0);
+    const float specNonLinearAccumSpeed = 1.0 / (1.0 + (1.0 - boost) * sample_count);
 
     const float PlaneDistSensitivity = 0.001;
     const vec2 geometry_weight_params = GetGeometryWeightParams(PlaneDistSensitivity, center_point_vs, center_normal_vs, specNonLinearAccumSpeed);
@@ -255,7 +269,16 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const float RadiusScale = 1.0;
 #endif
 
-    const float InitialBlurRadius = 1.0;
+#ifdef PRE_FILTER
+    const float InitialBlurRadius = 60.0;
+#else
+    const float InitialBlurRadius = 45.0;
+#endif
+
+    // Blur radius - main
+    float blur_radius = smc * InitialBlurRadius * (1.0 + 2.0 * boost) / 3.0;
+    blur_radius *= mix( hitDistFactorRelaxedByError, hitDistFactorAdditionallyRelaxedByRoughness, specNonLinearAccumSpeed);
+    blur_radius = min(blur_radius, minBlurRadius);
 
     // Blur radius - addition to avoid underblurring
     //blur_radius += RadiusBias * smc;
@@ -268,10 +291,19 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const mat2x3 TvBv = GetKernelBasis(D.xyz, center_point_vs, center_normal_vs, blur_radius_ws, center_roughness);
     const vec4 kernel_rotator = GetBlurKernelRotation(uvec2(dispatch_thread_id), g_params.rotator, g_params.frame_index.x);
 
+#ifdef PRE_FILTER
+    const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
+    const vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb;
+#endif
+
     const bool needs_blur = IsGlossyReflection(center_roughness) && !IsMirrorReflection(center_roughness);
     for (int i = 0; i < 8 && needs_blur; ++i) {
         const vec3 offset = g_Special8[i];
+#ifdef PRE_FILTER
+        const vec2 uv = pix_uv + RotateVector(kernel_rotator, offset.xy) * blur_radius / vec2(screen_size);
+#else
         const vec2 uv = GetKernelSampleCoordinates(g_shrd_data.clip_from_view, offset, center_point_vs, TvBv[0], TvBv[1], kernel_rotator);
+#endif
 
         const float depth_fetch = textureLod(g_depth_tex, uv, 0.0).x;
         const float neighbor_depth = LinearizeDepth(depth_fetch, g_shrd_data.clip_info);
@@ -285,7 +317,13 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
 
-        sum += weight * sanitize(textureLod(g_refl_tex, uv, 0.0));
+        const vec4 fetch = sanitize(textureLod(g_refl_tex, uv, 0.0));
+
+#ifdef PRE_FILTER
+        weight *= GetRadianceWeight(fetch.xyz, avg_radiance, variance);
+#endif
+
+        sum += weight * fetch;
         total_weight += vec2(weight);
     }
 
@@ -293,6 +331,8 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     imageStore(g_out_denoised_img, dispatch_thread_id, sum);
 }
+
+layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const uint packed_coords = g_tile_list[gl_WorkGroupID.x];

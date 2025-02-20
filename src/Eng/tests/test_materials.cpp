@@ -520,7 +520,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "complex_mat1", 28.80, Full_Ultra);
         run_image_test(threads, "complex_mat2", 33.90, NoShadow);
         run_image_test(threads, "complex_mat2", 33.45, NoGI);
-        run_image_test(threads, "complex_mat2", 27.30, NoDiffGI);
+        run_image_test(threads, "complex_mat2", 27.25, NoDiffGI);
         run_image_test(threads, "complex_mat2", 25.05, MedDiffGI);
         run_image_test(threads, "complex_mat2", 24.75, Full);
         run_image_test(threads, "complex_mat2", 27.85, Full_Ultra);
@@ -533,7 +533,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "complex_mat2_sun_light", 33.50, NoShadow);
         run_image_test(threads, "complex_mat2_sun_light", 29.15, NoGI);
         run_image_test(threads, "complex_mat2_sun_light", 33.40, NoGI_RTShadow);
-        run_image_test(threads, "complex_mat2_sun_light", 21.25, Full);
+        run_image_test(threads, "complex_mat2_sun_light", 21.20, Full);
         run_image_test(threads, "complex_mat2_sun_light", 22.80, Full_Ultra);
         run_image_test(threads, "complex_mat2_moon_light", 22.85, MedDiffGI);
         run_image_test(threads, "complex_mat2_moon_light", 22.65, Full);
