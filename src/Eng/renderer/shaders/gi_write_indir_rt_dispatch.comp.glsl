@@ -12,7 +12,7 @@ layout(std430, binding = INDIR_ARGS_SLOT) writeonly buffer IndirArgs {
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    uint ray_count = g_ray_counter[4];
+    const uint ray_count = g_ray_counter[6];
 
     // raytracing pipeline dispatch
     g_intersect_args[0] = ray_count;
@@ -24,6 +24,6 @@ void main() {
     g_intersect_args[4] = 1;
     g_intersect_args[5] = 1;
 
-    g_ray_counter[4] = 0;
-    g_ray_counter[5] = ray_count;
+    g_ray_counter[6] = 0;
+    g_ray_counter[7] = ray_count;
 }

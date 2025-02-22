@@ -38,7 +38,7 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
 
 layout(binding = OUT_REPROJECTED_IMG_SLOT, rgba16f) uniform image2D g_out_reprojected_img;
 layout(binding = OUT_AVG_GI_IMG_SLOT, rgba16f) uniform image2D g_out_avg_gi_img;
-layout(binding = OUT_VERIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
+layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
 layout(binding = OUT_SAMPLE_COUNT_IMG_SLOT, r16f) uniform image2D g_out_sample_count_img;
 
 shared uint g_shared_storage_0[16][16];
@@ -240,7 +240,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
 
     float16_t variance = 1.0;
     float16_t sample_count = 0.0;
-    vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
+    const vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
     f16vec4 gi = texelFetch(g_gi_tex, ivec2(dispatch_thread_id), 0);
 
     if (gi.w > 0.0) {
@@ -274,6 +274,9 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
             imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
             imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
         }
+    } else {
+        imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
+        imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(0.0));
     }
 
     // Downsample 8x8 -> 1 radiance using shared memory

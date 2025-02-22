@@ -34,7 +34,6 @@ layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform usamplerBuffer g_scrambling_ti
 layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_tex;
 
 layout(binding = GI_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_gi_img;
-layout(binding = AVG_GI_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_avg_gi_img;
 layout(binding = NOISE_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_noise_img;
 
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
@@ -171,16 +170,18 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
 #endif
 
     imageStore(g_gi_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, -1.0));
-    if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
-        imageStore(g_avg_gi_img, ivec2(gl_WorkGroupID.xy), vec4(0.0));
-    }
 
     groupMemoryBarrier(); // Wait until all waves write into g_tile_count
     barrier();
 
-    if (group_thread_id.x == 0u && group_thread_id.y == 0u && g_tile_count > 0) {
-        uint tile_index = atomicAdd(g_ray_counter[2], 1);
-        g_tile_list[tile_index] = ((dispatch_thread_id.y & 0xffffu) << 16u) | (dispatch_thread_id.x & 0xffffu);
+    if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
+        if (g_tile_count > 0) {
+            const uint denoise_tile_index = atomicAdd(g_ray_counter[2], 1);
+            g_tile_list[denoise_tile_index] = ((dispatch_thread_id.y & 0xffffu) << 16u) | (dispatch_thread_id.x & 0xffffu);
+        } else {
+            const uint clear_tile_index = atomicAdd(g_ray_counter[4], 1);
+            g_tile_list[g_params.tile_count - clear_tile_index - 1] = ((dispatch_thread_id.y & 0xffffu) << 16u) | (dispatch_thread_id.x & 0xffffu);
+        }
     }
 }
 

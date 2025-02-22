@@ -46,7 +46,7 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
 };
 
-layout(binding = OUT_DENOISED_IMG_SLOT, rgba16f) uniform image2D g_out_denoised_img;
+layout(binding = OUT_DENOISED_IMG_SLOT, rgba16f) uniform writeonly image2D g_out_denoised_img;
 
 #define RADIANCE_WEIGHT_BIAS 0.0
 #define RADIANCE_WEIGHT_VARIANCE_K 0.1
@@ -224,7 +224,8 @@ float GetSpecularLobeTanHalfAngle(float linearRoughness, float percentOfVolume) 
 void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const vec2 pix_uv = (vec2(dispatch_thread_id) + 0.5) / vec2(screen_size);
     const float center_depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
-    if (!IsReflectiveSurface(center_depth, g_spec_tex, pix_uv)) {
+    if (!IsSpecularSurface(center_depth, g_spec_tex, pix_uv)) {
+        imageStore(g_out_denoised_img, dispatch_thread_id, vec4(0.0, 0.0, 0.0, -1.0));
         return;
     }
     const float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info);
@@ -310,14 +311,14 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         const vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x).xyz;
         const vec3 neighbor_point_vs = ReconstructViewPosition_YFlip(uv, g_shrd_data.frustum_info, -neighbor_depth, 0.0 /* is_ortho */);
 
-        /* fp16 */ float weight = float(IsReflectiveSurface(depth_fetch, g_spec_tex, uv));
+        const vec4 fetch = sanitize(textureLod(g_refl_tex, uv, 0.0));
+
+        /* fp16 */ float weight = float(fetch.w > 0.0); //float(IsSpecularSurface(depth_fetch, g_spec_tex, uv));
         weight *= IsInScreen(uv);
         weight *= GetGaussianWeight(offset.z);
         weight *= GetEdgeStoppingNormalWeight(center_normal_ws, neighbor_normal_ws);
         //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
-
-        const vec4 fetch = sanitize(textureLod(g_refl_tex, uv, 0.0));
 
 #ifdef PRE_FILTER
         weight *= GetRadianceWeight(fetch.xyz, avg_radiance, variance);

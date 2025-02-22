@@ -213,8 +213,8 @@ class Renderer {
     Ren::PipelineRef pi_ssr_classify_, pi_ssr_write_indirect_, pi_ssr_trace_hq_[2][2];
     Ren::PipelineRef pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::PipelineRef pi_ssr_reproject_, pi_ssr_temporal_[2], pi_ssr_filter_[4],
-        pi_ssr_stabilization_;
+    Ren::PipelineRef pi_ssr_reproject_, pi_ssr_temporal_[2], pi_ssr_filter_[4], pi_ssr_stabilization_;
+    Ren::PipelineRef pi_tile_clear_[4];
     // GI Cache
     Ren::PipelineRef pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[3], pi_probe_sample_;
     // GTAO
@@ -242,8 +242,8 @@ class Renderer {
         blit_down_depth_prog_, blit_ssr_compose_prog_;
 
     struct CommonBuffers {
-        FgResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, rt_cells_res, lights_res,
-            decals_res, items_res, rt_items_res, shared_data_res, atomic_cnt_res;
+        FgResRef skin_transforms, shape_keys, instance_indices, cells, rt_cells, lights, decals, items, rt_items,
+            shared_data, atomic_cnt;
     };
 
     struct FrameTextures {

@@ -258,12 +258,16 @@ float sanitize(const float val) {
     return (isnan(val) || isinf(val)) ? 0.0 : val;
 }
 
-vec3 sanitize(const vec3 col) {
-    return vec3(sanitize(col.x), sanitize(col.y), sanitize(col.z));
+vec2 sanitize(const vec2 val) {
+    return vec2(sanitize(val.x), sanitize(val.y));
 }
 
-vec4 sanitize(const vec4 col) {
-    return vec4(sanitize(col.x), sanitize(col.y), sanitize(col.z), sanitize(col.w));
+vec3 sanitize(const vec3 val) {
+    return vec3(sanitize(val.x), sanitize(val.y), sanitize(val.z));
+}
+
+vec4 sanitize(const vec4 val) {
+    return vec4(sanitize(val.x), sanitize(val.y), sanitize(val.z), sanitize(val.w));
 }
 
 vec3 TransformFromClipSpace(const mat4 world_from_clip, vec4 pos_cs) {

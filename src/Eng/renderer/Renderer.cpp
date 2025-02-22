@@ -711,9 +711,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef skin_vtx_res =
                 skinning.AddStorageReadonlyInput(persistent_data.skin_vertex_buf, Ren::eStageBits::ComputeShader);
             FgResRef in_skin_transforms_res =
-                skinning.AddStorageReadonlyInput(common_buffers.skin_transforms_res, Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(common_buffers.skin_transforms, Ren::eStageBits::ComputeShader);
             FgResRef in_shape_keys_res =
-                skinning.AddStorageReadonlyInput(common_buffers.shape_keys_res, Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(common_buffers.shape_keys, Ren::eStageBits::ComputeShader);
             FgResRef delta_buf_res =
                 skinning.AddStorageReadonlyInput(persistent_data.delta_buf, Ren::eStageBits::ComputeShader);
 
@@ -899,11 +899,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef ndx_buf_res = shadow_maps.AddIndexBufferInput(persistent_data.indices_buf);
 
             FgResRef shared_data_res = shadow_maps.AddUniformBufferInput(
-                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+                common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
             FgResRef instances_res = shadow_maps.AddStorageReadonlyInput(
                 persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
             FgResRef instance_indices_res =
-                shadow_maps.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
+                shadow_maps.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
 
             FgResRef materials_buf_res =
                 shadow_maps.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
@@ -984,11 +984,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef ndx_buf = depth_fill.AddIndexBufferInput(persistent_data.indices_buf);
 
             FgResRef shared_data_res = depth_fill.AddUniformBufferInput(
-                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+                common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
             FgResRef instances_res = depth_fill.AddStorageReadonlyInput(
                 persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
             FgResRef instance_indices_res =
-                depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
+                depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
 
             FgResRef materials_buf_res =
                 depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
@@ -1033,7 +1033,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const FgResRef depth_tex =
                 depth_hierarchy.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
             const FgResRef atomic_buf =
-                depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt_res, Ren::eStageBits::ComputeShader);
+                depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt, Ren::eStageBits::ComputeShader);
 
             { // 32-bit float depth hierarchy
                 Ren::Tex2DParams params;
@@ -1145,7 +1145,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             auto *data = debug_probes.AllocNodeData<ExDebugProbes::Args>();
             data->shared_data =
-                debug_probes.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::VertexShader);
+                debug_probes.AddUniformBufferInput(common_buffers.shared_data, Ren::eStageBits::VertexShader);
             data->offset_tex =
                 debug_probes.AddTextureInput(frame_textures.gi_cache_offset, Ren::eStageBits::VertexShader);
             data->irradiance_tex =
@@ -1182,7 +1182,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             const Ren::eStageBits stages = Ren::eStageBits::ComputeShader;
 
             auto *data = debug_rt.AllocNodeData<ExDebugRT::Args>();
-            data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data_res, stages);
+            data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data, stages);
             if (list.render_settings.debug_rt == eDebugRT::Main) {
                 data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_geo_instances_res, stages);
             } else if (list.render_settings.debug_rt == eDebugRT::Shadow) {
@@ -1192,11 +1192,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf1, stages);
             data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf2, stages);
             data->ndx_buf = debug_rt.AddStorageReadonlyInput(persistent_data.indices_buf, stages);
-            data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights_res, stages);
+            data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights, stages);
             data->shadowmap_tex = debug_rt.AddTextureInput(shadow_map_tex_, stages);
             data->ltc_luts_tex = debug_rt.AddTextureInput(ltc_luts_, stages);
-            data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells_res, stages);
-            data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items_res, stages);
+            data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells, stages);
+            data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items, stages);
 
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;

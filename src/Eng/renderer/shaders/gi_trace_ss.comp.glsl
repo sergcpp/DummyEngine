@@ -113,7 +113,7 @@ void main() {
 
         uint base_ray_index = 0;
         if (subgroupElect()) {
-            base_ray_index = atomicAdd(g_inout_ray_counter[4], wave_ray_count);
+            base_ray_index = atomicAdd(g_inout_ray_counter[6], wave_ray_count);
         }
         base_ray_index = subgroupBroadcastFirst(base_ray_index);
         if (needs_ray) {
@@ -122,7 +122,7 @@ void main() {
         }
 #else
         if (needs_ray) {
-            uint ray_index = atomicAdd(g_inout_ray_counter[4], 1);
+            uint ray_index = atomicAdd(g_inout_ray_counter[6], 1);
             StoreRay(ray_index, pix_uvs, copy_horizontal, copy_vertical, copy_diagonal);
         }
 #endif

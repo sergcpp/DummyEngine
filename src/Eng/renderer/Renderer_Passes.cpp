@@ -75,6 +75,10 @@ void Eng::Renderer::InitPipelines() {
     pi_ssr_filter_[2] = sh_.LoadPipeline("internal/ssr_filter.comp.glsl");
     pi_ssr_filter_[3] = sh_.LoadPipeline("internal/ssr_filter@POST_FILTER.comp.glsl");
     pi_ssr_stabilization_ = sh_.LoadPipeline("internal/ssr_stabilization.comp.glsl");
+    pi_tile_clear_[0] = sh_.LoadPipeline("internal/tile_clear.comp.glsl");
+    pi_tile_clear_[1] = sh_.LoadPipeline("internal/tile_clear@AVERAGE.comp.glsl");
+    pi_tile_clear_[2] = sh_.LoadPipeline("internal/tile_clear@VARIANCE.comp.glsl");
+    pi_tile_clear_[3] = sh_.LoadPipeline("internal/tile_clear@AVERAGE;VARIANCE.comp.glsl");
 
     // GI Cache
     pi_probe_blend_[0][0] = sh_.LoadPipeline("internal/probe_blend@RADIANCE.comp.glsl");
@@ -177,42 +181,42 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = SkinTransformsBufChunkSize;
-        common_buffers.skin_transforms_res = update_bufs.AddTransferOutput("Skin Transforms", desc);
+        common_buffers.skin_transforms = update_bufs.AddTransferOutput("Skin Transforms", desc);
     }
     { // create shape keys buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ShapeKeysBufChunkSize;
-        common_buffers.shape_keys_res = update_bufs.AddTransferOutput("Shape Keys", desc);
+        common_buffers.shape_keys = update_bufs.AddTransferOutput("Shape Keys", desc);
     }
     { // create instance indices buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
-        common_buffers.instance_indices_res = update_bufs.AddTransferOutput("Instance Indices", desc);
+        common_buffers.instance_indices = update_bufs.AddTransferOutput("Instance Indices", desc);
     }
     FgResRef shared_data_res;
     { // create uniform buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Uniform;
         desc.size = SharedDataBlockSize;
-        shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput("Shared Data", desc);
+        shared_data_res = common_buffers.shared_data = update_bufs.AddTransferOutput("Shared Data", desc);
     }
     { // create atomic counter buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Storage;
         desc.size = sizeof(uint32_t);
-        common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter", desc);
+        common_buffers.atomic_cnt = update_bufs.AddTransferOutput("Atomic Counter", desc);
     }
 
     update_bufs.set_execute_cb([this, &common_buffers, &persistent_data, shared_data_res](FgBuilder &builder) {
         Ren::Context &ctx = builder.ctx();
-        FgAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms_res);
-        FgAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
+        FgAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms);
+        FgAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys);
         // FgAllocBuf &instances_buf = builder.GetWriteBuffer(common_buffers.instances_res);
-        FgAllocBuf &instance_indices_buf = builder.GetWriteBuffer(common_buffers.instance_indices_res);
+        FgAllocBuf &instance_indices_buf = builder.GetWriteBuffer(common_buffers.instance_indices);
         FgAllocBuf &shared_data_buf = builder.GetWriteBuffer(shared_data_res);
-        FgAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
+        FgAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt);
 
         Ren::UpdateBuffer(
             *skin_transforms_buf.ref, 0, uint32_t(p_list_->skin_transforms.size() * sizeof(SkinTransform)),
@@ -448,47 +452,47 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
-        common_buffers.cells_res = update_light_bufs.AddTransferOutput("Cells Buffer", desc);
+        common_buffers.cells = update_light_bufs.AddTransferOutput("Cells Buffer", desc);
     }
     { // create RT cells buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
-        common_buffers.rt_cells_res = update_light_bufs.AddTransferOutput("RT Cells Buffer", desc);
+        common_buffers.rt_cells = update_light_bufs.AddTransferOutput("RT Cells Buffer", desc);
     }
     { // create lights buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
-        common_buffers.lights_res = update_light_bufs.AddTransferOutput("Lights Buffer", desc);
+        common_buffers.lights = update_light_bufs.AddTransferOutput("Lights Buffer", desc);
     }
     { // create decals buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = DecalsBufChunkSize;
-        common_buffers.decals_res = update_light_bufs.AddTransferOutput("Decals Buffer", desc);
+        common_buffers.decals = update_light_bufs.AddTransferOutput("Decals Buffer", desc);
     }
     { // create items buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
-        common_buffers.items_res = update_light_bufs.AddTransferOutput("Items Buffer", desc);
+        common_buffers.items = update_light_bufs.AddTransferOutput("Items Buffer", desc);
     }
     { // create RT items buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
-        common_buffers.rt_items_res = update_light_bufs.AddTransferOutput("RT Items Buffer", desc);
+        common_buffers.rt_items = update_light_bufs.AddTransferOutput("RT Items Buffer", desc);
     }
 
     update_light_bufs.set_execute_cb([this, &common_buffers](FgBuilder &builder) {
         Ren::Context &ctx = builder.ctx();
-        FgAllocBuf &cells_buf = builder.GetWriteBuffer(common_buffers.cells_res);
-        FgAllocBuf &rt_cells_buf = builder.GetWriteBuffer(common_buffers.rt_cells_res);
-        FgAllocBuf &lights_buf = builder.GetWriteBuffer(common_buffers.lights_res);
-        FgAllocBuf &decals_buf = builder.GetWriteBuffer(common_buffers.decals_res);
-        FgAllocBuf &items_buf = builder.GetWriteBuffer(common_buffers.items_res);
-        FgAllocBuf &rt_items_buf = builder.GetWriteBuffer(common_buffers.rt_items_res);
+        FgAllocBuf &cells_buf = builder.GetWriteBuffer(common_buffers.cells);
+        FgAllocBuf &rt_cells_buf = builder.GetWriteBuffer(common_buffers.rt_cells);
+        FgAllocBuf &lights_buf = builder.GetWriteBuffer(common_buffers.lights);
+        FgAllocBuf &decals_buf = builder.GetWriteBuffer(common_buffers.decals);
+        FgAllocBuf &items_buf = builder.GetWriteBuffer(common_buffers.items);
+        FgAllocBuf &rt_items_buf = builder.GetWriteBuffer(common_buffers.rt_items);
 
         if (!cells_buf.tbos[0]) {
             cells_buf.tbos[0] =
@@ -734,7 +738,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         auto *data = skydome_cube.AllocNodeData<ExSkydomeCube::Args>();
 
         data->shared_data =
-            skydome_cube.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+            skydome_cube.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
 
         data->transmittance_lut = skydome_cube.AddTextureInput(sky_transmittance_lut_, Stg::FragmentShader);
         data->multiscatter_lut = skydome_cube.AddTextureInput(sky_multiscatter_lut_, Stg::FragmentShader);
@@ -755,7 +759,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
         auto *data = skymap.AllocNodeData<ExSkydomeScreen::Args>();
         data->shared_data =
-            skymap.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+            skymap.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
         if (p_list_->env.env_map_name != "physical_sky") {
             frame_textures.envmap = data->env_tex = skymap.AddTextureInput(p_list_->env.env_map, Stg::FragmentShader);
             frame_textures.color = data->color_tex = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
@@ -813,7 +817,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         };
 
         auto *data = sky_upsample.AllocNodeData<PassData>();
-        data->shared_data = sky_upsample.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = sky_upsample.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         frame_textures.depth = data->depth_tex = sky_upsample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         frame_textures.envmap = data->env_map = sky_upsample.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
         data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Stg::ComputeShader);
@@ -891,7 +895,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
 
         auto *data = sun_color.AllocNodeData<PassData>();
 
-        data->shared_data = sun_color.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = sun_color.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->transmittance_lut = sun_color.AddTextureInput(sky_transmittance_lut_, Stg::ComputeShader);
         data->multiscatter_lut = sun_color.AddTextureInput(sky_multiscatter_lut_, Stg::ComputeShader);
         data->moon_tex = sun_color.AddTextureInput(sky_moon_tex_, Stg::ComputeShader);
@@ -940,8 +944,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         auto *data = sun_color.AllocNodeData<PassData>();
 
         data->sample_buf = sun_color.AddTransferInput(output);
-        common_buffers.shared_data_res = data->shared_data =
-            sun_color.AddTransferOutput(common_buffers.shared_data_res);
+        common_buffers.shared_data = data->shared_data = sun_color.AddTransferOutput(common_buffers.shared_data);
 
         sun_color.set_execute_cb([data](FgBuilder &builder) {
             FgAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
@@ -979,14 +982,14 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     const FgResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(
         persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
     const FgResRef instances_indices_buf =
-        gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
+        gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
     const FgResRef shared_data_buf =
-        gbuf_fill.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        gbuf_fill.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
 
-    const FgResRef cells_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-    const FgResRef items_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-    const FgResRef decals_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
+    const FgResRef cells_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.cells, Stg::FragmentShader);
+    const FgResRef items_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.items, Stg::FragmentShader);
+    const FgResRef decals_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
 
     frame_textures.albedo = gbuf_fill.AddColorOutput(MAIN_ALBEDO_TEX, frame_textures.albedo_params);
     frame_textures.normal = gbuf_fill.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_params);
@@ -1024,15 +1027,15 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     const FgResRef instances_buf = opaque.AddStorageReadonlyInput(persistent_data.instance_buf,
                                                                   persistent_data.instance_buf_tbo, Stg::VertexShader);
     const FgResRef instances_indices_buf =
-        opaque.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
+        opaque.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
     const FgResRef shader_data_buf =
-        opaque.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        opaque.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
 
-    const FgResRef cells_buf = opaque.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-    const FgResRef items_buf = opaque.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-    const FgResRef lights_buf = opaque.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
-    const FgResRef decals_buf = opaque.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
+    const FgResRef cells_buf = opaque.AddStorageReadonlyInput(common_buffers.cells, Stg::FragmentShader);
+    const FgResRef items_buf = opaque.AddStorageReadonlyInput(common_buffers.items, Stg::FragmentShader);
+    const FgResRef lights_buf = opaque.AddStorageReadonlyInput(common_buffers.lights, Stg::FragmentShader);
+    const FgResRef decals_buf = opaque.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
 
     const FgResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
     const FgResRef ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
@@ -1083,15 +1086,15 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
     const FgResRef instances_buf = transparent.AddStorageReadonlyInput(
         persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
     const FgResRef instances_indices_buf =
-        transparent.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
+        transparent.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
     const FgResRef shader_data_buf =
-        transparent.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        transparent.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
 
-    const FgResRef cells_buf = transparent.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
-    const FgResRef items_buf = transparent.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
-    const FgResRef lights_buf = transparent.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
-    const FgResRef decals_buf = transparent.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
+    const FgResRef cells_buf = transparent.AddStorageReadonlyInput(common_buffers.cells, Stg::FragmentShader);
+    const FgResRef items_buf = transparent.AddStorageReadonlyInput(common_buffers.items, Stg::FragmentShader);
+    const FgResRef lights_buf = transparent.AddStorageReadonlyInput(common_buffers.lights, Stg::FragmentShader);
+    const FgResRef decals_buf = transparent.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
 
     const FgResRef shadowmap_tex = transparent.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
     const FgResRef ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
@@ -1133,12 +1136,12 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     };
 
     auto *data = gbuf_shade.AllocNodeData<PassData>();
-    data->shared_data = gbuf_shade.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+    data->shared_data = gbuf_shade.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
-    data->cells_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.cells_res, Stg::ComputeShader);
-    data->items_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.items_res, Stg::ComputeShader);
-    data->lights_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.lights_res, Stg::ComputeShader);
-    data->decals_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.decals_res, Stg::ComputeShader);
+    data->cells_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.cells, Stg::ComputeShader);
+    data->items_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.items, Stg::ComputeShader);
+    data->lights_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
+    data->decals_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.decals, Stg::ComputeShader);
 
     data->shadowmap_tex = gbuf_shade.AddTextureInput(frame_textures.shadowmap, Stg::ComputeShader);
     data->ssao_tex = gbuf_shade.AddTextureInput(frame_textures.ssao, Stg::ComputeShader);
@@ -1207,7 +1210,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             (view_state_.act_res[1] + GBufferShade::LOCAL_GROUP_SIZE_Y - 1u) / GBufferShade::LOCAL_GROUP_SIZE_Y, 1u};
 
         GBufferShade::Params uniform_params;
-        uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+        uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
         DispatchCompute(*pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
@@ -1237,10 +1240,10 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
     const FgResRef instances_buf = emissive.AddStorageReadonlyInput(
         persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
     const FgResRef instances_indices_buf =
-        emissive.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
+        emissive.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
     const FgResRef shared_data_buf =
-        emissive.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        emissive.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
 
     frame_textures.color = emissive.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
     frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
@@ -1689,7 +1692,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                            (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
 
             DispatchCompute(*pi_gtao_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -1713,7 +1716,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     auto *data = static_vel.AllocNodeData<PassData>();
 
     data->shared_data =
-        static_vel.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        static_vel.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
     data->depth_tex = static_vel.AddCustomTextureInput(depth_tex, Ren::eResState::StencilTestDepthFetch,
                                                        Stg::DepthAttachment | Stg::FragmentShader);
     inout_velocity_tex = data->velocity_tex = static_vel.AddColorOutput(inout_velocity_tex);

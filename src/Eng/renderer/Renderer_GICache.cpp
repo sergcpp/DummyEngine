@@ -31,10 +31,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         data->materials = rt_gi_cache.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
         data->vtx_buf1 = rt_gi_cache.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
         data->ndx_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.indices_buf, stage);
-        data->shared_data = rt_gi_cache.AddUniformBufferInput(common_buffers.shared_data_res, stage);
+        data->shared_data = rt_gi_cache.AddUniformBufferInput(common_buffers.shared_data, stage);
         data->env_tex = rt_gi_cache.AddTextureInput(env_map, stage);
         data->tlas_buf = rt_gi_cache.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
-        data->lights_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.lights_res, stage);
+        data->lights_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.lights, stage);
         data->shadowmap_tex = rt_gi_cache.AddTextureInput(shadow_map_tex_, stage);
         data->ltc_luts_tex = rt_gi_cache.AddTextureInput(ltc_luts_, stage);
         if (persistent_data.stoch_lights_buf) {
@@ -42,8 +42,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             data->stoch_lights_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.stoch_lights_buf, stage);
             data->light_nodes_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.stoch_lights_nodes_buf, stage);
         }
-        data->cells_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.rt_cells_res, stage);
-        data->items_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.rt_items_res, stage);
+        data->cells_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.rt_cells, stage);
+        data->items_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.rt_items, stage);
 
         if (!ctx_.capabilities.hwrt) {
             data->swrt.root_node = persistent_data.swrt.rt_root_node;

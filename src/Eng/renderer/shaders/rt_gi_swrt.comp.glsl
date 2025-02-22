@@ -146,7 +146,7 @@ float LightVisibility(const light_item_t litem, const vec3 P) {
 
 void main() {
     uint ray_index = gl_WorkGroupID.x * LOCAL_GROUP_SIZE_X + gl_LocalInvocationIndex;
-    if (ray_index >= g_ray_counter[1]) return;
+    if (ray_index >= g_ray_counter[7]) return;
     uint packed_coords = g_ray_list[ray_index];
 
     uvec2 ray_coords;

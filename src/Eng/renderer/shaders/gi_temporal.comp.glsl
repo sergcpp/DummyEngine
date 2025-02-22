@@ -142,8 +142,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         const float16_t weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
         new_signal.rgb = mix(new_signal.rgb, fallback_radiance, 1.0 / max(sample_count + 1.0, 1.0));
-        // Clip outliers
-        {
+        { // Clip outliers
 #ifdef RELAXED
             const f16vec3 radiance_min = fallback_radiance - color_std * 1.0;
             const f16vec3 radiance_max = fallback_radiance + color_std * 1.0;
@@ -156,14 +155,10 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         // Blend with history
         new_signal = mix(new_signal, clipped_old_signal, weight);
         new_variance = mix(ComputeTemporalVariance(new_signal.rgb, clipped_old_signal.rgb), new_variance, weight);
-        if (any(isinf(new_signal)) || any(isnan(new_signal)) || isinf(new_variance) || isnan(new_variance)) {
-            new_signal = vec4(0.0);
-            new_variance = 0.0;
-        }
     }
 
-    imageStore(g_out_gi_img, dispatch_thread_id, new_signal);
-    imageStore(g_out_variance_img, dispatch_thread_id, vec4(new_variance));
+    imageStore(g_out_gi_img, dispatch_thread_id, sanitize(new_signal));
+    imageStore(g_out_variance_img, dispatch_thread_id, vec4(sanitize(new_variance)));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

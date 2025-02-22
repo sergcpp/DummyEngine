@@ -5,6 +5,7 @@
 layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_ray_counter[];
 };
+
 layout(std430, binding = INDIR_ARGS_SLOT) buffer IndirArgs {
     uint g_intersect_args[];
 };
@@ -22,7 +23,7 @@ void main() {
         g_ray_counter[0] = 0;
         g_ray_counter[1] = ray_count;
     }
-    { // denoising arguments
+    { // denoising arguments (1/2)
         const uint tile_count = g_ray_counter[2];
 
         g_intersect_args[3] = tile_count;
@@ -31,5 +32,15 @@ void main() {
 
         g_ray_counter[2] = 0;
         g_ray_counter[3] = tile_count;
+    }
+    { // denoising arguments (2/2)
+        const uint tile_count = g_ray_counter[4];
+
+        g_intersect_args[6] = tile_count;
+        g_intersect_args[7] = 1;
+        g_intersect_args[8] = 1;
+
+        g_ray_counter[4] = 0;
+        g_ray_counter[5] = tile_count;
     }
 }

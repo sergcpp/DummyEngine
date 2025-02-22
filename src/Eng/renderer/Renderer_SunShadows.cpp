@@ -69,7 +69,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         auto *data = rt_shadows.AllocNodeData<PassData>();
         data->depth = rt_shadows.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->normal = rt_shadows.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->shared_data = rt_shadows.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = rt_shadows.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         indir_args = data->tile_counter = rt_shadows.AddStorageOutput(indir_args, Stg::ComputeShader);
         data->sobol = rt_shadows.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
         data->scrambling_tile = rt_shadows.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
@@ -149,7 +149,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                                               1u};
 
             RTShadowClassify::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
             uniform_params.frame_index = view_state_.frame_index;
 
             DispatchCompute(*pi_shadow_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
@@ -168,7 +168,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->materials = rt_shadows.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
         data->vtx_buf1 = rt_shadows.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
         data->ndx_buf = rt_shadows.AddStorageReadonlyInput(persistent_data.indices_buf, stage);
-        data->shared_data = rt_shadows.AddUniformBufferInput(common_buffers.shared_data_res, stage);
+        data->shared_data = rt_shadows.AddUniformBufferInput(common_buffers.shared_data, stage);
         data->noise_tex = rt_shadows.AddTextureInput(noise_tex, stage);
         data->depth_tex = rt_shadows.AddTextureInput(frame_textures.depth, stage);
         data->normal_tex = rt_shadows.AddTextureInput(frame_textures.normal, stage);
@@ -232,7 +232,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 1u};
 
             RTShadowDebug::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
 
             DispatchCompute(*pi_shadow_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -280,7 +280,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             const Ren::Vec3u grp_count = Ren::Vec3u{(x_tiles + 4u - 1u) / 4u, (y_tiles + 4u - 1u) / 4u, 1u};
 
             RTShadowPrepareMask::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
 
             DispatchCompute(*pi_shadow_prepare_mask_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -319,7 +319,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->prev_depth = rt_classify_tiles.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->prev_moments = rt_classify_tiles.AddHistoryTextureInput("SH Moments Tex", Stg::ComputeShader);
         data->ray_hits = rt_classify_tiles.AddStorageReadonlyInput(shadow_mask, Stg::ComputeShader);
-        data->shared_data = rt_classify_tiles.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = rt_classify_tiles.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // metadata buffer
             FgBufDesc desc = {};
@@ -390,7 +390,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                            1u};
 
             RTShadowClassifyTiles::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
@@ -419,7 +419,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->normal = rt_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->input = rt_filter.AddTextureInput(repro_results, Stg::ComputeShader);
         data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Stg::ComputeShader);
-        data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
             Ren::Tex2DParams params;
@@ -456,7 +456,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 1u};
 
             RTShadowFilter::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
@@ -485,7 +485,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->normal = rt_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->input = rt_filter.AddTextureInput(filtered_result0, Stg::ComputeShader);
         data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Stg::ComputeShader);
-        data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
             Ren::Tex2DParams params;
@@ -522,7 +522,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 1u};
 
             RTShadowFilter::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
@@ -551,7 +551,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         data->normal = rt_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->input = rt_filter.AddTextureInput(filtered_result1, Stg::ComputeShader);
         data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Stg::ComputeShader);
-        data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
             Ren::Tex2DParams params;
@@ -588,7 +588,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 1u};
 
             RTShadowFilter::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
             uniform_params.inv_img_size =
                 1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
@@ -625,7 +625,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
     FgResRef shadow_tex;
 
     auto *data = sun_shadows.AllocNodeData<PassData>();
-    data->shared_data = sun_shadows.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+    data->shared_data = sun_shadows.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
     data->depth_tex = sun_shadows.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
     data->normal_tex = sun_shadows.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
     data->shadow_tex = sun_shadows.AddTextureInput(frame_textures.shadowmap, Stg::ComputeShader);
@@ -662,7 +662,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
             (view_state_.act_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
 
         SunShadows::Params uniform_params;
-        uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+        uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
         uniform_params.enabled = enabled ? 1.0f : 0.0f;
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
         uniform_params.softness_factor =

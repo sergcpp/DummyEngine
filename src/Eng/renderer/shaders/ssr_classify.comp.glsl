@@ -35,7 +35,6 @@ layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform usamplerBuffer g_scrambling_ti
 layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_tex;
 
 layout(binding = REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_refl_img;
-layout(binding = AVG_REFL_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_avg_refl_img;
 layout(binding = NOISE_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_noise_img;
 
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
@@ -84,7 +83,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     bool needs_ray = (dispatch_thread_id.x < screen_size.x && dispatch_thread_id.y < screen_size.y); // disable offscreen pixels
 
     // Dont shoot a ray on very rough surfaces.
-    const bool is_reflective_surface = IsReflectiveSurface(g_depth_tex, g_spec_tex, ivec2(dispatch_thread_id));
+    const bool is_reflective_surface = IsSpecularSurface(g_depth_tex, g_spec_tex, ivec2(dispatch_thread_id));
     const bool is_glossy_reflection = IsGlossyReflection(roughness);
     needs_ray = needs_ray && is_glossy_reflection && is_reflective_surface;
 
@@ -175,17 +174,19 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 
     if (g_params.clear > 0.5) {
         imageStore(g_refl_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, -1.0));
-        if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
-            imageStore(g_avg_refl_img, ivec2(gl_WorkGroupID.xy), vec4(0.0));
-        }
     }
 
     groupMemoryBarrier(); // Wait until all waves write into g_tile_count
     barrier();
 
-    if (group_thread_id.x == 0u && group_thread_id.y == 0u && g_tile_count > 0) {
-        uint tile_index = atomicAdd(g_ray_counter[2], 1);
-        g_tile_list[tile_index] = ((dispatch_thread_id.y & 0xffffu) << 16u) | (dispatch_thread_id.x & 0xffffu);
+    if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
+        if (g_tile_count > 0) {
+            const uint denoise_tile_index = atomicAdd(g_ray_counter[2], 1);
+            g_tile_list[denoise_tile_index] = ((dispatch_thread_id.y & 0xffffu) << 16u) | (dispatch_thread_id.x & 0xffffu);
+        } else {
+            const uint clear_tile_index = atomicAdd(g_ray_counter[4], 1);
+            g_tile_list[g_params.tile_count - clear_tile_index - 1] = ((dispatch_thread_id.y & 0xffffu) << 16u) | (dispatch_thread_id.x & 0xffffu);
+        }
     }
 }
 

@@ -3,7 +3,7 @@
 
 #include "_interface_common.h"
 
-INTERFACE_START(SSRComposeNew)
+INTERFACE_START(SSRCompose)
 
 struct Params {
     vec4 transform;

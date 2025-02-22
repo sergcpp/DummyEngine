@@ -49,26 +49,6 @@ layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
 
-vec3 Tonemap(vec3 c) {
-    //c = c / (c + vec3(1.0));
-    return c;
-}
-
-vec4 Tonemap(vec4 c) {
-    c.rgb = Tonemap(c.rgb);
-    return c;
-}
-
-vec3 TonemapInvert(vec3 c) {
-    //c = c / (vec3(1.0) - c);
-    return c;
-}
-
-vec4 TonemapInvert(vec4 c) {
-    c.rgb = TonemapInvert(c.rgb);
-    return c;
-}
-
 void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size) {
     // Load 16x16 region into shared memory using 4 8x8 blocks
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
@@ -81,7 +61,7 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
 
     // Load into registers
     for (int i = 0; i < 4; ++i) {
-        refl[i] = Tonemap(texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0));
+        refl[i] = texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0);
     }
 
     // Move to shared memory
@@ -175,9 +155,9 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     if (center_radiance.w > 0.0 && IsGlossyReflection(roughness) && !IsMirrorReflection(roughness)) {
         float16_t sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        f16vec3 avg_radiance = Tonemap(textureLod(g_avg_refl_tex, uv8, 0.0).rgb);
+        f16vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb;
 
-        f16vec4 old_signal = Tonemap(texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0));
+        f16vec4 old_signal = texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0);
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
         f16vec3 color_std = (sqrt(local_neighborhood.variance.xyz) + length(local_neighborhood.mean.xyz - avg_radiance)) * history_clip_weight;
@@ -189,8 +169,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         float16_t weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
         new_signal.rgb = mix(new_signal.rgb, avg_radiance, 1.0 / max(sample_count + 1.0, 1.0));
-        // Clip outliers
-        {
+        { // Clip outliers
 #ifdef RELAXED
             const f16vec3 radiance_min = avg_radiance - color_std * 0.75;
             const f16vec3 radiance_max = avg_radiance + color_std * 0.75;
@@ -206,13 +185,8 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         new_variance = mix(ComputeTemporalVariance(new_signal.xyz, clipped_old_signal), new_variance, weight);
     }
 
-    if (any(isinf(new_signal)) || any(isnan(new_signal)) || isinf(new_variance) || isnan(new_variance)) {
-        new_signal = vec4(0.0);
-        new_variance = 0.0;
-    }
-
-    imageStore(g_out_refl_img, dispatch_thread_id, TonemapInvert(new_signal));
-    imageStore(g_out_variance_img, dispatch_thread_id, vec4(new_variance));
+    imageStore(g_out_refl_img, dispatch_thread_id, sanitize(new_signal));
+    imageStore(g_out_variance_img, dispatch_thread_id, vec4(sanitize(new_variance)));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

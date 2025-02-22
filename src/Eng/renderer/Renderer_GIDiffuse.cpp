@@ -13,6 +13,7 @@
 #include "shaders/gi_write_indir_rt_dispatch_interface.h"
 #include "shaders/gi_write_indirect_args_interface.h"
 #include "shaders/probe_sample_interface.h"
+#include "shaders/tile_clear_interface.h"
 
 void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                                      const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
@@ -42,7 +43,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
         auto *data = probe_sample.AllocNodeData<PassData>();
 
-        data->shared_data = probe_sample.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = probe_sample.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->depth_tex = probe_sample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->normals_tex = probe_sample.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->ssao_tex = probe_sample.AddTextureInput(frame_textures.ssao, Stg::ComputeShader);
@@ -62,6 +63,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         }
 
         probe_sample.set_execute_cb([data, &persistent_data, this](FgBuilder &builder) {
+            using namespace ProbeSample;
+
             FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             FgAllocTex &normals_tex = builder.GetReadTexture(data->normals_tex);
@@ -73,26 +76,23 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-                {Trg::Tex2DSampled, ProbeSample::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::Tex2DSampled, ProbeSample::NORM_TEX_SLOT, *normals_tex.ref},
-                {Trg::Tex2DSampled, ProbeSample::SSAO_TEX_SLOT, *ssao_tex.ref},
-                {Trg::Tex2DArraySampled, ProbeSample::IRRADIANCE_TEX_SLOT,
-                 *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
-                {Trg::Tex2DArraySampled, ProbeSample::DISTANCE_TEX_SLOT,
-                 *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
-                {Trg::Tex2DArraySampled, ProbeSample::OFFSET_TEX_SLOT,
-                 *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
-                {Trg::Image2D, ProbeSample::OUT_IMG_SLOT, *out_tex.ref}};
+                {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Trg::Tex2DSampled, NORM_TEX_SLOT, *normals_tex.ref},
+                {Trg::Tex2DSampled, SSAO_TEX_SLOT, *ssao_tex.ref},
+                {Trg::Tex2DArraySampled, IRRADIANCE_TEX_SLOT, *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
+                {Trg::Tex2DArraySampled, DISTANCE_TEX_SLOT, *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
+                {Trg::Tex2DArraySampled, OFFSET_TEX_SLOT, *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+                {Trg::Image2D, OUT_IMG_SLOT, *out_tex.ref}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + ProbeSample::LOCAL_GROUP_SIZE_X - 1u) / ProbeSample::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + ProbeSample::LOCAL_GROUP_SIZE_Y - 1u) / ProbeSample::LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                           (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[0].origin;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[0].scroll;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[0].spacing;
 
-            ProbeSample::Params uniform_params;
+            Params uniform_params;
             uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
@@ -131,7 +131,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         { // ray counter
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = 6 * sizeof(uint32_t);
+            desc.size = 8 * sizeof(uint32_t);
 
             ray_counter = data->ray_counter = gi_prepare.AddTransferOutput("GI Ray Counter", desc);
         }
@@ -144,8 +144,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
+    const int tile_count = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8);
+
     FgResRef ray_list, tile_list;
-    FgResRef gi_tex, avg_gi_tex, noise_tex;
+    FgResRef gi_tex, noise_tex;
 
     { // Classify pixel quads
         auto &gi_classify = fg_builder_.AddNode("GI CLASSIFY");
@@ -158,7 +160,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef ray_counter;
             FgResRef ray_list;
             FgResRef tile_list;
-            FgResRef out_gi_tex, out_avg_gi_tex, out_noise_tex;
+            FgResRef out_gi_tex, out_noise_tex;
         };
 
         auto *data = gi_classify.AllocNodeData<PassData>();
@@ -184,7 +186,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         { // tile list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8) * sizeof(uint32_t);
+            desc.size = tile_count * sizeof(uint32_t);
 
             tile_list = data->tile_list = gi_classify.AddStorageOutput("GI Tile List", desc, Stg::ComputeShader);
         }
@@ -197,17 +199,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             gi_tex = data->out_gi_tex = gi_classify.AddStorageImageOutput("GI Final", params, Stg::ComputeShader);
         }
-        { // 8x8 average gi texture
-            Ren::Tex2DParams params;
-            params.w = (view_state_.scr_res[0] + 7) / 8;
-            params.h = (view_state_.scr_res[1] + 7) / 8;
-            params.format = Ren::eTexFormat::RGBA16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            avg_gi_tex = data->out_avg_gi_tex =
-                gi_classify.AddStorageImageOutput("Average GI", params, Stg::ComputeShader);
-        }
         { // blue noise texture
             Ren::Tex2DParams params;
             params.w = params.h = 128;
@@ -218,7 +209,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_classify.AddStorageImageOutput("GI BN Tex", params, Stg::ComputeShader);
         }
 
-        gi_classify.set_execute_cb([this, data, SamplesPerQuad](FgBuilder &builder) {
+        gi_classify.set_execute_cb([this, data, tile_count, SamplesPerQuad](FgBuilder &builder) {
+            using namespace GIClassifyTiles;
+
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
             FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
             FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
@@ -230,7 +223,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
             FgAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
             FgAllocTex &gi_tex = builder.GetWriteTexture(data->out_gi_tex);
-            FgAllocTex &avg_gi_tex = builder.GetWriteTexture(data->out_avg_gi_tex);
             FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
             // Initialize texel buffers if needed
@@ -249,31 +241,27 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                          ranking_tile_buf.ref->size());
             }
 
-            const Ren::Binding bindings[] = {
-                {Trg::Tex2DSampled, GIClassifyTiles::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::Tex2DSampled, GIClassifyTiles::SPEC_TEX_SLOT, *spec_tex.ref},
-                {Trg::Tex2DSampled, GIClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Trg::SBufRO, GIClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                {Trg::SBufRO, GIClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
-                {Trg::SBufRO, GIClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Trg::UTBuf, GIClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                {Trg::UTBuf, GIClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                {Trg::UTBuf, GIClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
-                {Trg::Image2D, GIClassifyTiles::GI_IMG_SLOT, *gi_tex.ref},
-                {Trg::Image2D, GIClassifyTiles::AVG_GI_IMG_SLOT, *avg_gi_tex.ref},
-                {Trg::Image2D, GIClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                                             {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                             {Trg::SBufRO, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                                             {Trg::SBufRO, RAY_LIST_SLOT, *ray_list_buf.ref},
+                                             {Trg::SBufRO, TILE_LIST_SLOT, *tile_list_buf.ref},
+                                             {Trg::UTBuf, SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
+                                             {Trg::UTBuf, SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
+                                             {Trg::UTBuf, RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                                             {Trg::Image2D, GI_IMG_SLOT, *gi_tex.ref},
+                                             {Trg::Image2D, NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + GIClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
-                               GIClassifyTiles::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + GIClassifyTiles::LOCAL_GROUP_SIZE_Y - 1u) /
-                               GIClassifyTiles::LOCAL_GROUP_SIZE_Y,
-                           1u};
+                Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                           (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
-            GIClassifyTiles::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
+            uniform_params.tile_count = tile_count;
 
             DispatchCompute(*pi_gi_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -296,18 +284,20 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         { // Indirect arguments
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Indirect;
-            desc.size = 2 * sizeof(Ren::DispatchIndirectCommand);
+            desc.size = 3 * sizeof(Ren::DispatchIndirectCommand);
 
             indir_disp_buf = data->indir_disp_buf =
                 write_indir.AddStorageOutput("GI Intersect Args", desc, Stg::ComputeShader);
         }
 
         write_indir.set_execute_cb([this, data](FgBuilder &builder) {
+            using namespace GIWriteIndirectArgs;
+
             FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
             FgAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
 
-            const Ren::Binding bindings[] = {{Trg::SBufRW, GIWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                                             {Trg::SBufRW, GIWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
+            const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                                             {Trg::SBufRW, INDIR_ARGS_SLOT, *indir_args.ref}};
 
             DispatchCompute(*pi_gi_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -330,7 +320,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
         auto *data = gi_trace_ss.AllocNodeData<PassData>();
         data->noise_tex = gi_trace_ss.AddTextureInput(noise_tex, Stg::ComputeShader);
-        data->shared_data = gi_trace_ss.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = gi_trace_ss.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->color_tex = gi_trace_ss.AddHistoryTextureInput(MAIN_COLOR_TEX, Stg::ComputeShader);
         data->normal_tex = gi_trace_ss.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->depth_hierarchy = gi_trace_ss.AddTextureInput(depth_hierarchy, Stg::ComputeShader);
@@ -349,6 +339,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         }
 
         gi_trace_ss.set_execute_cb([this, data](FgBuilder &builder) {
+            using namespace GITraceSS;
+
             FgAllocTex &noise_tex = builder.GetReadTexture(data->noise_tex);
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
@@ -361,20 +353,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
             FgAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, GITraceSS::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
-                {Trg::Tex2DSampled, GITraceSS::COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::Tex2DSampled, GITraceSS::NORM_TEX_SLOT, *normal_tex.ref},
-                {Trg::Tex2DSampled, GITraceSS::NOISE_TEX_SLOT, *noise_tex.ref},
-                {Trg::SBufRO, GITraceSS::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                {Trg::Image2D, GITraceSS::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
-                {Trg::SBufRW, GITraceSS::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
-                {Trg::SBufRW, GITraceSS::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                             {Trg::Tex2DSampled, DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
+                                             {Trg::Tex2DSampled, COLOR_TEX_SLOT, *color_tex.ref},
+                                             {Trg::Tex2DSampled, NORM_TEX_SLOT, *normal_tex.ref},
+                                             {Trg::Tex2DSampled, NOISE_TEX_SLOT, *noise_tex.ref},
+                                             {Trg::SBufRO, IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
+                                             {Trg::Image2D, OUT_GI_IMG_SLOT, *out_gi_tex.ref},
+                                             {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
+                                             {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
-            GITraceSS::Params uniform_params;
-            uniform_params.resolution =
-                Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
+            Params uniform_params;
+            uniform_params.resolution = Ren::Vec4u(view_state_.act_res[0], view_state_.act_res[1], 0, 0);
 
             DispatchComputeIndirect(*pi_gi_trace_ss_, *indir_args_buf.ref, 0, bindings, &uniform_params,
                                     sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -405,12 +395,13 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             }
 
             rt_disp_args.set_execute_cb([this, data](FgBuilder &builder) {
+                using namespace GIWriteIndirRTDispatch;
+
                 FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
                 FgAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
 
-                const Ren::Binding bindings[] = {
-                    {Trg::SBufRW, GIWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                    {Trg::SBufRW, GIWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
+                const Ren::Binding bindings[] = {{Trg::SBufRW, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                                                 {Trg::SBufRW, INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
 
                 DispatchCompute(*pi_gi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -429,7 +420,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->materials = rt_gi.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
             data->vtx_buf1 = rt_gi.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
             data->ndx_buf = rt_gi.AddStorageReadonlyInput(persistent_data.indices_buf, stage);
-            data->shared_data = rt_gi.AddUniformBufferInput(common_buffers.shared_data_res, stage);
+            data->shared_data = rt_gi.AddUniformBufferInput(common_buffers.shared_data, stage);
             data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_gi.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_gi.AddTextureInput(frame_textures.normal, stage);
@@ -438,11 +429,11 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->ray_list = rt_gi.AddStorageReadonlyInput(ray_rt_list, stage);
             data->indir_args = rt_gi.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_gi.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
-            data->lights_buf = rt_gi.AddStorageReadonlyInput(common_buffers.lights_res, stage);
+            data->lights_buf = rt_gi.AddStorageReadonlyInput(common_buffers.lights, stage);
             data->shadowmap_tex = rt_gi.AddTextureInput(shadow_map_tex_, stage);
             data->ltc_luts_tex = rt_gi.AddTextureInput(ltc_luts_, stage);
-            data->cells_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_cells_res, stage);
-            data->items_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_items_res, stage);
+            data->cells_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_cells, stage);
+            data->items_buf = rt_gi.AddStorageReadonlyInput(common_buffers.rt_items, stage);
 
             if (persistent_data.stoch_lights_buf) {
                 data->stoch_lights_buf =
@@ -478,7 +469,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             auto &sample_lights = fg_builder_.AddNode("SAMPLE LIGHTS");
 
             auto *data = sample_lights.AllocNodeData<ExSampleLights::Args>();
-            data->shared_data = sample_lights.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->shared_data = sample_lights.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
             data->random_seq = sample_lights.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
             if (persistent_data.stoch_lights_buf) {
                 data->lights_buf =
@@ -536,7 +527,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         return;
     }
 
-    FgResRef reproj_gi_tex;
+    FgResRef reproj_gi_tex, avg_gi_tex;
     FgResRef variance_temp_tex, sample_count_tex;
 
     { // Denoiser reprojection
@@ -549,25 +540,26 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef gi_tex;
             FgResRef tile_list;
             FgResRef indir_args;
-            uint32_t indir_args_offset = 0;
+            uint32_t indir_args_offset1 = 0, indir_args_offset2 = 0;
             FgResRef out_reprojected_tex, out_avg_gi_tex;
             FgResRef out_variance_tex, out_sample_count_tex;
         };
 
         auto *data = gi_reproject.AllocNodeData<PassData>();
-        data->shared_data = gi_reproject.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = gi_reproject.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->depth_tex = gi_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = gi_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->velocity_tex = gi_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
         data->depth_hist_tex = gi_reproject.AddHistoryTextureInput(OPAQUE_DEPTH_TEX, Stg::ComputeShader);
         data->norm_hist_tex = gi_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->gi_hist_tex = gi_reproject.AddHistoryTextureInput(gi_tex, Stg::ComputeShader);
+        data->gi_hist_tex = gi_reproject.AddHistoryTextureInput("GI Diffuse Filtered", Stg::ComputeShader);
         data->variance_hist_tex = gi_reproject.AddHistoryTextureInput(DIFFUSE_VARIANCE_TEX, Stg::ComputeShader);
         gi_tex = data->gi_tex = gi_reproject.AddTextureInput(gi_tex, Stg::ComputeShader);
 
         data->tile_list = gi_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_reproject.AddIndirectBufferInput(indir_disp_buf);
-        data->indir_args_offset = 3 * sizeof(uint32_t);
+        data->indir_args_offset1 = 3 * sizeof(uint32_t);
+        data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         { // Reprojected gi texture
             Ren::Tex2DParams params;
@@ -579,6 +571,17 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             reproj_gi_tex = data->out_reprojected_tex =
                 gi_reproject.AddStorageImageOutput("GI Reprojected", params, Stg::ComputeShader);
+        }
+        { // 8x8 average gi texture
+            Ren::Tex2DParams params;
+            params.w = (view_state_.scr_res[0] + 7) / 8;
+            params.h = (view_state_.scr_res[1] + 7) / 8;
+            params.format = Ren::eTexFormat::RGBA16F;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            avg_gi_tex = data->out_avg_gi_tex =
+                gi_reproject.AddStorageImageOutput("Average GI", params, Stg::ComputeShader);
         }
         { // Variance
             Ren::Tex2DParams params;
@@ -603,11 +606,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_reproject.AddStorageImageOutput("GI Sample Count", params, Stg::ComputeShader);
         }
 
-        avg_gi_tex = data->out_avg_gi_tex = gi_reproject.AddStorageImageOutput(avg_gi_tex, Stg::ComputeShader);
         data->sample_count_hist_tex =
             gi_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
 
-        gi_reproject.set_execute_cb([this, data](FgBuilder &builder) {
+        gi_reproject.set_execute_cb([this, data, tile_count](FgBuilder &builder) {
             FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
@@ -625,30 +627,49 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
             FgAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-                {Trg::Tex2DSampled, GIReproject::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::Tex2DSampled, GIReproject::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2DSampled, GIReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Trg::Tex2DSampled, GIReproject::DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
-                {Trg::Tex2DSampled, GIReproject::NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
-                {Trg::Tex2DSampled, GIReproject::GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                {Trg::Tex2DSampled, GIReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
-                {Trg::Tex2DSampled, GIReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
-                {Trg::Tex2DSampled, GIReproject::GI_TEX_SLOT, *gi_tex.ref},
-                {Trg::SBufRO, GIReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Trg::Image2D, GIReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
-                {Trg::Image2D, GIReproject::OUT_AVG_GI_IMG_SLOT, *out_avg_gi_tex.ref},
-                {Trg::Image2D, GIReproject::OUT_VERIANCE_IMG_SLOT, *out_variance_tex.ref},
-                {Trg::Image2D, GIReproject::OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
+            { // Process tiles
+                using namespace GIReproject;
 
-            GIReproject::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
+                const Ren::Binding bindings[] = {
+                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
+                    {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                    {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                    {Trg::Tex2DSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                    {Trg::Tex2DSampled, DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
+                    {Trg::Tex2DSampled, NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
+                    {Trg::Tex2DSampled, GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
+                    {Trg::Tex2DSampled, VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
+                    {Trg::Tex2DSampled, SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
+                    {Trg::Tex2DSampled, GI_TEX_SLOT, *gi_tex.ref},
+                    {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                    {Trg::Image2D, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
+                    {Trg::Image2D, OUT_AVG_GI_IMG_SLOT, *out_avg_gi_tex.ref},
+                    {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
+                    {Trg::Image2D, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
-            DispatchComputeIndirect(*pi_gi_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                    &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                    builder.ctx().log());
+                Params uniform_params;
+                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
+
+                DispatchComputeIndirect(*pi_gi_reproject_, *indir_args_buf.ref, data->indir_args_offset1, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
+            }
+            { // Clear unused tiles
+                using namespace TileClear;
+
+                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
+                                                 {Trg::Image2D, OUT_AVG_RAD_IMG_SLOT, *out_avg_gi_tex.ref},
+                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+
+                Params uniform_params;
+                uniform_params.tile_count = tile_count;
+
+                DispatchComputeIndirect(*pi_tile_clear_[3], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
+            }
         });
     }
 
@@ -662,12 +683,12 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef depth_tex, spec_tex, norm_tex, gi_tex, avg_gi_tex;
             FgResRef sample_count_tex, tile_list;
             FgResRef indir_args;
-            uint32_t indir_args_offset = 0;
+            uint32_t indir_args_offset1 = 0, indir_args_offset2 = 0;
             FgResRef out_gi_tex;
         };
 
         auto *data = gi_prefilter.AllocNodeData<PassData>();
-        data->shared_data = gi_prefilter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = gi_prefilter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->spec_tex = gi_prefilter.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
         data->depth_tex = gi_prefilter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_tex = gi_prefilter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -676,7 +697,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->sample_count_tex = gi_prefilter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
         data->tile_list = gi_prefilter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_prefilter.AddIndirectBufferInput(indir_disp_buf);
-        data->indir_args_offset = 3 * sizeof(uint32_t);
+        data->indir_args_offset1 = 3 * sizeof(uint32_t);
+        data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         { // Final diffuse
             Ren::Tex2DParams params;
@@ -690,7 +712,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_prefilter.AddStorageImageOutput("GI Diffuse 1", params, Stg::ComputeShader);
         }
 
-        gi_prefilter.set_execute_cb([this, data](FgBuilder &builder) {
+        gi_prefilter.set_execute_cb([this, data, tile_count](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
@@ -703,25 +725,41 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, GIFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::Tex2DSampled, GIFilter::SPEC_TEX_SLOT, *spec_tex.ref},
-                {Trg::Tex2DSampled, GIFilter::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2DSampled, GIFilter::GI_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
-                {Trg::Tex2DSampled, GIFilter::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
-                {Trg::Tex2DSampled, GIFilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::SBufRO, GIFilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Trg::Image2D, GIFilter::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+            { // Filter tiles
+                using namespace GIFilter;
 
-            GIFilter::Params uniform_params;
-            uniform_params.rotator = view_state_.rand_rotators[0];
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-            uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                                 {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                                                 {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                                                 {Trg::Tex2DSampled, GI_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
+                                                 {Trg::Tex2DSampled, AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
+                                                 {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                                                 {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                 {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
-            DispatchComputeIndirect(*pi_gi_filter_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
-                                    data->indir_args_offset, bindings, &uniform_params, sizeof(uniform_params),
-                                    builder.ctx().default_descr_alloc(), builder.ctx().log());
+                Params uniform_params;
+                uniform_params.rotator = view_state_.rand_rotators[0];
+                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+
+                DispatchComputeIndirect(*pi_gi_filter_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
+                                        data->indir_args_offset1, bindings, &uniform_params, sizeof(uniform_params),
+                                        builder.ctx().default_descr_alloc(), builder.ctx().log());
+            }
+            { // Clear unused tiles
+                using namespace TileClear;
+
+                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
+
+                Params uniform_params;
+                uniform_params.tile_count = tile_count;
+
+                DispatchComputeIndirect(*pi_tile_clear_[0], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
+            }
         });
     }
 
@@ -735,12 +773,12 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgResRef norm_tex, avg_gi_tex, fallback_gi_tex, gi_tex, reproj_gi_tex;
             FgResRef variance_tex, sample_count_tex, tile_list;
             FgResRef indir_args;
-            uint32_t indir_args_offset = 0;
+            uint32_t indir_args_offset1 = 0, indir_args_offset2 = 0;
             FgResRef out_gi_tex, out_variance_tex;
         };
 
         auto *data = gi_temporal.AllocNodeData<PassData>();
-        data->shared_data = gi_temporal.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->shared_data = gi_temporal.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->norm_tex = gi_temporal.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->avg_gi_tex = gi_temporal.AddTextureInput(avg_gi_tex, Stg::ComputeShader);
         data->fallback_gi_tex = gi_temporal.AddTextureInput(gi_fallback, Stg::ComputeShader);
@@ -750,7 +788,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->sample_count_tex = gi_temporal.AddTextureInput(sample_count_tex, Stg::ComputeShader);
         data->tile_list = gi_temporal.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = gi_temporal.AddIndirectBufferInput(indir_disp_buf);
-        data->indir_args_offset = 3 * sizeof(uint32_t);
+        data->indir_args_offset1 = 3 * sizeof(uint32_t);
+        data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         if (EnableBlur) {
             Ren::Tex2DParams params;
@@ -778,7 +817,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_temporal.AddStorageImageOutput(DIFFUSE_VARIANCE_TEX, params, Stg::ComputeShader);
         }
 
-        gi_temporal.set_execute_cb([this, data](FgBuilder &builder) {
+        gi_temporal.set_execute_cb([this, data, tile_count](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
             FgAllocTex &avg_gi_tex = builder.GetReadTexture(data->avg_gi_tex);
@@ -793,25 +832,42 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
             FgAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::FALLBACK_TEX_SLOT, *fallback_gi_tex.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::GI_TEX_SLOT, *gi_tex.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Trg::Tex2DSampled, GIResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::SBufRO, GIResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Trg::Image2D, GIResolveTemporal::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
-                {Trg::Image2D, GIResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+            { // Process tiles
+                using namespace GIResolveTemporal;
 
-            GIResolveTemporal::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                                 {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                                                 {Trg::Tex2DSampled, AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
+                                                 {Trg::Tex2DSampled, FALLBACK_TEX_SLOT, *fallback_gi_tex.ref},
+                                                 {Trg::Tex2DSampled, GI_TEX_SLOT, *gi_tex.ref},
+                                                 {Trg::Tex2DSampled, REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
+                                                 {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                                 {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                                                 {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                 {Trg::Image2D, OUT_GI_IMG_SLOT, *out_gi_tex.ref},
+                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
-            DispatchComputeIndirect(*pi_gi_temporal_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
-                                    data->indir_args_offset, bindings, &uniform_params, sizeof(uniform_params),
-                                    builder.ctx().default_descr_alloc(), builder.ctx().log());
+                Params uniform_params;
+                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+
+                DispatchComputeIndirect(*pi_gi_temporal_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
+                                        data->indir_args_offset1, bindings, &uniform_params, sizeof(uniform_params),
+                                        builder.ctx().default_descr_alloc(), builder.ctx().log());
+            }
+            { // Clear unused tiles
+                using namespace TileClear;
+
+                const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref},
+                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+
+                Params uniform_params;
+                uniform_params.tile_count = tile_count;
+
+                DispatchComputeIndirect(*pi_tile_clear_[2], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                        builder.ctx().log());
+            }
         });
     }
 
@@ -826,12 +882,12 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 FgResRef depth_tex, spec_tex, norm_tex, gi_tex;
                 FgResRef sample_count_tex, tile_list;
                 FgResRef indir_args;
-                uint32_t indir_args_offset = 0;
+                uint32_t indir_args_offset1 = 0, indir_args_offset2 = 0;
                 FgResRef out_gi_tex;
             };
 
             auto *data = gi_filter.AllocNodeData<PassData>();
-            data->shared_data = gi_filter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->shared_data = gi_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
             data->spec_tex = gi_filter.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
             data->depth_tex = gi_filter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->norm_tex = gi_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -839,7 +895,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->sample_count_tex = gi_filter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
             data->tile_list = gi_filter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
             data->indir_args = gi_filter.AddIndirectBufferInput(indir_disp_buf);
-            data->indir_args_offset = 3 * sizeof(uint32_t);
+            data->indir_args_offset1 = 3 * sizeof(uint32_t);
+            data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
             { // Final diffuse
                 Ren::Tex2DParams params;
@@ -853,7 +910,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                     gi_filter.AddStorageImageOutput("GI Diffuse 2", params, Stg::ComputeShader);
             }
 
-            gi_filter.set_execute_cb([this, data](FgBuilder &builder) {
+            gi_filter.set_execute_cb([this, data, tile_count](FgBuilder &builder) {
                 FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
                 FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
                 FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
@@ -866,26 +923,41 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
                 FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-                const Ren::Binding bindings[] = {
-                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                    {Trg::Tex2DSampled, GIFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Trg::Tex2DSampled, GIFilter::SPEC_TEX_SLOT, *spec_tex.ref},
-                    {Trg::Tex2DSampled, GIFilter::NORM_TEX_SLOT, *norm_tex.ref},
-                    {Trg::Tex2DSampled, GIFilter::GI_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
-                    {Trg::Tex2DSampled, GIFilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                    //{Trg::Tex2DSampled, GIFilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                    {Trg::SBufRO, GIFilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::Image2D, GIFilter::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+                { // Filter tiles
+                    using namespace GIFilter;
 
-                GIFilter::Params uniform_params;
-                uniform_params.rotator = view_state_.rand_rotators[0];
-                uniform_params.img_size =
-                    Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-                uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+                    const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                                     {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                     {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                                                     {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                                                     {Trg::Tex2DSampled, GI_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
+                                                     {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                                                     //{Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                                     {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                     {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
-                DispatchComputeIndirect(*pi_gi_filter_[2], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                        builder.ctx().log());
+                    Params uniform_params;
+                    uniform_params.rotator = view_state_.rand_rotators[0];
+                    uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                    uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+
+                    DispatchComputeIndirect(*pi_gi_filter_[2], *indir_args_buf.ref, data->indir_args_offset1, bindings,
+                                            &uniform_params, sizeof(uniform_params),
+                                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                }
+                { // Clear unused tiles
+                    using namespace TileClear;
+
+                    const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                     {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
+
+                    Params uniform_params;
+                    uniform_params.tile_count = tile_count;
+
+                    DispatchComputeIndirect(*pi_tile_clear_[0], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                                            &uniform_params, sizeof(uniform_params),
+                                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                }
             });
         }
 
@@ -899,13 +971,12 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 FgResRef depth_tex, spec_tex, norm_tex, gi_tex, raylen_tex;
                 FgResRef sample_count_tex, tile_list;
                 FgResRef indir_args;
-                uint32_t indir_args_offset = 0;
+                uint32_t indir_args_offset1 = 0, indir_args_offset2 = 0;
                 FgResRef out_gi_tex;
             };
 
             auto *data = gi_post_filter.AllocNodeData<PassData>();
-            data->shared_data =
-                gi_post_filter.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+            data->shared_data = gi_post_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
             data->depth_tex = gi_post_filter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
             data->spec_tex = gi_post_filter.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
             data->norm_tex = gi_post_filter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
@@ -913,11 +984,22 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->sample_count_tex = gi_post_filter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
             data->tile_list = gi_post_filter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
             data->indir_args = gi_post_filter.AddIndirectBufferInput(indir_disp_buf);
-            data->indir_args_offset = 3 * sizeof(uint32_t);
+            data->indir_args_offset1 = 3 * sizeof(uint32_t);
+            data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
-            gi_diffuse3_tex = data->out_gi_tex = gi_post_filter.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
+            { // Final diffuse
+                Ren::Tex2DParams params;
+                params.w = view_state_.scr_res[0];
+                params.h = view_state_.scr_res[1];
+                params.format = Ren::eTexFormat::RGBA16F;
+                params.sampling.filter = Ren::eTexFilter::Bilinear;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            gi_post_filter.set_execute_cb([this, data](FgBuilder &builder) {
+                gi_diffuse3_tex = data->out_gi_tex =
+                    gi_post_filter.AddStorageImageOutput("GI Diffuse Filtered", params, Stg::ComputeShader);
+            }
+
+            gi_post_filter.set_execute_cb([this, data, tile_count](FgBuilder &builder) {
                 FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
                 FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
                 FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
@@ -930,26 +1012,41 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
                 FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-                const Ren::Binding bindings[] = {
-                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                    {Trg::Tex2DSampled, GIFilter::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Trg::Tex2DSampled, GIFilter::SPEC_TEX_SLOT, *spec_tex.ref},
-                    {Trg::Tex2DSampled, GIFilter::NORM_TEX_SLOT, *norm_tex.ref},
-                    {Trg::Tex2DSampled, GIFilter::GI_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
-                    {Trg::Tex2DSampled, GIFilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                    //{Trg::Tex2DSampled, GIFilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                    {Trg::SBufRO, GIFilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::Image2D, GIFilter::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+                { // Filter tiles
+                    using namespace GIFilter;
 
-                GIFilter::Params uniform_params;
-                uniform_params.rotator = view_state_.rand_rotators[1];
-                uniform_params.img_size =
-                    Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-                uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+                    const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                                     {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                     {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                                                     {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                                                     {Trg::Tex2DSampled, GI_TEX_SLOT, {*gi_tex.ref, *nearest_sampler_}},
+                                                     {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                                                     //{Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                                     {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                     {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
-                DispatchComputeIndirect(*pi_gi_filter_[3], *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                        &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                        builder.ctx().log());
+                    Params uniform_params;
+                    uniform_params.rotator = view_state_.rand_rotators[1];
+                    uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                    uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
+
+                    DispatchComputeIndirect(*pi_gi_filter_[3], *indir_args_buf.ref, data->indir_args_offset1, bindings,
+                                            &uniform_params, sizeof(uniform_params),
+                                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                }
+                { // Clear unused tiles
+                    using namespace TileClear;
+
+                    const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                                     {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
+
+                    Params uniform_params;
+                    uniform_params.tile_count = tile_count;
+
+                    DispatchComputeIndirect(*pi_tile_clear_[0], *indir_args_buf.ref, data->indir_args_offset2, bindings,
+                                            &uniform_params, sizeof(uniform_params),
+                                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+                }
             });
         }
 
@@ -983,6 +1080,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->gi_hist_tex = gi_stabilization.AddHistoryTextureInput(gi_diffuse4_tex, Stg::ComputeShader);
 
             gi_stabilization.set_execute_cb([this, data](FgBuilder &builder) {
+                using namespace GIStabilization;
+
                 FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
                 FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
                 FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
@@ -990,23 +1089,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
                 FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-                const Ren::Binding bindings[] = {
-                    {Trg::Tex2DSampled, GIStabilization::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Trg::Tex2DSampled, GIStabilization::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                    {Trg::Tex2DSampled, GIStabilization::GI_TEX_SLOT, *gi_tex.ref},
-                    {Trg::Tex2DSampled, GIStabilization::GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                    {Trg::Image2D, GIStabilization::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::Tex2DSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                                                 {Trg::Tex2DSampled, GI_TEX_SLOT, *gi_tex.ref},
+                                                 {Trg::Tex2DSampled, GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
+                                                 {Trg::Image2D, OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =
-                    Ren::Vec3u{(view_state_.act_res[0] + GIStabilization::LOCAL_GROUP_SIZE_X - 1u) /
-                                   GIStabilization::LOCAL_GROUP_SIZE_X,
-                               (view_state_.act_res[1] + GIStabilization::LOCAL_GROUP_SIZE_Y - 1u) /
-                                   GIStabilization::LOCAL_GROUP_SIZE_Y,
-                               1u};
+                    Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                               (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
-                GIStabilization::Params uniform_params;
-                uniform_params.img_size =
-                    Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+                Params uniform_params;
+                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
 
                 DispatchCompute(*pi_gi_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                 builder.ctx().default_descr_alloc(), builder.ctx().log());

@@ -141,7 +141,7 @@ float LightVisibility(const light_item_t litem, const vec3 P) {
 
 void main() {
     const uint ray_index = gl_WorkGroupID.x * LOCAL_GROUP_SIZE_X + gl_LocalInvocationIndex;
-    if (ray_index >= g_ray_counter[5]) return;
+    if (ray_index >= g_ray_counter[7]) return;
 
 #ifndef LAYERED
     const uint packed_coords = g_ray_list[ray_index];
