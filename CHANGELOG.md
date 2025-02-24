@@ -10,6 +10,17 @@
 
 ### Removed
 
+## [0.2.1] - 2025-02-24
+
+### Added
+
+- Bathroom scene
+- Dedicated loading screen
+
+### Fixed
+
+- Buggy view direction update
+
 ## [0.2.0] - 2024-11-27
 
 ### Added
@@ -51,6 +62,7 @@
 
 - Most of the functionality moved to Eng lib
 
-[Unreleased]: https://github.com/sergcpp/DummyEngine/compare/v0.2.0...master
+[Unreleased]: https://github.com/sergcpp/DummyEngine/compare/v0.2.1...master
+[0.2.1]: https://github.com/sergcpp/DummyEngine/releases/v0.2.1
 [0.2.0]: https://github.com/sergcpp/DummyEngine/releases/v0.2.0
 [0.1.0]: https://github.com/sergcpp/DummyEngine/releases/v0.1.0

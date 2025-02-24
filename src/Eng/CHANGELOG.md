@@ -10,6 +10,28 @@
 
 ### Removed
 
+## [0.2.1] - 2025-02-24
+
+### Added
+
+- Approximate transparency in RT shaders
+- Multi-threaded pipeline initialization
+
+### Fixed
+
+- Inactive probes near transparent objects
+- Noisy recursive reflections
+- GI cache flickering
+- SSAO artifacts
+- Black splotches in GI
+- Occasional texture streaming crash
+
+### Changed
+
+- Improved denoising
+- Improved screen-space shadow (two samplers approach)
+- GTAO is done in half-res on medium/high
+
 ## [0.2.0] - 2024-11-02
 
 ### Added
@@ -108,6 +130,7 @@
 - LinearAlloc
 
 
-[Unreleased]: https://github.com/sergcpp/Eng/compare/v0.2.0...master
+[Unreleased]: https://github.com/sergcpp/Eng/compare/v0.2.1...master
+[0.2.1]: https://github.com/sergcpp/Eng/releases/v0.2.1
 [0.2.0]: https://github.com/sergcpp/Eng/releases/v0.2.0
 [0.1.0]: https://github.com/sergcpp/Eng/releases/v0.1.0

@@ -516,8 +516,8 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "complex_mat1", 34.85, NoGI);
         run_image_test(threads, "complex_mat1", 31.10, NoDiffGI);
         run_image_test(threads, "complex_mat1", 29.74, MedDiffGI);
-        run_image_test(threads, "complex_mat1", 28.25, Full);
-        run_image_test(threads, "complex_mat1", 28.65, Full_Ultra);
+        run_image_test(threads, "complex_mat1", 28.70, Full);
+        run_image_test(threads, "complex_mat1", 29.15, Full_Ultra);
         run_image_test(threads, "complex_mat2", 33.90, NoShadow);
         run_image_test(threads, "complex_mat2", 33.45, NoGI);
         run_image_test(threads, "complex_mat2", 27.25, NoDiffGI);
@@ -540,7 +540,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "complex_mat2_moon_light", 23.50, Full_Ultra);
         run_image_test(threads, "complex_mat2_hdri_light", 20.80, MedDiffGI);
         run_image_test(threads, "complex_mat2_hdri_light", 22.10, Full);
-        run_image_test(threads, "complex_mat2_hdri_light", 23.45, Full_Ultra);
+        run_image_test(threads, "complex_mat2_hdri_light", 23.95, Full_Ultra);
         run_image_test(threads, "complex_mat2_portal_hdri", 27.25, NoGI);
         run_image_test(threads, "complex_mat2_portal_hdri", 24.40, NoDiffGI);
         run_image_test(threads, "complex_mat2_portal_hdri", 24.50, MedDiffGI);
