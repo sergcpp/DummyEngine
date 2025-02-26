@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Gui
-	branch = master
-	commit = e19c5b76c5e9079213c73ff1d312cad5cfd5bc8e
+	branch = update_26_02
+	commit = 77b613a4c1b988268653336b8674b2bdf95fc7d4
 	method = merge
 	cmdver = 0.4.6
-	parent = 4cfcadac3e2f47ed6fa9fbd3fd78b6fdef4cf67e
+	parent = 4b3565b4a75efaa65c82a95df8ba8b70becdad30
