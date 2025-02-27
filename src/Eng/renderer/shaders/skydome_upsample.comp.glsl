@@ -42,15 +42,15 @@ void main() {
     const vec3 view_ray_ws = normalize(ray_origin_ws);
 
     // initial fallback color
-    vec4 out_color = textureLod(g_env_tex, view_ray_ws, 0.0);
+    vec3 out_color = textureLod(g_env_tex, view_ray_ws, 0.0).xyz;
     // sun disk is missing from cubemap, add it here
     if (g_shrd_data.sun_dir.w > 0.0 && view_ray_ws.y > -0.01) {
         const float costh = dot(view_ray_ws, g_shrd_data.sun_dir.xyz);
         const float cos_theta = g_shrd_data.sun_col.w;
         const float sun_disk = smoothstep(cos_theta - SKY_SUN_BLEND_VAL, cos_theta + SKY_SUN_BLEND_VAL, costh);
-        out_color.xyz += sun_disk * g_shrd_data.sun_col.xyz;
+        out_color += sun_disk * g_shrd_data.sun_col.xyz;
     }
-    out_color.xyz = compress_hdr(out_color.xyz, g_shrd_data.cam_pos_and_exp.w);
+    out_color = compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w);
 
     vec4 prev_ray_origin_cs = g_shrd_data.prev_clip_from_world * vec4(ray_origin_ws, 1.0);
     prev_ray_origin_cs /= prev_ray_origin_cs.w;
@@ -62,20 +62,20 @@ void main() {
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
         const vec4 history = textureLod(g_sky_hist_tex, hist_uvs, 0.0);
         if (history.w > 0.0) {
-            out_color = history;
+            out_color = g_params.hist_weight * history.xyz;
         }
     }
 
     if (all(equal(icoord % 4, g_params.sample_coord))) {
         const vec4 new_sample = texelFetch(g_sky_tex, icoord/4, 0);
         if (new_sample.w > 0.0) {
-            out_color = new_sample;
+            out_color = new_sample.xyz;
         }
     }
 
-    imageStore(g_out_hist_img, icoord, vec4(out_color.xyz, 1.0));
+    imageStore(g_out_hist_img, icoord, vec4(out_color, 1.0));
     const float depth = texelFetch(g_depth_tex, icoord, 0).r;
     if (depth == 0.0) {
-        imageStore(g_out_img, icoord, vec4(out_color.xyz, 1.0));
+        imageStore(g_out_img, icoord, vec4(out_color, 1.0));
     }
 }

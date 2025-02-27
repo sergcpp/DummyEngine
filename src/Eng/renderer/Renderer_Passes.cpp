@@ -863,6 +863,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             Skydome::Params2 uniform_params;
             uniform_params.img_size = view_state_.scr_res;
             uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
+            uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
             DispatchCompute(*pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());

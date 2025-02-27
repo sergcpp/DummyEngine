@@ -14,6 +14,8 @@ struct Params {
 struct Params2 {
     ivec2 sample_coord;
     ivec2 img_size;
+    float hist_weight;
+    float _pad[3];
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;
