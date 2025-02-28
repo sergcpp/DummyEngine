@@ -18,8 +18,9 @@ const int LOCAL_GROUP_SIZE_Y = 8;
 const int DEPTH_TEX_SLOT = 1;
 const int DEPTH_LIN_TEX_SLOT = 2;
 const int NORM_TEX_SLOT = 3;
-const int SHADOW_TEX_SLOT = 4;
-const int SHADOW_TEX_VAL_SLOT = 5;
+const int SHADOW_DEPTH_TEX_SLOT = 4;
+const int SHADOW_DEPTH_TEX_VAL_SLOT = 5;
+const int SHADOW_COLOR_TEX_SLOT = 6;
 
 const int OUT_SHADOW_IMG_SLOT = 0;
 

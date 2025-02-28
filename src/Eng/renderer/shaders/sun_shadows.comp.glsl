@@ -17,10 +17,11 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = DEPTH_LIN_TEX_SLOT) uniform sampler2D g_depth_lin_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
-layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
-layout(binding = SHADOW_TEX_VAL_SLOT) uniform sampler2D g_shadow_val_tex;
+layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
+layout(binding = SHADOW_DEPTH_TEX_VAL_SLOT) uniform sampler2D g_shadow_depth_val_tex;
+layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
-layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform restrict writeonly image2D g_out_shadow_img;
+layout(binding = OUT_SHADOW_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_out_shadow_img;
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -63,9 +64,9 @@ void main() {
 
     const float dot_N_L = saturate(dot(normal_ws, g_shrd_data.sun_dir.xyz));
 
-    float visibility = 0.0;
+    vec3 final_color = vec3(1.0);
     if (dot_N_L > -0.01) {
-        visibility = 1.0;
+        float visibility = 1.0;
 
 #ifdef SS_SHADOW
         if (lin_depth < 30.0) {
@@ -123,10 +124,9 @@ void main() {
         pix_scale = exp2(ceil(log2(pix_scale)));
         const float hash = hash3D(floor(pix_scale * pos_ws_biased));
 
-        //visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
-        visibility = min(visibility, GetSunVisibility(lin_depth, g_shadow_tex, g_shadow_val_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)),
-                                                      g_params.softness_factor, hash));
+        final_color = visibility * GetSunVisibilityExt(lin_depth, g_shadow_depth_tex, g_shadow_depth_val_tex, g_shadow_color_tex,
+                                                       transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)), g_params.softness_factor, hash);
     }
 
-    imageStore(g_out_shadow_img, icoord, vec4(visibility));
+    imageStore(g_out_shadow_img, icoord, vec4(final_color, 1.0));
 }

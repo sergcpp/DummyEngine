@@ -50,7 +50,8 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
 
-layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
+layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
@@ -227,7 +228,7 @@ void main() {
             pp.y = 1.0 - pp.y;
 #endif // VULKAN
 
-            light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+            light_contribution *= SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, pp.xyz);
         }
 
         light_total += light_contribution;
@@ -248,8 +249,8 @@ void main() {
         shadow_uvs.y = 1.0 - shadow_uvs.y;
 #endif // VULKAN
 
-        const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
-        if (sun_visibility > 0.0) {
+        const vec3 sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
+        if (hsum(sun_visibility) > 0.0) {
             light_total += sun_visibility * EvaluateSunLight_Approx(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w,
                                                                     I, N, lobe_weights, roughness, clearcoat_roughness2,
                                                                     base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

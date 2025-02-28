@@ -23,7 +23,7 @@
 #endif // ALPHATEST
 
 #ifdef ALPHATEST
-    layout(location = 0) in vec2 g_vtx_uvs0;
+    layout(location = 0) in vec2 g_vtx_uvs;
     layout(location = 1) in flat float g_alpha;
     #if !defined(NO_BINDLESS)
         layout(location = 2) in flat TEX_HANDLE g_alpha_tex;
@@ -32,7 +32,7 @@
 
 void main() {
 #ifdef ALPHATEST
-    float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
+    float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
     if (alpha < 0.5) {
         discard;
     }

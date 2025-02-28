@@ -1038,7 +1038,7 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     const FgResRef lights_buf = opaque.AddStorageReadonlyInput(common_buffers.lights, Stg::FragmentShader);
     const FgResRef decals_buf = opaque.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
 
-    const FgResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+    const FgResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadow_depth, Stg::FragmentShader);
     const FgResRef ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
 
     FgResRef lmap_tex[4];
@@ -1097,7 +1097,7 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
     const FgResRef lights_buf = transparent.AddStorageReadonlyInput(common_buffers.lights, Stg::FragmentShader);
     const FgResRef decals_buf = transparent.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
 
-    const FgResRef shadowmap_tex = transparent.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+    const FgResRef shadowmap_tex = transparent.AddTextureInput(frame_textures.shadow_depth, Stg::FragmentShader);
     const FgResRef ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
 
     FgResRef lmap_tex[4];
@@ -1130,7 +1130,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     struct PassData {
         FgResRef shared_data;
         FgResRef cells_buf, items_buf, lights_buf, decals_buf;
-        FgResRef shadowmap_tex, ssao_tex, gi_tex, sun_shadow_tex;
+        FgResRef shadow_depth_tex, shadow_color_tex, ssao_tex, gi_tex, sun_shadow_tex;
         FgResRef depth_tex, albedo_tex, normal_tex, spec_tex;
         FgResRef ltc_luts_tex, env_tex;
         FgResRef output_tex;
@@ -1144,7 +1144,8 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     data->lights_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
     data->decals_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.decals, Stg::ComputeShader);
 
-    data->shadowmap_tex = gbuf_shade.AddTextureInput(frame_textures.shadowmap, Stg::ComputeShader);
+    data->shadow_depth_tex = gbuf_shade.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
+    data->shadow_color_tex = gbuf_shade.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
     data->ssao_tex = gbuf_shade.AddTextureInput(frame_textures.ssao, Stg::ComputeShader);
     if (enable_gi) {
         data->gi_tex = gbuf_shade.AddTextureInput(frame_textures.gi, Stg::ComputeShader);
@@ -1176,7 +1177,8 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         FgAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
         FgAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
 
-        FgAllocTex &shad_tex = builder.GetReadTexture(data->shadowmap_tex);
+        FgAllocTex &shad_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
+        FgAllocTex &shad_color_tex = builder.GetReadTexture(data->shadow_color_tex);
         FgAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
         FgAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
         FgAllocTex &sun_shadow_tex = builder.GetReadTexture(data->sun_shadow_tex);
@@ -1197,8 +1199,9 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Trg::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::NORM_TEX_SLOT, *normal_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::SPEC_TEX_SLOT, *spec_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, {*shad_tex.ref, *nearest_sampler_}},
+            {Trg::Tex2DSampled, GBufferShade::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
+            {Trg::Tex2DSampled, GBufferShade::SHADOW_DEPTH_VAL_TEX_SLOT, {*shad_depth_tex.ref, *nearest_sampler_}},
+            {Trg::Tex2DSampled, GBufferShade::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},

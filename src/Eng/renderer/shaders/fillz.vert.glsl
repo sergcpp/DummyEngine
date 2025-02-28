@@ -20,7 +20,7 @@
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef ALPHATEST
-layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -44,7 +44,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     layout(location = 3) out vec2 g_vtx_z_vs_prev;
 #endif // MOVING
 #ifdef ALPHATEST
-    layout(location = 4) out vec2 g_vtx_uvs0;
+    layout(location = 4) out vec2 g_vtx_uvs;
     layout(location = 5) out vec3 g_vtx_pos_ls;
     layout(location = 6) out flat float g_alpha;
     #if !defined(NO_BINDLESS)
@@ -63,7 +63,7 @@ void main() {
 #endif // MOVING
 
 #ifdef ALPHATEST
-    g_vtx_uvs0 = g_in_vtx_uvs0;
+    g_vtx_uvs = g_in_vtx_uvs;
 
     const MaterialData mat = g_materials[instance.y];
     g_alpha = 1.0 - mat.params[3].x;

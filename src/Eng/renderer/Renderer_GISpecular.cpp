@@ -393,7 +393,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             data->indir_args = rt_refl.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
             data->lights_buf = rt_refl.AddStorageReadonlyInput(common_buffers.lights, stage);
-            data->shadowmap_tex = rt_refl.AddTextureInput(shadow_map_tex_, stage);
+            data->shadow_depth_tex = rt_refl.AddTextureInput(shadow_depth_tex_, stage);
+            data->shadow_color_tex = rt_refl.AddTextureInput(shadow_color_tex_, stage);
             data->ltc_luts_tex = rt_refl.AddTextureInput(ltc_luts_, stage);
             data->cells_buf = rt_refl.AddStorageReadonlyInput(common_buffers.rt_cells, stage);
             data->items_buf = rt_refl.AddStorageReadonlyInput(common_buffers.rt_items, stage);

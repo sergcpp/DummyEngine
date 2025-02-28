@@ -24,7 +24,8 @@ void Eng::ExRTGI::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &indir_args_buf = builder.GetReadBuffer(args_->indir_args);
     [[maybe_unused]] FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
-    FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
+    FgAllocTex &shadow_depth_tex = builder.GetReadTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = builder.GetReadTexture(args_->shadow_color_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
@@ -40,8 +41,8 @@ void Eng::ExRTGI::Execute_HWRT(FgBuilder &builder) {
 
         if (!stoch_lights_buf->tbos[0] || stoch_lights_buf->tbos[0]->params().size != stoch_lights_buf->ref->size()) {
             stoch_lights_buf->tbos[0] =
-                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref,
-                                              Ren::eTexFormat::RGBA32F, 0, stoch_lights_buf->ref->size());
+                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref, Ren::eTexFormat::RGBA32F,
+                                              0, stoch_lights_buf->ref->size());
         }
         if (!light_nodes_buf->tbos[0] || light_nodes_buf->tbos[0]->params().size != light_nodes_buf->ref->size()) {
             light_nodes_buf->tbos[0] =
@@ -73,7 +74,8 @@ void Eng::ExRTGI::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::SBufRO, RTGI::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::SBufRO, RTGI::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
@@ -132,7 +134,8 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
-    FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
+    FgAllocTex &shadow_depth_tex = builder.GetReadTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = builder.GetReadTexture(args_->shadow_color_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
@@ -148,8 +151,8 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
 
         if (!stoch_lights_buf->tbos[0] || stoch_lights_buf->tbos[0]->params().size != stoch_lights_buf->ref->size()) {
             stoch_lights_buf->tbos[0] =
-                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref,
-                                              Ren::eTexFormat::RGBA32F, 0, stoch_lights_buf->ref->size());
+                builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", stoch_lights_buf->ref, Ren::eTexFormat::RGBA32F,
+                                              0, stoch_lights_buf->ref->size());
         }
         if (!light_nodes_buf->tbos[0] || light_nodes_buf->tbos[0]->params().size != light_nodes_buf->ref->size()) {
             light_nodes_buf->tbos[0] =
@@ -174,24 +177,23 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
     }
 
     if (!prim_ndx_buf.tbos[0] || prim_ndx_buf.tbos[0]->params().size != prim_ndx_buf.ref->size()) {
-        prim_ndx_buf.tbos[0] = ctx.CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                                   prim_ndx_buf.ref->size());
+        prim_ndx_buf.tbos[0] =
+            ctx.CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref, Ren::eTexFormat::R32UI, 0, prim_ndx_buf.ref->size());
     }
 
     if (!rt_blas_buf.tbos[0] || rt_blas_buf.tbos[0]->params().size != rt_blas_buf.ref->size()) {
-        rt_blas_buf.tbos[0] = ctx.CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
-                                                  rt_blas_buf.ref->size());
+        rt_blas_buf.tbos[0] =
+            ctx.CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RGBA32F, 0, rt_blas_buf.ref->size());
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
-                                                  rt_tlas_buf.ref->size());
+        rt_tlas_buf.tbos[0] =
+            ctx.CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RGBA32F, 0, rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
-        mesh_instances_buf.tbos[0] =
-            ctx.CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RGBA32F, 0,
-                                mesh_instances_buf.ref->size());
+        mesh_instances_buf.tbos[0] = ctx.CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref,
+                                                         Ren::eTexFormat::RGBA32F, 0, mesh_instances_buf.ref->size());
     }
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
@@ -214,7 +216,8 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTGI::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGI::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},

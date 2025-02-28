@@ -24,7 +24,8 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &indir_args_buf = builder.GetReadBuffer(args_->indir_args);
     [[maybe_unused]] FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
-    FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
+    FgAllocTex &shadow_depth_tex = builder.GetReadTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = builder.GetReadTexture(args_->shadow_color_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
@@ -82,7 +83,8 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::SBufRO, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.ref},
         {Ren::eBindTarget::SBufRO, RTReflections::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBufRO, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]}};
@@ -171,7 +173,8 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
-    FgAllocTex &shadowmap_tex = builder.GetReadTexture(args_->shadowmap_tex);
+    FgAllocTex &shadow_depth_tex = builder.GetReadTexture(args_->shadow_depth_tex);
+    FgAllocTex &shadow_color_tex = builder.GetReadTexture(args_->shadow_color_tex);
     FgAllocTex &ltc_luts_tex = builder.GetReadTexture(args_->ltc_luts_tex);
     FgAllocBuf &cells_buf = builder.GetReadBuffer(args_->cells_buf);
     FgAllocBuf &items_buf = builder.GetReadBuffer(args_->items_buf);
@@ -266,7 +269,8 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTReflections::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBufRO, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::UTBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]}};

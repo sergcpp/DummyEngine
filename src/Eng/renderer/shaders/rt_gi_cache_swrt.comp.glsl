@@ -74,7 +74,8 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
 
-layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
+layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
@@ -85,10 +86,10 @@ layout(binding = OUT_RAY_DATA_IMG_SLOT, rgba16f) uniform restrict writeonly imag
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
-float LightVisibility(const light_item_t litem, const vec3 P) {
+vec3 LightVisibility(const light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
     if (shadowreg_index == -1) {
-        return 1.0;
+        return vec3(1.0);
     }
 
     const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
@@ -104,7 +105,7 @@ float LightVisibility(const light_item_t litem, const vec3 P) {
     pp.y = 1.0 - pp.y;
 #endif // VULKAN
 
-    return textureLod(g_shadow_tex, pp.xyz, 0.0);
+    return textureLod(g_shadow_depth_tex, pp.xyz, 0.0) * textureLod(g_shadow_color_tex, pp.xy, 0.0).xyz;
 }
 
 void main() {
@@ -314,7 +315,7 @@ void main() {
             }
             if (mat.params[2].y > 0) {
                 const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
-                throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
+                throughput = min(throughput, 0.8 * mix(vec3(1.0), mat.params[2].y * base_color, alpha));
                 if (dot(throughput, vec3(0.333)) > 0.1) {
                     ro += (inter.t + 0.0005) * probe_ray_dir;
                     inter.mask = 0;
@@ -600,8 +601,8 @@ void main() {
             shadow_uvs.y = 1.0 - shadow_uvs.y;
     #endif // VULKAN
 
-            const float sun_visibility = textureLod(g_shadow_tex, shadow_uvs, 0.0);
-            if (sun_visibility > 0.0) {
+            const vec3 sun_visibility = textureLod(g_shadow_depth_tex, shadow_uvs, 0.0) * textureLod(g_shadow_color_tex, shadow_uvs.xy, 0.0).xyz;
+            if (hsum(sun_visibility) > 0.0) {
                 light_total += sun_visibility * EvaluateSunLight_Approx(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w,
                                                                         I, N, lobe_weights, roughness, clearcoat_roughness2,
                                                                         base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

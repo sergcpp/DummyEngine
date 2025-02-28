@@ -59,7 +59,7 @@ void main() {
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                     bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 diff_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs.xy)));
+    vec3 base_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs.xy)));
     vec3 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs.xy).wyz;
     vec4 spec_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs.xy);
 
@@ -98,7 +98,7 @@ void main() {
             if (diff_uvs_tr.z > 0.0) {
                 vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
                 vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_tex, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
-                diff_color = mix(diff_color, SRGBToLinear(decal_diff), decal_influence);
+                base_color = mix(base_color, SRGBToLinear(decal_diff), decal_influence);
             }
 
             vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 5);
@@ -184,7 +184,7 @@ void main() {
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
-    vec3 diffuse_color = diff_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
+    vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                        ambient_occlusion * indirect_col + additional_light);
 
     vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos);

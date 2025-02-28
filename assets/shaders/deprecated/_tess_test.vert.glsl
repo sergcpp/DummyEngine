@@ -10,7 +10,7 @@
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 layout(location = VTX_NOR_LOC) in vec4 g_in_vtx_normal;
 layout(location = VTX_TAN_LOC) in vec2 g_in_vtx_tangent;
-layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 layout(location = VTX_AUX_LOC) in vec2 g_vtx_unused;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -59,7 +59,7 @@ void main() {
     g_vtx_pos_cs = vtx_pos_ws;
     g_vtx_norm_cs = vtx_nor_ws;
     g_vtx_tangent_cs = vtx_tan_ws;
-    g_vtx_uvs_cs = g_in_vtx_uvs0;
+    g_vtx_uvs_cs = g_in_vtx_uvs;
 
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),

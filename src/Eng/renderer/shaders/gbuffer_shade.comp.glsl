@@ -16,6 +16,7 @@
 
 #include "_fs_common.glsl"
 #include "principled_common.glsl"
+#include "taa_common.glsl"
 #include "gbuffer_shade_interface.h"
 
 #pragma multi_compile _ SHADOW_JITTER
@@ -36,8 +37,9 @@ layout(binding = DEPTH_LIN_TEX_SLOT) uniform sampler2D g_depth_lin_tex;
 layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
-layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
-layout(binding = SHADOW_VAL_TEX_SLOT) uniform sampler2D g_shadow_val_tex;
+layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
+layout(binding = SHADOW_DEPTH_VAL_TEX_SLOT) uniform sampler2D g_shadow_depth_val_tex;
+layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 layout(binding = SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
 layout(binding = LIGHT_BUF_SLOT) uniform samplerBuffer g_lights_buf;
 layout(binding = DECAL_BUF_SLOT) uniform samplerBuffer g_decals_buf;
@@ -67,13 +69,11 @@ float LinearDepthFetch_Bilinear(const vec2 hit_uv) {
 
 #include "ss_trace_simple.glsl.inl"
 
-float LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, float lin_depth, vec4 rotator, const float hash) {
+vec3 LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, float lin_depth, vec4 rotator, const float hash) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
     [[dont_flatten]] if (shadowreg_index == -1) {
-        return 1.0;
+        return vec3(1.0);
     }
-
-    float final_visibility = 1.0;
 
     vec3 from_light = normalize(P + 0.05 * (hash - 0.5) * N - litem.shadow_pos_and_tri_index.xyz);
     shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
@@ -96,22 +96,26 @@ float LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, flo
     const float MaxShadowRadiusPx = 3.5;
 #endif // SHADOW_JITTER
 
-    vec2 blocker = BlockerSearch(g_shadow_val_tex, pp.xyz, MaxShadowRadiusPx * (1.0 - pp.z), rotator);
+    vec3 final_color = vec3(1.0);
+
+    vec2 blocker = BlockerSearch(g_shadow_depth_val_tex, g_shadow_color_tex, pp.xyz, MaxShadowRadiusPx * (1.0 - pp.z), rotator);
     if (blocker.y > 0.5) {
         blocker.x /= blocker.y;
 
-        float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / (1.0 - blocker.x);
+        const float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / (1.0 - blocker.x);
         const float filter_radius_px = clamp(penumbra_size_approx, MinShadowRadiusPx, MaxShadowRadiusPx);
-        float shadow_visibility = 0.0;
+
+        vec3 shadow_color = vec3(0.0);
         for (int i = 0; i < 16; ++i) {
-            vec2 uv = pp.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
-            shadow_visibility += textureLod(g_shadow_tex, vec3(uv, pp.z), 0.0);
+            const vec2 uv = pp.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
+            const float shadow_visibility = textureLod(g_shadow_depth_tex, vec3(uv, pp.z), 0.0);
+            shadow_color += shadow_visibility * textureLod(g_shadow_color_tex, uv, 0.0).xyz;
         }
-        final_visibility = min(final_visibility, shadow_visibility / 16.0);
+        final_color = shadow_color / 16.0;
     }
 
 #ifdef SS_SHADOW_MANY
-    if (final_visibility > 0.0 && lin_depth < 30.0) {
+    if (hsum(final_color) > 0.0 && lin_depth < 30.0) {
         vec2 hit_uv;
         vec3 hit_point;
 
@@ -131,11 +135,11 @@ float LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, flo
         // fix shadow terminator
         occlusion *= saturate(abs(8.0 * dot(N, normalize(litem.shadow_pos_and_tri_index.xyz - P))));
 
-        final_visibility = min(final_visibility, 1.0 - occlusion);
+        final_color *= (1.0 - occlusion);
     }
 #endif // SS_SHADOW_MANY
 
-    return final_visibility;
+    return final_color;
 }
 
 void main() {
@@ -344,10 +348,10 @@ void main() {
     vec3 final_color = vec3(0.0);
 
     if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
-        const float sun_visibility = texelFetch(g_sun_shadow_tex, icoord, 0).r;
-        if (sun_visibility > 0.0) {
-            final_color += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
--                                                                sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+        const vec3 sun_color = texelFetch(g_sun_shadow_tex, icoord, 0).xyz;
+        if (hsum(sun_color) > 0.0) {
+            final_color += sun_color * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+-                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }
     }
 
@@ -361,6 +365,5 @@ void main() {
     final_color += artificial_light;
     final_color += gi_contribution;
 
-    const float sun_visibility = texelFetch(g_sun_shadow_tex, icoord, 0).r;
     imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w), 0.0));
 }

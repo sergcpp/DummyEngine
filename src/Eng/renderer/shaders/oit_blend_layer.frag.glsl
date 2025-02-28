@@ -143,7 +143,7 @@ void main() {
     vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
     const float spec_color_lum = lum(approx_spec_col);
 
-    const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+    lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
     const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -160,6 +160,7 @@ void main() {
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
 
     if (lobe_weights.refraction > 0.0) {
+        lobe_weights.specular = 1.0;
         approx_spec_col = vec3(1.0);
     }
 
@@ -214,7 +215,7 @@ void main() {
 
     vec3 sun_color = vec3(0.0);
 
-    const float dot_N_L = saturate(dot(normal, g_shrd_data.sun_dir.xyz));
+    const float dot_N_L = saturate(dot(N, g_shrd_data.sun_dir.xyz));
     if (dot_N_L > -0.01) {
         const vec2 offsets[4] = vec2[4](
             vec2(0.0, 0.0),
@@ -225,7 +226,7 @@ void main() {
 
         const vec2 shadow_offsets = get_shadow_offsets(dot_N_L);
         vec3 pos_ws_biased = P;
-        pos_ws_biased += 0.001 * shadow_offsets.x * normal;
+        pos_ws_biased += 0.001 * shadow_offsets.x * N;
         pos_ws_biased += 0.003 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
         vec4 g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2;
@@ -243,7 +244,7 @@ void main() {
             g_vtx_sh_uvs2[i] = shadow_uvs[2];
         }
 
-        const float sun_visibility =  GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
+        const float sun_visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
         if (sun_visibility > 0.0) {
             sun_color = sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
@@ -271,7 +272,7 @@ void main() {
                 vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(I, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
                                                                 g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
                 avg_radiance *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
-                gi_color += (1.0 / M_PI) * avg_radiance;
+                gi_color += FN * (1.0 / M_PI) * avg_radiance;
             }
 #endif
             break;

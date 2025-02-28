@@ -331,18 +331,16 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             tiles_metadata = data->out_tile_metadata_buf =
                 rt_classify_tiles.AddStorageOutput("RT SH Tile Meta", desc, Stg::ComputeShader);
         }
-
         { // reprojected texture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RG16F;
+            params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             repro_results = data->out_repro_results_img =
                 rt_classify_tiles.AddStorageImageOutput("SH Reproj Tex", params, Stg::ComputeShader);
         }
-
         { // moments texture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
@@ -557,7 +555,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::R8;
+            params.format = Ren::eTexFormat::RGBA8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result2 = data->out_history_img =
@@ -617,7 +615,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
         FgResRef shared_data;
         FgResRef depth_tex;
         FgResRef normal_tex;
-        FgResRef shadow_tex;
+        FgResRef shadow_depth_tex, shadow_color_tex;
 
         FgResRef out_shadow_tex;
     };
@@ -628,13 +626,14 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
     data->shared_data = sun_shadows.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
     data->depth_tex = sun_shadows.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
     data->normal_tex = sun_shadows.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
-    data->shadow_tex = sun_shadows.AddTextureInput(frame_textures.shadowmap, Stg::ComputeShader);
+    data->shadow_depth_tex = sun_shadows.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
+    data->shadow_color_tex = sun_shadows.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
     { // shadows texture
         Ren::Tex2DParams params;
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
-        params.format = Ren::eTexFormat::R8;
+        params.format = Ren::eTexFormat::RGBA8;
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         shadow_tex = data->out_shadow_tex =
@@ -645,7 +644,8 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
         FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
         FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
         FgAllocTex &norm_tex = builder.GetReadTexture(data->normal_tex);
-        FgAllocTex &shadow_tex = builder.GetReadTexture(data->shadow_tex);
+        FgAllocTex &shadow_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
+        FgAllocTex &shadow_color_tex = builder.GetReadTexture(data->shadow_color_tex);
         FgAllocTex &out_shadow_tex = builder.GetWriteTexture(data->out_shadow_tex);
 
         const Ren::Binding bindings[] = {
@@ -653,8 +653,9 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
             {Trg::Tex2DSampled, SunShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Trg::Tex2DSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
             {Trg::Tex2DSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
-            {Trg::Tex2DSampled, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},
-            {Trg::Tex2DSampled, SunShadows::SHADOW_TEX_VAL_SLOT, {*shadow_tex.ref, *nearest_sampler_}},
+            {Trg::Tex2DSampled, SunShadows::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+            {Trg::Tex2DSampled, SunShadows::SHADOW_DEPTH_TEX_VAL_SLOT, {*shadow_depth_tex.ref, *nearest_sampler_}},
+            {Trg::Tex2DSampled, SunShadows::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
             {Trg::Image2D, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{

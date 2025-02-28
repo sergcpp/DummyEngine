@@ -105,7 +105,7 @@ class Renderer {
     Ren::Tex3DRef sky_noise3d_tex_;
 
     // FrameBuf probe_sample_buf_;
-    Ren::Tex2DRef shadow_map_tex_;
+    Ren::Tex2DRef shadow_depth_tex_, shadow_color_tex_;
     Ren::SamplerRef nearest_sampler_, linear_sampler_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     eTAAMode taa_mode_ = eTAAMode::Off;
@@ -261,7 +261,7 @@ class Renderer {
         FgResRef velocity;
 
         FgResRef envmap;
-        FgResRef shadowmap;
+        FgResRef shadow_depth, shadow_color;
         FgResRef ssao;
         FgResRef gi;
         FgResRef sun_shadow;

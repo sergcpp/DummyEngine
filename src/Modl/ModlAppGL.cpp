@@ -310,7 +310,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     for (const auto &grp : m->groups()) {
         const Ren::Material *mat = grp.front_mat.get();
 
-        if (mat->flags() & Ren::eMatFlags::TwoSided) {
+        if (mat->flags & Ren::eMatFlags::TwoSided) {
             glDisable(GL_CULL_FACE);
         } else {
             glEnable(GL_CULL_FACE);

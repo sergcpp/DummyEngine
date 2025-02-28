@@ -36,15 +36,16 @@ const int LIGHTS_BUF_SLOT = 15;
 const int VTX_BUF1_SLOT = 16;
 const int VTX_BUF2_SLOT = 17;
 const int NDX_BUF_SLOT = 18;
-const int SHADOW_TEX_SLOT = 19;
-const int LTC_LUTS_TEX_SLOT = 20;
-const int CELLS_BUF_SLOT = 21;
-const int IRRADIANCE_TEX_SLOT = 22;
-const int DISTANCE_TEX_SLOT = 25;
-const int OFFSET_TEX_SLOT = 26;
-const int ITEMS_BUF_SLOT = 27;
-const int STOCH_LIGHTS_BUF_SLOT = 28;
-const int LIGHT_NODES_BUF_SLOT = 29;
+const int SHADOW_DEPTH_TEX_SLOT = 19;
+const int SHADOW_COLOR_TEX_SLOT = 20;
+const int LTC_LUTS_TEX_SLOT = 21;
+const int CELLS_BUF_SLOT = 22;
+const int IRRADIANCE_TEX_SLOT = 25;
+const int DISTANCE_TEX_SLOT = 26;
+const int OFFSET_TEX_SLOT = 27;
+const int ITEMS_BUF_SLOT = 28;
+const int STOCH_LIGHTS_BUF_SLOT = 29;
+const int LIGHT_NODES_BUF_SLOT = 30;
 
 const int OUT_REFL_IMG_SLOT = 0;
 

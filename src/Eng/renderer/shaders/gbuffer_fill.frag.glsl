@@ -66,7 +66,7 @@ void main() {
     const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 diff_color = YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
+    vec3 base_color = YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
     vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
     float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).r;
     float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).r;
@@ -108,7 +108,7 @@ void main() {
             if (diff_uvs_tr.z > 0.0) {
                 vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
                 vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_tex, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
-                diff_color = mix(diff_color, decal_diff.rgb, decal_influence);
+                base_color = mix(base_color, decal_diff.rgb, decal_influence);
             }
 
             vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 5);
@@ -153,7 +153,7 @@ void main() {
 
     // TODO: try to get rid of explicit srgb conversion
 #if !FORCE_GREY_ALBEDO
-    g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, g_shadow_vis);
+    g_out_albedo = vec4(SRGBToLinear(base_color) * g_base_color.rgb, g_shadow_vis);
 #else
     g_out_albedo = vec4(0.5, 0.5, 0.5, g_shadow_vis);
 #endif

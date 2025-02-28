@@ -19,7 +19,7 @@
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 layout(location = VTX_NOR_LOC) in vec4 g_in_vtx_normal;
 layout(location = VTX_TAN_LOC) in vec2 g_in_vtx_tangent;
-layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 #ifdef VEGETATION
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
 #endif // VEGETATION
@@ -96,7 +96,7 @@ void main() {
     g_vtx_pos = vtx_pos_ws;
     g_vtx_normal = vtx_nor_ws;
     g_vtx_tangent = vtx_tan_ws;
-    g_vtx_uvs = g_in_vtx_uvs0;
+    g_vtx_uvs = g_in_vtx_uvs;
 
 #if !defined(NO_BINDLESS)
     g_base_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]);

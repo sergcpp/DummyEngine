@@ -1225,7 +1225,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                 file_size = mat_file.tellg() - file_size;
                 mat_file.seekg(0, ios::beg);
 
-                unique_ptr<char[]> mat_data(new char[(size_t)file_size]);
+                unique_ptr<char[]> mat_data(new char[file_size]);
                 mat_file.read(mat_data.get(), file_size);
 
                 Ren::eMatLoadStatus status;
@@ -1234,7 +1234,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                     std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6),
                     std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
-                alpha_test = bool(mat->flags() & Ren::eMatFlags::AlphaTest);
+                alpha_test = bool(mat->flags & Ren::eMatFlags::AlphaTest);
             } else {
                 cerr << "material " << materials[i] << " missing!" << endl;
             }

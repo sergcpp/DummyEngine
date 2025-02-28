@@ -580,7 +580,7 @@ void main() {
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
-    vec3 diff_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
+    vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                          ambient_occlusion * ambient_occlusion * indirect_col +
                                          additional_light);
 
@@ -589,7 +589,7 @@ void main() {
 
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, spec_color.xyz, spec_color.a);
 
-    g_out_color = vec4(diff_color * kD, 1.0);
+    g_out_color = vec4(base_color * kD, 1.0);
     g_out_normal = PackNormalAndRoughness(normal, spec_color.w);
     g_out_specular = spec_color;
 }

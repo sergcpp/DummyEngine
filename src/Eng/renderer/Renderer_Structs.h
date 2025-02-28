@@ -88,11 +88,13 @@ struct InstanceData {
 static_assert(sizeof(InstanceData) == 192, "!");
 
 struct BasicDrawBatch {                          // NOLINT
-    static const uint64_t TypeSimple = 0b00ull;  // simple
-    static const uint64_t TypeVege = 0b01ull;    // vegetation
-    static const uint64_t TypeSkinned = 0b10ull; // skeletal
+    static const uint64_t TypeSimple = 0b00ull;
+    static const uint64_t TypeVege = 0b01ull;
+    static const uint64_t TypeSkinned = 0b10ull;
     static const uint64_t TypeUnused = 0b11ull;
 
+    static const uint64_t BitEmissive = (1ull << 34u);
+    static const uint64_t BitAlphaBlend = (1ull << 33u);
     static const uint64_t BitsSimple = (TypeSimple << 31u);
     static const uint64_t BitsVege = (TypeVege << 31u);
     static const uint64_t BitsSkinned = (TypeSkinned << 31u);
@@ -100,8 +102,7 @@ struct BasicDrawBatch {                          // NOLINT
     static const uint64_t BitMoving = (1ull << 29u);
     static const uint64_t BitTwoSided = (1ull << 28u);
     static const uint64_t BitBackSided = (1ull << 27u);
-    static const uint64_t BitAlphaBlend = (1ull << 33u);
-    static const uint64_t BitEmissive = (1ull << 34u);
+    
     static const uint64_t FlagBits = (0b11111111ull << 27u);
 
     union {
@@ -168,7 +169,9 @@ struct ShadowList { // NOLINT
     int shadow_map_pos[2], shadow_map_size[2];
     int scissor_test_pos[2], scissor_test_size[2];
     uint32_t shadow_batch_start, shadow_batch_count;
+    int alpha_blend_start_index;
     float bias[2];
+    bool dirty;
 
     // for debugging
     float cam_near, cam_far;

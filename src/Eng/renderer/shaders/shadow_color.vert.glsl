@@ -15,14 +15,9 @@
 #if defined(NO_BINDLESS) && defined(VULKAN)
     #pragma dont_compile
 #endif
-#if defined(NO_BINDLESS) && !defined(ALPHATEST)
-    #pragma dont_compile
-#endif
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
-#ifdef ALPHATEST
-layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
-#endif
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 
 layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 
@@ -42,28 +37,33 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-#ifdef ALPHATEST
-    layout(location = 0) out vec2 g_vtx_uvs0;
-    layout(location = 1) out flat float g_alpha;
-    #if !defined(NO_BINDLESS)
-        layout(location = 2) out flat TEX_HANDLE g_alpha_tex;
-    #endif // !NO_BINDLESS
-#endif // ALPHATEST
+layout(location = 0) out vec2 g_vtx_uvs;
+#if !defined(NO_BINDLESS)
+    layout(location = 1) out flat TEX_HANDLE g_base_tex;
+#endif
+layout(location = 2) out flat vec4 g_base_color;
+#if !defined(NO_BINDLESS)
+    layout(location = 3) out flat TEX_HANDLE g_alpha_tex;
+#endif // !NO_BINDLESS
+layout(location = 4) out flat float g_alpha;
 
 void main() {
-    ivec2 instance = g_instance_indices[gl_InstanceIndex];
-    mat4 MMatrix = FetchModelMatrix(g_instances_buf, instance.x);
+    const ivec2 instance = g_instance_indices[gl_InstanceIndex];
+    const mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
 
-#ifdef ALPHATEST
-    g_vtx_uvs0 = g_in_vtx_uvs0;
+    g_vtx_uvs = g_in_vtx_uvs;
 
-    MaterialData mat = g_materials[instance.y];
-    g_alpha = 1.0 - mat.params[3].x;
+    const MaterialData mat = g_materials[instance.y];
+#if !defined(NO_BINDLESS)
+    g_base_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]);
+#endif // !NO_BINDLESS
+    g_base_color = vec4(mat.params[0].xyz, mat.params[2].y);
+
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
 #endif // !NO_BINDLESS
-#endif // ALPHATEST
+    g_alpha = 1.0 - mat.params[3].x;
 
-    vec3 vertex_position_ws = (MMatrix * vec4(g_in_vtx_pos, 1.0)).xyz;
+    const vec3 vertex_position_ws = (model_matrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     gl_Position = g_shadow_view_proj_mat * vec4(vertex_position_ws, 1.0);
 }

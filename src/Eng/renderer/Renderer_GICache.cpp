@@ -35,7 +35,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
         data->env_tex = rt_gi_cache.AddTextureInput(env_map, stage);
         data->tlas_buf = rt_gi_cache.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
         data->lights_buf = rt_gi_cache.AddStorageReadonlyInput(common_buffers.lights, stage);
-        data->shadowmap_tex = rt_gi_cache.AddTextureInput(shadow_map_tex_, stage);
+        data->shadow_depth_tex = rt_gi_cache.AddTextureInput(shadow_depth_tex_, stage);
+        data->shadow_color_tex = rt_gi_cache.AddTextureInput(shadow_color_tex_, stage);
         data->ltc_luts_tex = rt_gi_cache.AddTextureInput(ltc_luts_, stage);
         if (persistent_data.stoch_lights_buf) {
             data->random_seq = rt_gi_cache.AddStorageReadonlyInput(pmj_samples_buf_, stage);

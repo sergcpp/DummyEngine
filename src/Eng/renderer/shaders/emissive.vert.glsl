@@ -17,7 +17,7 @@
 #endif
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
-layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 #ifdef VEGETATION
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
 #endif // VEGETATION
@@ -80,7 +80,7 @@ void main() {
 
     const vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
 
-    g_vtx_uvs = g_in_vtx_uvs0;
+    g_vtx_uvs = g_in_vtx_uvs;
 
 #if !defined(NO_BINDLESS)
     g_emission_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_EMISSION]);

@@ -11,7 +11,7 @@
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 layout(location = VTX_NOR_LOC) in vec4 g_in_vtx_normal;
 layout(location = VTX_TAN_LOC) in vec2 g_in_vtx_tangent;
-layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 layout(location = VTX_AUX_LOC) in uint g_vtx_unused;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -45,7 +45,7 @@ void main() {
     vec3 vtx_pos_ws = (model_matrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(g_in_vtx_normal.xyz, 0.0)).xyz);
 
-    g_vtx_uvs = g_in_vtx_uvs0;
+    g_vtx_uvs = g_in_vtx_uvs;
     g_vtx_normal = vtx_nor_ws;
 
 #if defined(BINDLESS_TEXTURES)

@@ -61,7 +61,7 @@ void main() {
     uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                     bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 diff_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs)));
+    vec3 base_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs)));
     float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).r;
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
@@ -163,7 +163,7 @@ void main() {
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
-    vec3 diffuse_color = diff_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
+    vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                        ambient_occlusion * ambient_occlusion * indirect_col +
                                        additional_light);
 

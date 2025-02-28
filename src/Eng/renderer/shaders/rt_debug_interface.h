@@ -37,10 +37,11 @@ const int LIGHTS_BUF_SLOT = 12;
 const int IRRADIANCE_TEX_SLOT = 13;
 const int DISTANCE_TEX_SLOT = 14;
 const int OFFSET_TEX_SLOT = 15;
-const int SHADOW_TEX_SLOT = 16;
-const int LTC_LUTS_TEX_SLOT = 17;
-const int CELLS_BUF_SLOT = 18;
-const int ITEMS_BUF_SLOT = 19;
+const int SHADOW_DEPTH_TEX_SLOT = 16;
+const int SHADOW_COLOR_TEX_SLOT = 17;
+const int LTC_LUTS_TEX_SLOT = 18;
+const int CELLS_BUF_SLOT = 19;
+const int ITEMS_BUF_SLOT = 20;
 
 const int OUT_IMG_SLOT = 0;
 

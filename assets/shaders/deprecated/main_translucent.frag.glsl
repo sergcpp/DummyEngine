@@ -208,9 +208,9 @@ void main() {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 
-    vec3 diff_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility + indirect_col + additional_light);
+    vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility + indirect_col + additional_light);
 
-    g_out_color = vec4(diff_color, mask_value);
+    g_out_color = vec4(base_color, mask_value);
     g_out_normal = vec4(0.0);
     g_out_specular = vec4(0.0);
 }

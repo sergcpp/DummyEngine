@@ -86,7 +86,8 @@ layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;
     layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
 #endif
 
-layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
+layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2DShadow g_shadow_color_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 #ifdef GI_CACHE
@@ -136,7 +137,7 @@ float LightVisibility(const light_item_t litem, const vec3 P) {
     pp.y = 1.0 - pp.y;
 #endif // VULKAN
 
-    return SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+    return SampleShadowPCF5x5(g_shadow_depth_tex, pp.xyz);
 }
 
 void main() {
@@ -275,7 +276,7 @@ void main() {
                 }
                 if (mat.params[2].y > 0) {
                     const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
-                    throughput = min(throughput, 0.8 * mat.params[2].y * alpha * base_color);
+                    throughput = min(throughput, 0.8 * mix(vec3(1.0), mat.params[2].y * base_color, alpha));
                     if (dot(throughput, vec3(0.333)) > 0.1) {
                         ro += (inter.t + 0.0005) * refl_ray_ws;
                         inter.mask = 0;
@@ -591,7 +592,7 @@ void main() {
                 shadow_uvs.y = 1.0 - shadow_uvs.y;
         #endif // VULKAN
 
-                const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
+                const float sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, shadow_uvs);
                 if (sun_visibility > 0.0) {
                     light_total += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

@@ -48,7 +48,7 @@ void main() {
     }
     if (mat.params[2].y > 0) {
         const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_BASECOLOR]), uv, 0.0)));
-        g_pld.throughput = min(g_pld.throughput, 0.8 * mat.params[2].y * alpha * base_color);
+        g_pld.throughput = min(g_pld.throughput, 0.8 * mix(vec3(1.0), mat.params[2].y * base_color, alpha));
         g_pld.throughput_dist = min(g_pld.throughput_dist, gl_HitTEXT);
         if (dot(g_pld.throughput, vec3(0.333)) > 0.1) {
             ignoreIntersectionEXT;

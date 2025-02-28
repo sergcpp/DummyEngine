@@ -956,7 +956,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "None",
@@ -990,7 +990,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Back",
@@ -1024,7 +1024,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Front",
@@ -1058,7 +1058,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow@ALPHATEST.vert.glsl", "internal/shadow@ALPHATEST.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth@ALPHATEST.vert.glsl", "internal/shadow_depth@ALPHATEST.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "None",
@@ -1103,7 +1103,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow@ALPHATEST.vert.glsl", "internal/shadow@ALPHATEST.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth@ALPHATEST.vert.glsl", "internal/shadow_depth@ALPHATEST.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Back",
@@ -1148,142 +1148,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow@ALPHATEST.vert.glsl", "internal/shadow@ALPHATEST.frag.glsl" ],
-        "rast_state" : {
-            "poly" : {
-                "cull" : "Front",
-                "depth_bias_mode" : "Dynamic"
-            },
-            "depth" : {
-                "test_enabled" : true,
-                "compare_op" : "Greater"
-            },
-            "scissor" : {
-                "enabled" : true
-            }
-        },
-        "vertex_input" : [
-            {
-                "buf" : 0,
-                "loc" : 0,
-                "size" : 3,
-                "type" : "Float32",
-                "stride" : 16,
-                "offset" : 0
-            },
-            {
-                "buf" : 0,
-                "loc" : 3,
-                "size" : 2,
-                "type" : "Float16",
-                "stride" : 16,
-                "offset" : 12
-            }
-        ],
-        "render_pass" : {
-            "depth" : {
-                "format" : "D16",
-                "load" : "Load",
-                "store" : "Store"
-            }
-        },
-        "features" : {
-            "bindless" : true
-        }
-    },
-    {
-        "type" : "graphics",
-        "shaders" : [ "internal/shadow@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl" ],
-        "rast_state" : {
-            "poly" : {
-                "cull" : "None",
-                "depth_bias_mode" : "Dynamic"
-            },
-            "depth" : {
-                "test_enabled" : true,
-                "compare_op" : "Greater"
-            },
-            "scissor" : {
-                "enabled" : true
-            }
-        },
-        "vertex_input" : [
-            {
-                "buf" : 0,
-                "loc" : 0,
-                "size" : 3,
-                "type" : "Float32",
-                "stride" : 16,
-                "offset" : 0
-            },
-            {
-                "buf" : 0,
-                "loc" : 3,
-                "size" : 2,
-                "type" : "Float16",
-                "stride" : 16,
-                "offset" : 12
-            }
-        ],
-        "render_pass" : {
-            "depth" : {
-                "format" : "D16",
-                "load" : "Load",
-                "store" : "Store"
-            }
-        },
-        "features" : {
-            "bindless" : false
-        }
-    },
-    {
-        "type" : "graphics",
-        "shaders" : [ "internal/shadow@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl" ],
-        "rast_state" : {
-            "poly" : {
-                "cull" : "Back",
-                "depth_bias_mode" : "Dynamic"
-            },
-            "depth" : {
-                "test_enabled" : true,
-                "compare_op" : "Greater"
-            },
-            "scissor" : {
-                "enabled" : true
-            }
-        },
-        "vertex_input" : [
-            {
-                "buf" : 0,
-                "loc" : 0,
-                "size" : 3,
-                "type" : "Float32",
-                "stride" : 16,
-                "offset" : 0
-            },
-            {
-                "buf" : 0,
-                "loc" : 3,
-                "size" : 2,
-                "type" : "Float16",
-                "stride" : 16,
-                "offset" : 12
-            }
-        ],
-        "render_pass" : {
-            "depth" : {
-                "format" : "D16",
-                "load" : "Load",
-                "store" : "Store"
-            }
-        },
-        "features" : {
-            "bindless" : false
-        }
-    },
-    {
-        "type" : "graphics",
-        "shaders" : [ "internal/shadow@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth@ALPHATEST.vert.glsl", "internal/shadow_depth@ALPHATEST.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Front",
@@ -1323,12 +1188,147 @@
             }
         },
         "features" : {
+            "bindless" : true
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_depth@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow_depth@ALPHATEST;NO_BINDLESS.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "None",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "depth" : {
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            }
+        },
+        "features" : {
             "bindless" : false
         }
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow_depth@ALPHATEST;NO_BINDLESS.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "Back",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "depth" : {
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            }
+        },
+        "features" : {
+            "bindless" : false
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_depth@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow_depth@ALPHATEST;NO_BINDLESS.frag.glsl" ],
+        "rast_state" : {
+            "poly" : {
+                "cull" : "Front",
+                "depth_bias_mode" : "Dynamic"
+            },
+            "depth" : {
+                "test_enabled" : true,
+                "compare_op" : "Greater"
+            },
+            "scissor" : {
+                "enabled" : true
+            }
+        },
+        "vertex_input" : [
+            {
+                "buf" : 0,
+                "loc" : 0,
+                "size" : 3,
+                "type" : "Float32",
+                "stride" : 16,
+                "offset" : 0
+            },
+            {
+                "buf" : 0,
+                "loc" : 3,
+                "size" : 2,
+                "type" : "Float16",
+                "stride" : 16,
+                "offset" : 12
+            }
+        ],
+        "render_pass" : {
+            "depth" : {
+                "format" : "D16",
+                "load" : "Load",
+                "store" : "Store"
+            }
+        },
+        "features" : {
+            "bindless" : false
+        }
+    },
+    {
+        "type" : "graphics",
+        "shaders" : [ "internal/shadow_depth_vege.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "None",
@@ -1373,7 +1373,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Back",
@@ -1418,7 +1418,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Front",
@@ -1463,7 +1463,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@NO_BINDLESS.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@NO_BINDLESS.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "None",
@@ -1508,7 +1508,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@NO_BINDLESS.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@NO_BINDLESS.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Back",
@@ -1553,7 +1553,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@NO_BINDLESS.vert.glsl", "internal/shadow.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@NO_BINDLESS.vert.glsl", "internal/shadow_depth.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Front",
@@ -1598,7 +1598,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@ALPHATEST.vert.glsl", "internal/shadow@ALPHATEST.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@ALPHATEST.vert.glsl", "internal/shadow_depth@ALPHATEST.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "None",
@@ -1651,7 +1651,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@ALPHATEST.vert.glsl", "internal/shadow@ALPHATEST.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@ALPHATEST.vert.glsl", "internal/shadow_depth@ALPHATEST.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Back",
@@ -1704,7 +1704,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@ALPHATEST.vert.glsl", "internal/shadow@ALPHATEST.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@ALPHATEST.vert.glsl", "internal/shadow_depth@ALPHATEST.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Front",
@@ -1757,7 +1757,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow_depth@ALPHATEST;NO_BINDLESS.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "None",
@@ -1810,7 +1810,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow_depth@ALPHATEST;NO_BINDLESS.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Back",
@@ -1863,7 +1863,7 @@
     },
     {
         "type" : "graphics",
-        "shaders" : [ "internal/shadow_vege@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow@ALPHATEST;NO_BINDLESS.frag.glsl" ],
+        "shaders" : [ "internal/shadow_depth_vege@ALPHATEST;NO_BINDLESS.vert.glsl", "internal/shadow_depth@ALPHATEST;NO_BINDLESS.frag.glsl" ],
         "rast_state" : {
             "poly" : {
                 "cull" : "Front",

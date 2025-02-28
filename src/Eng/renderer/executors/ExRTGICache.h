@@ -14,7 +14,7 @@ class ExRTGICache final : public FgExecutor {
         FgResRef shared_data;
         FgResRef env_tex;
         FgResRef lights_buf;
-        FgResRef shadowmap_tex;
+        FgResRef shadow_depth_tex, shadow_color_tex;
         FgResRef ltc_luts_tex;
         FgResRef cells_buf;
         FgResRef items_buf;

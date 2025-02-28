@@ -202,14 +202,14 @@ void main() {
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
-    vec3 diff_color = albedo_color * (g_shrd_data.sun_col.xyz * sun_diffuse * visibility + ambient_occlusion * indirect_col + additional_light);
+    vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * sun_diffuse * visibility + ambient_occlusion * indirect_col + additional_light);
 
     vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
 
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, spec_color.xyz, spec_color.a);
 
-    g_out_color = vec4(diff_color * kD, 1.0);
+    g_out_color = vec4(base_color * kD, 1.0);
     g_out_normal = PackNormalAndRoughness(normal, spec_color.w);
     g_out_specular = spec_color;
 

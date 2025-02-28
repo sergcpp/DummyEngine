@@ -16,7 +16,8 @@
 #include "executors/ExDebugRT.h"
 #include "executors/ExDepthFill.h"
 #include "executors/ExDepthHierarchy.h"
-#include "executors/ExShadowMaps.h"
+#include "executors/ExShadowColor.h"
+#include "executors/ExShadowDepth.h"
 
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
@@ -430,7 +431,19 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         params.sampling.compare = Ren::eTexCompare::GEqual;
 
         Ren::eTexLoadStatus status;
-        shadow_map_tex_ = ctx_.LoadTexture2D("Shadow Map", params, ctx_.default_mem_allocs(), &status);
+        shadow_depth_tex_ = ctx_.LoadTexture2D("Shadow Depth Tex", params, ctx_.default_mem_allocs(), &status);
+    }
+    { // shadow filter texture
+        Ren::Tex2DParams params;
+        params.w = SHADOWMAP_WIDTH;
+        params.h = SHADOWMAP_HEIGHT;
+        params.format = Ren::eTexFormat::RGBA8;
+        params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Sampled;
+        params.sampling.filter = Ren::eTexFilter::Bilinear;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        shadow_color_tex_ = ctx_.LoadTexture2D("Shadow Color Tex", params, ctx_.default_mem_allocs(), &status);
     }
 
     { // nearest sampler
@@ -892,35 +905,66 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         auto &frame_textures = *fg_builder_.AllocNodeData<FrameTextures>();
 
-        { // Shadow maps
-            auto &shadow_maps = fg_builder_.AddNode("SHADOW MAPS");
-            FgResRef vtx_buf1_res = shadow_maps.AddVertexBufferInput(persistent_data.vertex_buf1);
-            FgResRef vtx_buf2_res = shadow_maps.AddVertexBufferInput(persistent_data.vertex_buf2);
-            FgResRef ndx_buf_res = shadow_maps.AddIndexBufferInput(persistent_data.indices_buf);
+        { // Shadow depth
+            auto &shadow_depth = fg_builder_.AddNode("SHADOW DEPTH");
+            FgResRef vtx_buf1_res = shadow_depth.AddVertexBufferInput(persistent_data.vertex_buf1);
+            FgResRef vtx_buf2_res = shadow_depth.AddVertexBufferInput(persistent_data.vertex_buf2);
+            FgResRef ndx_buf_res = shadow_depth.AddIndexBufferInput(persistent_data.indices_buf);
 
-            FgResRef shared_data_res = shadow_maps.AddUniformBufferInput(
+            FgResRef shared_data_res = shadow_depth.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            FgResRef instances_res = shadow_maps.AddStorageReadonlyInput(
+            FgResRef instances_res = shadow_depth.AddStorageReadonlyInput(
                 persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
             FgResRef instance_indices_res =
-                shadow_maps.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
+                shadow_depth.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
 
             FgResRef materials_buf_res =
-                shadow_maps.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+                shadow_depth.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(REN_GL_BACKEND)
             FgResRef textures_buf_res =
-                shadow_maps.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
+                shadow_depth.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
 #else
             FgResRef textures_buf_res;
 #endif
-            FgResRef noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            FgResRef noise_tex_res = shadow_depth.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
 
-            frame_textures.shadowmap = shadow_maps.AddDepthOutput(shadow_map_tex_);
+            frame_textures.shadow_depth = shadow_depth.AddDepthOutput(shadow_depth_tex_);
 
-            shadow_maps.make_executor<ExShadowMaps>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res,
-                                                    vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
-                                                    textures_buf_res, instances_res, instance_indices_res,
-                                                    shared_data_res, noise_tex_res, frame_textures.shadowmap);
+            shadow_depth.make_executor<ExShadowDepth>(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res,
+                                                      vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
+                                                      textures_buf_res, instances_res, instance_indices_res,
+                                                      shared_data_res, noise_tex_res, frame_textures.shadow_depth);
+        }
+        { // Shadow color
+            auto &shadow_color = fg_builder_.AddNode("SHADOW COLOR");
+            FgResRef vtx_buf1_res = shadow_color.AddVertexBufferInput(persistent_data.vertex_buf1);
+            FgResRef vtx_buf2_res = shadow_color.AddVertexBufferInput(persistent_data.vertex_buf2);
+            FgResRef ndx_buf_res = shadow_color.AddIndexBufferInput(persistent_data.indices_buf);
+
+            FgResRef shared_data_res = shadow_color.AddUniformBufferInput(
+                common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+            FgResRef instances_res = shadow_color.AddStorageReadonlyInput(
+                persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
+            FgResRef instance_indices_res =
+                shadow_color.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
+
+            FgResRef materials_buf_res =
+                shadow_color.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+#if defined(REN_GL_BACKEND)
+            FgResRef textures_buf_res =
+                shadow_color.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
+#else
+            FgResRef textures_buf_res;
+#endif
+            FgResRef noise_tex_res = shadow_color.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+
+            frame_textures.shadow_depth = shadow_color.AddDepthOutput(shadow_depth_tex_);
+            frame_textures.shadow_color = shadow_color.AddColorOutput(shadow_color_tex_);
+
+            shadow_color.make_executor<ExShadowColor>(
+                SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT, &p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res,
+                &bindless_tex, textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
+                frame_textures.shadow_depth, frame_textures.shadow_color);
         }
 
         frame_textures.depth_params.w = view_state_.scr_res[0];
@@ -1193,7 +1237,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf2, stages);
             data->ndx_buf = debug_rt.AddStorageReadonlyInput(persistent_data.indices_buf, stages);
             data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights, stages);
-            data->shadowmap_tex = debug_rt.AddTextureInput(shadow_map_tex_, stages);
+            data->shadow_depth_tex = debug_rt.AddTextureInput(shadow_depth_tex_, stages);
+            data->shadow_color_tex = debug_rt.AddTextureInput(shadow_color_tex_, stages);
             data->ltc_luts_tex = debug_rt.AddTextureInput(ltc_luts_, stages);
             data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells, stages);
             data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items, stages);

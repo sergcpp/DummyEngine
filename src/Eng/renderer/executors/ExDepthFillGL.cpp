@@ -8,6 +8,12 @@
 #include <Ren/RastState.h>
 
 namespace ExSharedInternal {
+void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
+                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers) {
+    assert(mat.textures.size() >= 1 && mat.samplers.size() >= 1);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, Eng::BIND_MAT_TEX0, mat.textures[0]->id());
+    glBindSampler(Eng::BIND_MAT_TEX0, mat.samplers[0]->id());
+}
 void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers) {
     assert(mat.textures.size() >= 1 && mat.samplers.size() >= 1);
@@ -53,6 +59,38 @@ uint32_t _draw_range_ext(Eng::FgBuilder &builder, const Ren::MaterialStorage *ma
 
         if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
             const Ren::Material &mat = materials->at(batch.material_index);
+            _bind_texture4_and_sampler4(builder.ctx(), mat, builder.temp_samplers);
+            cur_mat_id = batch.material_index;
+        }
+
+        glUniform1ui(Eng::REN_U_BASE_INSTANCE_LOC, batch.instance_start);
+
+        glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
+                                          (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
+                                          GLsizei(batch.instance_count), GLint(batch.base_vertex));
+        ++(*draws_count);
+    }
+    return i;
+}
+
+uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                          uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count) {
+    auto &ctx = builder.ctx();
+
+    for (; i < batch_indices.size(); i++) {
+        const auto &batch = batches[batch_indices[i]];
+        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+            break;
+        }
+
+        if (!batch.instance_count) {
+            continue;
+        }
+
+        if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
+            const Ren::Material &mat = materials->at(batch.material_index);
+            _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
             _bind_texture4_and_sampler4(builder.ctx(), mat, builder.temp_samplers);
             cur_mat_id = batch.material_index;
         }

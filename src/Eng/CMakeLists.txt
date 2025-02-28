@@ -134,8 +134,10 @@ set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExRTShadows.cpp
                         renderer/executors/ExSampleLights.h
                         renderer/executors/ExSampleLights.cpp
-                        renderer/executors/ExShadowMaps.h
-                        renderer/executors/ExShadowMaps.cpp
+                        renderer/executors/ExShadowColor.h
+                        renderer/executors/ExShadowColor.cpp
+                        renderer/executors/ExShadowDepth.h
+                        renderer/executors/ExShadowDepth.cpp
                         renderer/executors/ExSkinning.h
                         renderer/executors/ExSkinning.cpp
                         renderer/executors/ExSkydome.h
@@ -167,7 +169,8 @@ if(${REN_BACKEND} STREQUAL "GL")
                             renderer/executors/ExRTReflections_GL.cpp
                             renderer/executors/ExRTShadows_GL.cpp
                             renderer/executors/ExSampleLights_GL.cpp
-                            renderer/executors/ExShadowMapsGL.cpp
+                            renderer/executors/ExShadowColorGL.cpp
+                            renderer/executors/ExShadowDepthGL.cpp
                             renderer/executors/ExSkinningGL.cpp
                             renderer/executors/ExTransparentGL.cpp)
 elseif(${REN_BACKEND} STREQUAL "VK")
@@ -193,7 +196,8 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                             renderer/executors/ExRTReflections_VK.cpp
                             renderer/executors/ExRTShadows_VK.cpp
                             renderer/executors/ExSampleLights_VK.cpp
-                            renderer/executors/ExShadowMapsVK.cpp
+                            renderer/executors/ExShadowColorVK.cpp
+                            renderer/executors/ExShadowDepthVK.cpp
                             renderer/executors/ExSkinningVK.cpp
                             renderer/executors/ExTransparentVK.cpp
                             renderer/executors/ExUpdateAccBuffersVK.cpp)

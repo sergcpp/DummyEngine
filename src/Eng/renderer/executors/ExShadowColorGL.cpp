@@ -1,4 +1,4 @@
-#include "ExShadowMaps.h"
+#include "ExShadowColor.h"
 
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
@@ -11,13 +11,13 @@
 namespace ExSharedInternal {
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
                      uint32_t i, uint64_t mask, int *draws_count);
-uint32_t _draw_range_ext(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
-                         uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
+uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                          uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 } // namespace ExSharedInternal
-namespace ExShadowMapsInternal {
+namespace ExShadowColorInternal {
 using namespace ExSharedInternal;
 
 void _adjust_bias_and_viewport(Ren::RastState &rast_state, const Eng::ShadowList &sh_list) {
@@ -39,11 +39,11 @@ void _adjust_bias_and_viewport(Ren::RastState &rast_state, const Eng::ShadowList
     new_rast_state.ApplyChanged(rast_state);
     rast_state = new_rast_state;
 }
-} // namespace ExShadowMapsInternal
+} // namespace ExShadowColorInternal
 
-void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap_tex) {
+void Eng::ExShadowColor::DrawShadowMaps(FgBuilder &builder) {
     using namespace ExSharedInternal;
-    using namespace ExShadowMapsInternal;
+    using namespace ExShadowColorInternal;
 
     using BDB = BasicDrawBatch;
 
@@ -51,10 +51,18 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
     rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
     rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Dynamic);
 
+    rast_state.blend.enabled = true;
+    rast_state.blend.color_op = uint8_t(Ren::eBlendOp::Add);
+    rast_state.blend.src_color = uint16_t(Ren::eBlendFactor::Zero);
+    rast_state.blend.dst_color = uint16_t(Ren::eBlendFactor::SrcColor);
+    rast_state.blend.alpha_op = uint8_t(Ren::eBlendOp::Max);
+    rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
+    rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
+
+    rast_state.depth.write_enabled = false;
     rast_state.depth.test_enabled = true;
     rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
     rast_state.scissor.enabled = true;
-    rast_state.blend.enabled = false;
 
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
@@ -84,7 +92,7 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
 
     glBindFramebuffer(GL_FRAMEBUFFER, shadow_fb_.id());
 
-    glClearDepthf(0.0f);
+    glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
     bool region_cleared[MAX_SHADOWMAPS_TOTAL] = {};
 
@@ -97,7 +105,8 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
 
         glBindVertexArray(pi_solid_[0]->vtx_input()->GetVAO());
 
-        static const uint32_t BitFlags[] = {0, BDB::BitBackSided, BDB::BitTwoSided};
+        static const uint64_t BitFlags[] = {BDB::BitAlphaBlend, BDB::BitAlphaBlend | BDB::BitBackSided,
+                                            BDB::BitAlphaBlend | BDB::BitTwoSided};
         for (int pi = 0; pi < 3; ++pi) {
             glUseProgram(pi_solid_[pi]->prog()->id());
 
@@ -105,108 +114,34 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
             rast_state.poly.cull = pi_solid_[pi]->rast_state().poly.cull;
             rast_state.ApplyChanged(builder.rast_state());
 
-            for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+            for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
                 const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
-                if (!sh_list.shadow_batch_count) {
+                if (!sh_list.dirty && sh_list.alpha_blend_start_index == -1) {
                     continue;
                 }
 
                 _adjust_bias_and_viewport(rast_state, sh_list);
 
-                if (!region_cleared[i]) {
-                    glClear(GL_DEPTH_BUFFER_BIT);
-                    region_cleared[i] = true;
+                if (!std::exchange(region_cleared[i], true)) {
+                    glClear(GL_COLOR_BUFFER_BIT);
+                }
+
+                if (sh_list.alpha_blend_start_index == -1) {
+                    continue;
                 }
 
                 glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
                                    Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
 
                 Ren::Span<const uint32_t> batch_indices = {
-                    (*p_list_)->shadow_batch_indices.data() + sh_list.shadow_batch_start, sh_list.shadow_batch_count};
-
-                uint32_t j = batch_points[i];
-                j = _draw_range(batch_indices, (*p_list_)->shadow_batches, j, BitFlags[pi], &draw_calls_count);
-                batch_points[i] = j;
-            }
-
-            builder.rast_state() = rast_state;
-        }
-    }
-
-    // draw opaque vegetation
-    /*glBindVertexArray(vi_depth_pass_vege_solid_->GetVAO());
-    glUseProgram(pi_vege_solid_.prog()->id());
-
-    for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
-        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
-        if (!sh_list.shadow_batch_count) {
-            continue;
-        }
-
-        _adjust_bias_and_viewport(rast_state, sh_list);
-
-        if (!region_cleared[i]) {
-            glClear(GL_DEPTH_BUFFER_BIT);
-            region_cleared[i] = true;
-        }
-
-        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
-                           Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
-
-        for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
-             ++j) {
-            const auto &batch = (*p_list_)->shadow_batches[(*p_list_)->shadow_batch_indices[j]];
-            if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
-                continue;
-            }
-
-            glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
-
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                                              (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                                              (GLsizei)batch.instance_count, (GLint)batch.base_vertex);
-            ++draw_calls_count;
-        }
-    }*/
-
-    { // draw transparent (alpha-tested) objects
-        Ren::DebugMarker _(api_ctx, ctx.current_cmd_buf(), "STATIC-ALPHA");
-
-        glBindVertexArray(pi_transp_[0]->vtx_input()->GetVAO());
-
-        static const uint32_t BitFlags[] = {BDB::BitAlphaTest, BDB::BitAlphaTest | BDB::BitBackSided,
-                                            BDB::BitAlphaTest | BDB::BitTwoSided};
-        for (int pi = 0; pi < 3; ++pi) {
-            glUseProgram(pi_transp_[pi]->prog()->id());
-
-            Ren::RastState rast_state = builder.rast_state();
-            rast_state.poly.cull = pi_transp_[pi]->rast_state().poly.cull;
-            rast_state.ApplyChanged(builder.rast_state());
-
-            for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
-                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
-                if (!sh_list.shadow_batch_count) {
-                    continue;
-                }
-
-                _adjust_bias_and_viewport(rast_state, sh_list);
-
-                if (!region_cleared[i]) {
-                    glClear(GL_DEPTH_BUFFER_BIT);
-                    region_cleared[i] = true;
-                }
-
-                glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
-                                   Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
-
-                Ren::Span<const uint32_t> batch_indices = {
-                    (*p_list_)->shadow_batch_indices.data() + sh_list.shadow_batch_start, sh_list.shadow_batch_count};
+                    (*p_list_)->shadow_batch_indices.data() + sh_list.alpha_blend_start_index,
+                    sh_list.shadow_batch_count - (sh_list.alpha_blend_start_index - sh_list.shadow_batch_start)};
 
                 uint32_t cur_mat_id = 0xffffffff;
 
                 uint32_t j = batch_points[i];
-                j = _draw_range_ext(builder, (*p_list_)->materials, batch_indices, (*p_list_)->shadow_batches, j,
-                                    BitFlags[pi], cur_mat_id, &draw_calls_count);
+                j = _draw_range_ext2(builder, (*p_list_)->materials, batch_indices, (*p_list_)->shadow_batches, j,
+                                     BitFlags[pi], cur_mat_id, &draw_calls_count);
                 batch_points[i] = j;
             }
 
@@ -214,56 +149,64 @@ void Eng::ExShadowMaps::DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap
         }
     }
 
-    // draw transparent (alpha-tested) vegetation
-    /*glBindVertexArray(vi_depth_pass_vege_transp_->GetVAO());
-    glUseProgram(pi_vege_transp_.prog()->id());
+    { // draw transparent (alpha-tested) objects
+        Ren::DebugMarker _(api_ctx, ctx.current_cmd_buf(), "STATIC-ALPHA");
 
-    for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
-        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
-        if (!sh_list.shadow_batch_count) {
-            continue;
-        }
+        glBindVertexArray(pi_alpha_[0]->vtx_input()->GetVAO());
 
-        _adjust_bias_and_viewport(rast_state, sh_list);
+        static const uint64_t BitFlags[] = {BDB::BitAlphaBlend | BDB::BitAlphaTest,
+                                            BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitBackSided,
+                                            BDB::BitAlphaBlend | BDB::BitAlphaTest | BDB::BitTwoSided};
+        for (int pi = 0; pi < 3; ++pi) {
+            glUseProgram(pi_alpha_[pi]->prog()->id());
 
-        if (!region_cleared[i]) {
-            glClear(GL_DEPTH_BUFFER_BIT);
-            region_cleared[i] = true;
-        }
+            Ren::RastState rast_state = builder.rast_state();
+            rast_state.poly.cull = pi_alpha_[pi]->rast_state().poly.cull;
+            rast_state.ApplyChanged(builder.rast_state());
 
-        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
-                           Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
+            for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
+                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+                if (!sh_list.dirty && sh_list.alpha_blend_start_index == -1) {
+                    continue;
+                }
 
-        uint32_t cur_mat_id = 0xffffffff;
-        for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
-             ++j) {
-            const auto &batch = (*p_list_)->shadow_batches[(*p_list_)->shadow_batch_indices[j]];
-            if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
-                continue;
+                _adjust_bias_and_viewport(rast_state, sh_list);
+
+                if (!std::exchange(region_cleared[i], true)) {
+                    glClear(GL_COLOR_BUFFER_BIT);
+                }
+
+                if (sh_list.alpha_blend_start_index == -1) {
+                    continue;
+                }
+
+                glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
+                                   Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
+
+                Ren::Span<const uint32_t> batch_indices = {
+                    (*p_list_)->shadow_batch_indices.data() + sh_list.alpha_blend_start_index,
+                    sh_list.shadow_batch_count - (sh_list.alpha_blend_start_index - sh_list.shadow_batch_start)};
+
+                uint32_t cur_mat_id = 0xffffffff;
+
+                uint32_t j = batch_points[i];
+                j = _draw_range_ext2(builder, (*p_list_)->materials, batch_indices, (*p_list_)->shadow_batches, j,
+                                     BitFlags[pi], cur_mat_id, &draw_calls_count);
+                batch_points[i] = j;
             }
 
-            if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
-                const Ren::Material &mat = (*p_list_)->materials->at(batch.material_index);
-                _bind_texture4_and_sampler4(builder.ctx(), mat, builder.temp_samplers);
-                cur_mat_id = batch.material_index;
-            }
-
-            glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
-
-            glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
-                                              (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
-                                              GLsizei(batch.instance_count), GLint(batch.base_vertex));
-            ++draw_calls_count;
+            builder.rast_state() = rast_state;
         }
-    }*/
+    }
 
+    rast_state.depth.write_enabled = true;
     rast_state.scissor.enabled = false;
     rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Disabled);
     rast_state.depth_bias = {};
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
 
-    glClearDepthf(1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glBindVertexArray(0);
     Ren::GLUnbindSamplers(0, 1);
 }

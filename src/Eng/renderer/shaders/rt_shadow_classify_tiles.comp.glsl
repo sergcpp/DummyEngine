@@ -39,7 +39,7 @@ layout(std430, binding = OUT_TILE_METADATA_BUF_SLOT) writeonly buffer TileMetada
     uint g_tile_metadata[];
 };
 
-layout(binding = OUT_REPROJ_RESULTS_IMG_SLOT, rg16f) uniform restrict image2D g_reproj_results_img;
+layout(binding = OUT_REPROJ_RESULTS_IMG_SLOT, rgba16f) uniform restrict image2D g_reproj_results_img;
 layout(binding = OUT_MOMENTS_IMG_SLOT, r11f_g11f_b10f) uniform restrict image2D g_out_moments_img;
 
 shared int g_false_count;
@@ -80,7 +80,7 @@ void WriteTileMetaData(uvec2 gid, uvec2 gtid, bool is_cleared, bool all_in_light
 
 void ClearTargets(uvec2 did, uvec2 gtid, uvec2 gid, float shadow_value, bool is_shadow_receiver, bool all_in_light) {
     WriteTileMetaData(gid, gtid, true, all_in_light);
-    imageStore(g_reproj_results_img, ivec2(did), vec4(shadow_value, 0.0, 0.0, 0.0)); // mean, variance
+    imageStore(g_reproj_results_img, ivec2(did), vec4(shadow_value, shadow_value, shadow_value, 0.0)); // mean, variance
 
     float temporal_sample_count = is_shadow_receiver ? 1 : 0;
     imageStore(g_out_moments_img, ivec2(did), vec4(shadow_value, 0.0, temporal_sample_count, 0.0)); // mean, variance, temporal sample count
@@ -492,7 +492,7 @@ void TileClassification(uint group_index, uvec2 gid) {
     }
 
     // Output the results of the temporal pass
-    imageStore(g_reproj_results_img, ivec2(did.xy), vec4(shadow_clamped, variance, 0.0, 0.0));
+    imageStore(g_reproj_results_img, ivec2(did.xy), vec4(shadow_clamped, shadow_clamped, shadow_clamped, variance));
     imageStore(g_out_moments_img, ivec2(did.xy), vec4(moments_current, 0.0));
 }
 

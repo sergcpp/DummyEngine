@@ -6,13 +6,13 @@
 #include <Ren/VertexInput.h>
 
 namespace Eng {
-class ExShadowMaps final : public FgExecutor {
+class ExShadowDepth final : public FgExecutor {
     bool initialized = false;
     int w_, h_;
 
     // lazily initialized data
-    Ren::PipelineRef pi_solid_[3], pi_transp_[3];
-    Ren::PipelineRef pi_vege_solid_, pi_vege_transp_;
+    Ren::PipelineRef pi_solid_[3], pi_alpha_[3];
+    Ren::PipelineRef pi_vege_solid_, pi_vege_alpha_;
 
     Ren::Framebuffer shadow_fb_;
 
@@ -32,17 +32,17 @@ class ExShadowMaps final : public FgExecutor {
     FgResRef noise_tex_;
 
     // outputs
-    FgResRef shadowmap_tex_;
+    FgResRef shadow_depth_tex_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2,
-                  FgAllocBuf &ndx_buf, FgAllocTex &shadowmap_tex);
-    void DrawShadowMaps(FgBuilder &builder, FgAllocTex &shadowmap_tex);
+                  FgAllocBuf &ndx_buf, FgAllocTex &shadow_depth_tex);
+    void DrawShadowMaps(FgBuilder &builder);
 
   public:
-    ExShadowMaps(const int w, const int h, const DrawList **p_list, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
-                 const FgResRef ndx_buf, const FgResRef materials_buf, const BindlessTextureData *bindless_tex,
-                 const FgResRef textures_buf, const FgResRef instances_buf, const FgResRef instance_indices_buf,
-                 const FgResRef shared_data_buf, const FgResRef noise_tex, const FgResRef shadowmap_tex)
+    ExShadowDepth(const int w, const int h, const DrawList **p_list, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
+                  const FgResRef ndx_buf, const FgResRef materials_buf, const BindlessTextureData *bindless_tex,
+                  const FgResRef textures_buf, const FgResRef instances_buf, const FgResRef instance_indices_buf,
+                  const FgResRef shared_data_buf, const FgResRef noise_tex, const FgResRef shadow_depth_tex)
         : w_(w), h_(h) {
         p_list_ = p_list;
         bindless_tex_ = bindless_tex;
@@ -58,7 +58,7 @@ class ExShadowMaps final : public FgExecutor {
         textures_buf_ = textures_buf;
         noise_tex_ = noise_tex;
 
-        shadowmap_tex_ = shadowmap_tex;
+        shadow_depth_tex_ = shadow_depth_tex;
     }
 
     void Execute(FgBuilder &builder) override;

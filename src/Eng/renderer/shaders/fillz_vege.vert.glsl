@@ -19,7 +19,7 @@
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef ALPHATEST
-layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 #endif
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
 
@@ -51,7 +51,7 @@ layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
     layout(location = 3) out vec2 g_vtx_z_vs_prev;
 #endif // OUTPUT_VELOCITY
 #ifdef ALPHATEST
-    layout(location = 4) out vec2 g_vtx_uvs0;
+    layout(location = 4) out vec2 g_vtx_uvs;
     layout(location = 5) out vec3 g_vtx_pos_ls;
     layout(location = 6) out flat float g_alpha;
     #if !defined(NO_BINDLESS)
@@ -89,7 +89,7 @@ void main() {
     const vec3 vtx_pos_ls_curr = TransformVegetation(g_in_vtx_pos, _unused, _unused, g_noise_tex, wind_scroll, wind_params, wind_vec_ls, hdata_curr);
 
 #ifdef ALPHATEST
-    g_vtx_uvs0 = g_in_vtx_uvs0;
+    g_vtx_uvs = g_in_vtx_uvs;
     g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);
