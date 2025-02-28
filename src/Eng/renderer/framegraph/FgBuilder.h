@@ -171,7 +171,6 @@ class FgBuilder {
 
     Ren::PipelineRef pi_clear_image_[int(Ren::eTexFormat::_Count)];
     Ren::PipelineRef pi_clear_buffer_;
-    Ren::ProgramRef prog_clear_target_[3];
 
   public:
     FgBuilder(Ren::Context &ctx, ShaderLoader &sh, PrimDraw &prim_draw);

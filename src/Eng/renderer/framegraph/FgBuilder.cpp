@@ -40,10 +40,6 @@ Eng::FgBuilder::FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh, PrimDraw &pr
     pi_clear_image_[int(Ren::eTexFormat::RGBA16F)] = sh.LoadPipeline("internal/clear_image@RGBA16F.comp.glsl");
 
     pi_clear_buffer_ = sh.LoadPipeline("internal/clear_buffer.comp.glsl");
-
-    prog_clear_target_[0] = sh.LoadProgram("internal/blit_clear.vert.glsl", "internal/blit_clear@FLOAT.frag.glsl");
-    prog_clear_target_[1] = sh.LoadProgram("internal/blit_clear.vert.glsl", "internal/blit_clear@UINT.frag.glsl");
-    prog_clear_target_[2] = sh.LoadProgram("internal/blit_clear.vert.glsl", "internal/blit_clear@DEPTH.frag.glsl");
 }
 
 Ren::ILog *Eng::FgBuilder::log() { return ctx_.log(); }
@@ -1849,19 +1845,11 @@ void Eng::FgBuilder::ClearImage_AsTarget(Ren::Tex2DRef &tex, Ren::CommandBuffer 
     Ren::RenderTarget depth_target;
     Ren::SmallVector<Ren::RenderTarget, 1> color_target;
 
-    Ren::ProgramRef prog;
     if (Ren::IsDepthFormat(p.format)) {
         depth_target = {tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store};
-        prog = prog_clear_target_[2];
     } else {
         color_target.emplace_back(tex, Ren::eLoadOp::Clear, Ren::eStoreOp::Store);
-        prog = Ren::IsUnsignedIntegerFormat(p.format) ? prog_clear_target_[1] : prog_clear_target_[0];
     }
 
-    Ren::RastState rast_state;
-    rast_state.viewport = Ren::Vec4i{0, 0, p.w, p.h};
-    rast_state.depth.test_enabled = true;
-
-    prim_draw_.DrawPrim(cmd_buf, PrimDraw::ePrim::Quad, prog, depth_target, color_target, rast_state, rast_state_, {},
-                        nullptr, 0, 0);
+    prim_draw_.ClearTarget(cmd_buf, depth_target, color_target);
 }

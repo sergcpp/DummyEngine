@@ -60,5 +60,9 @@ class PrimDraw {
                   Ren::Span<const Ren::RenderTarget> color_rts, const Ren::RastState &new_rast_state,
                   Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings, const void *uniform_data,
                   int uniform_data_len, int uniform_data_offset, int instances = 1);
+
+    void ClearTarget(Ren::CommandBuffer cmd_buf, Ren::RenderTarget depth_rt,
+                     Ren::Span<const Ren::RenderTarget> color_rts);
+    void ClearTarget(Ren::RenderTarget depth_rt, Ren::Span<const Ren::RenderTarget> color_rts);
 };
 } // namespace Eng

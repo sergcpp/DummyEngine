@@ -154,7 +154,7 @@ void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const
         }
     }
 
-    Ren::RenderPassRef rp = ctx_->LoadRenderPass(depth_rt, color_rts);
+    const Ren::RenderPassRef rp = ctx_->LoadRenderPass(depth_rt, color_rts);
     const Ren::Framebuffer *fb =
         FindOrCreateFramebuffer(rp.get(), new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
                                 new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{}, color_rts);
@@ -171,9 +171,13 @@ void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const
     render_pass_begin_info.framebuffer = fb->vk_handle();
     render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(fb->w), uint32_t(fb->h)}};
 
-    VkClearValue clear_value = {};
-    render_pass_begin_info.pClearValues = &clear_value;
-    render_pass_begin_info.clearValueCount = 1;
+    Ren::SmallVector<VkClearValue, 4> clear_values;
+    if (depth_rt) {
+        clear_values.push_back(VkClearValue{});
+    }
+    clear_values.resize(clear_values.size() + uint32_t(color_rts.size()), VkClearValue{});
+    render_pass_begin_info.pClearValues = clear_values.cdata();
+    render_pass_begin_info.clearValueCount = clear_values.size();
 
     api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
@@ -229,4 +233,36 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Re
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
     DrawPrim(cmd_buf, prim, p, depth_rt, color_rts, new_rast_state, applied_rast_state, bindings, uniform_data,
              uniform_data_len, uniform_data_offset, instances);
+}
+
+void Eng::PrimDraw::ClearTarget(Ren::CommandBuffer cmd_buf, Ren::RenderTarget depth_rt,
+                                Ren::Span<const Ren::RenderTarget> color_rts) {
+    const Ren::RenderPassRef rp = ctx_->LoadRenderPass(depth_rt, color_rts);
+    const Ren::Framebuffer *fb = FindOrCreateFramebuffer(rp.get(), depth_rt, depth_rt, color_rts);
+
+    VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+    render_pass_begin_info.renderPass = rp->vk_handle();
+    render_pass_begin_info.framebuffer = fb->vk_handle();
+    render_pass_begin_info.renderArea = {{0, 0}, {uint32_t(fb->w), uint32_t(fb->h)}};
+
+    Ren::SmallVector<VkClearValue, 4> clear_values;
+    if (depth_rt) {
+        clear_values.push_back(VkClearValue{});
+    }
+    clear_values.resize(clear_values.size() + uint32_t(color_rts.size()), VkClearValue{});
+    render_pass_begin_info.pClearValues = clear_values.cdata();
+    render_pass_begin_info.clearValueCount = clear_values.size();
+
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+    api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Do nothing
+
+    api_ctx->vkCmdEndRenderPass(cmd_buf);
+}
+
+void Eng::PrimDraw::ClearTarget(Ren::RenderTarget depth_rt, Ren::Span<const Ren::RenderTarget> color_rts) {
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+    ClearTarget(cmd_buf, depth_rt, color_rts);
 }

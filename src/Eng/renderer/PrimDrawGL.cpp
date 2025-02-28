@@ -100,3 +100,18 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::Re
     DrawPrim({}, prim, p, depth_rt, color_rts, new_rast_state, applied_rast_state, bindings, uniform_data,
              uniform_data_len, uniform_data_offset, instance_count);
 }
+
+void Eng::PrimDraw::ClearTarget(Ren::CommandBuffer cmd_buf, Ren::RenderTarget depth_rt,
+                                Ren::Span<const Ren::RenderTarget> color_rts) {
+    const Ren::Framebuffer *fb = FindOrCreateFramebuffer(nullptr, depth_rt, depth_rt, color_rts);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fb->id());
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearDepth(0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void Eng::PrimDraw::ClearTarget(Ren::RenderTarget depth_rt, Ren::Span<const Ren::RenderTarget> color_rts) {
+    ClearTarget({}, depth_rt, color_rts);
+}
