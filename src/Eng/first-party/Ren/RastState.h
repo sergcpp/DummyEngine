@@ -10,22 +10,35 @@
 #undef Always
 
 namespace Ren {
-enum class eCullFace : uint8_t { None, Front, Back, _Count };
-enum class eCompareOp : uint8_t { Always, Never, Less, Equal, Greater, LEqual, NEqual, GEqual, _Count };
-enum class eBlendFactor : uint8_t {
-    Zero,
-    One,
-    SrcColor,
-    OneMinusSrcColor,
-    DstColor,
-    OneMinusDstColor,
-    SrcAlpha,
-    OneMinusSrcAlpha,
-    DstAlpha,
-    OneMinusDstAlpha,
+#define X(_0, ...) _0,
+enum class eCompareOp : uint8_t {
+#include "CompareOp.inl"
     _Count
 };
-enum class eStencilOp : uint8_t { Keep, Zero, Replace, Incr, Decr, Invert, _Count };
+#undef X
+
+#define X(_0, ...) _0,
+enum class eStencilOp : uint8_t {
+#include "StencilOp.inl"
+    _Count
+};
+#undef X
+
+#define X(_0, ...) _0,
+enum class eBlendFactor : uint8_t {
+#include "BlendFactor.inl"
+    _Count
+};
+#undef X
+
+#define X(_0, ...) _0,
+enum class eBlendOp : uint8_t {
+#include "BlendOp.inl"
+    _Count
+};
+#undef X
+
+enum class eCullFace : uint8_t { None, Front, Back, _Count };
 enum class ePolygonMode : uint8_t { Fill, Line, _Count };
 enum class eDepthBiasMode : uint8_t { Disabled, Static, Dynamic, _Count };
 enum class eDepthRangeMode : uint8_t { ZeroToOne, NegOneToOne, _Count };
@@ -98,26 +111,44 @@ inline bool operator<(const DepthState &lhs, const DepthState &rhs) { return lhs
 
 union BlendState {
     struct {
-        uint16_t enabled : 1;
-        uint16_t src_color : 3;
-        uint16_t dst_color : 3;
-        uint16_t src_alpha : 3;
-        uint16_t dst_alpha : 3;
-        uint16_t _unused : 3;
+        uint8_t enabled : 1;
+        uint8_t color_op : 3;
+        uint8_t src_color : 4;
+        uint8_t dst_color : 4;
+        uint8_t _unused : 1;
+        uint8_t alpha_op : 3;
+        uint8_t src_alpha : 4;
+        uint8_t dst_alpha : 4;
     };
-    uint16_t bits;
+    uint8_t bits[3];
 
-    BlendState() : bits(0) {
+    BlendState() : bits{0, 0, 0} {
         enabled = 0;
+        color_op = alpha_op = uint8_t(eBlendOp::Add);
         src_color = dst_color = uint8_t(eBlendFactor::Zero);
         src_alpha = dst_alpha = uint8_t(eBlendFactor::Zero);
     }
 };
-static_assert(sizeof(BlendState) == 2, "!");
+static_assert(sizeof(BlendState) == 3, "!");
 
-inline bool operator==(const BlendState &lhs, const BlendState &rhs) { return lhs.bits == rhs.bits; }
-inline bool operator!=(const BlendState &lhs, const BlendState &rhs) { return lhs.bits != rhs.bits; }
-inline bool operator<(const BlendState &lhs, const BlendState &rhs) { return lhs.bits < rhs.bits; }
+inline bool operator==(const BlendState &lhs, const BlendState &rhs) {
+    return lhs.bits[0] == rhs.bits[0] && lhs.bits[1] == rhs.bits[1] && lhs.bits[2] == rhs.bits[2];
+}
+inline bool operator!=(const BlendState &lhs, const BlendState &rhs) {
+    return lhs.bits[0] != rhs.bits[0] || lhs.bits[1] != rhs.bits[1] || lhs.bits[2] != rhs.bits[2];
+}
+inline bool operator<(const BlendState &lhs, const BlendState &rhs) {
+    if (lhs.bits[0] < rhs.bits[0]) {
+        return true;
+    } else if (lhs.bits[0] == rhs.bits[0]) {
+        if (lhs.bits[1] < rhs.bits[1]) {
+            return true;
+        } else if (lhs.bits[1] == rhs.bits[1]) {
+            return lhs.bits[2] < rhs.bits[2];
+        }
+    }
+    return false;
+}
 
 union StencilState {
     struct {

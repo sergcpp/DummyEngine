@@ -542,6 +542,12 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC ren_glBindTextureUnit_Comp;
 #define GL_NEGATIVE_ONE_TO_ONE 0x935E
 #define GL_ZERO_TO_ONE 0x935F
 
+#define GL_FUNC_ADD                 0x8006
+#define GL_FUNC_SUBTRACT            0x800A
+#define GL_FUNC_REVERSE_SUBTRACT    0x800B
+#define GL_MIN                      0x8007
+#define GL_MAX                      0x8008
+
 #ifndef APIENTRY
 #if defined(_WIN32)
 #define WINAPI __stdcall
@@ -939,6 +945,13 @@ typedef void(APIENTRY *PFNGLBINDSAMPLER)(GLuint unit, GLuint sampler);
 typedef void(APIENTRY *PFNGLSAMPLERPARAMETERI)(GLuint sampler, GLenum pname, GLint param);
 typedef void(APIENTRY *PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GLfloat param);
 
+//
+// Blending
+//
+
+typedef void(APIENTRY *PFNGLBLENDEQUATIONPROC)(GLenum mode);
+typedef void(APIENTRY *PFNGLBLENDEQUATIONSEPARATEPROC)(GLenum modeRGB, GLenum modeAlpha);
+
 #if !defined(__APPLE__)
 
 #define glCreateProgram ren_glCreateProgram
@@ -1189,6 +1202,13 @@ typedef void(APIENTRY *PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GLf
 #define glBindSampler ren_glBindSampler
 #define glSamplerParameteri ren_glSamplerParameteri
 #define glSamplerParameterf ren_glSamplerParameterf
+
+//
+// Blending
+//
+
+#define glBlendEquation ren_glBlendEquation
+#define glBlendEquationSeparate ren_glBlendEquationSeparate
 
 #if !defined(__APPLE__)
 EXTERN_FUNC PFNGLCREATEPROGRAMPROC ren_glCreateProgram;
@@ -1454,6 +1474,14 @@ EXTERN_FUNC PFNGLISSAMPLER ren_glIsSampler;
 EXTERN_FUNC PFNGLBINDSAMPLER ren_glBindSampler;
 EXTERN_FUNC PFNGLSAMPLERPARAMETERI ren_glSamplerParameteri;
 EXTERN_FUNC PFNGLSAMPLERPARAMETERF ren_glSamplerParameterf;
+
+//
+// Blending
+//
+
+EXTERN_FUNC PFNGLBLENDEQUATIONPROC ren_glBlendEquation;
+EXTERN_FUNC PFNGLBLENDEQUATIONSEPARATEPROC ren_glBlendEquationSeparate;
+
 }
 
 #undef EXTERN_FUNC

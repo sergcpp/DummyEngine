@@ -8,6 +8,30 @@
 namespace Ren {
 extern const VkShaderStageFlagBits g_shader_stages_vk[];
 
+#define X(_0, _1, _2) _1,
+const VkCompareOp g_compare_op_vk[] = {
+#include "CompareOp.inl"
+};
+#undef X
+
+#define X(_0, _1, _2) _1,
+const VkStencilOp g_stencil_op_vk[] = {
+#include "StencilOp.inl"
+};
+#undef X
+
+#define X(_0, _1, _2) _1,
+const VkBlendFactor g_blend_factor_vk[] = {
+#include "BlendFactor.inl"
+};
+#undef X
+
+#define X(_0, _1, _2) _1,
+const VkBlendOp g_blend_op_vk[] = {
+#include "BlendOp.inl"
+};
+#undef X
+
 const VkCullModeFlagBits g_cull_modes_vk[] = {
     VK_CULL_MODE_NONE,      // None
     VK_CULL_MODE_FRONT_BIT, // Front
@@ -15,47 +39,11 @@ const VkCullModeFlagBits g_cull_modes_vk[] = {
 };
 static_assert(std::size(g_cull_modes_vk) == int(eCullFace::_Count), "!");
 
-const VkCompareOp g_compare_op_vk[] = {
-    VK_COMPARE_OP_ALWAYS,          // Always
-    VK_COMPARE_OP_NEVER,           // Never
-    VK_COMPARE_OP_LESS,            // Less
-    VK_COMPARE_OP_EQUAL,           // Equal
-    VK_COMPARE_OP_GREATER,         // Greater
-    VK_COMPARE_OP_LESS_OR_EQUAL,   // LEqual
-    VK_COMPARE_OP_NOT_EQUAL,       // NEqual
-    VK_COMPARE_OP_GREATER_OR_EQUAL // GEqual
-};
-static_assert(std::size(g_compare_op_vk) == int(eCompareOp::_Count), "!");
-
-const VkStencilOp g_stencil_op_vk[] = {
-    VK_STENCIL_OP_KEEP,                // Keep
-    VK_STENCIL_OP_ZERO,                // Zero
-    VK_STENCIL_OP_REPLACE,             // Replace
-    VK_STENCIL_OP_INCREMENT_AND_CLAMP, // Incr
-    VK_STENCIL_OP_DECREMENT_AND_CLAMP, // Decr
-    VK_STENCIL_OP_INVERT               // Invert
-};
-static_assert(std::size(g_stencil_op_vk) == int(eStencilOp::_Count), "!");
-
 const VkPolygonMode g_poly_mode_vk[] = {
     VK_POLYGON_MODE_FILL, // Fill
     VK_POLYGON_MODE_LINE  // Line
 };
 static_assert(std::size(g_poly_mode_vk) == int(ePolygonMode::_Count), "!");
-
-const VkBlendFactor g_blend_factor_vk[] = {
-    VK_BLEND_FACTOR_ZERO,                // Zero
-    VK_BLEND_FACTOR_ONE,                 // One
-    VK_BLEND_FACTOR_SRC_COLOR,           // SrcColor
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, // OneMinusSrcColor
-    VK_BLEND_FACTOR_DST_COLOR,           // DstColor
-    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, // OneMinusDstColor
-    VK_BLEND_FACTOR_SRC_ALPHA,           // SrcAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // OneMinusSrcAlpha
-    VK_BLEND_FACTOR_DST_ALPHA,           // DstAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA  // OneMinusDstAlpha
-};
-static_assert(std::size(g_blend_factor_vk) == int(eBlendFactor::_Count), "!");
 
 uint32_t align_up(const uint32_t size, const uint32_t alignment) { return (size + alignment - 1) & ~(alignment - 1); }
 
@@ -245,10 +233,10 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         for (int i = 0; i < int(render_pass->color_rts.size()); ++i) {
             auto &new_state = color_blend_attachment_states.emplace_back();
             new_state.blendEnable = rast_state.blend.enabled ? VK_TRUE : VK_FALSE;
-            new_state.colorBlendOp = VK_BLEND_OP_ADD;
+            new_state.colorBlendOp = g_blend_op_vk[int(rast_state.blend.color_op)];
             new_state.srcColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.src_color)];
             new_state.dstColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst_color)];
-            new_state.alphaBlendOp = VK_BLEND_OP_ADD;
+            new_state.alphaBlendOp = g_blend_op_vk[int(rast_state.blend.alpha_op)];
             new_state.srcAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.src_alpha)];
             new_state.dstAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst_alpha)];
             new_state.colorWriteMask = 0xf;

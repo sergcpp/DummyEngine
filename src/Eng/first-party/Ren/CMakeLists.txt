@@ -50,11 +50,14 @@ set(SOURCE_FILES AccStructure.h
                  Anim.cpp
                  ApiContext.h
                  Bitmask.h
+                 BlendFactor.inl
+                 BlendOp.inl
                  Buffer.h
                  Buffer.cpp
                  Camera.h
                  Camera.cpp
                  Common.h
+                 CompareOp.inl
                  Config.h
                  Context.h
                  Context.cpp
@@ -95,6 +98,7 @@ set(SOURCE_FILES AccStructure.h
                  SmallVector.h
                  Span.h
                  SparseArray.h
+                 StencilOp.inl
                  Storage.h
                  String.h
                  Texture.h

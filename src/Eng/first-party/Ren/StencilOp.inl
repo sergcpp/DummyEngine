@@ -1,0 +1,6 @@
+X(Keep,     VK_STENCIL_OP_KEEP,                 GL_KEEP)
+X(Zero,     VK_STENCIL_OP_ZERO,                 GL_ZERO)
+X(Replace,  VK_STENCIL_OP_REPLACE,              GL_REPLACE)
+X(Incr,     VK_STENCIL_OP_INCREMENT_AND_CLAMP,  GL_INCR)
+X(Decr,     VK_STENCIL_OP_DECREMENT_AND_CLAMP,  GL_DECR)
+X(Invert,   VK_STENCIL_OP_INVERT,               GL_INVERT)

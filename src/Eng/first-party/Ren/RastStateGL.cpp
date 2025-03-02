@@ -5,120 +5,55 @@
 #include "GL.h"
 
 namespace Ren {
-const uint32_t gl_cull_face[] = {
+#define X(_0, _1, _2) _2,
+const uint32_t g_compare_op_gl[] = {
+#include "CompareOp.inl"
+};
+#undef X
+
+#define X(_0, _1, _2) _2,
+const uint32_t g_stencil_op_gl[] = {
+#include "StencilOp.inl"
+};
+#undef X
+
+#define X(_0, _1, _2) _2,
+const uint32_t g_blend_factor_gl[] = {
+#include "BlendFactor.inl"
+};
+#undef X
+
+#define X(_0, _1, _2) _2,
+const uint32_t g_blend_op_gl[] = {
+#include "BlendOp.inl"
+};
+#undef X
+
+const uint32_t g_cull_face_gl[] = {
     0xffffffff, // None
     GL_FRONT,   // Front
     GL_BACK,    // Back
 };
-static_assert(std::size(gl_cull_face) == size_t(eCullFace::_Count), "!");
+static_assert(std::size(g_cull_face_gl) == size_t(eCullFace::_Count), "!");
 
-const uint32_t gl_blend_factor[] = {
-    GL_ZERO,                // Zero
-    GL_ONE,                 // One
-    GL_SRC_COLOR,           // SrcColor
-    GL_ONE_MINUS_SRC_COLOR, // OneMinusSrcColor
-    GL_DST_COLOR,           // DstColor
-    GL_ONE_MINUS_DST_COLOR, // OneMinusDstColor
-    GL_SRC_ALPHA,           // SrcAlpha
-    GL_ONE_MINUS_SRC_ALPHA, // OneMinusSrcAlpha
-    GL_DST_ALPHA,           // DstAlpha
-    GL_ONE_MINUS_DST_ALPHA  // OneMinusDstAlpha
-};
-static_assert(std::size(gl_blend_factor) == size_t(eBlendFactor::_Count), "!");
-
-const uint32_t gl_compare_op[] = {
-    GL_ALWAYS,   // Always
-    GL_NEVER,    // Never
-    GL_LESS,     // Less
-    GL_EQUAL,    // Equal
-    GL_GREATER,  // Greater
-    GL_LEQUAL,   // LEqual
-    GL_NOTEQUAL, // NEqual
-    GL_GEQUAL    // GEqual
-};
-static_assert(std::size(gl_compare_op) == size_t(eCompareOp::_Count), "!");
-
-const uint32_t gl_stencil_op[] = {
-    GL_KEEP,    // Keep
-    GL_ZERO,    // Zero
-    GL_REPLACE, // Replace
-    GL_INCR,    // Incr
-    GL_DECR,    // Decr
-    GL_INVERT   // Invert
-};
-static_assert(std::size(gl_stencil_op) == size_t(eStencilOp::_Count), "!");
-
-const uint32_t gl_polygon_mode[] = {
+const uint32_t g_polygon_mode_gl[] = {
     GL_FILL, // Fill
     GL_LINE, // Line
 };
-static_assert(std::size(gl_polygon_mode) == size_t(ePolygonMode::_Count), "!");
+static_assert(std::size(g_polygon_mode_gl) == size_t(ePolygonMode::_Count), "!");
 
-const uint32_t gl_depth_range_mode[] = {
+const uint32_t g_depth_range_mode_gl[] = {
     GL_ZERO_TO_ONE,        // ZeroToOne
     GL_NEGATIVE_ONE_TO_ONE // NegOneToOne
 };
-static_assert(std::size(gl_depth_range_mode) == size_t(eDepthRangeMode::_Count), "!");
-
-eCullFace cull_face_from_gl_enum(GLenum face) {
-    if (face == GL_FRONT) {
-        return eCullFace::Front;
-    } else if (face == GL_BACK) {
-        return eCullFace::Back;
-    }
-    return eCullFace::Back;
-}
-
-eBlendFactor blend_factor_from_gl_enum(GLenum factor) {
-    if (factor == GL_ZERO) {
-        return eBlendFactor::Zero;
-    } else if (factor == GL_ONE) {
-        return eBlendFactor::One;
-    } else if (factor == GL_SRC_COLOR) {
-        return eBlendFactor::SrcColor;
-    } else if (factor == GL_ONE_MINUS_SRC_COLOR) {
-        return eBlendFactor::OneMinusSrcColor;
-    } else if (factor == GL_DST_COLOR) {
-        return eBlendFactor::DstColor;
-    } else if (factor == GL_ONE_MINUS_DST_COLOR) {
-        return eBlendFactor::OneMinusDstColor;
-    } else if (factor == GL_SRC_ALPHA) {
-        return eBlendFactor::SrcAlpha;
-    } else if (factor == GL_ONE_MINUS_SRC_ALPHA) {
-        return eBlendFactor::OneMinusSrcAlpha;
-    } else if (factor == GL_DST_ALPHA) {
-        return eBlendFactor::DstAlpha;
-    } else if (factor == GL_ONE_MINUS_DST_ALPHA) {
-        return eBlendFactor::OneMinusDstAlpha;
-    }
-    return eBlendFactor::Zero;
-}
-
-eCompareOp test_func_from_gl_enum(GLenum func) {
-    if (func == GL_ALWAYS) {
-        return eCompareOp::Always;
-    } else if (func == GL_NEVER) {
-        return eCompareOp::Never;
-    } else if (func == GL_LESS) {
-        return eCompareOp::Less;
-    } else if (func == GL_GREATER) {
-        return eCompareOp::Greater;
-    } else if (func == GL_LEQUAL) {
-        return eCompareOp::LEqual;
-    } else if (func == GL_NOTEQUAL) {
-        return eCompareOp::NEqual;
-    } else if (func == GL_GEQUAL) {
-        return eCompareOp::GEqual;
-    }
-    return eCompareOp::Always;
-}
+static_assert(std::size(g_depth_range_mode_gl) == size_t(eDepthRangeMode::_Count), "!");
 } // namespace Ren
 
 void Ren::RastState::Apply(const RastState *ref) const {
     if (!ref || ref->poly.cull != poly.cull) {
         if (eCullFace(poly.cull) != eCullFace::None) {
             glEnable(GL_CULL_FACE);
-            glCullFace(gl_cull_face[poly.cull]);
+            glCullFace(g_cull_face_gl[poly.cull]);
         } else {
             glDisable(GL_CULL_FACE);
         }
@@ -130,8 +65,8 @@ void Ren::RastState::Apply(const RastState *ref) const {
         } else {
             glDisable(GL_DEPTH_TEST);
         }
-        glDepthFunc(gl_compare_op[depth.compare_op]);
-        glClipControl(GL_LOWER_LEFT, gl_depth_range_mode[depth.range_mode]);
+        glDepthFunc(g_compare_op_gl[depth.compare_op]);
+        glClipControl(GL_LOWER_LEFT, g_depth_range_mode_gl[depth.range_mode]);
     }
 
     if (!ref || ref->depth.write_enabled != depth.write_enabled) {
@@ -148,8 +83,9 @@ void Ren::RastState::Apply(const RastState *ref) const {
         } else {
             glDisable(GL_BLEND);
         }
-        glBlendFuncSeparate(gl_blend_factor[blend.src_color], gl_blend_factor[blend.dst_color],
-                            gl_blend_factor[blend.src_alpha], gl_blend_factor[blend.dst_alpha]);
+        glBlendEquationSeparate(g_blend_op_gl[blend.color_op], g_blend_op_gl[blend.alpha_op]);
+        glBlendFuncSeparate(g_blend_factor_gl[blend.src_color], g_blend_factor_gl[blend.dst_color],
+                            g_blend_factor_gl[blend.src_alpha], g_blend_factor_gl[blend.dst_alpha]);
     }
 
     if (!ref || ref->stencil != stencil) {
@@ -159,14 +95,14 @@ void Ren::RastState::Apply(const RastState *ref) const {
             glDisable(GL_STENCIL_TEST);
         }
         glStencilMask(stencil.write_mask);
-        glStencilOp(gl_stencil_op[int(stencil.stencil_fail)], gl_stencil_op[int(stencil.depth_fail)],
-                    gl_stencil_op[int(stencil.pass)]);
-        glStencilFunc(gl_compare_op[stencil.compare_op], stencil.reference, stencil.compare_mask);
+        glStencilOp(g_stencil_op_gl[int(stencil.stencil_fail)], g_stencil_op_gl[int(stencil.depth_fail)],
+                    g_stencil_op_gl[int(stencil.pass)]);
+        glStencilFunc(g_compare_op_gl[stencil.compare_op], stencil.reference, stencil.compare_mask);
     }
 
 #if !defined(__ANDROID__)
     if (!ref || ref->poly.mode != poly.mode) {
-        glPolygonMode(GL_FRONT_AND_BACK, gl_polygon_mode[poly.mode]);
+        glPolygonMode(GL_FRONT_AND_BACK, g_polygon_mode_gl[poly.mode]);
     }
 #endif
 

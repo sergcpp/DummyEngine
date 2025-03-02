@@ -1,0 +1,5 @@
+X(Add,          VK_BLEND_OP_ADD,                GL_FUNC_ADD)
+X(Substract,    VK_BLEND_OP_SUBTRACT,           GL_FUNC_SUBTRACT)
+X(RevSubstract, VK_BLEND_OP_REVERSE_SUBTRACT,   GL_FUNC_REVERSE_SUBTRACT)
+X(Min,          VK_BLEND_OP_MIN,                GL_MIN)
+X(Max,          VK_BLEND_OP_MAX,                GL_MAX)

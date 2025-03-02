@@ -517,6 +517,13 @@ bool Ren::InitGLExtentions(ILog *log) {
     LOAD_GL_FUN(glBindSampler)
     LOAD_GL_FUN(glSamplerParameteri)
     LOAD_GL_FUN(glSamplerParameterf)
+
+    //
+    // Blending
+    //
+
+    LOAD_GL_FUN(glBlendEquation)
+    LOAD_GL_FUN(glBlendEquationSeparate)
 #endif
 
     return true;
