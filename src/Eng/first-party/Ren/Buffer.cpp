@@ -1,11 +1,11 @@
 #include "Buffer.h"
 
 namespace Ren {
-#define DECORATE(X) #X,
+#define X(_0) #_0,
 static const std::string_view g_type_names[] = {
 #include "Types.inl"
 };
-#undef DECORATE
+#undef X
 static_assert(std::size(g_type_names) == int(eType::_Count));
 } // namespace Ren
 

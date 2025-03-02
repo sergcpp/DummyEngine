@@ -13,12 +13,12 @@
 namespace Ren {
 class ILog;
 struct ApiContext;
-#define DECORATE(X) X,
+#define X(_0) _0,
 enum class eType : uint8_t {
 #include "Types.inl"
     _Count
 };
-#undef DECORATE
+#undef X
 enum class eBufType : uint8_t {
     Undefined,
     VertexAttribs,

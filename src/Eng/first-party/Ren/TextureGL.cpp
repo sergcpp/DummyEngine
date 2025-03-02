@@ -17,7 +17,7 @@
 #endif
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) {ZZ, WW, XXX},
+#define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) {_6, _7, _8},
 struct {
     uint32_t format;
     uint32_t internal_format;
@@ -25,7 +25,7 @@ struct {
 } g_gl_formats[] = {
 #include "TextureFormat.inl"
 };
-#undef DECORATE
+#undef X
 
 extern const uint32_t g_gl_compare_func[];
 

@@ -4,11 +4,11 @@
 #include <ostream>
 
 namespace glslx {
-#define DECORATE(X, Y) #X,
+#define X(_0, _1) #_0,
 const char *g_hlsl_keywords[] = {
 #include "KeywordsHLSL.inl"
 };
-#undef DECORATE
+#undef X
 
 bool is_shadow_sampler(const ast_type *base_type) {
     if (!base_type->builtin) {

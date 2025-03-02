@@ -7,7 +7,7 @@
 #endif
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) {Y, Z, W, XX},
+#define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) {_1, _2, _3, _4},
 struct {
     int channel_count;
     int pp_data_len;
@@ -16,7 +16,7 @@ struct {
 } g_tex_format_info[] = {
 #include "TextureFormat.inl"
 };
-#undef DECORATE
+#undef X
 
 const eTexUsage g_tex_usage_per_state[] = {
     {},                      // Undefined

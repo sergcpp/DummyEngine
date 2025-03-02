@@ -3,29 +3,29 @@
 #include "VKCtx.h"
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX) Y,
+#define X(_0, _1, _2, _3, _4) _1,
 extern const VkFilter g_vk_min_mag_filter[] = {
 #include "TextureFilter.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z, W, XX) Z,
+#define X(_0, _1, _2, _3, _4) _2,
 extern const VkSamplerMipmapMode g_vk_mipmap_mode[] = {
 #include "TextureFilter.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z) Y,
+#define X(_0, _1, _2) _1,
 extern const VkSamplerAddressMode g_vk_wrap_mode[] = {
 #include "../TextureWrap.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z) Y,
+#define X(_0, _1, _2) _1,
 extern const VkCompareOp g_vk_compare_ops[] = {
 #include "../TextureCompare.inl"
 };
-#undef DECORATE
+#undef X
 
 extern const float AnisotropyLevel = 4;
 } // namespace Ren

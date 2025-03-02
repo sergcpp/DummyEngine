@@ -27,17 +27,17 @@ enum class eTokType {
     Directive
 };
 
-#define DECORATE(X, Y, Z) K_##X,
+#define X(_0, _1, _2) K_##_0,
 enum class eKeyword {
 #include "Keywords.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z) X,
+#define X(_0, _1, _2) _0,
 enum class eOperator {
 #include "Operators.inl"
 };
-#undef DECORATE
+#undef X
 
 enum class eDirType { Version, Extension };
 

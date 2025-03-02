@@ -3,14 +3,14 @@
 #include "Utils.h"
 
 namespace glslx {
-#define DECORATE(X, Y) {#X, Y},
+#define X(_0, _1) {#_0, _1},
 struct {
     const char *qualifier;
     bool is_assign;
 } g_layout_qualifiers[] = {
 #include "LayoutQualifiers.inl"
 };
-#undef DECORATE
+#undef X
 
 static const eKeyword g_GenTypesTable[][4] = {
     {eKeyword::K_float, eKeyword::K_vec2, eKeyword::K_vec3, eKeyword::K_vec4},

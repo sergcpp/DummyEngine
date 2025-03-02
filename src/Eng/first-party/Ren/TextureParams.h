@@ -7,12 +7,12 @@
 #include "SamplingParams.h"
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) X,
+#define X(_0, ...) _0,
 enum class eTexFormat : uint8_t {
 #include "TextureFormat.inl"
     _Count
 };
-#undef DECORATE
+#undef X
 
 inline bool operator<(const eTexFormat lhs, const eTexFormat rhs) { return uint8_t(lhs) < uint8_t(rhs); }
 

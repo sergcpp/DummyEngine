@@ -3,29 +3,29 @@
 #include "GL.h"
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX) W,
+#define X(_0, _1, _2, _3, _4) _3,
 extern const uint32_t g_gl_min_filter[] = {
 #include "TextureFilter.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z, W, XX) XX,
+#define X(_0, _1, _2, _3, _4) _4,
 extern const uint32_t g_gl_mag_filter[] = {
 #include "TextureFilter.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z) Z,
+#define X(_0, _1, _2) _2,
 extern const uint32_t g_gl_wrap_mode[] = {
 #include "../TextureWrap.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z) Z,
+#define X(_0, _1, _2) _2,
 extern const uint32_t g_gl_compare_func[] = {
 #include "../TextureCompare.inl"
 };
-#undef DECORATE
+#undef X
 
 extern const float AnisotropyLevel = 4;
 } // namespace Ren

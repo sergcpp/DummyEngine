@@ -18,11 +18,11 @@
 #endif
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) YY,
+#define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) _5,
 extern const VkFormat g_vk_formats[] = {
 #include "TextureFormat.inl"
 };
-#undef DECORATE
+#undef X
 
 uint32_t TextureHandleCounter = 0;
 

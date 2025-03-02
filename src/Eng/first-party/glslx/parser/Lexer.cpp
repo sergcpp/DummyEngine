@@ -7,17 +7,17 @@ inline bool is_octal(const int ch) { return unsigned(ch) - '0' < 8; }
 inline bool is_hex(const int ch) { return (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') || isdigit(ch); }
 inline bool is_space(const int ch) { return (ch >= '\t' && ch <= '\r') || ch == ' '; }
 
-#define DECORATE(X, Y, Z) {#X, eKeyword::K_##X, Y, Z},
+#define X(_0, _1, _2) {#_0, eKeyword::K_##_0, _1, _2},
 extern const keyword_info_t g_keywords[] = {
 #include "Keywords.inl"
 };
-#undef DECORATE
+#undef X
 
-#define DECORATE(X, Y, Z) {#X, Y, Z},
+#define X(_0, _1, _2) {#_0, _1, _2},
 extern const operator_info_t g_operators[] = {
 #include "Operators.inl"
 };
-#undef DECORATE
+#undef X
 } // namespace glslx
 
 int glslx::token_t::precedence() const {

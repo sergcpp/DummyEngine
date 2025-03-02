@@ -3,11 +3,11 @@
 #include <algorithm>
 
 namespace Ren {
-#define DECORATE(X, Y, Z, W, XX, YY, ZZ, WW, XXX) #X,
+#define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) #_0,
 static const std::string_view g_format_names[] = {
 #include "TextureFormat.inl"
 };
-#undef DECORATE
+#undef X
 } // namespace Ren
 
 std::string_view Ren::TexFormatName(const eTexFormat format) { return g_format_names[uint8_t(format)]; }
