@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_27_02
-	commit = f7b497284a7bf77d5a93e7626e185a856f216c27
+	branch = translucent_shadow
+	commit = 81b7767af66a7aefa5d37bc30746918c53d67f9b
 	method = merge
 	cmdver = 0.4.6
-	parent = e9ed050e0ee92979f726921fd843d1ba2db127e4
+	parent = 66ebf983a80f06bfa4a1ab22ee58e67c095522de
