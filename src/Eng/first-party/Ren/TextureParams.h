@@ -49,7 +49,6 @@ enum class eTexFlags : uint8_t {
     NoRepeat,
     MIPMin,
     MIPMax,
-    NoBias,
     ExtendedViews
 };
 

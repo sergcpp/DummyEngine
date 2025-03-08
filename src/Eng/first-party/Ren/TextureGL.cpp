@@ -910,10 +910,7 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[size_t(sampling.wrap)]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[size_t(sampling.wrap)]);
 
-#ifndef __ANDROID__
-        ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS,
-                                     (params.flags & eTexFlags::NoBias) ? 0.0f : sampling.lod_bias.to_float());
-#endif
+        ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS, sampling.lod_bias.to_float());
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_LOD, sampling.min_lod.to_float());
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_LOD, sampling.max_lod.to_float());
 

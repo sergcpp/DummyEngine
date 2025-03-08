@@ -227,8 +227,6 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                             texture_flags |= eTexFlags::MIPMin;
                         } else if (strncmp(flag, "mip_max", flag_len) == 0) {
                             texture_flags |= eTexFlags::MIPMax;
-                        } else if (strncmp(flag, "nobias", flag_len) == 0) {
-                            texture_flags |= eTexFlags::NoBias;
                         } else {
                             break;
                         }
