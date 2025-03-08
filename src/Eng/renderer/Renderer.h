@@ -92,8 +92,6 @@ class Renderer {
     Random &rand_;
     Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
-    Ren::ProgramRef blit_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_, blit_mipmap_prog_,
-        blit_prefilter_prog_, blit_project_sh_prog_;
 
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
         noise_tex_;
@@ -237,9 +235,9 @@ class Renderer {
     // Debug
     Ren::PipelineRef pi_debug_velocity_;
 
-    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_[2],
-        blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_,
-        blit_down_depth_prog_, blit_ssr_compose_prog_;
+    Ren::ProgramRef blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_[2],
+        blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
+        blit_down_depth_prog_, blit_ssr_compose_prog_, blit_fxaa_prog_;
 
     struct CommonBuffers {
         FgResRef skin_transforms, shape_keys, instance_indices, cells, rt_cells, lights, decals, items, rt_items,

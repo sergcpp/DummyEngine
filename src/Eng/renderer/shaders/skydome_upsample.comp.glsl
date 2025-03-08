@@ -11,13 +11,11 @@ LAYOUT_PARAMS uniform UniformParams {
     Params2 g_params;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 layout(binding = SKY_TEX_SLOT) uniform sampler2D g_sky_tex;
 layout(binding = SKY_HIST_TEX_SLOT) uniform sampler2D g_sky_hist_tex;
 
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_img;
-layout(binding = OUT_HIST_IMG_SLOT, rgba16f) uniform image2D g_out_hist_img;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
@@ -73,9 +71,5 @@ void main() {
         }
     }
 
-    imageStore(g_out_hist_img, icoord, vec4(out_color, 1.0));
-    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
-    if (depth == 0.0) {
-        imageStore(g_out_img, icoord, vec4(out_color, 1.0));
-    }
+    imageStore(g_out_img, icoord, vec4(out_color, 1.0));
 }

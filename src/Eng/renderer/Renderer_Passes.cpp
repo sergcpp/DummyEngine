@@ -13,6 +13,7 @@
 #include "shaders/blit_bilateral_interface.h"
 #include "shaders/blit_down_depth_interface.h"
 #include "shaders/blit_down_interface.h"
+#include "shaders/blit_fxaa_interface.h"
 #include "shaders/blit_gauss_interface.h"
 #include "shaders/blit_ssao_interface.h"
 #include "shaders/blit_static_vel_interface.h"
@@ -155,7 +156,7 @@ void Eng::Renderer::InitPipelines() {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     blit_static_vel_prog_ = sh_.LoadProgram("internal/blit_static_vel.vert.glsl", "internal/blit_static_vel.frag.glsl");
-    blit_gauss2_prog_ = sh_.LoadProgram("internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
+    blit_gauss_prog_ = sh_.LoadProgram("internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
     blit_ao_prog_ = sh_.LoadProgram("internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
     blit_bilateral_prog_ = sh_.LoadProgram("internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
     blit_taa_prog_[0] = sh_.LoadProgram("internal/blit_taa.vert.glsl",
@@ -170,8 +171,9 @@ void Eng::Renderer::InitPipelines() {
     blit_ssr_compose_prog_ =
         sh_.LoadProgram("internal/blit_ssr_compose.vert.glsl", "internal/blit_ssr_compose.frag.glsl");
     blit_upscale_prog_ = sh_.LoadProgram("internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
-    blit_down2_prog_ = sh_.LoadProgram("internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
+    blit_down_prog_ = sh_.LoadProgram("internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
     blit_down_depth_prog_ = sh_.LoadProgram("internal/blit_down_depth.vert.glsl", "internal/blit_down_depth.frag.glsl");
+    blit_fxaa_prog_ = sh_.LoadProgram("internal/blit_fxaa.vert.glsl", "internal/blit_fxaa.frag.glsl");
 }
 
 void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const PersistentGpuData &persistent_data) {
@@ -804,26 +806,24 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
     }
 
     if (settings.sky_quality == eSkyQuality::High) {
-        auto &sky_upsample = fg_builder_.AddNode("SKY UPSAMPLE");
-
-        struct PassData {
-            FgResRef shared_data;
-            FgResRef depth_tex;
-            FgResRef env_map;
-            FgResRef sky_temp_tex;
-            FgResRef sky_hist_tex;
-            FgResRef output_tex;
-            FgResRef output_hist_tex;
-        };
-
-        auto *data = sky_upsample.AllocNodeData<PassData>();
-        data->shared_data = sky_upsample.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        frame_textures.depth = data->depth_tex = sky_upsample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        frame_textures.envmap = data->env_map = sky_upsample.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
-        data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Stg::ComputeShader);
-
         FgResRef sky_upsampled;
-        {
+        { // prepare upsampled texture
+            auto &sky_upsample = fg_builder_.AddNode("SKY UPSAMPLE");
+
+            struct PassData {
+                FgResRef shared_data;
+                FgResRef env_map;
+                FgResRef sky_temp_tex;
+                FgResRef sky_hist_tex;
+                FgResRef output_tex;
+            };
+
+            auto *data = sky_upsample.AllocNodeData<PassData>();
+            data->shared_data = sky_upsample.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+            frame_textures.envmap = data->env_map =
+                sky_upsample.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
+            data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Stg::ComputeShader);
+
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
@@ -831,43 +831,80 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            sky_upsampled = data->output_hist_tex =
+            sky_upsampled = data->output_tex =
                 sky_upsample.AddStorageImageOutput("SKY HIST", params, Stg::ComputeShader);
+            data->sky_hist_tex = sky_upsample.AddHistoryTextureInput(sky_upsampled, Stg::ComputeShader);
+
+            sky_upsample.set_execute_cb([data, this](FgBuilder &builder) {
+                FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+                FgAllocTex &env_map_tex = builder.GetReadTexture(data->env_map);
+                FgAllocTex &sky_temp_tex = builder.GetReadTexture(data->sky_temp_tex);
+                FgAllocTex &sky_hist_tex = builder.GetReadTexture(data->sky_hist_tex);
+                FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+                const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                                 {Trg::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
+                                                 {Trg::Tex2DSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
+                                                 {Trg::Tex2DSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
+                                                 {Trg::Image2D, Skydome::OUT_IMG_SLOT, *output_tex.ref}};
+
+                const Ren::Vec3u grp_count = Ren::Vec3u{
+                    (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
+                    (view_state_.act_res[1] + Skydome::LOCAL_GROUP_SIZE_Y - 1u) / Skydome::LOCAL_GROUP_SIZE_Y, 1u};
+
+                Skydome::Params2 uniform_params;
+                uniform_params.img_size = view_state_.scr_res;
+                uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
+                uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
+
+                DispatchCompute(*pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                builder.ctx().default_descr_alloc(), builder.ctx().log());
+            });
         }
+        { // blit result
+            auto &sky_blit = fg_builder_.AddNode("SKY BLIT");
 
-        data->sky_hist_tex = sky_upsample.AddHistoryTextureInput(sky_upsampled, Stg::ComputeShader);
-        frame_textures.color = data->output_tex =
-            sky_upsample.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
+            struct PassData {
+                FgResRef depth_tex;
+                FgResRef sky_tex;
+                FgResRef output_tex;
+            };
 
-        sky_upsample.set_execute_cb([data, this](FgBuilder &builder) {
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-            FgAllocTex &env_map_tex = builder.GetReadTexture(data->env_map);
-            FgAllocTex &sky_temp_tex = builder.GetReadTexture(data->sky_temp_tex);
-            FgAllocTex &sky_hist_tex = builder.GetReadTexture(data->sky_hist_tex);
-            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-            FgAllocTex &output_hist_tex = builder.GetWriteTexture(data->output_hist_tex);
+            auto *data = sky_blit.AllocNodeData<PassData>();
+            frame_textures.depth = data->depth_tex = sky_blit.AddDepthOutput(frame_textures.depth);
+            data->sky_tex = sky_blit.AddTextureInput(sky_upsampled, Stg::FragmentShader);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::Tex2DSampled, Skydome::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                             {Trg::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
-                                             {Trg::Tex2DSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
-                                             {Trg::Tex2DSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
-                                             {Trg::Image2D, Skydome::OUT_IMG_SLOT, *output_tex.ref},
-                                             {Trg::Image2D, Skydome::OUT_HIST_IMG_SLOT, *output_hist_tex.ref}};
+            frame_textures.color = data->output_tex =
+                sky_blit.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + Skydome::LOCAL_GROUP_SIZE_Y - 1u) / Skydome::LOCAL_GROUP_SIZE_Y, 1u};
+            sky_blit.set_execute_cb([data, this](FgBuilder &builder) {
+                FgAllocTex &sky_tex = builder.GetReadTexture(data->sky_tex);
+                FgAllocTex &depth_tex = builder.GetWriteTexture(data->depth_tex);
+                FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            Skydome::Params2 uniform_params;
-            uniform_params.img_size = view_state_.scr_res;
-            uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
-            uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
+                Ren::RastState rast_state;
+                rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+                rast_state.depth.write_enabled = false;
+                rast_state.depth.test_enabled = true;
+                rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
 
-            DispatchCompute(*pi_sky_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
-        });
+                rast_state.viewport[2] = view_state_.act_res[0];
+                rast_state.viewport[3] = view_state_.act_res[1];
+
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, FXAA::INPUT_TEX_SLOT, *sky_tex.ref}};
+
+                FXAA::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+                uniform_params.inv_resolution =
+                    1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+                const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
+                const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_fxaa_prog_, depth_target, render_targets, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(FXAA::Params), 0);
+            });
+        }
     }
 }
 
@@ -1299,21 +1336,17 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             rast_state.viewport[2] = view_state_.act_res[0] / 2;
             rast_state.viewport[3] = view_state_.act_res[1] / 2;
 
-            { // prepare ao buffer
-                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
-                                                 {Trg::Tex2DSampled, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
+                                             {Trg::Tex2DSampled, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
 
-                SSAO::Params uniform_params;
-                uniform_params.transform =
-                    Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0] / 2, view_state_.act_res[1] / 2};
-                uniform_params.resolution = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+            SSAO::Params uniform_params;
+            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0] / 2, view_state_.act_res[1] / 2};
+            uniform_params.resolution = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
 
-                const Ren::RenderTarget render_targets[] = {
-                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, {}, render_targets, rast_state,
-                                    builder.rast_state(), bindings, &uniform_params, sizeof(SSAO::Params), 0);
-            }
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, {}, render_targets, rast_state,
+                                builder.rast_state(), bindings, &uniform_params, sizeof(SSAO::Params), 0);
         });
     }
 
