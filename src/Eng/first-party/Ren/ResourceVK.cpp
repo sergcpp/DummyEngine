@@ -300,7 +300,7 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                       dst_stages ? dst_stages : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr,
-                                      uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                      uint32_t(img_barriers.size()), img_barriers.cdata());
+                                      buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                      img_barriers.cdata());
     }
 }

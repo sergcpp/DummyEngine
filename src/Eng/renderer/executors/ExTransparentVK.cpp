@@ -62,8 +62,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         /*const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
                                                 (*p_list_)->probe_storage->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};*/
-        //const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
-        //const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
+        // const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
+        // const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
 
         const VkBufferView lights_buf_view = lights_buf.tbos[0]->view();
         const VkBufferView decals_buf_view = decals_buf.tbos[0]->view();
@@ -240,8 +240,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
             descr_write.pBufferInfo = &mat_buf_info;
         }
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0,
-                                        nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, descr_writes.size(), descr_writes.cdata(), 0, nullptr);
     }
 
     const auto &texture_descr_sets = bindless_tex_->textures_descr_sets;

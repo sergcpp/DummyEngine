@@ -225,7 +225,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
         d.dstSet = descr_set;
     }
 
-    api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.data(), 0, nullptr);
+    api_ctx->vkUpdateDescriptorSets(api_ctx->device, descr_writes.size(), descr_writes.data(), 0, nullptr);
 
     return descr_set;
 }

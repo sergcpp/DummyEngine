@@ -13,9 +13,7 @@ namespace Gui {
 extern const int TexAtlasSlot;
 } // namespace Gui
 
-Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
-    instance_index_ = g_instance_count++;
-}
+Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) { instance_index_ = g_instance_count++; }
 
 Gui::Renderer::~Renderer() {
     Ren::ApiContext *api_ctx = ctx_.api_ctx();
@@ -103,7 +101,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         dst_stages &= api_ctx->supported_stages_mask;
 
         if (!buf_barriers.empty()) {
-            api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
+            api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, buf_barriers.size(),
                                           buf_barriers.cdata(), 0, nullptr);
         }
 
@@ -199,8 +197,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
     dst_stages &= api_ctx->supported_stages_mask;
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
-                                      buf_barriers.cdata(), uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, buf_barriers.size(),
+                                      buf_barriers.cdata(), img_barriers.size(), img_barriers.cdata());
 
         vertex_buf_->resource_state = Ren::eResState::VertexBuffer;
         index_buf_->resource_state = Ren::eResState::IndexBuffer;
@@ -211,7 +209,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
     // (Re)create framebuffers
     //
-    framebuffers_.resize(uint32_t(api_ctx->present_images.size()));
+    framebuffers_.resize(api_ctx->present_images.size());
     if (!framebuffers_[api_ctx->active_present_image].Setup(api_ctx, *render_pass_, w, h, ctx_.backbuffer_ref(), {},
                                                             Ren::WeakTex2DRef{}, false, ctx_.log())) {
         ctx_.log()->Error("Failed to create framebuffer!");

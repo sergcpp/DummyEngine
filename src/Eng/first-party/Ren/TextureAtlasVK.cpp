@@ -215,8 +215,8 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -257,8 +257,8 @@ void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
         new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::ShaderResource);
-        new_barrier.oldLayout = (VkImageLayout)VKImageLayoutForState(resource_state);
-        new_barrier.newLayout = (VkImageLayout)VKImageLayoutForState(eResState::ShaderResource);
+        new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(resource_state));
+        new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(eResState::ShaderResource));
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.image = img_[i];
@@ -277,7 +277,7 @@ void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
 
     if (!img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, 0, nullptr, img_barriers.size(), img_barriers.cdata());
     }
 
     resource_state = eResState::ShaderResource;

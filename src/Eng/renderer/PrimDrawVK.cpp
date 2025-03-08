@@ -148,9 +148,9 @@ void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const
         dst_stages &= ctx_->api_ctx()->supported_stages_mask;
 
         if (!img_barriers.empty() || !buf_barriers.empty()) {
-            ctx_->api_ctx()->vkCmdPipelineBarrier(
-                cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0, nullptr,
-                uint32_t(buf_barriers.size()), buf_barriers.data(), uint32_t(img_barriers.size()), img_barriers.data());
+            ctx_->api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                  dst_stages, 0, 0, nullptr, buf_barriers.size(), buf_barriers.data(),
+                                                  img_barriers.size(), img_barriers.data());
         }
     }
 

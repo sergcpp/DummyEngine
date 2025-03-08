@@ -175,7 +175,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             Params uniform_params;
             uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
-            uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
+            uniform_params.samples_and_guided = Ren::Vec2u(SamplesPerQuad, VarianceGuided ? 1u : 0u);
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.clear = (view_state_.stochastic_lights_count > 0) ? 0.0f : 1.0f;
             uniform_params.tile_count = tile_count;

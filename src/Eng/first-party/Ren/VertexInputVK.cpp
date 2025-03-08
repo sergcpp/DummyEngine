@@ -66,10 +66,11 @@ void Ren::VertexInput::BindBuffers(ApiContext *api_ctx, VkCommandBuffer cmd_buf,
         }
     }
 
-    api_ctx->vkCmdBindVertexBuffers(cmd_buf, 0, uint32_t(buffers_to_bind.size()), buffers_to_bind.cdata(),
+    api_ctx->vkCmdBindVertexBuffers(cmd_buf, 0, buffers_to_bind.size(), buffers_to_bind.cdata(),
                                     buffer_offsets.cdata());
     if (elem_buf) {
-        api_ctx->vkCmdBindIndexBuffer(cmd_buf, elem_buf->vk_handle(), VkDeviceSize(index_offset), VkIndexType(index_type));
+        api_ctx->vkCmdBindIndexBuffer(cmd_buf, elem_buf->vk_handle(), VkDeviceSize(index_offset),
+                                      VkIndexType(index_type));
     }
 }
 

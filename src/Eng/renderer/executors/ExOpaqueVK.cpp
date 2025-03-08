@@ -339,8 +339,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
             descr_write.pBufferInfo = &mat_buf_info;
         }
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0,
-                                        nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, descr_writes.size(), descr_writes.cdata(), 0, nullptr);
     }
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];

@@ -1210,8 +1210,8 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemAllocators *me
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1446,8 +1446,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1718,8 +1718,8 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators 
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1955,8 +1955,8 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators 
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -2081,8 +2081,8 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -2186,8 +2186,8 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, 
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     this->resource_state = eResState::CopySrc;
@@ -2554,8 +2554,8 @@ void Ren::Texture3D::SetSubImage(int offsetx, int offsety, int offsetz, int size
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                       uint32_t(img_barriers.size()), img_barriers.cdata());
+                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
+                                       img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;

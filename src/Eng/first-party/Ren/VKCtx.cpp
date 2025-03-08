@@ -527,7 +527,7 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
         device_extensions.push_back(VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME);
     }
 
-    device_info.enabledExtensionCount = uint32_t(device_extensions.size());
+    device_info.enabledExtensionCount = device_extensions.size();
     device_info.ppEnabledExtensionNames = device_extensions.cdata();
 
     VkPhysicalDeviceFeatures features = {};
@@ -1218,7 +1218,7 @@ bool Ren::MatchDeviceNames(const char *name, const char *pattern) {
 
 bool Ren::ReadbackTimestampQueries(ApiContext *api_ctx, int i) {
     VkQueryPool query_pool = api_ctx->query_pools[i];
-    const uint32_t query_count = uint32_t(api_ctx->query_counts[i]);
+    const uint32_t query_count = api_ctx->query_counts[i];
     if (!query_count) {
         // nothing to readback
         return true;

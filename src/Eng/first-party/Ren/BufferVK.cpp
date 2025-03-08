@@ -157,8 +157,8 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ui
             dst_stages &= api_ctx_->supported_stages_mask;
 
             if (!barriers.empty()) {
-                api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,
-                                               uint32_t(barriers.size()), barriers.cdata(), 0, nullptr);
+                api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, barriers.size(),
+                                               barriers.cdata(), 0, nullptr);
             }
 
             VkBufferCopy region_to_copy = {};
@@ -460,7 +460,7 @@ void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uin
     dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!barriers.empty()) {
-        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, barriers.size(),
                                        barriers.cdata(), 0, nullptr);
     }
 
@@ -492,7 +492,7 @@ void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void
     dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!barriers.empty()) {
-        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, barriers.size(),
                                        barriers.cdata(), 0, nullptr);
     }
 
@@ -540,7 +540,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
     dst_stages &= src.api_ctx()->supported_stages_mask;
 
     if (!barriers.empty()) {
-        src.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
+        src.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, barriers.size(),
                                             barriers.cdata(), 0, nullptr);
     }
 

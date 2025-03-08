@@ -130,7 +130,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 
     VkFramebufferCreateInfo framebuf_create_info = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     framebuf_create_info.renderPass = renderpass_;
-    framebuf_create_info.attachmentCount = uint32_t(image_views.size());
+    framebuf_create_info.attachmentCount = image_views.size();
     framebuf_create_info.pAttachments = image_views.data();
     framebuf_create_info.width = _w;
     framebuf_create_info.height = _h;
@@ -201,7 +201,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 
     VkFramebufferCreateInfo framebuf_create_info = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     framebuf_create_info.renderPass = renderpass_;
-    framebuf_create_info.attachmentCount = uint32_t(image_views.size());
+    framebuf_create_info.attachmentCount = image_views.size();
     framebuf_create_info.pAttachments = image_views.data();
     framebuf_create_info.width = _w;
     framebuf_create_info.height = _h;
