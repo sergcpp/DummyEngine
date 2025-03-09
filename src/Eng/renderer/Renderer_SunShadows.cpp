@@ -9,6 +9,8 @@
 #include "shaders/rt_shadow_prepare_mask_interface.h"
 #include "shaders/sun_shadows_interface.h"
 
+#include "Renderer_Names.h"
+
 void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                           const AccelerationStructureData &acc_struct_data,
                                           const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
@@ -316,7 +318,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         } else {
             data->hist = rt_classify_tiles.AddHistoryTextureInput("SH Reproj Tex", Stg::ComputeShader);
         }
-        data->prev_depth = rt_classify_tiles.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->prev_depth = rt_classify_tiles.AddHistoryTextureInput(OPAQUE_DEPTH_TEX, Stg::ComputeShader);
         data->prev_moments = rt_classify_tiles.AddHistoryTextureInput("SH Moments Tex", Stg::ComputeShader);
         data->ray_hits = rt_classify_tiles.AddStorageReadonlyInput(shadow_mask, Stg::ComputeShader);
         data->shared_data = rt_classify_tiles.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);

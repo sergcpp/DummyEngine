@@ -307,8 +307,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             }
 
             Params uniform_params;
-            uniform_params.resolution =
-                Ren::Vec4u(view_state_.act_res[0], view_state_.act_res[1], 0, 0);
+            uniform_params.resolution = Ren::Vec4u(view_state_.act_res[0], view_state_.act_res[1], 0, 0);
 
             DispatchComputeIndirect(*pi_ssr_trace_hq_[1][irr_tex != nullptr], *indir_args_buf.ref, 0, bindings,
                                     &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
@@ -444,8 +443,11 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             }
             { // background depth
                 const std::string tex_name = i == 0 ? OPAQUE_DEPTH_TEX : "OIT Back Depth #" + std::to_string(i);
-                back_depth = frame_textures.opaque_depth = data->out_back_depth =
+                back_depth = data->out_back_depth =
                     oit_back.AddTransferImageOutput(tex_name, frame_textures.depth_params);
+                if (i == 0) {
+                    frame_textures.opaque_depth = back_depth;
+                }
             }
 
             oit_back.set_execute_cb([this, data, i](FgBuilder &builder) {
@@ -504,7 +506,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             const FgResRef decals_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.decals, Stg::FragmentShader);
 
-            const FgResRef shadow_map = oit_blend_layer.AddTextureInput(frame_textures.shadow_depth, Stg::FragmentShader);
+            const FgResRef shadow_map =
+                oit_blend_layer.AddTextureInput(frame_textures.shadow_depth, Stg::FragmentShader);
             const FgResRef ltc_luts_tex = oit_blend_layer.AddTextureInput(ltc_luts_, Stg::FragmentShader);
             const FgResRef env_tex = oit_blend_layer.AddTextureInput(frame_textures.envmap, Stg::FragmentShader);
 
