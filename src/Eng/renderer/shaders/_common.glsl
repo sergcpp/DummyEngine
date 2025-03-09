@@ -239,7 +239,7 @@ vec3 normalize_len(const vec3 v, out float len) {
 }
 
 float lum(vec3 color) {
-    return dot(vec3(0.212671, 0.715160, 0.715160), color);
+    return dot(vec3(0.299, 0.587, 0.114), color);
 }
 
 vec3 limit_intensity(vec3 color, const float limit) {
