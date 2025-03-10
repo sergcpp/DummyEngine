@@ -61,7 +61,11 @@ void LoadWithOffset(ivec2 did, ivec2 offset, out /* fp16 */ vec3 normals, out /*
 
     ivec2 p = clamp(did, ivec2(0, 0), ivec2(g_params.img_size) - ivec2(1));
     normals = UnpackNormalAndRoughness(texelFetch(g_norm_tex, p, 0).x).xyz;
+#if defined(PASS_0)
     input_ = texelFetch(g_input_tex, p, 0).xw;
+#else
+    input_ = texelFetch(g_input_tex, p, 0).xy;
+#endif
     depth = texelFetch(g_depth_tex, p, 0).x;
 }
 
