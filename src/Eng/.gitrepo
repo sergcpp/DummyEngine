@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = smooth_sky
-	commit = 1536e524c41352e9321784bbba844c641e269eb0
+	branch = colored_rt_shadow
+	commit = 1032cf81b3b8845111e2b32d0b7bfe5b465aeda8
 	method = merge
 	cmdver = 0.4.6
-	parent = 6ae6e5c1eca0ced630bfeae12e1061da9d6f6f7a
+	parent = 63fcf7b2bed9d4c3dbeee2a62599a96f3de81119
