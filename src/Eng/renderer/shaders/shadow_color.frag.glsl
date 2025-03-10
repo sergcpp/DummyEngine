@@ -38,5 +38,5 @@ void main() {
     }
 #endif
     const vec3 base_color = g_base_color.xyz * YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
-    g_out_color = vec4(0.8 * mix(vec3(1.0), g_base_color.w * base_color, alpha), gl_FragCoord.z);
+    g_out_color = vec4(mix(vec3(1.0), 0.8 * g_base_color.w * base_color, alpha), gl_FragCoord.z);
 }

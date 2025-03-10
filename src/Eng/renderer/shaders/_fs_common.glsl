@@ -406,6 +406,35 @@ vec2 BlockerSearch(sampler2D shadow_depth_tex, sampler2D shadow_color_tex, const
     return vec2(avg_distance, count);
 }
 
+vec2 BlockerSearch2(sampler2D shadow_color_tex, const vec3 shadow_uv, const float search_radius, vec4 rotator) {
+    const vec2 shadow_size = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
+
+    float avg_distance = 0.0;
+    float count = 0.0;
+
+#if !ROTATE_BLOCKER_SEARCH
+    rotator = vec4(1, 0, 0, 1);
+#endif
+
+    for (int i = 0; i < 8; ++i) {
+        const vec2 uv = shadow_uv.xy + search_radius * RotateVector(rotator, g_poisson_disk_8[i] / shadow_size);
+#if GATHER4_BLOCKER_SEARCH
+        const vec4 depth = textureGather(shadow_color_tex, uv, 3);
+        const vec4 valid = vec4(greaterThan(depth, vec4(shadow_uv.z)));
+        avg_distance += dot(valid, depth);
+        count += dot(valid, vec4(1.0));
+#else
+        const float depth = textureLod(shadow_color_tex, uv, 0.0).w;
+        if (depth > shadow_uv.z) {
+            avg_distance += depth;
+            count += 1.0;
+        }
+#endif
+    }
+
+    return vec2(avg_distance, count);
+}
+
 float GetCascadeVisibility(sampler2DShadow shadow_depth_tex, sampler2D shadow_depth_val_tex, vec3 sh_uvs, vec4 rotator, float softness_factor) {
     const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES / 2));
     const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
@@ -484,6 +513,44 @@ vec3 GetSunVisibilityExt(const float frag_depth, sampler2DShadow shadow_depth_te
         return GetCascadeVisibilityExt(shadow_depth_tex, shadow_depth_val_tex, shadow_color_tex, sh_uvs[2], rotator, softness_factor[2]);
     }
     return GetCascadeVisibilityExt(shadow_depth_tex, shadow_depth_val_tex, shadow_color_tex, sh_uvs[3], rotator, softness_factor[3]);
+}
+
+vec3 GetCascadeVisColor(sampler2D shadow_color_tex, const vec3 sh_uvs, const vec4 rotator, const float softness_factor) {
+    const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES / 2));
+    const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
+    const float MaxShadowRadiusPx = 16.0;
+
+    vec2 blocker = BlockerSearch2(shadow_color_tex, sh_uvs, MaxShadowRadiusPx, rotator);
+    if (blocker.y < 0.5) {
+        return vec3(1.0);
+    }
+    blocker.x /= blocker.y;
+
+    vec3 final_color = vec3(0.0);
+
+    const float filter_radius_px = clamp(softness_factor * abs(blocker.x - sh_uvs.z), MinShadowRadiusPx, MaxShadowRadiusPx);
+    for (int i = 0; i < 16; ++i) {
+        const vec2 uv = sh_uvs.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
+        final_color += textureLod(shadow_color_tex, uv, 0.0).xyz;
+    }
+    final_color /= 16.0;
+
+    return final_color;
+}
+
+vec3 GetSunVisColor(const float frag_depth, sampler2D shadow_color_tex, const mat4x3 sh_uvs, const vec4 softness_factor, const float hash) {
+    const float angle = hash * 2.0 * M_PI;
+    const float ca = cos(angle), sa = sin(angle);
+    const vec4 rotator = vec4(ca, sa, -sa, ca);
+
+    if (frag_depth < SHADOWMAP_CASCADE0_DIST) {
+        return GetCascadeVisColor(shadow_color_tex, sh_uvs[0], rotator, softness_factor[0]);
+    } else if (frag_depth < SHADOWMAP_CASCADE1_DIST) {
+        return GetCascadeVisColor(shadow_color_tex, sh_uvs[1], rotator, softness_factor[1]);
+    } else if (frag_depth < SHADOWMAP_CASCADE2_DIST) {
+        return GetCascadeVisColor(shadow_color_tex, sh_uvs[2], rotator, softness_factor[2]);
+    }
+    return GetCascadeVisColor(shadow_color_tex, sh_uvs[3], rotator, softness_factor[3]);
 }
 
 vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {

@@ -274,7 +274,7 @@ void main() {
             }
             if (mat.params[2].y > 0) {
                 const vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR])), uv, 0.0)));
-                throughput = min(throughput, 0.8 * mix(vec3(1.0), mat.params[2].y * base_color, alpha));
+                throughput = min(throughput, mix(vec3(1.0), 0.8 * mat.params[2].y * base_color, alpha));
                 if (dot(throughput, vec3(0.333)) <= 0.1) {
                     rayQueryConfirmIntersectionEXT(rq);
                 }

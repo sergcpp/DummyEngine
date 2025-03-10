@@ -348,7 +348,7 @@ void main() {
     vec3 final_color = vec3(0.0);
 
     if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
-        const vec3 sun_color = texelFetch(g_sun_shadow_tex, icoord, 0).xyz;
+        const vec3 sun_color = textureLod(g_sun_shadow_tex, norm_uvs, 0.0).xyz;
         if (hsum(sun_color) > 0.0) {
             final_color += sun_color * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
 -                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

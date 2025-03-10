@@ -39,7 +39,7 @@ layout(std430, binding = OUT_TILE_METADATA_BUF_SLOT) writeonly buffer TileMetada
     uint g_tile_metadata[];
 };
 
-layout(binding = OUT_REPROJ_RESULTS_IMG_SLOT, rgba16f) uniform restrict image2D g_reproj_results_img;
+layout(binding = OUT_REPROJ_RESULTS_IMG_SLOT, rg16f) uniform restrict image2D g_reproj_results_img;
 layout(binding = OUT_MOMENTS_IMG_SLOT, r11f_g11f_b10f) uniform restrict image2D g_out_moments_img;
 
 shared int g_false_count;
@@ -492,7 +492,7 @@ void TileClassification(uint group_index, uvec2 gid) {
     }
 
     // Output the results of the temporal pass
-    imageStore(g_reproj_results_img, ivec2(did.xy), vec4(shadow_clamped, shadow_clamped, shadow_clamped, variance));
+    imageStore(g_reproj_results_img, ivec2(did.xy), vec4(shadow_clamped, variance, 0.0, 0.0));
     imageStore(g_out_moments_img, ivec2(did.xy), vec4(moments_current, 0.0));
 }
 

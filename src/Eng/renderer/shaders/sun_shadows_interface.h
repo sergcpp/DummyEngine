@@ -7,7 +7,7 @@ INTERFACE_START(SunShadows)
 
 struct Params {
     uvec2 img_size;
-    float enabled;
+    float _unused;
     float pixel_spread_angle;
     vec4 softness_factor;
 };
@@ -21,6 +21,7 @@ const int NORM_TEX_SLOT = 3;
 const int SHADOW_DEPTH_TEX_SLOT = 4;
 const int SHADOW_DEPTH_TEX_VAL_SLOT = 5;
 const int SHADOW_COLOR_TEX_SLOT = 6;
+const int RT_SHADOW_TEX_SLOT = 7;
 
 const int OUT_SHADOW_IMG_SLOT = 0;
 

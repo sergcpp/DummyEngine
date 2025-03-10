@@ -4,7 +4,7 @@
 #include "_fs_common.glsl"
 #include "sun_shadows_interface.h"
 
-#pragma multi_compile _ SS_SHADOW
+#pragma multi_compile _ SS_SHADOW RT_SHADOW
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
@@ -20,6 +20,10 @@ layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
 layout(binding = SHADOW_DEPTH_TEX_VAL_SLOT) uniform sampler2D g_shadow_depth_val_tex;
 layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
+
+#ifdef RT_SHADOW
+    layout(binding = RT_SHADOW_TEX_SLOT) uniform sampler2D g_rt_shadow_tex;
+#endif
 
 layout(binding = OUT_SHADOW_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_out_shadow_img;
 
@@ -46,18 +50,13 @@ void main() {
         return;
     }
 
-    if (g_params.enabled < 0.5) {
-        imageStore(g_out_shadow_img, icoord, vec4(1.0));
-        return;
-    }
+    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
+    const vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x).xyz;
+    const vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
-    float depth = texelFetch(g_depth_tex, icoord, 0).r;
-    float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
-    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x).xyz;
-    vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
-
-    vec2 px_center = vec2(icoord) + 0.5;
-    vec2 in_uv = px_center / vec2(g_params.img_size);
+    const vec2 px_center = vec2(icoord) + 0.5;
+    const vec2 in_uv = px_center / vec2(g_params.img_size);
 
     const vec4 pos_cs = vec4(2.0 * in_uv - 1.0, depth, 1.0);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
@@ -70,14 +69,14 @@ void main() {
 
 #ifdef SS_SHADOW
         if (lin_depth < 30.0) {
-            vec2 hit_pixel;
-            vec3 hit_point;
-
             float occlusion = 0.0;
 
             const float jitter = 0.0;//Bayer4x4(uvec2(icoord), 0);
             const vec3 pos_vs = (g_shrd_data.view_from_world * vec4(pos_ws, 1.0)).xyz;
             const vec3 sun_dir_vs = (g_shrd_data.view_from_world * vec4(g_shrd_data.sun_dir.xyz, 0.0)).xyz;
+
+            vec2 hit_pixel;
+            vec3 hit_point;
             if (IntersectRay(pos_vs, sun_dir_vs, jitter, hit_pixel, hit_point)) {
                 occlusion = 1.0;
             }
@@ -124,8 +123,14 @@ void main() {
         pix_scale = exp2(ceil(log2(pix_scale)));
         const float hash = hash3D(floor(pix_scale * pos_ws_biased));
 
+#ifndef RT_SHADOW
         final_color = visibility * GetSunVisibilityExt(lin_depth, g_shadow_depth_tex, g_shadow_depth_val_tex, g_shadow_color_tex,
                                                        transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)), g_params.softness_factor, hash);
+#else
+        final_color = textureLod(g_rt_shadow_tex, in_uv, 0.0).xxx;
+        final_color *= GetSunVisColor(lin_depth, g_shadow_color_tex,
+                                      transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)), g_params.softness_factor, hash);
+#endif
     }
 
     imageStore(g_out_shadow_img, icoord, vec4(final_color, 1.0));

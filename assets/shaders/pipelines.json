@@ -301,6 +301,10 @@
     },
     {
         "type" : "compute",
+        "shaders" : [ "internal/sun_shadows@RT_SHADOW.comp.glsl" ]
+    },
+    {
+        "type" : "compute",
         "shaders" : [ "internal/sun_brightness.comp.glsl" ]
     },
     {

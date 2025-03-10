@@ -121,7 +121,8 @@ void Eng::Renderer::InitPipelines() {
     pi_gi_stabilization_ = sh_.LoadPipeline("internal/gi_stabilization.comp.glsl");
 
     // Sun Shadow
-    pi_sun_shadows_ = sh_.LoadPipeline("internal/sun_shadows@SS_SHADOW.comp.glsl");
+    pi_sun_shadows_[0] = sh_.LoadPipeline("internal/sun_shadows@SS_SHADOW.comp.glsl");
+    pi_sun_shadows_[1] = sh_.LoadPipeline("internal/sun_shadows@RT_SHADOW.comp.glsl");
     pi_sun_brightness_ = sh_.LoadPipeline("internal/sun_brightness.comp.glsl");
     pi_shadow_classify_ = sh_.LoadPipeline(subgroup_select("internal/rt_shadow_classify.comp.glsl", //
                                                            "internal/rt_shadow_classify@NO_SUBGROUP.comp.glsl"),

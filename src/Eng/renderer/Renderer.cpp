@@ -1115,13 +1115,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) &&
                 list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
-                // RT Sun shadows
-                AddHQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                                      rt_sh_geo_instances_res, rt_sh_obj_instances_res, frame_textures,
-                                      list.render_settings.debug_denoise == eDebugDenoise::Shadow);
+                frame_textures.sun_shadow =
+                    AddHQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                                          rt_sh_geo_instances_res, rt_sh_obj_instances_res, frame_textures,
+                                          list.render_settings.debug_denoise == eDebugDenoise::Shadow);
+            } else if (list.render_settings.shadows_quality != eShadowsQuality::Off) {
+                frame_textures.sun_shadow =
+                    AddLQSunShadowsPass(common_buffers, persistent_data, acc_struct_data, bindless_tex, frame_textures);
             } else {
-                AddLQSunShadowsPass(common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                                    list.render_settings.shadows_quality != eShadowsQuality::Off, frame_textures);
+                frame_textures.sun_shadow = fg_builder_.MakeTextureResource(dummy_white_);
             }
 
             // GI cache

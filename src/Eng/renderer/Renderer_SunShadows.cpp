@@ -11,11 +11,12 @@
 
 #include "Renderer_Names.h"
 
-void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                          const AccelerationStructureData &acc_struct_data,
-                                          const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
-                                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures,
-                                          const bool debug_denoise) {
+Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers,
+                                                   const PersistentGpuData &persistent_data,
+                                                   const AccelerationStructureData &acc_struct_data,
+                                                   const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
+                                                   FgResRef rt_obj_instances_res, const FrameTextures &frame_textures,
+                                                   const bool debug_denoise) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -217,8 +218,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            frame_textures.sun_shadow = data->out_result_img =
-                rt_shadow_debug.AddStorageImageOutput("RT SH Debug", params, Stg::ComputeShader);
+            data->out_result_img = rt_shadow_debug.AddStorageImageOutput("RT SH Debug", params, Stg::ComputeShader);
         }
 
         rt_shadow_debug.set_execute_cb([this, data](FgBuilder &builder) {
@@ -240,7 +240,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
 
-        return;
+        return data->out_result_img;
     }
 
     FgResRef shadow_mask;
@@ -337,7 +337,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RGBA16F;
+            params.format = Ren::eTexFormat::RG16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             repro_results = data->out_repro_results_img =
@@ -557,7 +557,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RGBA8;
+            params.format = Ren::eTexFormat::RG16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             filtered_result2 = data->out_history_img =
@@ -597,17 +597,89 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         });
     }
 
-    if (EnableFilter) {
-        frame_textures.sun_shadow = filtered_result2;
-    } else {
-        frame_textures.sun_shadow = repro_results;
+    FgResRef shadow_final;
+
+    { // combine shadow color with RT opaque shadow
+        auto &rt_sh_combine = fg_builder_.AddNode("RT SH COMBINE");
+
+        struct PassData {
+            FgResRef shared_data;
+            FgResRef depth_tex;
+            FgResRef normal_tex;
+            FgResRef shadow_depth_tex, shadow_color_tex;
+            FgResRef rt_shadow_tex;
+
+            FgResRef out_shadow_tex;
+        };
+
+        auto *data = rt_sh_combine.AllocNodeData<PassData>();
+        data->shared_data = rt_sh_combine.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->depth_tex = rt_sh_combine.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->normal_tex = rt_sh_combine.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->shadow_depth_tex = rt_sh_combine.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
+        data->shadow_color_tex = rt_sh_combine.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
+        if (EnableFilter) {
+            data->rt_shadow_tex = rt_sh_combine.AddTextureInput(filtered_result2, Stg::ComputeShader);
+        } else {
+            data->rt_shadow_tex = rt_sh_combine.AddTextureInput(repro_results, Stg::ComputeShader);
+        }
+
+        { // shadows texture
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RGBA8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            shadow_final = data->out_shadow_tex =
+                rt_sh_combine.AddStorageImageOutput("Sun Shadows", params, Stg::ComputeShader);
+        }
+
+        rt_sh_combine.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->normal_tex);
+            FgAllocTex &shadow_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
+            FgAllocTex &shadow_color_tex = builder.GetReadTexture(data->shadow_color_tex);
+            FgAllocTex &rt_shadow_tex = builder.GetReadTexture(data->rt_shadow_tex);
+            FgAllocTex &out_shadow_tex = builder.GetWriteTexture(data->out_shadow_tex);
+
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
+                {Trg::Tex2DSampled, SunShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Trg::Tex2DSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
+                {Trg::Tex2DSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, SunShadows::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+                {Trg::Tex2DSampled, SunShadows::SHADOW_DEPTH_TEX_VAL_SLOT, {*shadow_depth_tex.ref, *nearest_sampler_}},
+                {Trg::Tex2DSampled, SunShadows::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
+                {Trg::Tex2DSampled, SunShadows::RT_SHADOW_TEX_SLOT, *rt_shadow_tex.ref},
+                {Trg::Image2D, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.act_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
+                (view_state_.act_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
+
+            SunShadows::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
+            uniform_params.softness_factor =
+                std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;
+            uniform_params.softness_factor /= 2.0f * p_list_->sun_shadow_bounds;
+            uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);
+
+            DispatchCompute(*pi_sun_shadows_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
     }
+
+    return shadow_final;
 }
 
-void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                        const AccelerationStructureData &acc_struct_data,
-                                        const BindlessTextureData &bindless, const bool enabled,
-                                        FrameTextures &frame_textures) {
+Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers,
+                                                 const PersistentGpuData &persistent_data,
+                                                 const AccelerationStructureData &acc_struct_data,
+                                                 const BindlessTextureData &bindless,
+                                                 const FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -642,7 +714,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
             sun_shadows.AddStorageImageOutput("Sun Shadows", params, Stg::ComputeShader);
     }
 
-    sun_shadows.set_execute_cb([this, data, enabled](FgBuilder &builder) {
+    sun_shadows.set_execute_cb([this, data](FgBuilder &builder) {
         FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
         FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
         FgAllocTex &norm_tex = builder.GetReadTexture(data->normal_tex);
@@ -666,16 +738,15 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
 
         SunShadows::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
-        uniform_params.enabled = enabled ? 1.0f : 0.0f;
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
         uniform_params.softness_factor =
             std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;
         uniform_params.softness_factor /= 2.0f * p_list_->sun_shadow_bounds;
         uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);
 
-        DispatchCompute(*pi_sun_shadows_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+        DispatchCompute(*pi_sun_shadows_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                         builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 
-    frame_textures.sun_shadow = shadow_tex;
+    return shadow_tex;
 }

@@ -23,11 +23,7 @@ layout(std430, binding = TILE_METADATA_BUF_SLOT) readonly buffer TileMetadata {
     uint g_tile_metadata[];
 };
 
-#if defined(PASS_0) || defined(PASS_1)
 layout(binding = OUT_RESULT_IMG_SLOT, rg16f) uniform restrict writeonly image2D g_out_result_img;
-#else
-layout(binding = OUT_RESULT_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_out_result_img;
-#endif
 
 /**********************************************************************
 Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
@@ -61,11 +57,7 @@ void LoadWithOffset(ivec2 did, ivec2 offset, out /* fp16 */ vec3 normals, out /*
 
     ivec2 p = clamp(did, ivec2(0, 0), ivec2(g_params.img_size) - ivec2(1));
     normals = UnpackNormalAndRoughness(texelFetch(g_norm_tex, p, 0).x).xyz;
-#if defined(PASS_0)
-    input_ = texelFetch(g_input_tex, p, 0).xw;
-#else
     input_ = texelFetch(g_input_tex, p, 0).xy;
-#endif
     depth = texelFetch(g_depth_tex, p, 0).x;
 }
 
@@ -294,7 +286,7 @@ void main() {
 #if defined(PASS_0) || defined(PASS_1)
         imageStore(g_out_result_img, ivec2(dispatch_thread_id), vec4(results, 0.0, 0.0));
 #else
-        imageStore(g_out_result_img, ivec2(dispatch_thread_id), vec4(mean, mean, mean, 0.0));
+        imageStore(g_out_result_img, ivec2(dispatch_thread_id), vec4(mean, 0.0, 0.0, 0.0));
 #endif
     }
 }

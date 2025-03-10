@@ -1218,6 +1218,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                                 ++new_instance.geo_count;
                             }
+                            if (!new_instance.geo_count) {
+                                --list.rt_obj_instances[1].count;
+                            }
                         }
                     }
 

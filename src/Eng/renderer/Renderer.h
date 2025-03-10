@@ -223,7 +223,7 @@ class Renderer {
     // GI Denoiser stuff
     Ren::PipelineRef pi_gi_reproject_, pi_gi_temporal_[2], pi_gi_filter_[4], pi_gi_stabilization_;
     // Sun shadows
-    Ren::PipelineRef pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
+    Ren::PipelineRef pi_shadow_classify_, pi_sun_shadows_[2], pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
     Ren::PipelineRef pi_sun_brightness_;
     // Bloom
@@ -320,13 +320,14 @@ class Renderer {
                           const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
                           FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
-    void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
-                               FrameTextures &frame_textures, bool debug_denoise);
-    void AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                             const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                             bool enabled, FrameTextures &frame_textures);
+    FgResRef AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                   const AccelerationStructureData &acc_struct_data,
+                                   const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
+                                   FgResRef rt_obj_instances_res, const FrameTextures &frame_textures,
+                                   bool debug_denoise);
+    FgResRef AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                 const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                                 const FrameTextures &frame_textures);
 
     FgResRef AddBloomPasses(FgResRef hdr_texture, FgResRef exposure_texture, bool compressed);
 

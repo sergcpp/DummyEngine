@@ -569,7 +569,7 @@ void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view 
         run_image_test(threads, "complex_mat4", 20.25, Full);
         run_image_test(threads, "complex_mat4", 20.25, Full_Ultra);
         run_image_test(threads, "complex_mat4_sun_light", 20.10, Full);
-        run_image_test(threads, "complex_mat4_sun_light", 19.00, Full_Ultra);
+        run_image_test(threads, "complex_mat4_sun_light", 19.90, Full_Ultra);
         run_image_test(threads, "emit_mat0", 24.95, Full);
         run_image_test(threads, "emit_mat0", 25.85, Full_Ultra);
         run_image_test(threads, "emit_mat1", 23.30, Full);
