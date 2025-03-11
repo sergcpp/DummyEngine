@@ -50,8 +50,8 @@ Eng::DebugFrameUI::DebugFrameUI(Ren::Context &ctx, const Gui::Vec2f &pos, const 
                            Gui::Vec2f{-1}, Gui::Vec2f{2}, nullptr),
       line_(ctx, "assets_pc/textures/internal/line.dds", Gui::Vec2f{}, Gui::Vec2f{}, nullptr) {}
 
-void Eng::DebugFrameUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info,
-                                   const ItemsInfo &items_info, const bool debug_items) {
+void Eng::DebugFrameUI::UpdateInfo(const frontend_info_t &frontend_info, const backend_info_t &backend_info,
+                                   const items_info_t &items_info, const bool debug_items) {
     const float alpha = 0.98f;
     const float k = (1.0f - alpha);
 
@@ -260,7 +260,7 @@ void Eng::DebugFrameUI::DrawCompact(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "        LIGHTS DATA: %.3f kb",
-                 items_info_smooth_.lights_count * sizeof(LightItem) / 1024.0f);
+                 items_info_smooth_.lights_count * sizeof(light_item_t) / 1024.0f);
         font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
 
         vertical_offset -= font_height;
@@ -269,17 +269,17 @@ void Eng::DebugFrameUI::DrawCompact(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "        DECALS DATA: %.3f kb",
-                 items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
+                 items_info_smooth_.decals_count * sizeof(decal_item_t) / 1024.0f);
         font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "         CELLS DATA: %.3f kb",
-                 ITEM_CELLS_COUNT * sizeof(CellData) / 1024.0f);
+                 ITEM_CELLS_COUNT * sizeof(cell_data_t) / 1024.0f);
         font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "         ITEMS DATA: %.3f kb",
-                 items_info_smooth_.items_total * sizeof(ItemData) / 1024.0f);
+                 items_info_smooth_.items_total * sizeof(item_data_t) / 1024.0f);
         font_small_->DrawText(r, text_buffer, Gui::Vec2f{-1, vertical_offset}, text_color, font_scale, parent_);
     }
 }

@@ -34,7 +34,7 @@ layout(location = 4) out vec3 g_vtx_sh_uvs[4];
 layout(binding = BIND_MAT_TEX3) uniform sampler2D g_bump_tex;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 void main() {

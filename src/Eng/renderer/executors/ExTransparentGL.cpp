@@ -12,16 +12,17 @@ namespace ExSharedInternal {
 void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 uint32_t _draw_list_range_full(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                               Eng::BackendInfo &backend_info);
+                               Eng::backend_info_t &backend_info);
 
 uint32_t _draw_list_range_full_rev(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                                   const Ren::Pipeline pipelines[],
+                                   Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                                   Eng::BackendInfo &backend_info);
+                                   Eng::backend_info_t &backend_info);
 } // namespace ExSharedInternal
 
 void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &instances_buf,
@@ -120,7 +121,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     uint64_t cur_prog_id = 0xffffffffffffffff;
     uint64_t cur_mat_id = 0xffffffffffffffff;
 
-    BackendInfo backend_info;
+    backend_info_t backend_info;
 
     for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
         const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];

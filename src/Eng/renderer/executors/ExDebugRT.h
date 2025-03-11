@@ -6,7 +6,7 @@
 #include "../Renderer_DrawList.h"
 #include "../framegraph/FgNode.h"
 
-struct ViewState;
+struct view_state_t;
 
 namespace Eng {
 class PrimDraw;
@@ -42,7 +42,7 @@ class ExDebugRT final : public FgExecutor {
         FgResRef output_tex;
     };
 
-    ExDebugRT(FgBuilder &builder, const ViewState *view_state, const Ren::IAccStructure *tlas_to_debug,
+    ExDebugRT(FgBuilder &builder, const view_state_t *view_state, const Ren::IAccStructure *tlas_to_debug,
               const BindlessTextureData *bindless_tex, const Args *args);
 
     void Execute(FgBuilder &builder) override;
@@ -51,7 +51,7 @@ class ExDebugRT final : public FgExecutor {
     Ren::PipelineRef pi_debug_;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const Ren::IAccStructure *tlas_to_debug_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
     int depth_w_ = 0, depth_h_ = 0;

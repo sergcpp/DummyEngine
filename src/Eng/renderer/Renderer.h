@@ -64,7 +64,7 @@ class Renderer {
     }
     void set_pre_exposure(const float exposure) { pre_exposure_ = exposure; }
 
-    const BackendInfo &backend_info() const { return backend_info_; }
+    const backend_info_t &backend_info() const { return backend_info_; }
 
     void InitBackendInfo();
 
@@ -144,14 +144,14 @@ class Renderer {
     };
     Ren::HashMap32<uint32_t, VisObjStorage> temp_visible_objects_, temp_rt_visible_objects_;
     DynArray<BBox> decals_boxes_;
-    BackendInfo backend_info_;
+    backend_info_t backend_info_;
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
     int backend_gpu_start_ = -1, backend_gpu_end_ = -1;
     Ren::Vec4f prev_wind_scroll_;
 
     DynArray<Ren::Frustum> temp_sub_frustums_;
-    std::vector<SortSpan32> temp_sort_spans_32_[2];
-    std::vector<SortSpan64> temp_sort_spans_64_[2];
+    std::vector<sort_span_32_t> temp_sort_spans_32_[2];
+    std::vector<sort_span_64_t> temp_sort_spans_64_[2];
 
     std::vector<float> temp_depth;
 
@@ -202,7 +202,7 @@ class Renderer {
     ExReadExposure ex_read_exposure_;
     ExPostprocess::Args ex_postprocess_args_;
 
-    ViewState view_state_;
+    view_state_t view_state_;
     PrimDraw prim_draw_;
     uint32_t frame_index_ = 0, accumulated_frames_ = 0;
 
@@ -347,7 +347,7 @@ class Renderer {
                                            Ren::HashMap32<uint32_t, VisObjStorage> &out_visible_objects2);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
                                           const LightSource *light_sources, Ren::Span<const uint32_t> litem_to_lsource,
-                                          const DrawList &list, CellData out_cells[], ItemData out_items[],
+                                          const DrawList &list, cell_data_t out_cells[], item_data_t out_items[],
                                           std::atomic_int &items_count);
 
     // Generate auxiliary textures
@@ -358,8 +358,8 @@ class Renderer {
     static std::unique_ptr<int16_t[]> Generate_RandDirs(int res, std::string &out_c_header);
     static std::unique_ptr<uint8_t[]> Generate_ConeTraceLUT(int resx, int resy, const float cone_angles[4],
                                                             std::string &out_c_header);
-    static std::vector<Ren::Vec4f> Generate_SkyTransmittanceLUT(const AtmosphereParams &params);
-    static std::vector<Ren::Vec4f> Generate_SkyMultiscatterLUT(const AtmosphereParams &params,
+    static std::vector<Ren::Vec4f> Generate_SkyTransmittanceLUT(const atmosphere_params_t &params);
+    static std::vector<Ren::Vec4f> Generate_SkyMultiscatterLUT(const atmosphere_params_t &params,
                                                                Ren::Span<const Ren::Vec4f> transmittance_lut);
 };
 } // namespace Eng

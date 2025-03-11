@@ -983,8 +983,8 @@ void BaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         const int back_list = (front_list_ + 1) % 2;
 
         const bool debug_items = renderer_->settings.debug_lights || renderer_->settings.debug_decals;
-        const Eng::FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
-        const Eng::BackendInfo &back_info = renderer_->backend_info();
+        const Eng::frontend_info_t front_info = main_view_lists_[back_list].frontend_info;
+        const Eng::backend_info_t &back_info = renderer_->backend_info();
 
         /*const uint64_t
             front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
@@ -993,7 +993,7 @@ void BaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long
         long)back_dur);*/
 
-        Eng::ItemsInfo items_info;
+        Eng::items_info_t items_info;
         items_info.lights_count = uint32_t(main_view_lists_[back_list].lights.size());
         items_info.decals_count = uint32_t(main_view_lists_[back_list].decals.size());
         items_info.probes_count = uint32_t(main_view_lists_[back_list].probes.size());
@@ -1311,7 +1311,7 @@ void BaseState::InitScene_PT() {
         env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
 
         memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
-        static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::AtmosphereParams));
+        static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::atmosphere_params_t));
 
         if (scene_data.env.sun_angle < 1) {
             env_desc.envmap_resolution *= 2;

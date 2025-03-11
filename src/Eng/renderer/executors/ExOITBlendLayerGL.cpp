@@ -15,20 +15,21 @@ namespace ExSharedInternal {
 void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 uint32_t _draw_list_range_full(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                               Eng::BackendInfo &backend_info);
+                               Eng::backend_info_t &backend_info);
 
 uint32_t _draw_list_range_full_rev(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                                   const Ren::Pipeline pipelines[],
+                                   Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                                   Eng::BackendInfo &backend_info);
+                                   Eng::backend_info_t &backend_info);
 uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
                           const Ren::Texture2D &white_tex, Ren::Span<const uint32_t> batch_indices,
-                          Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint64_t mask, uint32_t &cur_mat_id,
-                          int *draws_count);
+                          Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask,
+                          uint32_t &cur_mat_id, int *draws_count);
 } // namespace ExSharedInternal
 
 void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth_tex) {
@@ -151,7 +152,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::SPEC_TEX_SLOT, specular_tex->ref->id());
     }
 
-    const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches};
+    const Ren::Span<const basic_draw_batch_t> batches = {(*p_list_)->basic_batches};
     const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices};
     const auto &materials = *(*p_list_)->materials;
 
@@ -159,7 +160,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     uint32_t i = (*p_list_)->alpha_blend_start_index;
     uint32_t cur_mat_id = 0xffffffff;
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     { // Simple meshes
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SIMPLE");

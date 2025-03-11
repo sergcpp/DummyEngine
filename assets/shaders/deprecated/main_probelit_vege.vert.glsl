@@ -16,7 +16,7 @@ layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
@@ -27,7 +27,7 @@ layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 layout(binding = BIND_NOISE_TEX) uniform sampler2D g_noise_tex;
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 #if !defined(BINDLESS_TEXTURES)
@@ -62,7 +62,7 @@ void main() {
     vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
 #if defined(BINDLESS_TEXTURES)
-    MaterialData mat = g_materials[instance.y];
+    material_data_t mat = g_materials[instance.y];
     TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // BINDLESS_TEXTURES

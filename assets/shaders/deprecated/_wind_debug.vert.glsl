@@ -11,7 +11,7 @@ layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 layout(location = VTX_AUX_LOC) in vec2 g_vtx_unused;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {

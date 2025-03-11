@@ -6,7 +6,7 @@
 #include "../Renderer_DrawList.h"
 #include "../framegraph/FgNode.h"
 
-struct ViewState;
+struct view_state_t;
 
 namespace Eng {
 class ExSampleLights final : public FgExecutor {
@@ -42,7 +42,7 @@ class ExSampleLights final : public FgExecutor {
         FgResRef out_specular_tex;
     };
 
-    void Setup(FgBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,
+    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
                const Args *args) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
@@ -58,7 +58,7 @@ class ExSampleLights final : public FgExecutor {
     Ren::PipelineRef pi_sample_lights_;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const Args *args_ = nullptr;

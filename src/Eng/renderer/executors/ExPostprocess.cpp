@@ -11,7 +11,7 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/blit_postprocess_interface.h"
 
-Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const ViewState *view_state, const Args *args)
+Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const view_state_t *view_state, const Args *args)
     : prim_draw_(prim_draw) {
     view_state_ = view_state;
     args_ = args;

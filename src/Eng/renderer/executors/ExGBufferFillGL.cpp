@@ -10,13 +10,13 @@
 namespace ExSharedInternal {
 uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
                           const Ren::Texture2D &white_tex, Ren::Span<const uint32_t> batch_indices,
-                          Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint64_t mask, uint32_t &cur_mat_id,
-                          int *draws_count) {
+                          Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask,
+                          uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -50,8 +50,8 @@ uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &m
     return i;
 }
 
-uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
-                     uint32_t mask);
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
+                     uint32_t i, uint32_t mask);
 } // namespace ExSharedInternal
 
 void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
@@ -134,7 +134,7 @@ void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
-    const Ren::Span<const BasicDrawBatch> batches = (*p_list_)->basic_batches;
+    const Ren::Span<const basic_draw_batch_t> batches = (*p_list_)->basic_batches;
     const Ren::Span<const uint32_t> batch_indices = (*p_list_)->basic_batch_indices;
     const auto &materials = *(*p_list_)->materials;
 
@@ -142,7 +142,7 @@ void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
     uint32_t i = 0;
     uint32_t cur_mat_id = 0xffffffff;
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     { // Simple meshes
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "SIMPLE");

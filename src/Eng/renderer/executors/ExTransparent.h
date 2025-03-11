@@ -22,7 +22,7 @@ class ExTransparent final : public FgExecutor {
 
     // temp data (valid only between Setup and Execute calls)
     Ren::ApiContext *api_ctx_ = nullptr;
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const Ren::Pipeline *pipelines_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
@@ -74,7 +74,7 @@ class ExTransparent final : public FgExecutor {
     explicit ExTransparent(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~ExTransparent() final;
 
-    void Setup(const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
+    void Setup(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
                const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
                const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const FgResRef brdf_lut,
                const FgResRef noise_tex, const FgResRef cone_rt_lut, const FgResRef dummy_black,

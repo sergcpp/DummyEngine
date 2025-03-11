@@ -4,7 +4,7 @@
 
 #include "../../utils/ShaderLoader.h"
 
-Eng::ExDebugRT::ExDebugRT(FgBuilder &builder, const ViewState *view_state, const Ren::IAccStructure *tlas_to_debug,
+Eng::ExDebugRT::ExDebugRT(FgBuilder &builder, const view_state_t *view_state, const Ren::IAccStructure *tlas_to_debug,
                           const BindlessTextureData *bindless_tex, const Args *args) {
     view_state_ = view_state;
     tlas_to_debug_ = tlas_to_debug;

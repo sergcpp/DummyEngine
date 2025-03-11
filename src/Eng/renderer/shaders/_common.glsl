@@ -346,27 +346,27 @@ vec3 MapToCone(vec2 u, vec3 n, float radius) {
 	return n + uv.x * tangents[0] + uv.y * tangents[1];
 }
 
-struct ShadowMapRegion {
+struct shadow_map_region_t {
     vec4 transform;
     mat4 clip_from_world;
 };
 
-struct ProbeItem {
+struct probe_item_t {
     vec4 pos_and_radius;
     vec4 unused_and_layer;
     vec4 sh_coeffs[3];
 };
 
-struct EllipsItem {
+struct ellipse_item_t {
     vec4 pos_and_radius;
     vec4 axis_and_perp;
 };
 
-struct SharedData {
+struct shared_data_t {
     mat4 view_from_world, clip_from_view, clip_from_world, prev_view_from_world, prev_clip_from_world;
     mat4 world_from_view, view_from_clip, world_from_clip, delta_matrix;
     mat4 rt_clip_from_world;
-    ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
+    shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
     vec4 clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
@@ -374,14 +374,14 @@ struct SharedData {
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;
     vec4 ambient_hack;
-    ProbeVolume probe_volumes[PROBE_VOLUMES_COUNT];
+    probe_volume_t probe_volumes[PROBE_VOLUMES_COUNT];
     uvec4 portals[MAX_PORTALS_TOTAL / 4];
-    ProbeItem probes[MAX_PROBES_TOTAL];
-    EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL];
-    AtmosphereParams atmosphere;
+    probe_item_t probes[MAX_PROBES_TOTAL];
+    ellipse_item_t ellipsoids[MAX_ELLIPSES_TOTAL];
+    atmosphere_params_t atmosphere;
 };
 
-struct MaterialData {
+struct material_data_t {
     uint texture_indices[MAX_TEX_PER_MATERIAL];
     uint _pad[2];
     vec4 params[4];

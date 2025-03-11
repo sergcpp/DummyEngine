@@ -23,7 +23,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
@@ -34,11 +34,11 @@ layout(binding = BLAS_BUF_SLOT) uniform samplerBuffer g_blas_nodes;
 layout(binding = TLAS_BUF_SLOT) uniform samplerBuffer g_tlas_nodes;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
-    RTGeoInstance g_geometries[];
+    rt_geo_instance_t g_geometries[];
 };
 
 layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(binding = VTX_BUF1_SLOT) uniform samplerBuffer g_vtx_data0;
@@ -130,12 +130,12 @@ void main() {
 
                     const int geo_index = i - 1;
 
-                    const RTGeoInstance geo = g_geometries[geo_index];
+                    const rt_geo_instance_t geo = g_geometries[geo_index];
                     const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
                     if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
                         break;
                     }
-                    const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+                    const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
                     const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
                     const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;

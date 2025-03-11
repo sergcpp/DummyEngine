@@ -44,7 +44,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
@@ -55,11 +55,11 @@ layout(binding = BLAS_BUF_SLOT) uniform samplerBuffer g_blas_nodes;
 layout(binding = TLAS_BUF_SLOT) uniform samplerBuffer g_tlas_nodes;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
-    RTGeoInstance g_geometries[];
+    rt_geo_instance_t g_geometries[];
 };
 
 layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(binding = VTX_BUF1_SLOT) uniform samplerBuffer g_vtx_data0;
@@ -69,7 +69,7 @@ layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
 layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
 
 layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
-    light_item_t g_lights[];
+    _light_item_t g_lights[];
 };
 
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
@@ -123,7 +123,7 @@ vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id, int bounce) {
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
-vec3 LightVisibility(const light_item_t litem, const vec3 P) {
+vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
     if (shadowreg_index == -1) {
         return vec3(1.0);
@@ -218,12 +218,12 @@ void main() {
 
                 const int geo_index = i - 1;
 
-                const RTGeoInstance geo = g_geometries[geo_index];
+                const rt_geo_instance_t geo = g_geometries[geo_index];
                 const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
                 if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
                     break;
                 }
-                const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+                const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
                 const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
                 const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
@@ -264,7 +264,7 @@ void main() {
         if (inter.mask == 0) {
             // Check portal lights intersection
             for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
-                const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
+                const _light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
 
                 const vec3 light_pos = litem.pos_and_radius.xyz;
                 vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
@@ -309,9 +309,9 @@ void main() {
 
             const int geo_index = i - 1;
 
-            const RTGeoInstance geo = g_geometries[geo_index];
+            const rt_geo_instance_t geo = g_geometries[geo_index];
             const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-            const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+            const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
             const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
             const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
@@ -462,8 +462,7 @@ void main() {
                     const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
                     const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
 
-                    const light_item_t litem = g_lights[s_li];
-
+                    const _light_item_t litem = g_lights[s_li];
                     const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
                     vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_weights, roughness, base_color, approx_spec_col);
@@ -490,8 +489,7 @@ void main() {
                     const int s_li = subgroupMin(v_li);
                     [[flatten]] if (s_li == v_li) {
                         ++i;
-                        const light_item_t litem = g_lights[s_li];
-
+                        const _light_item_t litem = g_lights[s_li];
                         const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
                         vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_weights, roughness, base_color, approx_spec_col);

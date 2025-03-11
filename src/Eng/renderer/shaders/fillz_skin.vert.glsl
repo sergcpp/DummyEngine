@@ -28,7 +28,7 @@ layout(location = VTX_PRE_LOC) in vec3 g_in_vtx_pos_prev;
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
@@ -38,7 +38,7 @@ layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
 };
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 #ifdef OUTPUT_VELOCITY
@@ -69,7 +69,7 @@ void main() {
 #ifdef ALPHATEST
     g_vtx_uvs = g_in_vtx_uvs;
 
-    const MaterialData mat = g_materials[instance.y];
+    const material_data_t mat = g_materials[instance.y];
     g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);

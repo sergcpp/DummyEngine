@@ -30,7 +30,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
@@ -43,11 +43,11 @@ layout(binding = LIGHTS_BUF_SLOT) uniform samplerBuffer g_lights_buf;
 layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
-    RTGeoInstance g_geometries[];
+    rt_geo_instance_t g_geometries[];
 };
 
 layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(binding = VTX_BUF1_SLOT) uniform samplerBuffer g_vtx_data0;
@@ -163,7 +163,7 @@ void main() {
 
     //
 
-    light_item_t litem = FetchLightItem(g_lights_buf, li);
+    _light_item_t litem = FetchLightItem(g_lights_buf, li);
     const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
     const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
     const bool is_doublesided = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DOUBLESIDED_BIT) != 0;
@@ -229,9 +229,9 @@ void main() {
                 const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, false);
                 const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, false);
 
-                const RTGeoInstance geo = g_geometries[custom_index + geo_index];
+                const rt_geo_instance_t geo = g_geometries[custom_index + geo_index];
                 const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-                const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+                const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
                 const uint i0 = texelFetch(g_vtx_indices, int(geo.indices_start + 3 * tri_index + 0)).x;
                 const uint i1 = texelFetch(g_vtx_indices, int(geo.indices_start + 3 * tri_index + 1)).x;
@@ -288,12 +288,12 @@ void main() {
 
                 const int geo_index = i - 1;
 
-                const RTGeoInstance geo = g_geometries[geo_index];
+                const rt_geo_instance_t geo = g_geometries[geo_index];
                 const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
                 if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
                     break;
                 }
-                const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+                const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
                 const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
                 const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;

@@ -20,11 +20,12 @@ void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, Eng::BIND_MAT_TEX4, mat.textures[4]->id());
     glBindSampler(Eng::BIND_MAT_TEX4, mat.samplers[4]->id());
 }
-uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
-                     uint32_t i, uint64_t mask, int *draws_count) {
+uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices,
+                     Ren::Span<const Eng::basic_draw_batch_t> zfill_batches, uint32_t i, uint64_t mask,
+                     int *draws_count) {
     for (; i < zfill_batch_indices.size(); i++) {
         const auto &batch = zfill_batches[zfill_batch_indices[i]];
-        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -43,13 +44,13 @@ uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<co
 }
 
 uint32_t _draw_range_ext(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                          uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -74,13 +75,13 @@ uint32_t _draw_range_ext(Eng::FgBuilder &builder, const Ren::MaterialStorage *ma
 }
 
 uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                           uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -144,13 +145,13 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         glClear(GL_STENCIL_BUFFER_BIT);
     }
 
-    const Ren::Span<const BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches};
+    const Ren::Span<const basic_draw_batch_t> zfill_batches = {(*p_list_)->basic_batches};
     const Ren::Span<const uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices};
 
     int draws_count = 0;
     uint32_t i = 0;
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     { // solid meshes
         Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "STATIC-SOLID-SIMPLE");

@@ -18,7 +18,7 @@
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
@@ -43,7 +43,7 @@ layout(location = U_M_MATRIX_LOC) uniform mat4 g_shadow_view_proj_mat;
 #endif // VULKAN
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 #if defined(NO_BINDLESS)
@@ -66,7 +66,7 @@ void main() {
     vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
     vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
-    MaterialData mat = g_materials[instance.y];
+    material_data_t mat = g_materials[instance.y];
 #if !defined(NO_BINDLESS)
     TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);

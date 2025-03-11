@@ -14,7 +14,7 @@ layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 layout(location = VTX_AUX_LOC) in vec2 g_vtx_unused;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
@@ -24,7 +24,7 @@ layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
 layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 #if defined(GL_ARB_bindless_texture)
@@ -76,7 +76,7 @@ void main() {
     }
 
 #if defined(GL_ARB_bindless_texture)
-    MaterialData mat = g_materials[instance.y];
+    material_data_t mat = g_materials[instance.y];
     g_diff_tex = texture_handles[mat.texture_indices[MAT_TEX_BASECOLOR]];
     g_norm_tex = texture_handles[mat.texture_indices[MAT_TEX_NORMALMAP]];
     g_spec_tex = texture_handles[mat.texture_indices[MAT_TEX_ROUGHNESS]];

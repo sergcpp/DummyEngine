@@ -15,7 +15,7 @@ namespace SceneManagerInternal {} // namespace SceneManagerInternal
 
 bool Eng::SceneManager::UpdateMaterialsBuffer() {
     const uint32_t max_mat_count = scene_data_.materials.capacity();
-    const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
+    const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(material_data_t);
 
     if (scene_data_.persistent_data.materials_buf->size() < req_mat_buf_size) {
         scene_data_.persistent_data.materials_buf->Resize(req_mat_buf_size);
@@ -53,14 +53,14 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     const size_t TexSizePerMaterial = MAX_TEX_PER_MATERIAL * sizeof(GLuint64);
 
     Ren::Buffer materials_upload_buf("Materials Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
-                                     (update_range.second - update_range.first) * sizeof(MaterialData));
+                                     (update_range.second - update_range.first) * sizeof(material_data_t));
     Ren::Buffer textures_stage_buf;
     if (ren_ctx_.capabilities.bindless_texture) {
         textures_stage_buf = Ren::Buffer("Textures Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
                                          (update_range.second - update_range.first) * TexSizePerMaterial);
     }
 
-    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_upload_buf.Map());
+    auto *material_data = reinterpret_cast<material_data_t *>(materials_upload_buf.Map());
     GLuint64 *texture_data = nullptr;
     GLuint64 white_tex_handle = 0, error_tex_handle = 0;
     if (ren_ctx_.capabilities.bindless_texture) {
@@ -125,8 +125,8 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 
     materials_upload_buf.Unmap();
     scene_data_.persistent_data.materials_buf->UpdateSubRegion(
-        update_range.first * sizeof(MaterialData), (update_range.second - update_range.first) * sizeof(MaterialData),
-        materials_upload_buf);
+        update_range.first * sizeof(material_data_t),
+        (update_range.second - update_range.first) * sizeof(material_data_t), materials_upload_buf);
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 
@@ -134,7 +134,5 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 }
 
 // stubs
-void Eng::SceneManager::Alloc_HWRT_TLAS() {
-    
-}
+void Eng::SceneManager::Alloc_HWRT_TLAS() {}
 std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const AccStructure &acc) { return nullptr; }

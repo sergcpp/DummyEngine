@@ -6,7 +6,7 @@
 #include "../Renderer_DrawList.h"
 #include "../framegraph/FgNode.h"
 
-struct ViewState;
+struct view_state_t;
 
 namespace Eng {
 class ExDebugOIT final : public FgExecutor {
@@ -18,7 +18,7 @@ class ExDebugOIT final : public FgExecutor {
         FgResRef output_tex;
     };
 
-    ExDebugOIT(FgBuilder &builder, const ViewState *view_state, const Args *pass_data);
+    ExDebugOIT(FgBuilder &builder, const view_state_t *view_state, const Args *pass_data);
 
     void Execute(FgBuilder &builder) override;
 
@@ -27,7 +27,7 @@ class ExDebugOIT final : public FgExecutor {
     Ren::PipelineRef pi_debug_oit_;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const Args *args_ = nullptr;
 };
 } // namespace Eng

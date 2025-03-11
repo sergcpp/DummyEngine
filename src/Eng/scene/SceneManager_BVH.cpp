@@ -1227,7 +1227,7 @@ void Eng::SceneManager::RebuildLightTree() {
     };
     std::vector<additional_data_t> additional_data;
 
-    std::vector<LightItem> stochastic_lights;
+    std::vector<light_item_t> stochastic_lights;
     std::vector<Phy::prim_t> temp_primitives;
     std::vector<uint32_t> temp_indices;
 
@@ -1303,7 +1303,7 @@ void Eng::SceneManager::RebuildLightTree() {
                     temp_primitives.push_back({0, 0, 0, bbox_min, bbox_max});
                     temp_indices.push_back(i / 3);
 
-                    LightItem &tri_light = stochastic_lights.emplace_back();
+                    light_item_t &tri_light = stochastic_lights.emplace_back();
                     tri_light.type_and_flags = LIGHT_TYPE_TRI;
                     if (bool(acc.vis_mask & AccStructure::eRayType::Diffuse)) {
                         tri_light.type_and_flags |= LIGHT_DIFFUSE_BIT;
@@ -1493,7 +1493,7 @@ void Eng::SceneManager::RebuildLightTree() {
     { // Init GPU data
         scene_data_.persistent_data.stoch_lights_buf =
             scene_data_.buffers.Insert("Stochastic Lights", ren_ctx_.api_ctx(), Ren::eBufType::Texture,
-                                       uint32_t(stochastic_lights.size() * sizeof(LightItem)));
+                                       uint32_t(stochastic_lights.size() * sizeof(light_item_t)));
         scene_data_.persistent_data.stoch_lights_nodes_buf =
             scene_data_.buffers.Insert("Stochastic Light Nodes", ren_ctx_.api_ctx(), Ren::eBufType::Texture,
                                        uint32_t(light_wnodes.size() * sizeof(gpu_light_cwbvh_node_t)));
@@ -1502,7 +1502,7 @@ void Eng::SceneManager::RebuildLightTree() {
                                      scene_data_.persistent_data.stoch_lights_buf->size());
         { // init stage buf
             uint8_t *mapped_ptr = lights_buf_stage.Map();
-            memcpy(mapped_ptr, stochastic_lights.data(), stochastic_lights.size() * sizeof(LightItem));
+            memcpy(mapped_ptr, stochastic_lights.data(), stochastic_lights.size() * sizeof(light_item_t));
             lights_buf_stage.Unmap();
         }
 
@@ -1516,7 +1516,7 @@ void Eng::SceneManager::RebuildLightTree() {
 
         Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
         CopyBufferToBuffer(lights_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_buf, 0,
-                           uint32_t(stochastic_lights.size() * sizeof(LightItem)), cmd_buf);
+                           uint32_t(stochastic_lights.size() * sizeof(light_item_t)), cmd_buf);
         CopyBufferToBuffer(nodes_buf_stage, 0, *scene_data_.persistent_data.stoch_lights_nodes_buf, 0,
                            uint32_t(light_wnodes.size() * sizeof(gpu_light_cwbvh_node_t)), cmd_buf);
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);

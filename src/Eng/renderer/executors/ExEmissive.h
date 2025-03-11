@@ -17,7 +17,7 @@ class ExEmissive final : public FgExecutor {
     int fb_to_use_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
@@ -43,7 +43,7 @@ class ExEmissive final : public FgExecutor {
     void DrawOpaque(FgBuilder &builder);
 
   public:
-    void Setup(const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
+    void Setup(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
                const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
                const BindlessTextureData *bindless_tex, const FgResRef noise_tex, const FgResRef dummy_white,
                const FgResRef instances_buf, const FgResRef instance_indices_buf,

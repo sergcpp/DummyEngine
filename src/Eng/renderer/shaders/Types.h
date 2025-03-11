@@ -5,7 +5,7 @@
 
 INTERFACE_START(Types)
 
-struct AtmosphereParams {
+struct atmosphere_params_t {
     float planet_radius;
     float viewpoint_height;
     float atmosphere_height;
@@ -45,14 +45,14 @@ struct AtmosphereParams {
     vec4 ground_albedo;
 };
 
-struct ProbeVolume {
+struct probe_volume_t {
     vec4 origin;
     vec4 spacing;
     ivec4 scroll;
     ivec4 scroll_diff;
 };
 
-struct LightItem {
+struct light_item_t {
     float col[3];
     uint type_and_flags;
     float pos[3], radius;

@@ -17,10 +17,10 @@ void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
     }
 }
 uint32_t _draw_list_range_full(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
-                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                               Eng::BackendInfo &backend_info) {
+                               Eng::backend_info_t &backend_info) {
     auto &ctx = builder.ctx();
 
     GLenum cur_primitive;
@@ -35,7 +35,7 @@ uint32_t _draw_list_range_full(Eng::FgBuilder &builder, const Ren::MaterialStora
 
     for (; i < main_batch_indices.size(); i++) {
         const auto &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::custom_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -78,16 +78,17 @@ uint32_t _draw_list_range_full(Eng::FgBuilder &builder, const Ren::MaterialStora
 }
 
 uint32_t _draw_list_range_full_rev(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
-                                   const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                                   const Ren::Pipeline pipelines[],
+                                   Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                                   Eng::BackendInfo &backend_info) {
+                                   Eng::backend_info_t &backend_info) {
     auto &ctx = builder.ctx();
 
     int i = int(ndx);
     for (; i >= 0; i--) {
         const auto &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::custom_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -208,8 +209,8 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l, lm_tex[sh_l]->ref->id());
     }
 
-    //ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
-    //                           (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
+    // ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
+    //                            (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.tbos[0]->id()));
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.tbos[0]->id()));
@@ -217,19 +218,19 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.tbos[0]->id()));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
-    //ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
+    // ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
-    const Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches};
+    const Ren::Span<const custom_draw_batch_t> batches = {(*p_list_)->custom_batches};
     const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices};
     const auto &materials = *(*p_list_)->materials;
 
-    BackendInfo _dummy = {};
+    backend_info_t _dummy = {};
 
     { // actual drawing
-        using CDB = CustomDrawBatch;
+        using CDB = custom_draw_batch_t;
 
         uint64_t cur_pipe_id = 0xffffffffffffffff;
         uint64_t cur_prog_id = 0xffffffffffffffff;

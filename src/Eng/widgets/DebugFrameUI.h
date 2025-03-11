@@ -11,9 +11,9 @@ class Context;
 }
 
 namespace Eng {
-struct BackendInfo;
-struct FrontendInfo;
-struct ItemsInfo;
+struct backend_info_t;
+struct frontend_info_t;
+struct items_info_t;
 struct resource_info_t;
 
 class DebugFrameUI final : public Gui::BaseElement {
@@ -21,7 +21,7 @@ class DebugFrameUI final : public Gui::BaseElement {
     DebugFrameUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
                  const Gui::BitmapFont *font_small, const Gui::BitmapFont *font_large);
 
-    void UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info, const ItemsInfo &items_info,
+    void UpdateInfo(const frontend_info_t &frontend_info, const backend_info_t &backend_info, const items_info_t &items_info,
                     bool debug_items);
 
     bool HandleInput(const Gui::input_event_t &ev, const std::vector<bool> &keys_state) override;

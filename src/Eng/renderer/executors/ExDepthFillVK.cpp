@@ -8,10 +8,11 @@
 
 namespace ExSharedInternal {
 uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, Ren::Span<const uint32_t> batch_indices,
-                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, const uint64_t mask, int *draws_count) {
+                     Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, const uint64_t mask,
+                     int *draws_count) {
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -30,13 +31,13 @@ uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, Ren::Spa
 }
 
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                          uint32_t i, const uint64_t mask, const uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count) {
     uint32_t bound_descr_id = 0;
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -61,7 +62,8 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
     return i;
 }
 
-uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
+                     uint32_t i,
                      uint64_t mask);
 } // namespace ExSharedInternal
 
@@ -89,10 +91,10 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
-    BackendInfo _dummy = {};
+    backend_info_t _dummy = {};
     uint32_t i = 0;
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     //
     // Prepare descriptor sets
@@ -123,7 +125,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
-    const Ren::Span<const BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches};
+    const Ren::Span<const basic_draw_batch_t> zfill_batches = {(*p_list_)->basic_batches};
     const Ren::Span<const uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices};
 
     int draws_count = 0;

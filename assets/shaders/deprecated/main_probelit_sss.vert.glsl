@@ -15,7 +15,7 @@ layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_color_packed;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
@@ -26,7 +26,7 @@ layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 layout(binding = BIND_NOISE_TEX) uniform sampler2D g_noise_tex;
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(location = 0) out vec3 g_vtx_pos;
@@ -76,7 +76,7 @@ void main() {
         g_vtx_sh_uvs[i].xy += offsets[i];
     }
 
-    MaterialData mat = g_materials[instance.y];
+    material_data_t mat = g_materials[instance.y];
     material_params = mat.params[0];
 #if defined(BINDLESS_TEXTURES)
     g_diff_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]);

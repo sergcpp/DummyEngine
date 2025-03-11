@@ -127,7 +127,7 @@ struct Environment {
     uint32_t generation = 0;
 
     Ren::String env_map_name;
-    AtmosphereParams atmosphere;
+    atmosphere_params_t atmosphere;
 };
 
 struct BBox {
@@ -176,7 +176,7 @@ class CompStorage {
 #endif
 
 namespace Eng {
-struct ProbeVolume {
+struct probe_volume_t {
     mutable Ren::Vec3f origin, spacing;
     mutable Ren::Vec3i scroll, scroll_diff;
     mutable int updates_count = 0;
@@ -184,7 +184,7 @@ struct ProbeVolume {
     mutable bool reset_classification = true;
 };
 
-struct LightItem {
+struct light_item_t {
     float col[3];
     uint32_t type_and_flags;
     float pos[3], radius;
@@ -195,7 +195,7 @@ struct LightItem {
     float shadow_pos[3];
     uint32_t tri_index;
 };
-static_assert(sizeof(LightItem) == 96, "!");
+static_assert(sizeof(light_item_t) == 96, "!");
 
 static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
 
@@ -238,7 +238,7 @@ struct PersistentGpuData {
     std::unique_ptr<Ren::Texture2DArray> probe_irradiance;
     std::unique_ptr<Ren::Texture2DArray> probe_distance;
     std::unique_ptr<Ren::Texture2DArray> probe_offset;
-    std::vector<ProbeVolume> probe_volumes;
+    std::vector<probe_volume_t> probe_volumes;
 
     PersistentGpuData();
     ~PersistentGpuData();

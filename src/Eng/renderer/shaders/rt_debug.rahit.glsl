@@ -6,11 +6,11 @@
 #include "rt_debug_interface.h"
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
-    RTGeoInstance g_geometries[];
+    rt_geo_instance_t g_geometries[];
 };
 
 layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
@@ -26,12 +26,12 @@ layout(location = 0) rayPayloadInEXT RayPayload g_pld;
 hitAttributeEXT vec2 bary_coord;
 
 void main() {
-    const RTGeoInstance geo = g_geometries[gl_InstanceCustomIndexEXT + gl_GeometryIndexEXT];
+    const rt_geo_instance_t geo = g_geometries[gl_InstanceCustomIndexEXT + gl_GeometryIndexEXT];
     uint mat_index = (geo.material_index & 0xffff);
     if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
         mat_index = (geo.material_index >> 16);
     }
-    const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+    const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
     const uint i0 = g_vtx_indices[geo.indices_start + 3 * gl_PrimitiveID + 0];
     const uint i1 = g_vtx_indices[geo.indices_start + 3 * gl_PrimitiveID + 1];

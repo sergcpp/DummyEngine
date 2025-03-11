@@ -222,11 +222,11 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
         FgAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt);
 
         Ren::UpdateBuffer(
-            *skin_transforms_buf.ref, 0, uint32_t(p_list_->skin_transforms.size() * sizeof(SkinTransform)),
+            *skin_transforms_buf.ref, 0, uint32_t(p_list_->skin_transforms.size() * sizeof(skin_transform_t)),
             p_list_->skin_transforms.data(), *p_list_->skin_transforms_stage_buf,
             ctx.backend_frame() * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize, ctx.current_cmd_buf());
 
-        Ren::UpdateBuffer(*shape_keys_buf.ref, 0, p_list_->shape_keys_data.count * sizeof(ShapeKeyData),
+        Ren::UpdateBuffer(*shape_keys_buf.ref, 0, p_list_->shape_keys_data.count * sizeof(shape_key_data_t),
                           p_list_->shape_keys_data.data, *p_list_->shape_keys_stage_buf,
                           ctx.backend_frame() * ShapeKeysBufChunkSize, ShapeKeysBufChunkSize, ctx.current_cmd_buf());
 
@@ -241,7 +241,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                           ctx.current_cmd_buf());
 
         { // Prepare data that is shared for all instances
-            SharedDataBlock shrd_data;
+            shared_data_t shrd_data;
 
             shrd_data.view_from_world = view_state_.view_from_world = p_list_->draw_cam.view_matrix();
             shrd_data.clip_from_view = p_list_->draw_cam.proj_matrix();
@@ -309,7 +309,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             if (p_list_->shadow_regions.count) {
                 assert(p_list_->shadow_regions.count <= MAX_SHADOWMAPS_TOTAL);
                 memcpy(&shrd_data.shadowmap_regions[0], &p_list_->shadow_regions.data[0],
-                       sizeof(ShadowMapRegion) * p_list_->shadow_regions.count);
+                       sizeof(shadow_map_region_t) * p_list_->shadow_regions.count);
             }
 
             const float tan_angle = tanf(p_list_->env.sun_angle * Ren::Pi<float>() / 360.0f);
@@ -426,9 +426,9 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                                persistent_data.probe_volumes[i].scroll[2], 0.0f};
             }
 
-            memcpy(&shrd_data.probes[0], p_list_->probes.data(), sizeof(ProbeItem) * p_list_->probes.size());
+            memcpy(&shrd_data.probes[0], p_list_->probes.data(), sizeof(probe_item_t) * p_list_->probes.size());
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data(),
-                   sizeof(EllipsItem) * p_list_->ellipsoids.size());
+                   sizeof(ellipse_item_t) * p_list_->ellipsoids.size());
 
             const int portals_count = std::min(int(p_list_->portals.size()), MAX_PORTALS_TOTAL);
             memcpy(&shrd_data.portals[0], p_list_->portals.data(), portals_count * sizeof(uint32_t));
@@ -436,10 +436,10 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                 shrd_data.portals[portals_count] = 0xffffffff;
             }
 
-            memcpy(&shrd_data.atmosphere, &p_list_->env.atmosphere, sizeof(AtmosphereParams));
-            static_assert(sizeof(Eng::AtmosphereParams) == sizeof(Types::AtmosphereParams));
+            memcpy(&shrd_data.atmosphere, &p_list_->env.atmosphere, sizeof(atmosphere_params_t));
+            static_assert(sizeof(Eng::atmosphere_params_t) == sizeof(Types::atmosphere_params_t));
 
-            Ren::UpdateBuffer(*shared_data_buf.ref, 0, sizeof(SharedDataBlock), &shrd_data,
+            Ren::UpdateBuffer(*shared_data_buf.ref, 0, sizeof(shared_data_t), &shrd_data,
                               *p_list_->shared_data_stage_buf, ctx.backend_frame() * SharedDataBlockSize,
                               SharedDataBlockSize, ctx.current_cmd_buf());
         }
@@ -502,7 +502,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
                 ctx.CreateTexture1D("Cells TBO", cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
         }
 
-        Ren::UpdateBuffer(*cells_buf.ref, 0, p_list_->cells.count * sizeof(CellData), p_list_->cells.data,
+        Ren::UpdateBuffer(*cells_buf.ref, 0, p_list_->cells.count * sizeof(cell_data_t), p_list_->cells.data,
                           *p_list_->cells_stage_buf, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
                           ctx.current_cmd_buf());
 
@@ -511,7 +511,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
                 ctx.CreateTexture1D("RT Cells TBO", rt_cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
         }
 
-        Ren::UpdateBuffer(*rt_cells_buf.ref, 0, p_list_->rt_cells.count * sizeof(CellData), p_list_->rt_cells.data,
+        Ren::UpdateBuffer(*rt_cells_buf.ref, 0, p_list_->rt_cells.count * sizeof(cell_data_t), p_list_->rt_cells.data,
                           *p_list_->rt_cells_stage_buf, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
                           ctx.current_cmd_buf());
 
@@ -520,7 +520,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
                 ctx.CreateTexture1D("Lights TBO", lights_buf.ref, Ren::eTexFormat::RGBA32F, 0, LightsBufChunkSize);
         }
 
-        Ren::UpdateBuffer(*lights_buf.ref, 0, uint32_t(p_list_->lights.size() * sizeof(LightItem)),
+        Ren::UpdateBuffer(*lights_buf.ref, 0, uint32_t(p_list_->lights.size() * sizeof(light_item_t)),
                           p_list_->lights.data(), *p_list_->lights_stage_buf, ctx.backend_frame() * LightsBufChunkSize,
                           LightsBufChunkSize, ctx.current_cmd_buf());
 
@@ -529,7 +529,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
                 ctx.CreateTexture1D("Decals TBO", decals_buf.ref, Ren::eTexFormat::RGBA32F, 0, DecalsBufChunkSize);
         }
 
-        Ren::UpdateBuffer(*decals_buf.ref, 0, uint32_t(p_list_->decals.size() * sizeof(DecalItem)),
+        Ren::UpdateBuffer(*decals_buf.ref, 0, uint32_t(p_list_->decals.size() * sizeof(decal_item_t)),
                           p_list_->decals.data(), *p_list_->decals_stage_buf, ctx.backend_frame() * DecalsBufChunkSize,
                           DecalsBufChunkSize, ctx.current_cmd_buf());
 
@@ -539,12 +539,12 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         }
 
         if (p_list_->items.count) {
-            Ren::UpdateBuffer(*items_buf.ref, 0, p_list_->items.count * sizeof(ItemData), p_list_->items.data,
+            Ren::UpdateBuffer(*items_buf.ref, 0, p_list_->items.count * sizeof(item_data_t), p_list_->items.data,
                               *p_list_->items_stage_buf, ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize,
                               ctx.current_cmd_buf());
         } else {
-            const ItemData dummy = {};
-            Ren::UpdateBuffer(*items_buf.ref, 0, sizeof(ItemData), &dummy, *p_list_->items_stage_buf,
+            const item_data_t dummy = {};
+            Ren::UpdateBuffer(*items_buf.ref, 0, sizeof(item_data_t), &dummy, *p_list_->items_stage_buf,
                               ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, ctx.current_cmd_buf());
         }
 
@@ -554,12 +554,13 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         }
 
         if (p_list_->rt_items.count) {
-            Ren::UpdateBuffer(*rt_items_buf.ref, 0, p_list_->rt_items.count * sizeof(ItemData), p_list_->rt_items.data,
+            Ren::UpdateBuffer(*rt_items_buf.ref, 0, p_list_->rt_items.count * sizeof(item_data_t),
+                              p_list_->rt_items.data,
                               *p_list_->rt_items_stage_buf, ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize,
                               ctx.current_cmd_buf());
         } else {
-            const ItemData dummy = {};
-            Ren::UpdateBuffer(*rt_items_buf.ref, 0, sizeof(ItemData), &dummy, *p_list_->rt_items_stage_buf,
+            const item_data_t dummy = {};
+            Ren::UpdateBuffer(*rt_items_buf.ref, 0, sizeof(item_data_t), &dummy, *p_list_->rt_items_stage_buf,
                               ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, ctx.current_cmd_buf());
         }
     });
@@ -989,10 +990,10 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
             FgAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
             FgAllocBuf &unif_sh_data_buf = builder.GetWriteBuffer(data->shared_data);
 
-            CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(SharedDataBlock, sun_col),
+            CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(shared_data_t, sun_col),
                                3 * sizeof(float), builder.ctx().current_cmd_buf());
             CopyBufferToBuffer(*sample_buf.ref, 4 * sizeof(float), *unif_sh_data_buf.ref,
-                               offsetof(SharedDataBlock, sun_col_point_sh), 3 * sizeof(float),
+                               offsetof(shared_data_t, sun_col_point_sh), 3 * sizeof(float),
                                builder.ctx().current_cmd_buf());
         });
     }
@@ -1776,7 +1777,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::Tex2DSampled, BlitStaticVel::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_shared_data_buf.ref}};
 
         const Ren::RenderTarget render_targets[] = {{velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::None, Ren::eStoreOp::None,

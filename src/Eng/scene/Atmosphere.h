@@ -4,7 +4,7 @@
 #include <Ren/Span.h>
 
 namespace Eng {
-struct AtmosphereParams {
+struct atmosphere_params_t {
     float planet_radius = 6371000.0f;
     float viewpoint_height = 700.0f;
     float atmosphere_height = 100000.0f;
@@ -56,16 +56,16 @@ inline float from_sub_uvs_to_unit(const float u, const float resolution) {
 
 // Transmittance LUT function parameterisation from Bruneton 2017
 // https://github.com/ebruneton/precomputed_atmospheric_scattering
-void UvToLutTransmittanceParams(const AtmosphereParams &params, Ren::Vec2f uv, float &view_height,
+void UvToLutTransmittanceParams(const atmosphere_params_t &params, Ren::Vec2f uv, float &view_height,
                                 float &view_zenith_cos_angle);
-Ren::Vec2f LutTransmittanceParamsToUv(const AtmosphereParams &params, float view_height, float view_zenith_cos_angle);
+Ren::Vec2f LutTransmittanceParamsToUv(const atmosphere_params_t &params, float view_height, float view_zenith_cos_angle);
 
-Ren::Vec4f IntegrateOpticalDepth(const AtmosphereParams &params, const Ren::Vec4f &ray_start,
+Ren::Vec4f IntegrateOpticalDepth(const atmosphere_params_t &params, const Ren::Vec4f &ray_start,
                                  const Ren::Vec4f &ray_dir);
 
 template <bool UniformPhase = false>
 std::pair<Ren::Vec4f, Ren::Vec4f>
-IntegrateScatteringMain(const AtmosphereParams &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir,
+IntegrateScatteringMain(const atmosphere_params_t &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir,
                         float ray_length, const Ren::Vec4f &light_dir, const Ren::Vec4f &moon_dir,
                         const Ren::Vec4f &light_color, Ren::Span<const Ren::Vec4f> transmittance_lut,
                         Ren::Span<const float> multiscatter_lut, float rand_offset, int sample_count,

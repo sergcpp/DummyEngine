@@ -7,7 +7,7 @@
 
 namespace Eng {
 class PrimDraw;
-struct ViewState;
+struct view_state_t;
 
 class ExPostprocess final : public FgExecutor {
   public:
@@ -27,7 +27,7 @@ class ExPostprocess final : public FgExecutor {
         float purkinje = 1.0f;
     };
 
-    ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const ViewState *view_state, const Args *args);
+    ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const view_state_t *view_state, const Args *args);
 
     void Execute(FgBuilder &builder) override;
 
@@ -37,7 +37,7 @@ class ExPostprocess final : public FgExecutor {
     Ren::ProgramRef blit_postprocess_prog_[2][2];
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const Args *args_ = nullptr;
 };
 } // namespace Eng

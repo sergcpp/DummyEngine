@@ -17,10 +17,10 @@ class ExDebugProbes final : public FgExecutor {
         FgResRef output_tex;
 
         int volume_to_debug = 0;
-        Ren::Span<const ProbeVolume> probe_volumes;
+        Ren::Span<const probe_volume_t> probe_volumes;
     };
 
-    ExDebugProbes(PrimDraw &prim_draw, FgBuilder &builder, const DrawList &list, const ViewState *view_state,
+    ExDebugProbes(PrimDraw &prim_draw, FgBuilder &builder, const DrawList &list, const view_state_t *view_state,
                   const Args *args);
 
     void Execute(FgBuilder &builder) override;
@@ -29,7 +29,7 @@ class ExDebugProbes final : public FgExecutor {
     PrimDraw &prim_draw_;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const Args *args_ = nullptr;
 
     // lazily initialized data

@@ -9,13 +9,13 @@
 namespace ExSharedInternal {
 uint32_t _draw_list_range_full(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                Ren::Span<const VkDescriptorSet> texture_descr_sets, const Ren::Pipeline pipelines[],
-                               Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                               Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id, uint32_t &bound_descr_id,
-                               Eng::BackendInfo &backend_info) {
+                               Eng::backend_info_t &backend_info) {
     for (; i < main_batch_indices.size(); i++) {
-        const Eng::CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
+        const Eng::custom_draw_batch_t &batch = main_batches[main_batch_indices[i]];
+        if ((batch.sort_key & Eng::custom_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -54,14 +54,14 @@ uint32_t _draw_list_range_full(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf
 
 uint32_t _draw_list_range_full_rev(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                    Ren::Span<const VkDescriptorSet> texture_descr_sets, const Ren::Pipeline pipelines[],
-                                   Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                                   Ren::Span<const Eng::custom_draw_batch_t> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id,
-                                   uint32_t &bound_descr_id, Eng::BackendInfo &backend_info) {
+                                   uint32_t &bound_descr_id, Eng::backend_info_t &backend_info) {
     int i = int(ndx);
     for (; i >= 0; i--) {
-        const Eng::CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
+        const Eng::custom_draw_batch_t &batch = main_batches[main_batch_indices[i]];
+        if ((batch.sort_key & Eng::custom_draw_batch_t::FlagBits) != mask) {
             break;
         }
 
@@ -355,13 +355,13 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
-    Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches};
+    Ren::Span<const custom_draw_batch_t> batches = {(*p_list_)->custom_batches};
     Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices};
 
-    BackendInfo _dummy = {};
+    backend_info_t _dummy = {};
 
     { // actual drawing
-        using CDB = CustomDrawBatch;
+        using CDB = custom_draw_batch_t;
 
         uint64_t cur_pipe_id = 0xffffffffffffffff;
         uint32_t bound_descr_id = 0xffffffff;

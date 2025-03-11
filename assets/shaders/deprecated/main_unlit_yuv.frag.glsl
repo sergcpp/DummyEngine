@@ -15,7 +15,7 @@ layout(binding = BIND_MAT_TEX1) uniform sampler2D g_mat1_tex;
 #endif // BINDLESS_TEXTURES
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(location = 4) in vec2 g_vtx_uvs;

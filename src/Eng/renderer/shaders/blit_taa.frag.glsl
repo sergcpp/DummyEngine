@@ -24,7 +24,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_curr;
 layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 LAYOUT_PARAMS uniform UniformParams {

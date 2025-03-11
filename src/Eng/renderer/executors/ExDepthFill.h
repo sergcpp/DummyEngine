@@ -13,7 +13,7 @@ class ExDepthFill final : public FgExecutor {
     // lazily initialized data
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
     bool clear_depth_ = false;
 
@@ -49,7 +49,7 @@ class ExDepthFill final : public FgExecutor {
     int fb_to_use_ = 0;
 
   public:
-    ExDepthFill(const DrawList **list, const ViewState *view_state, bool clear_depth, const FgResRef vtx_buf1,
+    ExDepthFill(const DrawList **list, const view_state_t *view_state, bool clear_depth, const FgResRef vtx_buf1,
                 const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
                 const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef instances_buf,
                 const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef noise_tex,

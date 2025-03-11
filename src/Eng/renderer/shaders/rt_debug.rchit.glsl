@@ -20,15 +20,15 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
-    RTGeoInstance g_geometries[];
+    rt_geo_instance_t g_geometries[];
 };
 
 layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
@@ -44,7 +44,7 @@ layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
 };
 
 layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
-    light_item_t g_lights[];
+    _light_item_t g_lights[];
 };
 
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
@@ -66,12 +66,12 @@ layout(location = 0) rayPayloadInEXT RayPayload g_pld;
 hitAttributeEXT vec2 bary_coord;
 
 void main() {
-    const RTGeoInstance geo = g_geometries[gl_InstanceCustomIndexEXT + gl_GeometryIndexEXT];
+    const rt_geo_instance_t geo = g_geometries[gl_InstanceCustomIndexEXT + gl_GeometryIndexEXT];
     uint mat_index = (geo.material_index & 0xffff);
     if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
         mat_index = (geo.material_index >> 16) & 0xffff;
     }
-    const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+    const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
     const uint i0 = g_indices[geo.indices_start + 3 * gl_PrimitiveID + 0];
     const uint i1 = g_indices[geo.indices_start + 3 * gl_PrimitiveID + 1];
@@ -188,7 +188,7 @@ void main() {
         const uint item_data = texelFetch(g_items_buf, int(i)).x;
         const int li = int(bitfieldExtract(item_data, 0, 12));
 
-        const light_item_t litem = g_lights[li];
+        const _light_item_t litem = g_lights[li];
 
         const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
         const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;

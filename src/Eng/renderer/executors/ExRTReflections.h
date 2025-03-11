@@ -6,7 +6,7 @@
 #include "../Renderer_DrawList.h"
 #include "../framegraph/FgNode.h"
 
-struct ViewState;
+struct view_state_t;
 
 namespace Eng {
 class PrimDraw;
@@ -45,7 +45,7 @@ class ExRTReflections final : public FgExecutor {
         FgResRef oit_depth_buf;
 
         const Ren::IAccStructure *tlas = nullptr;
-        const ProbeVolume *probe_volume = nullptr;
+        const probe_volume_t *probe_volume = nullptr;
 
         struct {
             uint32_t root_node = 0xffffffff;
@@ -60,7 +60,7 @@ class ExRTReflections final : public FgExecutor {
         FgResRef out_refl_tex[OIT_REFLECTION_LAYERS];
     };
 
-    void Setup(FgBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,
+    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
                const Args *args) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
@@ -77,7 +77,7 @@ class ExRTReflections final : public FgExecutor {
     Ren::PipelineRef pi_rt_reflections_[3], pi_rt_reflections_4bounce_[3];
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const Args *args_ = nullptr;

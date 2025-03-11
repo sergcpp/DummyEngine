@@ -5,18 +5,18 @@
 #include "../framegraph/FgNode.h"
 
 namespace Eng {
-struct ViewState;
+struct view_state_t;
 class ExDepthHierarchy final : public FgExecutor {
     Ren::PipelineRef pi_depth_hierarchy_;
 
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
 
     FgResRef depth_tex_;
     FgResRef atomic_buf_;
     FgResRef output_tex_;
 
   public:
-    ExDepthHierarchy(FgBuilder &builder, const ViewState *view_state, const FgResRef depth_tex,
+    ExDepthHierarchy(FgBuilder &builder, const view_state_t *view_state, const FgResRef depth_tex,
                      const FgResRef atomic_counter, const FgResRef output_tex);
 
     static const int MipCount = 7;

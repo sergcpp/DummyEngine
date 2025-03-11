@@ -31,7 +31,7 @@ layout(binding = BIND_MAT_TEX3) uniform sampler2D g_bump_tex;
 #endif // BINDLESS_TEXTURES
 
 layout (binding = 0, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 void main() {

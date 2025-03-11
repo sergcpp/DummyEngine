@@ -104,7 +104,7 @@ uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
 uint8_t f32_to_u8(const float value) { return uint8_t(value * 255); }
 
 void __init_wind_params(const Eng::VegState &vs, const Eng::Environment &env, const Ren::Mat4f &object_from_world,
-                        Eng::InstanceData &instance) {
+                        Eng::instance_data_t &instance) {
     instance.movement_scale = f32_to_u8(vs.movement_scale);
     instance.tree_mode = f32_to_u8(vs.tree_mode);
     instance.bend_scale = f32_to_u8(vs.bend_scale);
@@ -726,7 +726,7 @@ void Eng::SceneManager::ReleaseEnvMap(const bool immediate) {
 void Eng::SceneManager::AllocGICache() {
     float probe_volume_spacing = 0.5f;
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
-        ProbeVolume &volume = scene_data_.persistent_data.probe_volumes.emplace_back();
+        probe_volume_t &volume = scene_data_.persistent_data.probe_volumes.emplace_back();
         volume.origin = Ren::Vec3f{0.0f};
         volume.spacing = Ren::Vec3f{probe_volume_spacing};
         probe_volume_spacing *= 3.0f;
@@ -888,10 +888,10 @@ void Eng::SceneManager::ReleaseMeshBuffers(const bool immediate) {
 void Eng::SceneManager::AllocInstanceBuffer() {
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
     scene_data_.persistent_data.instance_buf = scene_data_.buffers.Insert(
-        "Instance Buf", api_ctx, Ren::eBufType::Texture, uint32_t(sizeof(InstanceData) * MAX_INSTANCES_TOTAL));
+        "Instance Buf", api_ctx, Ren::eBufType::Texture, uint32_t(sizeof(instance_data_t) * MAX_INSTANCES_TOTAL));
     scene_data_.persistent_data.instance_buf_tbo =
         ren_ctx_.CreateTexture1D("Instances TBO", scene_data_.persistent_data.instance_buf, Ren::eTexFormat::RGBA32F, 0,
-                                 sizeof(InstanceData) * MAX_INSTANCES_TOTAL);
+                                 sizeof(instance_data_t) * MAX_INSTANCES_TOTAL);
     for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
         instance_data_to_update_.push_back(i);
     }
@@ -909,7 +909,7 @@ void Eng::SceneManager::ReleaseInstanceBuffer(const bool immediate) {
 void Eng::SceneManager::AllocMaterialsBuffer() {
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
     scene_data_.persistent_data.materials_buf = scene_data_.buffers.Insert(
-        "Materials Buffer", api_ctx, Ren::eBufType::Storage, uint32_t(8 * sizeof(MaterialData)));
+        "Materials Buffer", api_ctx, Ren::eBufType::Storage, uint32_t(8 * sizeof(material_data_t)));
     for (auto it = scene_data_.materials.begin(); it != scene_data_.materials.end(); ++it) {
         scene_data_.material_changes.push_back(it.index());
     }
@@ -1766,10 +1766,10 @@ void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const 
     const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
     const auto *vegs = (VegState *)scene_data_.comp_store[CompVegState]->SequentialData();
 
-    const uint32_t total_data_to_update = sizeof(InstanceData) * (obj_end - obj_beg + 1);
+    const uint32_t total_data_to_update = sizeof(instance_data_t) * (obj_end - obj_beg + 1);
     Ren::BufferRef temp_stage_buf =
         ren_ctx_.LoadBuffer("Instance Update Stage Buf", Ren::eBufType::Upload, total_data_to_update);
-    auto *instance_stage = (InstanceData *)temp_stage_buf->Map();
+    auto *instance_stage = (instance_data_t *)temp_stage_buf->Map();
 
     for (uint32_t i = obj_beg; i <= obj_end; ++i) {
         SceneObject &obj = scene_data_.objects[i];
@@ -1779,7 +1779,7 @@ void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const 
         const Ren::Mat4f world_from_object_trans = Transpose(tr.world_from_object);
         const Ren::Mat4f prev_world_from_object_trans = Transpose(tr.world_from_object_prev);
 
-        InstanceData &instance = instance_stage[i - obj_beg];
+        instance_data_t &instance = instance_stage[i - obj_beg];
         memcpy(&instance.model_matrix[0][0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
         memcpy(&instance.prev_model_matrix[0][0], ValuePtr(prev_world_from_object_trans), 12 * sizeof(float));
 
@@ -1799,7 +1799,7 @@ void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const 
 
     temp_stage_buf->Unmap();
 
-    scene_data_.persistent_data.instance_buf->UpdateSubRegion(obj_beg * sizeof(InstanceData), total_data_to_update,
+    scene_data_.persistent_data.instance_buf->UpdateSubRegion(obj_beg * sizeof(instance_data_t), total_data_to_update,
                                                               *temp_stage_buf, 0, ren_ctx_.current_cmd_buf());
 }
 
@@ -1831,7 +1831,7 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
     }
 
-    for (ProbeVolume &volume : scene_data_.persistent_data.probe_volumes) {
+    for (probe_volume_t &volume : scene_data_.persistent_data.probe_volumes) {
         volume.updates_count = 0;
     }
 }

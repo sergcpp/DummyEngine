@@ -34,7 +34,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
             Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(Skinning::Params));
 
         for (uint32_t i = 0; i < uint32_t(p_list_->skin_regions.size()); i++) {
-            const SkinRegion &sr = p_list_->skin_regions[i];
+            const skin_region_t &sr = p_list_->skin_regions[i];
 
             const uint32_t non_shapekeyed_vertex_count = sr.vertex_count - sr.shape_keyed_vertex_count;
 

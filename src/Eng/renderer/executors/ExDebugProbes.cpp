@@ -8,7 +8,7 @@
 #include "../shaders/probe_debug_interface.h"
 
 Eng::ExDebugProbes::ExDebugProbes(PrimDraw &prim_draw, FgBuilder &builder, const DrawList &list,
-                                  const ViewState *view_state, const Args *args)
+                                  const view_state_t *view_state, const Args *args)
     : prim_draw_(prim_draw), view_state_(view_state), args_(args) {
     prog_probe_debug_ = builder.sh().LoadProgram("internal/probe_debug.vert.glsl", "internal/probe_debug.frag.glsl");
 }
@@ -35,7 +35,7 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
                                      {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT,
                                       *std::get<const Ren::Texture2DArray *>(irr_tex._ref)}};
 
-    const ProbeVolume &volume = args_->probe_volumes[args_->volume_to_debug];
+    const probe_volume_t &volume = args_->probe_volumes[args_->volume_to_debug];
 
     ProbeDebug::Params uniform_params = {};
     uniform_params.volume_index = args_->volume_to_debug;

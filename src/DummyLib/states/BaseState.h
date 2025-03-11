@@ -102,8 +102,8 @@ class BaseState : public Eng::ViewerState {
     Eng::DrawList main_view_lists_[2];
     int front_list_ = 0;
 
-    Eng::FrontendInfo prev_front_info_;
-    Eng::BackendInfo prev_back_info_;
+    Eng::frontend_info_t prev_front_info_;
+    Eng::backend_info_t prev_back_info_;
     Eng::TimeInterval prev_swap_interval_;
 
     uint64_t last_frame_time_ = 0;

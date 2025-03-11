@@ -41,7 +41,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
@@ -51,11 +51,11 @@ layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
-    RTGeoInstance g_geometries[];
+    rt_geo_instance_t g_geometries[];
 };
 
 layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
@@ -67,7 +67,7 @@ layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
 };
 
 layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
-    light_item_t g_lights[];
+    _light_item_t g_lights[];
 };
 
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
@@ -121,7 +121,7 @@ vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id, int bounce) {
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
-vec3 LightVisibility(const light_item_t litem, const vec3 P) {
+vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
     if (shadowreg_index == -1) {
         return vec3(1.0);
@@ -208,9 +208,9 @@ void main() {
                     const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, false);
                     const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, false);
 
-                    const RTGeoInstance geo = g_geometries[custom_index + geo_index];
+                    const rt_geo_instance_t geo = g_geometries[custom_index + geo_index];
                     const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-                    const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+                    const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
                     const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
                     const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
@@ -240,7 +240,7 @@ void main() {
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
             // Check portal lights intersection (diffuse rays are blocked by them)
             for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
-                const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
+                const _light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
 
                 const vec3 light_pos = litem.pos_and_radius.xyz;
                 vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
@@ -280,9 +280,9 @@ void main() {
             const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
             const mat4x3 world_from_object = rayQueryGetIntersectionObjectToWorldEXT(rq, true);
 
-            const RTGeoInstance geo = g_geometries[custom_index + geo_index];
+            const rt_geo_instance_t geo = g_geometries[custom_index + geo_index];
             const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-            const MaterialData mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+            const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
             const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
             const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
@@ -414,8 +414,7 @@ void main() {
                     const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
                     const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
 
-                    const light_item_t litem = g_lights[s_li];
-
+                    const _light_item_t litem = g_lights[s_li];
                     const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
                     vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_weights, roughness, base_color, approx_spec_col);
@@ -442,8 +441,7 @@ void main() {
                     const int s_li = subgroupMin(v_li);
                     [[flatten]] if (s_li == v_li) {
                         ++i;
-                        const light_item_t litem = g_lights[s_li];
-
+                        const _light_item_t litem = g_lights[s_li];
                         const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
 
                         vec3 light_contribution = EvaluateLightSource_Approx(litem, P, I, N, lobe_weights, roughness, base_color, approx_spec_col);

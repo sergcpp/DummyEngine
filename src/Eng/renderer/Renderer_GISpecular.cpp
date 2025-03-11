@@ -1091,7 +1091,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             // TODO: get rid of global binding slots
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_sh_data_buf.ref},
                 {Ren::eBindTarget::Tex2DSampled, ALBEDO_TEX_SLOT, *albedo_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
@@ -1162,7 +1162,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
                 const Ren::Binding bindings[] = {
                     {Trg::Tex2DSampled, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
                     {Trg::Tex2DSampled, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
-                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
+                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_sh_data_buf.ref}};
 
                 SSRTrace::Params uniform_params;
                 uniform_params.transform =

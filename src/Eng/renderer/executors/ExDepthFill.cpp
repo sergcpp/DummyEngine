@@ -6,11 +6,12 @@
 #include "../../utils/ShaderLoader.h"
 
 namespace ExSharedInternal {
-uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
+                     uint32_t i,
                      const uint64_t mask) {
     for (; i < batch_indices.size(); ++i) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
             break;
         }
     }

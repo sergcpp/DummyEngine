@@ -19,7 +19,7 @@
 //#define FORCE_METALLIC 1.0
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 #if defined(NO_BINDLESS)

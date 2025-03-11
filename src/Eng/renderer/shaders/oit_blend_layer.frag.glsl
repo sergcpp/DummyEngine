@@ -20,7 +20,7 @@
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 #if defined(NO_BINDLESS)
@@ -169,7 +169,7 @@ void main() {
         const uint item_data = texelFetch(g_items_buf, int(i)).x;
         const int li = int(bitfieldExtract(item_data, 0, 12));
 
-        const light_item_t litem = FetchLightItem(g_lights_buf, li);
+        const _light_item_t litem = FetchLightItem(g_lights_buf, li);
         const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
         const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
         const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;

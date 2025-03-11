@@ -40,12 +40,12 @@ class ExRTGICache final : public FgExecutor {
 
         FgResRef out_ray_data_tex;
 
-        const ViewState *view_state = nullptr;
+        const view_state_t *view_state = nullptr;
         bool partial_update = false;
-        Ren::Span<const ProbeVolume> probe_volumes;
+        Ren::Span<const probe_volume_t> probe_volumes;
     };
 
-    void Setup(FgBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,
+    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
                const Args *args) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
@@ -61,7 +61,7 @@ class ExRTGICache final : public FgExecutor {
     Ren::PipelineRef pi_rt_gi_cache_[2][2];
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const Args *args_ = nullptr;

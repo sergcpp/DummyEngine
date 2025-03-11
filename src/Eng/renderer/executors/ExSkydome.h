@@ -28,7 +28,7 @@ class ExSkydomeCube final : public FgExecutor {
         FgResRef color_tex;
     };
 
-    void Setup(const ViewState *view_state, const Args *args) {
+    void Setup(const view_state_t *view_state, const Args *args) {
         view_state_ = view_state;
         args_ = args;
     }
@@ -42,7 +42,7 @@ class ExSkydomeCube final : public FgExecutor {
     int last_updated_faceq_ = 23;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const Args *args_ = nullptr;
 
     // lazily initialized data
@@ -75,7 +75,7 @@ class ExSkydomeScreen final : public FgExecutor {
         FgResRef depth_tex;
     };
 
-    void Setup(const ViewState *view_state, const Args *args) {
+    void Setup(const view_state_t *view_state, const Args *args) {
         view_state_ = view_state;
         args_ = args;
     }
@@ -89,7 +89,7 @@ class ExSkydomeScreen final : public FgExecutor {
     bool initialized = false;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const Args *args_ = nullptr;
 
     // lazily initialized data

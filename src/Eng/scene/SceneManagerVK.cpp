@@ -48,7 +48,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     auto &pers_data = scene_data_.persistent_data;
 
     const uint32_t max_mat_count = scene_data_.materials.capacity();
-    const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
+    const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(material_data_t);
 
     if (pers_data.materials_buf->size() < req_mat_buf_size) {
         pers_data.materials_buf->Resize(req_mat_buf_size);
@@ -197,8 +197,8 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     }
 
     Ren::Buffer materials_upload_buf("Materials Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
-                                     (update_range.second - update_range.first) * sizeof(MaterialData));
-    auto *material_data = reinterpret_cast<MaterialData *>(materials_upload_buf.Map());
+                                     (update_range.second - update_range.first) * sizeof(material_data_t));
+    auto *material_data = reinterpret_cast<material_data_t *>(materials_upload_buf.Map());
 
     Ren::SmallVector<VkDescriptorImageInfo, 256> img_infos;
     Ren::SmallVector<Ren::TransitionInfo, 256> img_transitions;
@@ -293,7 +293,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 
     materials_upload_buf.Unmap();
     scene_data_.persistent_data.materials_buf->UpdateSubRegion(
-        update_range.first * sizeof(MaterialData), (update_range.second - update_range.first) * sizeof(MaterialData),
+        update_range.first * sizeof(material_data_t), (update_range.second - update_range.first) * sizeof(material_data_t),
         materials_upload_buf, 0, ren_ctx_.current_cmd_buf());
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);

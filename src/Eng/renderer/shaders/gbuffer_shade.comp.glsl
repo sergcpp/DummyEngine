@@ -24,7 +24,7 @@
 #pragma multi_compile _ NO_SUBGROUP
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -69,7 +69,7 @@ float LinearDepthFetch_Bilinear(const vec2 hit_uv) {
 
 #include "ss_trace_simple.glsl.inl"
 
-vec3 LightVisibility(const light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, float lin_depth, vec4 rotator, const float hash) {
+vec3 LightVisibility(const _light_item_t litem, vec3 P, vec3 pos_vs, vec3 N, float lin_depth, vec4 rotator, const float hash) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
     [[dont_flatten]] if (shadowreg_index == -1) {
         return vec3(1.0);
@@ -248,7 +248,7 @@ void main() {
             const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
             const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
 
-            const light_item_t litem = FetchLightItem(g_lights_buf, s_li);
+            const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
             const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
             const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
             const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
@@ -288,7 +288,7 @@ void main() {
             const int s_li = subgroupMin(v_li);
             [[flatten]] if (s_li == v_li) {
                 ++i;
-                const light_item_t litem = FetchLightItem(g_lights_buf, s_li);
+                const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
                 const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
                 const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;

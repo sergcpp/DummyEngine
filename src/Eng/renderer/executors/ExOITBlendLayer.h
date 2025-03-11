@@ -20,7 +20,7 @@ class ExOITBlendLayer final : public FgExecutor {
     int fb_to_use_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const DrawList **p_list_ = nullptr;
@@ -61,7 +61,7 @@ class ExOITBlendLayer final : public FgExecutor {
     void DrawTransparent(FgBuilder &builder, FgAllocTex &depth_tex);
 
   public:
-    ExOITBlendLayer(PrimDraw &prim_draw, const DrawList **p_list, const ViewState *view_state, FgResRef vtx_buf1,
+    ExOITBlendLayer(PrimDraw &prim_draw, const DrawList **p_list, const view_state_t *view_state, FgResRef vtx_buf1,
                     FgResRef vtx_buf2, FgResRef ndx_buf, FgResRef materials_buf, FgResRef textures_buf,
                     const BindlessTextureData *bindless_tex, FgResRef cells_buf, FgResRef items_buf,
                     FgResRef lights_buf, FgResRef decals_buf, FgResRef noise_tex, FgResRef dummy_white,

@@ -395,7 +395,7 @@ std::unique_ptr<uint8_t[]> Eng::Renderer::Generate_ConeTraceLUT(const int resx, 
     return out_data;
 }
 
-std::vector<Ren::Vec4f> Eng::Renderer::Generate_SkyTransmittanceLUT(const AtmosphereParams &params) {
+std::vector<Ren::Vec4f> Eng::Renderer::Generate_SkyTransmittanceLUT(const atmosphere_params_t &params) {
     std::vector<Ren::Vec4f> sky_transmittance(SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H);
     for (int y = 0; y < SKY_TRANSMITTANCE_LUT_H; ++y) {
         const float v = float(y) / SKY_TRANSMITTANCE_LUT_H;
@@ -421,9 +421,9 @@ std::vector<Ren::Vec4f> Eng::Renderer::Generate_SkyTransmittanceLUT(const Atmosp
     return sky_transmittance;
 }
 
-std::vector<Ren::Vec4f> Eng::Renderer::Generate_SkyMultiscatterLUT(const AtmosphereParams &params,
+std::vector<Ren::Vec4f> Eng::Renderer::Generate_SkyMultiscatterLUT(const atmosphere_params_t &params,
                                                                    Ren::Span<const Ren::Vec4f> transmittance_lut) {
-    AtmosphereParams _params = params;
+    atmosphere_params_t _params = params;
     _params.moon_radius = 0.0f;
 
     const float SphereSolidAngle = 4.0f * Ren::Pi<float>();

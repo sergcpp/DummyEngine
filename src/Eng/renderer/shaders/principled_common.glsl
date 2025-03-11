@@ -184,7 +184,7 @@ ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, fl
     return ret;
 }
 
-struct light_item_t {
+struct _light_item_t {
     vec4 col_and_type;
     vec4 pos_and_radius;
     vec4 dir_and_spot;
@@ -193,8 +193,8 @@ struct light_item_t {
     vec4 shadow_pos_and_tri_index;
 };
 
-light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
-    light_item_t ret;
+_light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
+    _light_item_t ret;
     ret.col_and_type = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 0);
     ret.pos_and_radius = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 1);
     ret.dir_and_spot = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 2);
@@ -230,7 +230,7 @@ light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
     #define ENABLE_CLEARCOAT 1
 #endif
 
-vec3 EvaluateLightSource_LTC(const light_item_t litem, const vec3 P, const vec3 I, const vec3 N, const lobe_weights_t lobe_weights, const ltc_params_t ltc,
+vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3 I, const vec3 N, const lobe_weights_t lobe_weights, const ltc_params_t ltc,
                              sampler2D ltc_luts, const float sheen, const vec3 base_color, const vec3 sheen_color, const vec3 spec_color, const vec3 clearcoat_color) {
     const bool TwoSided = false;
 
@@ -500,7 +500,7 @@ float spec_normalization(const float dist, const float light_dim, const float ro
 	return sqr(roughness / saturate(roughness + 0.5 * saturate(light_dim / dist)));
 }
 
-vec3 EvaluateLightSource_Approx(const light_item_t litem, const vec3 P, const vec3 I, const vec3 N, const lobe_weights_t lobe_weights,
+vec3 EvaluateLightSource_Approx(const _light_item_t litem, const vec3 P, const vec3 I, const vec3 N, const lobe_weights_t lobe_weights,
                                 const float roughness, const vec3 base_color, const vec3 spec_color) {
     const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;
     const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);

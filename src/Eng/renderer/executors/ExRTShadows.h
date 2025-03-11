@@ -6,7 +6,7 @@
 #include "../Renderer_DrawList.h"
 #include "../framegraph/FgNode.h"
 
-struct ViewState;
+struct view_state_t;
 
 namespace Eng {
 class PrimDraw;
@@ -38,7 +38,7 @@ class ExRTShadows final : public FgExecutor {
         FgResRef out_shadow_tex;
     };
 
-    void Setup(FgBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,
+    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
                const Args *args) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
@@ -54,7 +54,7 @@ class ExRTShadows final : public FgExecutor {
     Ren::PipelineRef pi_rt_shadows_;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const Args *args_ = nullptr;

@@ -34,7 +34,7 @@ layout(location = U_M_MATRIX_LOC) uniform mat4 g_shadow_view_proj_mat;
 #endif
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 layout(location = 0) out vec2 g_vtx_uvs;
@@ -53,7 +53,7 @@ void main() {
 
     g_vtx_uvs = g_in_vtx_uvs;
 
-    const MaterialData mat = g_materials[instance.y];
+    const material_data_t mat = g_materials[instance.y];
 #if !defined(NO_BINDLESS)
     g_base_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_BASECOLOR]);
 #endif // !NO_BINDLESS

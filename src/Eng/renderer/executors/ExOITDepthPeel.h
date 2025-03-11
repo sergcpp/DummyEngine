@@ -16,7 +16,7 @@ class ExOITDepthPeel final : public FgExecutor {
     int fb_to_use_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const DrawList **p_list_ = nullptr;
@@ -39,7 +39,7 @@ class ExOITDepthPeel final : public FgExecutor {
     void DrawTransparent(FgBuilder &builder);
 
   public:
-    ExOITDepthPeel(const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1,
+    ExOITDepthPeel(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
                    const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
                    const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef dummy_white,
                    const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,

@@ -52,10 +52,10 @@ struct EnvironmentWeak {
     Ren::WeakTex2DRef env_map;
     Ren::WeakTex2DRef lm_direct, lm_indir, lm_indir_sh[4];
     float sun_shadow_bias[2] = {4.0f, 8.0f};
-    uint32_t generation;
+    uint32_t generation = 0xffffffff;
 
     Ren::String env_map_name;
-    AtmosphereParams atmosphere;
+    atmosphere_params_t atmosphere;
 
     EnvironmentWeak() = default;
     explicit EnvironmentWeak(const Environment &env) {
@@ -91,41 +91,41 @@ struct DrawList {
     uint32_t frame_index = 0;
     Ren::Camera draw_cam, ext_cam;
     EnvironmentWeak env;
-    FrontendInfo frontend_info;
+    frontend_info_t frontend_info;
     Ren::Vec4f sun_shadow_bounds;
     std::vector<Ren::Vec2i> instance_indices;
     mutable Ren::BufferRef instance_indices_stage_buf;
-    std::vector<BasicDrawBatch> shadow_batches;
+    std::vector<basic_draw_batch_t> shadow_batches;
     std::vector<uint32_t> shadow_batch_indices;
-    DynArray<ShadowList> shadow_lists;
-    DynArray<ShadowMapRegion> shadow_regions;
-    std::vector<BasicDrawBatch> basic_batches;
+    DynArray<shadow_list_t> shadow_lists;
+    DynArray<shadow_map_region_t> shadow_regions;
+    std::vector<basic_draw_batch_t> basic_batches;
     std::vector<uint32_t> basic_batch_indices;
-    std::vector<CustomDrawBatch> custom_batches;
+    std::vector<custom_draw_batch_t> custom_batches;
     std::vector<uint32_t> custom_batch_indices;
     int alpha_blend_start_index = -1;
     int emissive_start_index = -1;
-    std::vector<SkinTransform> skin_transforms;
+    std::vector<skin_transform_t> skin_transforms;
     mutable Ren::BufferRef skin_transforms_stage_buf;
-    std::vector<SkinRegion> skin_regions;
-    DynArray<ShapeKeyData> shape_keys_data;
+    std::vector<skin_region_t> skin_regions;
+    DynArray<shape_key_data_t> shape_keys_data;
     mutable Ren::BufferRef shape_keys_stage_buf;
     uint32_t skin_vertices_count = 0;
-    std::vector<LightItem> lights;
+    std::vector<light_item_t> lights;
     mutable Ren::BufferRef lights_stage_buf;
-    std::vector<DecalItem> decals;
+    std::vector<decal_item_t> decals;
     mutable Ren::BufferRef decals_stage_buf;
-    std::vector<ProbeItem> probes;
-    std::vector<EllipsItem> ellipsoids;
+    std::vector<probe_item_t> probes;
+    std::vector<ellipse_item_t> ellipsoids;
     std::vector<uint32_t> portals;
-    DynArray<CellData> cells, rt_cells;
+    DynArray<cell_data_t> cells, rt_cells;
     mutable Ren::BufferRef cells_stage_buf, rt_cells_stage_buf;
-    DynArray<ItemData> items, rt_items;
+    DynArray<item_data_t> items, rt_items;
     mutable Ren::BufferRef items_stage_buf, rt_items_stage_buf;
 
-    DynArray<RTGeoInstance> rt_geo_instances[int(eTLASIndex::_Count)];
+    DynArray<rt_geo_instance_t> rt_geo_instances[int(eTLASIndex::_Count)];
     mutable Ren::BufferRef rt_geo_instances_stage_buf[int(eTLASIndex::_Count)];
-    DynArray<RTObjInstance> rt_obj_instances[int(eTLASIndex::_Count)];
+    DynArray<rt_obj_instance_t> rt_obj_instances[int(eTLASIndex::_Count)];
     mutable Ren::BufferRef rt_obj_instances_stage_buf[int(eTLASIndex::_Count)];
     struct {
         mutable Ren::BufferRef rt_tlas_nodes_stage_buf[int(eTLASIndex::_Count)];

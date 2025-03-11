@@ -40,12 +40,12 @@ Ren::Vec2f SphereIntersection(Ren::Vec4f ray_start, const Ren::Vec4f &ray_dir, c
     }
 }
 
-Ren::Vec2f PlanetIntersection(const AtmosphereParams &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir) {
+Ren::Vec2f PlanetIntersection(const atmosphere_params_t &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir) {
     const Ren::Vec4f planet_center = Ren::Vec4f(0, -params.planet_radius, 0, 0);
     return SphereIntersection(ray_start, ray_dir, planet_center, params.planet_radius);
 }
 
-Ren::Vec2f AtmosphereIntersection(const AtmosphereParams &params, const Ren::Vec4f &ray_start,
+Ren::Vec2f AtmosphereIntersection(const atmosphere_params_t &params, const Ren::Vec4f &ray_start,
                                   const Ren::Vec4f &ray_dir) {
     const Ren::Vec4f planet_center = Ren::Vec4f(0, -params.planet_radius, 0, 0);
     return SphereIntersection(ray_start, ray_dir, planet_center, params.planet_radius + params.atmosphere_height);
@@ -61,7 +61,7 @@ float PhaseMie(const float costh, float g = 0.85f) {
 }
 
 // Atmosphere
-float AtmosphereHeight(const AtmosphereParams &params, const Ren::Vec4f &position_ws, Ren::Vec4f &up_vector) {
+float AtmosphereHeight(const atmosphere_params_t &params, const Ren::Vec4f &position_ws, Ren::Vec4f &up_vector) {
     const Ren::Vec4f planet_center = Ren::Vec4f(0, -params.planet_radius, 0, 0);
     up_vector = (position_ws - planet_center);
     const float height = Length(up_vector);
@@ -69,7 +69,7 @@ float AtmosphereHeight(const AtmosphereParams &params, const Ren::Vec4f &positio
     return height - params.planet_radius;
 }
 
-Ren::Vec4f AtmosphereDensity(const AtmosphereParams &params, const float h) {
+Ren::Vec4f AtmosphereDensity(const atmosphere_params_t &params, const float h) {
     const float density_rayleigh = fast_exp(-fmaxf(0.0f, h / params.rayleigh_height));
     const float density_mie = fast_exp(-fmaxf(0.0f, h / params.mie_height));
     const float density_ozone = fmaxf(0.0f, 1.0f - fabsf(h - params.ozone_height_center) / params.ozone_half_width);
@@ -94,7 +94,7 @@ struct atmosphere_medium_t {
     Ren::Vec4f extinction_ozo;
 };
 
-atmosphere_medium_t SampleAtmosphereMedium(const AtmosphereParams &params, const float h) {
+atmosphere_medium_t SampleAtmosphereMedium(const atmosphere_params_t &params, const float h) {
     const Ren::Vec4f local_density = AtmosphereDensity(params, h);
 
     atmosphere_medium_t s;
@@ -139,7 +139,7 @@ Ren::Vec4f SampleTransmittanceLUT(Ren::Span<const Ren::Vec4f> lut, Ren::Vec2f uv
 
 } // namespace Eng
 
-Ren::Vec4f Eng::IntegrateOpticalDepth(const AtmosphereParams &params, const Ren::Vec4f &ray_start,
+Ren::Vec4f Eng::IntegrateOpticalDepth(const atmosphere_params_t &params, const Ren::Vec4f &ray_start,
                                       const Ren::Vec4f &ray_dir) {
     Ren::Vec2f intersection = AtmosphereIntersection(params, ray_start, ray_dir);
     float ray_length = intersection[1];
@@ -159,7 +159,7 @@ Ren::Vec4f Eng::IntegrateOpticalDepth(const AtmosphereParams &params, const Ren:
     return optical_depth;
 }
 
-void Eng::UvToLutTransmittanceParams(const AtmosphereParams &params, const Ren::Vec2f uv, float &view_height,
+void Eng::UvToLutTransmittanceParams(const atmosphere_params_t &params, const Ren::Vec2f uv, float &view_height,
                                      float &view_zenith_cos_angle) {
     const float top_radius = params.planet_radius + params.atmosphere_height;
 
@@ -176,7 +176,7 @@ void Eng::UvToLutTransmittanceParams(const AtmosphereParams &params, const Ren::
     view_zenith_cos_angle = Ren::Clamp(view_zenith_cos_angle, -1.0f, 1.0f);
 }
 
-Ren::Vec2f Eng::LutTransmittanceParamsToUv(const AtmosphereParams &params, const float view_height,
+Ren::Vec2f Eng::LutTransmittanceParamsToUv(const atmosphere_params_t &params, const float view_height,
                                            const float view_zenith_cos_angle) {
     const float top_radius = params.planet_radius + params.atmosphere_height;
 
@@ -198,7 +198,7 @@ Ren::Vec2f Eng::LutTransmittanceParamsToUv(const AtmosphereParams &params, const
 
 template <bool UniformPhase>
 std::pair<Ren::Vec4f, Ren::Vec4f>
-Eng::IntegrateScatteringMain(const AtmosphereParams &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir,
+Eng::IntegrateScatteringMain(const atmosphere_params_t &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir,
                              float ray_length, const Ren::Vec4f &light_dir, const Ren::Vec4f &moon_dir,
                              const Ren::Vec4f &light_color, Ren::Span<const Ren::Vec4f> transmittance_lut,
                              Ren::Span<const float> multiscatter_lut, const float rand_offset, const int sample_count,
@@ -318,12 +318,12 @@ Eng::IntegrateScatteringMain(const AtmosphereParams &params, const Ren::Vec4f &r
 }
 
 template std::pair<Ren::Vec4f, Ren::Vec4f> Eng::IntegrateScatteringMain<false>(
-    const AtmosphereParams &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir, float ray_length,
+    const atmosphere_params_t &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir, float ray_length,
     const Ren::Vec4f &light_dir, const Ren::Vec4f &moon_dir, const Ren::Vec4f &light_color,
     Ren::Span<const Ren::Vec4f> transmittance_lut, Ren::Span<const float> multiscatter_lut, float rand_offset,
     int sample_count, Ren::Vec4f &inout_transmittance);
 template std::pair<Ren::Vec4f, Ren::Vec4f> Eng::IntegrateScatteringMain<true>(
-    const AtmosphereParams &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir, float ray_length,
+    const atmosphere_params_t &params, const Ren::Vec4f &ray_start, const Ren::Vec4f &ray_dir, float ray_length,
     const Ren::Vec4f &light_dir, const Ren::Vec4f &moon_dir, const Ren::Vec4f &light_color,
     Ren::Span<const Ren::Vec4f> transmittance_lut, Ren::Span<const float> multiscatter_lut, float rand_offset,
     int sample_count, Ren::Vec4f &inout_transmittance);

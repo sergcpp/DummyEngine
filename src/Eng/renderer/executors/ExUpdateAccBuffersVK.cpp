@@ -12,7 +12,7 @@ void Eng::ExUpdateAccBuffers::Execute_HWRT(FgBuilder &builder) {
     auto &rt_geo_instances_stage_buf = p_list_->rt_geo_instances_stage_buf[rt_index_];
 
     if (rt_geo_instances.count) {
-        const uint32_t rt_geo_instances_mem_size = rt_geo_instances.count * sizeof(RTGeoInstance);
+        const uint32_t rt_geo_instances_mem_size = rt_geo_instances.count * sizeof(rt_geo_instance_t);
         assert(rt_geo_instances_mem_size < RTGeoInstancesBufChunkSize);
 
         uint8_t *stage_mem = rt_geo_instances_stage_buf->MapRange(ctx.backend_frame() * RTGeoInstancesBufChunkSize,

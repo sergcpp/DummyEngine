@@ -8,7 +8,7 @@ const float NormalBiasViewAddition = 0.000025;
 const uint RTGeoProbeBits = 0xff;
 const uint RTGeoLightmappedBit = (1u << 8u);
 
-struct RTGeoInstance {
+struct rt_geo_instance_t {
     uint indices_start;
     uint vertices_start;
     uint material_index;

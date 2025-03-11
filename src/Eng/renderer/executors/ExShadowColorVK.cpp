@@ -12,15 +12,15 @@
 
 namespace ExSharedInternal {
 uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, Ren::Span<const uint32_t> batch_indices,
-                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint64_t mask, int *draws_count);
+                     Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask, int *draws_count);
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                          uint32_t i, uint64_t mask, uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 } // namespace ExSharedInternal
 
 namespace ExShadowColorInternal {
-void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
+void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::shadow_list_t &sh_list) {
     const VkViewport viewport = {
         float(sh_list.shadow_map_pos[0]),
         float((Eng::SHADOWMAP_RES / 2) - sh_list.shadow_map_pos[1] - sh_list.shadow_map_size[1]),
@@ -38,7 +38,7 @@ void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf
     api_ctx->vkCmdSetDepthBias(cmd_buf, sh_list.bias[1], 0.0f, sh_list.bias[0]);
 }
 
-void _clear_region(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
+void _clear_region(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::shadow_list_t &sh_list) {
     VkClearAttachment clear_att = {};
     clear_att.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     clear_att.clearValue.color = {1.0f, 1.0f, 1.0f, 0.0f};
@@ -58,7 +58,7 @@ void Eng::ExShadowColor::DrawShadowMaps(FgBuilder &builder) {
     using namespace ExSharedInternal;
     using namespace ExShadowColorInternal;
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
@@ -121,7 +121,7 @@ void Eng::ExShadowColor::DrawShadowMaps(FgBuilder &builder) {
         for (int pi = 0; pi < 3; ++pi) {
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_[pi]->handle());
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
-                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+                const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.dirty && sh_list.alpha_blend_start_index == -1) {
                     continue;
                 }
@@ -168,7 +168,7 @@ void Eng::ExShadowColor::DrawShadowMaps(FgBuilder &builder) {
         for (int pi = 0; pi < 3; ++pi) {
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_alpha_[pi]->handle());
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
-                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+                const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.dirty && sh_list.alpha_blend_start_index == -1) {
                     continue;
                 }

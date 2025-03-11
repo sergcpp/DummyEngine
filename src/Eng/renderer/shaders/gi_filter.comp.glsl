@@ -26,7 +26,7 @@
 #include "gi_filter_interface.h"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 LAYOUT_PARAMS uniform UniformParams {

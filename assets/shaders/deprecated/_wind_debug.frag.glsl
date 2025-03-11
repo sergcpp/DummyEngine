@@ -16,7 +16,7 @@ layout(binding = BIND_ITEMS_BUF) uniform usamplerBuffer g_items_buf;
 layout(binding = BIND_INST_BUF) uniform sampler2D g_noise_tex;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(location = 0) in vec3 g_vtx_pos;

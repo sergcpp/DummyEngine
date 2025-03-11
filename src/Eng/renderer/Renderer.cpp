@@ -531,7 +531,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
-        const ProbeVolume &volume = persistent_data.probe_volumes[i];
+        const probe_volume_t &volume = persistent_data.probe_volumes[i];
         if (i == list.volume_to_update) {
             Ren::Vec3i new_scroll = Ren::Vec3i{(list.draw_cam.world_position() - volume.origin) / volume.spacing};
             // Ren::Vec3i new_scroll = Ren::Vec3i{list.draw_cam.world_position() / volume.spacing};
@@ -554,7 +554,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     if (list.volume_to_update == PROBE_VOLUMES_COUNT - 1) {
         // force the last volume to cover the whole scene
-        const ProbeVolume &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
+        const probe_volume_t &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
         last_volume.spacing =
             (list.bbox_max - list.bbox_min) / Ren::Vec3f{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z};
         last_volume.spacing =
@@ -567,8 +567,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     float probe_volume_spacing = 0.5f;
     for (int i = 0; i < PROBE_VOLUMES_COUNT - 1; ++i) {
-        const ProbeVolume &volume = persistent_data.probe_volumes[i],
-                          &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
+        const probe_volume_t &volume = persistent_data.probe_volumes[i],
+                             &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
         if (probe_volume_spacing > last_volume.spacing[0]) {
             volume.spacing = last_volume.spacing[0];
             volume.scroll = Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - volume.origin) / volume.spacing};
@@ -627,10 +627,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     view_state_.volume_to_update = list.volume_to_update;
     view_state_.stochastic_lights_count = view_state_.stochastic_lights_count_cache = 0;
     if (persistent_data.stoch_lights_buf) {
-        view_state_.stochastic_lights_count_cache = persistent_data.stoch_lights_buf->size() / sizeof(LightItem);
+        view_state_.stochastic_lights_count_cache = persistent_data.stoch_lights_buf->size() / sizeof(light_item_t);
     }
     if (persistent_data.stoch_lights_buf && list.render_settings.gi_quality > eGIQuality::Medium) {
-        view_state_.stochastic_lights_count = persistent_data.stoch_lights_buf->size() / sizeof(LightItem);
+        view_state_.stochastic_lights_count = persistent_data.stoch_lights_buf->size() / sizeof(light_item_t);
     }
 
     view_state_.env_generation = list.env.generation;

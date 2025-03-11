@@ -4,7 +4,7 @@
 
 #include "../../utils/ShaderLoader.h"
 
-Eng::ExOITDepthPeel::ExOITDepthPeel(const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1,
+Eng::ExOITDepthPeel::ExOITDepthPeel(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
                                     const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
                                     const FgResRef textures_buf, const BindlessTextureData *bindless_tex,
                                     const FgResRef dummy_white, const FgResRef instances_buf,

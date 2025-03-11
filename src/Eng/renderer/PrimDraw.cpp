@@ -6,11 +6,10 @@
 #include "Renderer_Structs.h"
 
 namespace PrimDrawInternal {
-#if defined(REN_VK_BACKEND)
 extern const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
+#if defined(REN_VK_BACKEND)
 extern const float fs_quad_norm_uvs[] = {0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f};
 #else
-extern const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
 extern const float fs_quad_norm_uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
 #endif
 extern const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};

@@ -6,7 +6,7 @@
 #include "../../utils/ShaderLoader.h"
 #include "../shaders/oit_debug_interface.h"
 
-Eng::ExDebugOIT::ExDebugOIT(FgBuilder &builder, const ViewState *view_state, const Args *pass_data) {
+Eng::ExDebugOIT::ExDebugOIT(FgBuilder &builder, const view_state_t *view_state, const Args *pass_data) {
     view_state_ = view_state;
     args_ = pass_data;
     pi_debug_oit_ = builder.sh().LoadPipeline("internal/oit_debug.comp.glsl");

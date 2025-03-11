@@ -444,7 +444,7 @@ float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, samplerBuffer li
         } else {
             const int light_index = int(cur & PRIM_INDEX_BITS);
 
-            const light_item_t litem = FetchLightItem(lights_buf, light_index);
+            const _light_item_t litem = FetchLightItem(lights_buf, light_index);
             const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;
             if (type == LIGHT_TYPE_TRI && floatBitsToUint(litem.shadow_pos_and_tri_index.w) == tri_index) {
                 return cur_factor;

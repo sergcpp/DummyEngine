@@ -6,7 +6,7 @@
 #include "../Renderer_DrawList.h"
 #include "../framegraph/FgNode.h"
 
-struct ViewState;
+struct view_state_t;
 
 namespace Eng {
 class ExRTGI final : public FgExecutor {
@@ -53,7 +53,7 @@ class ExRTGI final : public FgExecutor {
         FgResRef out_gi_tex;
     };
 
-    void Setup(FgBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,
+    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
                const Args *args) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
@@ -69,7 +69,7 @@ class ExRTGI final : public FgExecutor {
     Ren::PipelineRef pi_rt_gi_[2], pi_rt_gi_2bounce_[2];
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
+    const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const Args *args_;

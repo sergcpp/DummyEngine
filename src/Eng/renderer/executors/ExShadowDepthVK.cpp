@@ -12,15 +12,15 @@
 
 namespace ExSharedInternal {
 uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, Ren::Span<const uint32_t> batch_indices,
-                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, uint64_t mask, int *draws_count);
+                     Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask, int *draws_count);
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                          uint32_t i, uint64_t mask, uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 } // namespace ExSharedInternal
 
 namespace ExShadowDepthInternal {
-void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
+void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::shadow_list_t &sh_list) {
     const VkViewport viewport = {
         float(sh_list.shadow_map_pos[0]),
         float((Eng::SHADOWMAP_RES / 2) - sh_list.shadow_map_pos[1] - sh_list.shadow_map_size[1]),
@@ -38,7 +38,7 @@ void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf
     api_ctx->vkCmdSetDepthBias(cmd_buf, sh_list.bias[1], 0.0f, sh_list.bias[0]);
 }
 
-void _clear_region(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
+void _clear_region(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::shadow_list_t &sh_list) {
     VkClearAttachment clear_att = {};
     clear_att.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
     clear_att.clearValue.depthStencil.depth = 0.0f;
@@ -58,7 +58,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
     using namespace ExSharedInternal;
     using namespace ExShadowDepthInternal;
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     FgAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     FgAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
@@ -120,7 +120,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
         for (int pi = 0; pi < 3; ++pi) {
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_[pi]->handle());
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
-                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+                const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.dirty && !sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -158,7 +158,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
         vi_depth_pass_vege_solid_->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
-            const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+            const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
             if (!sh_list.dirty && !sh_list.shadow_batch_count) {
                 continue;
             }
@@ -177,7 +177,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
             uint32_t j = batch_points[i];
             for (; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
                 const auto &batch = (*p_list_)->shadow_batches[(*p_list_)->shadow_batch_indices[j]];
-                if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
+                if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != basic_draw_batch_t::TypeVege) {
                     continue;
                 }
 
@@ -212,7 +212,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
         for (int pi = 0; pi < 3; ++pi) {
             api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_alpha_[pi]->handle());
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
-                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+                const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.dirty && !sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -251,7 +251,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
         vi_depth_pass_alpha_->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         for (int i = 0; i < int((*p_list_)->shadow_lists.count); ++i) {
-            const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+            const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
             if (!sh_list.dirty && !sh_list.shadow_batch_count) {
                 continue;
             }
@@ -270,7 +270,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
             for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
                  j++) {
                 const auto &batch = (*p_list_)->shadow_batches[(*p_list_)->shadow_batch_indices[j]];
-                if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
+                if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != basic_draw_batch_t::TypeVege) {
                     continue;
                 }
 

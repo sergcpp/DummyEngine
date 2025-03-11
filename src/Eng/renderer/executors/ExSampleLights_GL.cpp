@@ -116,7 +116,7 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
 
     SampleLights::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(LightItem));
+    uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(light_item_t));
     uniform_params.frame_index = view_state_->frame_index;
 
     DispatchCompute(*pi_sample_lights_, grp_count, bindings, &uniform_params, sizeof(uniform_params),

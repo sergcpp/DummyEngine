@@ -9,7 +9,7 @@
 
 namespace ExSharedInternal {
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                          uint32_t i, uint64_t mask, uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 }
@@ -50,7 +50,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
@@ -62,7 +62,7 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
     const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-    const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches};
+    const Ren::Span<const basic_draw_batch_t> batches = {(*p_list_)->basic_batches};
     const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices};
 
     int draws_count = 0;

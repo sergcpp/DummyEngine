@@ -6,11 +6,11 @@
 #include "rt_debug_interface.h"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
-    light_item_t g_lights[];
+    _light_item_t g_lights[];
 };
 
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
@@ -22,7 +22,7 @@ void main() {
     g_pld.col = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb;
 
     for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
-        const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
+        const _light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
 
         const vec3 light_pos = litem.pos_and_radius.xyz;
         vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;

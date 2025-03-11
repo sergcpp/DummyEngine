@@ -9,10 +9,11 @@
 #include "../shaders/shadow_interface.h"
 
 namespace ExSharedInternal {
-uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
-                     uint32_t i, uint64_t mask, int *draws_count);
+uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices,
+                     Ren::Span<const Eng::basic_draw_batch_t> zfill_batches, uint32_t i, uint64_t mask,
+                     int *draws_count);
 uint32_t _draw_range_ext(Eng::FgBuilder &builder, const Ren::MaterialStorage *materials,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
                          uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
@@ -20,7 +21,7 @@ void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
 namespace ExShadowDepthInternal {
 using namespace ExSharedInternal;
 
-void _adjust_bias_and_viewport(Ren::RastState &rast_state, const Eng::ShadowList &sh_list) {
+void _adjust_bias_and_viewport(Ren::RastState &rast_state, const Eng::shadow_list_t &sh_list) {
     Ren::RastState new_rast_state = rast_state;
 
     new_rast_state.depth_bias.slope_factor = sh_list.bias[0];
@@ -45,7 +46,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
     using namespace ExSharedInternal;
     using namespace ExShadowDepthInternal;
 
-    using BDB = BasicDrawBatch;
+    using BDB = basic_draw_batch_t;
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
@@ -106,7 +107,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
-                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+                const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -137,7 +138,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
     glUseProgram(pi_vege_solid_.prog()->id());
 
     for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
-        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+        const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
         if (!sh_list.shadow_batch_count) {
             continue;
         }
@@ -155,7 +156,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
         for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
              ++j) {
             const auto &batch = (*p_list_)->shadow_batches[(*p_list_)->shadow_batch_indices[j]];
-            if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
+            if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != basic_draw_batch_t::TypeVege) {
                 continue;
             }
 
@@ -183,7 +184,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
-                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+                const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -217,7 +218,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
     glUseProgram(pi_vege_transp_.prog()->id());
 
     for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
-        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
+        const shadow_list_t &sh_list = (*p_list_)->shadow_lists.data[i];
         if (!sh_list.shadow_batch_count) {
             continue;
         }
@@ -236,7 +237,7 @@ void Eng::ExShadowDepth::DrawShadowMaps(FgBuilder &builder) {
         for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
              ++j) {
             const auto &batch = (*p_list_)->shadow_batches[(*p_list_)->shadow_batch_indices[j]];
-            if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
+            if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != basic_draw_batch_t::TypeVege) {
                 continue;
             }
 

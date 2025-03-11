@@ -9,7 +9,7 @@
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 float _SRGBToLinear(float col) {

@@ -18,7 +18,7 @@ layout(location = 3) out vec3 g_vtx_tangent_es[];
 layout(location = 4) out vec3 g_vtx_sh_uvs_es[][4];
 
 layout (binding = 0, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 float GetTessLevel(float Distance0, float Distance1) {

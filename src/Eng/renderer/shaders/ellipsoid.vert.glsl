@@ -4,7 +4,7 @@
 #include "ellipsoid_interface.h"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;

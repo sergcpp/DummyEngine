@@ -31,7 +31,7 @@ struct OutputPatch {
 layout(location = 0) out patch OutputPatch oPatch;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 float GetTessLevel(float Distance0, float Distance1) {

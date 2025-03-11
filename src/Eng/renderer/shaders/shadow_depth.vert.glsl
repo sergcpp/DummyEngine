@@ -39,7 +39,7 @@ layout(location = U_M_MATRIX_LOC) uniform mat4 g_shadow_view_proj_mat;
 #endif
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 #ifdef ALPHATEST
@@ -57,7 +57,7 @@ void main() {
 #ifdef ALPHATEST
     g_vtx_uvs = g_in_vtx_uvs;
 
-    MaterialData mat = g_materials[instance.y];
+    material_data_t mat = g_materials[instance.y];
     g_alpha = 1.0 - mat.params[3].x;
 #if !defined(NO_BINDLESS)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA]);

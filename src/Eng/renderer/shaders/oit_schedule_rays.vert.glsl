@@ -25,7 +25,7 @@ layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
 #endif // VEGETATION
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
+    shared_data_t g_shrd_data;
 };
 
 layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
@@ -36,7 +36,7 @@ layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 layout(binding = BIND_NOISE_TEX) uniform sampler2D g_noise_tex;
 
 layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
-    MaterialData g_materials[];
+    material_data_t g_materials[];
 };
 
 #if defined(NO_BINDLESS)
@@ -64,7 +64,7 @@ void main() {
     vec3 vtx_pos_ls = g_in_vtx_pos;
     vec3 vtx_nor_ls = g_in_vtx_normal.xyz, vtx_tan_ls = vec3(g_in_vtx_normal.w, g_in_vtx_tangent);
 
-    const MaterialData mat = g_materials[instance.y];
+    const material_data_t mat = g_materials[instance.y];
 #ifdef VEGETATION
     // load vegetation properties
     vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);

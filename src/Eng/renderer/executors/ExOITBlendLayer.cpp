@@ -5,7 +5,7 @@
 #include "../../utils/ShaderLoader.h"
 
 Eng::ExOITBlendLayer::ExOITBlendLayer(
-    PrimDraw &prim_draw, const DrawList **p_list, const ViewState *view_state, const FgResRef vtx_buf1,
+    PrimDraw &prim_draw, const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
     const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
     const BindlessTextureData *bindless_tex, const FgResRef cells_buf, const FgResRef items_buf,
     const FgResRef lights_buf, const FgResRef decals_buf, const FgResRef noise_tex, const FgResRef dummy_white,
