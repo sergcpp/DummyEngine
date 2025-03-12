@@ -292,7 +292,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint
         ref = textures_2D_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
         (*load_status) = eTexLoadStatus::Found;
-        if (!ref->ready() && !data.empty()) {
+        if ((ref->params.flags & eTexFlags::Stub) && !(p.flags & eTexFlags::Stub) && !data.empty()) {
             ref->Init(data, p, mem_allocs, load_status, log_);
         }
     }
@@ -305,9 +305,8 @@ Ren::Tex2DRef Ren::Context::LoadTextureCube(std::string_view name, Span<const ui
     if (!ref) {
         ref = textures_2D_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
-        if (ref->ready()) {
-            (*load_status) = eTexLoadStatus::Found;
-        } else if (data) {
+        (*load_status) = eTexLoadStatus::Found;
+        if ((ref->params.flags & eTexFlags::Stub) && (p.flags & eTexFlags::Stub) && data) {
             ref->Init(data, p, mem_allocs, load_status, log_);
         }
     }
@@ -324,7 +323,8 @@ void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Textur
 }
 
 int Ren::Context::NumTexturesNotReady() {
-    return int(std::count_if(textures_2D_.begin(), textures_2D_.end(), [](const Texture2D &t) { return !t.ready(); }));
+    return int(std::count_if(textures_2D_.begin(), textures_2D_.end(),
+                             [](const Texture2D &t) { return bool(t.params.flags & eTexFlags::Stub); }));
 }
 
 void Ren::Context::Release2DTextures() {

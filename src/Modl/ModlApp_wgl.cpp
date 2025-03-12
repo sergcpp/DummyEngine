@@ -884,7 +884,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                     return eCompileResult::RES_PARSE_ERROR;
                 }
                 for (int j : {0, 1, 2}) {
-                    indices.back().push_back((uint32_t)stoi(toks[j]));
+                    indices.back().push_back(uint32_t(stoi(toks[j])));
                 }
                 i++;
             }
@@ -1176,7 +1176,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
             std::vector<uint32_t> &cur_strip = reordered_indices.back();
 
             cur_strip.resize(index_group.size());
-            Ren::ReorderTriangleIndices(&index_group[0], (uint32_t)index_group.size(), (uint32_t)num_vertices,
+            Ren::ReorderTriangleIndices(&index_group[0], uint32_t(index_group.size()), uint32_t(num_vertices),
                                         &cur_strip[0]);
         }
 
@@ -1241,10 +1241,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
         }
 
         if (alpha_test) {
-            alpha_chunks.emplace_back((uint32_t)total_indices.size(), (uint32_t)reordered_indices[i].size(), 1);
+            alpha_chunks.emplace_back(uint32_t(total_indices.size()), uint32_t(reordered_indices[i].size()), 1);
             alpha_mats.push_back(i);
         } else {
-            total_chunks.emplace_back((uint32_t)total_indices.size(), (uint32_t)reordered_indices[i].size(), 0);
+            total_chunks.emplace_back(uint32_t(total_indices.size()), uint32_t(reordered_indices[i].size()), 0);
         }
 
         total_indices.insert(total_indices.end(), reordered_indices[i].begin(), reordered_indices[i].end());
@@ -1654,7 +1654,7 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
     prim_lists.emplace_back();
 
     for (size_t i = 0; i < primitives.size(); i++) {
-        prim_lists.back().indices.push_back((uint32_t)i);
+        prim_lists.back().indices.push_back(uint32_t(i));
         prim_lists.back().min = Min(prim_lists.back().min, primitives[i].bbox_min);
         prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
     }
@@ -1667,7 +1667,7 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
                                                            prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
-        const auto leaf_index = (uint32_t)nodes.size();
+        const auto leaf_index = uint32_t(nodes.size());
         uint32_t parent_index = 0xffffffff;
 
         if (leaf_index) {
@@ -1675,18 +1675,18 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
             const bvh_node_t *_out_nodes = &nodes[0];
             for (uint32_t i = leaf_index - 1; i >= root_node; i--) {
                 if (_out_nodes[i].left_child == leaf_index || _out_nodes[i].right_child == leaf_index) {
-                    parent_index = (uint32_t)i;
+                    parent_index = uint32_t(i);
                     break;
                 }
             }
         }
 
         if (split_data.right_indices.empty()) {
-            nodes.push_back({(uint32_t)prim_indices.size(), (uint32_t)split_data.left_indices.size(), 0, 0,
+            nodes.push_back({uint32_t(prim_indices.size()), uint32_t(split_data.left_indices.size()), 0, 0,
                              split_data.left_bounds[0], parent_index, split_data.left_bounds[1], 0});
             prim_indices.insert(prim_indices.end(), split_data.left_indices.begin(), split_data.left_indices.end());
         } else {
-            auto index = (uint32_t)nodes_count;
+            auto index = uint32_t(nodes_count);
 
             const Phy::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f;
             const Phy::Vec3f c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
@@ -1800,7 +1800,7 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
         uint32_t stack[128];
         uint32_t stack_size = 0;
 
-        stack[stack_size++] = (uint32_t)root_node;
+        stack[stack_size++] = uint32_t(root_node);
 
         while (stack_size) {
             uint32_t cur = stack[--stack_size];
@@ -1879,7 +1879,7 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
 Ren::Tex2DRef ModlApp::OnTextureNeeded(std::string_view name) {
     Ren::eTexLoadStatus status;
     Ren::Tex2DRef ret = ctx_->LoadTexture2D(name, {}, {}, ctx_->default_mem_allocs(), &status);
-    if (!ret->ready()) {
+    if (ret->params.flags & Ren::eTexFlags::Stub) {
         Sys::AssetFile in_file(std::string("assets_pc/textures/") + std::string(name));
         std::vector<uint8_t> in_file_data(in_file.size());
         in_file.Read((char *)in_file_data.data(), in_file.size());

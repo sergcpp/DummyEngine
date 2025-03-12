@@ -7,7 +7,7 @@
 #include "VKCtx.h"
 
 namespace Ren {
-extern const VkFormat g_vk_formats[];
+extern const VkFormat g_formats_vk[];
 
 VkFormat ToSRGBFormat(VkFormat format);
 } // namespace Ren
@@ -32,7 +32,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             img_info.extent.depth = 1;
             img_info.mipLevels = mip_count_;
             img_info.arrayLayers = 1;
-            img_info.format = g_vk_formats[size_t(formats[i])];
+            img_info.format = g_formats_vk[size_t(formats[i])];
             if (flags[i] & eTexFlags::SRGB) {
                 img_info.format = ToSRGBFormat(img_info.format);
             }
@@ -84,7 +84,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
             view_info.image = img_[i];
             view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            view_info.format = g_vk_formats[size_t(formats[i])];
+            view_info.format = g_formats_vk[size_t(formats[i])];
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             view_info.subresourceRange.baseMipLevel = 0;
             view_info.subresourceRange.levelCount = mip_count_;

@@ -8,7 +8,7 @@
 #include "Log.h"
 
 namespace Ren {
-const uint32_t g_gl_buf_targets[] = {
+const uint32_t g_buf_targets_gl[] = {
     0xffffffff,               // Undefined
     GL_ARRAY_BUFFER,          // VertexAttribs
     GL_ELEMENT_ARRAY_BUFFER,  // VertexIndices
@@ -21,7 +21,7 @@ const uint32_t g_gl_buf_targets[] = {
     0xffffffff,               // ShaderBinding
     GL_DRAW_INDIRECT_BUFFER   // Indirect
 };
-static_assert(std::size(g_gl_buf_targets) == size_t(eBufType::_Count), "!");
+static_assert(std::size(g_buf_targets_gl) == size_t(eBufType::_Count), "!");
 
 GLenum GetGLBufUsage(const eBufType type) {
     if (type == eBufType::Upload || type == eBufType::Readback) {
@@ -138,22 +138,18 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
     GLuint gl_buffer;
     glGenBuffers(1, &gl_buffer);
-    glBindBuffer(g_gl_buf_targets[int(type_)], gl_buffer);
+    glBindBuffer(g_buf_targets_gl[int(type_)], gl_buffer);
 #ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_BUFFER, gl_buffer, -1, name_.c_str());
 #endif
-#if !defined(__ANDROID__)
-    glBufferStorage(g_gl_buf_targets[int(type_)], size_, nullptr, GetGLBufStorageFlags(type_));
-#else
-    glBufferData(g_gl_buf_targets[int(type_)], size_, nullptr, GetGLBufUsage(type_));
-#endif
+    glBufferStorage(g_buf_targets_gl[int(type_)], size_, nullptr, GetGLBufStorageFlags(type_));
 
     if (handle_.buf) {
-        glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.buf));
+        glBindBuffer(g_buf_targets_gl[int(type_)], GLuint(handle_.buf));
         glBindBuffer(GL_COPY_WRITE_BUFFER, gl_buffer);
 
         if (keep_content) {
-            glCopyBufferSubData(g_gl_buf_targets[int(type_)], GL_COPY_WRITE_BUFFER, 0, 0, old_size);
+            glCopyBufferSubData(g_buf_targets_gl[int(type_)], GL_COPY_WRITE_BUFFER, 0, 0, old_size);
         }
 
         auto old_buffer = GLuint(handle_.buf);
@@ -196,10 +192,10 @@ uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const
         buf_map_range_flags |= GLbitfield(GL_MAP_READ_BIT);
     }
 
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.buf));
-    auto *ret = (uint8_t *)glMapBufferRange(g_gl_buf_targets[int(type_)], GLintptr(offset), GLsizeiptr(size),
+    glBindBuffer(g_buf_targets_gl[int(type_)], GLuint(handle_.buf));
+    auto *ret = (uint8_t *)glMapBufferRange(g_buf_targets_gl[int(type_)], GLintptr(offset), GLsizeiptr(size),
                                             buf_map_range_flags);
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
+    glBindBuffer(g_buf_targets_gl[int(type_)], GLuint(0));
 
     mapped_offset_ = offset;
     mapped_ptr_ = ret;
@@ -209,9 +205,9 @@ uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const
 
 void Ren::Buffer::Unmap() {
     assert(mapped_offset_ != 0xffffffff && mapped_ptr_);
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.buf));
-    glUnmapBuffer(g_gl_buf_targets[int(type_)]);
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
+    glBindBuffer(g_buf_targets_gl[int(type_)], GLuint(handle_.buf));
+    glUnmapBuffer(g_buf_targets_gl[int(type_)]);
+    glBindBuffer(g_buf_targets_gl[int(type_)], GLuint(0));
     mapped_offset_ = 0xffffffff;
     mapped_ptr_ = nullptr;
 }

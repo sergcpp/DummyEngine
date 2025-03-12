@@ -19,7 +19,7 @@
 
 namespace Ren {
 #define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) _5,
-extern const VkFormat g_vk_formats[] = {
+extern const VkFormat g_formats_vk[] = {
 #include "TextureFormat.inl"
 };
 #undef X
@@ -108,10 +108,10 @@ int GetBlockLenBytes(eTexFormat format);
 int GetMipDataLenBytes(int w, int h, eTexFormat format);
 void ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params);
 
-extern const VkFilter g_vk_min_mag_filter[];
-extern const VkSamplerAddressMode g_vk_wrap_mode[];
-extern const VkSamplerMipmapMode g_vk_mipmap_mode[];
-extern const VkCompareOp g_vk_compare_ops[];
+extern const VkFilter g_min_mag_filter_vk[];
+extern const VkSamplerAddressMode g_wrap_mode_vk[];
+extern const VkSamplerMipmapMode g_mipmap_mode_vk[];
+extern const VkCompareOp g_compare_ops_vk[];
 
 extern const float AnisotropyLevel;
 } // namespace Ren
@@ -148,9 +148,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     handle_ = std::exchange(rhs.handle_, {});
     alloc_ = std::exchange(rhs.alloc_, {});
-    initialized_mips_ = std::exchange(rhs.initialized_mips_, 0);
     params = std::exchange(rhs.params, {});
-    ready_ = std::exchange(rhs.ready_, false);
     name_ = std::move(rhs.name_);
 
     resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
@@ -160,7 +158,6 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
 
 void Ren::Texture2D::Init(const Tex2DParams &p, MemAllocators *mem_allocs, ILog *log) {
     InitFromRAWData(nullptr, 0, nullptr, mem_allocs, p, log);
-    ready_ = true;
 }
 
 void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log) {
@@ -173,7 +170,7 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view_info.format = g_vk_formats[size_t(params.format)];
+        view_info.format = g_formats_vk[size_t(params.format)];
         if (bool(params.flags & eTexFlags::SRGB)) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
@@ -223,7 +220,7 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
                 VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
                 view_info.image = handle_.img;
                 view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-                view_info.format = g_vk_formats[size_t(params.format)];
+                view_info.format = g_formats_vk[size_t(params.format)];
                 if (params.flags & eTexFlags::SRGB) {
                     view_info.format = ToSRGBFormat(view_info.format);
                 }
@@ -255,122 +252,67 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
     if (handle_.sampler == VkSampler{} && !bool(params.flags & eTexFlags::NoOwnership)) {
         SetSampling(params.sampling);
     }
-
-    ready_ = true;
 }
 
 void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
-    if (data.empty()) {
-        auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload, 4};
+    assert(!data.empty());
+    if ((name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) && !(p.flags & eTexFlags::Stub)) {
+        InitFromTGAFile(data, mem_allocs, p, log);
+    } else if ((name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) && !(p.flags & eTexFlags::Stub)) {
+        InitFromDDSFile(data, mem_allocs, p, log);
+    } else if ((name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) && !(p.flags & eTexFlags::Stub)) {
+        InitFromKTXFile(data, mem_allocs, p, log);
+    } else {
+        auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload, uint32_t(data.size())};
         { // Update staging buffer
             uint8_t *stage_data = sbuf.Map();
-            memcpy(stage_data, p.fallback_color, 4);
+            memcpy(stage_data, data.data(), data.size());
             sbuf.Unmap();
         }
-
         CommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
-
-        Tex2DParams _p = p;
-        _p.w = _p.h = 1;
-        _p.mip_count = 1;
-        _p.format = eTexFormat::RGBA8;
-        _p.usage = Bitmask(eTexUsage::Sampled) | eTexUsage::Transfer;
-
-        InitFromRAWData(&sbuf, 0, cmd_buf, mem_allocs, _p, log);
-
+        InitFromRAWData(&sbuf, 0, cmd_buf, mem_allocs, p, log);
         api_ctx_->EndSingleTimeCommands(cmd_buf);
         sbuf.FreeImmediate();
-
-        // mark it as not ready
-        ready_ = false;
-        (*load_status) = eTexLoadStatus::CreatedDefault;
-    } else {
-        if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-            InitFromTGAFile(data, mem_allocs, p, log);
-        } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, mem_allocs, p, log);
-        } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-            InitFromKTXFile(data, mem_allocs, p, log);
-        } else {
-            auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload, uint32_t(data.size())};
-            { // Update staging buffer
-                uint8_t *stage_data = sbuf.Map();
-                memcpy(stage_data, data.data(), data.size());
-                sbuf.Unmap();
-            }
-            CommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
-            InitFromRAWData(&sbuf, 0, cmd_buf, mem_allocs, p, log);
-            api_ctx_->EndSingleTimeCommands(cmd_buf);
-            sbuf.FreeImmediate();
-        }
-        ready_ = true;
-        (*load_status) = eTexLoadStatus::CreatedFromData;
     }
+    (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
 void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
-    if (!data) {
-        auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload, 4};
+    assert(data);
+    if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
+        InitFromTGAFile(data, mem_allocs, p, log);
+    } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
+        InitFromKTXFile(data, mem_allocs, p, log);
+    } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
+        InitFromDDSFile(data, mem_allocs, p, log);
+    } else {
+        auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload,
+                           uint32_t(data[0].size() + data[1].size() + data[2].size() + data[3].size() + data[4].size() +
+                                    data[5].size())};
+        int data_off[6];
         { // Update staging buffer
             uint8_t *stage_data = sbuf.Map();
-            memcpy(stage_data, p.fallback_color, 4);
+            uint32_t stage_off = 0;
+
+            for (int i = 0; i < 6; i++) {
+                if (!data[i].empty()) {
+                    memcpy(&stage_data[stage_off], data[i].data(), data[i].size());
+                    data_off[i] = int(stage_off);
+                    stage_off += uint32_t(data[i].size());
+                } else {
+                    data_off[i] = -1;
+                }
+            }
             sbuf.Unmap();
         }
-
         CommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
-
-        Tex2DParams _p = p;
-        _p.w = _p.h = 1;
-        _p.format = eTexFormat::RGBA8;
-        _p.usage = Bitmask(eTexUsage::Sampled) | eTexUsage::Transfer;
-
-        int data_off[6] = {};
-        InitFromRAWData(sbuf, data_off, cmd_buf, mem_allocs, _p, log);
-
+        InitFromRAWData(sbuf, data_off, cmd_buf, mem_allocs, p, log);
         api_ctx_->EndSingleTimeCommands(cmd_buf);
         sbuf.FreeImmediate();
-
-        // mark it as not ready
-        ready_ = false;
-        (*load_status) = eTexLoadStatus::CreatedDefault;
-    } else {
-        if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-            InitFromTGAFile(data, mem_allocs, p, log);
-        } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-            InitFromKTXFile(data, mem_allocs, p, log);
-        } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, mem_allocs, p, log);
-        } else {
-            auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload,
-                               uint32_t(data[0].size() + data[1].size() + data[2].size() + data[3].size() +
-                                        data[4].size() + data[5].size())};
-            int data_off[6];
-            { // Update staging buffer
-                uint8_t *stage_data = sbuf.Map();
-                uint32_t stage_off = 0;
-
-                for (int i = 0; i < 6; i++) {
-                    if (!data[i].empty()) {
-                        memcpy(&stage_data[stage_off], data[i].data(), data[i].size());
-                        data_off[i] = int(stage_off);
-                        stage_off += uint32_t(data[i].size());
-                    } else {
-                        data_off[i] = -1;
-                    }
-                }
-                sbuf.Unmap();
-            }
-            CommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
-            InitFromRAWData(sbuf, data_off, cmd_buf, mem_allocs, p, log);
-            api_ctx_->EndSingleTimeCommands(cmd_buf);
-            sbuf.FreeImmediate();
-        }
-
-        ready_ = true;
-        (*load_status) = eTexLoadStatus::CreatedFromData;
     }
+    (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
 void Ren::Texture2D::Free() {
@@ -386,7 +328,6 @@ void Ren::Texture2D::Free() {
 
         handle_ = {};
         params.format = eTexFormat::Undefined;
-        ready_ = false;
     }
 }
 
@@ -403,7 +344,6 @@ void Ren::Texture2D::FreeImmediate() {
 
         handle_ = {};
         params.format = eTexFormat::Undefined;
-        ready_ = false;
     }
 }
 
@@ -426,7 +366,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         img_info.extent.depth = 1;
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
-        img_info.format = g_vk_formats[size_t(format)];
+        img_info.format = g_formats_vk[size_t(format)];
         if (is_srgb) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
@@ -476,7 +416,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = new_image;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view_info.format = g_vk_formats[size_t(format)];
+        view_info.format = g_formats_vk[size_t(format)];
         if (is_srgb) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
@@ -512,7 +452,6 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
 
     const TexHandle new_handle = {new_image, new_image_view, VK_NULL_HANDLE, std::exchange(handle_.sampler, {}),
                                   TextureHandleCounter++};
-    uint16_t new_initialized_mips = 0;
 
     // copy data from old texture
     if (params.format == format) {
@@ -531,27 +470,23 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         uint32_t copy_regions_count = 0;
 
         for (; src_mip < int(params.mip_count) && dst_mip < mip_count; ++src_mip, ++dst_mip) {
-            if (initialized_mips_ & (1u << src_mip)) {
-                VkImageCopy &reg = copy_regions[copy_regions_count++];
+            VkImageCopy &reg = copy_regions[copy_regions_count++];
 
-                reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                reg.srcSubresource.baseArrayLayer = 0;
-                reg.srcSubresource.layerCount = 1;
-                reg.srcSubresource.mipLevel = src_mip;
-                reg.srcOffset = {0, 0, 0};
-                reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                reg.dstSubresource.baseArrayLayer = 0;
-                reg.dstSubresource.layerCount = 1;
-                reg.dstSubresource.mipLevel = dst_mip;
-                reg.dstOffset = {0, 0, 0};
-                reg.extent = {uint32_t(std::max(w >> dst_mip, 1)), uint32_t(std::max(h >> dst_mip, 1)), 1};
+            reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            reg.srcSubresource.baseArrayLayer = 0;
+            reg.srcSubresource.layerCount = 1;
+            reg.srcSubresource.mipLevel = src_mip;
+            reg.srcOffset = {0, 0, 0};
+            reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            reg.dstSubresource.baseArrayLayer = 0;
+            reg.dstSubresource.layerCount = 1;
+            reg.dstSubresource.mipLevel = dst_mip;
+            reg.dstOffset = {0, 0, 0};
+            reg.extent = {uint32_t(std::max(w >> dst_mip, 1)), uint32_t(std::max(h >> dst_mip, 1)), 1};
 
 #ifdef TEX_VERBOSE_LOGGING
-                log->Info("Copying data mip %i [old] -> mip %i [new]", src_mip, dst_mip);
+            log->Info("Copying data mip %i [old] -> mip %i [new]", src_mip, dst_mip);
 #endif
-
-                new_initialized_mips |= (1u << dst_mip);
-            }
         }
 
         if (copy_regions_count) {
@@ -630,7 +565,6 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     params.mip_count = mip_count;
     params.samples = samples;
     params.format = format;
-    initialized_mips_ = new_initialized_mips;
 
     if (params.flags & eTexFlags::ExtendedViews) {
         // create additional image views
@@ -638,7 +572,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
             view_info.image = handle_.img;
             view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            view_info.format = g_vk_formats[size_t(params.format)];
+            view_info.format = g_formats_vk[size_t(params.format)];
             if (params.flags & eTexFlags::SRGB) {
                 view_info.format = ToSRGBFormat(view_info.format);
             }
@@ -677,7 +611,6 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
 
     handle_.generation = TextureHandleCounter++;
     params = p;
-    initialized_mips_ = 0;
 
     int mip_count = params.mip_count;
     if (!mip_count) {
@@ -692,7 +625,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
         img_info.extent.depth = 1;
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
-        img_info.format = g_vk_formats[size_t(p.format)];
+        img_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
@@ -746,7 +679,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        view_info.format = g_vk_formats[size_t(p.format)];
+        view_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
@@ -796,7 +729,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
                 VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
                 view_info.image = handle_.img;
                 view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-                view_info.format = g_vk_formats[size_t(p.format)];
+                view_info.format = g_formats_vk[size_t(p.format)];
                 if (p.flags & eTexFlags::SRGB) {
                     view_info.format = ToSRGBFormat(view_info.format);
                 }
@@ -897,24 +830,22 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
 
         api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf->vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                          1, &region);
-
-        initialized_mips_ |= (1u << 0);
     }
 
     { // create new sampler
         VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-        sampler_info.magFilter = g_vk_min_mag_filter[size_t(p.sampling.filter)];
-        sampler_info.minFilter = g_vk_min_mag_filter[size_t(p.sampling.filter)];
-        sampler_info.addressModeU = g_vk_wrap_mode[size_t(p.sampling.wrap)];
-        sampler_info.addressModeV = g_vk_wrap_mode[size_t(p.sampling.wrap)];
-        sampler_info.addressModeW = g_vk_wrap_mode[size_t(p.sampling.wrap)];
+        sampler_info.magFilter = g_min_mag_filter_vk[size_t(p.sampling.filter)];
+        sampler_info.minFilter = g_min_mag_filter_vk[size_t(p.sampling.filter)];
+        sampler_info.addressModeU = g_wrap_mode_vk[size_t(p.sampling.wrap)];
+        sampler_info.addressModeV = g_wrap_mode_vk[size_t(p.sampling.wrap)];
+        sampler_info.addressModeW = g_wrap_mode_vk[size_t(p.sampling.wrap)];
         sampler_info.anisotropyEnable = VK_TRUE;
         sampler_info.maxAnisotropy = AnisotropyLevel;
         sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         sampler_info.unnormalizedCoordinates = VK_FALSE;
         sampler_info.compareEnable = p.sampling.compare != eTexCompare::None ? VK_TRUE : VK_FALSE;
-        sampler_info.compareOp = g_vk_compare_ops[size_t(p.sampling.compare)];
-        sampler_info.mipmapMode = g_vk_mipmap_mode[size_t(p.sampling.filter)];
+        sampler_info.compareOp = g_compare_ops_vk[size_t(p.sampling.compare)];
+        sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(p.sampling.filter)];
         sampler_info.mipLodBias = p.sampling.lod_bias.to_float();
         sampler_info.minLod = p.sampling.min_lod.to_float();
         sampler_info.maxLod = p.sampling.max_lod.to_float();
@@ -1113,8 +1044,6 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemAllocators *me
         reg.imageOffset = {0, 0, 0};
         reg.imageExtent = {uint32_t(w), uint32_t(h), 1};
 
-        initialized_mips_ |= (1u << i);
-
         data_off += len;
         bytes_left -= len;
         w = std::max(w / 2, 1);
@@ -1251,7 +1180,6 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemAllocators *me
         reg.imageOffset = {0, 0, 0};
         reg.imageExtent = {uint32_t(w), uint32_t(h), 1};
 
-        initialized_mips_ |= (1u << i);
         data_offset += img_size;
 
         w = std::max(w / 2, 1);
@@ -1277,7 +1205,6 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
 
     handle_.generation = TextureHandleCounter++;
     params = p;
-    initialized_mips_ = 0;
 
     const int mip_count = CalcMipCount(p.w, p.h, 1);
     params.mip_count = mip_count;
@@ -1290,7 +1217,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
         img_info.extent.depth = 1;
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 6;
-        img_info.format = g_vk_formats[size_t(p.format)];
+        img_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
@@ -1338,7 +1265,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-        view_info.format = g_vk_formats[size_t(p.format)];
+        view_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
@@ -1370,7 +1297,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
                 VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
                 view_info.image = handle_.img;
                 view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-                view_info.format = g_vk_formats[size_t(p.format)];
+                view_info.format = g_formats_vk[size_t(p.format)];
                 if (p.flags & eTexFlags::SRGB) {
                     view_info.format = ToSRGBFormat(view_info.format);
                 }
@@ -1478,8 +1405,6 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
     api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                      uint32_t(regions.size()), regions.data());
 
-    initialized_mips_ |= (1u << 0);
-
     ApplySampling(p.sampling, log);
 }
 
@@ -1586,7 +1511,6 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators 
     handle_.generation = TextureHandleCounter++;
     params = p;
     params.cube = 1;
-    initialized_mips_ = 0;
 
     { // create image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -1596,7 +1520,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators 
         img_info.extent.depth = 1;
         img_info.mipLevels = first_mip_count;
         img_info.arrayLayers = 6;
-        img_info.format = g_vk_formats[size_t(first_format)];
+        img_info.format = g_formats_vk[size_t(first_format)];
         if (p.flags & eTexFlags::SRGB) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
@@ -1644,7 +1568,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators 
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-        view_info.format = g_vk_formats[size_t(p.format)];
+        view_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
@@ -1816,7 +1740,6 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators 
     handle_.generation = TextureHandleCounter++;
     params = p;
     params.cube = 1;
-    initialized_mips_ = 0;
 
     bool is_srgb_format;
     params.format = FormatFromGLInternalFormat(first_header->gl_internal_format, &is_srgb_format);
@@ -1833,7 +1756,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators 
         img_info.extent.depth = 1;
         img_info.mipLevels = first_header->mipmap_levels_count;
         img_info.arrayLayers = 6;
-        img_info.format = g_vk_formats[size_t(params.format)];
+        img_info.format = g_formats_vk[size_t(params.format)];
         if (params.flags & eTexFlags::SRGB) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
@@ -1881,7 +1804,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators 
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-        view_info.format = g_vk_formats[size_t(p.format)];
+        view_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
@@ -2104,12 +2027,6 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
 
     api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                      &region);
-
-    if (offsetx == 0 && offsety == 0 && sizex == std::max(params.w >> level, 1) &&
-        sizey == std::max(params.h >> level, 1)) {
-        // consider this level initialized
-        initialized_mips_ |= (1u << level);
-    }
 }
 
 void Ren::Texture2D::SetSampling(const SamplingParams s) {
@@ -2118,18 +2035,18 @@ void Ren::Texture2D::SetSampling(const SamplingParams s) {
     }
 
     VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    sampler_info.magFilter = g_vk_min_mag_filter[size_t(s.filter)];
-    sampler_info.minFilter = g_vk_min_mag_filter[size_t(s.filter)];
-    sampler_info.addressModeU = g_vk_wrap_mode[size_t(s.wrap)];
-    sampler_info.addressModeV = g_vk_wrap_mode[size_t(s.wrap)];
-    sampler_info.addressModeW = g_vk_wrap_mode[size_t(s.wrap)];
+    sampler_info.magFilter = g_min_mag_filter_vk[size_t(s.filter)];
+    sampler_info.minFilter = g_min_mag_filter_vk[size_t(s.filter)];
+    sampler_info.addressModeU = g_wrap_mode_vk[size_t(s.wrap)];
+    sampler_info.addressModeV = g_wrap_mode_vk[size_t(s.wrap)];
+    sampler_info.addressModeW = g_wrap_mode_vk[size_t(s.wrap)];
     sampler_info.anisotropyEnable = VK_TRUE;
     sampler_info.maxAnisotropy = AnisotropyLevel;
     sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     sampler_info.unnormalizedCoordinates = VK_FALSE;
     sampler_info.compareEnable = s.compare != eTexCompare::None ? VK_TRUE : VK_FALSE;
-    sampler_info.compareOp = g_vk_compare_ops[size_t(s.compare)];
-    sampler_info.mipmapMode = g_vk_mipmap_mode[size_t(s.filter)];
+    sampler_info.compareOp = g_compare_ops_vk[size_t(s.compare)];
+    sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(s.filter)];
     sampler_info.mipLodBias = s.lod_bias.to_float();
     sampler_info.minLod = s.min_lod.to_float();
     sampler_info.maxLod = s.max_lod.to_float();
@@ -2318,7 +2235,7 @@ void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const u
 
     VkBufferViewCreateInfo view_info = {VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO};
     view_info.buffer = buf->vk_handle();
-    view_info.format = g_vk_formats[size_t(format)];
+    view_info.format = g_formats_vk[size_t(format)];
     view_info.offset = VkDeviceSize(offset);
     view_info.range = VkDeviceSize(size);
 
@@ -2374,7 +2291,7 @@ void Ren::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog 
         img_info.extent.depth = uint32_t(p.d);
         img_info.mipLevels = 1;
         img_info.arrayLayers = 1;
-        img_info.format = g_vk_formats[size_t(p.format)];
+        img_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
@@ -2429,7 +2346,7 @@ void Ren::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog 
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_3D;
-        view_info.format = g_vk_formats[size_t(p.format)];
+        view_info.format = g_formats_vk[size_t(p.format)];
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
         view_info.subresourceRange.baseMipLevel = 0;
@@ -2465,18 +2382,18 @@ void Ren::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog 
 
     { // create new sampler
         VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-        sampler_info.magFilter = g_vk_min_mag_filter[size_t(p.sampling.filter)];
-        sampler_info.minFilter = g_vk_min_mag_filter[size_t(p.sampling.filter)];
-        sampler_info.addressModeU = g_vk_wrap_mode[size_t(p.sampling.wrap)];
-        sampler_info.addressModeV = g_vk_wrap_mode[size_t(p.sampling.wrap)];
-        sampler_info.addressModeW = g_vk_wrap_mode[size_t(p.sampling.wrap)];
+        sampler_info.magFilter = g_min_mag_filter_vk[size_t(p.sampling.filter)];
+        sampler_info.minFilter = g_min_mag_filter_vk[size_t(p.sampling.filter)];
+        sampler_info.addressModeU = g_wrap_mode_vk[size_t(p.sampling.wrap)];
+        sampler_info.addressModeV = g_wrap_mode_vk[size_t(p.sampling.wrap)];
+        sampler_info.addressModeW = g_wrap_mode_vk[size_t(p.sampling.wrap)];
         sampler_info.anisotropyEnable = VK_FALSE;
         sampler_info.maxAnisotropy = AnisotropyLevel;
         sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         sampler_info.unnormalizedCoordinates = VK_FALSE;
         sampler_info.compareEnable = VK_FALSE;
-        sampler_info.compareOp = g_vk_compare_ops[size_t(p.sampling.compare)];
-        sampler_info.mipmapMode = g_vk_mipmap_mode[size_t(p.sampling.filter)];
+        sampler_info.compareOp = g_compare_ops_vk[size_t(p.sampling.compare)];
+        sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(p.sampling.filter)];
         sampler_info.mipLodBias = p.sampling.lod_bias.to_float();
         sampler_info.minLod = p.sampling.min_lod.to_float();
         sampler_info.maxLod = p.sampling.max_lod.to_float();
@@ -2579,7 +2496,7 @@ void Ren::Texture3D::SetSubImage(int offsetx, int offsety, int offsetz, int size
                                      &region);
 }
 
-VkFormat Ren::VKFormatFromTexFormat(eTexFormat format) { return g_vk_formats[size_t(format)]; }
+VkFormat Ren::VKFormatFromTexFormat(eTexFormat format) { return g_formats_vk[size_t(format)]; }
 
 #ifdef _MSC_VER
 #pragma warning(pop)

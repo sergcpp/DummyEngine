@@ -11,7 +11,7 @@
 #include "TextureArray.h"
 
 namespace Ren {
-const uint32_t gl_binding_targets[] = {
+const uint32_t g_binding_targets_gl[] = {
     GL_TEXTURE_2D,             // Tex2D
     GL_TEXTURE_2D,             // Tex2DSampled
     GL_TEXTURE_2D_ARRAY,       // Tex2DArraySampled
@@ -29,14 +29,14 @@ const uint32_t gl_binding_targets[] = {
     0xffffffff,                // Image2DArray
     0xffffffff                 // AccStruct
 };
-static_assert(std::size(gl_binding_targets) == size_t(eBindTarget::_Count), "!");
+static_assert(std::size(g_binding_targets_gl) == size_t(eBindTarget::_Count), "!");
 
-extern const uint32_t g_gl_internal_formats[];
+extern const uint32_t g_internal_formats_gl[];
 
 int g_param_buf_binding;
 } // namespace Ren
 
-uint32_t Ren::GLBindTarget(const eBindTarget binding) { return gl_binding_targets[size_t(binding)]; }
+uint32_t Ren::GLBindTarget(const eBindTarget binding) { return g_binding_targets_gl[size_t(binding)]; }
 
 void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
                           const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {

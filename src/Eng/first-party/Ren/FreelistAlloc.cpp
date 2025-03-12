@@ -24,7 +24,7 @@ inline int fls(const uint64_t size) {
     return bits;
 }
 
-inline int ffs(uint32_t word) {
+inline int ffs(const uint32_t word) {
 #ifdef _MSC_VER
     unsigned long index;
     return _BitScanForward(&index, word) ? index : -1;

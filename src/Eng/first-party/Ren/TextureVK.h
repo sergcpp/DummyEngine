@@ -60,8 +60,6 @@ class Texture2D : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
     TexHandle handle_;
     MemAllocation alloc_;
-    uint16_t initialized_mips_ = 0;
-    bool ready_ = false;
     String name_;
 
     void InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemAllocators *mem_allocs,
@@ -87,7 +85,7 @@ class Texture2D : public RefCounter {
               ILog *log);
     Texture2D(std::string_view name, ApiContext *api_ctx, const TexHandle &handle, const Tex2DParams &_params,
               MemAllocation &&alloc, ILog *log)
-        : api_ctx_(api_ctx), ready_(true), name_(name) {
+        : api_ctx_(api_ctx), name_(name) {
         Init(handle, _params, std::move(alloc), log);
     }
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
@@ -118,7 +116,6 @@ class Texture2D : public RefCounter {
     [[nodiscard]] TexHandle &handle() { return handle_; }
     [[nodiscard]] VkSampler vk_sampler() const { return handle_.sampler; }
     [[nodiscard]] const MemAllocation &mem_alloc() const { return alloc_; }
-    [[nodiscard]] uint16_t initialized_mips() const { return initialized_mips_; }
 
     [[nodiscard]] VkDescriptorImageInfo
     vk_desc_image_info(const int view_index = 0,
@@ -133,8 +130,6 @@ class Texture2D : public RefCounter {
     ApiContext *api_ctx() { return api_ctx_; }
 
     [[nodiscard]] const SamplingParams &sampling() const { return params.sampling; }
-
-    [[nodiscard]] bool ready() const { return ready_; }
     [[nodiscard]] const String &name() const { return name_; }
 
     void SetSampling(SamplingParams sampling);

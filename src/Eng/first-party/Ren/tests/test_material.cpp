@@ -23,7 +23,11 @@ void test_material() {
                                          const Bitmask<eTexFlags> flags) {
             eTexLoadStatus status;
             Tex2DParams p;
-            return test.LoadTexture2D(name, {}, p, test.default_mem_allocs(), &status);
+            p.w = p.h = 1;
+            p.format = eTexFormat::RGBA8;
+            p.usage = eTexUsage::Transfer;
+            p.flags = eTexFlags::Stub;
+            return test.LoadTexture2D(name, Span{color, color + 4}, p, test.default_mem_allocs(), &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {

@@ -43,8 +43,6 @@ class MemAllocators;
 
 class Texture2D : public RefCounter {
     TexHandle handle_;
-    uint16_t initialized_mips_ = 0;
-    bool ready_ = false;
     String name_;
 
     void InitFromRAWData(const Buffer *sbuf, int data_off, const Tex2DParams &p, ILog *log);
@@ -66,7 +64,7 @@ class Texture2D : public RefCounter {
     Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *mem_allocs, ILog *log);
     Texture2D(std::string_view name, ApiContext *api_ctx, const TexHandle &handle, const Tex2DParams &_params,
               MemAllocation &&alloc, ILog *log)
-        : ready_(true), name_(name) {
+        : name_(name) {
         Init(handle, _params, std::move(alloc), log);
     }
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
@@ -102,9 +100,6 @@ class Texture2D : public RefCounter {
         static MemAllocation dummy;
         return dummy;
     }
-    [[nodiscard]] uint16_t initialized_mips() const { return initialized_mips_; }
-
-    [[nodiscard]] bool ready() const { return ready_; }
     [[nodiscard]] const String &name() const { return name_; }
 
     void SetSampling(SamplingParams sampling) { params.sampling = sampling; }

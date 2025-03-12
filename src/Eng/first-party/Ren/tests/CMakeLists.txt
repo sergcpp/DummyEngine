@@ -39,7 +39,6 @@ set(SOURCE_FILES main.cpp
                  test_sparse_array.cpp
                  test_storage.cpp
                  test_string.cpp
-                 test_texture.cpp
                  test_utils.cpp)
 
 if(${REN_BACKEND} STREQUAL "VK")

@@ -3,7 +3,7 @@
 #include "GL.h"
 
 namespace Ren {
-const uint32_t g_gl_attrib_types[] = {
+const uint32_t g_attrib_types_gl[] = {
     0xffffffff,        // Undefined
     GL_HALF_FLOAT,     // Float16
     GL_FLOAT,          // Float32
@@ -14,7 +14,7 @@ const uint32_t g_gl_attrib_types[] = {
     GL_UNSIGNED_BYTE,  // Uint8UNorm
     GL_INT,            // Int32
 };
-static_assert(std::size(g_gl_attrib_types) == size_t(eType::_Count), "!");
+static_assert(std::size(g_attrib_types_gl) == size_t(eType::_Count), "!");
 
 bool IsIntegerType(const eType type) { return type == eType::Uint32 || type == eType::Int32 || type == eType::Uint16; }
 bool IsNormalizedType(const eType type) {
@@ -70,10 +70,10 @@ uint32_t Ren::VertexInput::GetVAO() const {
             glBindBuffer(GL_ARRAY_BUFFER, a.buf->id());
             glEnableVertexAttribArray(GLuint(a.loc));
             if (IsIntegerType(a.type)) {
-                glVertexAttribIPointer(GLuint(a.loc), GLint(a.size), g_gl_attrib_types[int(a.type)], GLsizei(a.stride),
+                glVertexAttribIPointer(GLuint(a.loc), GLint(a.size), g_attrib_types_gl[int(a.type)], GLsizei(a.stride),
                                        reinterpret_cast<void *>(uintptr_t(a.offset)));
             } else {
-                glVertexAttribPointer(GLuint(a.loc), GLint(a.size), g_gl_attrib_types[int(a.type)],
+                glVertexAttribPointer(GLuint(a.loc), GLint(a.size), g_attrib_types_gl[int(a.type)],
                                       IsNormalizedType(a.type) ? GL_TRUE : GL_FALSE, GLsizei(a.stride),
                                       reinterpret_cast<void *>(uintptr_t(a.offset)));
             }

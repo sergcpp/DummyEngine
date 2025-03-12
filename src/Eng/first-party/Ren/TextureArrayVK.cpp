@@ -7,7 +7,7 @@
 #include "VKCtx.h"
 
 namespace Ren {
-extern const VkFormat g_vk_formats[];
+extern const VkFormat g_formats_vk[];
 
 VkFormat ToSRGBFormat(VkFormat format);
 VkImageUsageFlags to_vk_image_usage(Bitmask<eTexUsage> usage, eTexFormat format);
@@ -26,7 +26,7 @@ Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view 
         img_info.extent.depth = 1;
         img_info.mipLevels = mip_count_;
         img_info.arrayLayers = uint32_t(layer_count);
-        img_info.format = g_vk_formats[size_t(format)];
+        img_info.format = g_formats_vk[size_t(format)];
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         img_info.usage = to_vk_image_usage(usage, format);
@@ -82,7 +82,7 @@ Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view 
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = img_;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-        view_info.format = g_vk_formats[size_t(format)];
+        view_info.format = g_formats_vk[size_t(format)];
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = mip_count_;

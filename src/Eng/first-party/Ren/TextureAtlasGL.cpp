@@ -5,9 +5,9 @@
 #include "Utils.h"
 
 namespace Ren {
-extern const uint32_t g_gl_min_filter[];
-extern const uint32_t g_gl_mag_filter[];
-extern const uint32_t g_gl_wrap_mode[];
+extern const uint32_t g_min_filter_gl[];
+extern const uint32_t g_mag_filter_gl[];
+extern const uint32_t g_wrap_mode_gl[];
 } // namespace Ren
 
 Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
@@ -81,15 +81,15 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
         const float anisotropy = 4;
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[size_t(filter_)]);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[size_t(filter_)]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER, g_min_filter_gl[size_t(filter_)]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER, g_mag_filter_gl[size_t(filter_)]);
 
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[size_t(filter)]);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[size_t(filter)]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_wrap_mode_gl[size_t(filter)]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_wrap_mode_gl[size_t(filter)]);
 
         CheckError("create texture", log);
 
-        tex_ids_[i] = (uint32_t)tex_id;
+        tex_ids_[i] = uint32_t(tex_id);
     }
 }
 

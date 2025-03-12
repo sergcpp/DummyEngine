@@ -5,9 +5,9 @@
 #include "Utils.h"
 
 namespace Ren {
-extern const uint32_t g_gl_min_filter[];
-extern const uint32_t g_gl_mag_filter[];
-extern const uint32_t g_gl_wrap_mode[];
+extern const uint32_t g_min_filter_gl[];
+extern const uint32_t g_mag_filter_gl[];
+extern const uint32_t g_wrap_mode_gl[];
 } // namespace Ren
 
 Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
@@ -22,8 +22,8 @@ Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view 
     ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
                                 GLInternalFormatFromTexFormat(format, false /* is_srgb */), w, h, layer_count);
 
-    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[size_t(filter_)]);
-    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[size_t(filter_)]);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MIN_FILTER, g_min_filter_gl[size_t(filter_)]);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MAG_FILTER, g_mag_filter_gl[size_t(filter_)]);
 
     tex_id_ = uint32_t(tex_id);
 }

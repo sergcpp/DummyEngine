@@ -96,9 +96,9 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p) {
     SWint tex_id;
     if (params_.format == Undefined) {
         tex_id = swCreateTexture();
-        tex_id_ = (uint32_t)tex_id;
+        tex_id_ = uint32_t(tex_id);
     } else {
-        tex_id = (SWint)tex_id_;
+        tex_id = SWint(tex_id_);
     }
 
     swActiveTexture(SW_TEXTURE0);
@@ -130,9 +130,9 @@ void Ren::Texture2D::InitFromTEXFile(const void *data, [[maybe_unused]] const Te
     SWint tex_id;
     if (params_.format == Undefined) {
         tex_id = swCreateTexture();
-        tex_id_ = (uint32_t)tex_id;
+        tex_id_ = uint32_t(tex_id);
     } else {
-        tex_id = (SWint)tex_id_;
+        tex_id = SWint(tex_id_);
     }
 
     swActiveTexture(SW_TEXTURE0);

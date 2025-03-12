@@ -118,7 +118,6 @@ const uint32_t DDSCAPS2_CUBEMAP_POSITIVEZ = 0x4000;
 const uint32_t DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x8000;
 const uint32_t DDSCAPS2_VOLUME = 0x200000;
 
-
 const uint32_t FourCC_BC1_UNORM =
     (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('1') << 24u);
 const uint32_t FourCC_BC2_UNORM =
@@ -329,16 +328,12 @@ void InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src, int u
 // BCn compression
 //
 
-// clang-format off
-
 const int BlockSize_BC1 = 2 * sizeof(uint16_t) + sizeof(uint32_t);
 //                        \_ low/high colors_/   \_ 16 x 2-bit _/
 const int BlockSize_BC4 = 2 * sizeof(uint8_t) + 6 * sizeof(uint8_t);
 //                        \_ low/high alpha_/     \_ 16 x 3-bit _/
 const int BlockSize_BC3 = BlockSize_BC1 + BlockSize_BC4;
 const int BlockSize_BC5 = BlockSize_BC4 + BlockSize_BC4;
-
-// clang-format on
 
 int GetRequiredMemory_BC1(int w, int h, int pitch_align);
 int GetRequiredMemory_BC3(int w, int h, int pitch_align);

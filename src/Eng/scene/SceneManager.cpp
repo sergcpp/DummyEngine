@@ -1477,20 +1477,22 @@ Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, cons
     using namespace SceneManagerConstants;
 
     Ren::Tex2DParams p;
-    memcpy(p.fallback_color, color, 4);
+    p.w = p.h = 1;
+    p.format = Ren::eTexFormat::RGBA8;
     p.sampling.filter = Ren::eTexFilter::Trilinear;
     if (p.flags & Ren::eTexFlags::NoRepeat) {
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
     } else {
         p.sampling.wrap = Ren::eTexWrap::Repeat;
     }
+    p.flags = Ren::eTexFlags::Stub;
     p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
     p.sampling.lod_bias.from_float(-1.0f); // TAA compensation
 
     Ren::eTexLoadStatus status;
-    Ren::Tex2DRef ret = LoadTexture(name, {}, p, &status);
+    Ren::Tex2DRef ret = LoadTexture(name, Ren::Span{color, color + 4}, p, &status);
 
-    if (status == Ren::eTexLoadStatus::CreatedDefault) {
+    if (status == Ren::eTexLoadStatus::CreatedFromData) {
         TextureRequest new_req;
         new_req.ref = ret;
 
@@ -1569,7 +1571,7 @@ Ren::Tex2DRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<co
         if (load_status) {
             (*load_status) = Ren::eTexLoadStatus::Found;
         }
-        if (!ref->ready() && !data.empty()) {
+        if ((ref->params.flags & Ren::eTexFlags::Stub) && !(p.flags & Ren::eTexFlags::Stub) && !data.empty()) {
             ref->Init(data, p, scene_data_.persistent_data.mem_allocs.get(), load_status, ren_ctx_.log());
         }
     }

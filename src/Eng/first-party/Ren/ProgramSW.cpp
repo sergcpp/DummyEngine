@@ -73,7 +73,7 @@ void Ren::Program::InitFromFuncs(void *vs_shader, void *fs_shader, int num_fvars
     swUseProgram(prog_id);
     swInitProgram((vtx_shader_proc)vs_shader, (frag_shader_proc)fs_shader, num_fvars);
 
-    prog_id_ = (uint32_t)prog_id;
+    prog_id_ = uint32_t(prog_id);
     ready_ = true;
 
     if (status) *status = CreatedFromData;

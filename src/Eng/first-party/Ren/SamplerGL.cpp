@@ -4,25 +4,25 @@
 
 namespace Ren {
 #define X(_0, _1, _2, _3, _4) _3,
-extern const uint32_t g_gl_min_filter[] = {
+extern const uint32_t g_min_filter_gl[] = {
 #include "TextureFilter.inl"
 };
 #undef X
 
 #define X(_0, _1, _2, _3, _4) _4,
-extern const uint32_t g_gl_mag_filter[] = {
+extern const uint32_t g_mag_filter_gl[] = {
 #include "TextureFilter.inl"
 };
 #undef X
 
 #define X(_0, _1, _2) _2,
-extern const uint32_t g_gl_wrap_mode[] = {
+extern const uint32_t g_wrap_mode_gl[] = {
 #include "../TextureWrap.inl"
 };
 #undef X
 
 #define X(_0, _1, _2) _2,
-extern const uint32_t g_gl_compare_func[] = {
+extern const uint32_t g_compare_func_gl[] = {
 #include "../TextureCompare.inl"
 };
 #undef X
@@ -58,16 +58,16 @@ void Ren::Sampler::Init(ApiContext *api_ctx, const SamplingParams params) {
     GLuint new_sampler;
     glGenSamplers(1, &new_sampler);
 
-    glSamplerParameteri(new_sampler, GL_TEXTURE_MIN_FILTER, g_gl_min_filter[size_t(params.filter)]);
-    glSamplerParameteri(new_sampler, GL_TEXTURE_MAG_FILTER, g_gl_mag_filter[size_t(params.filter)]);
+    glSamplerParameteri(new_sampler, GL_TEXTURE_MIN_FILTER, g_min_filter_gl[size_t(params.filter)]);
+    glSamplerParameteri(new_sampler, GL_TEXTURE_MAG_FILTER, g_mag_filter_gl[size_t(params.filter)]);
 
-    glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_S, g_gl_wrap_mode[size_t(params.wrap)]);
-    glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_T, g_gl_wrap_mode[size_t(params.wrap)]);
-    glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_R, g_gl_wrap_mode[size_t(params.wrap)]);
+    glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_S, g_wrap_mode_gl[size_t(params.wrap)]);
+    glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_T, g_wrap_mode_gl[size_t(params.wrap)]);
+    glSamplerParameteri(new_sampler, GL_TEXTURE_WRAP_R, g_wrap_mode_gl[size_t(params.wrap)]);
 
     if (params.compare != eTexCompare::None) {
         glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-        glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_FUNC, g_gl_compare_func[int(params.compare)]);
+        glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_FUNC, g_compare_func_gl[int(params.compare)]);
     } else {
         glSamplerParameteri(new_sampler, GL_TEXTURE_COMPARE_MODE, GL_NONE);
     }

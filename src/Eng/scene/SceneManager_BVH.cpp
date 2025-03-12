@@ -166,7 +166,7 @@ void Eng::SceneManager::RebuildSceneBVH() {
         if (split_data.right_indices.empty()) {
             const Phy::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
 
-            const auto new_node_index = (uint32_t)scene_data_.nodes.size();
+            const auto new_node_index = uint32_t(scene_data_.nodes.size());
 
             for (const uint32_t i : split_data.left_indices) {
                 Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
@@ -221,7 +221,7 @@ void Eng::SceneManager::RebuildSceneBVH() {
 
     /*{   // reorder objects
         uint32_t j, k;
-        for (uint32_t i = 0; i < (uint32_t)objects_.size(); i++) {
+        for (uint32_t i = 0; i < uint32_t(objects_.size()); i++) {
             while (i != (j = obj_indices[i])) {
                 k = obj_indices[j];
                 std::swap(objects_[j], objects_[k]);

@@ -322,16 +322,16 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             Sys::JsObject &js_form = js_entry.at("form").as_obj();
             Sys::JsString &js_orth = js_form.at("orth").as_str();
 
-            dict_link_t &link = dict_hashmap[Ren::String{js_orth.val.c_str()}];
-            link.entries[link.entries_count++] = (uint32_t)dict_entries.size();
+            dict_link_t &link = dict_hashmap[Ren::String{js_orth.val}];
+            link.entries[link.entries_count++] = uint32_t(dict_entries.size());
 
             dict_entry_t &entry = dict_entries.emplace_back();
 
-            entry.orth = Ren::String{js_orth.val.c_str()};
+            entry.orth = Ren::String{js_orth.val};
 
             if (js_form.Has("pron")) {
                 const Sys::JsString &js_pron = js_form.at("pron").as_str();
-                entry.pron = Ren::String{js_pron.val.c_str()};
+                entry.pron = Ren::String{js_pron.val};
             }
 
             // init defaults
@@ -371,7 +371,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
                 }
             }
 
-            entry.trans_index = (uint32_t)translations.size();
+            entry.trans_index = uint32_t(translations.size());
             entry.trans_count = 0;
 
             if (js_entry.at("sense").type() == Sys::JsType::Object) {
@@ -476,12 +476,12 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
 
             const size_t key_len = it->key.length();
             memcpy(&comb_str_buf[comb_str_buf_ndx1], it->key.c_str(), key_len + 1);
-            const auto key_str_offset = (uint32_t)comb_str_buf_ndx1;
+            const auto key_str_offset = uint32_t(comb_str_buf_ndx1);
             comb_str_buf_ndx1 += key_len + 1;
 
             Dictionary::dict_link_compact_t &link = links_compact.emplace_back();
             link.key_str_off = key_str_offset;
-            link.entry_index = (uint32_t)entries_compact.size();
+            link.entry_index = uint32_t(entries_compact.size());
             link.entry_count = src_link.entries_count;
 
             links_count += link.entry_count;
@@ -498,14 +498,14 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
                 { // correct word writing
                     const size_t len = src_entry.orth.length();
                     memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.orth.c_str(), len + 1);
-                    dst_entry.orth_str_off = (uint32_t)comb_str_buf_ndx1;
+                    dst_entry.orth_str_off = uint32_t(comb_str_buf_ndx1);
                     comb_str_buf_ndx1 += len + 1;
                 }
 
                 if (!src_entry.pron.empty()) { // word pronunciation
                     const size_t len = src_entry.pron.length();
                     memcpy(&comb_str_buf[comb_str_buf_ndx1], src_entry.pron.c_str(), len + 1);
-                    dst_entry.pron_str_off = (uint32_t)comb_str_buf_ndx1;
+                    dst_entry.pron_str_off = uint32_t(comb_str_buf_ndx1);
                     comb_str_buf_ndx1 += len + 1;
                 } else {
                     dst_entry.pron_str_off = 0xffffffff;
@@ -516,7 +516,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
                     memcpy(&comb_str_buf[comb_str_buf_ndx2], translations[j].c_str(), len + 1);
 
                     if (j == src_entry.trans_index) {
-                        dst_entry.trans_str_off = (uint32_t)comb_str_buf_ndx2;
+                        dst_entry.trans_str_off = uint32_t(comb_str_buf_ndx2);
                     }
 
                     comb_str_buf_ndx2 += len + 1;
@@ -583,7 +583,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
 
         { // String data offsets
             const uint32_t string_data_chunk_id = uint32_t(Dictionary::eDictChunks::DictChStrings),
-                           string_data_offset = data_offset, string_data_size = (uint32_t)str_mem_req;
+                           string_data_offset = data_offset, string_data_size = uint32_t(str_mem_req);
             out_stream.write((const char *)&string_data_chunk_id, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_offset, sizeof(uint32_t));
             out_stream.write((const char *)&string_data_size, sizeof(uint32_t));
@@ -599,8 +599,8 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             info.src_lang[1] = 'n';
             info.dst_lang[0] = 'd';
             info.dst_lang[1] = 'e';
-            info.keys_count = (uint32_t)links_compact.size();
-            info.entries_count = (uint32_t)entries_compact.size();
+            info.keys_count = uint32_t(links_compact.size());
+            info.entries_count = uint32_t(entries_compact.size());
 
             out_stream.write((const char *)&info, sizeof(Dictionary::dict_info_t));
         }

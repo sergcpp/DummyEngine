@@ -339,23 +339,17 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                 int w = std::max(int(req->orig_w) >> req->mip_offset_to_init, 1);
                 int h = std::max(int(req->orig_h) >> req->mip_offset_to_init, 1);
 
-                uint16_t initialized_mips = req->ref->initialized_mips();
-                int last_initialized_mip = 0;
-                for (uint16_t temp = initialized_mips; temp >>= 1; ++last_initialized_mip)
-                    ;
-
-                const Ren::Tex2DParams &p = req->ref->params;
-
                 // stage_buf->fence.ClientWaitSync();
                 ren_ctx_.BegSingleTimeCommands(stage_buf->cmd_buf);
 
-                const int new_mip_count = (p.w != 1 || p.h != 1) ? (last_initialized_mip + 1 + req->mip_count_to_init)
-                                                                 : req->mip_count_to_init;
+                Ren::Tex2DParams &p = req->ref->params;
+                const int new_mip_count =
+                    (p.flags & Ren::eTexFlags::Stub) ? req->mip_count_to_init : (p.mip_count + req->mip_count_to_init);
+                p.flags &= ~Ren::Bitmask(Ren::eTexFlags::Stub);
+
                 req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format,
                                   (p.flags & Ren::eTexFlags::SRGB), stage_buf->cmd_buf,
                                   scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
-
-                initialized_mips = req->ref->initialized_mips();
 
                 int data_off = int(req->buf->data_off());
                 for (int i = int(req->mip_offset_to_init); i < int(req->mip_offset_to_init) + req->mip_count_to_init;
@@ -365,12 +359,10 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                         break;
                     }
                     const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format);
-
                     const int mip_index = i - req->mip_offset_to_init;
-                    if ((initialized_mips & (1u << mip_index)) == 0) {
-                        req->ref->SetSubImage(mip_index, 0, 0, w, h, req->orig_format, stage_buf->stage_buf(),
-                                              stage_buf->cmd_buf, data_off, data_len);
-                    }
+
+                    req->ref->SetSubImage(mip_index, 0, 0, w, h, req->orig_format, stage_buf->stage_buf(),
+                                          stage_buf->cmd_buf, data_off, data_len);
 
                     data_off += data_len;
                     w = std::max(w / 2, 1);
@@ -643,7 +635,8 @@ void Eng::SceneManager::ForceTextureReload() {
 
     // Reset textures to 1x1 mip and send to processing
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
-        Ren::Tex2DParams p = it->params;
+        Ren::Tex2DParams &p = it->params;
+        p.flags |= Ren::eTexFlags::Stub;
 
         // drop to lowest lod
         const int w = std::max(p.w >> (p.mip_count - 1), 1);
@@ -693,6 +686,8 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
     // Reset textures to 1x1
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
         Ren::Tex2DParams p = it->params;
+        p.format = Ren::eTexFormat::RGBA8;
+        p.flags = Ren::eTexFlags::Stub;
         p.w = p.h = 1;
         p.mip_count = 1;
 
@@ -700,7 +695,9 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
 
         // Initialize with fallback color
         Ren::eTexLoadStatus status;
-        it->Init(Ren::Span<const uint8_t>{}, p, new_alloc.get(), &status, ren_ctx_.log());
+        // TODO: Use actual fallback color
+        uint8_t fallback_color[4] = {};
+        it->Init(fallback_color, p, new_alloc.get(), &status, ren_ctx_.log());
 
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 

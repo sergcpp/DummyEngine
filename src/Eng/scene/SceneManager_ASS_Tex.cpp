@@ -538,7 +538,7 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h, const in
 
     for (int i = 0; i < mip_count; i++) {
         assert((file_offset % 4) == 0);
-        auto size = (uint32_t)dxt_size[i];
+        auto size = uint32_t(dxt_size[i]);
         out_stream.write((char *)&size, sizeof(uint32_t));
         file_offset += sizeof(uint32_t);
         out_stream.write((char *)dxt_data[i].get(), size);

@@ -16,7 +16,6 @@ void test_small_vector();
 void test_span();
 void test_sparse_array();
 void test_string();
-void test_texture();
 void test_utils();
 
 int main() {
@@ -36,6 +35,5 @@ int main() {
     test_span();
     test_sparse_array();
     test_string();
-    test_texture();
     test_utils();
 }

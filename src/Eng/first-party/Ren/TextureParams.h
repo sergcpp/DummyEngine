@@ -49,7 +49,8 @@ enum class eTexFlags : uint8_t {
     NoRepeat,
     MIPMin,
     MIPMax,
-    ExtendedViews
+    ExtendedViews,
+    Stub
 };
 
 enum class eTexUsage : uint8_t { Transfer, Sampled, Storage, RenderTarget };
@@ -68,17 +69,14 @@ struct Tex2DParams {
     Bitmask<eTexUsage> usage;
     uint8_t cube = 0;
     uint8_t samples = 1;
-    uint8_t fallback_color[4] = {0, 0, 0, 255};
     eTexFormat format = eTexFormat::Undefined;
     SamplingParams sampling;
 };
-static_assert(sizeof(Tex2DParams) == 20, "!");
+static_assert(sizeof(Tex2DParams) == 16, "!");
 
 inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
     return lhs.w == rhs.w && lhs.h == rhs.h && lhs.flags == rhs.flags && lhs.mip_count == rhs.mip_count &&
            lhs.usage == rhs.usage && lhs.cube == rhs.cube && lhs.samples == rhs.samples &&
-           lhs.fallback_color[0] == rhs.fallback_color[0] && lhs.fallback_color[1] == rhs.fallback_color[1] &&
-           lhs.fallback_color[2] == rhs.fallback_color[2] && lhs.fallback_color[3] == rhs.fallback_color[3] &&
            lhs.format == rhs.format && lhs.sampling == rhs.sampling;
 }
 inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) { return !operator==(lhs, rhs); }

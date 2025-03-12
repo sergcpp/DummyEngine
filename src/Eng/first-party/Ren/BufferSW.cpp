@@ -227,7 +227,7 @@ void Ren::Buffer::Resize(uint32_t new_size) {
         glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
     }
 
-    buf_id_ = (uint32_t)gl_buffer;
+    buf_id_ = uint32_t(gl_buffer);
 #elif defined(REN_SW_BACKEND)
     SWuint sw_buffer = swCreateBuffer();
     swBindBuffer(SW_ARRAY_BUFFER, sw_buffer);
@@ -245,6 +245,6 @@ void Ren::Buffer::Resize(uint32_t new_size) {
         free(_temp);
     }
 
-    buf_id_ = (uint32_t)sw_buffer;
+    buf_id_ = uint32_t(sw_buffer);
 #endif
 }
