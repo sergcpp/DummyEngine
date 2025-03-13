@@ -46,14 +46,7 @@ class Texture2D : public RefCounter {
     String name_;
 
     void InitFromRAWData(const Buffer *sbuf, int data_off, const TexParams &p, ILog *log);
-    void InitFromTGAFile(Span<const uint8_t> data, const TexParams &p, ILog *log);
-    void InitFromDDSFile(Span<const uint8_t> data, const TexParams &p, ILog *log);
-    void InitFromKTXFile(Span<const uint8_t> data, const TexParams &p, ILog *log);
-
     void InitFromRAWData(const Buffer &sbuf, int data_off[6], const TexParams &p, ILog *log);
-    void InitFromTGAFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log);
-    void InitFromDDSFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log);
-    void InitFromKTXFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log);
 
   public:
     TexParams params;

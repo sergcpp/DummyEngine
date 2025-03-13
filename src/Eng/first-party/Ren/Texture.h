@@ -13,7 +13,7 @@ class Context;
 int GetBlockLenBytes(eTexFormat format);
 int GetBlockCount(int w, int h, eTexFormat format);
 int GetMipDataLenBytes(int w, int h, eTexFormat format);
-uint32_t EstimateMemory(const TexParams &params);
+uint32_t GetDataLenBytes(const TexParams &params);
 
 eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, bool *is_srgb);
 int BlockLenFromGLInternalFormat(uint32_t gl_internal_format);

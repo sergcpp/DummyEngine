@@ -233,19 +233,14 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         std::string name_buf = paths_.textures_path;
         name_buf += "internal/error.dds";
 
-        Sys::AssetFile in_file(name_buf);
-        if (in_file) {
-            size_t in_file_size = in_file.size();
+        Ren::TexParams p;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
 
-            std::vector<uint8_t> in_file_data(in_file_size);
-            in_file.Read((char *)&in_file_data[0], in_file_size);
-
-            Ren::TexParams p;
-            p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
-            p.sampling.filter = Ren::eTexFilter::Bilinear;
-
+        const std::vector<uint8_t> data = LoadDDS(name_buf, &p);
+        if (!data.empty()) {
             Ren::eTexLoadStatus status;
-            error_tex_ = ren_ctx_.LoadTexture2D(name_buf, in_file_data, p, ren_ctx_.default_mem_allocs(), &status);
+            error_tex_ = ren_ctx_.LoadTexture2D(name_buf, data, p, ren_ctx_.default_mem_allocs(), &status);
             assert(status == Ren::eTexLoadStatus::CreatedFromData);
         } else {
             log->Error("SceneManager: Failed to load error.dds!");

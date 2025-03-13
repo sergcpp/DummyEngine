@@ -64,15 +64,8 @@ class Texture2D : public RefCounter {
 
     void InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemAllocators *mem_allocs,
                          const TexParams &p, ILog *log);
-    void InitFromTGAFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const TexParams &p, ILog *log);
-    void InitFromDDSFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const TexParams &p, ILog *log);
-    void InitFromKTXFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const TexParams &p, ILog *log);
-
     void InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cmd_buf, MemAllocators *mem_allocs,
                          const TexParams &p, ILog *log);
-    void InitFromTGAFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const TexParams &p, ILog *log);
-    void InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const TexParams &p, ILog *log);
-    void InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const TexParams &p, ILog *log);
 
   public:
     TexParams params;

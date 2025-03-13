@@ -3,8 +3,67 @@
 #include <memory>
 #include <sstream>
 
+#include <Ren/Texture.h>
 #include <Sys/AssetFile.h>
 #include <Sys/MemBuf.h>
+
+std::vector<uint8_t> Eng::LoadDDS(std::string_view path, Ren::TexParams *p) {
+    Sys::AssetFile in_file(path);
+    if (!in_file) {
+        return {};
+    }
+
+    Ren::DDSHeader header = {};
+    size_t bytes_read = in_file.Read((char *)&header, sizeof(Ren::DDSHeader));
+    if (bytes_read != sizeof(Ren::DDSHeader)) {
+        return {};
+    }
+
+    Ren::ParseDDSHeader(header, p);
+    if (header.sPixelFormat.dwFourCC ==
+        ((unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
+        Ren::DDS_HEADER_DXT10 dx10_header = {};
+        bytes_read = in_file.Read((char *)&dx10_header, sizeof(Ren::DDS_HEADER_DXT10));
+        if (bytes_read != sizeof(Ren::DDS_HEADER_DXT10)) {
+            return {};
+        }
+        p->format = Ren::TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
+    } else if (p->format == Ren::eTexFormat::Undefined) {
+        // Try to use least significant bits of FourCC as format
+        const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
+        if (val == 0x6f) {
+            p->format = Ren::eTexFormat::R16F;
+        } else if (val == 0x70) {
+            p->format = Ren::eTexFormat::RG16F;
+        } else if (val == 0x71) {
+            p->format = Ren::eTexFormat::RGBA16F;
+        } else if (val == 0x72) {
+            p->format = Ren::eTexFormat::R32F;
+        } else if (val == 0x73) {
+            p->format = Ren::eTexFormat::RG32F;
+        } else if (val == 0x74) {
+            p->format = Ren::eTexFormat::RGBA32F;
+        } else if (val == 0) {
+            if (header.sPixelFormat.dwRGBBitCount == 8) {
+                p->format = Ren::eTexFormat::R8;
+            } else if (header.sPixelFormat.dwRGBBitCount == 16) {
+                p->format = Ren::eTexFormat::RG8;
+                assert(header.sPixelFormat.dwRBitMask == 0x00ff);
+                assert(header.sPixelFormat.dwGBitMask == 0xff00);
+            }
+        }
+    }
+
+    const uint32_t data_len = Ren::GetDataLenBytes(*p);
+
+    std::vector<uint8_t> in_file_data(data_len);
+    bytes_read = in_file.Read((char *)&in_file_data[0], data_len);
+    if (bytes_read != data_len) {
+        return {};
+    }
+
+    return in_file_data;
+}
 
 std::vector<uint8_t> Eng::LoadHDR(std::string_view name, int &out_w, int &out_h) {
     Sys::AssetFile in_file(name);
@@ -25,8 +84,9 @@ std::vector<uint8_t> Eng::LoadHDR(std::string_view name, int &out_w, int &out_h)
     std::string format;
 
     while (std::getline(in_stream, line)) {
-        if (line.empty()) break;
-
+        if (line.empty()) {
+            break;
+        }
         if (!line.compare(0, 6, "FORMAT")) {
             format = line.substr(7);
         } else if (!line.compare(0, 8, "EXPOSURE")) {

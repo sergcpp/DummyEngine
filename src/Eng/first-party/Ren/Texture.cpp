@@ -75,7 +75,7 @@ int Ren::GetMipDataLenBytes(const int w, const int h, const eTexFormat format) {
     }
 }
 
-uint32_t Ren::EstimateMemory(const TexParams &params) {
+uint32_t Ren::GetDataLenBytes(const TexParams &params) {
     uint32_t total_len = 0;
     for (int i = 0; i < params.mip_count; i++) {
         const int w = std::max(params.w >> i, 1);

@@ -821,7 +821,7 @@ void Eng::FgBuilder::AllocateNeededResources_Simple() {
 
         assert(!tex.ref);
         ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                         float(EstimateMemory(tex.desc)) * 0.000001f);
+                         float(GetDataLenBytes(tex.desc)) * 0.000001f);
         Ren::eTexLoadStatus status;
         tex.strong_ref = ctx_.LoadTexture2D(tex.name, tex.desc, ctx_.default_mem_allocs(), &status);
         tex.ref = tex.strong_ref;
@@ -1559,12 +1559,12 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
             if (tex.alias_of != -1) {
                 const FgAllocTex &orig_tex = textures_[tex.alias_of];
                 ctx_.log()->Info("Tex %-24.24s alias of %16s\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
-                                 float(EstimateMemory(tex.ref->params)) / (1024.0f * 1024.0f));
+                                 float(GetDataLenBytes(tex.ref->params)) / (1024.0f * 1024.0f));
                 continue;
             }
             if (tex.strong_ref) {
                 ctx_.log()->Info("Tex %-24.24s (%4ix%-4i)\t\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                                 float(EstimateMemory(tex.ref->params)) / (1024.0f * 1024.0f));
+                                 float(GetDataLenBytes(tex.ref->params)) / (1024.0f * 1024.0f));
             } else if (tex.ref) {
                 not_handled_textures.push_back(tex.ref);
             }
@@ -1572,7 +1572,7 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
         ctx_.log()->Info("----------------------------------------------------------------------------");
         for (const auto &ref : not_handled_textures) {
             ctx_.log()->Info("Tex %-24.24s (%4ix%-4i)\t\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
-                             float(EstimateMemory(ref->params)) / (1024.0f * 1024.0f));
+                             float(GetDataLenBytes(ref->params)) / (1024.0f * 1024.0f));
         }
     }
     ctx_.log()->Info("============================================================================");

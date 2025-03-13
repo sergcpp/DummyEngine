@@ -3,6 +3,7 @@
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 
+#include "../utils/Load.h"
 #include "Renderer_Names.h"
 
 #include "shaders/blit_fxaa_interface.h"
@@ -78,51 +79,58 @@ void Eng::Renderer::InitSkyResources() {
                     ctx_.current_cmd_buf(), 0, 4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
             }
             { // Init Moon texture
-                Sys::AssetFile moon_tex("assets_pc/textures/internal/moon_diff.dds");
-                std::vector<uint8_t> data(moon_tex.size());
-                moon_tex.Read((char *)&data[0], moon_tex.size());
+                const std::string_view moon_diff = "assets_pc/textures/internal/moon_diff.dds";
 
                 Ren::TexParams p;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
-                Ren::eTexLoadStatus status;
-                sky_moon_tex_ = ctx_.LoadTexture2D(moon_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                const std::vector<uint8_t> data = LoadDDS(moon_diff, &p);
+                if (!data.empty()) {
+                    Ren::eTexLoadStatus status;
+                    sky_moon_tex_ = ctx_.LoadTexture2D(moon_diff, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                } else {
+                    ctx_.log()->Error("Failed to load %s", moon_diff.data());
+                }
             }
             { // Init Weather texture
-                Sys::AssetFile weather_tex("assets_pc/textures/internal/weather.dds");
-                std::vector<uint8_t> data(weather_tex.size());
-                weather_tex.Read((char *)&data[0], weather_tex.size());
+                const std::string_view weather = "assets_pc/textures/internal/weather.dds";
 
                 Ren::TexParams p;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
-                Ren::eTexLoadStatus status;
-                sky_weather_tex_ = ctx_.LoadTexture2D(weather_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                const std::vector<uint8_t> data = LoadDDS(weather, &p);
+                if (!data.empty()) {
+                    Ren::eTexLoadStatus status;
+                    sky_weather_tex_ = ctx_.LoadTexture2D(weather, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                } else {
+                    ctx_.log()->Error("Failed to load %s", weather.data());
+                }
             }
             { // Init Cirrus texture
-                Sys::AssetFile cirrus_tex("assets_pc/textures/internal/cirrus.dds");
-                std::vector<uint8_t> data(cirrus_tex.size());
-                cirrus_tex.Read((char *)&data[0], cirrus_tex.size());
+                const std::string_view cirrus = "assets_pc/textures/internal/cirrus.dds";
 
                 Ren::TexParams p;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
-                Ren::eTexLoadStatus status;
-                sky_cirrus_tex_ = ctx_.LoadTexture2D(cirrus_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                const std::vector<uint8_t> data = LoadDDS(cirrus, &p);
+                if (!data.empty()) {
+                    Ren::eTexLoadStatus status;
+                    sky_cirrus_tex_ = ctx_.LoadTexture2D(cirrus, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                } else {
+                    ctx_.log()->Error("Failed to load %s", cirrus.data());
+                }
             }
             { // Init Curl texture
-                Sys::AssetFile curl_tex("assets_pc/textures/internal/curl.dds");
-                std::vector<uint8_t> data(curl_tex.size());
-                curl_tex.Read((char *)&data[0], curl_tex.size());
+                const std::string_view curl = "assets_pc/textures/internal/curl.dds";
 
                 Ren::TexParams p;
                 p.flags = Ren::eTexFlags::SRGB;
@@ -130,9 +138,14 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
-                Ren::eTexLoadStatus status;
-                sky_curl_tex_ = ctx_.LoadTexture2D(curl_tex.name(), data, p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                const std::vector<uint8_t> data = LoadDDS(curl, &p);
+                if (!data.empty()) {
+                    Ren::eTexLoadStatus status;
+                    sky_curl_tex_ = ctx_.LoadTexture2D(curl, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                } else {
+                    ctx_.log()->Error("Failed to load %s", curl.data());
+                }
             }
             { // Init 3d noise texture
                 Sys::AssetFile noise_tex("assets_pc/textures/internal/3dnoise.dds");

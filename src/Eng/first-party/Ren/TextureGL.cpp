@@ -136,55 +136,43 @@ void Ren::Texture2D::Init(const TexHandle &handle, const TexParams &_params, Mem
 void Ren::Texture2D::Init(Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     assert(!data.empty());
-    if ((name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) && !(p.flags & eTexFlags::Stub)) {
-        InitFromTGAFile(data, p, log);
-    } else if ((name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) && !(p.flags & eTexFlags::Stub)) {
-        InitFromDDSFile(data, p, log);
-    } else if ((name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) && !(p.flags & eTexFlags::Stub)) {
-        InitFromKTXFile(data, p, log);
-    } else {
-        auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(data.size())};
-        { // Update staging buffer
-            uint8_t *stage_data = sbuf.Map();
-            memcpy(stage_data, data.data(), data.size());
-            sbuf.Unmap();
-        }
-        InitFromRAWData(&sbuf, 0, p, log);
+
+    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(data.size())};
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        memcpy(stage_data, data.data(), data.size());
+        sbuf.Unmap();
     }
+    InitFromRAWData(&sbuf, 0, p, log);
+
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
 void Ren::Texture2D::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     assert(data);
-    if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-        InitFromTGAFile(data, p, log);
-    } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-        InitFromKTXFile(data, p, log);
-    } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-        InitFromDDSFile(data, p, log);
-    } else {
-        auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload,
-                           uint32_t(data[0].size() + data[1].size() + data[2].size() + data[3].size() + data[4].size() +
-                                    data[5].size())};
-        int data_off[6];
-        { // Update staging buffer
-            uint8_t *stage_data = sbuf.Map();
-            uint32_t stage_off = 0;
 
-            for (int i = 0; i < 6; i++) {
-                if (!data[i].empty()) {
-                    memcpy(&stage_data[stage_off], data[i].data(), data[i].size());
-                    data_off[i] = int(stage_off);
-                    stage_off += uint32_t(data[i].size());
-                } else {
-                    data_off[i] = -1;
-                }
+    auto sbuf = Buffer{
+        "Temp Stage Buf", nullptr, eBufType::Upload,
+        uint32_t(data[0].size() + data[1].size() + data[2].size() + data[3].size() + data[4].size() + data[5].size())};
+    int data_off[6];
+    { // Update staging buffer
+        uint8_t *stage_data = sbuf.Map();
+        uint32_t stage_off = 0;
+
+        for (int i = 0; i < 6; i++) {
+            if (!data[i].empty()) {
+                memcpy(&stage_data[stage_off], data[i].data(), data[i].size());
+                data_off[i] = int(stage_off);
+                stage_off += uint32_t(data[i].size());
+            } else {
+                data_off[i] = -1;
             }
-            sbuf.Unmap();
         }
-        InitFromRAWData(sbuf, data_off, p, log);
+        sbuf.Unmap();
     }
+    InitFromRAWData(sbuf, data_off, p, log);
+
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
@@ -300,7 +288,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
         mip_count = GLsizei(CalcMipCount(p.w, p.h, 1));
     }
 
-    if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
+    if (internal_format != 0xffffffff) {
         if (p.samples > 1) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex_id);
             glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, GLsizei(p.samples), internal_format, GLsizei(p.w),
@@ -311,9 +299,29 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
             if (sbuf) {
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
 
-                // update first level
-                ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, 0, 0, 0, p.w, p.h, format, type,
-                                             reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+                int w = p.w, h = p.h;
+                int bytes_left = sbuf->size() - data_off;
+                for (int i = 0; i < mip_count; ++i) {
+                    const int len = GetMipDataLenBytes(w, h, p.format);
+                    if (len > bytes_left) {
+                        log->Error("Insufficient data length, bytes left %i, expected %i", bytes_left, len);
+                        return;
+                    }
+
+                    if (IsCompressedFormat(p.format)) {
+                        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), i, 0, 0, w, h,
+                                                               internal_format, len,
+                                                               reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+                    } else {
+                        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, i, 0, 0, w, h, format, type,
+                                                     reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+                    }
+
+                    data_off += len;
+                    bytes_left -= len;
+                    w = std::max(w / 2, 1);
+                    h = std::max(h / 2, 1);
+                }
 
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
             }
@@ -343,203 +351,6 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     }
 
     CheckError("create texture", log);
-}
-
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, const TexParams &p, ILog *log) {
-    int w = 0, h = 0;
-    eTexFormat format = eTexFormat::Undefined;
-    uint32_t img_size = 0;
-    const bool res1 = ReadTGAFile(data, w, h, format, nullptr, img_size);
-    if (!res1) {
-        return;
-    }
-
-    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, img_size};
-    { // Update staging buffer
-        uint8_t *stage_data = sbuf.Map();
-        const bool res2 = ReadTGAFile(data, w, h, format, stage_data, img_size);
-        assert(res2);
-        sbuf.Unmap();
-    }
-
-    TexParams _p = p;
-    _p.w = w;
-    _p.h = h;
-    _p.format = format;
-
-    InitFromRAWData(&sbuf, 0, _p, log);
-}
-
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, const TexParams &p, ILog *log) {
-    Free();
-
-    int bytes_left = int(data.size());
-    const uint8_t *p_data = data.data();
-
-    DDSHeader header;
-    memcpy(&header, data.data(), sizeof(DDSHeader));
-    p_data += sizeof(DDSHeader);
-    bytes_left -= sizeof(DDSHeader);
-
-    TexParams _p = p;
-    ParseDDSHeader(header, &_p);
-
-    if (header.sPixelFormat.dwFourCC ==
-        ((unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
-        DDS_HEADER_DXT10 dx10_header = {};
-        memcpy(&dx10_header, data.data() + sizeof(DDSHeader), sizeof(DDS_HEADER_DXT10));
-        _p.format = TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
-
-        p_data += sizeof(DDS_HEADER_DXT10);
-        bytes_left -= sizeof(DDS_HEADER_DXT10);
-    } else if (_p.format == eTexFormat::Undefined) {
-        // Try to use least significant bits of FourCC as format
-        const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
-        if (val == 0x6f) {
-            _p.format = eTexFormat::R16F;
-        } else if (val == 0x70) {
-            _p.format = eTexFormat::RG16F;
-        } else if (val == 0x71) {
-            _p.format = eTexFormat::RGBA16F;
-        } else if (val == 0x72) {
-            _p.format = eTexFormat::R32F;
-        } else if (val == 0x73) {
-            _p.format = eTexFormat::RG32F;
-        } else if (val == 0x74) {
-            _p.format = eTexFormat::RGBA32F;
-        } else if (val == 0) {
-            if (header.sPixelFormat.dwRGBBitCount == 8) {
-                _p.format = eTexFormat::R8;
-            } else if (header.sPixelFormat.dwRGBBitCount == 16) {
-                _p.format = eTexFormat::RG8;
-                assert(header.sPixelFormat.dwRBitMask == 0x00ff);
-                assert(header.sPixelFormat.dwGBitMask == 0xff00);
-            }
-        }
-    }
-
-    if (_p.format == eTexFormat::Undefined) {
-        log->Error("Failed to parse DDS header!");
-        return;
-    }
-
-    params.usage = _p.usage;
-
-    Realloc(_p.w, _p.h, _p.mip_count, 1, _p.format, (_p.flags & eTexFlags::SRGB), nullptr, nullptr, log);
-
-    params.flags = _p.flags;
-    params.sampling = _p.sampling;
-
-    const auto format = (GLenum)GLFormatFromTexFormat(_p.format),
-               internal_format = (GLenum)GLInternalFormatFromTexFormat(_p.format, (_p.flags & eTexFlags::SRGB)),
-               type = (GLenum)GLTypeFromTexFormat(_p.format);
-
-    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(bytes_left)};
-    { // Update staging buffer
-        uint8_t *stage_data = sbuf.Map();
-        memcpy(stage_data, p_data, bytes_left);
-        sbuf.Unmap();
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
-
-    int w = params.w, h = params.h;
-    uintptr_t data_off = 0;
-    for (uint32_t i = 0; i < header.dwMipMapCount; i++) {
-        const int len = GetMipDataLenBytes(w, h, params.format);
-        if (len > bytes_left) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", bytes_left, len);
-            return;
-        }
-
-        if (IsCompressedFormat(params.format)) {
-            ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(i), 0, 0, w, h,
-                                                   internal_format, len, reinterpret_cast<const GLvoid *>(data_off));
-        } else {
-            ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), 0, 0, 0, w, h, format, type,
-                                         reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
-        }
-
-        data_off += len;
-        bytes_left -= len;
-        w = std::max(w / 2, 1);
-        h = std::max(h / 2, 1);
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-    ApplySampling(p.sampling, log);
-}
-
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, const TexParams &p, ILog *log) {
-    KTXHeader header;
-    memcpy(&header, data.data(), sizeof(KTXHeader));
-
-    bool is_srgb_format;
-    eTexFormat format = FormatFromGLInternalFormat(header.gl_internal_format, &is_srgb_format);
-
-    if (is_srgb_format && (params.flags & eTexFlags::SRGB)) {
-        log->Warning("Loading SRGB texture as non-SRGB!");
-    }
-
-    Free();
-    Realloc(int(header.pixel_width), int(header.pixel_height), int(header.mipmap_levels_count), 1, format,
-            (p.flags & eTexFlags::SRGB), nullptr, nullptr, log);
-
-    params.flags = p.flags;
-    params.sampling = p.sampling;
-
-    int w = int(params.w);
-    int h = int(params.h);
-
-    params.w = w;
-    params.h = h;
-
-    int data_offset = sizeof(KTXHeader);
-
-    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(data.size() - data_offset)};
-    { // Update staging buffer
-        uint8_t *stage_data = sbuf.Map();
-        memcpy(stage_data, data.data(), data.size() - data_offset);
-        sbuf.Unmap();
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
-
-    for (int i = 0; i < int(header.mipmap_levels_count); i++) {
-        if (data_offset + int(sizeof(uint32_t)) > data.size()) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", int(data.size() - data_offset),
-                       int(sizeof(uint32_t)));
-            break;
-        }
-
-        uint32_t img_size;
-        memcpy(&img_size, &data[data_offset], sizeof(uint32_t));
-        if (data_offset + int(img_size) > data.size()) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", int(data.size() - data_offset),
-                       img_size);
-            break;
-        }
-
-        data_offset += sizeof(uint32_t);
-
-        ren_glCompressedTextureSubImage2D_Comp(
-            GL_TEXTURE_2D, GLuint(handle_.id), i, 0, 0, w, h,
-            GLInternalFormatFromTexFormat(params.format, (params.flags & eTexFlags::SRGB)), GLsizei(img_size),
-            reinterpret_cast<const GLvoid *>(uintptr_t(data_offset)));
-
-        data_offset += img_size;
-
-        w = std::max(w / 2, 1);
-        h = std::max(h / 2, 1);
-
-        const int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
-        data_offset += pad;
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-    ApplySampling(p.sampling, log);
 }
 
 void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const TexParams &p, ILog *log) {
@@ -599,243 +410,6 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
             }
         }
     }
-
-    ApplySampling(p.sampling, log);
-}
-
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log) {
-    int w = 0, h = 0;
-    eTexFormat format = eTexFormat::Undefined;
-
-    auto sbuf = Buffer{
-        "Temp Stage Buf", nullptr, eBufType::Upload,
-        uint32_t(data[0].size() + data[1].size() + data[2].size() + data[3].size() + data[4].size() + data[5].size())};
-    int data_off[6] = {-1, -1, -1, -1, -1, -1};
-    { // Update staging buffer
-        uint8_t *stage_data = sbuf.Map();
-        uint32_t stage_off = 0;
-
-        int data_off[6] = {-1, -1, -1, -1, -1, -1};
-
-        for (int i = 0; i < 6; i++) {
-            if (!data[i].empty()) {
-                uint32_t data_size;
-                const bool res1 = ReadTGAFile(data[i], w, h, format, nullptr, data_size);
-                assert(res1);
-
-                assert(stage_off + data_size < sbuf.size());
-                const bool res2 = ReadTGAFile(data[i], w, h, format, &stage_data[stage_off], data_size);
-                assert(res2);
-
-                data_off[i] = int(stage_off);
-                stage_off += data_size;
-            }
-        }
-        sbuf.Unmap();
-    }
-
-    TexParams _p = p;
-    _p.w = w;
-    _p.h = h;
-    _p.format = format;
-
-    InitFromRAWData(sbuf, data_off, _p, log);
-}
-
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log) {
-    assert(p.w > 0 && p.h > 0);
-    Free();
-
-    uint32_t data_off[6] = {};
-    uint32_t stage_len = 0;
-
-    GLenum first_format = 0;
-
-    for (int i = 0; i < 6; ++i) {
-        const DDSHeader *header = reinterpret_cast<const DDSHeader *>(data[i].data());
-
-        GLenum format = 0;
-
-        switch ((header->sPixelFormat.dwFourCC >> 24u) - '0') {
-        case 1:
-            format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-            break;
-        case 3:
-            format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-            break;
-        case 5:
-            format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-            break;
-        default:
-            log->Error("Unknown DDS format %i", int((header->sPixelFormat.dwFourCC >> 24u) - '0'));
-            return;
-        }
-
-        if (i == 0) {
-            first_format = format;
-        } else {
-            assert(format == first_format);
-        }
-
-        data_off[i] = stage_len;
-        stage_len += uint32_t(data[i].size());
-    }
-
-    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, stage_len};
-    { // Update staging buffer
-        uint8_t *stage_data = sbuf.Map();
-        for (int i = 0; i < 6; ++i) {
-            memcpy(stage_data + data_off[i], data[i].data(), data[i].size());
-        }
-        sbuf.Unmap();
-    }
-
-    GLuint tex_id;
-    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &tex_id);
-#ifdef ENABLE_GPU_DEBUG
-    glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
-#endif
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
-
-    handle_ = {tex_id, TextureHandleCounter++};
-    params = p;
-    params.flags |= eTexFlags::CubeMap;
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
-
-    for (int i = 0; i < 6; i++) {
-        const DDSHeader *header = reinterpret_cast<const DDSHeader *>(data[i].data());
-        int data_offset = sizeof(DDSHeader);
-        for (uint32_t j = 0; j < header->dwMipMapCount; j++) {
-            const int width = std::max(int(header->dwWidth >> j), 1), height = std::max(int(header->dwHeight >> j), 1);
-
-            const int image_len = ((width + 3) / 4) * ((height + 3) / 4) * BlockLenFromGLInternalFormat(first_format);
-            if (data_off[i] + image_len > stage_len) {
-                log->Error("Insufficient data length!");
-                break;
-            }
-
-            glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, j, first_format, width, height, 0, image_len,
-                                   reinterpret_cast<const GLvoid *>(uintptr_t(data_off[i] + data_offset)));
-
-            data_offset += image_len;
-        }
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-    ApplySampling(p.sampling, log);
-}
-
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log) {
-    Free();
-
-    const auto *first_header = reinterpret_cast<const KTXHeader *>(data[0].data());
-
-    uint32_t data_off[6] = {};
-    uint32_t stage_len = 0;
-
-    for (int i = 0; i < 6; ++i) {
-        const auto *this_header = reinterpret_cast<const KTXHeader *>(data[i].data());
-
-        // make sure all images have same properties
-        if (this_header->pixel_width != first_header->pixel_width) {
-            log->Error("Image width mismatch %i, expected %i", int(this_header->pixel_width),
-                       int(first_header->pixel_width));
-            continue;
-        }
-        if (this_header->pixel_height != first_header->pixel_height) {
-            log->Error("Image height mismatch %i, expected %i", int(this_header->pixel_height),
-                       int(first_header->pixel_height));
-            continue;
-        }
-        if (this_header->gl_internal_format != first_header->gl_internal_format) {
-            log->Error("Internal format mismatch %i, expected %i", int(this_header->gl_internal_format),
-                       int(first_header->gl_internal_format));
-            continue;
-        }
-
-        data_off[i] = stage_len;
-        stage_len += uint32_t(data[i].size());
-    }
-
-    auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, stage_len};
-    { // Update staging buffer
-        uint8_t *stage_data = sbuf.Map();
-        for (int i = 0; i < 6; ++i) {
-            memcpy(stage_data + data_off[i], data[i].data(), data[i].size());
-        }
-        sbuf.Unmap();
-    }
-
-    GLuint tex_id;
-    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &tex_id);
-#ifdef ENABLE_GPU_DEBUG
-    glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
-#endif
-
-    handle_ = {tex_id, TextureHandleCounter++};
-    params = p;
-    params.flags |= eTexFlags::CubeMap;
-
-    bool is_srgb_format;
-    params.format = FormatFromGLInternalFormat(first_header->gl_internal_format, &is_srgb_format);
-
-    if (is_srgb_format && !(params.flags & eTexFlags::SRGB)) {
-        log->Warning("Loading SRGB texture as non-SRGB!");
-    }
-
-    params.w = int(first_header->pixel_width);
-    params.h = int(first_header->pixel_height);
-
-    glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
-
-    for (int i = 0; i < 6; ++i) {
-#ifndef NDEBUG
-        const auto *this_header = reinterpret_cast<const KTXHeader *>(data[i].data());
-
-        // make sure all images have same properties
-        if (this_header->pixel_width != first_header->pixel_width) {
-            log->Error("Image width mismatch %i, expected %i", int(this_header->pixel_width),
-                       int(first_header->pixel_width));
-            continue;
-        }
-        if (this_header->pixel_height != first_header->pixel_height) {
-            log->Error("Image height mismatch %i, expected %i", int(this_header->pixel_height),
-                       int(first_header->pixel_height));
-            continue;
-        }
-        if (this_header->gl_internal_format != first_header->gl_internal_format) {
-            log->Error("Internal format mismatch %i, expected %i", int(this_header->gl_internal_format),
-                       int(first_header->gl_internal_format));
-            continue;
-        }
-#endif
-        int data_offset = sizeof(KTXHeader);
-        int _w = params.w, _h = params.h;
-
-        for (int j = 0; j < int(first_header->mipmap_levels_count); j++) {
-            uint32_t img_size;
-            memcpy(&img_size, &data[data_offset], sizeof(uint32_t));
-            data_offset += sizeof(uint32_t);
-            glCompressedTexImage2D(GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i), j,
-                                   GLenum(first_header->gl_internal_format), _w, _h, 0, GLsizei(img_size),
-                                   reinterpret_cast<const GLvoid *>(uintptr_t(data_off[i] + data_offset)));
-            data_offset += img_size;
-
-            _w = std::max(_w / 2, 1);
-            _h = std::max(_h / 2, 1);
-
-            const int pad = (data_offset % 4) ? (4 - (data_offset % 4)) : 0;
-            data_offset += pad;
-        }
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     ApplySampling(p.sampling, log);
 }

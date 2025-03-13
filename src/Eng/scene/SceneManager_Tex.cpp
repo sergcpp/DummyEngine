@@ -247,7 +247,7 @@ void Eng::SceneManager::EstimateTextureMemory(const int portion_size) {
         while (index != end) {
             const auto &tex = scene_data_.textures.at(index);
 
-            bucket += EstimateMemory(tex.params);
+            bucket += GetDataLenBytes(tex.params);
 
             index = scene_data_.textures.FindOccupiedInRange(index + 1, end);
         }

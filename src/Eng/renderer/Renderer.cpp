@@ -1644,7 +1644,7 @@ void Eng::Renderer::InitBackendInfo() {
             } else {
                 info.heap = 1;
                 info.offset = heap_size;
-                info.size = Ren::EstimateMemory(it->desc);
+                info.size = Ren::GetDataLenBytes(it->desc);
                 heap_size += info.size;
             }
 
@@ -1667,7 +1667,7 @@ void Eng::Renderer::InitBackendInfo() {
             } else {
                 info.heap = 1;
                 info.offset = backend_info_.resources_info[indices[it->alias_of]].offset;
-                info.size = Ren::EstimateMemory(it->desc);
+                info.size = Ren::GetDataLenBytes(it->desc);
                 heap_size += info.size;
             }
         }
