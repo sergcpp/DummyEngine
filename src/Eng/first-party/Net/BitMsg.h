@@ -80,22 +80,22 @@ namespace Net {
     inline bool BitMsg::Read<bool>() const { return ReadBits(1) == 1; }
 
     template<>
-    inline int8_t BitMsg::Read<int8_t>() const { return (int8_t) ReadBits(-8); }
+    inline int8_t BitMsg::Read<int8_t>() const { return int8_t(ReadBits(-8)); }
 
     template<>
-    inline uint8_t BitMsg::Read<uint8_t>() const { return (uint8_t) ReadBits(8); }
+    inline uint8_t BitMsg::Read<uint8_t>() const { return uint8_t(ReadBits(8)); }
 
     template<>
-    inline int16_t BitMsg::Read<int16_t>() const { return (int16_t) ReadBits(-16); }
+    inline int16_t BitMsg::Read<int16_t>() const { return int16_t(ReadBits(-16)); }
 
     template<>
-    inline uint16_t BitMsg::Read<uint16_t>() const { return (uint16_t) ReadBits(16); }
+    inline uint16_t BitMsg::Read<uint16_t>() const { return uint16_t(ReadBits(16)); }
 
     template<>
-    inline int32_t BitMsg::Read<int32_t>() const { return (int32_t) ReadBits(32); }
+    inline int32_t BitMsg::Read<int32_t>() const { return int32_t(ReadBits(32)); }
 
     template<>
-    inline uint32_t BitMsg::Read<uint32_t>() const { return (uint32_t) ReadBits(32); }
+    inline uint32_t BitMsg::Read<uint32_t>() const { return uint32_t(ReadBits(32)); }
 
     template<>
     inline int64_t BitMsg::Read<int64_t>() const {

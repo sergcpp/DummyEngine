@@ -149,7 +149,7 @@ bool Net::WsConnection::Send(const void *data, int size) {
     uint32_t mask = 0;
 
     if (should_mask_) {
-        mask = (uint32_t)rand(); // NOLINT
+        mask = uint32_t(rand()); // NOLINT
         *(uint32_t *)payload = mask;
         payload += 4;
     }
