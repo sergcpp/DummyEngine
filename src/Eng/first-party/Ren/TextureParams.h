@@ -47,10 +47,9 @@ enum class eTexFlags : uint8_t {
     Signed,
     SRGB,
     NoRepeat,
-    MIPMin,
-    MIPMax,
     ExtendedViews,
-    Stub
+    Stub,
+    CubeMap
 };
 
 enum class eTexUsage : uint8_t { Transfer, Sampled, Storage, RenderTarget };
@@ -62,40 +61,29 @@ struct Texture1DParams {
 };
 static_assert(sizeof(Texture1DParams) == 12, "!");
 
-struct Tex2DParams {
-    uint16_t w = 0, h = 0;
-    Bitmask<eTexFlags> flags;
-    uint8_t mip_count = 1;
-    Bitmask<eTexUsage> usage;
-    uint8_t cube = 0;
-    uint8_t samples = 1;
-    eTexFormat format = eTexFormat::Undefined;
-    SamplingParams sampling;
-};
-static_assert(sizeof(Tex2DParams) == 16, "!");
-
-inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
-    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.flags == rhs.flags && lhs.mip_count == rhs.mip_count &&
-           lhs.usage == rhs.usage && lhs.cube == rhs.cube && lhs.samples == rhs.samples &&
-           lhs.format == rhs.format && lhs.sampling == rhs.sampling;
-}
-inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) { return !operator==(lhs, rhs); }
-
-struct Tex3DParams {
+struct TexParams {
     uint16_t w = 0, h = 0;
     uint8_t d = 0;
+    uint8_t mip_count : 5;
+    uint8_t samples : 3;
     Bitmask<eTexFlags> flags;
     Bitmask<eTexUsage> usage;
     eTexFormat format = eTexFormat::Undefined;
     SamplingParams sampling;
-};
-static_assert(sizeof(Tex3DParams) == 14, "!");
 
-inline bool operator==(const Tex3DParams &lhs, const Tex3DParams &rhs) {
-    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.flags == rhs.flags && lhs.usage == rhs.usage &&
-           lhs.format == rhs.format && lhs.sampling == rhs.sampling;
+    TexParams() {
+        mip_count = 1;
+        samples = 1;
+    }
+};
+static_assert(sizeof(TexParams) == 16, "!");
+
+inline bool operator==(const TexParams &lhs, const TexParams &rhs) {
+    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.mip_count == rhs.mip_count &&
+           lhs.samples == rhs.samples && lhs.flags == rhs.flags && lhs.usage == rhs.usage && lhs.format == rhs.format &&
+           lhs.sampling == rhs.sampling;
 }
-inline bool operator!=(const Tex3DParams &lhs, const Tex3DParams &rhs) { return !operator==(lhs, rhs); }
+inline bool operator!=(const TexParams &lhs, const TexParams &rhs) { return !operator==(lhs, rhs); }
 
 int GetColorChannelCount(eTexFormat format);
 

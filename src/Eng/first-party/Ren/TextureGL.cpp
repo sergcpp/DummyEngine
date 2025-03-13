@@ -87,18 +87,18 @@ extern const float AnisotropyLevel;
 
 static_assert(sizeof(GLsync) == sizeof(void *), "!");
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *, ILog *log)
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *, ILog *log)
     : name_(name) {
     Init(p, nullptr, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const TexParams &p,
                           MemAllocators *, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, p, nullptr, load_status, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const TexParams &p,
                           MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, p, nullptr, load_status, log);
@@ -124,16 +124,16 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
 
 uint64_t Ren::Texture2D::GetBindlessHandle() const { return glGetTextureHandleARB(GLuint(handle_.id)); }
 
-void Ren::Texture2D::Init(const Tex2DParams &p, MemAllocators *, ILog *log) { InitFromRAWData(nullptr, 0, p, log); }
+void Ren::Texture2D::Init(const TexParams &p, MemAllocators *, ILog *log) { InitFromRAWData(nullptr, 0, p, log); }
 
-void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log) {
+void Ren::Texture2D::Init(const TexHandle &handle, const TexParams &_params, MemAllocation &&alloc, ILog *log) {
     handle_ = handle;
     params = _params;
 
     SetSampling(params.sampling);
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     assert(!data.empty());
     if ((name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) && !(p.flags & eTexFlags::Stub)) {
@@ -154,7 +154,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAll
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     assert(data);
     if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
@@ -279,7 +279,7 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     }
 }
 
-void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const TexParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -345,7 +345,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     CheckError("create texture", log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, const TexParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
     uint32_t img_size = 0;
@@ -362,7 +362,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, const Tex2DParams
         sbuf.Unmap();
     }
 
-    Tex2DParams _p = p;
+    TexParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = format;
@@ -370,7 +370,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, const Tex2DParams
     InitFromRAWData(&sbuf, 0, _p, log);
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, const TexParams &p, ILog *log) {
     Free();
 
     int bytes_left = int(data.size());
@@ -381,7 +381,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, const Tex2DParams
     p_data += sizeof(DDSHeader);
     bytes_left -= sizeof(DDSHeader);
 
-    Tex2DParams _p = p;
+    TexParams _p = p;
     ParseDDSHeader(header, &_p);
 
     if (header.sPixelFormat.dwFourCC ==
@@ -471,7 +471,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, const Tex2DParams
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, const TexParams &p, ILog *log) {
     KTXHeader header;
     memcpy(&header, data.data(), sizeof(KTXHeader));
 
@@ -542,7 +542,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, const Tex2DParams
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const TexParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -554,6 +554,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
 
     handle_ = {tex_id, TextureHandleCounter++};
     params = p;
+    params.flags |= eTexFlags::CubeMap;
 
     const auto format = (GLenum)GLFormatFromTexFormat(params.format),
                internal_format = (GLenum)GLInternalFormatFromTexFormat(params.format, (p.flags & eTexFlags::SRGB)),
@@ -599,12 +600,10 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
         }
     }
 
-    params.cube = 1;
-
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
 
@@ -635,7 +634,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], const Tex2DPar
         sbuf.Unmap();
     }
 
-    Tex2DParams _p = p;
+    TexParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = format;
@@ -643,7 +642,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], const Tex2DPar
     InitFromRAWData(sbuf, data_off, _p, log);
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -702,6 +701,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const Tex2DPar
 
     handle_ = {tex_id, TextureHandleCounter++};
     params = p;
+    params.flags |= eTexFlags::CubeMap;
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
@@ -726,12 +726,10 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], const Tex2DPar
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    params.cube = 1;
-
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const TexParams &p, ILog *log) {
     Free();
 
     const auto *first_header = reinterpret_cast<const KTXHeader *>(data[0].data());
@@ -780,6 +778,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const Tex2DPar
 
     handle_ = {tex_id, TextureHandleCounter++};
     params = p;
+    params.flags |= eTexFlags::CubeMap;
 
     bool is_srgb_format;
     params.format = FormatFromGLInternalFormat(first_header->gl_internal_format, &is_srgb_format);
@@ -790,7 +789,6 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const Tex2DPar
 
     params.w = int(first_header->pixel_width);
     params.h = int(first_header->pixel_height);
-    params.cube = true;
 
     glBindTexture(GL_TEXTURE_CUBE_MAP, tex_id);
 
@@ -845,7 +843,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], const Tex2DPar
 void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
     const auto tex_id = GLuint(handle_.id);
 
-    if (!params.cube) {
+    if (!(params.flags & eTexFlags::CubeMap)) {
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER,
                                      g_min_filter_gl[size_t(sampling.filter)]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER,
@@ -859,14 +857,6 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_LOD, sampling.max_lod.to_float());
 
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyLevel);
-
-        const bool custom_mip_filter = (params.flags & (Bitmask(eTexFlags::MIPMin) | eTexFlags::MIPMax));
-
-        if (!IsCompressedFormat(params.format) &&
-            (sampling.filter == eTexFilter::Trilinear || sampling.filter == eTexFilter::Bilinear) &&
-            !custom_mip_filter && params.mip_count > 1) {
-            ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, tex_id);
-        }
 
         if (sampling.compare != eTexCompare::None) {
             assert(IsDepthFormat(params.format));
@@ -888,11 +878,6 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
                                      g_wrap_mode_gl[size_t(sampling.wrap)]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_R,
                                      g_wrap_mode_gl[size_t(sampling.wrap)]);
-
-        if (!IsCompressedFormat(params.format) &&
-            (sampling.filter == eTexFilter::Trilinear || sampling.filter == eTexFilter::Bilinear)) {
-            ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_CUBE_MAP, tex_id);
-        }
     }
 
     params.sampling = sampling;
@@ -1032,7 +1017,7 @@ void Ren::Texture1D::Free() {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs,
+Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const TexParams &params, MemAllocators *mem_allocs,
                           ILog *log)
     : name_(name), api_ctx_(ctx) {
     Init(params, mem_allocs, log);
@@ -1057,7 +1042,7 @@ Ren::Texture3D &Ren::Texture3D::operator=(Texture3D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog *log) {
+void Ren::Texture3D::Init(const TexParams &p, MemAllocators *mem_allocs, ILog *log) {
     Free();
 
     GLuint tex_id;

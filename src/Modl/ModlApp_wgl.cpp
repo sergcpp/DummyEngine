@@ -603,7 +603,7 @@ int ModlApp::Init(const int w, const int h) {
             }
         }
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = checker_res;
         p.format = Ren::eTexFormat::RGB8;
 
@@ -1884,7 +1884,7 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(std::string_view name) {
         std::vector<uint8_t> in_file_data(in_file.size());
         in_file.Read((char *)in_file_data.data(), in_file.size());
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.sampling.filter = Ren::eTexFilter::Trilinear;
 
         Ren::eTexLoadStatus status;

@@ -216,7 +216,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     Ren::ILog *log = ren_ctx_.log();
 
     { // create white texture
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.format = Ren::eTexFormat::RGBA8;
@@ -240,7 +240,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
             std::vector<uint8_t> in_file_data(in_file_size);
             in_file.Read((char *)&in_file_data[0], in_file_size);
 
-            Ren::Tex2DParams p;
+            Ren::TexParams p;
             p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
             p.sampling.filter = Ren::eTexFilter::Bilinear;
 
@@ -647,7 +647,7 @@ void Eng::SceneManager::LoadEnvMap() {
             _black_cube[i] = black_cube;
         }
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = 512;
         p.format = Ren::eTexFormat::RGBA16F;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage |
@@ -683,7 +683,7 @@ void Eng::SceneManager::LoadEnvMap() {
             data[i] = tex_data[i];
         }
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = w;
         p.h = h;
         p.mip_count = int(header.dwMipMapCount);
@@ -704,7 +704,7 @@ void Eng::SceneManager::LoadEnvMap() {
             _white_cube[i] = white_cube[i];
         }
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RGBA8;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
@@ -1476,7 +1476,7 @@ Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, cons
                                                const Ren::Bitmask<Ren::eTexFlags> flags) {
     using namespace SceneManagerConstants;
 
-    Ren::Tex2DParams p;
+    Ren::TexParams p;
     p.w = p.h = 1;
     p.format = Ren::eTexFormat::RGBA8;
     p.sampling.filter = Ren::eTexFilter::Trilinear;
@@ -1562,7 +1562,7 @@ Ren::MaterialRef Eng::SceneManager::LoadMaterial(std::string_view name, std::str
 }
 
 Ren::Tex2DRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<const uint8_t> data,
-                                             const Ren::Tex2DParams &p, Ren::eTexLoadStatus *load_status) {
+                                             const Ren::TexParams &p, Ren::eTexLoadStatus *load_status) {
     Ren::Tex2DRef ref = scene_data_.textures.FindByName(name);
     if (!ref) {
         ref = scene_data_.textures.Insert(name, ren_ctx_.api_ctx(), data, p,

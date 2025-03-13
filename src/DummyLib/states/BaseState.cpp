@@ -711,7 +711,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     probes_dirty_ = false;
 
     if (!viewer_->app_params.ref_name.empty()) {
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = viewer_->width;
         params.h = viewer_->height;
         params.format = Ren::eTexFormat::RGBA8;
@@ -1651,7 +1651,7 @@ Ray::TextureHandle BaseState::LoadTexture_PT(const std::string_view name, const 
     Ren::DDSHeader header = {};
     in_file.read((char *)&header, sizeof(Ren::DDSHeader));
 
-    Ren::Tex2DParams temp_params;
+    Ren::TexParams temp_params;
     Ren::ParseDDSHeader(header, &temp_params);
 
     Ray::tex_desc_t tex_desc;
@@ -1909,7 +1909,7 @@ void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
             handle.img = pt_image.vk_image;
             handle.views[0] = pt_image.vk_image_view;
 
-            Ren::Tex2DParams params = {};
+            Ren::TexParams params = {};
             params.w = res_x;
             params.h = res_y;
             params.format = Ren::eTexFormat::RGBA32F;

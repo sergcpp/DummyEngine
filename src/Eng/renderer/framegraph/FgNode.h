@@ -66,7 +66,7 @@ class FgNode {
 
     FgResRef AddTransferImageInput(const Ren::WeakTex2DRef &tex);
     FgResRef AddTransferImageInput(FgResRef handle);
-    FgResRef AddTransferImageOutput(std::string_view name, const Ren::Tex2DParams &params);
+    FgResRef AddTransferImageOutput(std::string_view name, const Ren::TexParams &params);
     FgResRef AddTransferImageOutput(const Ren::WeakTex2DRef &tex);
     FgResRef AddTransferImageOutput(FgResRef handle);
 
@@ -78,16 +78,16 @@ class FgNode {
     FgResRef AddStorageOutput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddStorageOutput(const Ren::WeakBufferRef &buf, Ren::eStageBits stages);
 
-    FgResRef AddStorageImageOutput(std::string_view name, const Ren::Tex2DParams &params, Ren::eStageBits stages);
+    FgResRef AddStorageImageOutput(std::string_view name, const Ren::TexParams &params, Ren::eStageBits stages);
     FgResRef AddStorageImageOutput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddStorageImageOutput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
     FgResRef AddStorageImageOutput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
 
-    FgResRef AddColorOutput(std::string_view name, const Ren::Tex2DParams &params);
+    FgResRef AddColorOutput(std::string_view name, const Ren::TexParams &params);
     FgResRef AddColorOutput(FgResRef handle);
     FgResRef AddColorOutput(const Ren::WeakTex2DRef &tex);
     FgResRef AddColorOutput(std::string_view name);
-    FgResRef AddDepthOutput(std::string_view name, const Ren::Tex2DParams &params);
+    FgResRef AddDepthOutput(std::string_view name, const Ren::TexParams &params);
     FgResRef AddDepthOutput(FgResRef handle);
     FgResRef AddDepthOutput(const Ren::WeakTex2DRef &tex);
 

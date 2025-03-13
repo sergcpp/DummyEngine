@@ -106,7 +106,7 @@ VkImageUsageFlags to_vk_image_usage(const Bitmask<eTexUsage> usage, const eTexFo
 eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, bool *is_srgb);
 int GetBlockLenBytes(eTexFormat format);
 int GetMipDataLenBytes(int w, int h, eTexFormat format);
-void ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params);
+void ParseDDSHeader(const DDSHeader &hdr, TexParams *params);
 
 extern const VkFilter g_min_mag_filter_vk[];
 extern const VkSamplerAddressMode g_wrap_mode_vk[];
@@ -116,19 +116,19 @@ extern const VkCompareOp g_compare_ops_vk[];
 extern const float AnisotropyLevel;
 } // namespace Ren
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p, MemAllocators *mem_allocs,
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *mem_allocs,
                           ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(p, mem_allocs, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const TexParams &p,
                           MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(data, p, mem_allocs, load_status, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const TexParams &p,
                           MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(data, p, mem_allocs, load_status, log);
@@ -156,11 +156,11 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture2D::Init(const Tex2DParams &p, MemAllocators *mem_allocs, ILog *log) {
+void Ren::Texture2D::Init(const TexParams &p, MemAllocators *mem_allocs, ILog *log) {
     InitFromRAWData(nullptr, 0, nullptr, mem_allocs, p, log);
 }
 
-void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, MemAllocation &&alloc, ILog *log) {
+void Ren::Texture2D::Init(const TexHandle &handle, const TexParams &_params, MemAllocation &&alloc, ILog *log) {
     handle_ = handle;
     alloc_ = std::move(alloc);
     params = _params;
@@ -254,7 +254,7 @@ void Ren::Texture2D::Init(const TexHandle &handle, const Tex2DParams &_params, M
     }
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     assert(!data.empty());
     if ((name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) && !(p.flags & eTexFlags::Stub)) {
@@ -278,7 +278,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, MemAll
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, MemAllocators *mem_allocs,
+void Ren::Texture2D::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs,
                           eTexLoadStatus *load_status, ILog *log) {
     assert(data);
     if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
@@ -606,7 +606,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
 }
 
 void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemAllocators *mem_allocs,
-                                     const Tex2DParams &p, ILog *log) {
+                                     const TexParams &p, ILog *log) {
     Free();
 
     handle_.generation = TextureHandleCounter++;
@@ -857,7 +857,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
     }
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const TexParams &p,
                                      ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
@@ -877,7 +877,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, MemAllocators *me
 
     CommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
 
-    Tex2DParams _p = p;
+    TexParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = format;
@@ -888,7 +888,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, MemAllocators *me
     sbuf.FreeImmediate();
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const TexParams &p,
                                      ILog *log) {
     Free();
 
@@ -905,7 +905,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemAllocators *me
     p_data += sizeof(DDSHeader);
     bytes_left -= sizeof(DDSHeader);
 
-    Tex2DParams _p = p;
+    TexParams _p = p;
     ParseDDSHeader(header, &_p);
 
     if (header.sPixelFormat.dwFourCC ==
@@ -1059,7 +1059,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, MemAllocators *me
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemAllocators *mem_allocs, const TexParams &p,
                                      ILog *log) {
     KTXHeader header;
     memcpy(&header, data.data(), sizeof(KTXHeader));
@@ -1199,7 +1199,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, MemAllocators *me
 }
 
 void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cmd_buf, MemAllocators *mem_allocs,
-                                     const Tex2DParams &p, ILog *log) {
+                                     const TexParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -1408,7 +1408,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const TexParams &p,
                                      ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
@@ -1438,10 +1438,11 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], MemAllocators 
         sbuf.Unmap();
     }
 
-    Tex2DParams _p = p;
+    TexParams _p = p;
     _p.w = w;
     _p.h = h;
     _p.format = format;
+    _p.flags |= eTexFlags::CubeMap;
 
     CommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
     InitFromRAWData(sbuf, data_off, cmd_buf, mem_allocs, _p, log);
@@ -1449,7 +1450,7 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], MemAllocators 
     sbuf.FreeImmediate();
 }
 
-void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const TexParams &p,
                                      ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
@@ -1510,7 +1511,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators 
 
     handle_.generation = TextureHandleCounter++;
     params = p;
-    params.cube = 1;
+    params.flags |= eTexFlags::CubeMap;
 
     { // create image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -1695,7 +1696,7 @@ void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], MemAllocators 
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const Tex2DParams &p,
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators *mem_allocs, const TexParams &p,
                                      ILog *log) {
     Free();
 
@@ -1739,7 +1740,7 @@ void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], MemAllocators 
 
     handle_.generation = TextureHandleCounter++;
     params = p;
-    params.cube = 1;
+    params.flags |= eTexFlags::CubeMap;
 
     bool is_srgb_format;
     params.format = FormatFromGLInternalFormat(first_header->gl_internal_format, &is_srgb_format);
@@ -2251,7 +2252,7 @@ void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const u
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemAllocators *mem_allocs,
+Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const TexParams &params, MemAllocators *mem_allocs,
                           ILog *log)
     : name_(name), api_ctx_(ctx) {
     Init(params, mem_allocs, log);
@@ -2277,7 +2278,7 @@ Ren::Texture3D &Ren::Texture3D::operator=(Texture3D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture3D::Init(const Tex3DParams &p, MemAllocators *mem_allocs, ILog *log) {
+void Ren::Texture3D::Init(const TexParams &p, MemAllocators *mem_allocs, ILog *log) {
     Free();
 
     handle_.generation = TextureHandleCounter++;

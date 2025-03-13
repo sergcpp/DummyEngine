@@ -223,10 +223,6 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                         } else if (strncmp(flag, "norepeat", flag_len) == 0) {
                             texture_flags |= eTexFlags::NoRepeat;
                             sampler_params.wrap = eTexWrap::ClampToEdge;
-                        } else if (strncmp(flag, "mip_min", flag_len) == 0) {
-                            texture_flags |= eTexFlags::MIPMin;
-                        } else if (strncmp(flag, "mip_max", flag_len) == 0) {
-                            texture_flags |= eTexFlags::MIPMax;
                         } else {
                             break;
                         }

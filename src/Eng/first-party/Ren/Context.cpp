@@ -240,7 +240,7 @@ Ren::PipelineRef Ren::Context::LoadPipeline(const RastState &rast_state, const P
     return ref;
 }
 
-Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const Tex3DParams &p, MemAllocators *mem_allocs,
+Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
     Tex3DRef ref = textures_3D_.FindByName(name);
     if (!ref) {
@@ -255,7 +255,7 @@ Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const Tex3DPara
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const Tex2DParams &p, MemAllocators *mem_allocs,
+Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
@@ -270,7 +270,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const Tex2DPara
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const TexHandle &handle, const Tex2DParams &p,
+Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const TexHandle &handle, const TexParams &p,
                                           MemAllocation &&alloc, eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
@@ -285,7 +285,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const TexHandle
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
+Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint8_t> data, const TexParams &p,
                                           MemAllocators *mem_allocs, eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
@@ -299,7 +299,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
+Ren::Tex2DRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const TexParams &p,
                                             MemAllocators *mem_allocs, eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
@@ -364,7 +364,7 @@ void Ren::Context::Release1DTextures() {
 }
 
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Span<const uint8_t> data,
-                                                      const Tex2DParams &p, eTexLoadStatus *load_status) {
+                                                      const TexParams &p, eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {
         ref = texture_regions_.Insert(name, data, p, &texture_atlas_, load_status);
@@ -379,7 +379,7 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Spa
 }
 
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, const Buffer &sbuf, const int data_off,
-                                                      const int data_len, CommandBuffer cmd_buf, const Tex2DParams &p,
+                                                      const int data_len, CommandBuffer cmd_buf, const TexParams &p,
                                                       eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {

@@ -14,7 +14,7 @@ void UITest3::InitBookMaterials() {
     //        "Page framebuffer is not initialized!");
 #if 0
     { // register framebuffer texture
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = page_buf_.w;
         params.h = page_buf_.h;
         params.format = page_buf_.attachments[0].desc.format;

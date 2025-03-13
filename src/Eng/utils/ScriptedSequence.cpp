@@ -713,7 +713,7 @@ Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(std::string_view na
         tex_data_pos++;
     }
 
-    Ren::Tex2DParams p;
+    Ren::TexParams p;
     p.w = tex_w;
     p.h = tex_h;
     p.format = Ren::eTexFormat::RGBA8;

@@ -131,7 +131,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         target = GL_TEXTURE_2D_MULTISAMPLE;
     }
     bool cube = false;
-    if (!_color_targets.empty() && _color_targets[0].ref->params.cube) {
+    if (!_color_targets.empty() && (_color_targets[0].ref->params.flags & eTexFlags::CubeMap)) {
         cube = true;
         target = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
     }

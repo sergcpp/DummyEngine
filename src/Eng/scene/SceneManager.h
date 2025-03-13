@@ -218,7 +218,7 @@ class SceneManager {
                                   const Ren::pipelines_load_callback &on_pipes_load,
                                   const Ren::texture_load_callback &on_tex_load,
                                   const Ren::sampler_load_callback &on_sampler_load);
-    Ren::Tex2DRef LoadTexture(std::string_view name, Ren::Span<const uint8_t> data, const Ren::Tex2DParams &p,
+    Ren::Tex2DRef LoadTexture(std::string_view name, Ren::Span<const uint8_t> data, const Ren::TexParams &p,
                               Ren::eTexLoadStatus *load_status);
     Ren::Vec4f LoadDecalTexture(std::string_view name);
 

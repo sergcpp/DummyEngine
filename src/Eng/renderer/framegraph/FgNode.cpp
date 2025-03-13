@@ -44,7 +44,7 @@ Eng::FgResRef Eng::FgNode::AddTransferImageInput(const FgResRef handle) {
     return builder_.ReadTexture(handle, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTransferImageOutput(std::string_view name, const Ren::Tex2DParams &params) {
+Eng::FgResRef Eng::FgNode::AddTransferImageOutput(std::string_view name, const Ren::TexParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
@@ -82,7 +82,7 @@ Eng::FgResRef Eng::FgNode::AddStorageOutput(const Ren::WeakBufferRef &buf, const
     return builder_.WriteBuffer(buf, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageImageOutput(std::string_view name, const Ren::Tex2DParams &params,
+Eng::FgResRef Eng::FgNode::AddStorageImageOutput(std::string_view name, const Ren::TexParams &params,
                                                     const Ren::eStageBits stages) {
     return builder_.WriteTexture(name, params, Ren::eResState::UnorderedAccess, stages, *this);
 }
@@ -99,7 +99,7 @@ Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const Ren::Texture2DArray *tex,
     return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddColorOutput(std::string_view name, const Ren::Tex2DParams &params) {
+Eng::FgResRef Eng::FgNode::AddColorOutput(std::string_view name, const Ren::TexParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
@@ -115,7 +115,7 @@ Eng::FgResRef Eng::FgNode::AddColorOutput(std::string_view name) {
     return builder_.WriteTexture(name, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddDepthOutput(std::string_view name, const Ren::Tex2DParams &params) {
+Eng::FgResRef Eng::FgNode::AddDepthOutput(std::string_view name, const Ren::TexParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 

@@ -287,7 +287,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     // NOTE: Temporarily placed here
     std::lock_guard<std::mutex> _(g_stbi_mutex);
 
-    Ren::Tex2DParams params;
+    Ren::TexParams params;
     params.w = ref_w;
     params.h = ref_h;
     params.format = Ren::eTexFormat::RGBA8;

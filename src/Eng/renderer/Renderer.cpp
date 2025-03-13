@@ -114,7 +114,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
 
     { // dummy 1px textures
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RGBA8;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
@@ -129,7 +129,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     { // random 2d halton 8x8
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = 8;
         p.format = Ren::eTexFormat::RG32F;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
@@ -141,7 +141,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     { // random 2d directions 4x4
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = 4;
         p.format = Ren::eTexFormat::RG16;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
@@ -168,7 +168,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                          false, false, "cone_lut.uncompressed.png");
         //std::exit(0);*/
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = __cone_rt_lut_res;
         p.h = __cone_rt_lut_res;
         p.format = Ren::eTexFormat::RGBA8;
@@ -190,7 +190,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         // const std::unique_ptr<uint16_t[]> img_data_rg16 = Generate_BRDF_LUT(256,
         // c_header);
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = __brdf_lut_res;
         p.format = Ren::eTexFormat::RG16;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
@@ -225,7 +225,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             _combined_data += 4 * 64;
         }
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = 8 * 64;
         p.h = 64;
         p.format = Ren::eTexFormat::RGBA32F;
@@ -247,7 +247,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         SceneManagerInternal::WriteImage((const uint8_t*)&img_data[0], res, res, 4,
         false, "test1.png");*/
 
-        Ren::Tex2DParams p;
+        Ren::TexParams p;
         p.w = p.h = __noise_res;
         p.format = Ren::eTexFormat::RGBA8_snorm;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
@@ -421,7 +421,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     { // shadow map texture
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = SHADOWMAP_WIDTH;
         params.h = SHADOWMAP_HEIGHT;
         params.format = Ren::eTexFormat::D16;
@@ -434,7 +434,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         shadow_depth_tex_ = ctx_.LoadTexture2D("Shadow Depth Tex", params, ctx_.default_mem_allocs(), &status);
     }
     { // shadow filter texture
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = SHADOWMAP_WIDTH;
         params.h = SHADOWMAP_HEIGHT;
         params.format = Ren::eTexFormat::RGBA8;
@@ -1047,7 +1047,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
             { // Texture that holds 2D velocity
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
@@ -1080,7 +1080,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt, Ren::eStageBits::ComputeShader);
 
             { // 32-bit float depth hierarchy
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = ((view_state_.scr_res[0] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
                            ExDepthHierarchy::TileSize;
                 params.h = ((view_state_.scr_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
@@ -1379,7 +1379,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
             }
             if (output_tex) {
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGB8;
@@ -1478,7 +1478,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
     }
 
     if (!tonemap_lut_) {
-        Ren::Tex3DParams params = {};
+        Ren::TexParams params = {};
         params.w = params.h = params.d = res;
         params.usage = Ren::Bitmask(Ren::eTexUsage::Sampled) | Ren::eTexUsage::Transfer;
         params.format = Ren::eTexFormat::RGB10_A2;
@@ -1782,7 +1782,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         FgResRef output_tex_res;
         { // output image
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = cur_scr_w;
             params.h = cur_scr_h;
             params.format = format;

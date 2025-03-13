@@ -145,7 +145,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             new_res.lifetime[0][1] = new_res.lifetime[1][1] = uint16_t(reordered_nodes_.size());
         }
 
-        Ren::Tex2DParams &p = t.desc;
+        Ren::TexParams &p = t.desc;
         if (t.history_index != -1) {
             // combine usage flags
             FgAllocTex &hist_tex = textures_[t.history_index];

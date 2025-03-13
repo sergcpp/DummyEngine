@@ -205,17 +205,17 @@ class Context {
                              const RenderPassRef &render_pass, uint32_t subpass_index);
 
     /*** Texture 3D ***/
-    Tex3DRef LoadTexture3D(std::string_view name, const Tex3DParams &p, MemAllocators *mem_allocs,
+    Tex3DRef LoadTexture3D(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
 
     /*** Texture 2D ***/
-    Tex2DRef LoadTexture2D(std::string_view name, const Tex2DParams &p, MemAllocators *mem_allocs,
+    Tex2DRef LoadTexture2D(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
-    Tex2DRef LoadTexture2D(std::string_view name, const TexHandle &handle, const Tex2DParams &p, MemAllocation &&alloc,
+    Tex2DRef LoadTexture2D(std::string_view name, const TexHandle &handle, const TexParams &p, MemAllocation &&alloc,
                            eTexLoadStatus *load_status);
-    Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
+    Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const TexParams &p,
                            MemAllocators *mem_allocs, eTexLoadStatus *load_status);
-    Tex2DRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
+    Tex2DRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const TexParams &p,
                              MemAllocators *mem_allocs, eTexLoadStatus *load_status);
 
     void VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback);
@@ -227,10 +227,10 @@ class Context {
     void Release1DTextures();
 
     /** Texture regions (placed on default atlas) **/
-    TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
+    TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p,
                                        eTexLoadStatus *load_status);
     TextureRegionRef LoadTextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
-                                       CommandBuffer cmd_buf, const Tex2DParams &p, eTexLoadStatus *load_status);
+                                       CommandBuffer cmd_buf, const TexParams &p, eTexLoadStatus *load_status);
 
     void ReleaseTextureRegions();
 

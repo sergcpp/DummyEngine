@@ -22,7 +22,7 @@ void Eng::Renderer::InitSkyResources() {
         if (!sky_transmittance_lut_) {
             const std::vector<Ren::Vec4f> transmittance_lut = Generate_SkyTransmittanceLUT(p_list_->env.atmosphere);
             { // Init transmittance LUT
-                Ren::Tex2DParams p;
+                Ren::TexParams p;
                 p.w = SKY_TRANSMITTANCE_LUT_W;
                 p.h = SKY_TRANSMITTANCE_LUT_H;
                 p.format = Ren::eTexFormat::RGBA32F;
@@ -49,7 +49,7 @@ void Eng::Renderer::InitSkyResources() {
                     ctx_.current_cmd_buf(), 0, 4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
             }
             { // Init multiscatter LUT
-                Ren::Tex2DParams p;
+                Ren::TexParams p;
                 p.w = p.h = SKY_MULTISCATTER_LUT_RES;
                 p.format = Ren::eTexFormat::RGBA32F;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
@@ -82,7 +82,7 @@ void Eng::Renderer::InitSkyResources() {
                 std::vector<uint8_t> data(moon_tex.size());
                 moon_tex.Read((char *)&data[0], moon_tex.size());
 
-                Ren::Tex2DParams p;
+                Ren::TexParams p;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
@@ -96,7 +96,7 @@ void Eng::Renderer::InitSkyResources() {
                 std::vector<uint8_t> data(weather_tex.size());
                 weather_tex.Read((char *)&data[0], weather_tex.size());
 
-                Ren::Tex2DParams p;
+                Ren::TexParams p;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
@@ -110,7 +110,7 @@ void Eng::Renderer::InitSkyResources() {
                 std::vector<uint8_t> data(cirrus_tex.size());
                 cirrus_tex.Read((char *)&data[0], cirrus_tex.size());
 
-                Ren::Tex2DParams p;
+                Ren::TexParams p;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
@@ -124,7 +124,7 @@ void Eng::Renderer::InitSkyResources() {
                 std::vector<uint8_t> data(curl_tex.size());
                 curl_tex.Read((char *)&data[0], curl_tex.size());
 
-                Ren::Tex2DParams p;
+                Ren::TexParams p;
                 p.flags = Ren::eTexFlags::SRGB;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
@@ -144,7 +144,7 @@ void Eng::Renderer::InitSkyResources() {
 
                 const uint32_t data_len = header.dwWidth * header.dwHeight * header.dwDepth;
 
-                Ren::Tex3DParams params;
+                Ren::TexParams params;
                 params.w = header.dwWidth;
                 params.h = header.dwHeight;
                 params.d = header.dwDepth;
@@ -225,7 +225,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 frame_textures.depth = data->depth_tex =
                     skymap.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
 
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = (view_state_.scr_res[0] + 3) / 4;
                 params.h = (view_state_.scr_res[1] + 3) / 4;
                 params.format = Ren::eTexFormat::RGBA16F;
@@ -268,7 +268,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 sky_upsample.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
             data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Stg::ComputeShader);
 
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;

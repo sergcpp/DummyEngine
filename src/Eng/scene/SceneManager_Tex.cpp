@@ -133,7 +133,7 @@ void Eng::SceneManager::TextureLoaderProc() {
                 req->read_offset = sizeof(Ren::DDSHeader);
 
                 if (read_success) {
-                    Ren::Tex2DParams temp_params;
+                    Ren::TexParams temp_params;
                     ParseDDSHeader(header, &temp_params);
                     req->orig_format = temp_params.format;
                     req->orig_w = temp_params.w;
@@ -177,7 +177,7 @@ void Eng::SceneManager::TextureLoaderProc() {
         }
 
         if (read_success) {
-            const Ren::Tex2DParams &cur_p = req->ref->params;
+            const Ren::TexParams &cur_p = req->ref->params;
 
             const int max_load_w = std::max(cur_p.w * (1 << mip_levels_per_request_), 256);
             const int max_load_h = std::max(cur_p.h * (1 << mip_levels_per_request_), 256);
@@ -342,7 +342,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                 // stage_buf->fence.ClientWaitSync();
                 ren_ctx_.BegSingleTimeCommands(stage_buf->cmd_buf);
 
-                Ren::Tex2DParams &p = req->ref->params;
+                Ren::TexParams &p = req->ref->params;
                 const int new_mip_count =
                     (p.flags & Ren::eTexFlags::Stub) ? req->mip_count_to_init : (p.mip_count + req->mip_count_to_init);
                 p.flags &= ~Ren::Bitmask(Ren::eTexFlags::Stub);
@@ -404,7 +404,7 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
 
             ren_ctx_.log()->Warning("Texture %s is being garbage collected", req.ref->name().c_str());
 
-            Ren::Tex2DParams p = req.ref->params;
+            Ren::TexParams p = req.ref->params;
 
             // drop to lowest lod
             const int w = std::max(p.w >> p.mip_count, 1);
@@ -635,7 +635,7 @@ void Eng::SceneManager::ForceTextureReload() {
 
     // Reset textures to 1x1 mip and send to processing
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
-        Ren::Tex2DParams &p = it->params;
+        Ren::TexParams &p = it->params;
         p.flags |= Ren::eTexFlags::Stub;
 
         // drop to lowest lod
@@ -685,7 +685,7 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
 
     // Reset textures to 1x1
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
-        Ren::Tex2DParams p = it->params;
+        Ren::TexParams p = it->params;
         p.format = Ren::eTexFormat::RGBA8;
         p.flags = Ren::eTexFlags::Stub;
         p.w = p.h = 1;

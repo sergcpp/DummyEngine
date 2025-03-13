@@ -15,19 +15,19 @@ class TextureRegion : public RefCounter {
     int texture_pos_[3] = {};
     bool ready_ = false;
 
-    [[nodiscard]] bool InitFromDDSFile(Span<const uint8_t> data, Tex2DParams p, TextureAtlasArray *atlas);
+    [[nodiscard]] bool InitFromDDSFile(Span<const uint8_t> data, TexParams p, TextureAtlasArray *atlas);
     [[nodiscard]] bool InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
-                                       const Tex2DParams &p, TextureAtlasArray *atlas);
+                                       const TexParams &p, TextureAtlasArray *atlas);
 
   public:
-    Tex2DParams params;
+    TexParams params;
 
     TextureRegion() = default;
     TextureRegion(std::string_view name, TextureAtlasArray *atlas, const int texture_pos[3]);
-    TextureRegion(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p, TextureAtlasArray *atlas,
+    TextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p, TextureAtlasArray *atlas,
                   eTexLoadStatus *load_status);
     TextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
-                  const Tex2DParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status);
+                  const TexParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status);
     ~TextureRegion();
 
     TextureRegion(const TextureRegion &rhs) = default;
@@ -40,8 +40,8 @@ class TextureRegion : public RefCounter {
 
     [[nodiscard]] bool ready() const { return ready_; }
 
-    void Init(Span<const uint8_t> data, const Tex2DParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status);
-    void Init(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, const Tex2DParams &p,
+    void Init(Span<const uint8_t> data, const TexParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status);
+    void Init(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, const TexParams &p,
               TextureAtlasArray *atlas, eTexLoadStatus *load_status);
 };
 

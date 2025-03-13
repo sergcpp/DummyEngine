@@ -105,7 +105,7 @@ struct FgAllocBuf : public FgAllocRes {
 };
 
 struct FgAllocTex : public FgAllocRes {
-    Ren::Tex2DParams desc;
+    Ren::TexParams desc;
     Ren::WeakTex2DRef ref;
     Ren::Tex2DRef strong_ref;
     // TODO: remove this once Texture2D/Texture2DArray/Texture3D will be merged into one class
@@ -229,7 +229,7 @@ class FgBuilder {
 
     FgResRef WriteTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef WriteTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef WriteTexture(std::string_view name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
+    FgResRef WriteTexture(std::string_view name, const Ren::TexParams &p, Ren::eResState desired_state,
                           Ren::eStageBits stages, FgNode &node);
     FgResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           FgNode &node, int slot_index = -1);

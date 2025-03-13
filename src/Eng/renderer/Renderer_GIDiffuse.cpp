@@ -52,7 +52,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->offset_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         { // gi texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
@@ -191,7 +191,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             tile_list = data->tile_list = gi_classify.AddStorageOutput("GI Tile List", desc, Stg::ComputeShader);
         }
         { // final gi texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
@@ -200,7 +200,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             gi_tex = data->out_gi_tex = gi_classify.AddStorageImageOutput("GI Final", params, Stg::ComputeShader);
         }
         { // blue noise texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = params.h = 128;
             params.format = Ren::eTexFormat::RGBA8;
             params.sampling.filter = Ren::eTexFilter::Nearest;
@@ -509,7 +509,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             gi_tex = data->out_diffuse_tex = sample_lights.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
 
             { // reflections texture
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
@@ -563,7 +563,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         { // Reprojected gi texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
@@ -574,7 +574,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_reproject.AddStorageImageOutput("GI Reprojected", params, Stg::ComputeShader);
         }
         { // 8x8 average gi texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = (view_state_.scr_res[0] + 7) / 8;
             params.h = (view_state_.scr_res[1] + 7) / 8;
             params.format = Ren::eTexFormat::RGBA16F;
@@ -585,7 +585,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_reproject.AddStorageImageOutput("Average GI", params, Stg::ComputeShader);
         }
         { // Variance
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R16F;
@@ -596,7 +596,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 gi_reproject.AddStorageImageOutput("GI Variance Temp", params, Stg::ComputeShader);
         }
         { // Sample count
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R16F;
@@ -702,7 +702,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         { // Final diffuse
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
@@ -793,7 +793,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
         if (EnableBlur) {
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
@@ -807,7 +807,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         }
 
         { // Variance texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R16F;
@@ -900,7 +900,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
             { // Final diffuse
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
@@ -989,7 +989,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->indir_args_offset2 = 6 * sizeof(uint32_t);
 
             { // Final diffuse
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
@@ -1067,7 +1067,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->gi_tex = gi_stabilization.AddTextureInput(gi_diffuse3_tex, Stg::ComputeShader);
 
             { // Final gi
-                Ren::Tex2DParams params;
+                Ren::TexParams params;
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;

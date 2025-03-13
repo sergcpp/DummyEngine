@@ -238,7 +238,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
         char name_buf[24];
         snprintf(name_buf, sizeof(name_buf), "Present Image [%i]", int(i));
 
-        Tex2DParams params;
+        TexParams params;
         params.w = w;
         params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
@@ -322,7 +322,7 @@ void Ren::Context::Resize(const int w, const int h) {
         char name_buf[24];
         snprintf(name_buf, sizeof(name_buf), "Present Image [%i]", int(i));
 
-        Tex2DParams params;
+        TexParams params;
         params.w = w;
         params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {

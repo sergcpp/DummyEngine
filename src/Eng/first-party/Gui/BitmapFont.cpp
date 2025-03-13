@@ -95,7 +95,7 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
 
             Ren::CommandBuffer cmd_buf = ctx.BegTempSingleTimeCommands();
 
-            Ren::Tex2DParams p;
+            Ren::TexParams p;
             p.w = img_data_w;
             p.h = img_data_h;
             p.format = Ren::eTexFormat::RGBA8;

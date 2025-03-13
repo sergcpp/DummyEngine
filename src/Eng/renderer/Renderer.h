@@ -245,17 +245,17 @@ class Renderer {
     };
 
     struct FrameTextures {
-        Ren::Tex2DParams color_params;
+        Ren::TexParams color_params;
         FgResRef color;
-        Ren::Tex2DParams albedo_params;
+        Ren::TexParams albedo_params;
         FgResRef albedo;
-        Ren::Tex2DParams specular_params;
+        Ren::TexParams specular_params;
         FgResRef specular;
-        Ren::Tex2DParams normal_params;
+        Ren::TexParams normal_params;
         FgResRef normal;
-        Ren::Tex2DParams depth_params;
+        Ren::TexParams depth_params;
         FgResRef depth, opaque_depth;
-        Ren::Tex2DParams velocity_params;
+        Ren::TexParams velocity_params;
         FgResRef velocity;
 
         FgResRef envmap;

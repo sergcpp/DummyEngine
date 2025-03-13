@@ -97,7 +97,7 @@ void test_mesh() {
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4],
                                          const Bitmask<eTexFlags> flags) {
             eTexLoadStatus status;
-            Tex2DParams p;
+            TexParams p;
             return test.LoadTexture2D(name, {}, p, nullptr, &status);
         };
 
@@ -166,7 +166,7 @@ void test_mesh() {
 
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const eTexFlags flags) {
             eTexLoadStatus status;
-            Tex2DParams p;
+            TexParams p;
             return test.LoadTexture2D(name, {}, p, nullptr, &status);
         };
 

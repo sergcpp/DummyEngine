@@ -75,23 +75,25 @@ int Ren::GetMipDataLenBytes(const int w, const int h, const eTexFormat format) {
     }
 }
 
-uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
+uint32_t Ren::EstimateMemory(const TexParams &params) {
     uint32_t total_len = 0;
     for (int i = 0; i < params.mip_count; i++) {
         const int w = std::max(params.w >> i, 1);
         const int h = std::max(params.h >> i, 1);
+        const int d = std::max(params.d >> i, 1);
 
         if (IsCompressedFormat(params.format)) {
             const int block_len = GetBlockLenBytes(params.format);
             const int block_cnt = GetBlockCount(w, h, params.format);
 
+            assert(params.d == 0);
             total_len += uint32_t(block_len) * block_cnt;
         } else {
             assert(g_tex_format_info[int(params.format)].pp_data_len != 0);
-            total_len += w * h * g_tex_format_info[int(params.format)].pp_data_len;
+            total_len += w * h * d * g_tex_format_info[int(params.format)].pp_data_len;
         }
     }
-    return params.cube ? 6 * total_len : total_len;
+    return (params.flags & eTexFlags::CubeMap) ? 6 * total_len : total_len;
 }
 
 //
@@ -249,9 +251,10 @@ int Ren::BlockLenFromGLInternalFormat(uint32_t gl_internal_format) {
 
 Ren::eTexUsage Ren::TexUsageFromState(eResState state) { return g_tex_usage_per_state[int(state)]; }
 
-void Ren::ParseDDSHeader(const DDSHeader &hdr, Tex2DParams *params) {
+void Ren::ParseDDSHeader(const DDSHeader &hdr, TexParams *params) {
     params->w = uint16_t(hdr.dwWidth);
     params->h = uint16_t(hdr.dwHeight);
+    //params->d = uint16_t(hdr.dwDepth);
     params->mip_count = uint8_t(hdr.dwMipMapCount);
 
     if (hdr.sPixelFormat.dwFourCC == FourCC_BC1_UNORM) {

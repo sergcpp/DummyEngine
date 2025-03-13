@@ -166,7 +166,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     { // create dummy texture
         char name_buf[] = "Present Image [0]";
 
-        Tex2DParams params;
+        TexParams params;
         params.format = eTexFormat::RGBA8;
         params.flags = eTexFlags::NoOwnership;
         params.usage = Bitmask(eTexUsage::RenderTarget);

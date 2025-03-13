@@ -971,7 +971,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         data->depth_tex = ssao.AddTextureInput(depth_down_2x, Stg::FragmentShader);
 
         { // Allocate output texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
             params.format = Ren::eTexFormat::R8;
@@ -1022,7 +1022,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         data->input_tex = ssao_blur_h.AddTextureInput(ssao_raw, Stg::FragmentShader);
 
         { // Allocate output texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
             params.format = Ren::eTexFormat::R8;
@@ -1077,7 +1077,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         data->input_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Stg::FragmentShader);
 
         { // Allocate output texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
             params.format = Ren::eTexFormat::R8;
@@ -1133,7 +1133,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
         data->input_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Stg::FragmentShader);
 
         { // Allocate output texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.act_res[0];
             params.h = view_state_.act_res[1];
             params.format = Ren::eTexFormat::R8;
@@ -1192,7 +1192,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
         data->norm_tex = gtao_main.AddTextureInput(norm_tex, Stg::ComputeShader);
 
         { // Output texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
             params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
@@ -1247,7 +1247,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
         data->ao_tex = gtao_filter.AddTextureInput(gtao_result, Stg::ComputeShader);
 
         { // Output texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
             params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
@@ -1300,7 +1300,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
         data->ao_tex = gtao_accumulation.AddTextureInput(gtao_result, Stg::ComputeShader);
 
         { // Final ao
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
             params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
@@ -1359,7 +1359,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
         data->ao_tex = gtao_upsample.AddTextureInput(gtao_result, Stg::ComputeShader);
 
         { // Final ao
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R8;
@@ -1467,7 +1467,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
     data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Stg::FragmentShader);
 
     { // Texture that holds resolved color
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
         params.format = Ren::eTexFormat::RGBA16F;
@@ -1539,7 +1539,7 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
     data->in_depth_tex = downsample_depth.AddTextureInput(depth_tex, Ren::eStageBits::FragmentShader);
 
     { // Texture that holds 2x downsampled linear depth
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = view_state_.scr_res[0] / 2;
         params.h = view_state_.scr_res[1] / 2;
         params.format = Ren::eTexFormat::R32F;
@@ -1595,7 +1595,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
         data->exposure_tex = bloom_downsample.AddTextureInput(exposure_texture, Ren::eStageBits::ComputeShader);
 
         { // Texture that holds downsampled bloom image
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = (view_state_.scr_res[0] / 2) >> mip;
             params.h = (view_state_.scr_res[1] / 2) >> mip;
             params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
@@ -1650,7 +1650,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
         data->blend_tex = bloom_upsample.AddTextureInput(downsampled[mip], Ren::eStageBits::ComputeShader);
 
         { // Texture that holds upsampled bloom image
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = (view_state_.scr_res[0] / 2) >> mip;
             params.h = (view_state_.scr_res[1] / 2) >> mip;
             params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
@@ -1693,7 +1693,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
     { // Clear histogram image
         auto &histogram_clear = fg_builder_.AddNode("HISTOGRAM CLEAR");
 
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = EXPOSURE_HISTOGRAM_RES + 1;
         params.h = 1;
         params.format = Ren::eTexFormat::R32UI;
@@ -1743,7 +1743,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
 
         data->histogram = histogram_exposure.AddTextureInput(histogram, Ren::eStageBits::ComputeShader);
 
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = params.h = 1;
         params.format = Ren::eTexFormat::R32F;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1785,7 +1785,7 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
     data->in_velocity_tex = debug_motion.AddTextureInput(velocity, Ren::eStageBits::ComputeShader);
 
     { // Output texture
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
         params.format = Ren::eTexFormat::RGBA8;

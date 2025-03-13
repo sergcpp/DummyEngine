@@ -40,7 +40,7 @@ LoadingState::LoadingState(Viewer *viewer) : viewer_(viewer), alloc_(32, 512), p
 LoadingState::~LoadingState() = default;
 
 void LoadingState::Enter() {
-    Ren::Tex2DParams params;
+    Ren::TexParams params;
     params.w = params.h = 1;
     params.format = Ren::eTexFormat::RGBA8;
 

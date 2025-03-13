@@ -582,7 +582,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::eRe
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex2DParams &p,
+Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::TexParams &p,
                                            const Ren::eResState desired_state, const Ren::eStageBits stages,
                                            FgNode &node) {
     FgResource ret;
@@ -1825,7 +1825,7 @@ void Eng::FgBuilder::ClearImage_AsTransfer(Ren::Tex2DRef &tex, Ren::CommandBuffe
 }
 
 void Eng::FgBuilder::ClearImage_AsStorage(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
-    const Ren::Tex2DParams &p = tex->params;
+    const Ren::TexParams &p = tex->params;
 
     const Ren::PipelineRef &pi = pi_clear_image_[int(p.format)];
     assert(pi);
@@ -1840,7 +1840,7 @@ void Eng::FgBuilder::ClearImage_AsStorage(Ren::Tex2DRef &tex, Ren::CommandBuffer
 }
 
 void Eng::FgBuilder::ClearImage_AsTarget(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
-    const Ren::Tex2DParams &p = tex->params;
+    const Ren::TexParams &p = tex->params;
 
     Ren::RenderTarget depth_target;
     Ren::SmallVector<Ren::RenderTarget, 1> color_target;

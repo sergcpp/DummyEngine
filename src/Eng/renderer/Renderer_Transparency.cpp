@@ -45,7 +45,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
             const std::string tex_name = "OIT REFL #" + std::to_string(i);
 
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = (view_state_.scr_res[0] / 2);
             params.h = (view_state_.scr_res[1] / 2);
             params.format = Ren::eTexFormat::RGBA16F;

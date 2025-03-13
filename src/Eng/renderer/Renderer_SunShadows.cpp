@@ -86,7 +86,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             tile_list = data->tile_list = rt_shadows.AddStorageOutput("SH Tile List", desc, Stg::ComputeShader);
         }
         { // ray hits texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = (view_state_.scr_res[0] + 7) / 8;
             params.h = (view_state_.scr_res[1] + 3) / 4;
             params.format = Ren::eTexFormat::R32UI;
@@ -96,7 +96,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_shadows.AddStorageImageOutput("SH Ray Hits", params, Stg::ComputeShader);
         }
         { // blue noise texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = params.h = 128;
             params.format = Ren::eTexFormat::RG8;
             params.sampling.filter = Ren::eTexFilter::Nearest;
@@ -211,7 +211,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->hit_mask_tex = rt_shadow_debug.AddTextureInput(ray_hits_tex, Stg::ComputeShader);
 
         { // shadow mask buffer
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::R8;
@@ -334,7 +334,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_classify_tiles.AddStorageOutput("RT SH Tile Meta", desc, Stg::ComputeShader);
         }
         { // reprojected texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG16F;
@@ -344,7 +344,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 rt_classify_tiles.AddStorageImageOutput("SH Reproj Tex", params, Stg::ComputeShader);
         }
         { // moments texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG11F_B10F;
@@ -422,7 +422,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG16F;
@@ -488,7 +488,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG16F;
@@ -554,7 +554,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->shared_data = rt_filter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
 
         { // out result texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RG16F;
@@ -625,7 +625,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         }
 
         { // shadows texture
-            Ren::Tex2DParams params;
+            Ren::TexParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RGBA8;
@@ -704,7 +704,7 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
     data->shadow_color_tex = sun_shadows.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
     { // shadows texture
-        Ren::Tex2DParams params;
+        Ren::TexParams params;
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
         params.format = Ren::eTexFormat::RGBA8;
