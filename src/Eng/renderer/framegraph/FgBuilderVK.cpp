@@ -331,8 +331,8 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         Ren::MemAllocation alloc = {resource.mem_offset, resource.mem_size, resource.mem_heap};
 
         Ren::eTexLoadStatus status;
-        tex.strong_ref = ctx_.LoadTexture2D(tex.name, std::get<Ren::TexHandle>(resource.handle), tex.desc,
-                                            std::move(alloc), &status);
+        tex.strong_ref =
+            ctx_.LoadTexture(tex.name, std::get<Ren::TexHandle>(resource.handle), tex.desc, std::move(alloc), &status);
         assert(status == Ren::eTexLoadStatus::CreatedDefault);
         tex.ref = tex.strong_ref;
     }
@@ -535,8 +535,6 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                 tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
             } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex._ref)) {
                 tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture2DArray *>(tex._ref)->resource_state);
-            } else if (std::holds_alternative<const Ren::Texture3D *>(tex._ref)) {
-                tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture3D *>(tex._ref)->resource_state);
             }
         }
 
@@ -553,8 +551,8 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
             Ren::eStageBits src_stages = Ren::eStageBits::None;
             Ren::eStageBits dst_stages = Ren::eStageBits::None;
 
-            std::vector<Ren::BufferRef> bufs_to_clear;
-            std::vector<Ren::Tex2DRef> texs_to_clear;
+            std::vector<Ren::BufRef> bufs_to_clear;
+            std::vector<Ren::TexRef> texs_to_clear;
 
             // for (const FgResource &res : node->input_) {
             //     HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
@@ -577,7 +575,7 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                 }
             }
             TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions);
-            for (Ren::BufferRef &b : bufs_to_clear) {
+            for (Ren::BufRef &b : bufs_to_clear) {
                 if (b->resource_state == Ren::eResState::CopyDst) {
                     ClearBuffer_AsTransfer(b, cmd_buf);
                 } else if (b->resource_state == Ren::eResState::UnorderedAccess) {
@@ -588,7 +586,7 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
                     assert(false);
                 }
             }
-            for (Ren::Tex2DRef &t : texs_to_clear) {
+            for (Ren::TexRef &t : texs_to_clear) {
                 if (t->resource_state == Ren::eResState::CopyDst) {
                     ClearImage_AsTransfer(t, cmd_buf);
                 } else if (t->resource_state == Ren::eResState::UnorderedAccess) {

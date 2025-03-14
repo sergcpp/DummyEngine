@@ -99,17 +99,17 @@ struct FgAllocRes {
 
 struct FgAllocBuf : public FgAllocRes {
     FgBufDesc desc;
-    Ren::WeakBufferRef ref;
-    Ren::BufferRef strong_ref;
-    Ren::Tex1DRef tbos[4];
+    Ren::WeakBufRef ref;
+    Ren::BufRef strong_ref;
+    Ren::TexBufRef tbos[4];
 };
 
 struct FgAllocTex : public FgAllocRes {
     Ren::TexParams desc;
-    Ren::WeakTex2DRef ref;
-    Ren::Tex2DRef strong_ref;
-    // TODO: remove this once Texture2D/Texture2DArray/Texture3D will be merged into one class
-    std::variant<std::monostate, const Ren::Texture2DArray *, const Ren::Texture3D *> _ref;
+    Ren::WeakTexRef ref;
+    Ren::TexRef strong_ref;
+    // TODO: remove this once Texture/Texture2DArray will be merged into one class
+    std::variant<std::monostate, const Ren::Texture2DArray *> _ref;
 };
 
 class FgNode;
@@ -146,12 +146,12 @@ class FgBuilder {
     void ReleaseMemHeaps();
     void BuildResourceLinkedLists();
 
-    void ClearBuffer_AsTransfer(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf);
-    void ClearBuffer_AsStorage(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf);
+    void ClearBuffer_AsTransfer(Ren::BufRef &buf, Ren::CommandBuffer cmd_buf);
+    void ClearBuffer_AsStorage(Ren::BufRef &buf, Ren::CommandBuffer cmd_buf);
 
-    void ClearImage_AsTransfer(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf);
-    void ClearImage_AsStorage(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf);
-    void ClearImage_AsTarget(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsTransfer(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf);
+    void ClearImage_AsTarget(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf);
 
     static const int AllocBufSize = 4 * 1024 * 1024;
     std::unique_ptr<char[]> alloc_buf_;
@@ -204,18 +204,17 @@ class FgBuilder {
     }
 
     FgResRef ReadBuffer(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                        FgNode &node, int slot_index = -1);
-    FgResRef ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex1DRef &tbo, Ren::eResState desired_state,
+    FgResRef ReadBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node,
+                        int slot_index = -1);
+    FgResRef ReadBuffer(const Ren::WeakBufRef &ref, const Ren::WeakTexBufRef &tbo, Ren::eResState desired_state,
                         Ren::eStageBits stages, FgNode &node);
 
     FgResRef ReadTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+    FgResRef ReadTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          FgNode &node);
     FgResRef ReadTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          FgNode &node);
-    FgResRef ReadTexture(const Ren::Texture3D *ref, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
 
     FgResRef ReadHistoryTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef ReadHistoryTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages,
@@ -224,19 +223,19 @@ class FgBuilder {
     FgResRef WriteBuffer(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef WriteBuffer(std::string_view name, const FgBufDesc &desc, Ren::eResState desired_state,
                          Ren::eStageBits stages, FgNode &node);
-    FgResRef WriteBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+    FgResRef WriteBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          FgNode &node);
 
     FgResRef WriteTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef WriteTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef WriteTexture(std::string_view name, const Ren::TexParams &p, Ren::eResState desired_state,
                           Ren::eStageBits stages, FgNode &node);
-    FgResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+    FgResRef WriteTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           FgNode &node, int slot_index = -1);
     FgResRef WriteTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           FgNode &node);
 
-    FgResRef MakeTextureResource(const Ren::WeakTex2DRef &ref);
+    FgResRef MakeTextureResource(const Ren::WeakTexRef &ref);
 
     FgAllocBuf &GetReadBuffer(FgResRef handle);
     FgAllocTex &GetReadTexture(FgResRef handle);

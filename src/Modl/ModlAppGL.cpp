@@ -337,10 +337,10 @@ void ModlApp::ClearColorAndDepth(const float r, const float g, const float b, co
 }
 
 void ModlApp::CheckInitVAOs() {
-    Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2();
-    Ren::BufferRef skin_vtx_buf = ctx_->default_skin_vertex_buf();
-    Ren::BufferRef delta_buf = ctx_->default_delta_buf();
-    Ren::BufferRef ndx_buf = ctx_->default_indices_buf();
+    Ren::BufRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2();
+    Ren::BufRef skin_vtx_buf = ctx_->default_skin_vertex_buf();
+    Ren::BufRef delta_buf = ctx_->default_delta_buf();
+    Ren::BufRef ndx_buf = ctx_->default_indices_buf();
 
     const auto gl_vertex_buf1 = GLuint(vtx_buf1->id()), gl_vertex_buf2 = GLuint(vtx_buf2->id()),
                gl_skin_vertex_buf = GLuint(skin_vtx_buf->id()), gl_delta_buf = GLuint(delta_buf->id()),

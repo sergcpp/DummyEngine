@@ -121,8 +121,8 @@ struct Environment {
     Ren::Vec2f curr_wind_scroll_lf, curr_wind_scroll_hf;
     Ren::Vec3f env_col;
     float env_map_rot = 0.0f;
-    Ren::Tex2DRef env_map;
-    Ren::Tex2DRef lm_direct, lm_indir, lm_indir_sh[4];
+    Ren::TexRef env_map;
+    Ren::TexRef lm_direct, lm_indir, lm_indir_sh[4];
     float sun_shadow_bias[2] = {4.0f, 8.0f};
     uint32_t generation = 0;
 
@@ -200,11 +200,11 @@ static_assert(sizeof(light_item_t) == 96, "!");
 static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
 
 struct PersistentGpuData {
-    Ren::BufferRef instance_buf;
-    Ren::Tex1DRef instance_buf_tbo;
-    Ren::BufferRef materials_buf;
-    Ren::BufferRef stoch_lights_buf, stoch_lights_nodes_buf;
-    Ren::BufferRef vertex_buf1, vertex_buf2, skin_vertex_buf, delta_buf, indices_buf;
+    Ren::BufRef instance_buf;
+    Ren::TexBufRef instance_buf_tbo;
+    Ren::BufRef materials_buf;
+    Ren::BufRef stoch_lights_buf, stoch_lights_nodes_buf;
+    Ren::BufRef vertex_buf1, vertex_buf2, skin_vertex_buf, delta_buf, indices_buf;
     std::unique_ptr<Ren::MemAllocators> mem_allocs;
 #if defined(REN_VK_BACKEND)
     std::unique_ptr<Ren::DescrPool> textures_descr_pool;
@@ -214,21 +214,21 @@ struct PersistentGpuData {
     Ren::SmallVector<VkDescriptorSet, 1024> textures_descr_sets[4];
     VkDescriptorSet rt_textures_descr_sets[4] = {}, rt_inline_textures_descr_sets[4] = {};
 #elif defined(REN_GL_BACKEND)
-    Ren::BufferRef textures_buf;
+    Ren::BufRef textures_buf;
 #endif
     Ren::PipelineStorage pipelines;
 
     struct {
         Ren::FreelistAlloc rt_blas_mem_alloc;
-        std::vector<Ren::BufferRef> rt_blas_buffers;
+        std::vector<Ren::BufRef> rt_blas_buffers;
     } hwrt;
 
-    Ren::BufferRef rt_tlas_buf, rt_sh_tlas_buf;
+    Ren::BufRef rt_tlas_buf, rt_sh_tlas_buf;
 
     struct {
-        Ren::BufferRef rt_prim_indices_buf;
+        Ren::BufRef rt_prim_indices_buf;
         uint32_t rt_root_node = 0;
-        Ren::BufferRef rt_blas_buf;
+        Ren::BufRef rt_blas_buf;
         Ren::SparseArray<mesh_t> rt_meshes;
     } swrt;
     uint32_t rt_tlas_build_scratch_size = 0;
@@ -257,7 +257,7 @@ struct SceneData {
     Ren::Bitmask<eSceneLoadFlags> load_flags;
 
     Ren::BufferStorage buffers;
-    Ren::Texture2DStorage textures;
+    Ren::TextureStorage textures;
     Ren::MaterialStorage materials;
     std::vector<uint32_t> material_changes;
     PersistentGpuData persistent_data;

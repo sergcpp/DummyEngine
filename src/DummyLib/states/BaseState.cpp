@@ -132,30 +132,30 @@ BaseState::BaseState(Viewer *viewer) : viewer_(viewer) {
     //
     // Create required staging buffers
     //
-    Ren::BufferRef instance_indices_stage_buf = ren_ctx_->LoadBuffer(
+    Ren::BufRef instance_indices_stage_buf = ren_ctx_->LoadBuffer(
         "Instance Indices (Upload)", Ren::eBufType::Upload, Eng::InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef skin_transforms_stage_buf = ren_ctx_->LoadBuffer(
+    Ren::BufRef skin_transforms_stage_buf = ren_ctx_->LoadBuffer(
         "Skin Transforms (Upload)", Ren::eBufType::Upload, Eng::SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef shape_keys_stage_buf = ren_ctx_->LoadBuffer("Shape Keys (Upload)", Ren::eBufType::Upload,
-                                                               Eng::ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef cells_stage_buf =
+    Ren::BufRef shape_keys_stage_buf = ren_ctx_->LoadBuffer("Shape Keys (Upload)", Ren::eBufType::Upload,
+                                                            Eng::ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef cells_stage_buf =
         ren_ctx_->LoadBuffer("Cells (Upload)", Ren::eBufType::Upload, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_cells_stage_buf = ren_ctx_->LoadBuffer("RT Cells (Upload)", Ren::eBufType::Upload,
-                                                             Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef items_stage_buf =
+    Ren::BufRef rt_cells_stage_buf = ren_ctx_->LoadBuffer("RT Cells (Upload)", Ren::eBufType::Upload,
+                                                          Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef items_stage_buf =
         ren_ctx_->LoadBuffer("Items (Upload)", Ren::eBufType::Upload, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_items_stage_buf = ren_ctx_->LoadBuffer("RT Items (Upload)", Ren::eBufType::Upload,
-                                                             Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef lights_stage_buf = ren_ctx_->LoadBuffer("Lights (Upload)", Ren::eBufType::Upload,
-                                                           Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef decals_stage_buf = ren_ctx_->LoadBuffer("Decals (Upload)", Ren::eBufType::Upload,
-                                                           Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_geo_instances_stage_buf = ren_ctx_->LoadBuffer(
+    Ren::BufRef rt_items_stage_buf = ren_ctx_->LoadBuffer("RT Items (Upload)", Ren::eBufType::Upload,
+                                                          Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef lights_stage_buf = ren_ctx_->LoadBuffer("Lights (Upload)", Ren::eBufType::Upload,
+                                                        Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef decals_stage_buf = ren_ctx_->LoadBuffer("Decals (Upload)", Ren::eBufType::Upload,
+                                                        Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef rt_geo_instances_stage_buf = ren_ctx_->LoadBuffer(
         "RT Geo Instances (Upload)", Ren::eBufType::Upload, Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_sh_geo_instances_stage_buf =
+    Ren::BufRef rt_sh_geo_instances_stage_buf =
         ren_ctx_->LoadBuffer("RT Shadow Geo Instances (Upload)", Ren::eBufType::Upload,
                              Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
+    Ren::BufRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx_->capabilities.hwrt) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
@@ -175,8 +175,8 @@ BaseState::BaseState(Viewer *viewer) : viewer_(viewer) {
                                                           Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
-    Ren::BufferRef shared_data_stage_buf = ren_ctx_->LoadBuffer("Shared Data (Upload)", Ren::eBufType::Upload,
-                                                                Eng::SharedDataBlockSize * Ren::MaxFramesInFlight);
+    Ren::BufRef shared_data_stage_buf = ren_ctx_->LoadBuffer("Shared Data (Upload)", Ren::eBufType::Upload,
+                                                             Eng::SharedDataBlockSize * Ren::MaxFramesInFlight);
 
     //
     // Initialize draw lists
@@ -723,7 +723,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
 #endif
 
         Ren::eTexLoadStatus status;
-        capture_result_ = ren_ctx_->LoadTexture2D("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);
+        capture_result_ = ren_ctx_->LoadTexture("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedDefault);
     }
 
@@ -832,7 +832,7 @@ void BaseState::Draw() {
         }
     }
 
-    Ren::Tex2DRef render_target;
+    Ren::TexRef render_target;
     if (capture_state_ != eCaptureState::None) {
         if (use_pt_) {
             const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0][0].iteration;
@@ -1393,7 +1393,7 @@ void BaseState::InitScene_PT() {
     std::map<std::string, Ray::MaterialHandle> loaded_materials;
     std::map<std::string, Ray::TextureHandle> loaded_textures;
 
-    auto load_texture = [&](const Ren::Texture2D &tex, const bool is_srgb = false, const bool is_YCoCg = false,
+    auto load_texture = [&](const Ren::Texture &tex, const bool is_srgb = false, const bool is_YCoCg = false,
                             const bool use_mips = true) {
         if (tex.name() == "default_basecolor.dds" || tex.name() == "default_normalmap.dds" ||
             tex.name() == "default_roughness.dds" || tex.name() == "default_metallic.dds" ||
@@ -1750,7 +1750,7 @@ void BaseState::Clear_PT() {
     ray_renderer_->Clear({});
 }
 
-void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
+void BaseState::Draw_PT(const Ren::TexRef &target) {
     using namespace BaseStateInternal;
 
 #if defined(REN_VK_BACKEND)
@@ -1916,7 +1916,7 @@ void BaseState::Draw_PT(const Ren::Tex2DRef &target) {
             params.flags = Ren::eTexFlags::NoOwnership;
 
             Ren::eTexLoadStatus status;
-            pt_result_ = ren_ctx_->LoadTexture2D("PT Result Ref", handle, params, {}, &status);
+            pt_result_ = ren_ctx_->LoadTexture("PT Result Ref", handle, params, {}, &status);
             assert(status == Ren::eTexLoadStatus::CreatedDefault);
             pt_result_->resource_state = to_ren_state(pt_image.state);
         }
@@ -1968,7 +1968,7 @@ void BaseState::ReloadSceneResources() {
 }
 
 int BaseState::WriteAndValidateCaptureResult() {
-    Ren::BufferRef stage_buf =
+    Ren::BufRef stage_buf =
         ren_ctx_->LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * viewer_->width * viewer_->height);
 
     { // Download result

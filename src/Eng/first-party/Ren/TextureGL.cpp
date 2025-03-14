@@ -87,26 +87,26 @@ extern const float AnisotropyLevel;
 
 static_assert(sizeof(GLsync) == sizeof(void *), "!");
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *, ILog *log)
+Ren::Texture::Texture(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *, ILog *log)
     : name_(name) {
     Init(p, nullptr, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const TexParams &p,
-                          MemAllocators *, eTexLoadStatus *load_status, ILog *log)
+Ren::Texture::Texture(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const TexParams &p,
+                      MemAllocators *, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, p, nullptr, load_status, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const TexParams &p,
-                          MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+Ren::Texture::Texture(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const TexParams &p,
+                      MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : name_(name) {
     Init(data, p, nullptr, load_status, log);
 }
 
-Ren::Texture2D::~Texture2D() { Free(); }
+Ren::Texture::~Texture() { Free(); }
 
-Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
+Ren::Texture &Ren::Texture::operator=(Texture &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
@@ -122,19 +122,19 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
     return (*this);
 }
 
-uint64_t Ren::Texture2D::GetBindlessHandle() const { return glGetTextureHandleARB(GLuint(handle_.id)); }
+uint64_t Ren::Texture::GetBindlessHandle() const { return glGetTextureHandleARB(GLuint(handle_.id)); }
 
-void Ren::Texture2D::Init(const TexParams &p, MemAllocators *, ILog *log) { InitFromRAWData(nullptr, 0, p, log); }
+void Ren::Texture::Init(const TexParams &p, MemAllocators *, ILog *log) { InitFromRAWData(nullptr, 0, p, log); }
 
-void Ren::Texture2D::Init(const TexHandle &handle, const TexParams &_params, MemAllocation &&alloc, ILog *log) {
+void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAllocation &&alloc, ILog *log) {
     handle_ = handle;
     params = _params;
 
     SetSampling(params.sampling);
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
-                          eTexLoadStatus *load_status, ILog *log) {
+void Ren::Texture::Init(Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
+                        eTexLoadStatus *load_status, ILog *log) {
     assert(!data.empty());
 
     auto sbuf = Buffer{"Temp Stage Buf", nullptr, eBufType::Upload, uint32_t(data.size())};
@@ -148,8 +148,8 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const TexParams &p, MemAlloc
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs,
-                          eTexLoadStatus *load_status, ILog *log) {
+void Ren::Texture::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs,
+                        eTexLoadStatus *load_status, ILog *log) {
     assert(data);
 
     auto sbuf = Buffer{
@@ -176,7 +176,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const TexParams &p, MemAl
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
-void Ren::Texture2D::Free() {
+void Ren::Texture::Free() {
     if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
         auto tex_id = GLuint(handle_.id);
         glDeleteTextures(1, &tex_id);
@@ -191,8 +191,8 @@ void Ren::Texture2D::Free() {
     }
 }
 
-void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
-                             const bool is_srgb, CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
+void Ren::Texture::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
+                           const bool is_srgb, CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
     GLuint tex_id;
     glCreateTextures(samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG
@@ -267,11 +267,11 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     }
 }
 
-void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const TexParams &p, ILog *log) {
+void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
-    glCreateTextures(p.samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
+    glCreateTextures(p.samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : (p.d ? GL_TEXTURE_3D : GL_TEXTURE_2D), 1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
@@ -294,33 +294,50 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
             glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, GLsizei(p.samples), internal_format, GLsizei(p.w),
                                       GLsizei(p.h), GL_TRUE);
         } else {
-            // allocate all mip levels
-            ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, GLsizei(p.w), GLsizei(p.h));
+            if (p.d == 0) {
+                ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, GLsizei(p.w),
+                                            GLsizei(p.h));
+            } else {
+                ren_glTextureStorage3D_Comp(GL_TEXTURE_3D, tex_id, 1, internal_format, GLsizei(p.w), GLsizei(p.h),
+                                            GLsizei(p.d));
+            }
             if (sbuf) {
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
 
-                int w = p.w, h = p.h;
+                int w = p.w, h = p.h, d = p.d;
                 int bytes_left = sbuf->size() - data_off;
                 for (int i = 0; i < mip_count; ++i) {
-                    const int len = GetMipDataLenBytes(w, h, p.format);
+                    const int len = GetDataLenBytes(w, h, d, p.format);
                     if (len > bytes_left) {
                         log->Error("Insufficient data length, bytes left %i, expected %i", bytes_left, len);
                         return;
                     }
 
-                    if (IsCompressedFormat(p.format)) {
-                        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), i, 0, 0, w, h,
-                                                               internal_format, len,
-                                                               reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+                    if (p.d == 0) {
+                        if (IsCompressedFormat(p.format)) {
+                            ren_glCompressedTextureSubImage2D_Comp(
+                                GL_TEXTURE_2D, GLuint(handle_.id), i, 0, 0, w, h, internal_format, len,
+                                reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+                        } else {
+                            ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, i, 0, 0, w, h, format, type,
+                                                         reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+                        }
                     } else {
-                        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, tex_id, i, 0, 0, w, h, format, type,
-                                                     reinterpret_cast<const GLvoid *>(uintptr_t(data_off)));
+                        if (IsCompressedFormat(p.format)) {
+                            ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), i, 0, 0, 0, w, h,
+                                                                   d, internal_format, len,
+                                                                   reinterpret_cast<const void *>(uintptr_t(data_off)));
+                        } else {
+                            ren_glTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), i, 0, 0, 0, w, h, d, format,
+                                                         type, reinterpret_cast<const void *>(uintptr_t(data_off)));
+                        }
                     }
 
                     data_off += len;
                     bytes_left -= len;
                     w = std::max(w / 2, 1);
                     h = std::max(h / 2, 1);
+                    d = std::max(d / 2, 1);
                 }
 
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -353,7 +370,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     CheckError("create texture", log);
 }
 
-void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const TexParams &p, ILog *log) {
+void Ren::Texture::InitFromRAWData(const Buffer &sbuf, int data_off[6], const TexParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -389,7 +406,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
             if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
                 ren_glTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, tex_id, j, 0, 0, i, _w, _h, 1, format,
                                              type, reinterpret_cast<const GLvoid *>(uintptr_t(buffer_offset)));
-                buffer_offset += GetMipDataLenBytes(_w, _h, p.format);
+                buffer_offset += GetDataLenBytes(_w, _h, 1, p.format);
             }
         }
     }
@@ -414,7 +431,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
+void Ren::Texture::ApplySampling(SamplingParams sampling, ILog *log) {
     const auto tex_id = GLuint(handle_.id);
 
     if (!(params.flags & eTexFlags::CubeMap)) {
@@ -425,6 +442,7 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
 
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_S, g_wrap_mode_gl[size_t(sampling.wrap)]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_T, g_wrap_mode_gl[size_t(sampling.wrap)]);
+        ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_R, g_wrap_mode_gl[size_t(sampling.wrap)]);
 
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS, sampling.lod_bias.to_float());
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_LOD, sampling.min_lod.to_float());
@@ -457,51 +475,46 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
     params.sampling = sampling;
 }
 
-void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                 const int sizey, const eTexFormat format, const void *data, const int data_len) {
+void Ren::Texture::SetSubImage(const int level, const int offsetx, const int offsety, const int offsetz,
+                               const int sizex, const int sizey, const int sizez, const eTexFormat format,
+                               const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off, const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
     assert(offsety >= 0 && offsety + sizey <= std::max(params.h >> level, 1));
-
-    if (IsCompressedFormat(format)) {
-        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
-                                               GLint(offsety), GLsizei(sizex), GLsizei(sizey),
-                                               GLInternalFormatFromTexFormat(format, (params.flags & eTexFlags::SRGB)),
-                                               GLsizei(data_len), data);
-    } else {
-        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
-                                     GLFormatFromTexFormat(format), GLTypeFromTexFormat(format), data);
-    }
-}
-
-Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                           const int sizey, const eTexFormat format, const Buffer &sbuf,
-                                           CommandBuffer cmd_buf, const int data_off, const int data_len) {
-    assert(format == params.format);
-    assert(params.samples == 1);
-    assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
-    assert(offsety >= 0 && offsety + sizey <= std::max(params.h >> level, 1));
+    assert(offsetz >= 0 && offsetz + sizez <= std::max(params.d >> level, 1));
+    assert(sbuf.type() == eBufType::Upload);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
-    if (IsCompressedFormat(format)) {
-        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
-                                               GLint(offsety), GLsizei(sizex), GLsizei(sizey),
-                                               GLInternalFormatFromTexFormat(format, (params.flags & eTexFlags::SRGB)),
-                                               GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
+    if (params.d == 0) {
+        if (IsCompressedFormat(format)) {
+            ren_glCompressedTextureSubImage2D_Comp(
+                GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx), GLint(offsety), GLsizei(sizex),
+                GLsizei(sizey), GLInternalFormatFromTexFormat(format, (params.flags & eTexFlags::SRGB)),
+                GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
+        } else {
+            ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
+                                         GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                         reinterpret_cast<const void *>(uintptr_t(data_off)));
+        }
     } else {
-        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
-                                     GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
-                                     reinterpret_cast<const void *>(uintptr_t(data_off)));
+        if (IsCompressedFormat(format)) {
+            ren_glCompressedTextureSubImage3D_Comp(
+                GL_TEXTURE_3D, GLuint(handle_.id), 0, GLint(offsetx), GLint(offsety), GLint(offsetz), GLsizei(sizex),
+                GLsizei(sizey), GLsizei(sizez), GLInternalFormatFromTexFormat(format, (params.flags & eTexFlags::SRGB)),
+                GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
+        } else {
+            ren_glTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, offsetx, offsety, offsetz, sizex, sizey,
+                                         sizez, GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                         reinterpret_cast<const void *>(uintptr_t(data_off)));
+        }
     }
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-    return MakeFence();
 }
 
-void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const {
+void Ren::Texture::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const {
     glBindBuffer(GL_PIXEL_PACK_BUFFER, GLuint(sbuf.id()));
 
     if (IsCompressedFormat(params.format)) {
@@ -516,15 +529,15 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 
-void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
-                           const uint32_t src_y, Texture2D &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
+void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32_t src_level, const uint32_t src_x,
+                           const uint32_t src_y, Texture &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
                            const uint32_t dst_y, const uint32_t dst_face, const uint32_t width, const uint32_t height) {
     glCopyImageSubData(GLuint(src_tex.id()), GL_TEXTURE_2D, GLint(src_level), GLint(src_x), GLint(src_y), 0,
                        GLuint(dst_tex.id()), GL_TEXTURE_2D, GLint(dst_level), GLint(dst_x), GLint(dst_y),
                        GLint(dst_face), GLsizei(width), GLsizei(height), 1);
 }
 
-void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf) {
+void Ren::ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
     if (IsDepthStencilFormat(tex.params.format) || IsUnsignedIntegerFormat(tex.params.format)) {
         glClearTexImage(tex.id(), 0, GLFormatFromTexFormat(tex.params.format), GLTypeFromTexFormat(tex.params.format),
                         rgba);
@@ -535,15 +548,15 @@ void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture1D::Texture1D(std::string_view name, const BufferRef &buf, const eTexFormat format, const uint32_t offset,
-                          const uint32_t size, ILog *log)
+Ren::TextureBuffer::TextureBuffer(std::string_view name, const BufRef &buf, const eTexFormat format,
+                                  const uint32_t offset, const uint32_t size, ILog *log)
     : name_(name) {
     Init(buf, format, offset, size, log);
 }
 
-Ren::Texture1D::~Texture1D() { Free(); }
+Ren::TextureBuffer::~TextureBuffer() { Free(); }
 
-Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
+Ren::TextureBuffer &Ren::TextureBuffer::operator=(TextureBuffer &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
@@ -560,8 +573,8 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
-                          ILog *log) {
+void Ren::TextureBuffer::Init(const BufRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
+                              ILog *log) {
     Free();
 
     GLuint tex_id;
@@ -581,7 +594,7 @@ void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const u
     params_.format = format;
 }
 
-void Ren::Texture1D::Free() {
+void Ren::TextureBuffer::Free() {
     if (params_.format != eTexFormat::Undefined) {
         auto tex_id = GLuint(handle_.id);
         glDeleteTextures(1, &tex_id);
@@ -590,96 +603,6 @@ void Ren::Texture1D::Free() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
-
-Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const TexParams &params, MemAllocators *mem_allocs,
-                          ILog *log)
-    : name_(name), api_ctx_(ctx) {
-    Init(params, mem_allocs, log);
-}
-
-Ren::Texture3D::~Texture3D() { Free(); }
-
-Ren::Texture3D &Ren::Texture3D::operator=(Texture3D &&rhs) noexcept {
-    if (this == &rhs) {
-        return (*this);
-    }
-
-    Free();
-
-    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
-    handle_ = std::exchange(rhs.handle_, {});
-    params = std::exchange(rhs.params, {});
-    name_ = std::move(rhs.name_);
-
-    resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
-
-    return (*this);
-}
-
-void Ren::Texture3D::Init(const TexParams &p, MemAllocators *mem_allocs, ILog *log) {
-    Free();
-
-    GLuint tex_id;
-    glCreateTextures(GL_TEXTURE_3D, 1, &tex_id);
-#ifdef ENABLE_GPU_DEBUG
-    glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
-#endif
-
-    handle_.id = tex_id;
-    handle_.generation = TextureHandleCounter++;
-    params = p;
-
-    const GLuint internal_format = GLInternalFormatFromTexFormat(p.format, (p.flags & eTexFlags::SRGB));
-
-    ren_glTextureStorage3D_Comp(GL_TEXTURE_3D, tex_id, 1, internal_format, GLsizei(p.w), GLsizei(p.h), GLsizei(p.d));
-
-    this->resource_state = eResState::Undefined;
-
-    ren_glTextureParameteri_Comp(GL_TEXTURE_3D, tex_id, GL_TEXTURE_MIN_FILTER,
-                                 g_min_filter_gl[size_t(p.sampling.filter)]);
-    ren_glTextureParameteri_Comp(GL_TEXTURE_3D, tex_id, GL_TEXTURE_MAG_FILTER,
-                                 g_mag_filter_gl[size_t(p.sampling.filter)]);
-
-    ren_glTextureParameteri_Comp(GL_TEXTURE_3D, tex_id, GL_TEXTURE_WRAP_S, g_wrap_mode_gl[size_t(p.sampling.wrap)]);
-    ren_glTextureParameteri_Comp(GL_TEXTURE_3D, tex_id, GL_TEXTURE_WRAP_T, g_wrap_mode_gl[size_t(p.sampling.wrap)]);
-    ren_glTextureParameteri_Comp(GL_TEXTURE_3D, tex_id, GL_TEXTURE_WRAP_R, g_wrap_mode_gl[size_t(p.sampling.wrap)]);
-}
-
-void Ren::Texture3D::Free() {
-    if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
-        auto tex_id = GLuint(handle_.id);
-        glDeleteTextures(1, &tex_id);
-
-        handle_ = {};
-        params.format = eTexFormat::Undefined;
-    }
-}
-
-void Ren::Texture3D::SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
-                                 eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off,
-                                 int data_len) {
-    assert(format == params.format);
-    assert(offsetx >= 0 && offsetx + sizex <= params.w);
-    assert(offsety >= 0 && offsety + sizey <= params.h);
-    assert(offsetz >= 0 && offsetz + sizez <= params.d);
-
-    assert(sbuf.type() == eBufType::Upload);
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
-
-    if (IsCompressedFormat(format)) {
-        ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, GLint(offsetx), GLint(offsety),
-                                               GLint(offsetz), GLsizei(sizex), GLsizei(sizey), GLsizei(sizez),
-                                               GLInternalFormatFromTexFormat(format, (params.flags & eTexFlags::SRGB)),
-                                               GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
-    } else {
-        ren_glTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, offsetx, offsety, offsetz, sizex, sizey,
-                                     sizez, GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
-                                     reinterpret_cast<const void *>(uintptr_t(data_off)));
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-}
 
 uint32_t Ren::GLFormatFromTexFormat(const eTexFormat format) { return g_formats_gl[size_t(format)].format; }
 

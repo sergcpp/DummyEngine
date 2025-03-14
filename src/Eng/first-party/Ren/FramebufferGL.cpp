@@ -33,23 +33,22 @@ void Ren::Framebuffer::Destroy() {
     }
 }
 
-bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
-                               const WeakTex2DRef &_stencil_attachment,
-                               Span<const WeakTex2DRef> _color_attachments) const {
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
+                               const WeakTexRef &_stencil_attachment, Span<const WeakTexRef> _color_attachments) const {
     return depth_attachment != _depth_attachment || stencil_attachment != _stencil_attachment ||
            Span<const Attachment>(color_attachments) != _color_attachments;
 }
 
-bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
-                               const WeakTex2DRef &_stencil_attachment,
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
+                               const WeakTexRef &_stencil_attachment,
                                Span<const RenderTarget> _color_attachments) const {
     return depth_attachment != _depth_attachment || stencil_attachment != _stencil_attachment ||
            Span<const Attachment>(color_attachments) != _color_attachments;
 }
 
-bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
-                                const WeakTex2DRef &_stencil_attachment,
-                                Span<const WeakTex2DRef> _color_attachments) const {
+bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
+                                const WeakTexRef &_stencil_attachment,
+                                Span<const WeakTexRef> _color_attachments) const {
     if (depth_attachment < _depth_attachment) {
         return true;
     } else if (depth_attachment == _depth_attachment) {
@@ -62,8 +61,8 @@ bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTex2DRe
     return false;
 }
 
-bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTex2DRef &_depth_attachment,
-                                const WeakTex2DRef &_stencil_attachment,
+bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTexRef &_depth_attachment,
+                                const WeakTexRef &_stencil_attachment,
                                 Span<const RenderTarget> _color_attachments) const {
     if (depth_attachment < _depth_attachment) {
         return true;
@@ -78,8 +77,8 @@ bool Ren::Framebuffer::LessThan(const RenderPass &render_pass, const WeakTex2DRe
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
-                             const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
-                             Span<const WeakTex2DRef> _color_attachments, const bool is_multisampled, ILog *log) {
+                             const WeakTexRef _depth_attachment, const WeakTexRef _stencil_attachment,
+                             Span<const WeakTexRef> _color_attachments, const bool is_multisampled, ILog *log) {
     if (!Changed(render_pass, _depth_attachment, _stencil_attachment, _color_attachments)) {
         // nothing has changed
         return true;
@@ -103,7 +102,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
                              const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
                              Span<const RenderTarget> _color_targets, ILog *log) {
-    SmallVector<WeakTex2DRef, 4> color_refs;
+    SmallVector<WeakTexRef, 4> color_refs;
     for (int i = 0; i < _color_targets.size(); ++i) {
         color_refs.push_back(_color_targets[i].ref);
     }

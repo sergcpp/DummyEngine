@@ -5,7 +5,7 @@
 
 namespace Ren {
 struct VtxAttribDesc {
-    WeakBufferRef buf;
+    WeakBufRef buf;
     uint8_t loc = 0;
     uint8_t size = 0;
     eType type = eType::Undefined;
@@ -13,7 +13,7 @@ struct VtxAttribDesc {
     uint32_t offset = 0;
 
     VtxAttribDesc() = default;
-    VtxAttribDesc(const BufferRef &_buf, int _loc, uint8_t _size, eType _type, int _stride, uint32_t _offset)
+    VtxAttribDesc(const BufRef &_buf, int _loc, uint8_t _size, eType _type, int _stride, uint32_t _offset)
         : buf(_buf), loc(_loc), size(_size), type(_type), stride(_stride), offset(_offset) {}
 };
 static_assert(sizeof(VtxAttribDesc) == 32);
@@ -39,10 +39,10 @@ class VertexInput : public RefCounter {
 #endif
   public:
     SmallVector<VtxAttribDesc, 4> attribs;
-    WeakBufferRef elem_buf;
+    WeakBufRef elem_buf;
 
     VertexInput();
-    VertexInput(Span<const VtxAttribDesc> attribs, const BufferRef &elem_buf) { Init(attribs, elem_buf); }
+    VertexInput(Span<const VtxAttribDesc> attribs, const BufRef &elem_buf) { Init(attribs, elem_buf); }
     VertexInput(const VertexInput &rhs) = delete;
     VertexInput(VertexInput &&rhs) noexcept { (*this) = std::move(rhs); }
     ~VertexInput();
@@ -72,7 +72,7 @@ class VertexInput : public RefCounter {
     uint32_t GetVAO() const;
 #endif
 
-    void Init(Span<const VtxAttribDesc> attribs, const BufferRef &elem_buf);
+    void Init(Span<const VtxAttribDesc> attribs, const BufRef &elem_buf);
 };
 
 using VertexInputRef = StrongRef<VertexInput, SortedStorage<VertexInput>>;

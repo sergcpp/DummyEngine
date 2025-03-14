@@ -42,39 +42,38 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
-        vtx_buf1.tbos[0] =
-            ctx.CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F, 0, vtx_buf1.ref->size());
+        vtx_buf1.tbos[0] = ctx.CreateTextureBuffer("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F, 0,
+                                                   vtx_buf1.ref->size());
     }
 
     if (!vtx_buf2.tbos[0] || vtx_buf2.tbos[0]->params().size != vtx_buf2.ref->size()) {
-        vtx_buf2.tbos[0] = ctx.CreateTexture1D("Vertex Buf 2 TBO", vtx_buf2.ref, Ren::eTexFormat::RGBA32UI, 0,
-                                               vtx_buf2.ref->size());
+        vtx_buf2.tbos[0] = ctx.CreateTextureBuffer("Vertex Buf 2 TBO", vtx_buf2.ref, Ren::eTexFormat::RGBA32UI, 0,
+                                                   vtx_buf2.ref->size());
     }
 
     if (!ndx_buf.tbos[0] || ndx_buf.tbos[0]->params().size != ndx_buf.ref->size()) {
         ndx_buf.tbos[0] =
-            ctx.CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0, ndx_buf.ref->size());
+            ctx.CreateTextureBuffer("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0, ndx_buf.ref->size());
     }
 
     if (!prim_ndx_buf.tbos[0] || prim_ndx_buf.tbos[0]->params().size != prim_ndx_buf.ref->size()) {
-        prim_ndx_buf.tbos[0] = ctx.CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                                   prim_ndx_buf.ref->size());
+        prim_ndx_buf.tbos[0] = ctx.CreateTextureBuffer("Prim Ndx TBO", prim_ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                                       prim_ndx_buf.ref->size());
     }
 
     if (!rt_blas_buf.tbos[0] || rt_blas_buf.tbos[0]->params().size != rt_blas_buf.ref->size()) {
-        rt_blas_buf.tbos[0] = ctx.CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
-                                                  rt_blas_buf.ref->size());
+        rt_blas_buf.tbos[0] = ctx.CreateTextureBuffer("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
+                                                      rt_blas_buf.ref->size());
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
-                                                  rt_tlas_buf.ref->size());
+        rt_tlas_buf.tbos[0] = ctx.CreateTextureBuffer("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RGBA32F, 0,
+                                                      rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
-        mesh_instances_buf.tbos[0] =
-            ctx.CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RGBA32F, 0,
-                                mesh_instances_buf.ref->size());
+        mesh_instances_buf.tbos[0] = ctx.CreateTextureBuffer(
+            "Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RGBA32F, 0, mesh_instances_buf.ref->size());
     }
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
@@ -116,6 +115,6 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.root_node = args_->swrt.root_node;
 
-    DispatchCompute(*pi_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                    ctx.default_descr_alloc(), ctx.log());
+    DispatchCompute(*pi_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(),
+                    ctx.log());
 }

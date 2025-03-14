@@ -223,29 +223,29 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     //
     // Create required staging buffers
     //
-    Ren::BufferRef instance_indices_stage_buf = ren_ctx.LoadBuffer(
-        "Instance Indices (Upload)", Ren::eBufType::Upload, InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef skin_transforms_stage_buf = ren_ctx.LoadBuffer("Skin Transforms (Upload)", Ren::eBufType::Upload,
-                                                                  SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef shape_keys_stage_buf =
+    Ren::BufRef instance_indices_stage_buf = ren_ctx.LoadBuffer("Instance Indices (Upload)", Ren::eBufType::Upload,
+                                                                InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef skin_transforms_stage_buf = ren_ctx.LoadBuffer("Skin Transforms (Upload)", Ren::eBufType::Upload,
+                                                               SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef shape_keys_stage_buf =
         ren_ctx.LoadBuffer("Shape Keys (Stage)", Ren::eBufType::Upload, ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef cells_stage_buf =
+    Ren::BufRef cells_stage_buf =
         ren_ctx.LoadBuffer("Cells (Upload)", Ren::eBufType::Upload, CellsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_cells_stage_buf =
+    Ren::BufRef rt_cells_stage_buf =
         ren_ctx.LoadBuffer("RT Cells (Upload)", Ren::eBufType::Upload, CellsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef items_stage_buf =
+    Ren::BufRef items_stage_buf =
         ren_ctx.LoadBuffer("Items (Upload)", Ren::eBufType::Upload, ItemsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_items_stage_buf =
+    Ren::BufRef rt_items_stage_buf =
         ren_ctx.LoadBuffer("RT Items (Upload)", Ren::eBufType::Upload, ItemsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef lights_stage_buf =
+    Ren::BufRef lights_stage_buf =
         ren_ctx.LoadBuffer("Lights (Upload)", Ren::eBufType::Upload, LightsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef decals_stage_buf =
+    Ren::BufRef decals_stage_buf =
         ren_ctx.LoadBuffer("Decals (Upload)", Ren::eBufType::Upload, DecalsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_geo_instances_stage_buf = ren_ctx.LoadBuffer("RT Geo Instances (Upload)", Ren::eBufType::Upload,
-                                                                   RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_sh_geo_instances_stage_buf = ren_ctx.LoadBuffer(
+    Ren::BufRef rt_geo_instances_stage_buf = ren_ctx.LoadBuffer("RT Geo Instances (Upload)", Ren::eBufType::Upload,
+                                                                RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef rt_sh_geo_instances_stage_buf = ren_ctx.LoadBuffer(
         "RT Shadow Geo Instances (Upload)", Ren::eBufType::Upload, RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
+    Ren::BufRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx.capabilities.hwrt) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
@@ -263,7 +263,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
                                                         SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
-    Ren::BufferRef shared_data_stage_buf =
+    Ren::BufRef shared_data_stage_buf =
         ren_ctx.LoadBuffer("Shared Data (Upload)", Ren::eBufType::Upload, SharedDataBlockSize * Ren::MaxFramesInFlight);
 
     //
@@ -299,7 +299,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
 #endif
 
     Ren::eTexLoadStatus status;
-    Ren::Tex2DRef render_result = ren_ctx.LoadTexture2D("Render Result", params, ren_ctx.default_mem_allocs(), &status);
+    Ren::TexRef render_result = ren_ctx.LoadTexture("Render Result", params, ren_ctx.default_mem_allocs(), &status);
 
     auto begin_frame = [&ren_ctx]() {
         Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
@@ -423,7 +423,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
         end_frame();
     }
 
-    Ren::BufferRef stage_buf = ren_ctx.LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * ref_w * ref_h);
+    Ren::BufRef stage_buf = ren_ctx.LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * ref_w * ref_h);
 
     { // Download result
         Ren::CommandBuffer cmd_buf = ren_ctx.BegTempSingleTimeCommands();

@@ -24,10 +24,9 @@ uint32_t _draw_list_range_full_rev(Eng::FgBuilder &builder, const Ren::MaterialS
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    Eng::backend_info_t &backend_info);
-uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
-                          const Ren::Texture2D &white_tex, Ren::Span<const uint32_t> batch_indices,
-                          Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask,
-                          uint32_t &cur_mat_id, int *draws_count);
+uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
+                          uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 } // namespace ExSharedInternal
 
 void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
@@ -43,8 +42,8 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
     FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(out_depth_buf_);
 
     if (!out_depth_buf.tbos[0]) {
-        out_depth_buf.tbos[0] = builder.ctx().CreateTexture1D("Depth Values Tex", out_depth_buf.ref,
-                                                              Ren::eTexFormat::R32UI, 0, out_depth_buf.ref->size());
+        out_depth_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Depth Values Tex", out_depth_buf.ref,
+                                                                  Ren::eTexFormat::R32UI, 0, out_depth_buf.ref->size());
     }
 
     if ((*p_list_)->alpha_blend_start_index == -1) {

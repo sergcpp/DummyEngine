@@ -33,7 +33,7 @@ void Eng::Renderer::InitSkyResources() {
 
                 Ren::eTexLoadStatus status;
                 sky_transmittance_lut_ =
-                    ctx_.LoadTexture2D("Sky Transmittance LUT", p, ctx_.default_mem_allocs(), &status);
+                    ctx_.LoadTexture("Sky Transmittance LUT", p, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedDefault);
 
                 Ren::Buffer stage_buf("Temp Stage Buf", ctx_.api_ctx(), Ren::eBufType::Upload,
@@ -45,9 +45,10 @@ void Eng::Renderer::InitSkyResources() {
                     stage_buf.Unmap();
                 }
 
-                sky_transmittance_lut_->SetSubImage(
-                    0, 0, 0, SKY_TRANSMITTANCE_LUT_W, SKY_TRANSMITTANCE_LUT_H, Ren::eTexFormat::RGBA32F, stage_buf,
-                    ctx_.current_cmd_buf(), 0, 4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
+                sky_transmittance_lut_->SetSubImage(0, 0, 0, 0, SKY_TRANSMITTANCE_LUT_W, SKY_TRANSMITTANCE_LUT_H, 1,
+                                                    Ren::eTexFormat::RGBA32F, stage_buf, ctx_.current_cmd_buf(), 0,
+                                                    4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H *
+                                                        sizeof(float));
             }
             { // Init multiscatter LUT
                 Ren::TexParams p;
@@ -58,8 +59,7 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 Ren::eTexLoadStatus status;
-                sky_multiscatter_lut_ =
-                    ctx_.LoadTexture2D("Sky Multiscatter LUT", p, ctx_.default_mem_allocs(), &status);
+                sky_multiscatter_lut_ = ctx_.LoadTexture("Sky Multiscatter LUT", p, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedDefault);
 
                 const std::vector<Ren::Vec4f> multiscatter_lut =
@@ -74,9 +74,10 @@ void Eng::Renderer::InitSkyResources() {
                     stage_buf.Unmap();
                 }
 
-                sky_multiscatter_lut_->SetSubImage(
-                    0, 0, 0, SKY_MULTISCATTER_LUT_RES, SKY_MULTISCATTER_LUT_RES, Ren::eTexFormat::RGBA32F, stage_buf,
-                    ctx_.current_cmd_buf(), 0, 4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
+                sky_multiscatter_lut_->SetSubImage(0, 0, 0, 0, SKY_MULTISCATTER_LUT_RES, SKY_MULTISCATTER_LUT_RES, 1,
+                                                   Ren::eTexFormat::RGBA32F, stage_buf, ctx_.current_cmd_buf(), 0,
+                                                   4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES *
+                                                       sizeof(float));
             }
             { // Init Moon texture
                 const std::string_view moon_diff = "assets_pc/textures/internal/moon_diff.dds";
@@ -89,7 +90,7 @@ void Eng::Renderer::InitSkyResources() {
                 const std::vector<uint8_t> data = LoadDDS(moon_diff, &p);
                 if (!data.empty()) {
                     Ren::eTexLoadStatus status;
-                    sky_moon_tex_ = ctx_.LoadTexture2D(moon_diff, data, p, ctx_.default_mem_allocs(), &status);
+                    sky_moon_tex_ = ctx_.LoadTexture(moon_diff, data, p, ctx_.default_mem_allocs(), &status);
                     assert(status == Ren::eTexLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", moon_diff.data());
@@ -106,7 +107,7 @@ void Eng::Renderer::InitSkyResources() {
                 const std::vector<uint8_t> data = LoadDDS(weather, &p);
                 if (!data.empty()) {
                     Ren::eTexLoadStatus status;
-                    sky_weather_tex_ = ctx_.LoadTexture2D(weather, data, p, ctx_.default_mem_allocs(), &status);
+                    sky_weather_tex_ = ctx_.LoadTexture(weather, data, p, ctx_.default_mem_allocs(), &status);
                     assert(status == Ren::eTexLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", weather.data());
@@ -123,7 +124,7 @@ void Eng::Renderer::InitSkyResources() {
                 const std::vector<uint8_t> data = LoadDDS(cirrus, &p);
                 if (!data.empty()) {
                     Ren::eTexLoadStatus status;
-                    sky_cirrus_tex_ = ctx_.LoadTexture2D(cirrus, data, p, ctx_.default_mem_allocs(), &status);
+                    sky_cirrus_tex_ = ctx_.LoadTexture(cirrus, data, p, ctx_.default_mem_allocs(), &status);
                     assert(status == Ren::eTexLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", cirrus.data());
@@ -141,7 +142,7 @@ void Eng::Renderer::InitSkyResources() {
                 const std::vector<uint8_t> data = LoadDDS(curl, &p);
                 if (!data.empty()) {
                     Ren::eTexLoadStatus status;
-                    sky_curl_tex_ = ctx_.LoadTexture2D(curl, data, p, ctx_.default_mem_allocs(), &status);
+                    sky_curl_tex_ = ctx_.LoadTexture(curl, data, p, ctx_.default_mem_allocs(), &status);
                     assert(status == Ren::eTexLoadStatus::CreatedFromData);
                 } else {
                     ctx_.log()->Error("Failed to load %s", curl.data());
@@ -167,7 +168,7 @@ void Eng::Renderer::InitSkyResources() {
                 params.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 Ren::eTexLoadStatus status;
-                sky_noise3d_tex_ = ctx_.LoadTexture3D("Noise 3d Tex", params, ctx_.default_mem_allocs(), &status);
+                sky_noise3d_tex_ = ctx_.LoadTexture("Noise 3d Tex", params, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedDefault);
 
                 Ren::Buffer stage_buf = Ren::Buffer("Temp stage buf", ctx_.api_ctx(), Ren::eBufType::Upload, data_len);
@@ -175,8 +176,9 @@ void Eng::Renderer::InitSkyResources() {
                 memcpy(mapped_ptr, &data[0] + sizeof(Ren::DDSHeader), data_len);
                 stage_buf.Unmap();
 
-                sky_noise3d_tex_->SetSubImage(0, 0, 0, int(header.dwWidth), int(header.dwHeight), int(header.dwDepth),
-                                              Ren::eTexFormat::R8, stage_buf, ctx_.current_cmd_buf(), 0, int(data_len));
+                sky_noise3d_tex_->SetSubImage(0, 0, 0, 0, int(header.dwWidth), int(header.dwHeight),
+                                              int(header.dwDepth), Ren::eTexFormat::R8, stage_buf,
+                                              ctx_.current_cmd_buf(), 0, int(data_len));
             }
         }
     }
@@ -205,7 +207,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         data->weather_tex = skydome_cube.AddTextureInput(sky_weather_tex_, Stg::FragmentShader);
         data->cirrus_tex = skydome_cube.AddTextureInput(sky_cirrus_tex_, Stg::FragmentShader);
         data->curl_tex = skydome_cube.AddTextureInput(sky_curl_tex_, Stg::FragmentShader);
-        data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_.get(), Stg::FragmentShader);
+        data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_, Stg::FragmentShader);
         frame_textures.envmap = data->color_tex = skydome_cube.AddColorOutput(p_list_->env.env_map);
 
         ex_skydome_cube_.Setup(&view_state_, data);
@@ -232,7 +234,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             data->phys.weather_tex = skymap.AddTextureInput(sky_weather_tex_, Stg::FragmentShader);
             data->phys.cirrus_tex = skymap.AddTextureInput(sky_cirrus_tex_, Stg::FragmentShader);
             data->phys.curl_tex = skymap.AddTextureInput(sky_curl_tex_, Stg::FragmentShader);
-            data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_.get(), Stg::FragmentShader);
+            data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_, Stg::FragmentShader);
 
             if (settings.sky_quality == eSkyQuality::High) {
                 frame_textures.depth = data->depth_tex =

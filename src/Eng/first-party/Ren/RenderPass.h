@@ -31,7 +31,7 @@ std::string_view StoreOpName(eStoreOp op);
 eStoreOp StoreOp(std::string_view name);
 
 struct RenderTarget {
-    WeakTex2DRef ref;
+    WeakTexRef ref;
     uint8_t view_index = 0;
     eLoadOp load = eLoadOp::DontCare;
     eStoreOp store = eStoreOp::DontCare;
@@ -39,10 +39,10 @@ struct RenderTarget {
     eStoreOp stencil_store = eStoreOp::DontCare;
 
     RenderTarget() = default;
-    RenderTarget(WeakTex2DRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
+    RenderTarget(WeakTexRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                  eStoreOp _stencil_store = eStoreOp::DontCare)
         : ref(_ref), load(_load), store(_store), stencil_load(_stencil_load), stencil_store(_stencil_store) {}
-    RenderTarget(WeakTex2DRef _ref, uint8_t _view_index, eLoadOp _load, eStoreOp _store,
+    RenderTarget(WeakTexRef _ref, uint8_t _view_index, eLoadOp _load, eStoreOp _store,
                  eLoadOp _stencil_load = eLoadOp::DontCare, eStoreOp _stencil_store = eStoreOp::DontCare)
         : ref(_ref), view_index(_view_index), load(_load), store(_store), stencil_load(_stencil_load),
           stencil_store(_stencil_store) {}
@@ -103,7 +103,7 @@ struct RenderTargetInfo {
     eStoreOp stencil_store = eStoreOp::DontCare;
 
     RenderTargetInfo() = default;
-    RenderTargetInfo(WeakTex2DRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
+    RenderTargetInfo(WeakTexRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
         : format(_ref->params.format), samples(_ref->params.samples), flags(_ref->params.flags),
 #if defined(REN_VK_BACKEND)
@@ -111,7 +111,7 @@ struct RenderTargetInfo {
 #endif
           load(_load), store(_store), stencil_load(_stencil_load), stencil_store(_stencil_store) {
     }
-    RenderTargetInfo(const Texture2D *tex, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
+    RenderTargetInfo(const Texture *tex, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
         : format(tex->params.format), samples(tex->params.samples), flags(tex->params.flags),
 #if defined(REN_VK_BACKEND)

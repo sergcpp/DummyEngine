@@ -128,7 +128,7 @@ class SceneManager {
         }
         changed_objects_.insert(changed_objects_.end(), indices.begin(), indices.end());
     }
-    void InvalidateTexture(const Ren::Tex2DRef &ref);
+    void InvalidateTexture(const Ren::TexRef &ref);
 
     void LoadScene(const Sys::JsObjectP &js_scene, Ren::Bitmask<eSceneLoadFlags> load_flags = SceneLoadAll);
     void SaveScene(Sys::JsObjectP &js_scene);
@@ -209,7 +209,7 @@ class SceneManager {
     void OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader, std::string_view f_shader,
                          std::string_view tc_shader, std::string_view te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    Ren::Tex2DRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::Bitmask<Ren::eTexFlags> flags);
+    Ren::TexRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::Bitmask<Ren::eTexFlags> flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
     Ren::MeshRef LoadMesh(std::string_view name, std::istream *data, const Ren::material_load_callback &on_mat_load,
@@ -218,8 +218,8 @@ class SceneManager {
                                   const Ren::pipelines_load_callback &on_pipes_load,
                                   const Ren::texture_load_callback &on_tex_load,
                                   const Ren::sampler_load_callback &on_sampler_load);
-    Ren::Tex2DRef LoadTexture(std::string_view name, Ren::Span<const uint8_t> data, const Ren::TexParams &p,
-                              Ren::eTexLoadStatus *load_status);
+    Ren::TexRef LoadTexture(std::string_view name, Ren::Span<const uint8_t> data, const Ren::TexParams &p,
+                            Ren::eTexLoadStatus *load_status);
     Ren::Vec4f LoadDecalTexture(std::string_view name);
 
     void EstimateTextureMemory(int portion_size);
@@ -246,7 +246,7 @@ class SceneManager {
     Eng::ShaderLoader &sh_;
     Snd::Context *snd_ctx_ = nullptr;
     Ren::MeshRef cam_rig_;
-    Ren::Tex2DRef white_tex_, error_tex_;
+    Ren::TexRef white_tex_, error_tex_;
     Sys::ThreadPool &threads_;
     path_config_t paths_;
 
@@ -263,7 +263,7 @@ class SceneManager {
     std::function<PostLoadFunc> component_post_load_[Eng::MAX_COMPONENT_TYPES];
 
     struct TextureRequest {
-        Ren::Tex2DRef ref;
+        Ren::TexRef ref;
         uint32_t sort_key = 0xffffffff;
 
         uint16_t frame_dist = 0;

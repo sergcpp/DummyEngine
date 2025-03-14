@@ -6,7 +6,7 @@
 #include "shaders/probe_classify_interface.h"
 #include "shaders/probe_relocate_interface.h"
 
-void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
+void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const CommonBuffers &common_buffers,
                                      const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,

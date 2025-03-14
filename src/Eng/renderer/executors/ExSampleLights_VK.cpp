@@ -39,26 +39,26 @@ void Eng::ExSampleLights::Execute_HWRT(FgBuilder &builder) {
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
     if (!random_seq_buf.tbos[0] || random_seq_buf.tbos[0]->params().size != random_seq_buf.ref->size()) {
-        random_seq_buf.tbos[0] = builder.ctx().CreateTexture1D(
+        random_seq_buf.tbos[0] = builder.ctx().CreateTextureBuffer(
             "Random Seq Buf TBO", random_seq_buf.ref, Ren::eTexFormat::R32UI, 0, random_seq_buf.ref->size());
     }
     if (!lights_buf.tbos[0] || lights_buf.tbos[0]->params().size != lights_buf.ref->size()) {
-        lights_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", lights_buf.ref,
-                                                           Ren::eTexFormat::RGBA32F, 0, lights_buf.ref->size());
+        lights_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Stoch Lights Buf TBO", lights_buf.ref,
+                                                               Ren::eTexFormat::RGBA32F, 0, lights_buf.ref->size());
     }
     if (!nodes_buf.tbos[0] || nodes_buf.tbos[0]->params().size != nodes_buf.ref->size()) {
-        nodes_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
-                                                          Ren::eTexFormat::RGBA32F, 0, nodes_buf.ref->size());
+        nodes_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
+                                                              Ren::eTexFormat::RGBA32F, 0, nodes_buf.ref->size());
     }
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
-        vtx_buf1.tbos[0] = builder.ctx().CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F,
-                                                         0, vtx_buf1.ref->size());
+        vtx_buf1.tbos[0] = builder.ctx().CreateTextureBuffer("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F,
+                                                             0, vtx_buf1.ref->size());
     }
 
     if (!ndx_buf.tbos[0] || ndx_buf.tbos[0]->params().size != ndx_buf.ref->size()) {
-        ndx_buf.tbos[0] = builder.ctx().CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                                        ndx_buf.ref->size());
+        ndx_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                                            ndx_buf.ref->size());
     }
 
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(args_->tlas);
@@ -138,47 +138,46 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
     if (!random_seq_buf.tbos[0] || random_seq_buf.tbos[0]->params().size != random_seq_buf.ref->size()) {
-        random_seq_buf.tbos[0] = builder.ctx().CreateTexture1D(
+        random_seq_buf.tbos[0] = builder.ctx().CreateTextureBuffer(
             "Random Seq Buf TBO", random_seq_buf.ref, Ren::eTexFormat::R32UI, 0, random_seq_buf.ref->size());
     }
     if (!lights_buf.tbos[0] || lights_buf.tbos[0]->params().size != lights_buf.ref->size()) {
-        lights_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Buf TBO", lights_buf.ref,
-                                                           Ren::eTexFormat::RGBA32F, 0, lights_buf.ref->size());
+        lights_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Stoch Lights Buf TBO", lights_buf.ref,
+                                                               Ren::eTexFormat::RGBA32F, 0, lights_buf.ref->size());
     }
     if (!nodes_buf.tbos[0] || nodes_buf.tbos[0]->params().size != nodes_buf.ref->size()) {
-        nodes_buf.tbos[0] = builder.ctx().CreateTexture1D("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
-                                                          Ren::eTexFormat::RGBA32F, 0, nodes_buf.ref->size());
+        nodes_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Stoch Lights Nodes Buf TBO", nodes_buf.ref,
+                                                              Ren::eTexFormat::RGBA32F, 0, nodes_buf.ref->size());
     }
 
     if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
-        vtx_buf1.tbos[0] = builder.ctx().CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F,
-                                                         0, vtx_buf1.ref->size());
+        vtx_buf1.tbos[0] = builder.ctx().CreateTextureBuffer("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RGBA32F,
+                                                             0, vtx_buf1.ref->size());
     }
 
     if (!ndx_buf.tbos[0] || ndx_buf.tbos[0]->params().size != ndx_buf.ref->size()) {
-        ndx_buf.tbos[0] = builder.ctx().CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                                        ndx_buf.ref->size());
+        ndx_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                                            ndx_buf.ref->size());
     }
 
     if (!prim_ndx_buf.tbos[0] || prim_ndx_buf.tbos[0]->params().size != prim_ndx_buf.ref->size()) {
-        prim_ndx_buf.tbos[0] = builder.ctx().CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref,
-                                                             Ren::eTexFormat::R32UI, 0, prim_ndx_buf.ref->size());
+        prim_ndx_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Prim Ndx TBO", prim_ndx_buf.ref,
+                                                                 Ren::eTexFormat::R32UI, 0, prim_ndx_buf.ref->size());
     }
 
     if (!rt_blas_buf.tbos[0] || rt_blas_buf.tbos[0]->params().size != rt_blas_buf.ref->size()) {
-        rt_blas_buf.tbos[0] = builder.ctx().CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RGBA32F,
-                                                            0, rt_blas_buf.ref->size());
+        rt_blas_buf.tbos[0] = builder.ctx().CreateTextureBuffer("RT BLAS TBO", rt_blas_buf.ref,
+                                                                Ren::eTexFormat::RGBA32F, 0, rt_blas_buf.ref->size());
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = builder.ctx().CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RGBA32F,
-                                                            0, rt_tlas_buf.ref->size());
+        rt_tlas_buf.tbos[0] = builder.ctx().CreateTextureBuffer("RT TLAS TBO", rt_tlas_buf.ref,
+                                                                Ren::eTexFormat::RGBA32F, 0, rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
-        mesh_instances_buf.tbos[0] =
-            builder.ctx().CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RGBA32F, 0,
-                                          mesh_instances_buf.ref->size());
+        mesh_instances_buf.tbos[0] = builder.ctx().CreateTextureBuffer(
+            "Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RGBA32F, 0, mesh_instances_buf.ref->size());
     }
 
     const Ren::Binding bindings[] = {

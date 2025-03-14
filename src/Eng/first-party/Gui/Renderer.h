@@ -89,8 +89,8 @@ class Renderer {
     std::unique_ptr<vertex_t[]> stage_vtx_data_;
     std::unique_ptr<uint16_t[]> stage_ndx_data_;
 
-    Ren::BufferRef vertex_stage_buf_, index_stage_buf_;
-    Ren::BufferRef vertex_buf_, index_buf_;
+    Ren::BufRef vertex_stage_buf_, index_stage_buf_;
+    Ren::BufRef vertex_buf_, index_buf_;
 
     vertex_t *vtx_stage_data_ = nullptr;
     uint16_t *ndx_stage_data_ = nullptr;

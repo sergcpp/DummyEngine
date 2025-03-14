@@ -58,50 +58,48 @@ class FgNode {
     // Non-owning version
     void set_executor(FgExecutor *exec) { p_executor_ = exec; }
 
-    FgResRef AddTransferInput(const Ren::WeakBufferRef &buf);
+    FgResRef AddTransferInput(const Ren::WeakBufRef &buf);
     FgResRef AddTransferInput(FgResRef handle);
     FgResRef AddTransferOutput(std::string_view name, const FgBufDesc &desc);
-    FgResRef AddTransferOutput(const Ren::WeakBufferRef &buf);
+    FgResRef AddTransferOutput(const Ren::WeakBufRef &buf);
     FgResRef AddTransferOutput(FgResRef handle);
 
-    FgResRef AddTransferImageInput(const Ren::WeakTex2DRef &tex);
+    FgResRef AddTransferImageInput(const Ren::WeakTexRef &tex);
     FgResRef AddTransferImageInput(FgResRef handle);
     FgResRef AddTransferImageOutput(std::string_view name, const Ren::TexParams &params);
-    FgResRef AddTransferImageOutput(const Ren::WeakTex2DRef &tex);
+    FgResRef AddTransferImageOutput(const Ren::WeakTexRef &tex);
     FgResRef AddTransferImageOutput(FgResRef handle);
 
     FgResRef AddStorageReadonlyInput(FgResRef handle, Ren::eStageBits stages);
-    FgResRef AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, Ren::eStageBits stages);
-    FgResRef AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, const Ren::WeakTex1DRef &tbo,
-                                     Ren::eStageBits stages);
+    FgResRef AddStorageReadonlyInput(const Ren::WeakBufRef &buf, Ren::eStageBits stages);
+    FgResRef AddStorageReadonlyInput(const Ren::WeakBufRef &buf, const Ren::WeakTexBufRef &tbo, Ren::eStageBits stages);
     FgResRef AddStorageOutput(std::string_view name, const FgBufDesc &desc, Ren::eStageBits stages);
     FgResRef AddStorageOutput(FgResRef handle, Ren::eStageBits stages);
-    FgResRef AddStorageOutput(const Ren::WeakBufferRef &buf, Ren::eStageBits stages);
+    FgResRef AddStorageOutput(const Ren::WeakBufRef &buf, Ren::eStageBits stages);
 
     FgResRef AddStorageImageOutput(std::string_view name, const Ren::TexParams &params, Ren::eStageBits stages);
     FgResRef AddStorageImageOutput(FgResRef handle, Ren::eStageBits stages);
-    FgResRef AddStorageImageOutput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
+    FgResRef AddStorageImageOutput(const Ren::WeakTexRef &tex, Ren::eStageBits stages);
     FgResRef AddStorageImageOutput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
 
     FgResRef AddColorOutput(std::string_view name, const Ren::TexParams &params);
     FgResRef AddColorOutput(FgResRef handle);
-    FgResRef AddColorOutput(const Ren::WeakTex2DRef &tex);
+    FgResRef AddColorOutput(const Ren::WeakTexRef &tex);
     FgResRef AddColorOutput(std::string_view name);
     FgResRef AddDepthOutput(std::string_view name, const Ren::TexParams &params);
     FgResRef AddDepthOutput(FgResRef handle);
-    FgResRef AddDepthOutput(const Ren::WeakTex2DRef &tex);
+    FgResRef AddDepthOutput(const Ren::WeakTexRef &tex);
 
     // TODO: try to get rid of this
-    FgResRef ReplaceTransferInput(int slot_index, const Ren::WeakBufferRef &buf);
-    FgResRef ReplaceColorOutput(int slot_index, const Ren::WeakTex2DRef &tex);
+    FgResRef ReplaceTransferInput(int slot_index, const Ren::WeakBufRef &buf);
+    FgResRef ReplaceColorOutput(int slot_index, const Ren::WeakTexRef &tex);
 
     FgResRef AddUniformBufferInput(FgResRef handle, Ren::eStageBits stages);
 
     FgResRef AddTextureInput(FgResRef handle, Ren::eStageBits stages);
-    FgResRef AddTextureInput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
+    FgResRef AddTextureInput(const Ren::WeakTexRef &tex, Ren::eStageBits stages);
     FgResRef AddTextureInput(std::string_view name, Ren::eStageBits stages);
     FgResRef AddTextureInput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
-    FgResRef AddTextureInput(const Ren::Texture3D *tex, Ren::eStageBits stages);
 
     FgResRef AddHistoryTextureInput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddHistoryTextureInput(std::string_view name, Ren::eStageBits stages);
@@ -109,14 +107,14 @@ class FgNode {
     FgResRef AddCustomTextureInput(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages);
 
     FgResRef AddVertexBufferInput(FgResRef handle);
-    FgResRef AddVertexBufferInput(const Ren::WeakBufferRef &buf);
+    FgResRef AddVertexBufferInput(const Ren::WeakBufRef &buf);
     FgResRef AddIndexBufferInput(FgResRef handle);
-    FgResRef AddIndexBufferInput(const Ren::WeakBufferRef &buf);
+    FgResRef AddIndexBufferInput(const Ren::WeakBufRef &buf);
     FgResRef AddIndirectBufferInput(FgResRef handle);
-    FgResRef AddIndirectBufferInput(const Ren::WeakBufferRef &buf);
+    FgResRef AddIndirectBufferInput(const Ren::WeakBufRef &buf);
 
     FgResRef AddASBuildReadonlyInput(FgResRef handle);
-    FgResRef AddASBuildOutput(const Ren::WeakBufferRef &buf);
+    FgResRef AddASBuildOutput(const Ren::WeakBufRef &buf);
     FgResRef AddASBuildOutput(std::string_view name, const FgBufDesc &desc);
 
     void Execute(FgBuilder &builder) {

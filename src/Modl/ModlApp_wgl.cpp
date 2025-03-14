@@ -608,7 +608,7 @@ int ModlApp::Init(const int w, const int h) {
         p.format = Ren::eTexFormat::RGB8;
 
         Ren::eTexLoadStatus status;
-        checker_tex_ = ctx_->LoadTexture2D("__diag_checker", checker_data, p, ctx_->default_mem_allocs(), &status);
+        checker_tex_ = ctx_->LoadTexture("__diag_checker", checker_data, p, ctx_->default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -1876,9 +1876,9 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
     return occlusion;
 }
 
-Ren::Tex2DRef ModlApp::OnTextureNeeded(std::string_view name) {
+Ren::TexRef ModlApp::OnTextureNeeded(std::string_view name) {
     Ren::eTexLoadStatus status;
-    Ren::Tex2DRef ret = ctx_->LoadTexture2D(name, {}, {}, ctx_->default_mem_allocs(), &status);
+    Ren::TexRef ret = ctx_->LoadTexture(name, {}, {}, ctx_->default_mem_allocs(), &status);
     if (ret->params.flags & Ren::eTexFlags::Stub) {
         Sys::AssetFile in_file(std::string("assets_pc/textures/") + std::string(name));
         std::vector<uint8_t> in_file_data(in_file.size());
@@ -1888,7 +1888,7 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(std::string_view name) {
         p.sampling.filter = Ren::eTexFilter::Trilinear;
 
         Ren::eTexLoadStatus status;
-        ctx_->LoadTexture2D(name, in_file_data, p, ctx_->default_mem_allocs(), &status);
+        ctx_->LoadTexture(name, in_file_data, p, ctx_->default_mem_allocs(), &status);
         printf("Texture %s loaded", name.data());
     }
 

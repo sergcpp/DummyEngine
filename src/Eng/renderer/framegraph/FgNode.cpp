@@ -16,7 +16,7 @@ Eng::FgResource *Eng::FgNode::FindUsageOf(const eFgResType type, const uint16_t 
     return nullptr;
 }
 
-Eng::FgResRef Eng::FgNode::AddTransferInput(const Ren::WeakBufferRef &buf) {
+Eng::FgResRef Eng::FgNode::AddTransferInput(const Ren::WeakBufRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 }
 
@@ -28,7 +28,7 @@ Eng::FgResRef Eng::FgNode::AddTransferOutput(std::string_view name, const FgBufD
     return builder_.WriteBuffer(name, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTransferOutput(const Ren::WeakBufferRef &buf) {
+Eng::FgResRef Eng::FgNode::AddTransferOutput(const Ren::WeakBufRef &buf) {
     return builder_.WriteBuffer(buf, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
@@ -36,7 +36,7 @@ Eng::FgResRef Eng::FgNode::AddTransferOutput(FgResRef handle) {
     return builder_.WriteBuffer(handle, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTransferImageInput(const Ren::WeakTex2DRef &tex) {
+Eng::FgResRef Eng::FgNode::AddTransferImageInput(const Ren::WeakTexRef &tex) {
     return builder_.ReadTexture(tex, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 }
 
@@ -48,7 +48,7 @@ Eng::FgResRef Eng::FgNode::AddTransferImageOutput(std::string_view name, const R
     return builder_.WriteTexture(name, params, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTransferImageOutput(const Ren::WeakTex2DRef &tex) {
+Eng::FgResRef Eng::FgNode::AddTransferImageOutput(const Ren::WeakTexRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
@@ -60,12 +60,12 @@ Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(FgResRef handle, Ren::eStageB
     return builder_.ReadBuffer(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, const Ren::eStageBits stages) {
+Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(const Ren::WeakBufRef &buf, const Ren::eStageBits stages) {
     return builder_.ReadBuffer(buf, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, const Ren::WeakTex1DRef &tbo,
-                                                      const Ren::eStageBits stages) {
+Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(const Ren::WeakBufRef &buf, const Ren::WeakTexBufRef &tbo,
+                                                   const Ren::eStageBits stages) {
     return builder_.ReadBuffer(buf, tbo, Ren::eResState::ShaderResource, stages, *this);
 }
 
@@ -78,12 +78,12 @@ Eng::FgResRef Eng::FgNode::AddStorageOutput(const FgResRef handle, const Ren::eS
     return builder_.WriteBuffer(handle, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageOutput(const Ren::WeakBufferRef &buf, const Ren::eStageBits stages) {
+Eng::FgResRef Eng::FgNode::AddStorageOutput(const Ren::WeakBufRef &buf, const Ren::eStageBits stages) {
     return builder_.WriteBuffer(buf, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddStorageImageOutput(std::string_view name, const Ren::TexParams &params,
-                                                    const Ren::eStageBits stages) {
+                                                 const Ren::eStageBits stages) {
     return builder_.WriteTexture(name, params, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
@@ -91,7 +91,7 @@ Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const FgResRef handle, const Re
     return builder_.WriteTexture(handle, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const Ren::WeakTex2DRef &tex, const Ren::eStageBits stages) {
+Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const Ren::WeakTexRef &tex, const Ren::eStageBits stages) {
     return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
@@ -107,7 +107,7 @@ Eng::FgResRef Eng::FgNode::AddColorOutput(const FgResRef handle) {
     return builder_.WriteTexture(handle, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddColorOutput(const Ren::WeakTex2DRef &tex) {
+Eng::FgResRef Eng::FgNode::AddColorOutput(const Ren::WeakTexRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
@@ -123,15 +123,15 @@ Eng::FgResRef Eng::FgNode::AddDepthOutput(const FgResRef handle) {
     return builder_.WriteTexture(handle, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddDepthOutput(const Ren::WeakTex2DRef &tex) {
+Eng::FgResRef Eng::FgNode::AddDepthOutput(const Ren::WeakTexRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 
-Eng::FgResRef Eng::FgNode::ReplaceTransferInput(const int slot_index, const Ren::WeakBufferRef &buf) {
+Eng::FgResRef Eng::FgNode::ReplaceTransferInput(const int slot_index, const Ren::WeakBufRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this, slot_index);
 }
 
-Eng::FgResRef Eng::FgNode::ReplaceColorOutput(const int slot_index, const Ren::WeakTex2DRef &tex) {
+Eng::FgResRef Eng::FgNode::ReplaceColorOutput(const int slot_index, const Ren::WeakTexRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this,
                                  slot_index);
 }
@@ -144,7 +144,7 @@ Eng::FgResRef Eng::FgNode::AddTextureInput(const FgResRef handle, const Ren::eSt
     return builder_.ReadTexture(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::WeakTex2DRef &tex, const Ren::eStageBits stages) {
+Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::WeakTexRef &tex, const Ren::eStageBits stages) {
     return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
 }
 
@@ -153,10 +153,6 @@ Eng::FgResRef Eng::FgNode::AddTextureInput(std::string_view name, const Ren::eSt
 }
 
 Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::Texture2DArray *tex, const Ren::eStageBits stages) {
-    return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
-}
-
-Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::Texture3D *tex, const Ren::eStageBits stages) {
     return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
 }
 
@@ -169,7 +165,7 @@ Eng::FgResRef Eng::FgNode::AddHistoryTextureInput(std::string_view name, const R
 }
 
 Eng::FgResRef Eng::FgNode::AddCustomTextureInput(const FgResRef handle, const Ren::eResState desired_state,
-                                                    const Ren::eStageBits stages) {
+                                                 const Ren::eStageBits stages) {
     return builder_.ReadTexture(handle, desired_state, stages, *this);
 }
 
@@ -177,7 +173,7 @@ Eng::FgResRef Eng::FgNode::AddVertexBufferInput(const FgResRef handle) {
     return builder_.ReadBuffer(handle, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddVertexBufferInput(const Ren::WeakBufferRef &buf) {
+Eng::FgResRef Eng::FgNode::AddVertexBufferInput(const Ren::WeakBufRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
 }
 
@@ -185,7 +181,7 @@ Eng::FgResRef Eng::FgNode::AddIndexBufferInput(const FgResRef handle) {
     return builder_.ReadBuffer(handle, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddIndexBufferInput(const Ren::WeakBufferRef &buf) {
+Eng::FgResRef Eng::FgNode::AddIndexBufferInput(const Ren::WeakBufRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
 }
 
@@ -193,7 +189,7 @@ Eng::FgResRef Eng::FgNode::AddIndirectBufferInput(const FgResRef handle) {
     return builder_.ReadBuffer(handle, Ren::eResState::IndirectArgument, Ren::eStageBits::DrawIndirect, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddIndirectBufferInput(const Ren::WeakBufferRef &buf) {
+Eng::FgResRef Eng::FgNode::AddIndirectBufferInput(const Ren::WeakBufRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::IndirectArgument, Ren::eStageBits::DrawIndirect, *this);
 }
 
@@ -201,7 +197,7 @@ Eng::FgResRef Eng::FgNode::AddASBuildReadonlyInput(const FgResRef handle) {
     return builder_.ReadBuffer(handle, Ren::eResState::BuildASRead, Ren::eStageBits::AccStructureBuild, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddASBuildOutput(const Ren::WeakBufferRef &buf) {
+Eng::FgResRef Eng::FgNode::AddASBuildOutput(const Ren::WeakBufRef &buf) {
     return builder_.WriteBuffer(buf, Ren::eResState::BuildASWrite, Ren::eStageBits::AccStructureBuild, *this);
 }
 

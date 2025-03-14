@@ -225,7 +225,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         static const uint8_t data[4] = {255, 255, 255, 255};
 
         Ren::eTexLoadStatus status;
-        white_tex_ = ren_ctx_.LoadTexture2D("White Tex", data, p, ren_ctx_.default_mem_allocs(), &status);
+        white_tex_ = ren_ctx_.LoadTexture("White Tex", data, p, ren_ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -240,7 +240,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         const std::vector<uint8_t> data = LoadDDS(name_buf, &p);
         if (!data.empty()) {
             Ren::eTexLoadStatus status;
-            error_tex_ = ren_ctx_.LoadTexture2D(name_buf, data, p, ren_ctx_.default_mem_allocs(), &status);
+            error_tex_ = ren_ctx_.LoadTexture(name_buf, data, p, ren_ctx_.default_mem_allocs(), &status);
             assert(status == Ren::eTexLoadStatus::CreatedFromData);
         } else {
             log->Error("SceneManager: Failed to load error.dds!");
@@ -853,7 +853,7 @@ void Eng::SceneManager::ReleaseMeshBuffers(const bool immediate) {
     }
 
     if (immediate) {
-        for (Ren::BufferRef &b : scene_data_.persistent_data.hwrt.rt_blas_buffers) {
+        for (Ren::BufRef &b : scene_data_.persistent_data.hwrt.rt_blas_buffers) {
             b->FreeImmediate();
         }
         if (scene_data_.persistent_data.swrt.rt_prim_indices_buf) {
@@ -885,8 +885,8 @@ void Eng::SceneManager::AllocInstanceBuffer() {
     scene_data_.persistent_data.instance_buf = scene_data_.buffers.Insert(
         "Instance Buf", api_ctx, Ren::eBufType::Texture, uint32_t(sizeof(instance_data_t) * MAX_INSTANCES_TOTAL));
     scene_data_.persistent_data.instance_buf_tbo =
-        ren_ctx_.CreateTexture1D("Instances TBO", scene_data_.persistent_data.instance_buf, Ren::eTexFormat::RGBA32F, 0,
-                                 sizeof(instance_data_t) * MAX_INSTANCES_TOTAL);
+        ren_ctx_.CreateTextureBuffer("Instances TBO", scene_data_.persistent_data.instance_buf,
+                                     Ren::eTexFormat::RGBA32F, 0, sizeof(instance_data_t) * MAX_INSTANCES_TOTAL);
     for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
         instance_data_to_update_.push_back(i);
     }
@@ -1467,8 +1467,8 @@ void Eng::SceneManager::OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std:
     init_pipelines_(ret, flags, scene_data_.persistent_data.pipelines, out_pipelines);
 }
 
-Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, const uint8_t color[4],
-                                               const Ren::Bitmask<Ren::eTexFlags> flags) {
+Ren::TexRef Eng::SceneManager::OnLoadTexture(const std::string_view name, const uint8_t color[4],
+                                             const Ren::Bitmask<Ren::eTexFlags> flags) {
     using namespace SceneManagerConstants;
 
     Ren::TexParams p;
@@ -1485,7 +1485,7 @@ Ren::Tex2DRef Eng::SceneManager::OnLoadTexture(const std::string_view name, cons
     p.sampling.lod_bias.from_float(-1.0f); // TAA compensation
 
     Ren::eTexLoadStatus status;
-    Ren::Tex2DRef ret = LoadTexture(name, Ren::Span{color, color + 4}, p, &status);
+    Ren::TexRef ret = LoadTexture(name, Ren::Span{color, color + 4}, p, &status);
 
     if (status == Ren::eTexLoadStatus::CreatedFromData) {
         TextureRequest new_req;
@@ -1556,9 +1556,9 @@ Ren::MaterialRef Eng::SceneManager::LoadMaterial(std::string_view name, std::str
     return ref;
 }
 
-Ren::Tex2DRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<const uint8_t> data,
-                                             const Ren::TexParams &p, Ren::eTexLoadStatus *load_status) {
-    Ren::Tex2DRef ref = scene_data_.textures.FindByName(name);
+Ren::TexRef Eng::SceneManager::LoadTexture(std::string_view name, Ren::Span<const uint8_t> data,
+                                           const Ren::TexParams &p, Ren::eTexLoadStatus *load_status) {
+    Ren::TexRef ref = scene_data_.textures.FindByName(name);
     if (!ref) {
         ref = scene_data_.textures.Insert(name, ren_ctx_.api_ctx(), data, p,
                                           scene_data_.persistent_data.mem_allocs.get(), load_status, ren_ctx_.log());
@@ -1764,7 +1764,7 @@ void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const 
     const auto *vegs = (VegState *)scene_data_.comp_store[CompVegState]->SequentialData();
 
     const uint32_t total_data_to_update = sizeof(instance_data_t) * (obj_end - obj_beg + 1);
-    Ren::BufferRef temp_stage_buf =
+    Ren::BufRef temp_stage_buf =
         ren_ctx_.LoadBuffer("Instance Update Stage Buf", Ren::eBufType::Upload, total_data_to_update);
     auto *instance_stage = (instance_data_t *)temp_stage_buf->Map();
 

@@ -449,14 +449,14 @@ struct BindlessTextureData {
     Ren::Span<const VkDescriptorSet> textures_descr_sets;
     VkDescriptorSet rt_textures_descr_set, rt_inline_textures_descr_set;
 #elif defined(REN_GL_BACKEND)
-    Ren::WeakBufferRef textures_buf;
+    Ren::WeakBufRef textures_buf;
 #endif
 };
 
 enum class eTLASIndex { Main, Shadow, _Count };
 
 struct AccelerationStructureData {
-    Ren::WeakBufferRef rt_tlas_buf, rt_sh_tlas_buf;
+    Ren::WeakBufRef rt_tlas_buf, rt_sh_tlas_buf;
     struct {
         uint32_t rt_tlas_build_scratch_size = 0;
     } hwrt;

@@ -35,12 +35,12 @@ struct VtxDelta {
 };
 
 struct BufferRange {
-    WeakBufferRef buf;
+    WeakBufRef buf;
     SubAllocation sub;
     uint32_t size = 0;
 
     BufferRange() = default;
-    BufferRange(BufferRef &_buf, const SubAllocation _sub, uint32_t _size) : buf(_buf), sub(_sub), size(_size) {}
+    BufferRange(BufRef &_buf, const SubAllocation _sub, uint32_t _size) : buf(_buf), sub(_sub), size(_size) {}
     ~BufferRange() { Release(); }
 
     BufferRange(const BufferRange &rhs) = delete;
@@ -62,7 +62,7 @@ struct BufferRange {
             const bool res = buf->FreeSubRegion(sub);
             assert(res);
         }
-        buf = WeakBufferRef{};
+        buf = WeakBufRef{};
     }
 };
 
@@ -103,22 +103,22 @@ class Mesh : public RefCounter {
 
     // simple static mesh with normals
     void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-                        BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log);
+                        BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf, ILog *log);
     // simple mesh with 4 per-vertex colors
     void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-                         BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, ILog *log);
+                         BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf, ILog *log);
     // mesh with 4 bone weights per vertex
     void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-                          BufferRef &skin_vertex_buf, BufferRef &delta_buf, BufferRef &index_buf, ILog *log);
+                          BufRef &skin_vertex_buf, BufRef &delta_buf, BufRef &index_buf, ILog *log);
 
   public:
     Mesh() = default;
     Mesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
-         ApiContext *api_ctx, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
-         eMeshLoadStatus *load_status, ILog *log);
+         ApiContext *api_ctx, BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf, eMeshLoadStatus *load_status,
+         ILog *log);
     Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-         BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-         BufferRef &delta_buf, eMeshLoadStatus *load_status, ILog *log);
+         BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf, BufRef &skin_vertex_buf, BufRef &delta_buf,
+         eMeshLoadStatus *load_status, ILog *log);
 
     Mesh(const Mesh &rhs) = delete;
     Mesh(Mesh &&rhs) = default;
@@ -149,13 +149,12 @@ class Mesh : public RefCounter {
     Skeleton *skel() { return &skel_; }
 
     void Init(const float *positions, int vtx_count, const uint32_t *indices, int ndx_count, ApiContext *api_ctx,
-              BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, eMeshLoadStatus *load_status,
-              ILog *log);
-    void Init(std::istream *data, const material_load_callback &on_mat_load, ApiContext *api_ctx,
-              BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-              BufferRef &delta_buf, eMeshLoadStatus *load_status, ILog *log);
+              BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf, eMeshLoadStatus *load_status, ILog *log);
+    void Init(std::istream *data, const material_load_callback &on_mat_load, ApiContext *api_ctx, BufRef &vertex_buf1,
+              BufRef &vertex_buf2, BufRef &index_buf, BufRef &skin_vertex_buf, BufRef &delta_buf,
+              eMeshLoadStatus *load_status, ILog *log);
 
-    void InitBufferData(ApiContext *api_ctx, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf);
+    void InitBufferData(ApiContext *api_ctx, BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf);
     void ReleaseBufferData();
 
     std::unique_ptr<IAccStructure> blas;

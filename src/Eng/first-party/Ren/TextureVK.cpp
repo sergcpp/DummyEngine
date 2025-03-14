@@ -105,7 +105,7 @@ VkImageUsageFlags to_vk_image_usage(const Bitmask<eTexUsage> usage, const eTexFo
 
 eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, bool *is_srgb);
 int GetBlockLenBytes(eTexFormat format);
-int GetMipDataLenBytes(int w, int h, eTexFormat format);
+int GetDataLenBytes(int w, int h, int d, eTexFormat format);
 void ParseDDSHeader(const DDSHeader &hdr, TexParams *params);
 
 extern const VkFilter g_min_mag_filter_vk[];
@@ -116,27 +116,27 @@ extern const VkCompareOp g_compare_ops_vk[];
 extern const float AnisotropyLevel;
 } // namespace Ren
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *mem_allocs,
-                          ILog *log)
+Ren::Texture::Texture(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *mem_allocs,
+                      ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(p, mem_allocs, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const TexParams &p,
-                          MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+Ren::Texture::Texture(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const TexParams &p,
+                      MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(data, p, mem_allocs, load_status, log);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const TexParams &p,
-                          MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
+Ren::Texture::Texture(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const TexParams &p,
+                      MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(data, p, mem_allocs, load_status, log);
 }
 
-Ren::Texture2D::~Texture2D() { Free(); }
+Ren::Texture::~Texture() { Free(); }
 
-Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
+Ren::Texture &Ren::Texture::operator=(Texture &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
@@ -156,11 +156,11 @@ Ren::Texture2D &Ren::Texture2D::operator=(Texture2D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture2D::Init(const TexParams &p, MemAllocators *mem_allocs, ILog *log) {
+void Ren::Texture::Init(const TexParams &p, MemAllocators *mem_allocs, ILog *log) {
     InitFromRAWData(nullptr, 0, nullptr, mem_allocs, p, log);
 }
 
-void Ren::Texture2D::Init(const TexHandle &handle, const TexParams &_params, MemAllocation &&alloc, ILog *log) {
+void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAllocation &&alloc, ILog *log) {
     handle_ = handle;
     alloc_ = std::move(alloc);
     params = _params;
@@ -254,8 +254,8 @@ void Ren::Texture2D::Init(const TexHandle &handle, const TexParams &_params, Mem
     }
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
-                          eTexLoadStatus *load_status, ILog *log) {
+void Ren::Texture::Init(Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
+                        eTexLoadStatus *load_status, ILog *log) {
     assert(!data.empty());
 
     auto sbuf = Buffer{"Temp Stage Buf", api_ctx_, eBufType::Upload, uint32_t(data.size())};
@@ -272,8 +272,8 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const TexParams &p, MemAlloc
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs,
-                          eTexLoadStatus *load_status, ILog *log) {
+void Ren::Texture::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs,
+                        eTexLoadStatus *load_status, ILog *log) {
     assert(data);
 
     auto sbuf = Buffer{
@@ -303,7 +303,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const TexParams &p, MemAl
     (*load_status) = eTexLoadStatus::CreatedFromData;
 }
 
-void Ren::Texture2D::Free() {
+void Ren::Texture::Free() {
     if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
         for (VkImageView view : handle_.views) {
             if (view) {
@@ -319,7 +319,7 @@ void Ren::Texture2D::Free() {
     }
 }
 
-void Ren::Texture2D::FreeImmediate() {
+void Ren::Texture::FreeImmediate() {
     if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
         for (VkImageView view : handle_.views) {
             if (view) {
@@ -335,8 +335,8 @@ void Ren::Texture2D::FreeImmediate() {
     }
 }
 
-bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
-                             const bool is_srgb, CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
+bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
+                           const bool is_srgb, CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
     VkImage new_image = VK_NULL_HANDLE;
     VkImageView new_image_view = VK_NULL_HANDLE;
     MemAllocation new_alloc = {};
@@ -593,8 +593,8 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     return true;
 }
 
-void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemAllocators *mem_allocs,
-                                     const TexParams &p, ILog *log) {
+void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemAllocators *mem_allocs,
+                                   const TexParams &p, ILog *log) {
     Free();
 
     handle_.generation = TextureHandleCounter++;
@@ -607,10 +607,10 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
 
     { // create image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-        img_info.imageType = VK_IMAGE_TYPE_2D;
-        img_info.extent.width = uint32_t(p.w);
-        img_info.extent.height = uint32_t(p.h);
-        img_info.extent.depth = 1;
+        img_info.imageType = p.d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D;
+        img_info.extent.width = p.w;
+        img_info.extent.height = p.h;
+        img_info.extent.depth = (p.d ? p.d : 1);
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
         img_info.format = g_formats_vk[size_t(p.format)];
@@ -666,7 +666,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
     if (p.usage != Bitmask(eTexUsage::Transfer)) { // not 'transfer only'
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
-        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view_info.viewType = p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_formats_vk[size_t(p.format)];
         if (p.flags & eTexFlags::SRGB) {
             view_info.format = ToSRGBFormat(view_info.format);
@@ -716,7 +716,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
             for (int j = 0; j < mip_count; ++j) {
                 VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
                 view_info.image = handle_.img;
-                view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                view_info.viewType = p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D;
                 view_info.format = g_formats_vk[size_t(p.format)];
                 if (p.flags & eTexFlags::SRGB) {
                     view_info.format = ToSRGBFormat(view_info.format);
@@ -803,10 +803,10 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
         sbuf->resource_state = eResState::CopySrc;
         this->resource_state = eResState::CopyDst;
 
-        int w = p.w, h = p.h;
+        int w = p.w, h = p.h, d = p.d;
         int bytes_left = sbuf->size() - data_off;
         for (int i = 0; i < mip_count; ++i) {
-            const int len = GetMipDataLenBytes(w, h, p.format);
+            const int len = GetDataLenBytes(w, h, d, p.format);
             if (len > bytes_left) {
                 log->Error("Insufficient data length, bytes left %i, expected %i", bytes_left, len);
                 return;
@@ -823,7 +823,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
             region.imageSubresource.layerCount = 1;
 
             region.imageOffset = {0, 0, 0};
-            region.imageExtent = {uint32_t(w), uint32_t(h), 1};
+            region.imageExtent = {uint32_t(w), uint32_t(h), uint32_t(std::max(d, 1))};
 
             api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf->vk_handle(), handle_.img,
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
@@ -832,6 +832,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
             bytes_left -= len;
             w = std::max(w / 2, 1);
             h = std::max(h / 2, 1);
+            d = std::max(d / 2, 1);
         }
     }
 
@@ -860,8 +861,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer c
     }
 }
 
-void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cmd_buf, MemAllocators *mem_allocs,
-                                     const TexParams &p, ILog *log) {
+void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cmd_buf, MemAllocators *mem_allocs,
+                                   const TexParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
 
@@ -1060,7 +1061,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
             reg.imageOffset = {0, 0, 0};
             reg.imageExtent = {uint32_t(p.w) >> j, uint32_t(p.h) >> j, 1};
 
-            buffer_offset += GetMipDataLenBytes(int(reg.imageExtent.width), int(reg.imageExtent.height), p.format);
+            buffer_offset += GetDataLenBytes(int(reg.imageExtent.width), int(reg.imageExtent.height), 1, p.format);
         }
     }
 
@@ -1070,14 +1071,14 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffe
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                 const int sizey, const eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf,
-                                 const int data_off, const int data_len) {
+void Ren::Texture::SetSubImage(const int level, const int offsetx, const int offsety, const int offsetz,
+                               const int sizex, const int sizey, const int sizez, const eTexFormat format,
+                               const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off, const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
     assert(offsety >= 0 && offsety + sizey <= std::max(params.h >> level, 1));
-
+    assert(offsetz >= 0 && offsetz + sizez <= std::max(params.d >> level, 1));
     assert(sbuf.type() == eBufType::Upload);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
@@ -1142,43 +1143,15 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
 
-    region.imageOffset = {int32_t(offsetx), int32_t(offsety), 0};
-    region.imageExtent = {uint32_t(sizex), uint32_t(sizey), 1};
+    region.imageOffset = {int32_t(offsetx), int32_t(offsety), int32_t(offsetz)};
+    region.imageExtent = {uint32_t(sizex), uint32_t(sizey), uint32_t(sizez)};
 
     api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                      &region);
 }
 
-void Ren::Texture2D::SetSampling(const SamplingParams s) {
-    if (handle_.sampler) {
-        api_ctx_->samplers_to_destroy[api_ctx_->backend_frame].emplace_back(handle_.sampler);
-    }
-
-    VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    sampler_info.magFilter = g_min_mag_filter_vk[size_t(s.filter)];
-    sampler_info.minFilter = g_min_mag_filter_vk[size_t(s.filter)];
-    sampler_info.addressModeU = g_wrap_mode_vk[size_t(s.wrap)];
-    sampler_info.addressModeV = g_wrap_mode_vk[size_t(s.wrap)];
-    sampler_info.addressModeW = g_wrap_mode_vk[size_t(s.wrap)];
-    sampler_info.anisotropyEnable = VK_TRUE;
-    sampler_info.maxAnisotropy = AnisotropyLevel;
-    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    sampler_info.unnormalizedCoordinates = VK_FALSE;
-    sampler_info.compareEnable = s.compare != eTexCompare::None ? VK_TRUE : VK_FALSE;
-    sampler_info.compareOp = g_compare_ops_vk[size_t(s.compare)];
-    sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(s.filter)];
-    sampler_info.mipLodBias = s.lod_bias.to_float();
-    sampler_info.minLod = s.min_lod.to_float();
-    sampler_info.maxLod = s.max_lod.to_float();
-
-    const VkResult res = api_ctx_->vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
-    assert(res == VK_SUCCESS && "Failed to create sampler!");
-
-    params.sampling = s;
-}
-
-void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off,
-                                     const int data_len) const {
+void Ren::Texture::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off,
+                                   const int data_len) const {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> buf_barriers;
     SmallVector<VkImageMemoryBarrier, 1> img_barriers;
@@ -1248,8 +1221,36 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, 
                                      &region);
 }
 
-void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
-                           const uint32_t src_y, Texture2D &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
+void Ren::Texture::SetSampling(const SamplingParams s) {
+    if (handle_.sampler) {
+        api_ctx_->samplers_to_destroy[api_ctx_->backend_frame].emplace_back(handle_.sampler);
+    }
+
+    VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    sampler_info.magFilter = g_min_mag_filter_vk[size_t(s.filter)];
+    sampler_info.minFilter = g_min_mag_filter_vk[size_t(s.filter)];
+    sampler_info.addressModeU = g_wrap_mode_vk[size_t(s.wrap)];
+    sampler_info.addressModeV = g_wrap_mode_vk[size_t(s.wrap)];
+    sampler_info.addressModeW = g_wrap_mode_vk[size_t(s.wrap)];
+    sampler_info.anisotropyEnable = VK_TRUE;
+    sampler_info.maxAnisotropy = AnisotropyLevel;
+    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    sampler_info.unnormalizedCoordinates = VK_FALSE;
+    sampler_info.compareEnable = s.compare != eTexCompare::None ? VK_TRUE : VK_FALSE;
+    sampler_info.compareOp = g_compare_ops_vk[size_t(s.compare)];
+    sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(s.filter)];
+    sampler_info.mipLodBias = s.lod_bias.to_float();
+    sampler_info.minLod = s.min_lod.to_float();
+    sampler_info.maxLod = s.max_lod.to_float();
+
+    const VkResult res = api_ctx_->vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
+    assert(res == VK_SUCCESS && "Failed to create sampler!");
+
+    params.sampling = s;
+}
+
+void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32_t src_level, const uint32_t src_x,
+                           const uint32_t src_y, Texture &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
                            const uint32_t dst_y, const uint32_t dst_face, const uint32_t width, const uint32_t height) {
     assert(src_tex.resource_state == eResState::CopySrc);
     assert(dst_tex.resource_state == eResState::CopyDst);
@@ -1279,7 +1280,7 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, const uint
                                       dst_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);
 }
 
-void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf) {
+void Ren::ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
     assert(tex.resource_state == eResState::CopyDst);
 
     if (!IsDepthFormat(tex.params.format)) {
@@ -1309,29 +1310,29 @@ void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf)
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture1D::Texture1D(std::string_view name, const BufferRef &buf, const eTexFormat format, const uint32_t offset,
-                          const uint32_t size, ILog *log)
+Ren::TextureBuffer::TextureBuffer(std::string_view name, const BufRef &buf, const eTexFormat format,
+                                  const uint32_t offset, const uint32_t size, ILog *log)
     : name_(name) {
     Init(buf, format, offset, size, log);
 }
 
-void Ren::Texture1D::Free() {
+void Ren::TextureBuffer::Free() {
     if (buf_view_) {
         api_ctx_->buf_views_to_destroy[api_ctx_->backend_frame].push_back(buf_view_);
         buf_view_ = {};
     }
-    buf_ = WeakBufferRef{};
+    buf_ = WeakBufRef{};
 }
 
-void Ren::Texture1D::FreeImmediate() {
+void Ren::TextureBuffer::FreeImmediate() {
     if (buf_view_) {
         api_ctx_->vkDestroyBufferView(api_ctx_->device, buf_view_, nullptr);
         buf_view_ = {};
     }
-    buf_ = WeakBufferRef{};
+    buf_ = WeakBufRef{};
 }
 
-Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
+Ren::TextureBuffer &Ren::TextureBuffer::operator=(TextureBuffer &&rhs) noexcept {
     if (this == &rhs) {
         return (*this);
     }
@@ -1349,8 +1350,8 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
     return (*this);
 }
 
-void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
-                          ILog *log) {
+void Ren::TextureBuffer::Init(const BufRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
+                              ILog *log) {
     Free();
 
     VkBufferViewCreateInfo view_info = {VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO};
@@ -1370,251 +1371,6 @@ void Ren::Texture1D::Init(const BufferRef &buf, const eTexFormat format, const u
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
-
-Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const TexParams &params, MemAllocators *mem_allocs,
-                          ILog *log)
-    : name_(name), api_ctx_(ctx) {
-    Init(params, mem_allocs, log);
-}
-
-Ren::Texture3D::~Texture3D() { Free(); }
-
-Ren::Texture3D &Ren::Texture3D::operator=(Texture3D &&rhs) noexcept {
-    if (this == &rhs) {
-        return (*this);
-    }
-
-    Free();
-
-    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
-    handle_ = std::exchange(rhs.handle_, {});
-    alloc_ = std::exchange(rhs.alloc_, {});
-    params = std::exchange(rhs.params, {});
-    name_ = std::move(rhs.name_);
-
-    resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
-
-    return (*this);
-}
-
-void Ren::Texture3D::Init(const TexParams &p, MemAllocators *mem_allocs, ILog *log) {
-    Free();
-
-    handle_.generation = TextureHandleCounter++;
-    params = p;
-
-    { // create image
-        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-        img_info.imageType = VK_IMAGE_TYPE_3D;
-        img_info.extent.width = uint32_t(p.w);
-        img_info.extent.height = uint32_t(p.h);
-        img_info.extent.depth = uint32_t(p.d);
-        img_info.mipLevels = 1;
-        img_info.arrayLayers = 1;
-        img_info.format = g_formats_vk[size_t(p.format)];
-        if (p.flags & eTexFlags::SRGB) {
-            img_info.format = ToSRGBFormat(img_info.format);
-        }
-        img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-        img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        assert(uint8_t(p.usage) != 0);
-        img_info.usage = to_vk_image_usage(p.usage, p.format);
-
-        img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        img_info.samples = VK_SAMPLE_COUNT_1_BIT;
-        img_info.flags = 0;
-
-        VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
-        if (res != VK_SUCCESS) {
-            log->Error("Failed to create image!");
-            return;
-        }
-
-#ifdef ENABLE_GPU_DEBUG
-        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-        name_info.objectType = VK_OBJECT_TYPE_IMAGE;
-        name_info.objectHandle = uint64_t(handle_.img);
-        name_info.pObjectName = name_.c_str();
-        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
-#endif
-
-        VkMemoryRequirements tex_mem_req;
-        api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
-
-        VkMemoryPropertyFlags img_tex_desired_mem_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        alloc_ = mem_allocs->Allocate(tex_mem_req, img_tex_desired_mem_flags);
-        if (!alloc_) {
-            log->Warning("Not enough device memory, falling back to CPU RAM!");
-            img_tex_desired_mem_flags &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            alloc_ = mem_allocs->Allocate(tex_mem_req, img_tex_desired_mem_flags);
-        }
-
-        if (!alloc_) {
-            log->Error("Failed to allocate memory!");
-            return;
-        }
-
-        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.pool),
-                                          VkDeviceSize(alloc_.offset));
-        if (res != VK_SUCCESS) {
-            log->Error("Failed to bind memory!");
-            return;
-        }
-    }
-
-    { // create default image view(s)
-        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-        view_info.image = handle_.img;
-        view_info.viewType = VK_IMAGE_VIEW_TYPE_3D;
-        view_info.format = g_formats_vk[size_t(p.format)];
-        view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
-
-        if (GetColorChannelCount(p.format) == 1) {
-            view_info.components.r = VK_COMPONENT_SWIZZLE_R;
-            view_info.components.g = VK_COMPONENT_SWIZZLE_R;
-            view_info.components.b = VK_COMPONENT_SWIZZLE_R;
-            view_info.components.a = VK_COMPONENT_SWIZZLE_R;
-        }
-
-        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
-        if (res != VK_SUCCESS) {
-            log->Error("Failed to create image view!");
-            return;
-        }
-
-#ifdef ENABLE_GPU_DEBUG
-        for (VkImageView view : handle_.views) {
-            VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-            name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-            name_info.objectHandle = uint64_t(view);
-            name_info.pObjectName = name_.c_str();
-            api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
-        }
-#endif
-    }
-
-    this->resource_state = eResState::Undefined;
-
-    { // create new sampler
-        VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-        sampler_info.magFilter = g_min_mag_filter_vk[size_t(p.sampling.filter)];
-        sampler_info.minFilter = g_min_mag_filter_vk[size_t(p.sampling.filter)];
-        sampler_info.addressModeU = g_wrap_mode_vk[size_t(p.sampling.wrap)];
-        sampler_info.addressModeV = g_wrap_mode_vk[size_t(p.sampling.wrap)];
-        sampler_info.addressModeW = g_wrap_mode_vk[size_t(p.sampling.wrap)];
-        sampler_info.anisotropyEnable = VK_FALSE;
-        sampler_info.maxAnisotropy = AnisotropyLevel;
-        sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        sampler_info.unnormalizedCoordinates = VK_FALSE;
-        sampler_info.compareEnable = VK_FALSE;
-        sampler_info.compareOp = g_compare_ops_vk[size_t(p.sampling.compare)];
-        sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(p.sampling.filter)];
-        sampler_info.mipLodBias = p.sampling.lod_bias.to_float();
-        sampler_info.minLod = p.sampling.min_lod.to_float();
-        sampler_info.maxLod = p.sampling.max_lod.to_float();
-
-        const VkResult res = api_ctx_->vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
-        if (res != VK_SUCCESS) {
-            log->Error("Failed to create sampler!");
-        }
-    }
-}
-
-void Ren::Texture3D::Free() {
-    if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
-        for (VkImageView view : handle_.views) {
-            if (view) {
-                api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(view);
-            }
-        }
-        api_ctx_->images_to_destroy[api_ctx_->backend_frame].push_back(handle_.img);
-        api_ctx_->samplers_to_destroy[api_ctx_->backend_frame].push_back(handle_.sampler);
-        api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
-
-        handle_ = {};
-        params.format = eTexFormat::Undefined;
-    }
-}
-
-void Ren::Texture3D::SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
-                                 eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off,
-                                 int data_len) {
-    assert(format == params.format);
-    assert(offsetx >= 0 && offsetx + sizex <= params.w);
-    assert(offsety >= 0 && offsety + sizey <= params.h);
-    assert(offsetz >= 0 && offsetz + sizez <= params.d);
-    assert(sbuf.type() == eBufType::Upload);
-
-    VkPipelineStageFlags src_stages = 0, dst_stages = 0;
-    SmallVector<VkBufferMemoryBarrier, 1> buf_barriers;
-    SmallVector<VkImageMemoryBarrier, 1> img_barriers;
-
-    if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
-        auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
-        new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
-        new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
-        new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.vk_handle();
-        new_barrier.offset = VkDeviceSize(0);
-        new_barrier.size = VkDeviceSize(sbuf.size());
-
-        src_stages |= VKPipelineStagesForState(sbuf.resource_state);
-        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
-    }
-
-    if (this->resource_state != eResState::CopyDst) {
-        auto &new_barrier = img_barriers.emplace_back();
-        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-        new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
-        new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
-        new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(this->resource_state));
-        new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(eResState::CopyDst));
-        new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.image = handle_.img;
-        new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        new_barrier.subresourceRange.baseMipLevel = 0;
-        new_barrier.subresourceRange.levelCount = 1;
-        new_barrier.subresourceRange.baseArrayLayer = 0;
-        new_barrier.subresourceRange.layerCount = 1;
-
-        src_stages |= VKPipelineStagesForState(this->resource_state);
-        dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
-    }
-
-    if (!buf_barriers.empty() || !img_barriers.empty()) {
-        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                       0, 0, nullptr, buf_barriers.size(), buf_barriers.cdata(), img_barriers.size(),
-                                       img_barriers.cdata());
-    }
-
-    sbuf.resource_state = eResState::CopySrc;
-    this->resource_state = eResState::CopyDst;
-
-    VkBufferImageCopy region = {};
-
-    region.bufferOffset = VkDeviceSize(data_off);
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-
-    region.imageOffset = {int32_t(offsetx), int32_t(offsety), int32_t(offsetz)};
-    region.imageExtent = {uint32_t(sizex), uint32_t(sizey), uint32_t(sizez)};
-
-    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                                     &region);
-}
 
 VkFormat Ren::VKFormatFromTexFormat(eTexFormat format) { return g_formats_vk[size_t(format)]; }
 

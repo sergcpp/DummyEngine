@@ -21,13 +21,13 @@ extern const int SphereIndicesCount = __sphere_indices_count;
 // aligned to vertex stride
 const size_t SphereVerticesSize = sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16);
 
-bool framebuffer_eq(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTex2DRef &depth_attachment,
-                    const Ren::WeakTex2DRef &stencil_attachment,
+bool framebuffer_eq(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTexRef &depth_attachment,
+                    const Ren::WeakTexRef &stencil_attachment,
                     const Ren::Span<const Ren::RenderTarget> color_attachments) {
     return !fb.Changed(rp, depth_attachment, stencil_attachment, color_attachments);
 }
-bool framebuffer_lt(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTex2DRef &depth_attachment,
-                    const Ren::WeakTex2DRef &stencil_attachment,
+bool framebuffer_lt(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const Ren::WeakTexRef &depth_attachment,
+                    const Ren::WeakTexRef &stencil_attachment,
                     const Ren::Span<const Ren::RenderTarget> color_attachments) {
     return fb.LessThan(rp, depth_attachment, stencil_attachment, color_attachments);
 }
@@ -36,8 +36,8 @@ bool framebuffer_lt(const Ren::Framebuffer &fb, const Ren::RenderPass &rp, const
 bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
     using namespace PrimDrawInternal;
 
-    Ren::BufferRef vtx_buf1 = ctx.default_vertex_buf1(), vtx_buf2 = ctx.default_vertex_buf2(),
-                   ndx_buf = ctx.default_indices_buf();
+    Ren::BufRef vtx_buf1 = ctx.default_vertex_buf1(), vtx_buf2 = ctx.default_vertex_buf2(),
+                ndx_buf = ctx.default_indices_buf();
 
     if (!initialized_) {
         Ren::CommandBuffer cmd_buf = ctx.api_ctx()->BegSingleTimeCommands();
@@ -124,8 +124,8 @@ void Eng::PrimDraw::CleanUp() {
     using namespace PrimDrawInternal;
 
     if (quad_vtx1_.offset != 0xffffffff) {
-        Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
-                       ndx_buf = ctx_->default_indices_buf();
+        Ren::BufRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
+                    ndx_buf = ctx_->default_indices_buf();
 
         vtx_buf1->FreeSubRegion(quad_vtx1_);
         assert(quad_vtx2_.offset != 0xffffffff);
@@ -135,8 +135,8 @@ void Eng::PrimDraw::CleanUp() {
     }
 
     if (sphere_vtx1_.offset != 0xffffffff) {
-        Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
-                       ndx_buf = ctx_->default_indices_buf();
+        Ren::BufRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
+                    ndx_buf = ctx_->default_indices_buf();
 
         vtx_buf1->FreeSubRegion(sphere_vtx1_);
         assert(sphere_vtx2_.offset != 0xffffffff);
@@ -146,8 +146,8 @@ void Eng::PrimDraw::CleanUp() {
     }
 
     if (temp_vtx1_.offset != 0xffffffff) {
-        Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
-                       ndx_buf = ctx_->default_indices_buf();
+        Ren::BufRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
+                    ndx_buf = ctx_->default_indices_buf();
 
         vtx_buf1->FreeSubRegion(temp_vtx1_);
         assert(temp_vtx2_.offset != 0xffffffff);
@@ -163,7 +163,7 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
                                                                Ren::Span<const Ren::RenderTarget> color_targets) {
     using namespace PrimDrawInternal;
 
-    Ren::WeakTex2DRef depth_ref = depth_target.ref, stencil_ref = stencil_target.ref;
+    Ren::WeakTexRef depth_ref = depth_target.ref, stencil_ref = stencil_target.ref;
 
     int start = 0, count = int(framebuffers_.size());
     while (count > 0) {

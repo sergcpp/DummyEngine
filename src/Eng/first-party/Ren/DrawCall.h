@@ -13,9 +13,8 @@ class DescrMultiPoolAlloc;
 class ILog;
 class Pipeline;
 class ProbeStorage;
-class Texture1D;
-class Texture2D;
-class Texture3D;
+class TextureBuffer;
+class Texture;
 class Texture2DArray;
 
 enum class eBindTarget : uint16_t {
@@ -24,6 +23,7 @@ enum class eBindTarget : uint16_t {
     Tex2DArraySampled,
     Tex2DMs,
     TexCubeArray,
+    Tex3D,
     Tex3DSampled,
     Sampler,
     UBuf,
@@ -45,10 +45,9 @@ extern int g_param_buf_binding;
 
 struct OpaqueHandle {
     union {
-        const Texture2D *tex;
-        const Texture3D *tex3d;
+        const Texture *tex;
         const Buffer *buf;
-        const Texture1D *tex_buf;
+        const TextureBuffer *tex_buf;
         const ProbeStorage *cube_arr;
         const Texture2DArray *tex2d_arr;
 #if defined(REN_VK_BACKEND)
@@ -59,11 +58,10 @@ struct OpaqueHandle {
     int view_index = 0;
 
     OpaqueHandle() = default;
-    OpaqueHandle(const Texture1D &_tex) : tex_buf(&_tex) {}
-    OpaqueHandle(const Texture2D &_tex, int _view_index = 0) : tex(&_tex), view_index(_view_index) {}
-    OpaqueHandle(const Texture2D &_tex, const Sampler &_sampler, int _view_index = 0)
+    OpaqueHandle(const TextureBuffer &_tex) : tex_buf(&_tex) {}
+    OpaqueHandle(const Texture &_tex, int _view_index = 0) : tex(&_tex), view_index(_view_index) {}
+    OpaqueHandle(const Texture &_tex, const Sampler &_sampler, int _view_index = 0)
         : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
-    OpaqueHandle(const Texture3D &_tex) : tex3d(&_tex) {}
     OpaqueHandle(const Buffer &_buf) : buf(&_buf) {}
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
     OpaqueHandle(const Texture2DArray &_tex2d_arr) : tex2d_arr(&_tex2d_arr) {}

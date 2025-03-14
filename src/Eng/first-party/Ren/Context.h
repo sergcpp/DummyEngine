@@ -25,12 +25,12 @@ class DescrMultiPoolAlloc;
 
 struct StageBufRef {
     Context &ctx;
-    BufferRef buf;
+    BufRef buf;
     SyncFence &fence;
     CommandBuffer cmd_buf;
     bool &is_in_use;
 
-    StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence, CommandBuffer cmd_buf, bool &_is_in_use);
+    StageBufRef(Context &_ctx, BufRef &_buf, SyncFence &_fence, CommandBuffer cmd_buf, bool &_is_in_use);
     ~StageBufRef();
 
     StageBufRef(const StageBufRef &rhs) = delete;
@@ -39,7 +39,7 @@ struct StageBufRef {
 
 struct StageBufs {
     Context *ctx = nullptr;
-    BufferRef bufs[StageBufferCount];
+    BufRef bufs[StageBufferCount];
     SyncFence fences[StageBufferCount];
     CommandBuffer cmd_bufs[StageBufferCount] = {};
     bool is_in_use[StageBufferCount] = {};
@@ -70,15 +70,14 @@ class Context {
     RenderPassStorage render_passes_;
     PipelineStorage pipelines_;
     ShaderStorage shaders_;
-    Texture3DStorage textures_3D_;
-    Texture2DStorage textures_2D_;
-    Texture1DStorage textures_1D_;
+    TextureStorage textures_;
+    TextureBufferStorage texture_buffers_;
     TextureRegionStorage texture_regions_;
     SamplerStorage samplers_;
     AnimSeqStorage anims_;
     BufferStorage buffers_;
 
-    BufferRef default_vertex_buf1_, default_vertex_buf2_, default_skin_vertex_buf_, default_delta_buf_,
+    BufRef default_vertex_buf1_, default_vertex_buf2_, default_skin_vertex_buf_, default_delta_buf_,
         default_indices_buf_;
     std::unique_ptr<MemAllocators> default_mem_allocs_;
 
@@ -116,17 +115,16 @@ class Context {
 
     ILog *log() const { return log_; }
 
-    Texture3DStorage &textures3D() { return textures_3D_; }
-    Texture2DStorage &textures2D() { return textures_2D_; }
-    Texture1DStorage &textures1D() { return textures_1D_; }
+    TextureStorage &textures() { return textures_; }
+    TextureBufferStorage &texture_buffers() { return texture_buffers_; }
     MaterialStorage &materials() { return materials_; }
     ProgramStorage &programs() { return programs_; }
 
-    BufferRef default_vertex_buf1() const { return default_vertex_buf1_; }
-    BufferRef default_vertex_buf2() const { return default_vertex_buf2_; }
-    BufferRef default_skin_vertex_buf() const { return default_skin_vertex_buf_; }
-    BufferRef default_delta_buf() const { return default_delta_buf_; }
-    BufferRef default_indices_buf() const { return default_indices_buf_; }
+    BufRef default_vertex_buf1() const { return default_vertex_buf1_; }
+    BufRef default_vertex_buf2() const { return default_vertex_buf2_; }
+    BufRef default_skin_vertex_buf() const { return default_skin_vertex_buf_; }
+    BufRef default_delta_buf() const { return default_delta_buf_; }
+    BufRef default_indices_buf() const { return default_indices_buf_; }
     MemAllocators *default_mem_allocs() { return default_mem_allocs_.get(); }
     DescrMultiPoolAlloc *default_descr_alloc() const;
 
@@ -147,13 +145,13 @@ class Context {
     MeshRef LoadMesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices,
                      int ndx_count, eMeshLoadStatus *load_status);
     MeshRef LoadMesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices,
-                     int ndx_count, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
+                     int ndx_count, BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf,
                      eMeshLoadStatus *load_status);
     MeshRef LoadMesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load,
                      eMeshLoadStatus *load_status);
     MeshRef LoadMesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load,
-                     BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf, BufferRef &skin_vertex_buf,
-                     BufferRef &delta_buf, eMeshLoadStatus *load_status);
+                     BufRef &vertex_buf1, BufRef &vertex_buf2, BufRef &index_buf, BufRef &skin_vertex_buf,
+                     BufRef &delta_buf, eMeshLoadStatus *load_status);
 
     /*** Material ***/
     MaterialRef LoadMaterial(std::string_view name, std::string_view mat_src, eMatLoadStatus *status,
@@ -187,7 +185,7 @@ class Context {
     void ReleasePrograms();
 
     /*** VertexInput ***/
-    VertexInputRef LoadVertexInput(Span<const VtxAttribDesc> attribs, const BufferRef &elem_buf);
+    VertexInputRef LoadVertexInput(Span<const VtxAttribDesc> attribs, const BufRef &elem_buf);
 
     /*** RenderPass ***/
     RenderPassRef LoadRenderPass(const RenderTarget &depth_rt, Span<const RenderTarget> color_rts) {
@@ -204,27 +202,23 @@ class Context {
     PipelineRef LoadPipeline(const RastState &rast_state, const ProgramRef &prog, const VertexInputRef &vtx_input,
                              const RenderPassRef &render_pass, uint32_t subpass_index);
 
-    /*** Texture 3D ***/
-    Tex3DRef LoadTexture3D(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
-                           eTexLoadStatus *load_status);
-
-    /*** Texture 2D ***/
-    Tex2DRef LoadTexture2D(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
-                           eTexLoadStatus *load_status);
-    Tex2DRef LoadTexture2D(std::string_view name, const TexHandle &handle, const TexParams &p, MemAllocation &&alloc,
-                           eTexLoadStatus *load_status);
-    Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const TexParams &p,
+    /*** Texture ***/
+    TexRef LoadTexture(std::string_view name, const TexParams &p, MemAllocators *mem_allocs,
+                       eTexLoadStatus *load_status);
+    TexRef LoadTexture(std::string_view name, const TexHandle &handle, const TexParams &p, MemAllocation &&alloc,
+                       eTexLoadStatus *load_status);
+    TexRef LoadTexture(std::string_view name, Span<const uint8_t> data, const TexParams &p, MemAllocators *mem_allocs,
+                       eTexLoadStatus *load_status);
+    TexRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const TexParams &p,
                            MemAllocators *mem_allocs, eTexLoadStatus *load_status);
-    Tex2DRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const TexParams &p,
-                             MemAllocators *mem_allocs, eTexLoadStatus *load_status);
 
-    void VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback);
+    void VisitTextures(eTexFlags mask, const std::function<void(Texture &tex)> &callback);
     int NumTexturesNotReady();
-    void Release2DTextures();
+    void ReleaseTextures();
 
-    /*** Texture 1D ***/
-    Tex1DRef CreateTexture1D(std::string_view name, BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size);
-    void Release1DTextures();
+    /*** TextureBuffer ***/
+    TexBufRef CreateTextureBuffer(std::string_view name, BufRef buf, eTexFormat format, uint32_t offset, uint32_t size);
+    void ReleaseTextureBuffers();
 
     /** Texture regions (placed on default atlas) **/
     TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p,
@@ -244,10 +238,10 @@ class Context {
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size, uint32_t size_alignment = 1,
-                         MemAllocators *mem_allocs = nullptr);
-    BufferRef LoadBuffer(std::string_view name, eBufType type, const BufHandle &handle, MemAllocation &&alloc,
-                         uint32_t initial_size, uint32_t size_alignment = 1);
+    BufRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size, uint32_t size_alignment = 1,
+                      MemAllocators *mem_allocs = nullptr);
+    BufRef LoadBuffer(std::string_view name, eBufType type, const BufHandle &handle, MemAllocation &&alloc,
+                      uint32_t initial_size, uint32_t size_alignment = 1);
     void ReleaseBuffers();
 
     void InitDefaultBuffers();
@@ -259,7 +253,7 @@ class Context {
     int backend_frame() const;
     int active_present_image() const;
 
-    Ren::Tex2DRef backbuffer_ref() const;
+    Ren::TexRef backbuffer_ref() const;
 
     int WriteTimestamp(bool start);
     uint64_t GetTimestampIntervalDurationUs(int query_start, int query_end) const;

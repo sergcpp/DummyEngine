@@ -129,7 +129,7 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const FgResRef handle, const Ren::eResS
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
+Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufRef &ref, const Ren::eResState desired_state,
                                          const Ren::eStageBits stages, FgNode &node, const int slot_index) {
     FgResource ret;
     ret.type = eFgResType::Buffer;
@@ -184,7 +184,7 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex1DRef &tbo,
+Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufRef &ref, const Ren::WeakTexBufRef &tbo,
                                          const Ren::eResState desired_state, const Ren::eStageBits stages,
                                          FgNode &node) {
     FgResource ret;
@@ -266,7 +266,7 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(std::string_view name, const Ren::eRes
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
+Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTexRef &ref, const Ren::eResState desired_state,
                                           const Ren::eStageBits stages, FgNode &node) {
     FgResource ret;
     ret.type = eFgResType::Texture;
@@ -306,44 +306,6 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Re
 }
 
 Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state,
-                                          Ren::eStageBits stages, FgNode &node) {
-    FgResource ret;
-    ret.type = eFgResType::Texture;
-
-    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
-    if (!ptex_index) {
-        FgAllocTex new_tex;
-        new_tex.name = ref->name();
-        new_tex.external = true;
-
-        ret.index = textures_.emplace(new_tex);
-        name_to_texture_[new_tex.name] = ret.index;
-    } else {
-        ret.index = *ptex_index;
-    }
-
-    assert(ref);
-    FgAllocTex &tex = textures_[ret.index];
-    tex._ref = ref;
-    ret._generation = tex._generation;
-    ret.desired_state = desired_state;
-    ret.stages = stages;
-
-    tex.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
-    ++tex.read_count;
-
-#ifndef NDEBUG
-    for (const FgResource &r : node.input_) {
-        assert(r.type != eFgResType::Texture || r.index != ret.index);
-    }
-#endif
-
-    node.input_.push_back(ret);
-
-    return ret;
-}
-
-Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture3D *ref, Ren::eResState desired_state,
                                           Ren::eStageBits stages, FgNode &node) {
     FgResource ret;
     ret.type = eFgResType::Texture;
@@ -499,7 +461,7 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(std::string_view name, const FgBufDesc
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
+Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufRef &ref, const Ren::eResState desired_state,
                                           const Ren::eStageBits stages, FgNode &node) {
     FgResource ret;
     ret.type = eFgResType::Buffer;
@@ -622,7 +584,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
+Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTexRef &ref, const Ren::eResState desired_state,
                                            const Ren::eStageBits stages, FgNode &node, const int slot_index) {
     FgResource ret;
     ret.type = eFgResType::Texture;
@@ -719,7 +681,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::Texture2DArray *ref, const
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::MakeTextureResource(const Ren::WeakTex2DRef &ref) {
+Eng::FgResRef Eng::FgBuilder::MakeTextureResource(const Ren::WeakTexRef &ref) {
     FgResource ret;
     ret.type = eFgResType::Texture;
 
@@ -823,7 +785,7 @@ void Eng::FgBuilder::AllocateNeededResources_Simple() {
         ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", tex.name.c_str(), tex.desc.w, tex.desc.h,
                          float(GetDataLenBytes(tex.desc)) * 0.000001f);
         Ren::eTexLoadStatus status;
-        tex.strong_ref = ctx_.LoadTexture2D(tex.name, tex.desc, ctx_.default_mem_allocs(), &status);
+        tex.strong_ref = ctx_.LoadTexture(tex.name, tex.desc, ctx_.default_mem_allocs(), &status);
         tex.ref = tex.strong_ref;
         assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                status == Ren::eTexLoadStatus::Reinitialized);
@@ -843,8 +805,8 @@ void Eng::FgBuilder::AllocateNeededResources_Simple() {
 }
 
 void Eng::FgBuilder::ClearResources_Simple() {
-    std::vector<Ren::BufferRef> buffers_to_clear;
-    std::vector<Ren::Tex2DRef> textures_to_clear;
+    std::vector<Ren::BufRef> buffers_to_clear;
+    std::vector<Ren::TexRef> textures_to_clear;
 
     for (const FgAllocBuf &b : buffers_) {
         if (b.external || !b.lifetime.is_used()) {
@@ -869,7 +831,7 @@ void Eng::FgBuilder::ClearResources_Simple() {
 
         std::vector<Ren::TransitionInfo> transitions;
         transitions.reserve(textures_to_clear.size() + buffers_to_clear.size());
-        for (const Ren::Tex2DRef &t : textures_to_clear) {
+        for (const Ren::TexRef &t : textures_to_clear) {
             if (t->params.usage & Ren::eTexUsage::Transfer) {
                 transitions.emplace_back(t.get(), Ren::eResState::CopyDst);
             } else if (t->params.usage & Ren::eTexUsage::Storage) {
@@ -882,12 +844,12 @@ void Eng::FgBuilder::ClearResources_Simple() {
                 }
             }
         }
-        for (const Ren::BufferRef &b : buffers_to_clear) {
+        for (const Ren::BufRef &b : buffers_to_clear) {
             transitions.emplace_back(b.get(), Ren::eResState::CopyDst);
         }
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
-        for (Ren::Tex2DRef &t : textures_to_clear) {
+        for (Ren::TexRef &t : textures_to_clear) {
             if (t->resource_state == Ren::eResState::CopyDst) {
                 ClearImage_AsTransfer(t, cmd_buf);
             } else if (t->resource_state == Ren::eResState::UnorderedAccess) {
@@ -899,7 +861,7 @@ void Eng::FgBuilder::ClearResources_Simple() {
                 assert(false);
             }
         }
-        for (Ren::BufferRef &b : buffers_to_clear) {
+        for (Ren::BufRef &b : buffers_to_clear) {
             if (b->resource_state == Ren::eResState::CopyDst) {
                 ClearBuffer_AsTransfer(b, cmd_buf);
             } else if (b->resource_state == Ren::eResState::UnorderedAccess) {
@@ -1524,7 +1486,7 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
 
     ctx_.log()->Info("============================================================================");
     { // report buffers
-        std::vector<Ren::WeakBufferRef> not_handled_buffers;
+        std::vector<Ren::WeakBufRef> not_handled_buffers;
         not_handled_buffers.reserve(buffers_.size());
         for (const FgAllocBuf &buf : buffers_) {
             if (buf.alias_of != -1) {
@@ -1553,7 +1515,7 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
     }
     ctx_.log()->Info("============================================================================");
     { // report textures
-        std::vector<Ren::WeakTex2DRef> not_handled_textures;
+        std::vector<Ren::WeakTexRef> not_handled_textures;
         not_handled_textures.reserve(textures_.size());
         for (const FgAllocTex &tex : textures_) {
             if (tex.alias_of != -1) {
@@ -1615,8 +1577,6 @@ void Eng::FgBuilder::Execute() {
             tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
         } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex._ref)) {
             tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture2DArray *>(tex._ref)->resource_state);
-        } else if (std::holds_alternative<const Ren::Texture3D *>(tex._ref)) {
-            tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture3D *>(tex._ref)->resource_state);
         }
     }
 
@@ -1751,15 +1711,7 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
             assert(tex->alias_of == -1);
         }
 
-        if (std::holds_alternative<const Ren::Texture3D *>(tex->_ref)) {
-            if (std::get<const Ren::Texture3D *>(tex->_ref)->resource_state != res.desired_state ||
-                IsRWState(std::get<const Ren::Texture3D *>(tex->_ref)->resource_state)) {
-                src_stages |= tex->used_in_stages;
-                dst_stages |= res.stages;
-                tex->used_in_stages = Ren::eStageBits::None;
-                res_transitions.emplace_back(std::get<const Ren::Texture3D *>(tex->_ref), res.desired_state);
-            }
-        } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex->_ref)) {
+        if (std::holds_alternative<const Ren::Texture2DArray *>(tex->_ref)) {
             if (std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state != res.desired_state ||
                 IsRWState(std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state)) {
                 src_stages |= tex->used_in_stages;
@@ -1799,11 +1751,11 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
     }
 }
 
-void Eng::FgBuilder::ClearBuffer_AsTransfer(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf) {
+void Eng::FgBuilder::ClearBuffer_AsTransfer(Ren::BufRef &buf, Ren::CommandBuffer cmd_buf) {
     buf->Fill(0, buf->size(), 0, cmd_buf);
 }
 
-void Eng::FgBuilder::ClearBuffer_AsStorage(Ren::BufferRef &buf, Ren::CommandBuffer cmd_buf) {
+void Eng::FgBuilder::ClearBuffer_AsStorage(Ren::BufRef &buf, Ren::CommandBuffer cmd_buf) {
     const Ren::Binding bindings[] = {{Ren::eBindTarget::SBufRW, ClearBuffer::OUT_BUF_SLOT, *buf}};
 
     assert((buf->size() % 4) == 0);
@@ -1818,13 +1770,13 @@ void Eng::FgBuilder::ClearBuffer_AsStorage(Ren::BufferRef &buf, Ren::CommandBuff
                          ctx_.default_descr_alloc(), ctx_.log());
 }
 
-void Eng::FgBuilder::ClearImage_AsTransfer(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
+void Eng::FgBuilder::ClearImage_AsTransfer(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {
     // NOTE: we can not really use anything other than zero due to aliasing
     static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     Ren::ClearImage(*tex, rgba, cmd_buf);
 }
 
-void Eng::FgBuilder::ClearImage_AsStorage(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
+void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {
     const Ren::TexParams &p = tex->params;
 
     const Ren::PipelineRef &pi = pi_clear_image_[int(p.format)];
@@ -1839,7 +1791,7 @@ void Eng::FgBuilder::ClearImage_AsStorage(Ren::Tex2DRef &tex, Ren::CommandBuffer
     Ren::DispatchCompute(cmd_buf, *pi, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
 }
 
-void Eng::FgBuilder::ClearImage_AsTarget(Ren::Tex2DRef &tex, Ren::CommandBuffer cmd_buf) {
+void Eng::FgBuilder::ClearImage_AsTarget(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {
     const Ren::TexParams &p = tex->params;
 
     Ren::RenderTarget depth_target;

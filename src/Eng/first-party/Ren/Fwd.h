@@ -56,16 +56,16 @@ struct RastState;
 class RenderPass;
 class Sampler;
 class Shader;
-class Texture2D;
-class Texture1D;
+class Texture;
+class TextureBuffer;
 class TextureAtlas;
 class Texture2DAtlas;
 class TextureSplitter;
 class VertexInput;
 
 using AnimSeqRef = StrongRef<AnimSequence, NamedStorage<AnimSequence>>;
-using BufferRef = StrongRef<Buffer, NamedStorage<Buffer>>;
-using WeakBufferRef = WeakRef<Buffer, NamedStorage<Buffer>>;
+using BufRef = StrongRef<Buffer, NamedStorage<Buffer>>;
+using WeakBufRef = WeakRef<Buffer, NamedStorage<Buffer>>;
 using MaterialRef = StrongRef<Material, NamedStorage<Material>>;
 using MeshRef = StrongRef<Mesh, NamedStorage<Mesh>>;
 using VertexInputRef = StrongRef<VertexInput, SortedStorage<VertexInput>>;
@@ -74,10 +74,10 @@ using ProgramRef = StrongRef<Program, SortedStorage<Program>>;
 using SamplerRef = StrongRef<Sampler, SparseArray<Sampler>>;
 using WeakSamplerRef = WeakRef<Sampler, SparseArray<Sampler>>;
 using ShaderRef = StrongRef<Shader, NamedStorage<Shader>>;
-using Tex2DRef = StrongRef<Texture2D, NamedStorage<Texture2D>>;
-using WeakTex2DRef = WeakRef<Texture2D, NamedStorage<Texture2D>>;
-using Tex1DRef = StrongRef<Texture1D, NamedStorage<Texture1D>>;
-using WeakTex1DRef = WeakRef<Texture1D, NamedStorage<Texture1D>>;
+using TexRef = StrongRef<Texture, NamedStorage<Texture>>;
+using WeakTexRef = WeakRef<Texture, NamedStorage<Texture>>;
+using TexBufRef = StrongRef<TextureBuffer, NamedStorage<TextureBuffer>>;
+using WeakTexBufRef = WeakRef<TextureBuffer, NamedStorage<TextureBuffer>>;
 
 const char *Version();
 } // namespace Ren

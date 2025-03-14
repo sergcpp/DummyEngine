@@ -16,7 +16,7 @@ __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
-void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data, const Ren::Tex2DRef &ref) {
+void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data, const Ren::TexRef &ref) {
     uint32_t tex_user = ref->first_user;
     while (tex_user != 0xffffffff) {
         Ren::Material &mat = scene_data.materials[tex_user];
@@ -184,7 +184,7 @@ void Eng::SceneManager::TextureLoaderProc() {
 
             int w = int(req->orig_w), h = int(req->orig_h);
             for (int i = 0; i < req->orig_mip_count; i++) {
-                const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format);
+                const int data_len = Ren::GetDataLenBytes(w, h, req->orig_format);
 
                 if ((w <= max_load_w && h <= max_load_h) || i == req->orig_mip_count - 1) {
                     if (req->mip_offset_to_init == 0xff) {
@@ -358,10 +358,10 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                         ren_ctx_.log()->Error("File %s has not enough data!", tex_name.c_str());
                         break;
                     }
-                    const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format);
+                    const int data_len = Ren::GetDataLenBytes(w, h, req->orig_format);
                     const int mip_index = i - req->mip_offset_to_init;
 
-                    req->ref->SetSubImage(mip_index, 0, 0, w, h, req->orig_format, stage_buf->stage_buf(),
+                    req->ref->SetSubImage(mip_index, 0, 0, 0, w, h, 1, req->orig_format, stage_buf->stage_buf(),
                                           stage_buf->cmd_buf, data_off, data_len);
 
                     data_off += data_len;
@@ -588,7 +588,7 @@ void Eng::SceneManager::TexturesGCIteration(const Ren::Span<const TexEntry> visi
     }
 }
 
-void Eng::SceneManager::InvalidateTexture(const Ren::Tex2DRef &ref) {
+void Eng::SceneManager::InvalidateTexture(const Ren::TexRef &ref) {
     SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, ref);
 }
 
@@ -653,7 +653,7 @@ void Eng::SceneManager::ForceTextureReload() {
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 
         TextureRequest req;
-        req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};
+        req.ref = Ren::TexRef{&scene_data_.textures, it.index()};
 
         SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
@@ -702,7 +702,7 @@ void Eng::SceneManager::ReleaseTextures(const bool immediate) {
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 
         TextureRequest req;
-        req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};
+        req.ref = Ren::TexRef{&scene_data_.textures, it.index()};
 
         SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 

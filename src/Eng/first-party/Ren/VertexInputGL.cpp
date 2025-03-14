@@ -89,7 +89,7 @@ uint32_t Ren::VertexInput::GetVAO() const {
     return gl_vao_;
 }
 
-void Ren::VertexInput::Init(Span<const VtxAttribDesc> _attribs, const BufferRef &_elem_buf) {
+void Ren::VertexInput::Init(Span<const VtxAttribDesc> _attribs, const BufRef &_elem_buf) {
     attribs.assign(std::begin(_attribs), std::end(_attribs));
     elem_buf = _elem_buf;
     attribs_buf_handles_.resize(attribs.size());

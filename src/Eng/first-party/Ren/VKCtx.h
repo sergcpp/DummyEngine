@@ -9,8 +9,8 @@
 namespace Ren {
 class ILog;
 
-class Texture2D;
-using Tex2DRef = StrongRef<Texture2D, NamedStorage<Texture2D>>;
+class Texture;
+using TexRef = StrongRef<Texture, NamedStorage<Texture>>;
 
 struct ApiContext {
     void *vulkan_module = {};
@@ -29,7 +29,7 @@ struct ApiContext {
     VkPresentModeKHR present_mode = {};
     SmallVector<VkImage, MaxFramesInFlight> present_images;
     SmallVector<VkImageView, MaxFramesInFlight> present_image_views;
-    SmallVector<Tex2DRef, MaxFramesInFlight> present_image_refs;
+    SmallVector<TexRef, MaxFramesInFlight> present_image_refs;
     VkSwapchainKHR swapchain = {};
 
     uint32_t active_present_image = 0;

@@ -27,7 +27,7 @@ void test_material() {
             p.format = eTexFormat::RGBA8;
             p.usage = eTexUsage::Transfer;
             p.flags = eTexFlags::Stub;
-            return test.LoadTexture2D(name, Span{color, color + 4}, p, test.default_mem_allocs(), &status);
+            return test.LoadTexture(name, Span{color, color + 4}, p, test.default_mem_allocs(), &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {
@@ -62,10 +62,10 @@ void test_material() {
         require(m_ref->ready());
         require(m_ref->name() == "mat1.mat");
 
-        Tex2DRef t0 = m_ref->textures[0];
-        Tex2DRef t1 = m_ref->textures[1];
-        Tex2DRef t2 = m_ref->textures[2];
-        Tex2DRef t3 = m_ref->textures[3];
+        TexRef t0 = m_ref->textures[0];
+        TexRef t1 = m_ref->textures[1];
+        TexRef t2 = m_ref->textures[2];
+        TexRef t3 = m_ref->textures[3];
 
         require(t0 == t1);
         require(t0 == t3);

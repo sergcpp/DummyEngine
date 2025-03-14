@@ -66,12 +66,13 @@ int Ren::GetBlockCount(const int w, const int h, const eTexFormat format) {
            ((h + g_tex_format_info[i].block_y - 1) / g_tex_format_info[i].block_y);
 }
 
-int Ren::GetMipDataLenBytes(const int w, const int h, const eTexFormat format) {
+int Ren::GetDataLenBytes(const int w, const int h, const int d, const eTexFormat format) {
     if (IsCompressedFormat(format)) {
+        assert(d == 0 || d == 1);
         return GetBlockCount(w, h, format) * GetBlockLenBytes(format);
     } else {
         assert(g_tex_format_info[int(format)].pp_data_len != 0);
-        return w * h * g_tex_format_info[int(format)].pp_data_len;
+        return w * h * d * g_tex_format_info[int(format)].pp_data_len;
     }
 }
 

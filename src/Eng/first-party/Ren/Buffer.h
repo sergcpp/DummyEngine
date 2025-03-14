@@ -155,7 +155,7 @@ bool UpdateBuffer(Buffer &dst, uint32_t dst_offset, uint32_t data_size, const vo
 void GLUnbindBufferUnits(int start, int count);
 #endif
 
-using BufferRef = StrongRef<Buffer, NamedStorage<Buffer>>;
-using WeakBufferRef = WeakRef<Buffer, NamedStorage<Buffer>>;
+using BufRef = StrongRef<Buffer, NamedStorage<Buffer>>;
+using WeakBufRef = WeakRef<Buffer, NamedStorage<Buffer>>;
 using BufferStorage = NamedStorage<Buffer>;
 } // namespace Ren

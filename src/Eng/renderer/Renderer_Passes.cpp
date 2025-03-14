@@ -229,8 +229,9 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                           ctx.backend_frame() * ShapeKeysBufChunkSize, ShapeKeysBufChunkSize, ctx.current_cmd_buf());
 
         if (!instance_indices_buf.tbos[0]) {
-            instance_indices_buf.tbos[0] = ctx.CreateTexture1D("Instance Indices TBO", instance_indices_buf.ref,
-                                                               Ren::eTexFormat::RG32UI, 0, InstanceIndicesBufChunkSize);
+            instance_indices_buf.tbos[0] =
+                ctx.CreateTextureBuffer("Instance Indices TBO", instance_indices_buf.ref, Ren::eTexFormat::RG32UI, 0,
+                                        InstanceIndicesBufChunkSize);
         }
 
         Ren::UpdateBuffer(*instance_indices_buf.ref, 0, uint32_t(p_list_->instance_indices.size() * sizeof(Ren::Vec2i)),
@@ -497,7 +498,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!cells_buf.tbos[0]) {
             cells_buf.tbos[0] =
-                ctx.CreateTexture1D("Cells TBO", cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
+                ctx.CreateTextureBuffer("Cells TBO", cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*cells_buf.ref, 0, p_list_->cells.count * sizeof(cell_data_t), p_list_->cells.data,
@@ -505,8 +506,8 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
                           ctx.current_cmd_buf());
 
         if (!rt_cells_buf.tbos[0]) {
-            rt_cells_buf.tbos[0] =
-                ctx.CreateTexture1D("RT Cells TBO", rt_cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
+            rt_cells_buf.tbos[0] = ctx.CreateTextureBuffer("RT Cells TBO", rt_cells_buf.ref, Ren::eTexFormat::RG32UI, 0,
+                                                           CellsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*rt_cells_buf.ref, 0, p_list_->rt_cells.count * sizeof(cell_data_t), p_list_->rt_cells.data,
@@ -515,7 +516,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!lights_buf.tbos[0]) {
             lights_buf.tbos[0] =
-                ctx.CreateTexture1D("Lights TBO", lights_buf.ref, Ren::eTexFormat::RGBA32F, 0, LightsBufChunkSize);
+                ctx.CreateTextureBuffer("Lights TBO", lights_buf.ref, Ren::eTexFormat::RGBA32F, 0, LightsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*lights_buf.ref, 0, uint32_t(p_list_->lights.size() * sizeof(light_item_t)),
@@ -524,7 +525,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!decals_buf.tbos[0]) {
             decals_buf.tbos[0] =
-                ctx.CreateTexture1D("Decals TBO", decals_buf.ref, Ren::eTexFormat::RGBA32F, 0, DecalsBufChunkSize);
+                ctx.CreateTextureBuffer("Decals TBO", decals_buf.ref, Ren::eTexFormat::RGBA32F, 0, DecalsBufChunkSize);
         }
 
         Ren::UpdateBuffer(*decals_buf.ref, 0, uint32_t(p_list_->decals.size() * sizeof(decal_item_t)),
@@ -533,7 +534,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 
         if (!items_buf.tbos[0]) {
             items_buf.tbos[0] =
-                ctx.CreateTexture1D("Items TBO", items_buf.ref, Ren::eTexFormat::RG32UI, 0, ItemsBufChunkSize);
+                ctx.CreateTextureBuffer("Items TBO", items_buf.ref, Ren::eTexFormat::RG32UI, 0, ItemsBufChunkSize);
         }
 
         if (p_list_->items.count) {
@@ -547,15 +548,14 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         }
 
         if (!rt_items_buf.tbos[0]) {
-            rt_items_buf.tbos[0] =
-                ctx.CreateTexture1D("RT Items TBO", rt_items_buf.ref, Ren::eTexFormat::RG32UI, 0, ItemsBufChunkSize);
+            rt_items_buf.tbos[0] = ctx.CreateTextureBuffer("RT Items TBO", rt_items_buf.ref, Ren::eTexFormat::RG32UI, 0,
+                                                           ItemsBufChunkSize);
         }
 
         if (p_list_->rt_items.count) {
             Ren::UpdateBuffer(*rt_items_buf.ref, 0, p_list_->rt_items.count * sizeof(item_data_t),
-                              p_list_->rt_items.data,
-                              *p_list_->rt_items_stage_buf, ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize,
-                              ctx.current_cmd_buf());
+                              p_list_->rt_items.data, *p_list_->rt_items_stage_buf,
+                              ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, ctx.current_cmd_buf());
         } else {
             const item_data_t dummy = {};
             Ren::UpdateBuffer(*rt_items_buf.ref, 0, sizeof(item_data_t), &dummy, *p_list_->rt_items_stage_buf,
@@ -595,7 +595,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
         data->moon_tex = sun_color.AddTextureInput(sky_moon_tex_, Stg::ComputeShader);
         data->weather_tex = sun_color.AddTextureInput(sky_weather_tex_, Stg::ComputeShader);
         data->cirrus_tex = sun_color.AddTextureInput(sky_cirrus_tex_, Stg::ComputeShader);
-        data->noise3d_tex = sun_color.AddTextureInput(sky_noise3d_tex_.get(), Stg::ComputeShader);
+        data->noise3d_tex = sun_color.AddTextureInput(sky_noise3d_tex_, Stg::ComputeShader);
 
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Storage;
@@ -619,8 +619,7 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
                 {Trg::Tex2DSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
                 {Trg::Tex2DSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
                 {Trg::Tex2DSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
-                {Trg::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT,
-                 *std::get<const Ren::Texture3D *>(noise3d_tex._ref)},
+                {Trg::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.ref},
                 {Trg::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
 
             DispatchCompute(*pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,

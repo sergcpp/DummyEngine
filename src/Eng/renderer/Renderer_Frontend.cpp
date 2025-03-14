@@ -91,7 +91,7 @@ static const uint32_t IndexBits = ~SkipFrustumCheckBit;
 void __push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object, Eng::DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const Eng::AnimState &as, const Ren::Mesh *mesh,
                               Eng::DrawList &list);
-uint32_t __record_texture(std::vector<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex, int prio, uint16_t distance);
+uint32_t __record_texture(std::vector<Eng::TexEntry> &storage, const Ren::TexRef &tex, int prio, uint16_t distance);
 void __record_textures(std::vector<Eng::TexEntry> &storage, const Ren::Material *mat, bool is_animated,
                        uint16_t distance);
 
@@ -1200,7 +1200,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                     continue;
                                 }
 
-                                rt_geo_instance_t &geo = list.rt_geo_instances[1].data[list.rt_geo_instances[1].count++];
+                                rt_geo_instance_t &geo =
+                                    list.rt_geo_instances[1].data[list.rt_geo_instances[1].count++];
                                 geo.indices_start = (indices_start + grp.byte_offset) / sizeof(uint32_t);
                                 geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
                                 assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
@@ -1640,7 +1641,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
 
         RadixSort_LSB<sort_span_64_t>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + spans_count,
-                                  temp_sort_spans_64_[1].data());
+                                      temp_sort_spans_64_[1].data());
 
         // decompress sorted spans
         size_t counter = 0;
@@ -1707,7 +1708,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     }
 
     RadixSort_LSB<sort_span_64_t>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + spans_count,
-                              temp_sort_spans_64_[1].data());
+                                  temp_sort_spans_64_[1].data());
 
     // decompress sorted spans
     size_t counter = 0;
@@ -1770,7 +1771,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
 
         RadixSort_LSB<sort_span_64_t>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + spans_count,
-                                  temp_sort_spans_64_[1].data());
+                                      temp_sort_spans_64_[1].data());
 
         // decompress sorted spans
         for (uint32_t i = 0; i < spans_count; i++) {
@@ -2548,8 +2549,8 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     return curr_out_offset;
 }
 
-uint32_t RendererInternal::__record_texture(std::vector<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex,
-                                            const int prio, const uint16_t distance) {
+uint32_t RendererInternal::__record_texture(std::vector<Eng::TexEntry> &storage, const Ren::TexRef &tex, const int prio,
+                                            const uint16_t distance) {
     const uint32_t index = tex.index();
 
     auto entry = std::lower_bound(storage.begin(), storage.end(), index,

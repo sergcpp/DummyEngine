@@ -114,7 +114,7 @@ void Ren::VertexInput::FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDe
     }
 }
 
-void Ren::VertexInput::Init(Span<const VtxAttribDesc> _attribs, const BufferRef &_elem_buf) {
+void Ren::VertexInput::Init(Span<const VtxAttribDesc> _attribs, const BufRef &_elem_buf) {
     attribs.assign(_attribs.begin(), _attribs.end());
     elem_buf = _elem_buf;
 }

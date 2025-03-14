@@ -109,7 +109,7 @@ void Eng::ExShadowDepth::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAl
     }
 
     if (!shadow_fb_.Setup(ctx.api_ctx(), *pi_solid_[0]->render_pass(), w_, h_, shadow_depth_tex.ref, {},
-                          Ren::Span<const Ren::WeakTex2DRef>{}, false, ctx.log())) {
+                          Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
         ctx.log()->Error("ExShadowMaps: shadow_fb_ init failed!");
     }
 }

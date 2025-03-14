@@ -119,18 +119,18 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 
             // Initialize texel buffers if needed
             if (!sobol_buf.tbos[0]) {
-                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                                         sobol_buf.ref->size());
+                sobol_buf.tbos[0] = ctx_.CreateTextureBuffer("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI,
+                                                             0, sobol_buf.ref->size());
             }
             if (!scrambling_tile_buf.tbos[0]) {
                 scrambling_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                         scrambling_tile_buf.ref->size());
+                    ctx_.CreateTextureBuffer("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI,
+                                             0, scrambling_tile_buf.ref->size());
             }
             if (!ranking_tile_buf.tbos[0]) {
                 ranking_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                         ranking_tile_buf.ref->size());
+                    ctx_.CreateTextureBuffer("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
+                                             ranking_tile_buf.ref->size());
             }
 
             const Ren::Binding bindings[] = {

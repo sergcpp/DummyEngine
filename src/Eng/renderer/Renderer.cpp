@@ -121,10 +121,10 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        dummy_black_ = ctx_.LoadTexture2D("dummy_black", black, p, ctx_.default_mem_allocs(), &status);
+        dummy_black_ = ctx_.LoadTexture("dummy_black", black, p, ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
-        dummy_white_ = ctx_.LoadTexture2D("dummy_white", white, p, ctx_.default_mem_allocs(), &status);
+        dummy_white_ = ctx_.LoadTexture("dummy_white", white, p, ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -135,8 +135,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
 
         Ren::eTexLoadStatus status;
-        rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", {(const uint8_t *)&PMJSamples64[0][0], sizeof(PMJSamples64)}, p,
-                                         ctx_.default_mem_allocs(), &status);
+        rand2d_8x8_ = ctx_.LoadTexture("rand2d_8x8", {(const uint8_t *)&PMJSamples64[0][0], sizeof(PMJSamples64)}, p,
+                                       ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -147,9 +147,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
 
         Ren::eTexLoadStatus status;
-        rand2d_dirs_4x4_ =
-            ctx_.LoadTexture2D("rand2d_dirs_4x4", {(const uint8_t *)&__rand_dirs[0], sizeof(__rand_dirs)}, p,
-                               ctx_.default_mem_allocs(), &status);
+        rand2d_dirs_4x4_ = ctx_.LoadTexture("rand2d_dirs_4x4", {(const uint8_t *)&__rand_dirs[0], sizeof(__rand_dirs)},
+                                            p, ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -177,11 +176,11 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        cone_rt_lut_ = ctx_.LoadTexture2D("cone_rt_lut", {&__cone_rt_lut[0], 4 * __cone_rt_lut_res * __cone_rt_lut_res},
-                                          p, ctx_.default_mem_allocs(), &status);
+        cone_rt_lut_ = ctx_.LoadTexture("cone_rt_lut", {&__cone_rt_lut[0], 4 * __cone_rt_lut_res * __cone_rt_lut_res},
+                                        p, ctx_.default_mem_allocs(), &status);
 
         // cone_rt_lut_ =
-        //    ctx_.LoadTexture2D("cone_rt_lut", &occ_data[0], 4 * resx * resy, p,
+        //    ctx_.LoadTexture("cone_rt_lut", &occ_data[0], 4 * resx * resy, p,
         //    &status);
     }
 
@@ -198,8 +197,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", {(const uint8_t *)&__brdf_lut[0], sizeof(__brdf_lut)}, p,
-                                       ctx_.default_mem_allocs(), &status);
+        brdf_lut_ = ctx_.LoadTexture("brdf_lut", {(const uint8_t *)&__brdf_lut[0], sizeof(__brdf_lut)}, p,
+                                     ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -235,8 +234,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         Ren::eTexLoadStatus status;
         ltc_luts_ =
-            ctx_.LoadTexture2D("LTC LUTs", {(const uint8_t *)combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float)}, p,
-                               ctx_.default_mem_allocs(), &status);
+            ctx_.LoadTexture("LTC LUTs", {(const uint8_t *)combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float)}, p,
+                             ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -254,8 +253,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.filter = Ren::eTexFilter::Bilinear;
 
         Ren::eTexLoadStatus status;
-        noise_tex_ = ctx_.LoadTexture2D("noise", {(const uint8_t *)&__noise[0], __noise_res * __noise_res * 4}, p,
-                                        ctx_.default_mem_allocs(), &status);
+        noise_tex_ = ctx_.LoadTexture("noise", {(const uint8_t *)&__noise[0], __noise_res * __noise_res * 4}, p,
+                                      ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -431,7 +430,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         params.sampling.compare = Ren::eTexCompare::GEqual;
 
         Ren::eTexLoadStatus status;
-        shadow_depth_tex_ = ctx_.LoadTexture2D("Shadow Depth Tex", params, ctx_.default_mem_allocs(), &status);
+        shadow_depth_tex_ = ctx_.LoadTexture("Shadow Depth Tex", params, ctx_.default_mem_allocs(), &status);
     }
     { // shadow filter texture
         Ren::TexParams params;
@@ -443,7 +442,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        shadow_color_tex_ = ctx_.LoadTexture2D("Shadow Color Tex", params, ctx_.default_mem_allocs(), &status);
+        shadow_color_tex_ = ctx_.LoadTexture("Shadow Color Tex", params, ctx_.default_mem_allocs(), &status);
     }
 
     { // nearest sampler
@@ -458,8 +457,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     {
-        Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
-                       ndx_buf = ctx_.default_indices_buf();
+        Ren::BufRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
+                    ndx_buf = ctx_.default_indices_buf();
 
         // Allocate buffer for skinned vertices
         // TODO: fix this. do not allocate twice more memory in buf2
@@ -491,7 +490,7 @@ void Eng::Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &c
 }
 
 void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
-                                    const Ren::Tex2DRef target, const bool blit_to_backbuffer) {
+                                    const Ren::TexRef target, const bool blit_to_backbuffer) {
     using namespace RendererInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
@@ -1378,6 +1377,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 ex_postprocess_args_.bloom_tex =
                     postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
             }
+            if (tonemap_lut_) {
+                ex_postprocess_args_.lut_tex =
+                    postprocess.AddTextureInput(tonemap_lut_, Ren::eStageBits::FragmentShader);
+            }
             if (output_tex) {
                 Ren::TexParams params;
                 params.w = view_state_.scr_res[0];
@@ -1393,7 +1396,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
             }
             ex_postprocess_args_.linear_sampler = linear_sampler_;
-            ex_postprocess_args_.lut_tex = tonemap_lut_;
             ex_postprocess_args_.tonemap_mode = int(list.render_settings.tonemap_mode);
             ex_postprocess_args_.inv_gamma = 1.0f / list.draw_cam.gamma;
             ex_postprocess_args_.fade = list.draw_cam.fade;
@@ -1486,7 +1488,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        tonemap_lut_ = ctx_.LoadTexture3D("Tonemap LUT", params, ctx_.default_mem_allocs(), &status);
+        tonemap_lut_ = ctx_.LoadTexture("Tonemap LUT", params, ctx_.default_mem_allocs(), &status);
     }
 
     Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
@@ -1504,7 +1506,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
                                                         {tonemap_lut_.get(), Ren::eResState::CopyDst}};
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
 
-        tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RGB10_A2, temp_upload_buf, cmd_buf, 0,
+        tonemap_lut_->SetSubImage(0, 0, 0, 0, res, res, res, Ren::eTexFormat::RGB10_A2, temp_upload_buf, cmd_buf, 0,
                                   data_len);
 
         const Ren::TransitionInfo res_transitions2[] = {{tonemap_lut_.get(), Ren::eResState::ShaderResource}};
@@ -1726,7 +1728,7 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
                                       const Ren::eTexFormat format, const float gamma, const float min_exposure,
-                                      const float max_exposure, const Ren::Tex2DRef &target, const bool compressed,
+                                      const float max_exposure, const Ren::TexRef &target, const bool compressed,
                                       const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
@@ -1757,8 +1759,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
     assert(format == Ren::eTexFormat::RGBA32F);
 
-    Ren::BufferRef temp_upload_buf =
-        ctx_.LoadBuffer("Image upload buf", Ren::eBufType::Upload, 4 * w * h * sizeof(float));
+    Ren::BufRef temp_upload_buf = ctx_.LoadBuffer("Image upload buf", Ren::eBufType::Upload, 4 * w * h * sizeof(float));
     uint8_t *stage_data = temp_upload_buf->Map();
     for (int y = 0; y < h; ++y) {
 #if defined(REN_GL_BACKEND)
@@ -1798,7 +1799,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             const int w = output_image.ref->params.w;
             const int h = output_image.ref->params.h;
 
-            output_image.ref->SetSubImage(0, 0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
+            output_image.ref->SetSubImage(0, 0, 0, 0, w, h, 1, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
                                           builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
         });
 
@@ -1819,6 +1820,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         } else {
             ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
         }
+        if (tonemap_lut_) {
+            ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStageBits::FragmentShader);
+        }
         if (target) {
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
             if (blit_to_backbuffer) {
@@ -1828,7 +1832,6 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
         }
         ex_postprocess_args_.linear_sampler = linear_sampler_;
-        ex_postprocess_args_.lut_tex = tonemap_lut_;
         ex_postprocess_args_.tonemap_mode = int(settings.tonemap_mode);
         ex_postprocess_args_.inv_gamma = 1.0f / gamma;
         ex_postprocess_args_.fade = 0.0f;
@@ -1877,10 +1880,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
     fg_builder_.Execute();
 }
 
-void Eng::Renderer::BlitImageTonemap(const Ren::Tex2DRef &result, const int w, const int h, Ren::eTexFormat format,
+void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, const int h, Ren::eTexFormat format,
                                      const float gamma, const float min_exposure, const float max_exposure,
-                                     const Ren::Tex2DRef &target, const bool compressed,
-                                     const bool blit_to_backbuffer) {
+                                     const Ren::TexRef &target, const bool compressed, const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
@@ -1934,6 +1936,9 @@ void Eng::Renderer::BlitImageTonemap(const Ren::Tex2DRef &result, const int w, c
         } else {
             ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
         }
+        if (tonemap_lut_) {
+            ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStageBits::FragmentShader);
+        }
         if (target) {
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
             if (blit_to_backbuffer) {
@@ -1943,7 +1948,6 @@ void Eng::Renderer::BlitImageTonemap(const Ren::Tex2DRef &result, const int w, c
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
         }
         ex_postprocess_args_.linear_sampler = linear_sampler_;
-        ex_postprocess_args_.lut_tex = tonemap_lut_;
         ex_postprocess_args_.tonemap_mode = int(settings.tonemap_mode);
         ex_postprocess_args_.inv_gamma = 1.0f / gamma;
         ex_postprocess_args_.fade = 0.0f;

@@ -9,7 +9,7 @@
 
 namespace ExSharedInternal {
 uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
-                          const Ren::Texture2D &white_tex, Ren::Span<const uint32_t> batch_indices,
+                          const Ren::Texture &white_tex, Ren::Span<const uint32_t> batch_indices,
                           Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask,
                           uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();

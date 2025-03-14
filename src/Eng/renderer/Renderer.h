@@ -73,16 +73,16 @@ class Renderer {
                                  Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const;
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
-    void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
-                         const Ren::Tex2DRef target = {}, bool blit_to_backbuffer = false);
+    void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data, const Ren::TexRef target = {},
+                         bool blit_to_backbuffer = false);
 
     void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
 
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
-                           float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
+                           float min_exposure, float max_exposure, const Ren::TexRef &target, bool compressed,
                            bool blit_to_backbuffer = false);
-    void BlitImageTonemap(const Ren::Tex2DRef &result, int w, int h, Ren::eTexFormat format, float gamma,
-                          float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
+    void BlitImageTonemap(const Ren::TexRef &result, int w, int h, Ren::eTexFormat format, float gamma,
+                          float min_exposure, float max_exposure, const Ren::TexRef &target, bool compressed,
                           bool blit_to_backbuffer = false);
     render_settings_t settings = {};
 
@@ -93,17 +93,17 @@ class Renderer {
     Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
 
-    Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
+    Ren::TexRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
         noise_tex_;
-    Ren::Tex3DRef tonemap_lut_;
-    Ren::BufferRef sobol_seq_buf_, scrambling_tile_buf_, ranking_tile_buf_;
-    Ren::BufferRef pmj_samples_buf_;
-    Ren::Tex2DRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_,
+    Ren::TexRef tonemap_lut_;
+    Ren::BufRef sobol_seq_buf_, scrambling_tile_buf_, ranking_tile_buf_;
+    Ren::BufRef pmj_samples_buf_;
+    Ren::TexRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_,
         sky_curl_tex_;
-    Ren::Tex3DRef sky_noise3d_tex_;
+    Ren::TexRef sky_noise3d_tex_;
 
     // FrameBuf probe_sample_buf_;
-    Ren::Tex2DRef shadow_depth_tex_, shadow_color_tex_;
+    Ren::TexRef shadow_depth_tex_, shadow_color_tex_;
     Ren::SamplerRef nearest_sampler_, linear_sampler_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     eTAAMode taa_mode_ = eTAAMode::Off;
@@ -179,8 +179,8 @@ class Renderer {
     FgBuilder fg_builder_;
     std::optional<render_settings_t> cached_settings_;
     int cached_rp_index_ = 0;
-    Ren::WeakTex2DRef env_map_;
-    Ren::WeakTex2DRef lm_direct_, lm_indir_, lm_indir_sh_[4];
+    Ren::WeakTexRef env_map_;
+    Ren::WeakTexRef lm_direct_, lm_indir_, lm_indir_sh_[4];
     const DrawList *p_list_;
     Ren::SmallVector<FgResRef, 8> backbuffer_sources_;
     float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
@@ -308,14 +308,13 @@ class Renderer {
     void AddLQSpecularPasses(const CommonBuffers &common_buffers, FgResRef depth_down_2x,
                              FrameTextures &frame_textures);
 
-    void AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
-                          const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
-                          const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                          const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                          FgResRef depth_hierarchy, FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
-                          FrameTextures &frame_textures);
+    void AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::WeakTexRef &lm_direct,
+                          const Ren::WeakTexRef lm_indir_sh[4], bool debug_denoise, const CommonBuffers &common_buffers,
+                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                          const BindlessTextureData &bindless, FgResRef depth_hierarchy, FgResRef rt_geo_instances_res,
+                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
-    void AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
+    void AddGICachePasses(const Ren::WeakTexRef &env_map, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                           const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
                           FgResRef rt_obj_instances_res, FrameTextures &frame_textures);

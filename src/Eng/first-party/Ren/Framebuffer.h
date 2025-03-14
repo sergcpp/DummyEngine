@@ -18,24 +18,24 @@ class Framebuffer {
     uint32_t id_ = 0;
 #endif
     struct Attachment {
-        WeakTex2DRef ref;
+        WeakTexRef ref;
         uint8_t view_index = 0;
         TexHandle handle; // handle is stored to detect texture reallocation
 
-        bool operator==(const WeakTex2DRef &rhs) const {
+        bool operator==(const WeakTexRef &rhs) const {
             if (!rhs) {
                 return !bool(this->ref);
             }
             return this->handle == rhs->handle();
         }
-        bool operator!=(const WeakTex2DRef &rhs) const { return !operator==(rhs); }
-        bool operator<(const WeakTex2DRef &rhs) const {
+        bool operator!=(const WeakTexRef &rhs) const { return !operator==(rhs); }
+        bool operator<(const WeakTexRef &rhs) const {
             if (!rhs) {
                 return this->handle < TexHandle();
             }
             return this->handle < rhs->handle();
         }
-        friend bool operator<(const WeakTex2DRef &lhs, const Attachment &rhs) {
+        friend bool operator<(const WeakTexRef &lhs, const Attachment &rhs) {
             if (!lhs) {
                 return TexHandle() < rhs.handle;
             }
@@ -96,27 +96,23 @@ class Framebuffer {
     [[nodiscard]] uint32_t id() const { return id_; }
 #endif
 
-    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
-                               const WeakTex2DRef &stencil_attachment,
-                               Span<const WeakTex2DRef> color_attachments) const;
-    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
-                               const WeakTex2DRef &stencil_attachment,
-                               Span<const RenderTarget> color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
+                               const WeakTexRef &stencil_attachment, Span<const WeakTexRef> color_attachments) const;
+    [[nodiscard]] bool Changed(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
+                               const WeakTexRef &stencil_attachment, Span<const RenderTarget> color_attachments) const;
 
-    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
-                                const WeakTex2DRef &stencil_attachment,
-                                Span<const WeakTex2DRef> color_attachments) const;
-    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTex2DRef &depth_attachment,
-                                const WeakTex2DRef &stencil_attachment,
-                                Span<const RenderTarget> color_attachments) const;
+    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
+                                const WeakTexRef &stencil_attachment, Span<const WeakTexRef> color_attachments) const;
+    [[nodiscard]] bool LessThan(const RenderPass &render_pass, const WeakTexRef &depth_attachment,
+                                const WeakTexRef &stencil_attachment, Span<const RenderTarget> color_attachments) const;
 
-    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTex2DRef depth_attachment,
-               WeakTex2DRef stencil_attachment, Span<const WeakTex2DRef> color_attachments, bool is_multisampled,
+    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTexRef depth_attachment,
+               WeakTexRef stencil_attachment, Span<const WeakTexRef> color_attachments, bool is_multisampled,
                ILog *log);
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const RenderTarget &depth_target,
                const RenderTarget &stencil_target, Span<const RenderTarget> color_attachments, ILog *log);
-    bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakTex2DRef depth_attachment,
-               const WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachment, const bool is_multisampled,
+    bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakTexRef depth_attachment,
+               const WeakTexRef stencil_attachment, const WeakTexRef color_attachment, const bool is_multisampled,
                ILog *log) {
         return Setup(api_ctx, renderpass, w, h, depth_attachment, stencil_attachment, {&color_attachment, 1},
                      is_multisampled, log);

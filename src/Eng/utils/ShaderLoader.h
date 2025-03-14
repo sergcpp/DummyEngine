@@ -33,7 +33,7 @@ class ShaderLoader {
         pipelines_.reserve(2048);
     }
 
-    Ren::VertexInputRef LoadVertexInput(Ren::Span<const Ren::VtxAttribDesc> attribs, const Ren::BufferRef &elem_buf);
+    Ren::VertexInputRef LoadVertexInput(Ren::Span<const Ren::VtxAttribDesc> attribs, const Ren::BufRef &elem_buf);
 
     Ren::RenderPassRef LoadRenderPass(const Ren::RenderTarget &depth_rt, Ren::Span<const Ren::RenderTarget> color_rts) {
         Ren::SmallVector<Ren::RenderTargetInfo, 4> infos;

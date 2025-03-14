@@ -43,7 +43,7 @@ Ren::eShaderType ShaderTypeFromName(std::string_view name) {
 } // namespace ShaderLoaderInternal
 
 Ren::VertexInputRef Eng::ShaderLoader::LoadVertexInput(Ren::Span<const Ren::VtxAttribDesc> attribs,
-                                                       const Ren::BufferRef &elem_buf) {
+                                                       const Ren::BufRef &elem_buf) {
     std::lock_guard<std::mutex> _(mtx_);
 
     Ren::VertexInputRef ref = vtx_inputs_.LowerBound([&](const Ren::VertexInput &vi) {

@@ -98,7 +98,7 @@ void test_mesh() {
                                          const Bitmask<eTexFlags> flags) {
             eTexLoadStatus status;
             TexParams p;
-            return test.LoadTexture2D(name, {}, p, nullptr, &status);
+            return test.LoadTexture(name, {}, p, nullptr, &status);
         };
 
         auto on_sampler_needed = [&test](SamplingParams params) {

@@ -15,11 +15,12 @@ class ExPostprocess final : public FgExecutor {
         FgResRef exposure_tex;
         FgResRef color_tex;
         FgResRef bloom_tex;
+        FgResRef lut_tex;
         FgResRef output_tex;
         FgResRef output_tex2;
 
         Ren::SamplerRef linear_sampler;
-        Ren::WeakTex3DRef lut_tex;
+        
 
         int tonemap_mode = 1;
         float inv_gamma = 1.0f, fade = 0.0f;

@@ -15,24 +15,24 @@ std::unique_ptr<uint8_t[]> ReadTGAFile(Span<const uint8_t> data, int &w, int &h,
 void CheckError(const char *op);
 } // namespace Ren
 
-Ren::Texture2D::Texture2D(std::string_view name, const void *data, int size,
-                          const TexParams &p, eTexLoadStatus *load_status) {
+Ren::Texture::Texture(std::string_view name, const void *data, int size,
+                      const TexParams &p, eTexLoadStatus *load_status) {
     Init(name, data, size, p, load_status);
 }
 
-Ren::Texture2D::Texture2D(std::string_view name, const void *data[6], const int size[6],
-                          const TexParams &p, eTexLoadStatus *load_status) {
+Ren::Texture::Texture(std::string_view name, const void *data[6], const int size[6],
+                      const TexParams &p, eTexLoadStatus *load_status) {
     Init(name, data, size, p, load_status);
 }
 
-Ren::Texture2D::~Texture2D() {
+Ren::Texture::~Texture() {
     if (params_.format != Undefined) {
         SWint sw_tex = (SWint)tex_id_;
         swDeleteTexture(sw_tex);
     }
 }
 
-Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) {
+Ren::Texture &Ren::Texture::operator=(Ren::Texture &&rhs) {
     if (this == &rhs) {
         return *this;
     }
@@ -55,8 +55,8 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) {
     return *this;
 }
 
-void Ren::Texture2D::Init(std::string_view name, const void *data, [[maybe_unused]] int size,
-                          const TexParams &p, eTexLoadStatus *load_status) {
+void Ren::Texture::Init(std::string_view name, const void *data, [[maybe_unused]] int size,
+                        const TexParams &p, eTexLoadStatus *load_status) {
     strcpy(name_, name);
 
     if (!data) {
@@ -83,8 +83,8 @@ void Ren::Texture2D::Init(std::string_view name, const void *data, [[maybe_unuse
     }
 }
 
-void Ren::Texture2D::Init(std::string_view name, [[maybe_unused]] const void *data[6], [[maybe_unused]] const int size[6],
-                          [[maybe_unused]] const TexParams &params, eTexLoadStatus *load_status) {
+void Ren::Texture::Init(std::string_view name, [[maybe_unused]] const void *data[6], [[maybe_unused]] const int size[6],
+                        [[maybe_unused]] const TexParams &params, eTexLoadStatus *load_status) {
     strcpy(name_, name);
     ready_ = false;
     if (load_status) {
@@ -92,7 +92,7 @@ void Ren::Texture2D::Init(std::string_view name, [[maybe_unused]] const void *da
     }
 }
 
-void Ren::Texture2D::InitFromRAWData(const void *data, const TexParams &p) {
+void Ren::Texture::InitFromRAWData(const void *data, const TexParams &p) {
     SWint tex_id;
     if (params_.format == Undefined) {
         tex_id = swCreateTexture();
@@ -113,7 +113,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const TexParams &p) {
     }
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data, const TexParams &p) {
+void Ren::Texture::InitFromTGAFile(const void *data, const TexParams &p) {
     int w = 0, h = 0;
     eTexFormat format = Undefined;
     auto image_data = ReadTGAFile(data, w, h, format);
@@ -126,7 +126,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data, const TexParams &p) {
     InitFromRAWData(image_data.get(), _p);
 }
 
-void Ren::Texture2D::InitFromTEXFile(const void *data, [[maybe_unused]] const TexParams &p) {
+void Ren::Texture::InitFromTEXFile(const void *data, [[maybe_unused]] const TexParams &p) {
     SWint tex_id;
     if (params_.format == Undefined) {
         tex_id = swCreateTexture();
@@ -149,7 +149,7 @@ void Ren::Texture2D::InitFromTEXFile(const void *data, [[maybe_unused]] const Te
     }
 }
 
-void Ren::Texture2D::SetFilter([[maybe_unused]] eTexFilter f, [[maybe_unused]] eTexRepeat r) {}
+void Ren::Texture::SetFilter([[maybe_unused]] eTexFilter f, [[maybe_unused]] eTexRepeat r) {}
 
 #ifdef _MSC_VER
 #pragma warning(pop)

@@ -28,8 +28,8 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
     FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(out_depth_buf_);
 
     if (!out_depth_buf.tbos[0]) {
-        out_depth_buf.tbos[0] = ctx.CreateTexture1D("Depth Values Tex", out_depth_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                                    out_depth_buf.ref->size());
+        out_depth_buf.tbos[0] = ctx.CreateTextureBuffer("Depth Values Tex", out_depth_buf.ref, Ren::eTexFormat::R32UI,
+                                                        0, out_depth_buf.ref->size());
     }
 
     if ((*p_list_)->alpha_blend_start_index == -1) {

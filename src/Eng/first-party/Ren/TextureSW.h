@@ -24,7 +24,7 @@ struct TexParams {
 
 enum eTexLoadStatus { TexFound, TexCreatedDefault, TexCreatedFromData, TexNotSupported };
 
-class Texture2D : public RefCounter {
+class Texture : public RefCounter {
     uint32_t    tex_id_ = 0;
     TexParams params_;
     bool        ready_ = false;
@@ -34,22 +34,22 @@ class Texture2D : public RefCounter {
     void InitFromTGAFile(const void *data, const TexParams &p);
     void InitFromTEXFile(const void *data, const TexParams &p);
 public:
-    Texture2D() {
+    Texture() {
         name_[0] = '\0';
     }
-    Texture2D(std::string_view name, uint32_t tex_id, const TexParams &params) : tex_id_(tex_id), params_(params), ready_(0) {
+    Texture(std::string_view name, uint32_t tex_id, const TexParams &params) : tex_id_(tex_id), params_(params), ready_(0) {
         strcpy(name_, name);
     }
-    Texture2D(std::string_view name, const void *data, int size, const TexParams &params, eTexLoadStatus *load_status);
-    Texture2D(std::string_view name, const void *data[6], const int size[6], const TexParams &params, eTexLoadStatus *load_status);
-    Texture2D(const Texture2D &rhs) = delete;
-    Texture2D(Texture2D &&rhs) {
+    Texture(std::string_view name, const void *data, int size, const TexParams &params, eTexLoadStatus *load_status);
+    Texture(std::string_view name, const void *data[6], const int size[6], const TexParams &params, eTexLoadStatus *load_status);
+    Texture(const Texture &rhs) = delete;
+    Texture(Texture &&rhs) {
         *this = std::move(rhs);
     }
-    ~Texture2D();
+    ~Texture();
 
-    Texture2D &operator=(const Texture2D &rhs) = delete;
-    Texture2D &operator=(Texture2D &&rhs);
+    Texture &operator=(const Texture &rhs) = delete;
+    Texture &operator=(Texture &&rhs);
 
     void Init(std::string_view name, const void *data, int size, const TexParams &params, eTexLoadStatus *load_status);
     void Init(std::string_view name, const void *data[6], const int size[6], const TexParams &params, eTexLoadStatus *load_status);
@@ -70,8 +70,8 @@ public:
     void SetFilter(eTexFilter f, eTexRepeat r);
 };
 
-typedef StrongRef<Texture2D> Tex2DRef;
-typedef Storage<Texture2D> Texture2DStorage;
+typedef StrongRef<Texture> TexRef;
+typedef Storage<Texture> TextureStorage;
 }
 
 #ifdef _MSC_VER

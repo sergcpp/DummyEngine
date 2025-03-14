@@ -11,7 +11,8 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/blit_postprocess_interface.h"
 
-Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const view_state_t *view_state, const Args *args)
+Eng::ExPostprocess::ExPostprocess(PrimDraw &prim_draw, ShaderLoader &sh, const view_state_t *view_state,
+                                  const Args *args)
     : prim_draw_(prim_draw) {
     view_state_ = view_state;
     args_ = args;
@@ -31,7 +32,10 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     FgAllocTex &color_tex = builder.GetReadTexture(args_->color_tex);
     FgAllocTex &bloom_tex = builder.GetReadTexture(args_->bloom_tex);
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
-    FgAllocTex *output_tex2 = nullptr;
+    FgAllocTex *lut_tex = nullptr, *output_tex2 = nullptr;
+    if (args_->lut_tex) {
+        lut_tex = &builder.GetReadTexture(args_->lut_tex);
+    }
     if (args_->output_tex2) {
         output_tex2 = &builder.GetWriteTexture(args_->output_tex2);
     }
@@ -57,7 +61,7 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::HDR_TEX_SLOT, {*color_tex.ref, *args_->linear_sampler}},
         {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::BLOOM_TEX_SLOT, *bloom_tex.ref}};
     if (args_->tonemap_mode == 2) {
-        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, BlitPostprocess::LUT_TEX_SLOT, *args_->lut_tex);
+        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, BlitPostprocess::LUT_TEX_SLOT, *lut_tex->ref);
     }
 
     Ren::SmallVector<Ren::RenderTarget, 2> render_targets = {

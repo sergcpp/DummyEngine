@@ -93,7 +93,7 @@ class ModlApp {
     std::unique_ptr<Ren::Context> ctx_;
 
     Ren::ProgramRef diag_prog_, diag_colored_prog_, diag_skinned_prog_, skinning_prog_;
-    Ren::Tex2DRef checker_tex_;
+    Ren::TexRef checker_tex_;
 
     float angle_x_ = 0.0f, angle_y_ = 0.0f;
     float offset_x_ = 0.0f, offset_y_ = 0.0f;
@@ -124,7 +124,7 @@ class ModlApp {
 
     void PrintUsage();
 
-    Ren::Tex2DRef OnTextureNeeded(std::string_view name);
+    Ren::TexRef OnTextureNeeded(std::string_view name);
     Ren::SamplerRef OnSamplerNeeded(Ren::SamplingParams params);
     void OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std::string_view fs_shader,
                            std::string_view arg3, std::string_view arg4,

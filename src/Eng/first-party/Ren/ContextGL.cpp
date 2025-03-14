@@ -172,7 +172,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         params.usage = Bitmask(eTexUsage::RenderTarget);
 
         api_ctx_->present_image_refs.emplace_back(
-            textures_2D_.Insert(name_buf, api_ctx_.get(), TexHandle{}, params, MemAllocation{}, log_));
+            textures_.Insert(name_buf, api_ctx_.get(), TexHandle{}, params, MemAllocation{}, log_));
     }
 
     texture_atlas_ = TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",     TextureAtlasWidth,

@@ -113,9 +113,9 @@ class BaseState : public Eng::ViewerState {
 
     bool streaming_finished_ = false;
     enum class eCaptureState { None, UpdateGICache, Warmup, Started } capture_state_ = eCaptureState::None;
-    Ren::Tex2DRef capture_result_;
+    Ren::TexRef capture_result_;
 
-    Ren::Tex2DRef pt_result_;
+    Ren::TexRef pt_result_;
 
     bool LoadScene(std::string_view name);
 
@@ -134,7 +134,7 @@ class BaseState : public Eng::ViewerState {
     Ray::TextureHandle LoadTexture_PT(std::string_view name, bool is_srgb, bool is_YCoCg, bool use_mips);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, float fov);
     void Clear_PT();
-    void Draw_PT(const Ren::Tex2DRef &target);
+    void Draw_PT(const Ren::TexRef &target);
 
     void ReloadSceneResources();
 

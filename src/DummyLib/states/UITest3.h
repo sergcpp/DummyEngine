@@ -43,7 +43,7 @@ class UITest3 : public BaseState {
 
     std::unique_ptr<Gui::Renderer> page_renderer_;
     // FrameBuf page_buf_;
-    Ren::Tex2DRef page_tex_;
+    Ren::TexRef page_tex_;
     Ren::MaterialRef orig_page_mat_, page_mat_;
 
     std::optional<Gui::Vec2f> hit_point_screen_, hit_point_ndc_;

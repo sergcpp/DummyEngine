@@ -293,7 +293,7 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
 
     if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(
             ctx.api_ctx(), *rp_depth_only_[0], depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
-            Ren::Span<const Ren::WeakTex2DRef>{}, false, ctx.log())) {
+            Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
         ctx.log()->Error("[ExDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 

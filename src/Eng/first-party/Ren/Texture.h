@@ -12,7 +12,8 @@ class Context;
 
 int GetBlockLenBytes(eTexFormat format);
 int GetBlockCount(int w, int h, eTexFormat format);
-int GetMipDataLenBytes(int w, int h, eTexFormat format);
+int GetDataLenBytes(int w, int h, int d, eTexFormat format);
+inline int GetDataLenBytes(int w, int h, eTexFormat format) { return GetDataLenBytes(w, h, 1, format); }
 uint32_t GetDataLenBytes(const TexParams &params);
 
 eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, bool *is_srgb);
@@ -30,17 +31,13 @@ void ParseDDSHeader(const DDSHeader &hdr, TexParams *params);
 #endif
 
 namespace Ren {
-using Tex3DRef = StrongRef<Texture3D, NamedStorage<Texture3D>>;
-using WeakTex3DRef = WeakRef<Texture3D, NamedStorage<Texture3D>>;
-using Texture3DStorage = NamedStorage<Texture3D>;
+using TexRef = StrongRef<Texture, NamedStorage<Texture>>;
+using WeakTexRef = WeakRef<Texture, NamedStorage<Texture>>;
+using TextureStorage = NamedStorage<Texture>;
 
-using Tex2DRef = StrongRef<Texture2D, NamedStorage<Texture2D>>;
-using WeakTex2DRef = WeakRef<Texture2D, NamedStorage<Texture2D>>;
-using Texture2DStorage = NamedStorage<Texture2D>;
-
-using Tex1DRef = StrongRef<Texture1D, NamedStorage<Texture1D>>;
-using WeakTex1DRef = WeakRef<Texture1D, NamedStorage<Texture1D>>;
-using Texture1DStorage = NamedStorage<Texture1D>;
+using TexBufRef = StrongRef<TextureBuffer, NamedStorage<TextureBuffer>>;
+using WeakTexBufRef = WeakRef<TextureBuffer, NamedStorage<TextureBuffer>>;
+using TextureBufferStorage = NamedStorage<TextureBuffer>;
 
 eTexUsage TexUsageFromState(eResState state);
 } // namespace Ren
