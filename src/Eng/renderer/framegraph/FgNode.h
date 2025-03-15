@@ -72,7 +72,6 @@ class FgNode {
 
     FgResRef AddStorageReadonlyInput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddStorageReadonlyInput(const Ren::WeakBufRef &buf, Ren::eStageBits stages);
-    FgResRef AddStorageReadonlyInput(const Ren::WeakBufRef &buf, const Ren::WeakTexBufRef &tbo, Ren::eStageBits stages);
     FgResRef AddStorageOutput(std::string_view name, const FgBufDesc &desc, Ren::eStageBits stages);
     FgResRef AddStorageOutput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddStorageOutput(const Ren::WeakBufRef &buf, Ren::eStageBits stages);

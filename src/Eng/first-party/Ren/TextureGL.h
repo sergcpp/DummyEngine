@@ -27,14 +27,18 @@ struct TexHandle {
 static_assert(sizeof(TexHandle) == 40, "!");
 
 inline bool operator==(const TexHandle lhs, const TexHandle rhs) {
-    return lhs.id == rhs.id && lhs.generation == rhs.generation;
+    return lhs.id == rhs.id && lhs.views == rhs.views && lhs.generation == rhs.generation;
 }
 inline bool operator!=(const TexHandle lhs, const TexHandle rhs) { return !operator==(lhs, rhs); }
 inline bool operator<(const TexHandle lhs, const TexHandle rhs) {
     if (lhs.id < rhs.id) {
         return true;
     } else if (lhs.id == rhs.id) {
-        return lhs.generation < rhs.generation;
+        if (lhs.views < rhs.views) {
+            return true;
+        } else if (lhs.views == rhs.views) {
+            return lhs.generation < rhs.generation;
+        }
     }
     return false;
 }
@@ -110,36 +114,6 @@ void CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, uint32_t src_leve
                       uint32_t width, uint32_t height);
 
 void ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf);
-
-class TextureBuffer : public RefCounter {
-    TexHandle handle_;
-    WeakBufRef buf_;
-    TextureBufferParams params_;
-    String name_;
-
-  public:
-    TextureBuffer(std::string_view name, const BufRef &buf, eTexFormat format, uint32_t offset, uint32_t size,
-                  ILog *log);
-    TextureBuffer(const TextureBuffer &rhs) = delete;
-    TextureBuffer(TextureBuffer &&rhs) noexcept { (*this) = std::move(rhs); }
-    ~TextureBuffer();
-
-    void Free();
-    void FreeImmediate() { Free(); }
-
-    TextureBuffer &operator=(const TextureBuffer &rhs) = delete;
-    TextureBuffer &operator=(TextureBuffer &&rhs) noexcept;
-
-    TexHandle handle() const { return handle_; }
-    uint32_t id() const { return handle_.id; }
-    int generation() const { return handle_.generation; }
-
-    const TextureBufferParams &params() const { return params_; }
-
-    const String &name() const { return name_; }
-
-    void Init(const BufRef &buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
-};
 
 uint32_t GLFormatFromTexFormat(eTexFormat format);
 uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);

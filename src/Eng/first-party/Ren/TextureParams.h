@@ -54,13 +54,6 @@ enum class eTexFlags : uint8_t {
 
 enum class eTexUsage : uint8_t { Transfer, Sampled, Storage, RenderTarget };
 
-struct TextureBufferParams {
-    uint32_t offset = 0, size = 0;
-    uint8_t _padding[3];
-    eTexFormat format = eTexFormat::Undefined;
-};
-static_assert(sizeof(TextureBufferParams) == 12, "!");
-
 struct TexParams {
     uint16_t w = 0, h = 0;
     uint8_t d = 0;

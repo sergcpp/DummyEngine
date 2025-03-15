@@ -104,7 +104,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     VkDescriptorSet simple_descr_sets[2];
     { // allocate descriptors
         const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
+                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref}};
         simple_descr_sets[0] =
@@ -116,7 +116,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     VkDescriptorSet vege_descr_sets[2];
     { // allocate descriptors
         const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
+                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
                                          {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref}};

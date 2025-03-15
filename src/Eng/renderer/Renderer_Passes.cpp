@@ -194,6 +194,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
+        desc.views.push_back(Ren::eTexFormat::RG32UI);
         common_buffers.instance_indices = update_bufs.AddTransferOutput("Instance Indices", desc);
     }
     FgResRef shared_data_res;
@@ -227,12 +228,6 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
         Ren::UpdateBuffer(*shape_keys_buf.ref, 0, p_list_->shape_keys_data.count * sizeof(shape_key_data_t),
                           p_list_->shape_keys_data.data, *p_list_->shape_keys_stage_buf,
                           ctx.backend_frame() * ShapeKeysBufChunkSize, ShapeKeysBufChunkSize, ctx.current_cmd_buf());
-
-        if (!instance_indices_buf.tbos[0]) {
-            instance_indices_buf.tbos[0] =
-                ctx.CreateTextureBuffer("Instance Indices TBO", instance_indices_buf.ref, Ren::eTexFormat::RG32UI, 0,
-                                        InstanceIndicesBufChunkSize);
-        }
 
         Ren::UpdateBuffer(*instance_indices_buf.ref, 0, uint32_t(p_list_->instance_indices.size() * sizeof(Ren::Vec2i)),
                           p_list_->instance_indices.data(), *p_list_->instance_indices_stage_buf,
@@ -454,36 +449,42 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
+        desc.views.push_back(Ren::eTexFormat::RG32UI);
         common_buffers.cells = update_light_bufs.AddTransferOutput("Cells Buffer", desc);
     }
     { // create RT cells buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
+        desc.views.push_back(Ren::eTexFormat::RG32UI);
         common_buffers.rt_cells = update_light_bufs.AddTransferOutput("RT Cells Buffer", desc);
     }
     { // create lights buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
+        desc.views.push_back(Ren::eTexFormat::RGBA32F);
         common_buffers.lights = update_light_bufs.AddTransferOutput("Lights Buffer", desc);
     }
     { // create decals buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = DecalsBufChunkSize;
+        desc.views.push_back(Ren::eTexFormat::RGBA32F);
         common_buffers.decals = update_light_bufs.AddTransferOutput("Decals Buffer", desc);
     }
     { // create items buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
+        desc.views.push_back(Ren::eTexFormat::RG32UI);
         common_buffers.items = update_light_bufs.AddTransferOutput("Items Buffer", desc);
     }
     { // create RT items buffer
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
+        desc.views.push_back(Ren::eTexFormat::RG32UI);
         common_buffers.rt_items = update_light_bufs.AddTransferOutput("RT Items Buffer", desc);
     }
 
@@ -496,46 +497,21 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         FgAllocBuf &items_buf = builder.GetWriteBuffer(common_buffers.items);
         FgAllocBuf &rt_items_buf = builder.GetWriteBuffer(common_buffers.rt_items);
 
-        if (!cells_buf.tbos[0]) {
-            cells_buf.tbos[0] =
-                ctx.CreateTextureBuffer("Cells TBO", cells_buf.ref, Ren::eTexFormat::RG32UI, 0, CellsBufChunkSize);
-        }
-
         Ren::UpdateBuffer(*cells_buf.ref, 0, p_list_->cells.count * sizeof(cell_data_t), p_list_->cells.data,
                           *p_list_->cells_stage_buf, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
                           ctx.current_cmd_buf());
-
-        if (!rt_cells_buf.tbos[0]) {
-            rt_cells_buf.tbos[0] = ctx.CreateTextureBuffer("RT Cells TBO", rt_cells_buf.ref, Ren::eTexFormat::RG32UI, 0,
-                                                           CellsBufChunkSize);
-        }
 
         Ren::UpdateBuffer(*rt_cells_buf.ref, 0, p_list_->rt_cells.count * sizeof(cell_data_t), p_list_->rt_cells.data,
                           *p_list_->rt_cells_stage_buf, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
                           ctx.current_cmd_buf());
 
-        if (!lights_buf.tbos[0]) {
-            lights_buf.tbos[0] =
-                ctx.CreateTextureBuffer("Lights TBO", lights_buf.ref, Ren::eTexFormat::RGBA32F, 0, LightsBufChunkSize);
-        }
-
         Ren::UpdateBuffer(*lights_buf.ref, 0, uint32_t(p_list_->lights.size() * sizeof(light_item_t)),
                           p_list_->lights.data(), *p_list_->lights_stage_buf, ctx.backend_frame() * LightsBufChunkSize,
                           LightsBufChunkSize, ctx.current_cmd_buf());
 
-        if (!decals_buf.tbos[0]) {
-            decals_buf.tbos[0] =
-                ctx.CreateTextureBuffer("Decals TBO", decals_buf.ref, Ren::eTexFormat::RGBA32F, 0, DecalsBufChunkSize);
-        }
-
         Ren::UpdateBuffer(*decals_buf.ref, 0, uint32_t(p_list_->decals.size() * sizeof(decal_item_t)),
                           p_list_->decals.data(), *p_list_->decals_stage_buf, ctx.backend_frame() * DecalsBufChunkSize,
                           DecalsBufChunkSize, ctx.current_cmd_buf());
-
-        if (!items_buf.tbos[0]) {
-            items_buf.tbos[0] =
-                ctx.CreateTextureBuffer("Items TBO", items_buf.ref, Ren::eTexFormat::RG32UI, 0, ItemsBufChunkSize);
-        }
 
         if (p_list_->items.count) {
             Ren::UpdateBuffer(*items_buf.ref, 0, p_list_->items.count * sizeof(item_data_t), p_list_->items.data,
@@ -545,11 +521,6 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
             const item_data_t dummy = {};
             Ren::UpdateBuffer(*items_buf.ref, 0, sizeof(item_data_t), &dummy, *p_list_->items_stage_buf,
                               ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, ctx.current_cmd_buf());
-        }
-
-        if (!rt_items_buf.tbos[0]) {
-            rt_items_buf.tbos[0] = ctx.CreateTextureBuffer("RT Items TBO", rt_items_buf.ref, Ren::eTexFormat::RG32UI, 0,
-                                                           ItemsBufChunkSize);
         }
 
         if (p_list_->rt_items.count) {
@@ -672,8 +643,7 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     const FgResRef dummy_white = gbuf_fill.AddTextureInput(dummy_white_, Stg::FragmentShader);
     const FgResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const FgResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(
-        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
+    const FgResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(persistent_data.instance_buf, Stg::VertexShader);
     const FgResRef instances_indices_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
@@ -717,8 +687,7 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
 
     const FgResRef dummy_black = opaque.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const FgResRef instances_buf = opaque.AddStorageReadonlyInput(persistent_data.instance_buf,
-                                                                  persistent_data.instance_buf_tbo, Stg::VertexShader);
+    const FgResRef instances_buf = opaque.AddStorageReadonlyInput(persistent_data.instance_buf, Stg::VertexShader);
     const FgResRef instances_indices_buf =
         opaque.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
@@ -776,8 +745,7 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
 
     const FgResRef dummy_black = transparent.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const FgResRef instances_buf = transparent.AddStorageReadonlyInput(
-        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
+    const FgResRef instances_buf = transparent.AddStorageReadonlyInput(persistent_data.instance_buf, Stg::VertexShader);
     const FgResRef instances_indices_buf =
         transparent.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
@@ -882,10 +850,10 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
 
         const Ren::Binding bindings[] = {
             {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-            {Trg::UTBuf, GBufferShade::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-            {Trg::UTBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-            {Trg::UTBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
-            {Trg::UTBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
+            {Trg::UTBuf, GBufferShade::CELLS_BUF_SLOT, *cells_buf.ref},
+            {Trg::UTBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.ref},
+            {Trg::UTBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.ref},
+            {Trg::UTBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.ref},
             {Trg::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Trg::Tex2DSampled, GBufferShade::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
             {Trg::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
@@ -933,8 +901,7 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
     const FgResRef noise_tex = emissive.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
     const FgResRef dummy_white = emissive.AddTextureInput(dummy_white_, Stg::FragmentShader);
 
-    const FgResRef instances_buf = emissive.AddStorageReadonlyInput(
-        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
+    const FgResRef instances_buf = emissive.AddStorageReadonlyInput(persistent_data.instance_buf, Stg::VertexShader);
     const FgResRef instances_indices_buf =
         emissive.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 

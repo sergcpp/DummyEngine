@@ -18,7 +18,7 @@
 
 namespace Ren {
 #define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) {_6, _7, _8},
-struct {
+extern struct {
     uint32_t format;
     uint32_t internal_format;
     uint32_t type;
@@ -543,62 +543,6 @@ void Ren::ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
                         rgba);
     } else {
         glClearTexImage(tex.id(), 0, GL_RGBA, GL_FLOAT, rgba);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////
-
-Ren::TextureBuffer::TextureBuffer(std::string_view name, const BufRef &buf, const eTexFormat format,
-                                  const uint32_t offset, const uint32_t size, ILog *log)
-    : name_(name) {
-    Init(buf, format, offset, size, log);
-}
-
-Ren::TextureBuffer::~TextureBuffer() { Free(); }
-
-Ren::TextureBuffer &Ren::TextureBuffer::operator=(TextureBuffer &&rhs) noexcept {
-    if (this == &rhs) {
-        return (*this);
-    }
-
-    Free();
-
-    handle_ = std::exchange(rhs.handle_, {});
-    buf_ = std::move(rhs.buf_);
-    params_ = std::exchange(rhs.params_, {});
-    name_ = std::move(rhs.name_);
-
-    RefCounter::operator=(std::move(rhs));
-
-    return (*this);
-}
-
-void Ren::TextureBuffer::Init(const BufRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
-                              ILog *log) {
-    Free();
-
-    GLuint tex_id;
-    glCreateTextures(GL_TEXTURE_BUFFER, 1, &tex_id);
-#ifdef ENABLE_GPU_DEBUG
-    glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
-#endif
-    glBindTexture(GL_TEXTURE_BUFFER, tex_id);
-    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format, false /* is_srgb */), GLuint(buf->id()),
-                     offset, size);
-    glBindTexture(GL_TEXTURE_BUFFER, 0);
-
-    handle_ = {uint32_t(tex_id), TextureHandleCounter++};
-    buf_ = buf;
-    params_.offset = offset;
-    params_.size = size;
-    params_.format = format;
-}
-
-void Ren::TextureBuffer::Free() {
-    if (params_.format != eTexFormat::Undefined) {
-        auto tex_id = GLuint(handle_.id);
-        glDeleteTextures(1, &tex_id);
-        handle_ = {};
     }
 }
 

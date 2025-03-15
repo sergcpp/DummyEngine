@@ -264,14 +264,17 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
 
     scene_data_.persistent_data.vertex_buf1 =
         scene_data_.buffers.Insert("VtxBuf1", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
+    scene_data_.persistent_data.vertex_buf1->AddBufferView(Ren::eTexFormat::RGBA32F);
     scene_data_.persistent_data.vertex_buf2 =
         scene_data_.buffers.Insert("VtxBuf2", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
+    scene_data_.persistent_data.vertex_buf2->AddBufferView(Ren::eTexFormat::RGBA32UI);
     scene_data_.persistent_data.skin_vertex_buf =
         scene_data_.buffers.Insert("SkinVtxBuf", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
     scene_data_.persistent_data.delta_buf =
         scene_data_.buffers.Insert("DeltaBuf", api_ctx, Ren::eBufType::VertexAttribs, 128, 16);
     scene_data_.persistent_data.indices_buf =
         scene_data_.buffers.Insert("NdxBuf", api_ctx, Ren::eBufType::VertexIndices, 128, 4);
+    scene_data_.persistent_data.indices_buf->AddBufferView(Ren::eTexFormat::R32UI);
 
     StartTextureLoaderThread();
 }
@@ -793,11 +796,17 @@ void Eng::SceneManager::Release_TLAS(const bool immediate) {
 }
 
 void Eng::SceneManager::AllocMeshBuffers() {
+    bool recreate_views = !*scene_data_.persistent_data.vertex_buf1;
     scene_data_.persistent_data.vertex_buf1->Resize(16 * 1024 * 1024);
     scene_data_.persistent_data.vertex_buf2->Resize(16 * 1024 * 1024);
     scene_data_.persistent_data.skin_vertex_buf->Resize(16 * 1024 * 1024);
     scene_data_.persistent_data.delta_buf->Resize(16 * 1024 * 1024);
     scene_data_.persistent_data.indices_buf->Resize(16 * 1024 * 1024);
+    if (recreate_views) {
+        scene_data_.persistent_data.vertex_buf1->AddBufferView(Ren::eTexFormat::RGBA32F);
+        scene_data_.persistent_data.vertex_buf2->AddBufferView(Ren::eTexFormat::RGBA32UI);
+        scene_data_.persistent_data.indices_buf->AddBufferView(Ren::eTexFormat::R32UI);
+    }
 }
 
 void Eng::SceneManager::LoadMeshBuffers() {
@@ -884,9 +893,7 @@ void Eng::SceneManager::AllocInstanceBuffer() {
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
     scene_data_.persistent_data.instance_buf = scene_data_.buffers.Insert(
         "Instance Buf", api_ctx, Ren::eBufType::Texture, uint32_t(sizeof(instance_data_t) * MAX_INSTANCES_TOTAL));
-    scene_data_.persistent_data.instance_buf_tbo =
-        ren_ctx_.CreateTextureBuffer("Instances TBO", scene_data_.persistent_data.instance_buf,
-                                     Ren::eTexFormat::RGBA32F, 0, sizeof(instance_data_t) * MAX_INSTANCES_TOTAL);
+    scene_data_.persistent_data.instance_buf->AddBufferView(Ren::eTexFormat::RGBA32F);
     for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
         instance_data_to_update_.push_back(i);
     }
@@ -895,10 +902,8 @@ void Eng::SceneManager::AllocInstanceBuffer() {
 void Eng::SceneManager::ReleaseInstanceBuffer(const bool immediate) {
     if (immediate) {
         scene_data_.persistent_data.instance_buf->FreeImmediate();
-        scene_data_.persistent_data.instance_buf_tbo->FreeImmediate();
     }
     scene_data_.persistent_data.instance_buf = {};
-    scene_data_.persistent_data.instance_buf_tbo = {};
 }
 
 void Eng::SceneManager::AllocMaterialsBuffer() {

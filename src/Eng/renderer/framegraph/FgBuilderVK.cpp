@@ -317,6 +317,10 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size, 16);
         }
         buf.ref = buf.strong_ref;
+        for (int i = 0; i < int(buf.desc.views.size()); ++i) {
+            const int view_index = buf.ref->AddBufferView(buf.desc.views[i]);
+            assert(view_index == i);
+        }
     }
     for (auto it = std::begin(textures_); it != std::end(textures_); ++it) {
         FgAllocTex &tex = *it;

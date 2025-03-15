@@ -138,36 +138,6 @@ void CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, uint32_t src_leve
 
 void ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf);
 
-class TextureBuffer : public RefCounter {
-    ApiContext *api_ctx_ = nullptr;
-    WeakBufRef buf_;
-    TextureBufferParams params_;
-    String name_;
-
-    VkBufferView buf_view_ = VK_NULL_HANDLE;
-
-  public:
-    TextureBuffer(std::string_view name, const BufRef &buf, eTexFormat format, uint32_t offset, uint32_t size,
-                  ILog *log);
-    TextureBuffer(const TextureBuffer &rhs) = delete;
-    TextureBuffer(TextureBuffer &&rhs) noexcept { (*this) = std::move(rhs); }
-    ~TextureBuffer() { Free(); }
-
-    void Free();
-    void FreeImmediate();
-
-    TextureBuffer &operator=(const TextureBuffer &rhs) = delete;
-    TextureBuffer &operator=(TextureBuffer &&rhs) noexcept;
-
-    const VkBufferView &view() const { return buf_view_; }
-
-    const TextureBufferParams &params() const { return params_; }
-
-    const String &name() const { return name_; }
-
-    void Init(const BufRef &buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
-};
-
 VkFormat VKFormatFromTexFormat(eTexFormat format);
 
 } // namespace Ren

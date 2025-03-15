@@ -66,6 +66,7 @@ static_assert(sizeof(FgResRef) == 6, "!");
 struct FgBufDesc {
     Ren::eBufType type;
     uint32_t size;
+    Ren::SmallVector<Ren::eTexFormat, 1> views;
 };
 
 inline bool operator==(const FgBufDesc &lhs, const FgBufDesc &rhs) {

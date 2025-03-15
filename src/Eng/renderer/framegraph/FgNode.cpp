@@ -64,11 +64,6 @@ Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(const Ren::WeakBufRef &buf, c
     return builder_.ReadBuffer(buf, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageReadonlyInput(const Ren::WeakBufRef &buf, const Ren::WeakTexBufRef &tbo,
-                                                   const Ren::eStageBits stages) {
-    return builder_.ReadBuffer(buf, tbo, Ren::eResState::ShaderResource, stages, *this);
-}
-
 Eng::FgResRef Eng::FgNode::AddStorageOutput(std::string_view name, const FgBufDesc &desc,
                                             const Ren::eStageBits stages) {
     return builder_.WriteBuffer(name, desc, Ren::eResState::UnorderedAccess, stages, *this);

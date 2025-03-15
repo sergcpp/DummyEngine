@@ -8,10 +8,9 @@
 #include <Ren/RastState.h>
 
 namespace ExSharedInternal {
-uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
-                          const Ren::Texture &white_tex, Ren::Span<const uint32_t> batch_indices,
-                          Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask,
-                          uint32_t &cur_mat_id, int *draws_count) {
+uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
+                          uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
     for (; i < batch_indices.size(); i++) {
@@ -125,13 +124,13 @@ void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF, GLuint(cells_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.ref->view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF, GLuint(cells_buf.ref->view(0).second));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.ref->view(0).second));
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
     const Ren::Span<const basic_draw_batch_t> batches = (*p_list_)->basic_batches;

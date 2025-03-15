@@ -65,7 +65,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.tbos[0]}};
+            {Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref}};
 
         BlitOITDepth::Params uniform_params = {};
         uniform_params.img_size[0] = view_state_->act_res[0];
@@ -80,11 +80,11 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
 
     Ren::SmallVector<Ren::Binding, 16> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, OITBlendLayer::DECAL_BUF_SLOT, *decals_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::CELLS_BUF_SLOT, *cells_buf.ref},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::ITEMS_BUF_SLOT, *items_buf.ref},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::LIGHT_BUF_SLOT, *lights_buf.ref},
+        {Ren::eBindTarget::UTBuf, OITBlendLayer::DECAL_BUF_SLOT, *decals_buf.ref},
+        {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref},

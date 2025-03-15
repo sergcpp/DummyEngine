@@ -65,14 +65,14 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         // const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
         // const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
 
-        const VkBufferView lights_buf_view = lights_buf.tbos[0]->view();
-        const VkBufferView decals_buf_view = decals_buf.tbos[0]->view();
-        const VkBufferView cells_buf_view = cells_buf.tbos[0]->view();
-        const VkBufferView items_buf_view = items_buf.tbos[0]->view();
+        const VkBufferView lights_buf_view = lights_buf.ref->view(0).second;
+        const VkBufferView decals_buf_view = decals_buf.ref->view(0).second;
+        const VkBufferView cells_buf_view = cells_buf.ref->view(0).second;
+        const VkBufferView items_buf_view = items_buf.ref->view(0).second;
 
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
-        const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
+        const VkBufferView instances_buf_view = instances_buf.ref->view(0).second;
         const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
                                                                   VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};

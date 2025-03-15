@@ -69,13 +69,14 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
                 glBindBufferBase(GLBindTarget(b.trg), b.loc, b.handle.buf->id());
             }
         } else if (b.trg == eBindTarget::UTBuf) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc),
+                                       GLuint(b.handle.buf->view(b.handle.view_index).second));
         } else if (b.trg == eBindTarget::STBufRO) {
-            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_ONLY,
-                               GLInternalFormatFromTexFormat(b.handle.tex_buf->params().format, false));
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(0).second), 0, GL_FALSE, 0,
+                               GL_READ_ONLY, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first, false));
         } else if (b.trg == eBindTarget::STBufRW) {
-            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.tex_buf->params().format, false));
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(0).second), 0, GL_FALSE, 0,
+                               GL_READ_WRITE, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first, false));
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Sampler) {
@@ -140,13 +141,13 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
                 glBindBufferBase(GLBindTarget(b.trg), b.loc, b.handle.buf->id());
             }
         } else if (b.trg == eBindTarget::UTBuf) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.buf->view(0).second));
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Sampler) {
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
         } else if (b.trg == eBindTarget::Image2D) {
-            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format, false));
         } else if (b.trg == eBindTarget::Image2DArray) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()), 0, GL_TRUE, 0, GL_READ_WRITE,

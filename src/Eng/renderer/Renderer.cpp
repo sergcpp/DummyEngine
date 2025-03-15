@@ -286,6 +286,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         // Sobol sequence
         sobol_seq_buf_ = ctx_.LoadBuffer("SobolSequenceBuf", Ren::eBufType::Texture, 256 * 256 * sizeof(int));
+        sobol_seq_buf_->AddBufferView(Ren::eTexFormat::R32UI);
         Ren::Buffer sobol_seq_buf_stage("SobolSequenceBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                         sobol_seq_buf_->size());
 
@@ -300,6 +301,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         // Scrambling tile
         scrambling_tile_buf_ =
             ctx_.LoadBuffer("ScramblingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
+        scrambling_tile_buf_->AddBufferView(Ren::eTexFormat::R32UI);
         Ren::Buffer scrambling_tile_buf_stage("ScramblingTileBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                               scrambling_tile_buf_->size());
 
@@ -314,6 +316,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         // Ranking tile
         ranking_tile_buf_ = ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
+        ranking_tile_buf_->AddBufferView(Ren::eTexFormat::R32UI);
         Ren::Buffer ranking_tile_buf_stage("RankingTileBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                            ranking_tile_buf_->size());
 
@@ -335,6 +338,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // PMJ samples
         pmj_samples_buf_ = ctx_.LoadBuffer("PMJSamples", Ren::eBufType::Texture,
                                            __pmj02_sample_count * __pmj02_dims_count * sizeof(uint32_t));
+        pmj_samples_buf_->AddBufferView(Ren::eTexFormat::R32UI);
 
         Ren::Buffer pmj_samples_stage("PMJSamplesStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                       pmj_samples_buf_->size());
@@ -769,6 +773,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = HWRTObjInstancesBufChunkSize;
+                desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
                 rt_obj_instances_res = update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
             }
@@ -813,6 +818,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = SWRTObjInstancesBufChunkSize;
+                desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
                 rt_obj_instances_res = build_acc_structs.AddTransferOutput("RT Obj Instances", desc);
             }
@@ -842,6 +848,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = HWRTObjInstancesBufChunkSize;
+                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
                     rt_sh_obj_instances_res = update_rt_bufs.AddTransferOutput("RT SH Obj Instances", desc);
                 }
@@ -888,6 +895,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = SWRTObjInstancesBufChunkSize;
+                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
                     rt_sh_obj_instances_res = build_acc_structs.AddTransferOutput("RT SH Obj Instances", desc);
                 }
@@ -912,8 +920,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef shared_data_res = shadow_depth.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            FgResRef instances_res = shadow_depth.AddStorageReadonlyInput(
-                persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
+            FgResRef instances_res =
+                shadow_depth.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStageBits::VertexShader);
             FgResRef instance_indices_res =
                 shadow_depth.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
 
@@ -942,8 +950,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef shared_data_res = shadow_color.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            FgResRef instances_res = shadow_color.AddStorageReadonlyInput(
-                persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
+            FgResRef instances_res =
+                shadow_color.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStageBits::VertexShader);
             FgResRef instance_indices_res =
                 shadow_color.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
 
@@ -1028,8 +1036,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             FgResRef shared_data_res = depth_fill.AddUniformBufferInput(
                 common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            FgResRef instances_res = depth_fill.AddStorageReadonlyInput(
-                persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
+            FgResRef instances_res =
+                depth_fill.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStageBits::VertexShader);
             FgResRef instance_indices_res =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
 

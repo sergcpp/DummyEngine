@@ -41,11 +41,6 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
 
     FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(out_depth_buf_);
 
-    if (!out_depth_buf.tbos[0]) {
-        out_depth_buf.tbos[0] = builder.ctx().CreateTextureBuffer("Depth Values Tex", out_depth_buf.ref,
-                                                                  Ren::eTexFormat::R32UI, 0, out_depth_buf.ref->size());
-    }
-
     if ((*p_list_)->alpha_blend_start_index == -1) {
         return;
     }
@@ -79,10 +74,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
-    glBindImageTexture(GLuint(DepthPeel::OUT_IMG_BUF_SLOT), GLuint(out_depth_buf.tbos[0]->id()), 0, GL_FALSE, 0,
+    glBindImageTexture(GLuint(DepthPeel::OUT_IMG_BUF_SLOT), GLuint(out_depth_buf.ref->view(0).second), 0, GL_FALSE, 0,
                        GL_READ_WRITE, GL_R32UI);
 
     const Ren::Span<const basic_draw_batch_t> batches = {(*p_list_)->basic_batches};

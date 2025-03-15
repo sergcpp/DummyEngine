@@ -201,7 +201,6 @@ static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
 
 struct PersistentGpuData {
     Ren::BufRef instance_buf;
-    Ren::TexBufRef instance_buf_tbo;
     Ren::BufRef materials_buf;
     Ren::BufRef stoch_lights_buf, stoch_lights_nodes_buf;
     Ren::BufRef vertex_buf1, vertex_buf2, skin_vertex_buf, delta_buf, indices_buf;

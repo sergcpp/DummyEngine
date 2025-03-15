@@ -40,10 +40,10 @@ void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
 
     { // allocate descriptors
         const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
-                                         {Ren::eBindTarget::UTBuf, BIND_DECAL_BUF, *decals_buf.tbos[0]},
-                                         {Ren::eBindTarget::UTBuf, BIND_CELLS_BUF, *cells_buf.tbos[0]},
-                                         {Ren::eBindTarget::UTBuf, BIND_ITEMS_BUF, *items_buf.tbos[0]},
+                                         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
+                                         {Ren::eBindTarget::UTBuf, BIND_DECAL_BUF, *decals_buf.ref},
+                                         {Ren::eBindTarget::UTBuf, BIND_CELLS_BUF, *cells_buf.ref},
+                                         {Ren::eBindTarget::UTBuf, BIND_ITEMS_BUF, *items_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
                                          {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref},

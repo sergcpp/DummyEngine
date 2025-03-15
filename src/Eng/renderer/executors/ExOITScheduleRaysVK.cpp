@@ -36,8 +36,8 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgBuilder &builder, FgAllocTex &dep
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-        {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
-        {Ren::eBindTarget::UTBuf, OITScheduleRays::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.tbos[0]},
+        {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
+        {Ren::eBindTarget::UTBuf, OITScheduleRays::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref},
         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
         {Ren::eBindTarget::SBufRO, OITScheduleRays::RAY_COUNTER_SLOT, *ray_counter_buf.ref},

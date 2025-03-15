@@ -26,10 +26,9 @@ uint32_t _draw_list_range_full_rev(Eng::FgBuilder &builder, const Ren::MaterialS
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    Eng::backend_info_t &backend_info);
-uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials,
-                          const Ren::Texture &white_tex, Ren::Span<const uint32_t> batch_indices,
-                          Ren::Span<const Eng::basic_draw_batch_t> batches, uint32_t i, uint64_t mask,
-                          uint32_t &cur_mat_id, int *draws_count);
+uint32_t _draw_range_ext2(Eng::FgBuilder &builder, const Ren::MaterialStorage &materials, const Ren::Texture &white_tex,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
+                          uint32_t i, uint64_t mask, uint32_t &cur_mat_id, int *draws_count);
 } // namespace ExSharedInternal
 
 void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth_tex) {
@@ -80,7 +79,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.tbos[0]}};
+            {Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref}};
 
         BlitOITDepth::Params uniform_params = {};
         uniform_params.img_size[0] = view_state_->act_res[0];
@@ -124,13 +123,13 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.ref->view(0).second));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::CELLS_BUF_SLOT, GLuint(cells_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::ITEMS_BUF_SLOT, GLuint(items_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::LIGHT_BUF_SLOT, GLuint(lights_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::DECAL_BUF_SLOT, GLuint(decals_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::CELLS_BUF_SLOT, cells_buf.ref->view(0).second);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::ITEMS_BUF_SLOT, items_buf.ref->view(0).second);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::LIGHT_BUF_SLOT, lights_buf.ref->view(0).second);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, OITBlendLayer::DECAL_BUF_SLOT, decals_buf.ref->view(0).second);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::SHADOW_TEX_SLOT, shadow_map_tex.ref->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::LTC_LUTS_TEX_SLOT, ltc_luts_tex.ref->id());

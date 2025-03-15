@@ -1310,68 +1310,6 @@ void Ren::ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::TextureBuffer::TextureBuffer(std::string_view name, const BufRef &buf, const eTexFormat format,
-                                  const uint32_t offset, const uint32_t size, ILog *log)
-    : name_(name) {
-    Init(buf, format, offset, size, log);
-}
-
-void Ren::TextureBuffer::Free() {
-    if (buf_view_) {
-        api_ctx_->buf_views_to_destroy[api_ctx_->backend_frame].push_back(buf_view_);
-        buf_view_ = {};
-    }
-    buf_ = WeakBufRef{};
-}
-
-void Ren::TextureBuffer::FreeImmediate() {
-    if (buf_view_) {
-        api_ctx_->vkDestroyBufferView(api_ctx_->device, buf_view_, nullptr);
-        buf_view_ = {};
-    }
-    buf_ = WeakBufRef{};
-}
-
-Ren::TextureBuffer &Ren::TextureBuffer::operator=(TextureBuffer &&rhs) noexcept {
-    if (this == &rhs) {
-        return (*this);
-    }
-
-    RefCounter::operator=(static_cast<RefCounter &&>(rhs));
-
-    Free();
-
-    api_ctx_ = rhs.buf_->api_ctx();
-    buf_ = std::move(rhs.buf_);
-    params_ = std::exchange(rhs.params_, {});
-    name_ = std::move(rhs.name_);
-    buf_view_ = std::exchange(rhs.buf_view_, {});
-
-    return (*this);
-}
-
-void Ren::TextureBuffer::Init(const BufRef &buf, const eTexFormat format, const uint32_t offset, const uint32_t size,
-                              ILog *log) {
-    Free();
-
-    VkBufferViewCreateInfo view_info = {VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO};
-    view_info.buffer = buf->vk_handle();
-    view_info.format = g_formats_vk[size_t(format)];
-    view_info.offset = VkDeviceSize(offset);
-    view_info.range = VkDeviceSize(size);
-
-    const VkResult res = buf->api_ctx()->vkCreateBufferView(buf->api_ctx()->device, &view_info, nullptr, &buf_view_);
-    assert(res == VK_SUCCESS);
-
-    api_ctx_ = buf->api_ctx();
-    buf_ = buf;
-    params_.offset = offset;
-    params_.size = size;
-    params_.format = format;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////
-
 VkFormat Ren::VKFormatFromTexFormat(eTexFormat format) { return g_formats_vk[size_t(format)]; }
 
 #ifdef _MSC_VER

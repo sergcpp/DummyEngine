@@ -101,7 +101,6 @@ struct FgAllocBuf : public FgAllocRes {
     FgBufDesc desc;
     Ren::WeakBufRef ref;
     Ren::BufRef strong_ref;
-    Ren::TexBufRef tbos[4];
 };
 
 struct FgAllocTex : public FgAllocRes {
@@ -206,8 +205,6 @@ class FgBuilder {
     FgResRef ReadBuffer(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef ReadBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node,
                         int slot_index = -1);
-    FgResRef ReadBuffer(const Ren::WeakBufRef &ref, const Ren::WeakTexBufRef &tbo, Ren::eResState desired_state,
-                        Ren::eStageBits stages, FgNode &node);
 
     FgResRef ReadTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);

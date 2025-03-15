@@ -117,31 +117,15 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             FgAllocTex &ray_hits_tex = builder.GetWriteTexture(data->out_ray_hits_tex);
             FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
-            // Initialize texel buffers if needed
-            if (!sobol_buf.tbos[0]) {
-                sobol_buf.tbos[0] = ctx_.CreateTextureBuffer("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI,
-                                                             0, sobol_buf.ref->size());
-            }
-            if (!scrambling_tile_buf.tbos[0]) {
-                scrambling_tile_buf.tbos[0] =
-                    ctx_.CreateTextureBuffer("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI,
-                                             0, scrambling_tile_buf.ref->size());
-            }
-            if (!ranking_tile_buf.tbos[0]) {
-                ranking_tile_buf.tbos[0] =
-                    ctx_.CreateTextureBuffer("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                             ranking_tile_buf.ref->size());
-            }
-
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2DSampled, RTShadowClassify::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Trg::Tex2DSampled, RTShadowClassify::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, *tile_counter_buf.ref},
                 {Trg::SBufRO, RTShadowClassify::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Trg::UTBuf, RTShadowClassify::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                {Trg::UTBuf, RTShadowClassify::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                {Trg::UTBuf, RTShadowClassify::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                {Trg::UTBuf, RTShadowClassify::SOBOL_BUF_SLOT, *sobol_buf.ref},
+                {Trg::UTBuf, RTShadowClassify::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.ref},
+                {Trg::UTBuf, RTShadowClassify::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.ref},
                 {Trg::Image2D, RTShadowClassify::RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
                 {Trg::Image2D, RTShadowClassify::NOISE_IMG_SLOT, *noise_tex.ref}};
 

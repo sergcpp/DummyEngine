@@ -13,7 +13,6 @@ class DescrMultiPoolAlloc;
 class ILog;
 class Pipeline;
 class ProbeStorage;
-class TextureBuffer;
 class Texture;
 class Texture2DArray;
 
@@ -47,7 +46,6 @@ struct OpaqueHandle {
     union {
         const Texture *tex;
         const Buffer *buf;
-        const TextureBuffer *tex_buf;
         const ProbeStorage *cube_arr;
         const Texture2DArray *tex2d_arr;
 #if defined(REN_VK_BACKEND)
@@ -58,11 +56,10 @@ struct OpaqueHandle {
     int view_index = 0;
 
     OpaqueHandle() = default;
-    OpaqueHandle(const TextureBuffer &_tex) : tex_buf(&_tex) {}
     OpaqueHandle(const Texture &_tex, int _view_index = 0) : tex(&_tex), view_index(_view_index) {}
     OpaqueHandle(const Texture &_tex, const Sampler &_sampler, int _view_index = 0)
         : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
-    OpaqueHandle(const Buffer &_buf) : buf(&_buf) {}
+    OpaqueHandle(const Buffer &_buf, int _view_index = 0) : buf(&_buf), view_index(_view_index) {}
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
     OpaqueHandle(const Texture2DArray &_tex2d_arr) : tex2d_arr(&_tex2d_arr) {}
     OpaqueHandle(const Sampler &_sampler) : sampler(&_sampler) {}

@@ -45,6 +45,7 @@ GLbitfield GetGLBufStorageFlags(const eBufType type) {
 }
 #endif
 
+uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);
 } // namespace Ren
 
 int Ren::Buffer::g_GenCounter = 0;
@@ -103,7 +104,7 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ui
 }
 
 void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, const Buffer &init_buf,
-                                  const uint32_t init_off, CommandBuffer cmd_buf) {
+                                  const uint32_t init_off, CommandBuffer) {
     glBindBuffer(GL_COPY_READ_BUFFER, GLuint(init_buf.handle_.buf));
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.buf));
 
@@ -144,6 +145,8 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 #endif
     glBufferStorage(g_buf_targets_gl[int(type_)], size_, nullptr, GetGLBufStorageFlags(type_));
 
+    auto views = std::move(handle_.views);
+
     if (handle_.buf) {
         glBindBuffer(g_buf_targets_gl[int(type_)], GLuint(handle_.buf));
         glBindBuffer(GL_COPY_WRITE_BUFFER, gl_buffer);
@@ -154,12 +157,19 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
         auto old_buffer = GLuint(handle_.buf);
         glDeleteBuffers(1, &old_buffer);
+        for (const auto view : views) {
+            auto gl_tex = GLuint(view.second);
+            glDeleteTextures(1, &gl_tex);
+        }
 
         glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
     }
 
     handle_.buf = uint32_t(gl_buffer);
     handle_.generation = g_GenCounter++;
+    for (auto view : views) {
+        AddBufferView(view.first);
+    }
 }
 
 void Ren::Buffer::Free() {
@@ -167,6 +177,10 @@ void Ren::Buffer::Free() {
     if (handle_.buf) {
         auto gl_buf = GLuint(handle_.buf);
         glDeleteBuffers(1, &gl_buf);
+        for (const auto view : handle_.views) {
+            auto gl_tex = GLuint(view.second);
+            glDeleteTextures(1, &gl_tex);
+        }
         handle_ = {};
         size_ = 0;
         sub_alloc_ = {};
@@ -212,23 +226,39 @@ void Ren::Buffer::Unmap() {
     mapped_ptr_ = nullptr;
 }
 
-void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, CommandBuffer cmd_buf) {
+void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, CommandBuffer) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.buf));
     glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED,
                          GL_UNSIGNED_INT, &data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf) {
+void Ren::Buffer::UpdateImmediate(const uint32_t dst_offset, const uint32_t size, const void *data,
+                                  CommandBuffer) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.buf));
     glBufferSubData(GL_COPY_WRITE_BUFFER, GLintptr(dst_offset), size, data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
+int Ren::Buffer::AddBufferView(const eTexFormat format) {
+    GLuint tex_id;
+    glCreateTextures(GL_TEXTURE_BUFFER, 1, &tex_id);
+#ifdef ENABLE_GPU_DEBUG
+    glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
+#endif
+    glBindTexture(GL_TEXTURE_BUFFER, tex_id);
+    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format, false /* is_srgb */), GLuint(handle_.buf),
+                     0, size_);
+    glBindTexture(GL_TEXTURE_BUFFER, 0);
+
+    handle_.views.emplace_back(format, tex_id);
+    return int(handle_.views.size()) - 1;
+}
+
 uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) { return offset; }
 
 void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
-                             const uint32_t size, CommandBuffer cmd_buf) {
+                             const uint32_t size, CommandBuffer) {
     glBindBuffer(GL_COPY_READ_BUFFER, GLuint(src.id()));
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));
     glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src_offset, dst_offset, size);

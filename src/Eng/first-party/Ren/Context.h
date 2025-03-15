@@ -71,7 +71,6 @@ class Context {
     PipelineStorage pipelines_;
     ShaderStorage shaders_;
     TextureStorage textures_;
-    TextureBufferStorage texture_buffers_;
     TextureRegionStorage texture_regions_;
     SamplerStorage samplers_;
     AnimSeqStorage anims_;
@@ -116,7 +115,6 @@ class Context {
     ILog *log() const { return log_; }
 
     TextureStorage &textures() { return textures_; }
-    TextureBufferStorage &texture_buffers() { return texture_buffers_; }
     MaterialStorage &materials() { return materials_; }
     ProgramStorage &programs() { return programs_; }
 
@@ -215,10 +213,6 @@ class Context {
     void VisitTextures(eTexFlags mask, const std::function<void(Texture &tex)> &callback);
     int NumTexturesNotReady();
     void ReleaseTextures();
-
-    /*** TextureBuffer ***/
-    TexBufRef CreateTextureBuffer(std::string_view name, BufRef buf, eTexFormat format, uint32_t offset, uint32_t size);
-    void ReleaseTextureBuffers();
 
     /** Texture regions (placed on default atlas) **/
     TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p,

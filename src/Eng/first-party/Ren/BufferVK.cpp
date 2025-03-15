@@ -8,6 +8,8 @@
 #include "VKCtx.h"
 
 namespace Ren {
+extern const VkFormat g_formats_vk[];
+
 VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufType type) {
     VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
@@ -337,6 +339,8 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
         assert(res == VK_SUCCESS && "Failed to bind memory!");
     }
 
+    auto views = std::move(handle_.views);
+
     if (handle_.buf != VK_NULL_HANDLE) {
         if (keep_content) {
             VkCommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
@@ -350,6 +354,9 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
             // destroy previous buffer
             api_ctx_->vkDestroyBuffer(api_ctx_->device, handle_.buf, nullptr);
+            for (auto view : views) {
+                api_ctx_->vkDestroyBufferView(api_ctx_->device, view.second, nullptr);
+            }
             alloc_ = {};
             if (dedicated_mem_) {
                 api_ctx_->vkFreeMemory(api_ctx_->device, dedicated_mem_, nullptr);
@@ -357,6 +364,9 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
         } else {
             // destroy previous buffer
             api_ctx_->bufs_to_destroy[api_ctx_->backend_frame].push_back(handle_.buf);
+            for (auto view : views) {
+                api_ctx_->buf_views_to_destroy[api_ctx_->backend_frame].push_back(view.second);
+            }
             if (alloc_) {
                 api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
             }
@@ -368,6 +378,9 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
     handle_.buf = new_buf;
     handle_.generation = g_GenCounter++;
+    for (auto view : views) {
+        AddBufferView(view.first);
+    }
     alloc_ = std::move(new_allocation);
     dedicated_mem_ = new_dedicated_mem;
 }
@@ -376,6 +389,9 @@ void Ren::Buffer::Free() {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     if (handle_.buf != VK_NULL_HANDLE) {
         api_ctx_->bufs_to_destroy[api_ctx_->backend_frame].push_back(handle_.buf);
+        for (auto view : handle_.views) {
+            api_ctx_->buf_views_to_destroy[api_ctx_->backend_frame].push_back(view.second);
+        }
         if (alloc_) {
             api_ctx_->allocations_to_free[api_ctx_->backend_frame].emplace_back(std::move(alloc_));
         }
@@ -395,6 +411,9 @@ void Ren::Buffer::FreeImmediate() {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     if (handle_.buf != VK_NULL_HANDLE) {
         api_ctx_->vkDestroyBuffer(api_ctx_->device, handle_.buf, nullptr);
+        for (auto view : handle_.views) {
+            api_ctx_->vkDestroyBufferView(api_ctx_->device, view.second, nullptr);
+        }
         alloc_ = {};
         if (dedicated_mem_) {
             api_ctx_->vkFreeMemory(api_ctx_->device, dedicated_mem_, nullptr);
@@ -499,6 +518,23 @@ void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void
     api_ctx_->vkCmdUpdateBuffer(cmd_buf, handle_.buf, VkDeviceSize{dst_offset}, VkDeviceSize{size}, data);
 
     resource_state = eResState::CopyDst;
+}
+
+int Ren::Buffer::AddBufferView(const eTexFormat format) {
+    VkBufferViewCreateInfo view_info = {VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO};
+    view_info.buffer = handle_.buf;
+    view_info.format = g_formats_vk[size_t(format)];
+    view_info.offset = VkDeviceSize(0);
+    view_info.range = VkDeviceSize(size_);
+
+    VkBufferView buf_view = {};
+    const VkResult res = api_ctx_->vkCreateBufferView(api_ctx_->device, &view_info, nullptr, &buf_view);
+    if (res != VK_SUCCESS) {
+        return -1;
+    }
+
+    handle_.views.emplace_back(format, buf_view);
+    return int(handle_.views.size()) - 1;
 }
 
 void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,

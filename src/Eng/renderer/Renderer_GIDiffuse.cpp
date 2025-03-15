@@ -225,31 +225,15 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             FgAllocTex &gi_tex = builder.GetWriteTexture(data->out_gi_tex);
             FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
-            // Initialize texel buffers if needed
-            if (!sobol_buf.tbos[0]) {
-                sobol_buf.tbos[0] = ctx_.CreateTextureBuffer("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::R32UI,
-                                                             0, sobol_buf.ref->size());
-            }
-            if (!scrambling_tile_buf.tbos[0]) {
-                scrambling_tile_buf.tbos[0] =
-                    ctx_.CreateTextureBuffer("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::R32UI,
-                                             0, scrambling_tile_buf.ref->size());
-            }
-            if (!ranking_tile_buf.tbos[0]) {
-                ranking_tile_buf.tbos[0] =
-                    ctx_.CreateTextureBuffer("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::R32UI, 0,
-                                             ranking_tile_buf.ref->size());
-            }
-
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
                                              {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                              {Trg::SBufRO, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                                              {Trg::SBufRO, RAY_LIST_SLOT, *ray_list_buf.ref},
                                              {Trg::SBufRO, TILE_LIST_SLOT, *tile_list_buf.ref},
-                                             {Trg::UTBuf, SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                                             {Trg::UTBuf, SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                                             {Trg::UTBuf, RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                                             {Trg::UTBuf, SOBOL_BUF_SLOT, *sobol_buf.ref},
+                                             {Trg::UTBuf, SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.ref},
+                                             {Trg::UTBuf, RANKING_TILE_BUF_SLOT, *ranking_tile_buf.ref},
                                              {Trg::Image2D, GI_IMG_SLOT, *gi_tex.ref},
                                              {Trg::Image2D, NOISE_IMG_SLOT, *noise_tex.ref}};
 

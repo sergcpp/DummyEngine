@@ -18,6 +18,7 @@ typedef struct VkDescriptorPool_T *VkDescriptorPool;
 typedef struct VkDescriptorSet_T *VkDescriptorSet;
 typedef struct VkDescriptorSetLayout_T *VkDescriptorSetLayout;
 typedef struct VkBuffer_T *VkBuffer;
+typedef struct VkBufferView_T *VkBufferView;
 typedef struct VkDeviceMemory_T *VkDeviceMemory;
 typedef struct VkCommandBuffer_T *VkCommandBuffer;
 typedef struct VkDescriptorSet_T *VkDescriptorSet;
@@ -57,7 +58,6 @@ class RenderPass;
 class Sampler;
 class Shader;
 class Texture;
-class TextureBuffer;
 class TextureAtlas;
 class Texture2DAtlas;
 class TextureSplitter;
@@ -76,8 +76,6 @@ using WeakSamplerRef = WeakRef<Sampler, SparseArray<Sampler>>;
 using ShaderRef = StrongRef<Shader, NamedStorage<Shader>>;
 using TexRef = StrongRef<Texture, NamedStorage<Texture>>;
 using WeakTexRef = WeakRef<Texture, NamedStorage<Texture>>;
-using TexBufRef = StrongRef<TextureBuffer, NamedStorage<TextureBuffer>>;
-using WeakTexBufRef = WeakRef<TextureBuffer, NamedStorage<TextureBuffer>>;
 
 const char *Version();
 } // namespace Ren

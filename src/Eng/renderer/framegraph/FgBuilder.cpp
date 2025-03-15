@@ -148,7 +148,7 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufRef &ref, const Ren::
     }
 
     FgAllocBuf &buf = buffers_[ret.index];
-    assert(buf.desc.size <= ref->size() && buf.desc.type == ref->type());
+    assert(buf.desc.size == ref->size() && buf.desc.type == ref->type());
     buf.ref = ref;
     ret._generation = buf._generation;
     ret.desired_state = desired_state;
@@ -180,46 +180,6 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufRef &ref, const Ren::
         }
         node.input_[slot_index] = ret;
     }
-
-    return ret;
-}
-
-Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufRef &ref, const Ren::WeakTexBufRef &tbo,
-                                         const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                         FgNode &node) {
-    FgResource ret;
-    ret.type = eFgResType::Buffer;
-
-    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name());
-    if (!pbuf_index) {
-        FgAllocBuf new_buf;
-        new_buf.name = ref->name().c_str();
-        new_buf.desc = FgBufDesc{ref->type(), ref->size()};
-        new_buf.external = true;
-
-        ret.index = buffers_.emplace(new_buf);
-        name_to_buffer_[new_buf.name] = ret.index;
-    } else {
-        ret.index = *pbuf_index;
-    }
-
-    FgAllocBuf &buf = buffers_[ret.index];
-    assert(buf.desc.size <= ref->size() && buf.desc.type == ref->type());
-    buf.ref = ref;
-    buf.tbos[0] = tbo;
-    ret._generation = buf._generation;
-    ret.desired_state = desired_state;
-    ret.stages = stages;
-
-    buf.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
-    ++buf.read_count;
-
-#ifndef NDEBUG
-    for (const FgResource &r : node.input_) {
-        assert(r.type != eFgResType::Buffer || r.index != ret.index);
-    }
-#endif
-    node.input_.push_back(ret);
 
     return ret;
 }
@@ -480,7 +440,7 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufRef &ref, const Ren:
     }
 
     FgAllocBuf &buf = buffers_[ret.index];
-    assert(buf.desc.size <= ref->size() && buf.desc.type == ref->type());
+    assert(buf.desc.size == ref->size() && buf.desc.type == ref->type());
     buf.ref = ref;
     ret._generation = buf._generation;
     ret.desired_state = desired_state;
@@ -750,6 +710,10 @@ void Eng::FgBuilder::AllocateNeededResources_Simple() {
         assert(!buf.ref);
         buf.strong_ref = ctx_.LoadBuffer(buf.name, buf.desc.type, buf.desc.size, 16, ctx_.default_mem_allocs());
         buf.ref = buf.strong_ref;
+        for (int i = 0; i < int(buf.desc.views.size()); ++i) {
+            const int view_index = buf.ref->AddBufferView(buf.desc.views[i]);
+            assert(view_index == i);
+        }
     }
     for (auto it = std::begin(buffers_); it != std::end(buffers_); ++it) {
         FgAllocBuf &buf = *it;
@@ -1124,7 +1088,8 @@ void Eng::FgBuilder::PrepareResourceLifetimes() {
             if (buf2.external || buf_aliases[j.index()] != -1) {
                 continue;
             }
-            if (buf1.desc.type == buf2.desc.type && buf1.desc.size == buf2.desc.size) {
+            if (buf1.desc.type == buf2.desc.type && buf1.desc.size == buf2.desc.size &&
+                buf1.desc.views == buf2.desc.views) {
                 bool disjoint = disjoint_lifetimes(buf1.lifetime, buf2.lifetime);
                 for (const int alias : buf_alias_chains_[j.index()]) {
                     if (alias == i.index()) {

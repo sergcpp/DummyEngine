@@ -27,11 +27,6 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
 
     FgAllocBuf &out_depth_buf = builder.GetWriteBuffer(out_depth_buf_);
 
-    if (!out_depth_buf.tbos[0]) {
-        out_depth_buf.tbos[0] = ctx.CreateTextureBuffer("Depth Values Tex", out_depth_buf.ref, Ren::eTexFormat::R32UI,
-                                                        0, out_depth_buf.ref->size());
-    }
-
     if ((*p_list_)->alpha_blend_start_index == -1) {
         return;
     }
@@ -41,10 +36,10 @@ void Eng::ExOITDepthPeel::DrawTransparent(FgBuilder &builder) {
     { // allocate descriptors
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
-            {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.tbos[0]},
+            {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
             {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
             {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-            {Ren::eBindTarget::STBufRW, DepthPeel::OUT_IMG_BUF_SLOT, *out_depth_buf.tbos[0]}};
+            {Ren::eBindTarget::STBufRW, DepthPeel::OUT_IMG_BUF_SLOT, *out_depth_buf.ref}};
         descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_simple_[0]->prog()->descr_set_layouts()[0], bindings,
                                              ctx.default_descr_alloc(), ctx.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];

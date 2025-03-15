@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include "Bitmask.h"
@@ -9,6 +10,7 @@
 #include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"
+#include "TextureParams.h"
 
 namespace Ren {
 class ILog;
@@ -40,8 +42,10 @@ eType Type(std::string_view name);
 struct BufHandle {
 #if defined(REN_VK_BACKEND)
     VkBuffer buf = {};
+    SmallVector<std::pair<eTexFormat, VkBufferView>, 1> views;
 #elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
     uint32_t buf = 0;
+    SmallVector<std::pair<eTexFormat, uint32_t>, 1> views;
 #endif
     uint32_t generation = 0;
 
@@ -54,16 +58,20 @@ struct BufHandle {
     }
 };
 inline bool operator==(const BufHandle &lhs, const BufHandle &rhs) {
-    return lhs.buf == rhs.buf && lhs.generation == rhs.generation;
+    return lhs.buf == rhs.buf && lhs.views == rhs.views && lhs.generation == rhs.generation;
 }
 inline bool operator!=(const BufHandle &lhs, const BufHandle &rhs) {
-    return lhs.buf != rhs.buf || lhs.generation != rhs.generation;
+    return lhs.buf != rhs.buf || lhs.views != rhs.views || lhs.generation != rhs.generation;
 }
 inline bool operator<(const BufHandle &lhs, const BufHandle &rhs) {
     if (lhs.buf < rhs.buf) {
         return true;
     } else if (lhs.buf == rhs.buf) {
-        return lhs.generation < rhs.generation;
+        if (lhs.views < rhs.views) {
+            return true;
+        } else if (lhs.views == rhs.views) {
+            return lhs.generation < rhs.generation;
+        }
     }
     return false;
 }
@@ -102,6 +110,12 @@ class Buffer : public RefCounter {
     Buffer(Buffer &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Buffer();
 
+#if defined(REN_VK_BACKEND)
+    operator bool() const { return (handle_.buf != VkBuffer{}); }
+#elif defined(REN_GL_BACKEND)
+    operator bool() const { return (handle_.buf != 0); }
+#endif
+
     Buffer &operator=(const Buffer &rhs) = delete;
     Buffer &operator=(Buffer &&rhs) noexcept;
 
@@ -113,10 +127,12 @@ class Buffer : public RefCounter {
     [[nodiscard]] ApiContext *api_ctx() const { return api_ctx_; }
 #if defined(REN_VK_BACKEND)
     [[nodiscard]] VkBuffer vk_handle() const { return handle_.buf; }
+    [[nodiscard]] const std::pair<eTexFormat, VkBufferView> &view(const int i) const { return handle_.views[i]; }
     [[nodiscard]] VkDeviceMemory mem() const { return dedicated_mem_; }
     [[nodiscard]] VkDeviceAddress vk_device_address() const;
 #elif defined(REN_GL_BACKEND) || defined(REN_SW_BACKEND)
     [[nodiscard]] uint32_t id() const { return handle_.buf; }
+    [[nodiscard]] std::pair<eTexFormat, uint32_t> view(const int i) const { return handle_.views[i]; }
 #endif
     [[nodiscard]] uint32_t generation() const { return handle_.generation; }
     [[nodiscard]] const MemAllocation &mem_alloc() const { return alloc_; }
@@ -141,6 +157,8 @@ class Buffer : public RefCounter {
 
     void Fill(uint32_t dst_offset, uint32_t size, uint32_t data, CommandBuffer cmd_buf);
     void UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf);
+
+    int AddBufferView(eTexFormat format);
 
     mutable eResState resource_state = eResState::Undefined;
 };

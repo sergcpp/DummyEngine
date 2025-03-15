@@ -93,7 +93,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             new_write.descriptorCount = 1;
-            new_write.pTexelBufferView = &b.handle.tex_buf->view();
+            new_write.pTexelBufferView = &b.handle.buf->view(b.handle.view_index).second;
 
             assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << b.loc);
@@ -122,7 +122,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
             new_write.descriptorCount = 1;
-            new_write.pTexelBufferView = &b.handle.tex_buf->view();
+            new_write.pTexelBufferView = &b.handle.buf->view(b.handle.view_index).second;
 
             assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << b.loc);

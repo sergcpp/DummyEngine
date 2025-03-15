@@ -16,7 +16,7 @@ void Eng::ExDebugOIT::Execute(FgBuilder &builder) {
     FgAllocBuf &oit_depth_buf = builder.GetReadBuffer(args_->oit_depth_buf);
     FgAllocTex &output_tex = builder.GetWriteTexture(args_->output_tex);
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, OITDebug::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.tbos[0]},
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UTBuf, OITDebug::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref},
                                      {Ren::eBindTarget::Image2D, OITDebug::OUT_IMG_SLOT, *output_tex.ref}};
 
     const Ren::Vec3u grp_count =

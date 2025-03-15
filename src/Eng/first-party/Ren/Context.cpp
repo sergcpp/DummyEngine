@@ -324,30 +324,6 @@ void Ren::Context::ReleaseTextures() {
     textures_.clear();
 }
 
-Ren::TexBufRef Ren::Context::CreateTextureBuffer(std::string_view name, BufRef buf, const eTexFormat format,
-                                                 const uint32_t offset, const uint32_t size) {
-    TexBufRef ref = texture_buffers_.FindByName(name);
-    if (!ref) {
-        ref = texture_buffers_.Insert(name, std::move(buf), format, offset, size, log_);
-    } else {
-        ref->Init(std::move(buf), format, offset, size, log_);
-    }
-
-    return ref;
-}
-
-void Ren::Context::ReleaseTextureBuffers() {
-    if (texture_buffers_.empty()) {
-        return;
-    }
-    log_->Error("---------REMAINING 1D TEXTURES--------");
-    for (const TextureBuffer &t : texture_buffers_) {
-        log_->Error("%s", t.name().c_str());
-    }
-    log_->Error("-----------------------------------");
-    texture_buffers_.clear();
-}
-
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Span<const uint8_t> data,
                                                       const TexParams &p, eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
@@ -487,14 +463,17 @@ void Ren::Context::ReleaseBuffers() {
 void Ren::Context::InitDefaultBuffers() {
     default_vertex_buf1_ =
         buffers_.Insert("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
+    default_vertex_buf1_->AddBufferView(eTexFormat::RGBA32F);
     default_vertex_buf2_ =
         buffers_.Insert("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
+    default_vertex_buf2_->AddBufferView(eTexFormat::RGBA32UI);
     default_skin_vertex_buf_ =
         buffers_.Insert("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_delta_buf_ =
         buffers_.Insert("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 1 * 1024 * 1024, 16);
     default_indices_buf_ =
         buffers_.Insert("default_ndx_buf", api_ctx_.get(), eBufType::VertexIndices, 1 * 1024 * 1024, 4);
+    default_indices_buf_->AddBufferView(eTexFormat::R32UI);
 }
 
 void Ren::Context::ReleaseDefaultBuffers() {
@@ -514,7 +493,6 @@ void Ren::Context::ReleaseAll() {
     ReleaseMaterials();
     ReleaseTextures();
     ReleaseTextureRegions();
-    ReleaseTextureBuffers();
     ReleaseBuffers();
 
     texture_atlas_ = {};

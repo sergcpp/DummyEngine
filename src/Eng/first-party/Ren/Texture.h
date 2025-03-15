@@ -35,9 +35,5 @@ using TexRef = StrongRef<Texture, NamedStorage<Texture>>;
 using WeakTexRef = WeakRef<Texture, NamedStorage<Texture>>;
 using TextureStorage = NamedStorage<Texture>;
 
-using TexBufRef = StrongRef<TextureBuffer, NamedStorage<TextureBuffer>>;
-using WeakTexBufRef = WeakRef<TextureBuffer, NamedStorage<TextureBuffer>>;
-using TextureBufferStorage = NamedStorage<TextureBuffer>;
-
 eTexUsage TexUsageFromState(eResState state);
 } // namespace Ren
