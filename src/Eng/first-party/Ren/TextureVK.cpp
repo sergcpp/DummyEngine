@@ -1250,8 +1250,9 @@ void Ren::Texture::SetSampling(const SamplingParams s) {
 }
 
 void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32_t src_level, const uint32_t src_x,
-                           const uint32_t src_y, Texture &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
-                           const uint32_t dst_y, const uint32_t dst_face, const uint32_t width, const uint32_t height) {
+                           const uint32_t src_y, const uint32_t src_z, Texture &dst_tex, const uint32_t dst_level,
+                           const uint32_t dst_x, const uint32_t dst_y, const uint32_t dst_z, const uint32_t dst_face,
+                           const uint32_t w, const uint32_t h, const uint32_t d) {
     assert(src_tex.resource_state == eResState::CopySrc);
     assert(dst_tex.resource_state == eResState::CopyDst);
 
@@ -1264,7 +1265,7 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
     reg.srcSubresource.baseArrayLayer = 0;
     reg.srcSubresource.layerCount = 1;
     reg.srcSubresource.mipLevel = src_level;
-    reg.srcOffset = {int32_t(src_x), int32_t(src_y), 0};
+    reg.srcOffset = {int32_t(src_x), int32_t(src_y), int32_t(src_z)};
     if (IsDepthFormat(dst_tex.params.format)) {
         reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
     } else {
@@ -1273,8 +1274,8 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
     reg.dstSubresource.baseArrayLayer = dst_face;
     reg.dstSubresource.layerCount = 1;
     reg.dstSubresource.mipLevel = dst_level;
-    reg.dstOffset = {int32_t(dst_x), int32_t(dst_y), 0};
-    reg.extent = {width, height, 1};
+    reg.dstOffset = {int32_t(dst_x), int32_t(dst_y), int32_t(dst_z)};
+    reg.extent = {w, h, d};
 
     src_tex.api_ctx()->vkCmdCopyImage(cmd_buf, src_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                       dst_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);

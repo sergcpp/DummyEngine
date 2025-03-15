@@ -460,12 +460,12 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 const int w = in_back_color_tex.ref->params.w, h = in_back_color_tex.ref->params.h;
 
                 if (p_list_->alpha_blend_start_index != -1) {
-                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0,
-                                     *out_back_color_tex.ref, 0, 0, 0, 0, w, h);
+                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_color_tex.ref, 0, 0, 0, 0,
+                                     *out_back_color_tex.ref, 0, 0, 0, 0, 0, w, h, 1);
                 }
                 if (i == 0 || p_list_->alpha_blend_start_index != -1) {
-                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0,
-                                     *out_back_depth_tex.ref, 0, 0, 0, 0, w, h);
+                    CopyImageToImage(builder.ctx().current_cmd_buf(), *in_back_depth_tex.ref, 0, 0, 0, 0,
+                                     *out_back_depth_tex.ref, 0, 0, 0, 0, 0, w, h, 1);
                 }
             });
         }

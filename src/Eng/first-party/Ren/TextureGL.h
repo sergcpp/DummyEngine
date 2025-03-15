@@ -59,10 +59,10 @@ class Texture : public RefCounter {
 
     Texture() = default;
     Texture(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *mem_allocs, ILog *log);
-    Texture(std::string_view name, ApiContext *api_ctx, const TexHandle &handle, const TexParams &_params,
+    Texture(std::string_view name, ApiContext *api_ctx, const TexHandle &handle, const TexParams &p,
             MemAllocation &&alloc, ILog *log)
         : name_(name) {
-        Init(handle, _params, std::move(alloc), log);
+        Init(handle, p, std::move(alloc), log);
     }
     Texture(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const TexParams &p,
             MemAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
@@ -110,8 +110,8 @@ class Texture : public RefCounter {
 };
 
 void CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
-                      Texture &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y, uint32_t dst_face,
-                      uint32_t width, uint32_t height);
+                      uint32_t src_z, Texture &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y,
+                      uint32_t dst_z, uint32_t dst_face, uint32_t w, uint32_t h, uint32_t d);
 
 void ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf);
 
