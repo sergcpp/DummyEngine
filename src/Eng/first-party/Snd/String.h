@@ -8,16 +8,15 @@
 // Pointer returned by c_str() is persistent and safe to use after std::move
 
 namespace Snd {
-template <typename Alloc = std::allocator<char>> class BasicString {
+template <typename Allocator = std::allocator<char>> class BasicString : public Allocator {
     char *str_;
     size_t len_;
-    Alloc alloc_;
 
   public:
     BasicString() : str_(nullptr), len_(0) {}
     explicit BasicString(const char *str) {
         len_ = strlen(str);
-        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        auto *storage = (uint32_t *)this->allocate(sizeof(uint32_t) + len_ + 1);
         // set number of users to 1
         *storage = 1;
         str_ = (char *)(storage + 1);
@@ -26,7 +25,7 @@ template <typename Alloc = std::allocator<char>> class BasicString {
 
     explicit BasicString(const char *start, const char *end) {
         len_ = end - start;
-        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        auto *storage = (uint32_t *)this->allocate(sizeof(uint32_t) + len_ + 1);
         // set number of users to 1
         *storage = 1;
         str_ = (char *)(storage + 1);
@@ -36,7 +35,7 @@ template <typename Alloc = std::allocator<char>> class BasicString {
 
     explicit BasicString(const std::string_view str) {
         len_ = str.length();
-        uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
+        auto *storage = (uint32_t *)this->allocate(sizeof(uint32_t) + len_ + 1);
         // set number of users to 1
         *storage = 1;
         str_ = (char *)(storage + 1);
@@ -54,12 +53,11 @@ template <typename Alloc = std::allocator<char>> class BasicString {
         }
     }
 
-    BasicString(BasicString &&rhs) noexcept {
+    BasicString(BasicString &&rhs) noexcept : Allocator(static_cast<Allocator &&>(rhs)) {
         len_ = rhs.len_;
         rhs.len_ = 0;
         str_ = rhs.str_;
         rhs.str_ = nullptr;
-        alloc_ = std::move(rhs.alloc_);
     }
 
     ~BasicString() { Release(); }
@@ -79,13 +77,14 @@ template <typename Alloc = std::allocator<char>> class BasicString {
     }
 
     BasicString &operator=(BasicString &&rhs) noexcept {
+        Allocator::operator=(static_cast<Allocator &&>(rhs));
+
         Release();
 
         len_ = rhs.len_;
         rhs.len_ = 0;
         str_ = rhs.str_;
         rhs.str_ = nullptr;
-        alloc_ = std::move(rhs.alloc_);
 
         return *this;
     }
@@ -106,7 +105,7 @@ template <typename Alloc = std::allocator<char>> class BasicString {
             --(*counter);
 
             if (!*counter) {
-                alloc_.deallocate((char *)counter, len_ + 1 + sizeof(uint32_t));
+                this->deallocate((char *)counter, len_ + 1 + sizeof(uint32_t));
             }
 
             str_ = nullptr;
@@ -157,6 +156,7 @@ template <typename Alloc = std::allocator<char>> class BasicString {
 
     friend bool operator!=(const std::string_view s1, const BasicString &s2) { return s1 != s2.str_; }
 };
+static_assert(sizeof(BasicString<>) == sizeof(void *) + sizeof(size_t));
 
 using String = BasicString<>;
 } // namespace Ren
