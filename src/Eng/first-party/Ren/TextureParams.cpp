@@ -3,18 +3,21 @@
 #include <algorithm>
 
 namespace Ren {
-#define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) #_0,
-static const std::string_view g_format_names[] = {
+#define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) #_0, _1,
+static const struct {
+    std::string_view name;
+    int channel_count;
+} g_format_props[] = {
 #include "TextureFormat.inl"
 };
 #undef X
 } // namespace Ren
 
-std::string_view Ren::TexFormatName(const eTexFormat format) { return g_format_names[uint8_t(format)]; }
+std::string_view Ren::TexFormatName(const eTexFormat format) { return g_format_props[uint8_t(format)].name; }
 
 Ren::eTexFormat Ren::TexFormat(std::string_view name) {
     for (int i = 0; i < int(eTexFormat::_Count); ++i) {
-        if (name == g_format_names[i]) {
+        if (name == g_format_props[i].name) {
             return eTexFormat(i);
         }
     }
@@ -22,13 +25,44 @@ Ren::eTexFormat Ren::TexFormat(std::string_view name) {
 }
 
 bool Ren::IsCompressedFormat(const eTexFormat format) {
+    static_assert(int(eTexFormat::_Count) == 66, "Update the list below!");
     switch (format) {
     case eTexFormat::BC1:
+    case eTexFormat::BC1_srgb:
     case eTexFormat::BC2:
+    case eTexFormat::BC2_srgb:
     case eTexFormat::BC3:
+    case eTexFormat::BC3_srgb:
     case eTexFormat::BC4:
     case eTexFormat::BC5:
     case eTexFormat::ASTC_4x4:
+    case eTexFormat::ASTC_4x4_srgb:
+    case eTexFormat::ASTC_5x4:
+    case eTexFormat::ASTC_5x4_srgb:
+    case eTexFormat::ASTC_5x5:
+    case eTexFormat::ASTC_5x5_srgb:
+    case eTexFormat::ASTC_6x5:
+    case eTexFormat::ASTC_6x5_srgb:
+    case eTexFormat::ASTC_6x6:
+    case eTexFormat::ASTC_6x6_srgb:
+    case eTexFormat::ASTC_8x5:
+    case eTexFormat::ASTC_8x5_srgb:
+    case eTexFormat::ASTC_8x6:
+    case eTexFormat::ASTC_8x6_srgb:
+    case eTexFormat::ASTC_8x8:
+    case eTexFormat::ASTC_8x8_srgb:
+    case eTexFormat::ASTC_10x5:
+    case eTexFormat::ASTC_10x5_srgb:
+    case eTexFormat::ASTC_10x6:
+    case eTexFormat::ASTC_10x6_srgb:
+    case eTexFormat::ASTC_10x8:
+    case eTexFormat::ASTC_10x8_srgb:
+    case eTexFormat::ASTC_10x10:
+    case eTexFormat::ASTC_10x10_srgb:
+    case eTexFormat::ASTC_12x10:
+    case eTexFormat::ASTC_12x10_srgb:
+    case eTexFormat::ASTC_12x12:
+    case eTexFormat::ASTC_12x12_srgb:
         return true;
     default:
         return false;
@@ -45,46 +79,4 @@ int Ren::CalcMipCount(const int w, const int h, const int min_res) {
     return mip_count;
 }
 
-int Ren::GetColorChannelCount(const eTexFormat format) {
-    static_assert(int(eTexFormat::_Count) == 46, "Update the list below!");
-    switch (format) {
-    case eTexFormat::RGBA8:
-    case eTexFormat::RGBA8_snorm:
-    case eTexFormat::BGRA8:
-    case eTexFormat::RGBA32F:
-    case eTexFormat::RGBA16F:
-    case eTexFormat::RGB10_A2:
-    case eTexFormat::BC2:
-    case eTexFormat::BC3:
-        return 4;
-    case eTexFormat::RGB8:
-    case eTexFormat::RGB32F:
-    case eTexFormat::RGB16F:
-    case eTexFormat::RG11F_B10F:
-    case eTexFormat::RGB9_E5:
-    case eTexFormat::BC1:
-        return 3;
-    case eTexFormat::RG8:
-    case eTexFormat::RG16:
-    case eTexFormat::RG16_snorm:
-    case eTexFormat::RG16F:
-    case eTexFormat::RG32F:
-    case eTexFormat::RG32UI:
-    case eTexFormat::BC5:
-        return 2;
-    case eTexFormat::R32F:
-    case eTexFormat::R16F:
-    case eTexFormat::R8:
-    // case eTexFormat::RawR16UI:
-    case eTexFormat::R32UI:
-    case eTexFormat::BC4:
-        return 1;
-    case eTexFormat::D16:
-    case eTexFormat::D24_S8:
-    case eTexFormat::D32_S8:
-    case eTexFormat::D32:
-    case eTexFormat::Undefined:
-    default:
-        return 0;
-    }
-}
+int Ren::GetColorChannelCount(const eTexFormat format) { return g_format_props[uint8_t(format)].channel_count; }

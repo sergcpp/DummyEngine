@@ -9,8 +9,8 @@ Ren::ProbeStorage::ProbeStorage()
 
 Ren::ProbeStorage::~ProbeStorage() { Destroy(); }
 
-bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eTexFormat format,
-                               const int res, const int capacity, ILog *log) {
+bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eTexFormat format, const int res,
+                               const int capacity, ILog *log) {
     Destroy();
 
     GLuint tex_id;
@@ -27,9 +27,8 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
 
     // allocate all mip levels
     if (IsCompressedFormat(format)) {
-        ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count,
-                                    GLInternalFormatFromTexFormat(format, false /* is_srgb */), res, res,
-                                    capacity * 6);
+        ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, GLInternalFormatFromTexFormat(format),
+                                    res, res, capacity * 6);
     } else {
         ren_glTextureStorage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, mip_count, compressed_tex_format, res, res,
                                     capacity * 6);
@@ -65,9 +64,9 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
 
                     for (int x_off = 0; x_off < _res; x_off += blank_block_res) {
                         if (!IsCompressedFormat(format)) {
-                            ren_glTextureSubImage3D_Comp(
-                                GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off, (layer * 6 + face), _init_res,
-                                _init_res, 1, GLFormatFromTexFormat(format), GL_UNSIGNED_BYTE, blank_block);
+                            ren_glTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off, y_off,
+                                                         (layer * 6 + face), _init_res, _init_res, 1,
+                                                         GLFormatFromTexFormat(format), GL_UNSIGNED_BYTE, blank_block);
                             CheckError("glTexSubImage2D", log);
                         } else {
                             ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, tex_id, level, x_off,
@@ -102,7 +101,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
 }
 
 bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int face, const eTexFormat format,
-                                const uint8_t *data, const int data_len, ILog *log) {
+                                     const uint8_t *data, const int data_len, ILog *log) {
     if (format_ != format) {
         return false;
     }
@@ -137,7 +136,7 @@ bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int
 }
 
 bool Ren::ProbeStorage::GetPixelData(const int level, const int layer, const int face, const int buf_size,
-                                uint8_t *out_pixels, ILog *log) const {
+                                     uint8_t *out_pixels, ILog *log) const {
 #if !defined(__ANDROID__)
     const int mip_res = int(unsigned(res_) >> unsigned(level));
     if (buf_size < 4 * mip_res * mip_res) {

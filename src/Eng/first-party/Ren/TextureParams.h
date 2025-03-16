@@ -42,15 +42,7 @@ const eTexFormat DefaultCompressedRGBA = eTexFormat::ASTC;
 const eTexFormat DefaultCompressedRGBA = eTexFormat::BC3;
 #endif
 
-enum class eTexFlags : uint8_t {
-    NoOwnership,
-    Signed,
-    SRGB,
-    NoRepeat,
-    ExtendedViews,
-    Stub,
-    CubeMap
-};
+enum class eTexFlags : uint8_t { NoOwnership, ExtendedViews, Stub, CubeMap };
 
 enum class eTexUsage : uint8_t { Transfer, Sampled, Storage, RenderTarget };
 
@@ -64,10 +56,15 @@ struct TexParams {
     eTexFormat format = eTexFormat::Undefined;
     SamplingParams sampling;
 
-    TexParams() {
-        mip_count = 1;
-        samples = 1;
+    TexParams() : mip_count(1), samples(1) {
+        assert(mip_count < 32);
+        assert(samples < 8);
     }
+    TexParams(const uint16_t _w, const uint16_t _h, const uint8_t _d, const uint8_t _mip_count, const uint8_t _samples,
+              const Bitmask<eTexFlags> _flags, const Bitmask<eTexUsage> _usage, const eTexFormat _format,
+              const SamplingParams _sampling)
+        : w(_w), h(_h), d(_d), mip_count(_mip_count), samples(_samples), flags(_flags), usage(_usage), format(_format),
+          sampling(_sampling) {}
 };
 static_assert(sizeof(TexParams) == 16, "!");
 
@@ -77,6 +74,31 @@ inline bool operator==(const TexParams &lhs, const TexParams &rhs) {
            lhs.sampling == rhs.sampling;
 }
 inline bool operator!=(const TexParams &lhs, const TexParams &rhs) { return !operator==(lhs, rhs); }
+
+struct TexParamsPacked {
+    uint16_t w = 0, h = 0;
+    uint8_t d = 0;
+    uint8_t mip_count : 5;
+    uint8_t samples : 3;
+    uint8_t flags : 4;
+    uint8_t usage : 4;
+    eTexFormat format = eTexFormat::Undefined;
+    SamplingParamsPacked sampling;
+
+    TexParamsPacked() : TexParamsPacked(TexParams{}) {}
+    TexParamsPacked(const TexParams &p)
+        : w(p.w), h(p.h), d(p.d), mip_count(p.mip_count), samples(p.samples), flags(p.flags), usage(p.usage),
+          format(p.format), sampling(p.sampling) {
+        assert(uint8_t(p.flags) < 16);
+        assert(uint8_t(p.usage) < 16);
+    }
+
+    operator TexParams() const {
+        return TexParams(w, h, d, mip_count, samples, Bitmask<eTexFlags>(flags), Bitmask<eTexUsage>(usage), format,
+                         SamplingParams{sampling});
+    }
+};
+static_assert(sizeof(TexParamsPacked) == 12, "!");
 
 int GetColorChannelCount(eTexFormat format);
 

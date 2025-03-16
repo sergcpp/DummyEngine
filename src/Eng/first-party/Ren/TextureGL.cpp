@@ -31,53 +31,6 @@ extern const uint32_t g_compare_func_gl[];
 
 uint32_t TextureHandleCounter = 0;
 
-GLenum ToSRGBFormat(const GLenum internal_format) {
-    switch (internal_format) {
-    case GL_RGB8:
-        return GL_SRGB8;
-    case GL_RGBA8:
-        return GL_SRGB8_ALPHA8;
-    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
-    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
-    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
-    case GL_COMPRESSED_RGBA_ASTC_4x4_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_5x4_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_5x5_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_6x5_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_6x6_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_8x5_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_8x6_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_8x8_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_10x5_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_10x6_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_10x8_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_10x10_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_12x10_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR;
-    case GL_COMPRESSED_RGBA_ASTC_12x12_KHR:
-        return GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR;
-    default:
-        assert(false && "Unsupported format!");
-    }
-
-    return 0xffffffff;
-}
-
 extern const uint32_t g_min_filter_gl[];
 extern const uint32_t g_mag_filter_gl[];
 extern const uint32_t g_wrap_mode_gl[];
@@ -177,7 +130,7 @@ void Ren::Texture::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllo
 }
 
 void Ren::Texture::Free() {
-    if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
+    if (params.format != eTexFormat::Undefined && !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
         auto tex_id = GLuint(handle_.id);
         glDeleteTextures(1, &tex_id);
         for (uint32_t view : handle_.views) {
@@ -192,13 +145,13 @@ void Ren::Texture::Free() {
 }
 
 void Ren::Texture::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
-                           const bool is_srgb, CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
+                           CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
     GLuint tex_id;
     glCreateTextures(samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
-    const GLuint internal_format = GLInternalFormatFromTexFormat(format, is_srgb);
+    const GLuint internal_format = GLInternalFormatFromTexFormat(format);
 
     if (!mip_count) {
         mip_count = CalcMipCount(w, h, 1);
@@ -244,16 +197,11 @@ void Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
     handle_ = new_handle;
     params.w = w;
     params.h = h;
-    if (is_srgb) {
-        params.flags |= eTexFlags::SRGB;
-    } else {
-        params.flags &= ~Bitmask(eTexFlags::SRGB);
-    }
     params.mip_count = mip_count;
     params.samples = samples;
     params.format = format;
 
-    if (params.flags & eTexFlags::ExtendedViews) {
+    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
         // create additional image views
         for (int j = 0; j < mip_count; ++j) {
             GLuint tex_view;
@@ -280,7 +228,7 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
     params = p;
 
     const auto format = (GLenum)GLFormatFromTexFormat(p.format),
-               internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format, (p.flags & eTexFlags::SRGB)),
+               internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format),
                type = (GLenum)GLTypeFromTexFormat(p.format);
 
     auto mip_count = GLsizei(p.mip_count);
@@ -350,7 +298,7 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
         handle_.views.push_back(tex_id);
     }
 
-    if (params.flags & eTexFlags::ExtendedViews) {
+    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
         // create additional image views
         for (int j = 0; j < mip_count; ++j) {
             GLuint tex_view;
@@ -382,15 +330,16 @@ void Ren::Texture::InitFromRAWData(const Buffer &sbuf, int data_off[6], const Te
 
     handle_ = {tex_id, TextureHandleCounter++};
     params = p;
-    params.flags |= eTexFlags::CubeMap;
+
+    auto flags = Bitmask<eTexFlags>{params.flags};
+    flags |= eTexFlags::CubeMap;
+    params.flags = uint8_t(flags);
 
     const auto format = (GLenum)GLFormatFromTexFormat(params.format),
-               internal_format = (GLenum)GLInternalFormatFromTexFormat(params.format, (p.flags & eTexFlags::SRGB)),
+               internal_format = (GLenum)GLInternalFormatFromTexFormat(params.format),
                type = (GLenum)GLTypeFromTexFormat(params.format);
 
     const int w = p.w, h = p.h;
-    const eTexFilter f = params.sampling.filter;
-
     const int mip_count = CalcMipCount(w, h, 1);
     params.mip_count = mip_count;
 
@@ -413,7 +362,7 @@ void Ren::Texture::InitFromRAWData(const Buffer &sbuf, int data_off[6], const Te
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    if (params.flags & eTexFlags::ExtendedViews) {
+    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
         // create additional image views
         for (int j = 0; j < mip_count; ++j) {
             for (int i = 0; i < 6; ++i) {
@@ -434,7 +383,7 @@ void Ren::Texture::InitFromRAWData(const Buffer &sbuf, int data_off[6], const Te
 void Ren::Texture::ApplySampling(SamplingParams sampling, ILog *log) {
     const auto tex_id = GLuint(handle_.id);
 
-    if (!(params.flags & eTexFlags::CubeMap)) {
+    if (!(Bitmask<eTexFlags>{params.flags} & eTexFlags::CubeMap)) {
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_FILTER,
                                      g_min_filter_gl[size_t(sampling.filter)]);
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAG_FILTER,
@@ -489,10 +438,10 @@ void Ren::Texture::SetSubImage(const int level, const int offsetx, const int off
 
     if (params.d == 0) {
         if (IsCompressedFormat(format)) {
-            ren_glCompressedTextureSubImage2D_Comp(
-                GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx), GLint(offsety), GLsizei(sizex),
-                GLsizei(sizey), GLInternalFormatFromTexFormat(format, (params.flags & eTexFlags::SRGB)),
-                GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
+            ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
+                                                   GLint(offsety), GLsizei(sizex), GLsizei(sizey),
+                                                   GLInternalFormatFromTexFormat(format), GLsizei(data_len),
+                                                   reinterpret_cast<const void *>(uintptr_t(data_off)));
         } else {
             ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
                                          GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
@@ -500,10 +449,10 @@ void Ren::Texture::SetSubImage(const int level, const int offsetx, const int off
         }
     } else {
         if (IsCompressedFormat(format)) {
-            ren_glCompressedTextureSubImage3D_Comp(
-                GL_TEXTURE_3D, GLuint(handle_.id), 0, GLint(offsetx), GLint(offsety), GLint(offsetz), GLsizei(sizex),
-                GLsizei(sizey), GLsizei(sizez), GLInternalFormatFromTexFormat(format, (params.flags & eTexFlags::SRGB)),
-                GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
+            ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, GLint(offsetx), GLint(offsety),
+                                                   GLint(offsetz), GLsizei(sizex), GLsizei(sizey), GLsizei(sizez),
+                                                   GLInternalFormatFromTexFormat(format), GLsizei(data_len),
+                                                   reinterpret_cast<const void *>(uintptr_t(data_off)));
         } else {
             ren_glTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, offsetx, offsety, offsetz, sizex, sizey,
                                          sizez, GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
@@ -551,9 +500,8 @@ void Ren::ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
 
 uint32_t Ren::GLFormatFromTexFormat(const eTexFormat format) { return g_formats_gl[size_t(format)].format; }
 
-uint32_t Ren::GLInternalFormatFromTexFormat(const eTexFormat format, const bool is_srgb) {
-    const uint32_t ret = g_formats_gl[size_t(format)].internal_format;
-    return is_srgb ? ToSRGBFormat(ret) : ret;
+uint32_t Ren::GLInternalFormatFromTexFormat(const eTexFormat format) {
+    return g_formats_gl[size_t(format)].internal_format;
 }
 
 uint32_t Ren::GLTypeFromTexFormat(const eTexFormat format) { return g_formats_gl[size_t(format)].type; }

@@ -796,11 +796,12 @@ void Eng::FgBuilder::ClearResources_Simple() {
         std::vector<Ren::TransitionInfo> transitions;
         transitions.reserve(textures_to_clear.size() + buffers_to_clear.size());
         for (const Ren::TexRef &t : textures_to_clear) {
-            if (t->params.usage & Ren::eTexUsage::Transfer) {
+            const Ren::TexParams p = t->params;
+            if (p.usage & Ren::eTexUsage::Transfer) {
                 transitions.emplace_back(t.get(), Ren::eResState::CopyDst);
-            } else if (t->params.usage & Ren::eTexUsage::Storage) {
+            } else if (p.usage & Ren::eTexUsage::Storage) {
                 transitions.emplace_back(t.get(), Ren::eResState::UnorderedAccess);
-            } else if (t->params.usage & Ren::eTexUsage::RenderTarget) {
+            } else if (p.usage & Ren::eTexUsage::RenderTarget) {
                 if (Ren::IsDepthFormat(t->params.format)) {
                     transitions.emplace_back(t.get(), Ren::eResState::DepthWrite);
                 } else {

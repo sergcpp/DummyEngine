@@ -45,7 +45,7 @@ GLbitfield GetGLBufStorageFlags(const eBufType type) {
 }
 #endif
 
-uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);
+uint32_t GLInternalFormatFromTexFormat(eTexFormat format);
 } // namespace Ren
 
 int Ren::Buffer::g_GenCounter = 0;
@@ -247,7 +247,7 @@ int Ren::Buffer::AddBufferView(const eTexFormat format) {
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
     glBindTexture(GL_TEXTURE_BUFFER, tex_id);
-    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format, false /* is_srgb */), GLuint(handle_.buf),
+    glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format), GLuint(handle_.buf),
                      0, size_);
     glBindTexture(GL_TEXTURE_BUFFER, 0);
 

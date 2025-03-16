@@ -118,15 +118,15 @@ const uint32_t DDSCAPS2_CUBEMAP_POSITIVEZ = 0x4000;
 const uint32_t DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x8000;
 const uint32_t DDSCAPS2_VOLUME = 0x200000;
 
-const uint32_t FourCC_BC1_UNORM =
+const uint32_t FourCC_BC1 =
     (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('1') << 24u);
-const uint32_t FourCC_BC2_UNORM =
+const uint32_t FourCC_BC2 =
     (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('3') << 24u);
-const uint32_t FourCC_BC3_UNORM =
+const uint32_t FourCC_BC3 =
     (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('5') << 24u);
-const uint32_t FourCC_BC4_UNORM =
+const uint32_t FourCC_BC4 =
     (uint32_t('B') << 0u) | (uint32_t('C') << 8u) | (uint32_t('4') << 16u) | (uint32_t('U') << 24u);
-const uint32_t FourCC_BC5_UNORM =
+const uint32_t FourCC_BC5 =
     (uint32_t('A') << 0u) | (uint32_t('T') << 8u) | (uint32_t('I') << 16u) | (uint32_t('2') << 24u);
 
 struct DDSHeader {

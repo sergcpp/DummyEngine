@@ -277,7 +277,8 @@ Ren::TexRef Ren::Context::LoadTexture(std::string_view name, Span<const uint8_t>
         ref = textures_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
         (*load_status) = eTexLoadStatus::Found;
-        if ((ref->params.flags & eTexFlags::Stub) && !(p.flags & eTexFlags::Stub) && !data.empty()) {
+        if ((Bitmask<eTexFlags>{ref->params.flags} & eTexFlags::Stub) && !(p.flags & eTexFlags::Stub) &&
+            !data.empty()) {
             ref->Init(data, p, mem_allocs, load_status, log_);
         }
     }
@@ -291,7 +292,7 @@ Ren::TexRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint
         ref = textures_.Insert(name, api_ctx_.get(), data, p, mem_allocs, load_status, log_);
     } else {
         (*load_status) = eTexLoadStatus::Found;
-        if ((ref->params.flags & eTexFlags::Stub) && (p.flags & eTexFlags::Stub) && data) {
+        if ((Bitmask<eTexFlags>{ref->params.flags} & eTexFlags::Stub) && (p.flags & eTexFlags::Stub) && data) {
             ref->Init(data, p, mem_allocs, load_status, log_);
         }
     }
@@ -301,7 +302,7 @@ Ren::TexRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint
 
 void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Texture &tex)> &callback) {
     for (Texture &tex : textures_) {
-        if (bool(tex.params.flags & mask)) {
+        if (Bitmask<eTexFlags>{tex.params.flags} & mask) {
             callback(tex);
         }
     }
@@ -309,7 +310,7 @@ void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Textur
 
 int Ren::Context::NumTexturesNotReady() {
     return int(std::count_if(textures_.begin(), textures_.end(),
-                             [](const Texture &t) { return bool(t.params.flags & eTexFlags::Stub); }));
+                             [](const Texture &t) { return Bitmask<eTexFlags>{t.params.flags} & eTexFlags::Stub; }));
 }
 
 void Ren::Context::ReleaseTextures() {

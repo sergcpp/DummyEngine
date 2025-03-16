@@ -244,13 +244,11 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
             params.format = eTexFormat::RGBA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_SRGB) {
-            params.format = eTexFormat::RGBA8;
-            params.flags |= eTexFlags::SRGB;
+            params.format = eTexFormat::RGBA8_srgb;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {
             params.format = eTexFormat::BGRA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
-            params.format = eTexFormat::BGRA8;
-            params.flags |= eTexFlags::SRGB;
+            params.format = eTexFormat::BGRA8_srgb;
         }
         params.usage = Bitmask(eTexUsage::RenderTarget);
         params.flags |= eTexFlags::NoOwnership;
@@ -330,8 +328,7 @@ void Ren::Context::Resize(const int w, const int h) {
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {
             params.format = eTexFormat::BGRA8;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
-            params.format = eTexFormat::BGRA8;
-            params.flags |= eTexFlags::SRGB;
+            params.format = eTexFormat::BGRA8_srgb;
         }
         params.usage = Bitmask(eTexUsage::RenderTarget);
         params.flags |= eTexFlags::NoOwnership;

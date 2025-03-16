@@ -385,10 +385,10 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
             {Ren::eTexFormat::RGBA8, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
              Ren::eStoreOp::Store},
 #endif
-            {Ren::eTexFormat::RGBA8, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal, Ren::eLoadOp::Load,
-             Ren::eStoreOp::Store}};
+            {Ren::eTexFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
-        color_rts[2].flags = Ren::eTexFlags::SRGB;
+        // color_rts[2].flags = Ren::eTexFlags::SRGB;
 
         // const auto depth_format =
         //     ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
@@ -1013,7 +1013,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
             frame_textures.specular_params.format = Ren::eTexFormat::RGBA8;
-            // frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         }
 
@@ -1021,7 +1020,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         frame_textures.albedo_params.w = view_state_.scr_res[0];
         frame_textures.albedo_params.h = view_state_.scr_res[1];
         frame_textures.albedo_params.format = Ren::eTexFormat::RGBA8;
-        // frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         //

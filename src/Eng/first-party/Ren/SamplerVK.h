@@ -9,7 +9,7 @@ struct ApiContext;
 class Sampler : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
     VkSampler handle_ = VK_NULL_HANDLE;
-    SamplingParams params_;
+    SamplingParamsPacked params_;
 
   public:
     Sampler() = default;

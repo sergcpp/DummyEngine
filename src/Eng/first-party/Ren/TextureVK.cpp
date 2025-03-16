@@ -32,54 +32,6 @@ static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT == 4, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT == 8, "!");
 
-VkFormat ToSRGBFormat(const VkFormat format) {
-    switch (format) {
-    case VK_FORMAT_R8G8B8_UNORM:
-        return VK_FORMAT_R8G8B8_SRGB;
-    case VK_FORMAT_R8G8B8A8_UNORM:
-        return VK_FORMAT_R8G8B8A8_SRGB;
-    case VK_FORMAT_B8G8R8A8_UNORM:
-        return VK_FORMAT_B8G8R8A8_SRGB;
-    case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
-        return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
-    case VK_FORMAT_BC2_UNORM_BLOCK:
-        return VK_FORMAT_BC2_SRGB_BLOCK;
-    case VK_FORMAT_BC3_UNORM_BLOCK:
-        return VK_FORMAT_BC3_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_4x4_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_5x4_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_5x4_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_5x5_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_5x5_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_6x5_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_6x5_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_6x6_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_6x6_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_8x5_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_8x5_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_8x6_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_8x6_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_8x8_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_8x8_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_10x5_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_10x5_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_10x6_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_10x6_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_10x8_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_10x8_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_10x10_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_10x10_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_12x10_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_12x10_SRGB_BLOCK;
-    case VK_FORMAT_ASTC_12x12_UNORM_BLOCK:
-        return VK_FORMAT_ASTC_12x12_SRGB_BLOCK;
-    default:
-        assert(false && "Unsupported format!");
-    }
-    return VK_FORMAT_UNDEFINED;
-}
-
 VkImageUsageFlags to_vk_image_usage(const Bitmask<eTexUsage> usage, const eTexFormat format) {
     VkImageUsageFlags ret = 0;
     if (usage & eTexUsage::Transfer) {
@@ -165,15 +117,12 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
     alloc_ = std::move(alloc);
     params = _params;
 
-    if (handle.views[0] == VkImageView{} && params.usage != Bitmask(eTexUsage::Transfer) &&
-        !bool(params.flags & eTexFlags::NoOwnership)) {
+    if (handle.views[0] == VkImageView{} && Bitmask<eTexUsage>{params.usage} != Bitmask(eTexUsage::Transfer) &&
+        !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_formats_vk[size_t(params.format)];
-        if (bool(params.flags & eTexFlags::SRGB)) {
-            view_info.format = ToSRGBFormat(view_info.format);
-        }
         if (IsDepthStencilFormat(params.format)) {
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
         } else if (IsDepthFormat(params.format)) {
@@ -214,16 +163,13 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
         }
 #endif
 
-        if (params.flags & eTexFlags::ExtendedViews) {
+        if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
             // create additional image views
             for (int j = 0; j < params.mip_count; ++j) {
                 VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
                 view_info.image = handle_.img;
                 view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
                 view_info.format = g_formats_vk[size_t(params.format)];
-                if (params.flags & eTexFlags::SRGB) {
-                    view_info.format = ToSRGBFormat(view_info.format);
-                }
                 view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 view_info.subresourceRange.baseMipLevel = j;
                 view_info.subresourceRange.levelCount = 1;
@@ -249,7 +195,7 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
         }
     }
 
-    if (handle_.sampler == VkSampler{} && !bool(params.flags & eTexFlags::NoOwnership)) {
+    if (handle_.sampler == VkSampler{} && !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
         SetSampling(params.sampling);
     }
 }
@@ -304,7 +250,7 @@ void Ren::Texture::Init(Span<const uint8_t> data[6], const TexParams &p, MemAllo
 }
 
 void Ren::Texture::Free() {
-    if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
+    if (params.format != eTexFormat::Undefined && !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
         for (VkImageView view : handle_.views) {
             if (view) {
                 api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(view);
@@ -320,7 +266,7 @@ void Ren::Texture::Free() {
 }
 
 void Ren::Texture::FreeImmediate() {
-    if (params.format != eTexFormat::Undefined && !(params.flags & eTexFlags::NoOwnership)) {
+    if (params.format != eTexFormat::Undefined && !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
         for (VkImageView view : handle_.views) {
             if (view) {
                 api_ctx_->vkDestroyImageView(api_ctx_->device, view, nullptr);
@@ -336,7 +282,7 @@ void Ren::Texture::FreeImmediate() {
 }
 
 bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
-                           const bool is_srgb, CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
+                           CommandBuffer cmd_buf, MemAllocators *mem_allocs, ILog *log) {
     VkImage new_image = VK_NULL_HANDLE;
     VkImageView new_image_view = VK_NULL_HANDLE;
     MemAllocation new_alloc = {};
@@ -355,13 +301,10 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
         img_info.format = g_formats_vk[size_t(format)];
-        if (is_srgb) {
-            img_info.format = ToSRGBFormat(img_info.format);
-        }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         assert(uint8_t(params.usage) != 0);
-        img_info.usage = to_vk_image_usage(params.usage, format);
+        img_info.usage = to_vk_image_usage(Bitmask<eTexUsage>{params.usage}, format);
 
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VkSampleCountFlagBits(samples);
@@ -405,9 +348,6 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
         view_info.image = new_image;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_formats_vk[size_t(format)];
-        if (is_srgb) {
-            view_info.format = ToSRGBFormat(view_info.format);
-        }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = mip_count;
@@ -545,25 +485,17 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
     alloc_ = std::move(new_alloc);
     params.w = w;
     params.h = h;
-    if (is_srgb) {
-        params.flags |= eTexFlags::SRGB;
-    } else {
-        params.flags &= ~Bitmask(eTexFlags::SRGB);
-    }
     params.mip_count = mip_count;
     params.samples = samples;
     params.format = format;
 
-    if (params.flags & eTexFlags::ExtendedViews) {
+    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
         // create additional image views
         for (int j = 0; j < mip_count; ++j) {
             VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
             view_info.image = handle_.img;
             view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
             view_info.format = g_formats_vk[size_t(params.format)];
-            if (params.flags & eTexFlags::SRGB) {
-                view_info.format = ToSRGBFormat(view_info.format);
-            }
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             view_info.subresourceRange.baseMipLevel = j;
             view_info.subresourceRange.levelCount = 1;
@@ -614,9 +546,6 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
         img_info.format = g_formats_vk[size_t(p.format)];
-        if (p.flags & eTexFlags::SRGB) {
-            img_info.format = ToSRGBFormat(img_info.format);
-        }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         assert(uint8_t(p.usage) != 0);
@@ -668,9 +597,6 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
         view_info.image = handle_.img;
         view_info.viewType = p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_formats_vk[size_t(p.format)];
-        if (p.flags & eTexFlags::SRGB) {
-            view_info.format = ToSRGBFormat(view_info.format);
-        }
         if (IsDepthStencilFormat(p.format)) {
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
         } else if (IsDepthFormat(p.format)) {
@@ -711,16 +637,13 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
         }
 #endif
 
-        if (params.flags & eTexFlags::ExtendedViews) {
+        if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
             // create additional image views
             for (int j = 0; j < mip_count; ++j) {
                 VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
                 view_info.image = handle_.img;
                 view_info.viewType = p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D;
                 view_info.format = g_formats_vk[size_t(p.format)];
-                if (p.flags & eTexFlags::SRGB) {
-                    view_info.format = ToSRGBFormat(view_info.format);
-                }
                 view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 view_info.subresourceRange.baseMipLevel = j;
                 view_info.subresourceRange.levelCount = 1;
@@ -881,9 +804,6 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 6;
         img_info.format = g_formats_vk[size_t(p.format)];
-        if (p.flags & eTexFlags::SRGB) {
-            img_info.format = ToSRGBFormat(img_info.format);
-        }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         assert(uint8_t(p.usage) != 0);
@@ -929,9 +849,6 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_formats_vk[size_t(p.format)];
-        if (p.flags & eTexFlags::SRGB) {
-            view_info.format = ToSRGBFormat(view_info.format);
-        }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = mip_count;
@@ -953,7 +870,7 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
 #endif
     }
 
-    if (params.flags & eTexFlags::ExtendedViews) {
+    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
         // create additional image views
         for (int j = 0; j < mip_count; ++j) {
             for (int i = 0; i < 6; ++i) {
@@ -961,9 +878,6 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
                 view_info.image = handle_.img;
                 view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
                 view_info.format = g_formats_vk[size_t(p.format)];
-                if (p.flags & eTexFlags::SRGB) {
-                    view_info.format = ToSRGBFormat(view_info.format);
-                }
                 view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 view_info.subresourceRange.baseMipLevel = j;
                 view_info.subresourceRange.levelCount = 1;

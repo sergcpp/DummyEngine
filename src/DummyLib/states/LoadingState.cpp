@@ -139,7 +139,7 @@ void LoadingState::Draw() {
     std::string loading_text = "Loading";
     const float text_width = font_->GetWidth(loading_text, ui_root_);
 
-    const uint64_t timing = (Sys::GetTimeUs() - loading_start_) % 1000000;
+    const uint64_t timing = (fr_info_.cur_time_us - loading_start_) % 1000000;
     if (timing > 256000) {
         loading_text += ".";
     }
@@ -161,8 +161,8 @@ void LoadingState::Draw() {
         Loading::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, ren_ctx_->w(), ren_ctx_->h()};
         uniform_params.tex_size = Ren::Vec2f{float(ren_ctx_->w()), float(ren_ctx_->h())};
-        uniform_params.time = float(Sys::GetTimeS());
-        uniform_params.fade = std::min(float((Sys::GetTimeUs() - loading_start_) / 1000000.0), 1.0f);
+        uniform_params.time = float(fr_info_.cur_time_us);
+        uniform_params.fade = std::min(float((fr_info_.cur_time_us - loading_start_) / 1000000.0), 1.0f);
 
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);

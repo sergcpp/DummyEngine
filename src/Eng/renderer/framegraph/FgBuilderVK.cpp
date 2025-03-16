@@ -13,7 +13,6 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, eBufType typ
 VkMemoryPropertyFlags GetVkMemoryPropertyFlags(eBufType type);
 uint32_t FindMemoryType(uint32_t search_from, const VkPhysicalDeviceMemoryProperties *mem_properties,
                         uint32_t mem_type_bits, VkMemoryPropertyFlags desired_mem_flags, VkDeviceSize desired_size);
-VkFormat ToSRGBFormat(VkFormat format);
 VkImageUsageFlags to_vk_image_usage(Bitmask<eTexUsage> usage, eTexFormat format);
 } // namespace Ren
 
@@ -174,9 +173,6 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             img_info.mipLevels = mip_count;
             img_info.arrayLayers = 1;
             img_info.format = Ren::VKFormatFromTexFormat(p.format);
-            if (p.flags & Ren::eTexFlags::SRGB) {
-                img_info.format = Ren::ToSRGBFormat(img_info.format);
-            }
             img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
             img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             assert(uint8_t(p.usage) != 0);

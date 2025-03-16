@@ -134,12 +134,15 @@ void Eng::Renderer::InitSkyResources() {
                 const std::string_view curl = "assets_pc/textures/internal/curl.dds";
 
                 Ren::TexParams p;
-                p.flags = Ren::eTexFlags::SRGB;
+                //p.flags = Ren::eTexFlags::SRGB;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
                 const std::vector<uint8_t> data = LoadDDS(curl, &p);
+                assert(p.format == Ren::eTexFormat::RGBA8);
+                p.format = Ren::eTexFormat::RGBA8_srgb;
+
                 if (!data.empty()) {
                     Ren::eTexLoadStatus status;
                     sky_curl_tex_ = ctx_.LoadTexture(curl, data, p, ctx_.default_mem_allocs(), &status);

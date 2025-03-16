@@ -127,7 +127,7 @@ struct RenderTargetInfo {
         if (rt.ref) {
             format = rt.ref->params.format;
             samples = rt.ref->params.samples;
-            flags = rt.ref->params.flags;
+            flags = Bitmask<eTexFlags>{rt.ref->params.flags};
 #if defined(REN_VK_BACKEND)
             layout = eImageLayout(VKImageLayoutForState(rt.ref->resource_state));
 #endif

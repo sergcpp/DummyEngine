@@ -8,8 +8,6 @@
 
 namespace Ren {
 extern const VkFormat g_formats_vk[];
-
-VkFormat ToSRGBFormat(VkFormat format);
 } // namespace Ren
 
 Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res, const int mip_count,
@@ -33,9 +31,6 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             img_info.mipLevels = mip_count_;
             img_info.arrayLayers = 1;
             img_info.format = g_formats_vk[size_t(formats[i])];
-            if (flags[i] & eTexFlags::SRGB) {
-                img_info.format = ToSRGBFormat(img_info.format);
-            }
             img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
             img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             img_info.usage =

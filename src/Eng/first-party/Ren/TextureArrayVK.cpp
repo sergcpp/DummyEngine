@@ -9,7 +9,6 @@
 namespace Ren {
 extern const VkFormat g_formats_vk[];
 
-VkFormat ToSRGBFormat(VkFormat format);
 VkImageUsageFlags to_vk_image_usage(Bitmask<eTexUsage> usage, eTexFormat format);
 } // namespace Ren
 

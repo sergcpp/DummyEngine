@@ -17,10 +17,8 @@ Ren::Texture2DArray::Texture2DArray(ApiContext *api_ctx, const std::string_view 
     GLuint tex_id;
     ren_glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex_id);
 
-    // TODO: add srgb here
-
-    ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
-                                GLInternalFormatFromTexFormat(format, false /* is_srgb */), w, h, layer_count);
+    ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count, GLInternalFormatFromTexFormat(format), w, h,
+                                layer_count);
 
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MIN_FILTER, g_min_filter_gl[size_t(filter_)]);
     ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MAG_FILTER, g_mag_filter_gl[size_t(filter_)]);

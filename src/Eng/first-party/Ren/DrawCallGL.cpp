@@ -73,10 +73,10 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
                                        GLuint(b.handle.buf->view(b.handle.view_index).second));
         } else if (b.trg == eBindTarget::STBufRO) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(0).second), 0, GL_FALSE, 0,
-                               GL_READ_ONLY, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first, false));
+                               GL_READ_ONLY, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first));
         } else if (b.trg == eBindTarget::STBufRW) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(0).second), 0, GL_FALSE, 0,
-                               GL_READ_WRITE, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first, false));
+                               GL_READ_WRITE, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first));
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Sampler) {
@@ -87,10 +87,10 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
                 texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
             }
             glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, GL_FALSE, 0, GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.tex->params.format, false));
+                               GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         } else if (b.trg == eBindTarget::Image2DArray) {
             glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex2d_arr->id()), 0, GL_TRUE, 0, GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.tex2d_arr->format(), false));
+                               GLInternalFormatFromTexFormat(b.handle.tex2d_arr->format()));
         }
     }
 
@@ -148,10 +148,10 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
         } else if (b.trg == eBindTarget::Image2D) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.tex->params.format, false));
+                               GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         } else if (b.trg == eBindTarget::Image2DArray) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()), 0, GL_TRUE, 0, GL_READ_WRITE,
-                               GLInternalFormatFromTexFormat(b.handle.tex2d_arr->format(), false));
+                               GLInternalFormatFromTexFormat(b.handle.tex2d_arr->format()));
         }
     }
 

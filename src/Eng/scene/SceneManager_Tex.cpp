@@ -342,13 +342,13 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                 // stage_buf->fence.ClientWaitSync();
                 ren_ctx_.BegSingleTimeCommands(stage_buf->cmd_buf);
 
-                Ren::TexParams &p = req->ref->params;
+                Ren::TexParams p = req->ref->params;
                 const int new_mip_count =
                     (p.flags & Ren::eTexFlags::Stub) ? req->mip_count_to_init : (p.mip_count + req->mip_count_to_init);
                 p.flags &= ~Ren::Bitmask(Ren::eTexFlags::Stub);
+                req->ref->params = p;
 
-                req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format,
-                                  (p.flags & Ren::eTexFlags::SRGB), stage_buf->cmd_buf,
+                req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format, stage_buf->cmd_buf,
                                   scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
                 int data_off = int(req->buf->data_off());
@@ -410,8 +410,8 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
             const int w = std::max(p.w >> p.mip_count, 1);
             const int h = std::max(p.h >> p.mip_count, 1);
 
-            req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, (p.flags & Ren::eTexFlags::SRGB),
-                             ren_ctx_.current_cmd_buf(), scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
+            req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, ren_ctx_.current_cmd_buf(),
+                             scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
             SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
@@ -635,7 +635,7 @@ void Eng::SceneManager::ForceTextureReload() {
 
     // Reset textures to 1x1 mip and send to processing
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
-        Ren::TexParams &p = it->params;
+        Ren::TexParams p = it->params;
         p.flags |= Ren::eTexFlags::Stub;
 
         // drop to lowest lod
@@ -647,8 +647,8 @@ void Eng::SceneManager::ForceTextureReload() {
             continue;
         }
 
-        it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, (p.flags & Ren::eTexFlags::SRGB),
-                    ren_ctx_.current_cmd_buf(), scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
+        it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, ren_ctx_.current_cmd_buf(),
+                    scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
         img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 

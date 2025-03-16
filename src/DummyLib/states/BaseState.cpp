@@ -714,13 +714,15 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         Ren::TexParams params;
         params.w = viewer_->width;
         params.h = viewer_->height;
+#if defined(REN_GL_BACKEND)
+        params.format = Ren::eTexFormat::RGBA8_srgb;
+#else
         params.format = Ren::eTexFormat::RGBA8;
+#endif
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Transfer;
-#if defined(REN_GL_BACKEND)
-        params.flags = Ren::eTexFlags::SRGB;
-#endif
+
 
         Ren::eTexLoadStatus status;
         capture_result_ = ren_ctx_->LoadTexture("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);

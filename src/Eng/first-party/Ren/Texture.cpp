@@ -41,17 +41,48 @@ static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count), "!");
 } // namespace Ren
 
 int Ren::GetBlockLenBytes(const eTexFormat format) {
+    static_assert(int(eTexFormat::_Count) == 66, "Update the list below!");
     switch (format) {
     case eTexFormat::BC1:
+    case eTexFormat::BC1_srgb:
         return BlockSize_BC1;
     case eTexFormat::BC2:
+    case eTexFormat::BC2_srgb:
     case eTexFormat::BC3:
+    case eTexFormat::BC3_srgb:
         return BlockSize_BC3;
     case eTexFormat::BC4:
         return BlockSize_BC4;
     case eTexFormat::BC5:
         return BlockSize_BC5;
     case eTexFormat::ASTC_4x4:
+    case eTexFormat::ASTC_4x4_srgb:
+    case eTexFormat::ASTC_5x4:
+    case eTexFormat::ASTC_5x4_srgb:
+    case eTexFormat::ASTC_5x5:
+    case eTexFormat::ASTC_5x5_srgb:
+    case eTexFormat::ASTC_6x5:
+    case eTexFormat::ASTC_6x5_srgb:
+    case eTexFormat::ASTC_6x6:
+    case eTexFormat::ASTC_6x6_srgb:
+    case eTexFormat::ASTC_8x5:
+    case eTexFormat::ASTC_8x5_srgb:
+    case eTexFormat::ASTC_8x6:
+    case eTexFormat::ASTC_8x6_srgb:
+    case eTexFormat::ASTC_8x8:
+    case eTexFormat::ASTC_8x8_srgb:
+    case eTexFormat::ASTC_10x5:
+    case eTexFormat::ASTC_10x5_srgb:
+    case eTexFormat::ASTC_10x6:
+    case eTexFormat::ASTC_10x6_srgb:
+    case eTexFormat::ASTC_10x8:
+    case eTexFormat::ASTC_10x8_srgb:
+    case eTexFormat::ASTC_10x10:
+    case eTexFormat::ASTC_10x10_srgb:
+    case eTexFormat::ASTC_12x10:
+    case eTexFormat::ASTC_12x10_srgb:
+    case eTexFormat::ASTC_12x12:
+    case eTexFormat::ASTC_12x12_srgb:
         assert(false);
         break;
     default:
@@ -258,15 +289,16 @@ void Ren::ParseDDSHeader(const DDSHeader &hdr, TexParams *params) {
     //params->d = uint16_t(hdr.dwDepth);
     params->mip_count = uint8_t(hdr.dwMipMapCount);
 
-    if (hdr.sPixelFormat.dwFourCC == FourCC_BC1_UNORM) {
-        params->format = eTexFormat::BC1;
-    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC2_UNORM) {
+    if (hdr.sPixelFormat.dwFourCC == FourCC_BC1) {
+        // assume SRGB by default
+        params->format = eTexFormat::BC1_srgb;
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC2) {
         params->format = eTexFormat::BC2;
-    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC3_UNORM) {
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC3) {
         params->format = eTexFormat::BC3;
-    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC4_UNORM) {
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC4) {
         params->format = eTexFormat::BC4;
-    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC5_UNORM) {
+    } else if (hdr.sPixelFormat.dwFourCC == FourCC_BC5) {
         params->format = eTexFormat::BC5;
     } else {
         if (hdr.sPixelFormat.dwFlags & DDPF_RGB) {

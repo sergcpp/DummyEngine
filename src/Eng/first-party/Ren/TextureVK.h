@@ -68,7 +68,7 @@ class Texture : public RefCounter {
                          const TexParams &p, ILog *log);
 
   public:
-    TexParams params;
+    TexParamsPacked params;
 
     uint32_t first_user = 0xffffffff;
     mutable eResState resource_state = eResState::Undefined;
@@ -101,7 +101,7 @@ class Texture : public RefCounter {
     void Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
               ILog *log);
 
-    bool Realloc(int w, int h, int mip_count, int samples, eTexFormat format, bool is_srgb, CommandBuffer cmd_buf,
+    bool Realloc(int w, int h, int mip_count, int samples, eTexFormat format, CommandBuffer cmd_buf,
                  MemAllocators *mem_allocs, ILog *log);
 
     [[nodiscard]] const TexHandle &handle() const { return handle_; }

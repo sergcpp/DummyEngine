@@ -53,7 +53,7 @@ class Texture : public RefCounter {
     void InitFromRAWData(const Buffer &sbuf, int data_off[6], const TexParams &p, ILog *log);
 
   public:
-    TexParams params;
+    TexParamsPacked params;
 
     uint32_t first_user = 0xffffffff;
 
@@ -87,7 +87,7 @@ class Texture : public RefCounter {
     void Init(Span<const uint8_t> data[6], const TexParams &p, MemAllocators *mem_allocs, eTexLoadStatus *load_status,
               ILog *log);
 
-    void Realloc(int w, int h, int mip_count, int samples, eTexFormat format, bool is_srgb, CommandBuffer cmd_buf,
+    void Realloc(int w, int h, int mip_count, int samples, eTexFormat format, CommandBuffer cmd_buf,
                  MemAllocators *mem_allocs, ILog *log);
 
     [[nodiscard]] TexHandle handle() const { return handle_; }
@@ -116,7 +116,7 @@ void CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, uint32_t src_leve
 void ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf);
 
 uint32_t GLFormatFromTexFormat(eTexFormat format);
-uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);
+uint32_t GLInternalFormatFromTexFormat(eTexFormat format);
 uint32_t GLTypeFromTexFormat(eTexFormat format);
 
 void GLUnbindTextureUnits(int start, int count);

@@ -370,13 +370,13 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     header.sPixelFormat.dwFlags = Ren::DDPF_FOURCC;
 
     if (channels == 1) {
-        header.sPixelFormat.dwFourCC = Ren::FourCC_BC4_UNORM;
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC4;
     } else if (channels == 2) {
-        header.sPixelFormat.dwFourCC = Ren::FourCC_BC5_UNORM;
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC5;
     } else if (!use_BC3) {
-        header.sPixelFormat.dwFourCC = Ren::FourCC_BC1_UNORM;
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC1;
     } else {
-        header.sPixelFormat.dwFourCC = Ren::FourCC_BC3_UNORM;
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC3;
     }
 
     header.sCaps.dwCaps1 = Ren::DDSCAPS_TEXTURE | Ren::DDSCAPS_MIPMAP;

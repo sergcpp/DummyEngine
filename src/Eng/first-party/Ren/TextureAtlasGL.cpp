@@ -23,9 +23,9 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
 
         const GLenum compressed_tex_format =
 #if !defined(__ANDROID__)
-            (flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            /*(flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT :*/ GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 #else
-            (flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+            /*(flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR :*/ GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
 
         formats_[i] = formats[i];
@@ -49,7 +49,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             }
             internal_format = compressed_tex_format;
         } else {
-            internal_format = GLInternalFormatFromTexFormat(formats_[i], (flags[i] & eTexFlags::SRGB));
+            internal_format = GLInternalFormatFromTexFormat(formats_[i]);
         }
 
         ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, w, h);
@@ -154,9 +154,9 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
     if (IsCompressedFormat(format)) {
         const GLenum tex_format =
 #if !defined(__ANDROID__)
-            (flags & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            /*(flags & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT :*/ GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 #else
-            (flags & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+            /*(flags & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR :*/ GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
         ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(tex_ids_[layer]), level, pos[0], pos[1], res[0],
                                                res[1], tex_format, data_len,
