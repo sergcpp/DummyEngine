@@ -161,8 +161,8 @@ void LoadingState::Draw() {
         Loading::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, ren_ctx_->w(), ren_ctx_->h()};
         uniform_params.tex_size = Ren::Vec2f{float(ren_ctx_->w()), float(ren_ctx_->h())};
-        uniform_params.time = float(fr_info_.cur_time_us);
-        uniform_params.fade = std::min(float((fr_info_.cur_time_us - loading_start_) / 1000000.0), 1.0f);
+        uniform_params.time = float(fr_info_.cur_time_us * 0.000001);
+        uniform_params.fade = std::min(float((fr_info_.cur_time_us - loading_start_) * 0.000001), 1.0f);
 
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
