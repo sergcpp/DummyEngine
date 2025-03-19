@@ -14,7 +14,6 @@ class ILog;
 class Pipeline;
 class ProbeStorage;
 class Texture;
-class Texture2DArray;
 
 enum class eBindTarget : uint16_t {
     Tex2D,
@@ -47,7 +46,6 @@ struct OpaqueHandle {
         const Texture *tex;
         const Buffer *buf;
         const ProbeStorage *cube_arr;
-        const Texture2DArray *tex2d_arr;
 #if defined(REN_VK_BACKEND)
         const AccStructureVK *acc_struct;
 #endif
@@ -61,7 +59,6 @@ struct OpaqueHandle {
         : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
     OpaqueHandle(const Buffer &_buf, int _view_index = 0) : buf(&_buf), view_index(_view_index) {}
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
-    OpaqueHandle(const Texture2DArray &_tex2d_arr) : tex2d_arr(&_tex2d_arr) {}
     OpaqueHandle(const Sampler &_sampler) : sampler(&_sampler) {}
 #if defined(REN_VK_BACKEND)
     OpaqueHandle(const AccStructureVK &_acc_struct) : acc_struct(&_acc_struct) {}

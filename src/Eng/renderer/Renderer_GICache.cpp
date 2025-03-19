@@ -61,18 +61,17 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
 
         frame_textures.gi_cache_irradiance = data->irradiance_tex =
-            rt_gi_cache.AddTextureInput(persistent_data.probe_irradiance.get(), Stg::ComputeShader);
+            rt_gi_cache.AddTextureInput(persistent_data.probe_irradiance, Stg::ComputeShader);
         frame_textures.gi_cache_distance = data->distance_tex =
-            rt_gi_cache.AddTextureInput(persistent_data.probe_distance.get(), Stg::ComputeShader);
+            rt_gi_cache.AddTextureInput(persistent_data.probe_distance, Stg::ComputeShader);
         frame_textures.gi_cache_offset = data->offset_tex =
-            rt_gi_cache.AddTextureInput(persistent_data.probe_offset.get(), Stg::ComputeShader);
+            rt_gi_cache.AddTextureInput(persistent_data.probe_offset, Stg::ComputeShader);
 
         data->view_state = &view_state_;
         data->partial_update = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
         data->probe_volumes = persistent_data.probe_volumes;
 
-        ray_data = data->out_ray_data_tex =
-            rt_gi_cache.AddStorageImageOutput(persistent_data.probe_ray_data.get(), stage);
+        ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput(persistent_data.probe_ray_data, stage);
 
         ex_rt_gi_cache_.Setup(fg_builder_, &view_state_, &bindless, data);
         rt_gi_cache.set_executor(&ex_rt_gi_cache_);
@@ -104,12 +103,10 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             FgAllocTex &out_irr_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
-                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(offset_tex._ref)},
-                                             {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(out_irr_tex._ref)}};
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
+                {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
+                {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_irr_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -161,19 +158,17 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             probe_blend.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
 
         frame_textures.gi_cache_distance = data->output_tex =
-            probe_blend.AddStorageImageOutput(persistent_data.probe_distance.get(), Stg::ComputeShader);
+            probe_blend.AddStorageImageOutput(persistent_data.probe_distance, Stg::ComputeShader);
 
         probe_blend.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
             FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
-                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(offset_tex._ref)},
-                                             {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
+                {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
+                {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_dist_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -211,16 +206,15 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         ray_data = data->ray_data = probe_relocate.AddTextureInput(ray_data, Stg::ComputeShader);
 
         frame_textures.gi_cache_offset = data->output_tex =
-            probe_relocate.AddStorageImageOutput(persistent_data.probe_offset.get(), Stg::ComputeShader);
+            probe_relocate.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
         probe_relocate.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
             FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
-                                             {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
+                {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -264,16 +258,15 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         ray_data = data->ray_data = probe_classify.AddTextureInput(ray_data, Stg::ComputeShader);
 
         frame_textures.gi_cache_offset = data->output_tex =
-            probe_classify.AddStorageImageOutput(persistent_data.probe_offset.get(), Stg::ComputeShader);
+            probe_classify.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
         probe_classify.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
             FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(ray_data_tex._ref)},
-                                             {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT,
-                                              *std::get<const Ren::Texture2DArray *>(out_dist_tex._ref)}};
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
+                {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);

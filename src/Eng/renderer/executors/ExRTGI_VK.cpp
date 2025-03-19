@@ -68,12 +68,9 @@ void Eng::ExRTGI::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.ref},
         {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.ref},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT, *dist_tex.ref},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT, *off_tex.ref},
         {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
@@ -169,12 +166,9 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.ref},
         {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.ref},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT, *dist_tex.ref},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT, *off_tex.ref},
         {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);

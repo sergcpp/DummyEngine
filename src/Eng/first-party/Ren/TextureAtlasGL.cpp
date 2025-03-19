@@ -23,9 +23,11 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
 
         const GLenum compressed_tex_format =
 #if !defined(__ANDROID__)
-            /*(flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT :*/ GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            /*(flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT :*/
+            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 #else
-            /*(flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR :*/ GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+            /*(flags[i] & eTexFlags::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR :*/
+            GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
 
         formats_[i] = formats[i];
@@ -185,4 +187,74 @@ void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
             }
         }
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
+                                          const int layer_count, const int mip_count, const eTexFormat format,
+                                          const eTexFilter filter, const Bitmask<eTexUsage> usage)
+    : api_ctx_(api_ctx), name_(name), w_(w), h_(h), layer_count_(layer_count), format_(format), filter_(filter) {
+    GLuint tex_id;
+    ren_glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex_id);
+
+    ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count, GLInternalFormatFromTexFormat(format), w, h,
+                                layer_count);
+
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MIN_FILTER, g_min_filter_gl[size_t(filter_)]);
+    ren_glTextureParameteri_Comp(GL_TEXTURE_2D_ARRAY, tex_id, GL_TEXTURE_MAG_FILTER, g_mag_filter_gl[size_t(filter_)]);
+
+    tex_id_ = uint32_t(tex_id);
+
+    splitters_.resize(layer_count, TextureSplitter{w, h});
+}
+
+void Ren::TextureAtlasArray::Free() {
+    if (tex_id_ != 0xffffffff) {
+        auto tex_id = GLuint(tex_id_);
+        glDeleteTextures(1, &tex_id);
+        tex_id_ = 0xffffffff;
+    }
+}
+
+void Ren::TextureAtlasArray::FreeImmediate() { Free(); }
+
+Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) noexcept {
+    if (this == &rhs) {
+        return (*this);
+    }
+
+    if (tex_id_ != 0xffffffff) {
+        auto tex_id = (GLuint)tex_id_;
+        glDeleteTextures(1, &tex_id);
+    }
+
+    mip_count_ = std::exchange(rhs.mip_count_, 0);
+    layer_count_ = std::exchange(rhs.layer_count_, 0);
+    format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
+    filter_ = std::exchange(rhs.filter_, eTexFilter::Nearest);
+
+    resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
+
+    tex_id_ = std::exchange(rhs.tex_id_, 0xffffffff);
+
+    splitters_ = std::move(rhs.splitters_);
+
+    return (*this);
+}
+
+void Ren::TextureAtlasArray::SetSubImage(const int level, const int layer, const int offsetx, const int offsety,
+                                         const int sizex, const int sizey, const eTexFormat format, const Buffer &sbuf,
+                                         const int data_off, const int data_len, void *) {
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
+
+    ren_glTextureSubImage3D_Comp(GL_TEXTURE_2D_ARRAY, GLuint(tex_id_), level, offsetx, offsety, layer, sizex, sizey, 1,
+                                 GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                 reinterpret_cast<const void *>(uintptr_t(data_off)));
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+}
+
+void Ren::TextureAtlasArray::Clear(const float rgba[4], void *) {
+    glClearTexImage(GLuint(tex_id_), 0, GL_RGBA, GL_FLOAT, rgba);
 }

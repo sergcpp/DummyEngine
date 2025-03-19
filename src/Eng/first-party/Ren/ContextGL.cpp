@@ -175,9 +175,10 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
             textures_.Insert(name_buf, api_ctx_.get(), TexHandle{}, params, MemAllocation{}, log_));
     }
 
-    texture_atlas_ = TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",     TextureAtlasWidth,
-                                       TextureAtlasHeight, TextureAtlasLayers,  1,
-                                       eTexFormat::RGBA8,  eTexFilter::Bilinear};
+    texture_atlas_ =
+        TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",      TextureAtlasWidth,
+                          TextureAtlasHeight, TextureAtlasLayers,   1,
+                          eTexFormat::RGBA8,  eTexFilter::Bilinear, Bitmask(eTexUsage::Transfer) | eTexUsage::Sampled};
 
     return true;
 }

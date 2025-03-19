@@ -2,7 +2,6 @@
 
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
-#include <Ren/TextureArray.h>
 #include <optick/optick.h>
 
 #include "../PrimDraw.h"
@@ -247,44 +246,6 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTexRef &ref, const Ren:
     FgAllocTex &tex = textures_[ret.index];
     tex.desc = ref->params;
     tex.ref = ref;
-    ret._generation = tex._generation;
-    ret.desired_state = desired_state;
-    ret.stages = stages;
-
-    tex.read_in_nodes.push_back({node.index_, int16_t(node.input_.size())});
-    ++tex.read_count;
-
-#ifndef NDEBUG
-    for (const FgResource &r : node.input_) {
-        assert(r.type != eFgResType::Texture || r.index != ret.index);
-    }
-#endif
-
-    node.input_.push_back(ret);
-
-    return ret;
-}
-
-Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state,
-                                          Ren::eStageBits stages, FgNode &node) {
-    FgResource ret;
-    ret.type = eFgResType::Texture;
-
-    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
-    if (!ptex_index) {
-        FgAllocTex new_tex;
-        new_tex.name = ref->name();
-        new_tex.external = true;
-
-        ret.index = textures_.emplace(new_tex);
-        name_to_texture_[new_tex.name] = ret.index;
-    } else {
-        ret.index = *ptex_index;
-    }
-
-    assert(ref);
-    FgAllocTex &tex = textures_[ret.index];
-    tex._ref = ref;
     ret._generation = tex._generation;
     ret.desired_state = desired_state;
     ret.stages = stages;
@@ -596,46 +557,6 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTexRef &ref, const Ren
         }
         node.output_[slot_index] = ret;
     }
-
-    ++ret.write_count;
-    return ret;
-}
-
-Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::Texture2DArray *ref, const Ren::eResState desired_state,
-                                           const Ren::eStageBits stages, FgNode &node) {
-    FgResource ret;
-    ret.type = eFgResType::Texture;
-
-    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
-    if (!ptex_index) {
-        FgAllocTex new_tex;
-        new_tex.name = ref->name();
-        // new_tex.desc = ref->params;
-        new_tex.external = true;
-
-        ret.index = textures_.emplace(new_tex);
-        name_to_texture_[new_tex.name] = ret.index;
-    } else {
-        ret.index = *ptex_index;
-    }
-
-    assert(ref);
-    FgAllocTex &tex = textures_[ret.index];
-    tex._ref = ref;
-    ret._generation = tex._generation;
-    ret.desired_state = desired_state;
-    ret.stages = stages;
-
-    tex.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
-    ++tex.write_count;
-
-#ifndef NDEBUG
-    for (const FgResource &r : node.output_) {
-        assert(r.type != eFgResType::Texture || r.index != ret.index);
-    }
-#endif
-    // Add new output
-    node.output_.push_back(ret);
 
     ++ret.write_count;
     return ret;
@@ -1541,8 +1462,6 @@ void Eng::FgBuilder::Execute() {
         tex.used_in_stages = Ren::eStageBits::None;
         if (tex.ref) {
             tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
-        } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex._ref)) {
-            tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture2DArray *>(tex._ref)->resource_state);
         }
     }
 
@@ -1677,40 +1596,30 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
             assert(tex->alias_of == -1);
         }
 
-        if (std::holds_alternative<const Ren::Texture2DArray *>(tex->_ref)) {
-            if (std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state != res.desired_state ||
-                IsRWState(std::get<const Ren::Texture2DArray *>(tex->_ref)->resource_state)) {
-                src_stages |= tex->used_in_stages;
-                dst_stages |= res.stages;
-                tex->used_in_stages = Ren::eStageBits::None;
-                res_transitions.emplace_back(std::get<const Ren::Texture2DArray *>(tex->_ref), res.desired_state);
-            }
-        } else {
-            if (tex->ref->resource_state == Ren::eResState::Undefined ||
-                tex->ref->resource_state == Ren::eResState::Discarded) {
-                for (const FgResRef other : tex->overlaps_with) {
-                    if (other.type == eFgResType::Buffer) {
-                        FgAllocBuf *other_buf = &buffers_.at(other.index);
-                        src_stages |= other_buf->used_in_stages;
-                        dst_stages |= other_buf->aliased_in_stages;
-                        assert(other_buf->ref->resource_state != Ren::eResState::Discarded);
-                        res_transitions.emplace_back(other_buf->ref.get(), Ren::eResState::Discarded);
-                    } else if (other.type == eFgResType::Texture) {
-                        FgAllocTex *other_tex = &textures_.at(other.index);
-                        src_stages |= other_tex->used_in_stages;
-                        dst_stages |= other_tex->aliased_in_stages;
-                        assert(other_tex->ref->resource_state != Ren::eResState::Discarded);
-                        res_transitions.emplace_back(other_tex->ref.get(), Ren::eResState::Discarded);
-                    }
+        if (tex->ref->resource_state == Ren::eResState::Undefined ||
+            tex->ref->resource_state == Ren::eResState::Discarded) {
+            for (const FgResRef other : tex->overlaps_with) {
+                if (other.type == eFgResType::Buffer) {
+                    FgAllocBuf *other_buf = &buffers_.at(other.index);
+                    src_stages |= other_buf->used_in_stages;
+                    dst_stages |= other_buf->aliased_in_stages;
+                    assert(other_buf->ref->resource_state != Ren::eResState::Discarded);
+                    res_transitions.emplace_back(other_buf->ref.get(), Ren::eResState::Discarded);
+                } else if (other.type == eFgResType::Texture) {
+                    FgAllocTex *other_tex = &textures_.at(other.index);
+                    src_stages |= other_tex->used_in_stages;
+                    dst_stages |= other_tex->aliased_in_stages;
+                    assert(other_tex->ref->resource_state != Ren::eResState::Discarded);
+                    res_transitions.emplace_back(other_tex->ref.get(), Ren::eResState::Discarded);
                 }
             }
+        }
 
-            if (tex->ref->resource_state != res.desired_state || IsRWState(tex->ref->resource_state)) {
-                src_stages |= tex->used_in_stages;
-                dst_stages |= res.stages;
-                tex->used_in_stages = Ren::eStageBits::None;
-                res_transitions.emplace_back(tex->ref.get(), res.desired_state);
-            }
+        if (tex->ref->resource_state != res.desired_state || IsRWState(tex->ref->resource_state)) {
+            src_stages |= tex->used_in_stages;
+            dst_stages |= res.stages;
+            tex->used_in_stages = Ren::eStageBits::None;
+            res_transitions.emplace_back(tex->ref.get(), res.desired_state);
         }
 
         tex->used_in_stages |= res.stages;

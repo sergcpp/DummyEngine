@@ -107,8 +107,6 @@ struct FgAllocTex : public FgAllocRes {
     Ren::TexParams desc;
     Ren::WeakTexRef ref;
     Ren::TexRef strong_ref;
-    // TODO: remove this once Texture/Texture2DArray will be merged into one class
-    std::variant<std::monostate, const Ren::Texture2DArray *> _ref;
 };
 
 class FgNode;
@@ -210,8 +208,6 @@ class FgBuilder {
     FgResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef ReadTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          FgNode &node);
-    FgResRef ReadTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                         FgNode &node);
 
     FgResRef ReadHistoryTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
     FgResRef ReadHistoryTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages,
@@ -229,8 +225,6 @@ class FgBuilder {
                           Ren::eStageBits stages, FgNode &node);
     FgResRef WriteTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           FgNode &node, int slot_index = -1);
-    FgResRef WriteTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                          FgNode &node);
 
     FgResRef MakeTextureResource(const Ren::WeakTexRef &ref);
 

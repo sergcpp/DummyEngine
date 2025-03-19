@@ -79,9 +79,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                 {Trg::Tex2DSampled, NORM_TEX_SLOT, *normals_tex.ref},
                 {Trg::Tex2DSampled, SSAO_TEX_SLOT, *ssao_tex.ref},
-                {Trg::Tex2DArraySampled, IRRADIANCE_TEX_SLOT, *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
-                {Trg::Tex2DArraySampled, DISTANCE_TEX_SLOT, *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
-                {Trg::Tex2DArraySampled, OFFSET_TEX_SLOT, *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
+                {Trg::Tex2DArraySampled, IRRADIANCE_TEX_SLOT, *irr_tex.ref},
+                {Trg::Tex2DArraySampled, DISTANCE_TEX_SLOT, *dist_tex.ref},
+                {Trg::Tex2DArraySampled, OFFSET_TEX_SLOT, *off_tex.ref},
                 {Trg::Image2D, OUT_IMG_SLOT, *out_tex.ref}};
 
             const Ren::Vec3u grp_count =

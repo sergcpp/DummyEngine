@@ -60,14 +60,10 @@ void Eng::ExRTGICache::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.ref},
         {Ren::eBindTarget::UTBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.ref},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(irr_tex._ref)},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(dist_tex._ref)},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT,
-         *std::get<const Ren::Texture2DArray *>(off_tex._ref)},
-        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT,
-         *std::get<const Ren::Texture2DArray *>(out_gi_tex._ref)}};
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *dist_tex.ref},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *off_tex.ref},
+        {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_gi_tex.ref}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::RANDOM_SEQ_BUF_SLOT, *random_seq_buf->ref);
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGICache::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);

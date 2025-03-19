@@ -139,12 +139,9 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, OITBlendLayer::BACK_DEPTH_TEX_SLOT, back_depth_tex.ref->id());
 
     if (irr_tex) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::IRRADIANCE_TEX_SLOT,
-                                   std::get<const Ren::Texture2DArray *>(irr_tex->_ref)->id());
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::DISTANCE_TEX_SLOT,
-                                   std::get<const Ren::Texture2DArray *>(dist_tex->_ref)->id());
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::OFFSET_TEX_SLOT,
-                                   std::get<const Ren::Texture2DArray *>(off_tex->_ref)->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::IRRADIANCE_TEX_SLOT, irr_tex->ref->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::DISTANCE_TEX_SLOT, dist_tex->ref->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_ARRAY, OITBlendLayer::OFFSET_TEX_SLOT, off_tex->ref->id());
     }
 
     if (specular_tex) {

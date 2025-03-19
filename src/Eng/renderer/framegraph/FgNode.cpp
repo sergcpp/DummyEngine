@@ -90,10 +90,6 @@ Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const Ren::WeakTexRef &tex, con
     return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::FgResRef Eng::FgNode::AddStorageImageOutput(const Ren::Texture2DArray *tex, Ren::eStageBits stages) {
-    return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
-}
-
 Eng::FgResRef Eng::FgNode::AddColorOutput(std::string_view name, const Ren::TexParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
@@ -145,10 +141,6 @@ Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::WeakTexRef &tex, const Ren
 
 Eng::FgResRef Eng::FgNode::AddTextureInput(std::string_view name, const Ren::eStageBits stages) {
     return builder_.ReadTexture(name, Ren::eResState::ShaderResource, stages, *this);
-}
-
-Eng::FgResRef Eng::FgNode::AddTextureInput(const Ren::Texture2DArray *tex, const Ren::eStageBits stages) {
-    return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
 }
 
 Eng::FgResRef Eng::FgNode::AddHistoryTextureInput(FgResRef handle, const Ren::eStageBits stages) {

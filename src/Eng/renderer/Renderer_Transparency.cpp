@@ -299,12 +299,9 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 bindings.emplace_back(Trg::Tex2DSampled, SPEC_TEX_SLOT, *specular_tex->ref);
                 bindings.emplace_back(Trg::Tex2DSampled, LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
 
-                bindings.emplace_back(Trg::Tex2DArraySampled, IRRADIANCE_TEX_SLOT,
-                                      *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
-                bindings.emplace_back(Trg::Tex2DArraySampled, DISTANCE_TEX_SLOT,
-                                      *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
-                bindings.emplace_back(Trg::Tex2DArraySampled, OFFSET_TEX_SLOT,
-                                      *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
+                bindings.emplace_back(Trg::Tex2DArraySampled, IRRADIANCE_TEX_SLOT, *irr_tex->ref);
+                bindings.emplace_back(Trg::Tex2DArraySampled, DISTANCE_TEX_SLOT, *dist_tex->ref);
+                bindings.emplace_back(Trg::Tex2DArraySampled, OFFSET_TEX_SLOT, *off_tex->ref);
             }
 
             Params uniform_params;

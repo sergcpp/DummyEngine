@@ -533,8 +533,6 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
             tex.used_in_stages = Ren::eStageBits::None;
             if (tex.ref) {
                 tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
-            } else if (std::holds_alternative<const Ren::Texture2DArray *>(tex._ref)) {
-                tex.used_in_stages = StageBitsForState(std::get<const Ren::Texture2DArray *>(tex._ref)->resource_state);
             }
         }
 

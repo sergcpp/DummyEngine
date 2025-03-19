@@ -10,7 +10,6 @@
 #include <Ren/Pipeline.h>
 #include <Ren/ProbeStorage.h>
 #include <Ren/Storage.h>
-#include <Ren/TextureArray.h>
 #include <Ren/TextureAtlas.h>
 
 #include "Atmosphere.h"
@@ -233,10 +232,10 @@ struct PersistentGpuData {
     uint32_t rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;
 
-    std::unique_ptr<Ren::Texture2DArray> probe_ray_data;
-    std::unique_ptr<Ren::Texture2DArray> probe_irradiance;
-    std::unique_ptr<Ren::Texture2DArray> probe_distance;
-    std::unique_ptr<Ren::Texture2DArray> probe_offset;
+    Ren::TexRef probe_ray_data;
+    Ren::TexRef probe_irradiance;
+    Ren::TexRef probe_distance;
+    Ren::TexRef probe_offset;
     std::vector<probe_volume_t> probe_volumes;
 
     PersistentGpuData();

@@ -1879,7 +1879,7 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
 Ren::TexRef ModlApp::OnTextureNeeded(std::string_view name) {
     Ren::eTexLoadStatus status;
     Ren::TexRef ret = ctx_->LoadTexture(name, {}, {}, ctx_->default_mem_allocs(), &status);
-    if (ret->params.flags & Ren::eTexFlags::Stub) {
+    if (Ren::Bitmask<Ren::eTexFlags>{ret->params.flags} & Ren::eTexFlags::Stub) {
         Sys::AssetFile in_file(std::string("assets_pc/textures/") + std::string(name));
         std::vector<uint8_t> in_file_data(in_file.size());
         in_file.Read((char *)in_file_data.data(), in_file.size());

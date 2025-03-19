@@ -94,12 +94,9 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
         {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_COLOR_TEX_SLOT, *back_color_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_DEPTH_TEX_SLOT, {*back_depth_tex.ref, 1}}};
     if (irr_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::IRRADIANCE_TEX_SLOT,
-                              *std::get<const Ren::Texture2DArray *>(irr_tex->_ref));
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::DISTANCE_TEX_SLOT,
-                              *std::get<const Ren::Texture2DArray *>(dist_tex->_ref));
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::OFFSET_TEX_SLOT,
-                              *std::get<const Ren::Texture2DArray *>(off_tex->_ref));
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::DISTANCE_TEX_SLOT, *dist_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::OFFSET_TEX_SLOT, *off_tex->ref);
     }
     if (specular_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, OITBlendLayer::SPEC_TEX_SLOT, *specular_tex->ref);

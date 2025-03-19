@@ -520,11 +520,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                                                    {persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
-        const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-        persistent_data.probe_ray_data->Clear(rgba, cmd_buf);
-        persistent_data.probe_irradiance->Clear(rgba, cmd_buf);
-        persistent_data.probe_distance->Clear(rgba, cmd_buf);
-        persistent_data.probe_offset->Clear(rgba, cmd_buf);
+        static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        Ren::ClearImage(*persistent_data.probe_ray_data, rgba, cmd_buf);
+        Ren::ClearImage(*persistent_data.probe_irradiance, rgba, cmd_buf);
+        Ren::ClearImage(*persistent_data.probe_distance, rgba, cmd_buf);
+        Ren::ClearImage(*persistent_data.probe_offset, rgba, cmd_buf);
 
         for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
             persistent_data.probe_volumes[i].updates_count = 0;

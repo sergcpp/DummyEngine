@@ -13,8 +13,7 @@
 namespace Ren {
 uint8_t from_hex_char(const char c) { return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0'); }
 
-const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexWrap::Repeat, eTexCompare::None, Fixed8{},
-                                              Fixed8::lowest(),      Fixed8::max()};
+const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexWrap::Repeat, eTexCompare::None, Fixed8{}};
 } // namespace Ren
 
 Ren::Material::Material(std::string_view name, std::string_view mat_src, eMatLoadStatus *status,

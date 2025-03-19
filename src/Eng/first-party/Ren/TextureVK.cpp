@@ -539,12 +539,12 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
 
     { // create image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-        img_info.imageType = p.d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D;
+        img_info.imageType = (p.d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D);
         img_info.extent.width = p.w;
         img_info.extent.height = p.h;
-        img_info.extent.depth = (p.d ? p.d : 1);
+        img_info.extent.depth = std::max<uint32_t>(p.d, 1u);
         img_info.mipLevels = mip_count;
-        img_info.arrayLayers = 1;
+        img_info.arrayLayers = p.layer_count ? p.layer_count : 1;
         img_info.format = g_formats_vk[size_t(p.format)];
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -595,7 +595,8 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
     if (p.usage != Bitmask(eTexUsage::Transfer)) { // not 'transfer only'
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
-        view_info.viewType = p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D;
+        view_info.viewType =
+            p.layer_count ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : (p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
         view_info.format = g_formats_vk[size_t(p.format)];
         if (IsDepthStencilFormat(p.format)) {
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -607,7 +608,7 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = mip_count;
         view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
+        view_info.subresourceRange.layerCount = std::max<uint32_t>(p.layer_count, 1u);
 
         const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
@@ -642,13 +643,14 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
             for (int j = 0; j < mip_count; ++j) {
                 VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
                 view_info.image = handle_.img;
-                view_info.viewType = p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D;
+                view_info.viewType =
+                    p.layer_count ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : (p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
                 view_info.format = g_formats_vk[size_t(p.format)];
                 view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 view_info.subresourceRange.baseMipLevel = j;
                 view_info.subresourceRange.levelCount = 1;
                 view_info.subresourceRange.baseArrayLayer = 0;
-                view_info.subresourceRange.layerCount = 1;
+                view_info.subresourceRange.layerCount = std::max<uint32_t>(p.layer_count, 1u);
 
                 handle_.views.emplace_back(VK_NULL_HANDLE);
                 const VkResult res =
@@ -774,8 +776,8 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
         sampler_info.compareOp = g_compare_ops_vk[size_t(p.sampling.compare)];
         sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(p.sampling.filter)];
         sampler_info.mipLodBias = p.sampling.lod_bias.to_float();
-        sampler_info.minLod = p.sampling.min_lod.to_float();
-        sampler_info.maxLod = p.sampling.max_lod.to_float();
+        sampler_info.minLod = 0.0f;
+        sampler_info.maxLod = VK_LOD_CLAMP_NONE;
 
         const VkResult res = api_ctx_->vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
         if (res != VK_SUCCESS) {
@@ -1154,8 +1156,8 @@ void Ren::Texture::SetSampling(const SamplingParams s) {
     sampler_info.compareOp = g_compare_ops_vk[size_t(s.compare)];
     sampler_info.mipmapMode = g_mipmap_mode_vk[size_t(s.filter)];
     sampler_info.mipLodBias = s.lod_bias.to_float();
-    sampler_info.minLod = s.min_lod.to_float();
-    sampler_info.maxLod = s.max_lod.to_float();
+    sampler_info.minLod = 0.0f;
+    sampler_info.maxLod = VK_LOD_CLAMP_NONE;
 
     const VkResult res = api_ctx_->vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
     assert(res == VK_SUCCESS && "Failed to create sampler!");
@@ -1195,7 +1197,7 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
                                       dst_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);
 }
 
-void Ren::ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
+void Ren::ClearImage(const Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
     assert(tex.resource_state == eResState::CopyDst);
 
     if (!IsDepthFormat(tex.params.format)) {

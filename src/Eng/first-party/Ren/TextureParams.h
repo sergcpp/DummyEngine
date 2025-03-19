@@ -48,7 +48,7 @@ enum class eTexUsage : uint8_t { Transfer, Sampled, Storage, RenderTarget };
 
 struct TexParams {
     uint16_t w = 0, h = 0;
-    uint8_t d = 0;
+    uint8_t d = 0, layer_count = 0;
     uint8_t mip_count : 5;
     uint8_t samples : 3;
     Bitmask<eTexFlags> flags;
@@ -60,24 +60,24 @@ struct TexParams {
         assert(mip_count < 32);
         assert(samples < 8);
     }
-    TexParams(const uint16_t _w, const uint16_t _h, const uint8_t _d, const uint8_t _mip_count, const uint8_t _samples,
-              const Bitmask<eTexFlags> _flags, const Bitmask<eTexUsage> _usage, const eTexFormat _format,
-              const SamplingParams _sampling)
-        : w(_w), h(_h), d(_d), mip_count(_mip_count), samples(_samples), flags(_flags), usage(_usage), format(_format),
-          sampling(_sampling) {}
+    TexParams(const uint16_t _w, const uint16_t _h, const uint8_t _d, const uint8_t _layer_count,
+              const uint8_t _mip_count, const uint8_t _samples, const Bitmask<eTexFlags> _flags,
+              const Bitmask<eTexUsage> _usage, const eTexFormat _format, const SamplingParams _sampling)
+        : w(_w), h(_h), d(_d), layer_count(_layer_count), mip_count(_mip_count), samples(_samples), flags(_flags),
+          usage(_usage), format(_format), sampling(_sampling) {}
 };
-static_assert(sizeof(TexParams) == 16, "!");
+static_assert(sizeof(TexParams) == 14, "!");
 
 inline bool operator==(const TexParams &lhs, const TexParams &rhs) {
-    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.mip_count == rhs.mip_count &&
-           lhs.samples == rhs.samples && lhs.flags == rhs.flags && lhs.usage == rhs.usage && lhs.format == rhs.format &&
-           lhs.sampling == rhs.sampling;
+    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.layer_count == rhs.layer_count &&
+           lhs.mip_count == rhs.mip_count && lhs.samples == rhs.samples && lhs.flags == rhs.flags &&
+           lhs.usage == rhs.usage && lhs.format == rhs.format && lhs.sampling == rhs.sampling;
 }
 inline bool operator!=(const TexParams &lhs, const TexParams &rhs) { return !operator==(lhs, rhs); }
 
 struct TexParamsPacked {
     uint16_t w = 0, h = 0;
-    uint8_t d = 0;
+    uint8_t d = 0, layer_count;
     uint8_t mip_count : 5;
     uint8_t samples : 3;
     uint8_t flags : 4;
@@ -87,18 +87,32 @@ struct TexParamsPacked {
 
     TexParamsPacked() : TexParamsPacked(TexParams{}) {}
     TexParamsPacked(const TexParams &p)
-        : w(p.w), h(p.h), d(p.d), mip_count(p.mip_count), samples(p.samples), flags(p.flags), usage(p.usage),
-          format(p.format), sampling(p.sampling) {
+        : w(p.w), h(p.h), d(p.d), layer_count(p.layer_count), mip_count(p.mip_count), samples(p.samples),
+          flags(p.flags), usage(p.usage), format(p.format), sampling(p.sampling) {
         assert(uint8_t(p.flags) < 16);
         assert(uint8_t(p.usage) < 16);
     }
 
     operator TexParams() const {
-        return TexParams(w, h, d, mip_count, samples, Bitmask<eTexFlags>(flags), Bitmask<eTexUsage>(usage), format,
-                         SamplingParams{sampling});
+        return TexParams(w, h, d, layer_count, mip_count, samples, Bitmask<eTexFlags>(flags), Bitmask<eTexUsage>(usage),
+                         format, SamplingParams{sampling});
     }
 };
 static_assert(sizeof(TexParamsPacked) == 12, "!");
+
+inline bool operator==(const TexParamsPacked &lhs, const TexParamsPacked &rhs) {
+    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.layer_count == rhs.layer_count &&
+           lhs.mip_count == rhs.mip_count && lhs.samples == rhs.samples && lhs.flags == rhs.flags &&
+           lhs.usage == rhs.usage && lhs.format == rhs.format && lhs.sampling == rhs.sampling;
+}
+inline bool operator!=(const TexParamsPacked &lhs, const TexParamsPacked &rhs) { return !operator==(lhs, rhs); }
+
+inline bool operator==(const TexParamsPacked &lhs, const TexParams &rhs) {
+    return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.layer_count == rhs.layer_count &&
+           lhs.mip_count == rhs.mip_count && lhs.samples == rhs.samples && lhs.flags == uint8_t(rhs.flags) &&
+           lhs.usage == uint8_t(rhs.usage) && lhs.format == rhs.format && lhs.sampling == rhs.sampling;
+}
+inline bool operator!=(const TexParamsPacked &lhs, const TexParams &rhs) { return !operator==(lhs, rhs); }
 
 int GetColorChannelCount(eTexFormat format);
 

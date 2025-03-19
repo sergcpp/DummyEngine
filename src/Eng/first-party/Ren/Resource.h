@@ -78,10 +78,9 @@ eStageBits StageBitsForState(eResState state);
 
 class Buffer;
 class Texture;
-class Texture2DArray;
 
 struct TransitionInfo {
-    std::variant<const Texture *, const Buffer *, const Texture2DArray *> p_res;
+    std::variant<const Texture *, const Buffer *> p_res;
 
     eResState old_state = eResState::Undefined;
     eResState new_state = eResState::Undefined;
@@ -93,8 +92,6 @@ struct TransitionInfo {
         : p_res(_p_buf), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const Texture *_p_tex, const eResState _new_state)
         : p_res(_p_tex), new_state(_new_state), update_internal_state(true) {}
-    TransitionInfo(const Texture2DArray *_p_tex2darr, const eResState _new_state)
-        : p_res(_p_tex2darr), new_state(_new_state), update_internal_state(true) {}
 };
 
 void TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, eStageBits src_stages_mask,

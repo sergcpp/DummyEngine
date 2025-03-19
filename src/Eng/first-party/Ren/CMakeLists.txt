@@ -103,7 +103,6 @@ set(SOURCE_FILES AccStructure.h
                  String.h
                  Texture.h
                  Texture.cpp
-                 TextureArray.h
                  TextureAtlas.h
                  TextureAtlas.cpp
                  TextureCompare.inl
@@ -152,7 +151,6 @@ if(${REN_BACKEND} STREQUAL "GL")
                      RenderPassGL.cpp
                      TextureGL.h
                      TextureGL.cpp
-                     TextureArrayGL.cpp
                      TextureAtlasGL.cpp
                      VertexInputGL.cpp)
 
@@ -192,7 +190,6 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                      ShaderVK.cpp
                      TextureVK.h
                      TextureVK.cpp
-                     TextureArrayVK.cpp
                      TextureAtlasVK.cpp
                      VertexInputVK.cpp
                      VK.h

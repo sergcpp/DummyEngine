@@ -79,7 +79,6 @@ class FgNode {
     FgResRef AddStorageImageOutput(std::string_view name, const Ren::TexParams &params, Ren::eStageBits stages);
     FgResRef AddStorageImageOutput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddStorageImageOutput(const Ren::WeakTexRef &tex, Ren::eStageBits stages);
-    FgResRef AddStorageImageOutput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
 
     FgResRef AddColorOutput(std::string_view name, const Ren::TexParams &params);
     FgResRef AddColorOutput(FgResRef handle);
@@ -98,7 +97,6 @@ class FgNode {
     FgResRef AddTextureInput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddTextureInput(const Ren::WeakTexRef &tex, Ren::eStageBits stages);
     FgResRef AddTextureInput(std::string_view name, Ren::eStageBits stages);
-    FgResRef AddTextureInput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
 
     FgResRef AddHistoryTextureInput(FgResRef handle, Ren::eStageBits stages);
     FgResRef AddHistoryTextureInput(std::string_view name, Ren::eStageBits stages);

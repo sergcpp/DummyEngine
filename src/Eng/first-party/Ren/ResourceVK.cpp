@@ -1,7 +1,6 @@
 #include "Resource.h"
 
 #include "Texture.h"
-#include "TextureArray.h"
 #include "VKCtx.h"
 
 namespace Ren {
@@ -215,45 +214,6 @@ void Ren::TransitionResourceStates(ApiContext *api_ctx, CommandBuffer cmd_buf, c
 
             if (tr.update_internal_state) {
                 std::get<const Texture *>(tr.p_res)->resource_state = tr.new_state;
-            }
-        } else if (std::holds_alternative<const Texture2DArray *>(tr.p_res)) {
-            eResState old_state = tr.old_state;
-            if (old_state == eResState::Undefined) {
-                // take state from resource itself
-                old_state = std::get<const Texture2DArray *>(tr.p_res)->resource_state;
-                if (old_state == tr.new_state && !IsRWState(old_state)) {
-                    // transition is not needed
-                    continue;
-                }
-            }
-
-            auto &new_barrier = img_barriers.emplace_back();
-            new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-            new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
-            new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
-            new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(old_state));
-            new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(tr.new_state));
-            new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.image = std::get<const Texture2DArray *>(tr.p_res)->img();
-            if (IsDepthStencilFormat(std::get<const Texture2DArray *>(tr.p_res)->format())) {
-                new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-            } else if (IsDepthFormat(std::get<const Texture2DArray *>(tr.p_res)->format())) {
-                new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            } else {
-                new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            }
-            // transition whole image for now
-            new_barrier.subresourceRange.baseMipLevel = 0;
-            new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-            new_barrier.subresourceRange.baseArrayLayer = 0;
-            new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-            src_stages |= VKPipelineStagesForState(old_state);
-            dst_stages |= VKPipelineStagesForState(tr.new_state);
-
-            if (tr.update_internal_state) {
-                std::get<const Texture2DArray *>(tr.p_res)->resource_state = tr.new_state;
             }
         }
     }

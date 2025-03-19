@@ -219,7 +219,9 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
     Free();
 
     GLuint tex_id;
-    glCreateTextures(p.samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : (p.d ? GL_TEXTURE_3D : GL_TEXTURE_2D), 1, &tex_id);
+    glCreateTextures(p.samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE
+                                   : (p.layer_count ? GL_TEXTURE_2D_ARRAY : (p.d ? GL_TEXTURE_3D : GL_TEXTURE_2D)),
+                     1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
 #endif
@@ -242,12 +244,17 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
             glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, GLsizei(p.samples), internal_format, GLsizei(p.w),
                                       GLsizei(p.h), GL_TRUE);
         } else {
-            if (p.d == 0) {
-                ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, GLsizei(p.w),
-                                            GLsizei(p.h));
+            if (p.layer_count == 0) {
+                if (p.d == 0) {
+                    ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, GLsizei(p.w),
+                                                GLsizei(p.h));
+                } else {
+                    ren_glTextureStorage3D_Comp(GL_TEXTURE_3D, tex_id, 1, internal_format, GLsizei(p.w), GLsizei(p.h),
+                                                GLsizei(p.d));
+                }
             } else {
-                ren_glTextureStorage3D_Comp(GL_TEXTURE_3D, tex_id, 1, internal_format, GLsizei(p.w), GLsizei(p.h),
-                                            GLsizei(p.d));
+                ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
+                                            internal_format, GLsizei(p.w), GLsizei(p.h), GLsizei(p.layer_count));
             }
             if (sbuf) {
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
@@ -261,6 +268,7 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
                         return;
                     }
 
+                    assert(p.layer_count == 0);
                     if (p.d == 0) {
                         if (IsCompressedFormat(p.format)) {
                             ren_glCompressedTextureSubImage2D_Comp(
@@ -300,6 +308,7 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
 
     if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
         // create additional image views
+        assert(p.layer_count == 0);
         for (int j = 0; j < mip_count; ++j) {
             GLuint tex_view;
             glGenTextures(1, &tex_view);
@@ -394,8 +403,8 @@ void Ren::Texture::ApplySampling(SamplingParams sampling, ILog *log) {
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_WRAP_R, g_wrap_mode_gl[size_t(sampling.wrap)]);
 
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS, sampling.lod_bias.to_float());
-        ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_LOD, sampling.min_lod.to_float());
-        ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_LOD, sampling.max_lod.to_float());
+        // ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_LOD, sampling.min_lod.to_float());
+        // ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_LOD, sampling.max_lod.to_float());
 
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyLevel);
 
@@ -487,7 +496,7 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
                        GLsizei(w), GLsizei(h), GLsizei(d));
 }
 
-void Ren::ClearImage(Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
+void Ren::ClearImage(const Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
     if (IsDepthStencilFormat(tex.params.format) || IsUnsignedIntegerFormat(tex.params.format)) {
         glClearTexImage(tex.id(), 0, GLFormatFromTexFormat(tex.params.format), GLTypeFromTexFormat(tex.params.format),
                         rgba);

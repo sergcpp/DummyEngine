@@ -730,29 +730,62 @@ void Eng::SceneManager::AllocGICache() {
         probe_volume_spacing *= 3.0f;
     }
 
-    // ~56.6mb
-    // TODO: make this temporary FG resource
-    scene_data_.persistent_data.probe_ray_data = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z,
-        4 * PROBE_VOLUME_RES_Y, 1, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
-        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
-    // ~47.8mb
-    scene_data_.persistent_data.probe_irradiance = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES,
-        PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES, 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1,
-        Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
-        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
-    // ~84.9mb
-    scene_data_.persistent_data.probe_distance = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES,
-        PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES, PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1, Ren::eTexFormat::RG16F,
-        Ren::eTexFilter::Bilinear,
-        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
-    // ~0.7mb
-    scene_data_.persistent_data.probe_offset = std::make_unique<Ren::Texture2DArray>(
-        ren_ctx_.api_ctx(), "Probe Volume Offset", PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Z,
-        PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT, 1, Ren::eTexFormat::RGBA16F, Ren::eTexFilter::Bilinear,
-        Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer);
+    { // ~56.6mb
+        // TODO: make this temporary FG resource
+        Ren::TexParams p;
+        p.w = PROBE_TOTAL_RAYS_COUNT;
+        p.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
+        p.layer_count = 4 * PROBE_VOLUME_RES_Y;
+        p.format = Ren::eTexFormat::RGBA16F;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+
+        Ren::eTexLoadStatus status;
+        scene_data_.persistent_data.probe_ray_data =
+            ren_ctx_.LoadTexture("Probe Volume RayData", p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status != Ren::eTexLoadStatus::Error);
+    }
+    { // ~47.8mb
+        Ren::TexParams p;
+        p.w = PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES;
+        p.h = PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES;
+        p.layer_count = 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
+        p.format = Ren::eTexFormat::RGBA16F;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
+
+        Ren::eTexLoadStatus status;
+        scene_data_.persistent_data.probe_irradiance =
+            ren_ctx_.LoadTexture("Probe Volume Irradiance", p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status != Ren::eTexLoadStatus::Error);
+    }
+    { // ~84.9mb
+        Ren::TexParams p;
+        p.w = PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES;
+        p.h = PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES;
+        p.layer_count = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
+        p.format = Ren::eTexFormat::RG16F;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
+
+        Ren::eTexLoadStatus status;
+        scene_data_.persistent_data.probe_distance =
+            ren_ctx_.LoadTexture("Probe Volume Distance", p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status != Ren::eTexLoadStatus::Error);
+    }
+    { // ~0.7mb
+        Ren::TexParams p;
+        p.w = PROBE_VOLUME_RES_X;
+        p.h = PROBE_VOLUME_RES_Z;
+        p.layer_count = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
+        p.format = Ren::eTexFormat::RGBA16F;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        p.sampling.filter = Ren::eTexFilter::Bilinear;
+
+        Ren::eTexLoadStatus status;
+        scene_data_.persistent_data.probe_offset =
+            ren_ctx_.LoadTexture("Probe Volume Offset", p, ren_ctx_.default_mem_allocs(), &status);
+        assert(status != Ren::eTexLoadStatus::Error);
+    }
 
     ClearGICache();
 }
@@ -1820,11 +1853,11 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
         {scene_data_.persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
     TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
-    const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    scene_data_.persistent_data.probe_ray_data->Clear(rgba, cmd_buf);
-    scene_data_.persistent_data.probe_irradiance->Clear(rgba, cmd_buf);
-    scene_data_.persistent_data.probe_distance->Clear(rgba, cmd_buf);
-    scene_data_.persistent_data.probe_offset->Clear(rgba, cmd_buf);
+    static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    Ren::ClearImage(*scene_data_.persistent_data.probe_ray_data, rgba, cmd_buf);
+    Ren::ClearImage(*scene_data_.persistent_data.probe_irradiance, rgba, cmd_buf);
+    Ren::ClearImage(*scene_data_.persistent_data.probe_distance, rgba, cmd_buf);
+    Ren::ClearImage(*scene_data_.persistent_data.probe_offset, rgba, cmd_buf);
 
     if (!_cmd_buf) {
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);

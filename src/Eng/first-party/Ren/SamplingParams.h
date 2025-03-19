@@ -32,18 +32,16 @@ struct SamplingParams {
     eTexWrap wrap = eTexWrap::Repeat;
     eTexCompare compare = eTexCompare::None;
     Fixed8 lod_bias;
-    Fixed8 min_lod = Fixed8::lowest(), max_lod = Fixed8::max();
 
     SamplingParams() = default;
-    SamplingParams(const eTexFilter _filter, const eTexWrap _wrap, const eTexCompare _compare, const Fixed8 _lod_bias,
-                   const Fixed8 _min_lod, const Fixed8 _max_lod)
-        : filter(_filter), wrap(_wrap), compare(_compare), lod_bias(_lod_bias), min_lod(_min_lod), max_lod(_max_lod) {}
+    SamplingParams(const eTexFilter _filter, const eTexWrap _wrap, const eTexCompare _compare, const Fixed8 _lod_bias)
+        : filter(_filter), wrap(_wrap), compare(_compare), lod_bias(_lod_bias) {}
 };
-static_assert(sizeof(SamplingParams) == 6, "!");
+static_assert(sizeof(SamplingParams) == 4, "!");
 
 inline bool operator==(const SamplingParams lhs, const SamplingParams rhs) {
     return lhs.filter == rhs.filter && lhs.wrap == rhs.wrap && lhs.compare == rhs.compare &&
-           lhs.lod_bias == rhs.lod_bias && lhs.min_lod == rhs.min_lod && lhs.max_lod == rhs.max_lod;
+           lhs.lod_bias == rhs.lod_bias;
 }
 inline bool operator!=(const SamplingParams lhs, const SamplingParams rhs) { return !operator==(lhs, rhs); }
 
@@ -52,31 +50,29 @@ struct SamplingParamsPacked {
     uint8_t wrap : 2;
     uint8_t compare : 4;
     Fixed8 lod_bias;
-    Fixed8 min_lod = Fixed8::lowest(), max_lod = Fixed8::max();
 
     SamplingParamsPacked() = default;
     SamplingParamsPacked(const SamplingParams &p)
-        : filter(uint8_t(p.filter)), wrap(uint8_t(p.wrap)), compare(uint8_t(p.compare)), lod_bias(p.lod_bias),
-          min_lod(p.min_lod), max_lod(p.max_lod) {
+        : filter(uint8_t(p.filter)), wrap(uint8_t(p.wrap)), compare(uint8_t(p.compare)), lod_bias(p.lod_bias) {
         assert(uint8_t(p.filter) < 4);
         assert(uint8_t(p.wrap) < 4);
         assert(uint8_t(p.compare) < 16);
     }
 
     operator SamplingParams() const {
-        return SamplingParams{eTexFilter(filter), eTexWrap(wrap), eTexCompare(compare), lod_bias, min_lod, max_lod};
+        return SamplingParams{eTexFilter(filter), eTexWrap(wrap), eTexCompare(compare), lod_bias};
     }
 };
-static_assert(sizeof(SamplingParamsPacked) == 4, "!");
+static_assert(sizeof(SamplingParamsPacked) == 2, "!");
 
 inline bool operator==(const SamplingParamsPacked lhs, const SamplingParamsPacked rhs) {
     return lhs.filter == rhs.filter && lhs.wrap == rhs.wrap && lhs.compare == rhs.compare &&
-           lhs.lod_bias == rhs.lod_bias && lhs.min_lod == rhs.min_lod && lhs.max_lod == rhs.max_lod;
+           lhs.lod_bias == rhs.lod_bias;
 }
 inline bool operator!=(const SamplingParamsPacked lhs, const SamplingParamsPacked rhs) { return !operator==(lhs, rhs); }
 inline bool operator==(const SamplingParamsPacked lhs, const SamplingParams rhs) {
     return lhs.filter == uint8_t(rhs.filter) && lhs.wrap == uint8_t(rhs.wrap) && lhs.compare == uint8_t(rhs.compare) &&
-           lhs.lod_bias == rhs.lod_bias && lhs.min_lod == rhs.min_lod && lhs.max_lod == rhs.max_lod;
+           lhs.lod_bias == rhs.lod_bias;
 }
 inline bool operator!=(const SamplingParamsPacked lhs, const SamplingParams rhs) { return !operator==(lhs, rhs); }
 
