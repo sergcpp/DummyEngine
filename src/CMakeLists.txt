@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(_Dummy)
 
 OPTION(ENABLE_GPU_DEBUG "Enable GPU debugging" ON)

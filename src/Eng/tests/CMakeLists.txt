@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(test_Eng)
 
 find_library(CORE_GRAPHICS CoreGraphics)
