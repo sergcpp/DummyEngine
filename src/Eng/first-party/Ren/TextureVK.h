@@ -121,7 +121,6 @@ class Texture : public RefCounter {
 
     ApiContext *api_ctx() { return api_ctx_; }
 
-    [[nodiscard]] const SamplingParams &sampling() const { return params.sampling; }
     [[nodiscard]] const String &name() const { return name_; }
 
     void SetSampling(SamplingParams sampling);

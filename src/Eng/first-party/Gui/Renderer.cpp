@@ -33,10 +33,10 @@ bool Gui::Renderer::Init() {
         fs_out.write(fs_source, strlen(fs_source));
     }
 
-    system("src\\libs\\spirv\\win32\\glslangValidator.exe -V ui.vert.glsl -o ui.vert.spv");
-    system("src\\libs\\spirv\\win32\\glslangValidator.exe -V ui.frag.glsl -o ui.frag.spv");
-    system("src\\libs\\spirv\\win32\\glslangValidator.exe -G ui.vert.glsl -o ui.vert.spv_ogl");
-    system("src\\libs\\spirv\\win32\\glslangValidator.exe -G ui.frag.glsl -o ui.frag.spv_ogl");
+    system("src\\libs\\spirv\\win32\\glslang.exe -V ui.vert.glsl -o ui.vert.spv");
+    system("src\\libs\\spirv\\win32\\glslang.exe -V ui.frag.glsl -o ui.frag.spv");
+    system("src\\libs\\spirv\\win32\\glslang.exe -G ui.vert.glsl -o ui.vert.spv_ogl");
+    system("src\\libs\\spirv\\win32\\glslang.exe -G ui.frag.glsl -o ui.frag.spv_ogl");
     system("bin2c.exe -o temp.h ui.vert.spv ui.frag.spv ui.vert.spv_ogl ui.frag.spv_ogl");
 #endif
 
