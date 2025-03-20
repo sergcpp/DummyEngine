@@ -26,17 +26,31 @@ void insert_sorted(Ren::SmallVectorImpl<int16_t> &vec, const int16_t val) {
 Eng::FgBuilder::FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh, PrimDraw &prim_draw)
     : ctx_(ctx), sh_(sh), prim_draw_(prim_draw), alloc_buf_(new char[AllocBufSize]),
       alloc_(alloc_buf_.get(), AllocBufSize) {
-    pi_clear_image_[int(Ren::eTexFormat::RGBA8)] = sh.LoadPipeline("internal/clear_image@RGBA8.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::R32F)] = sh.LoadPipeline("internal/clear_image@R32F.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::R16F)] = sh.LoadPipeline("internal/clear_image@R16F.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::R8)] = sh.LoadPipeline("internal/clear_image@R8.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::R32UI)] = sh.LoadPipeline("internal/clear_image@R32UI.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::RG8)] = sh.LoadPipeline("internal/clear_image@RG8.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::RG16F)] = sh.LoadPipeline("internal/clear_image@RG16F.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::RG32F)] = sh.LoadPipeline("internal/clear_image@RG32F.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::RG11F_B10F)] = sh.LoadPipeline("internal/clear_image@RG11F_B10F.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::RGBA32F)] = sh.LoadPipeline("internal/clear_image@RGBA32F.comp.glsl");
-    pi_clear_image_[int(Ren::eTexFormat::RGBA16F)] = sh.LoadPipeline("internal/clear_image@RGBA16F.comp.glsl");
+    // 2D Image
+    pi_clear_image_[0][int(Ren::eTexFormat::RGBA8)] = sh.LoadPipeline("internal/clear_image@RGBA8.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::R32F)] = sh.LoadPipeline("internal/clear_image@R32F.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::R16F)] = sh.LoadPipeline("internal/clear_image@R16F.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::R8)] = sh.LoadPipeline("internal/clear_image@R8.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::R32UI)] = sh.LoadPipeline("internal/clear_image@R32UI.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::RG8)] = sh.LoadPipeline("internal/clear_image@RG8.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::RG16F)] = sh.LoadPipeline("internal/clear_image@RG16F.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::RG32F)] = sh.LoadPipeline("internal/clear_image@RG32F.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::RG11F_B10F)] = sh.LoadPipeline("internal/clear_image@RG11F_B10F.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::RGBA32F)] = sh.LoadPipeline("internal/clear_image@RGBA32F.comp.glsl");
+    pi_clear_image_[0][int(Ren::eTexFormat::RGBA16F)] = sh.LoadPipeline("internal/clear_image@RGBA16F.comp.glsl");
+    // 2D Image Array
+    pi_clear_image_[1][int(Ren::eTexFormat::RGBA8)] = sh.LoadPipeline("internal/clear_image@ARRAY;RGBA8.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::R32F)] = sh.LoadPipeline("internal/clear_image@ARRAY;R32F.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::R16F)] = sh.LoadPipeline("internal/clear_image@ARRAY;R16F.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::R8)] = sh.LoadPipeline("internal/clear_image@ARRAY;R8.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::R32UI)] = sh.LoadPipeline("internal/clear_image@ARRAY;R32UI.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::RG8)] = sh.LoadPipeline("internal/clear_image@ARRAY;RG8.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::RG16F)] = sh.LoadPipeline("internal/clear_image@ARRAY;RG16F.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::RG32F)] = sh.LoadPipeline("internal/clear_image@ARRAY;RG32F.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::RG11F_B10F)] =
+        sh.LoadPipeline("internal/clear_image@ARRAY;RG11F_B10F.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::RGBA32F)] = sh.LoadPipeline("internal/clear_image@ARRAY;RGBA32F.comp.glsl");
+    pi_clear_image_[1][int(Ren::eTexFormat::RGBA16F)] = sh.LoadPipeline("internal/clear_image@ARRAY;RGBA16F.comp.glsl");
 
     pi_clear_buffer_ = sh.LoadPipeline("internal/clear_buffer.comp.glsl");
 }
@@ -1653,15 +1667,18 @@ void Eng::FgBuilder::ClearImage_AsTransfer(Ren::TexRef &tex, Ren::CommandBuffer 
 
 void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {
     const Ren::TexParams &p = tex->params;
+    assert(p.d == 0);
 
-    const Ren::PipelineRef &pi = pi_clear_image_[int(p.format)];
+    const Ren::PipelineRef &pi = pi_clear_image_[p.layer_count != 0][int(p.format)];
     assert(pi);
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::Image2D, ClearImage::OUT_IMG_SLOT, *tex}};
+    const Ren::Binding bindings[] = {
+        {p.layer_count ? Ren::eBindTarget::Image2DArray : Ren::eBindTarget::Image2D, ClearImage::OUT_IMG_SLOT, *tex}};
 
     const Ren::Vec3u grp_count =
         Ren::Vec3u{(p.w + ClearImage::LOCAL_GROUP_SIZE_X - 1u) / ClearImage::LOCAL_GROUP_SIZE_X,
-                   (p.h + ClearImage::LOCAL_GROUP_SIZE_Y - 1u) / ClearImage::LOCAL_GROUP_SIZE_Y, 1u};
+                   (p.h + ClearImage::LOCAL_GROUP_SIZE_Y - 1u) / ClearImage::LOCAL_GROUP_SIZE_Y,
+                   std::max<uint32_t>(p.layer_count, 1)};
 
     Ren::DispatchCompute(cmd_buf, *pi, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
 }

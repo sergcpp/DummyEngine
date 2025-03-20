@@ -166,7 +166,7 @@ class FgBuilder {
     std::vector<Ren::SmallVector<int, 4>> tex_alias_chains_, buf_alias_chains_;
     std::vector<Ren::MemHeap> memory_heaps_;
 
-    Ren::PipelineRef pi_clear_image_[int(Ren::eTexFormat::_Count)];
+    Ren::PipelineRef pi_clear_image_[2][int(Ren::eTexFormat::_Count)];
     Ren::PipelineRef pi_clear_buffer_;
 
   public:

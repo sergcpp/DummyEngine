@@ -71,7 +71,16 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         data->partial_update = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
         data->probe_volumes = persistent_data.probe_volumes;
 
-        ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput(persistent_data.probe_ray_data, stage);
+        { // ~56.6mb
+            Ren::TexParams p;
+            p.w = PROBE_TOTAL_RAYS_COUNT;
+            p.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
+            p.layer_count = 4 * PROBE_VOLUME_RES_Y;
+            p.format = Ren::eTexFormat::RGBA16F;
+            p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+
+            ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput("Probe Volume RayData", p, stage);
+        }
 
         ex_rt_gi_cache_.Setup(fg_builder_, &view_state_, &bindless, data);
         rt_gi_cache.set_executor(&ex_rt_gi_cache_);

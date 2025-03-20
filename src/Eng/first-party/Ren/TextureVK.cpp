@@ -121,7 +121,8 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
         !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
-        view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view_info.viewType = params.layer_count ? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+                                                : (params.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
         view_info.format = g_formats_vk[size_t(params.format)];
         if (IsDepthStencilFormat(params.format)) {
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -1201,25 +1202,25 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
 void Ren::ClearImage(const Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
     assert(tex.resource_state == eResState::CopyDst);
 
+    VkImageSubresourceRange clear_range = {};
+    clear_range.baseMipLevel = 0;
+    clear_range.levelCount = VK_REMAINING_MIP_LEVELS;
+    clear_range.baseArrayLayer = 0;
+    clear_range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
     if (!IsDepthFormat(tex.params.format)) {
+        clear_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
         VkClearColorValue clear_val = {};
         memcpy(clear_val.float32, rgba, 4 * sizeof(float));
-
-        VkImageSubresourceRange clear_range = {};
-        clear_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        clear_range.layerCount = 1;
-        clear_range.levelCount = 1;
 
         tex.api_ctx()->vkCmdClearColorImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val,
                                             1, &clear_range);
     } else {
+        clear_range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
         VkClearDepthStencilValue clear_val = {};
         clear_val.depth = rgba[0];
-
-        VkImageSubresourceRange clear_range = {};
-        clear_range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        clear_range.layerCount = 1;
-        clear_range.levelCount = 1;
 
         tex.api_ctx()->vkCmdClearDepthStencilImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                                    &clear_val, 1, &clear_range);

@@ -730,20 +730,6 @@ void Eng::SceneManager::AllocGICache() {
         probe_volume_spacing *= 3.0f;
     }
 
-    { // ~56.6mb
-        // TODO: make this temporary FG resource
-        Ren::TexParams p;
-        p.w = PROBE_TOTAL_RAYS_COUNT;
-        p.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
-        p.layer_count = 4 * PROBE_VOLUME_RES_Y;
-        p.format = Ren::eTexFormat::RGBA16F;
-        p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
-
-        Ren::eTexLoadStatus status;
-        scene_data_.persistent_data.probe_ray_data =
-            ren_ctx_.LoadTexture("Probe Volume RayData", p, ren_ctx_.default_mem_allocs(), &status);
-        assert(status != Ren::eTexLoadStatus::Error);
-    }
     { // ~47.8mb
         Ren::TexParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES;
@@ -792,12 +778,10 @@ void Eng::SceneManager::AllocGICache() {
 
 void Eng::SceneManager::ReleaseGICache(const bool immediate) {
     if (immediate) {
-        scene_data_.persistent_data.probe_ray_data->FreeImmediate();
         scene_data_.persistent_data.probe_irradiance->FreeImmediate();
         scene_data_.persistent_data.probe_distance->FreeImmediate();
         scene_data_.persistent_data.probe_offset->FreeImmediate();
     }
-    scene_data_.persistent_data.probe_ray_data = {};
     scene_data_.persistent_data.probe_irradiance = {};
     scene_data_.persistent_data.probe_distance = {};
     scene_data_.persistent_data.probe_offset = {};
@@ -1836,8 +1820,8 @@ void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const 
 }
 
 void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
-    if (!scene_data_.persistent_data.probe_ray_data || !scene_data_.persistent_data.probe_irradiance ||
-        !scene_data_.persistent_data.probe_distance || !scene_data_.persistent_data.probe_offset) {
+    if (!scene_data_.persistent_data.probe_irradiance || !scene_data_.persistent_data.probe_distance ||
+        !scene_data_.persistent_data.probe_offset) {
         return;
     }
 
@@ -1847,14 +1831,12 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
     }
 
     const Ren::TransitionInfo transitions[] = {
-        {scene_data_.persistent_data.probe_ray_data.get(), Ren::eResState::CopyDst},
         {scene_data_.persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
         {scene_data_.persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
         {scene_data_.persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
     TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
     static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    Ren::ClearImage(*scene_data_.persistent_data.probe_ray_data, rgba, cmd_buf);
     Ren::ClearImage(*scene_data_.persistent_data.probe_irradiance, rgba, cmd_buf);
     Ren::ClearImage(*scene_data_.persistent_data.probe_distance, rgba, cmd_buf);
     Ren::ClearImage(*scene_data_.persistent_data.probe_offset, rgba, cmd_buf);

@@ -50,7 +50,6 @@ void Eng::PersistentGpuData::Release() {
     rt_tlas = {};
     rt_sh_tlas = {};
 
-    probe_ray_data = {};
     probe_irradiance = {};
     probe_distance = {};
     probe_offset = {};

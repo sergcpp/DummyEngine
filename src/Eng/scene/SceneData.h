@@ -232,7 +232,6 @@ struct PersistentGpuData {
     uint32_t rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;
 
-    Ren::TexRef probe_ray_data;
     Ren::TexRef probe_irradiance;
     Ren::TexRef probe_distance;
     Ren::TexRef probe_offset;

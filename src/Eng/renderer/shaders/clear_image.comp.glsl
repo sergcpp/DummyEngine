@@ -4,14 +4,25 @@
 #include "_cs_common.glsl"
 #include "clear_image_interface.h"
 
+#pragma multi_compile _ ARRAY
 #pragma multi_compile RGBA8 R32F R16F R8 R32UI RG8 RG16F RG32F RGBA32F RGBA16F RG11F_B10F
 
-#if defined(R32UI)
-    #define IMAGE2D uimage2D
-    #define ZERO uvec4(0)
+#if defined(ARRAY)
+    #if defined(R32UI)
+        #define IMAGE2D uimage2DArray
+        #define ZERO uvec4(0)
+    #else
+        #define IMAGE2D image2DArray
+        #define ZERO vec4(0)
+    #endif
 #else
-    #define IMAGE2D image2D
-    #define ZERO vec4(0)
+    #if defined(R32UI)
+        #define IMAGE2D uimage2D
+        #define ZERO uvec4(0)
+    #else
+        #define IMAGE2D image2D
+        #define ZERO vec4(0)
+    #endif
 #endif
 
 layout(binding = OUT_IMG_SLOT,
@@ -43,5 +54,9 @@ layout(binding = OUT_IMG_SLOT,
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
+#if defined(ARRAY)
+    imageStore(g_out_img, ivec3(gl_GlobalInvocationID.xyz), ZERO);
+#else
     imageStore(g_out_img, ivec2(gl_GlobalInvocationID.xy), ZERO);
+#endif
 }
