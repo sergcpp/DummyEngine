@@ -286,7 +286,7 @@ Ren::eTexUsage Ren::TexUsageFromState(eResState state) { return g_tex_usage_per_
 void Ren::ParseDDSHeader(const DDSHeader &hdr, TexParams *params) {
     params->w = uint16_t(hdr.dwWidth);
     params->h = uint16_t(hdr.dwHeight);
-    //params->d = uint16_t(hdr.dwDepth);
+    params->d = uint8_t(hdr.dwDepth > 1 ? hdr.dwDepth : 0);
     params->mip_count = uint8_t(hdr.dwMipMapCount);
 
     if (hdr.sPixelFormat.dwFourCC == FourCC_BC1) {

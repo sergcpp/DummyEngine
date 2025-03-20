@@ -131,9 +131,9 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         }
         view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = params.mip_count;
+        view_info.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
+        view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
         const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
@@ -174,7 +174,7 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
                 view_info.subresourceRange.baseMipLevel = j;
                 view_info.subresourceRange.levelCount = 1;
                 view_info.subresourceRange.baseArrayLayer = 0;
-                view_info.subresourceRange.layerCount = 1;
+                view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
                 handle_.views.emplace_back(VK_NULL_HANDLE);
                 const VkResult res =
@@ -350,9 +350,9 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
         view_info.format = g_formats_vk[size_t(format)];
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = mip_count;
+        view_info.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
+        view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
         const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &new_image_view);
         if (res != VK_SUCCESS) {
@@ -434,9 +434,9 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
                 new_barrier.image = handle_.img;
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 new_barrier.subresourceRange.baseMipLevel = 0;
-                new_barrier.subresourceRange.levelCount = params.mip_count; // transit the whole image
+                new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
                 new_barrier.subresourceRange.baseArrayLayer = 0;
-                new_barrier.subresourceRange.layerCount = 1;
+                new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
                 src_stages |= VKPipelineStagesForState(this->resource_state);
                 dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
@@ -455,9 +455,9 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
                 new_barrier.image = new_image;
                 new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 new_barrier.subresourceRange.baseMipLevel = 0;
-                new_barrier.subresourceRange.levelCount = mip_count; // transit the whole image
+                new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
                 new_barrier.subresourceRange.baseArrayLayer = 0;
-                new_barrier.subresourceRange.layerCount = 1;
+                new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
                 src_stages |= VKPipelineStagesForState(new_resource_state);
                 dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
@@ -500,7 +500,7 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
             view_info.subresourceRange.baseMipLevel = j;
             view_info.subresourceRange.levelCount = 1;
             view_info.subresourceRange.baseArrayLayer = 0;
-            view_info.subresourceRange.layerCount = 1;
+            view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
             handle_.views.emplace_back(VK_NULL_HANDLE);
             const VkResult res =
@@ -606,9 +606,9 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         }
         view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = mip_count;
+        view_info.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = std::max<uint32_t>(p.layer_count, 1u);
+        view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
         const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
@@ -650,7 +650,7 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
                 view_info.subresourceRange.baseMipLevel = j;
                 view_info.subresourceRange.levelCount = 1;
                 view_info.subresourceRange.baseArrayLayer = 0;
-                view_info.subresourceRange.layerCount = std::max<uint32_t>(p.layer_count, 1u);
+                view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
                 handle_.views.emplace_back(VK_NULL_HANDLE);
                 const VkResult res =
@@ -708,9 +708,9 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
             new_barrier.image = handle_.img;
             new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             new_barrier.subresourceRange.baseMipLevel = 0;
-            new_barrier.subresourceRange.levelCount = mip_count; // transit whole image
+            new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
             new_barrier.subresourceRange.baseArrayLayer = 0;
-            new_barrier.subresourceRange.layerCount = 1;
+            new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
             src_stages |= VKPipelineStagesForState(this->resource_state);
             dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
@@ -853,9 +853,9 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
         view_info.format = g_formats_vk[size_t(p.format)];
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = mip_count;
+        view_info.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 6;
+        view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
         const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
@@ -939,9 +939,9 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
         new_barrier.image = handle_.img;
         new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         new_barrier.subresourceRange.baseMipLevel = 0;
-        new_barrier.subresourceRange.levelCount = mip_count; // transit whole image
+        new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         new_barrier.subresourceRange.baseArrayLayer = 0;
-        new_barrier.subresourceRange.layerCount = 6;
+        new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
@@ -987,9 +987,10 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture::SetSubImage(const int level, const int offsetx, const int offsety, const int offsetz,
-                               const int sizex, const int sizey, const int sizez, const eTexFormat format,
-                               const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off, const int data_len) {
+void Ren::Texture::SetSubImage(const int layer, const int level, const int offsetx, const int offsety,
+                               const int offsetz, const int sizex, const int sizey, const int sizez,
+                               const eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off,
+                               const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
@@ -1028,9 +1029,9 @@ void Ren::Texture::SetSubImage(const int level, const int offsetx, const int off
         new_barrier.image = handle_.img;
         new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         new_barrier.subresourceRange.baseMipLevel = 0;
-        new_barrier.subresourceRange.levelCount = params.mip_count; // transit whole image
+        new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         new_barrier.subresourceRange.baseArrayLayer = 0;
-        new_barrier.subresourceRange.layerCount = 1;
+        new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
@@ -1056,7 +1057,7 @@ void Ren::Texture::SetSubImage(const int level, const int offsetx, const int off
 
     region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.imageSubresource.mipLevel = uint32_t(level);
-    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.baseArrayLayer = uint32_t(layer);
     region.imageSubresource.layerCount = 1;
 
     region.imageOffset = {int32_t(offsetx), int32_t(offsety), int32_t(offsetz)};
@@ -1084,9 +1085,9 @@ void Ren::Texture::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, co
         new_barrier.image = handle_.img;
         new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         new_barrier.subresourceRange.baseMipLevel = 0;
-        new_barrier.subresourceRange.levelCount = params.mip_count; // transit whole image
+        new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         new_barrier.subresourceRange.baseArrayLayer = 0;
-        new_barrier.subresourceRange.layerCount = 1;
+        new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopySrc);

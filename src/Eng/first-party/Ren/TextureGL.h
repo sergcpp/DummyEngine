@@ -56,6 +56,7 @@ class Texture : public RefCounter {
     TexParamsPacked params;
 
     uint32_t first_user = 0xffffffff;
+    mutable eResState resource_state = eResState::Undefined;
 
     Texture() = default;
     Texture(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *mem_allocs, ILog *log);
@@ -102,11 +103,23 @@ class Texture : public RefCounter {
     void SetSampling(SamplingParams sampling) { params.sampling = sampling; }
     void ApplySampling(SamplingParams sampling, ILog *log);
 
-    void SetSubImage(int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
+    void SetSubImage(int layer, int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
                      eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);
-    void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;
+    void SetSubImage(int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
+                     eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) {
+        SetSubImage(0, level, offsetx, offsety, offsetz, sizex, sizey, sizez, format, sbuf, cmd_buf, data_off,
+                    data_len);
+    }
+    void SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez, eTexFormat format,
+                     const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) {
+        SetSubImage(0, 0, offsetx, offsety, offsetz, sizex, sizey, sizez, format, sbuf, cmd_buf, data_off, data_len);
+    }
+    void SetSubImage(int offsetx, int offsety, int sizex, int sizey, eTexFormat format, const Buffer &sbuf,
+                     CommandBuffer cmd_buf, int data_off, int data_len) {
+        SetSubImage(0, 0, offsetx, offsety, 0, sizex, sizey, 1, format, sbuf, cmd_buf, data_off, data_len);
+    }
 
-    mutable eResState resource_state = eResState::Undefined;
+    void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;
 };
 
 void CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,

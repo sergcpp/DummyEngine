@@ -32,25 +32,16 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 Ren::eTexLoadStatus status;
-                sky_transmittance_lut_ =
-                    ctx_.LoadTexture("Sky Transmittance LUT", p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedDefault);
-
-                Ren::Buffer stage_buf("Temp Stage Buf", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                      4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
-                { // init stage buf
-                    uint8_t *mapped_ptr = stage_buf.Map();
-                    memcpy(mapped_ptr, transmittance_lut.data(),
-                           4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
-                    stage_buf.Unmap();
-                }
-
-                sky_transmittance_lut_->SetSubImage(0, 0, 0, 0, SKY_TRANSMITTANCE_LUT_W, SKY_TRANSMITTANCE_LUT_H, 1,
-                                                    Ren::eTexFormat::RGBA32F, stage_buf, ctx_.current_cmd_buf(), 0,
-                                                    4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H *
-                                                        sizeof(float));
+                sky_transmittance_lut_ = ctx_.LoadTexture(
+                    "Sky Transmittance LUT",
+                    Ren::Span{(const uint8_t *)transmittance_lut.data(), transmittance_lut.size() * sizeof(Ren::Vec4f)},
+                    p, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init multiscatter LUT
+                const std::vector<Ren::Vec4f> multiscatter_lut =
+                    Generate_SkyMultiscatterLUT(p_list_->env.atmosphere, transmittance_lut);
+
                 Ren::TexParams p;
                 p.w = p.h = SKY_MULTISCATTER_LUT_RES;
                 p.format = Ren::eTexFormat::RGBA32F;
@@ -59,25 +50,11 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 Ren::eTexLoadStatus status;
-                sky_multiscatter_lut_ = ctx_.LoadTexture("Sky Multiscatter LUT", p, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedDefault);
-
-                const std::vector<Ren::Vec4f> multiscatter_lut =
-                    Generate_SkyMultiscatterLUT(p_list_->env.atmosphere, transmittance_lut);
-
-                Ren::Buffer stage_buf("Temp Stage Buf", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                      4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
-                { // init stage buf
-                    uint8_t *mapped_ptr = stage_buf.Map();
-                    memcpy(mapped_ptr, multiscatter_lut.data(),
-                           4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
-                    stage_buf.Unmap();
-                }
-
-                sky_multiscatter_lut_->SetSubImage(0, 0, 0, 0, SKY_MULTISCATTER_LUT_RES, SKY_MULTISCATTER_LUT_RES, 1,
-                                                   Ren::eTexFormat::RGBA32F, stage_buf, ctx_.current_cmd_buf(), 0,
-                                                   4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES *
-                                                       sizeof(float));
+                sky_multiscatter_lut_ = ctx_.LoadTexture(
+                    "Sky Multiscatter LUT",
+                    Ren::Span{(const uint8_t *)multiscatter_lut.data(), multiscatter_lut.size() * sizeof(Ren::Vec4f)},
+                    p, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedFromData);
             }
             { // Init Moon texture
                 const std::string_view moon_diff = "assets_pc/textures/internal/moon_diff.dds";
@@ -134,7 +111,7 @@ void Eng::Renderer::InitSkyResources() {
                 const std::string_view curl = "assets_pc/textures/internal/curl.dds";
 
                 Ren::TexParams p;
-                //p.flags = Ren::eTexFlags::SRGB;
+                // p.flags = Ren::eTexFlags::SRGB;
                 p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
@@ -152,36 +129,21 @@ void Eng::Renderer::InitSkyResources() {
                 }
             }
             { // Init 3d noise texture
-                Sys::AssetFile noise_tex("assets_pc/textures/internal/3dnoise.dds");
-                std::vector<uint8_t> data(noise_tex.size());
-                noise_tex.Read((char *)&data[0], noise_tex.size());
+                const std::string_view noise = "assets_pc/textures/internal/3dnoise.dds";
 
-                Ren::DDSHeader header = {};
-                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
+                Ren::TexParams p;
+                p.usage = Ren::Bitmask(Ren::eTexUsage::Sampled) | Ren::eTexUsage::Transfer;
+                p.sampling.filter = Ren::eTexFilter::Bilinear;
+                p.sampling.wrap = Ren::eTexWrap::Repeat;
 
-                const uint32_t data_len = header.dwWidth * header.dwHeight * header.dwDepth;
-
-                Ren::TexParams params;
-                params.w = header.dwWidth;
-                params.h = header.dwHeight;
-                params.d = header.dwDepth;
-                params.format = Ren::eTexFormat::R8;
-                params.usage = Ren::Bitmask(Ren::eTexUsage::Sampled) | Ren::eTexUsage::Transfer;
-                params.sampling.filter = Ren::eTexFilter::Bilinear;
-                params.sampling.wrap = Ren::eTexWrap::Repeat;
-
-                Ren::eTexLoadStatus status;
-                sky_noise3d_tex_ = ctx_.LoadTexture("Noise 3d Tex", params, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedDefault);
-
-                Ren::Buffer stage_buf = Ren::Buffer("Temp stage buf", ctx_.api_ctx(), Ren::eBufType::Upload, data_len);
-                uint8_t *mapped_ptr = stage_buf.Map();
-                memcpy(mapped_ptr, &data[0] + sizeof(Ren::DDSHeader), data_len);
-                stage_buf.Unmap();
-
-                sky_noise3d_tex_->SetSubImage(0, 0, 0, 0, int(header.dwWidth), int(header.dwHeight),
-                                              int(header.dwDepth), Ren::eTexFormat::R8, stage_buf,
-                                              ctx_.current_cmd_buf(), 0, int(data_len));
+                const std::vector<uint8_t> data = LoadDDS(noise, &p);
+                if (!data.empty()) {
+                    Ren::eTexLoadStatus status;
+                    sky_noise3d_tex_ = ctx_.LoadTexture(noise, data, p, ctx_.default_mem_allocs(), &status);
+                    assert(status == Ren::eTexLoadStatus::CreatedFromData);
+                } else {
+                    ctx_.log()->Error("Failed to load %s", noise.data());
+                }
             }
         }
     }

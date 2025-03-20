@@ -253,8 +253,8 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
                                                 GLsizei(p.d));
                 }
             } else {
-                ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count,
-                                            internal_format, GLsizei(p.w), GLsizei(p.h), GLsizei(p.layer_count));
+                ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count, internal_format, GLsizei(p.w),
+                                            GLsizei(p.h), GLsizei(p.layer_count));
             }
             if (sbuf) {
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
@@ -433,9 +433,10 @@ void Ren::Texture::ApplySampling(SamplingParams sampling, ILog *log) {
     params.sampling = sampling;
 }
 
-void Ren::Texture::SetSubImage(const int level, const int offsetx, const int offsety, const int offsetz,
-                               const int sizex, const int sizey, const int sizez, const eTexFormat format,
-                               const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off, const int data_len) {
+void Ren::Texture::SetSubImage(const int layer, const int level, const int offsetx, const int offsety,
+                               const int offsetz, const int sizex, const int sizey, const int sizez,
+                               const eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off,
+                               const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
@@ -445,26 +446,40 @@ void Ren::Texture::SetSubImage(const int level, const int offsetx, const int off
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
-    if (params.d == 0) {
-        if (IsCompressedFormat(format)) {
-            ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
-                                                   GLint(offsety), GLsizei(sizex), GLsizei(sizey),
-                                                   GLInternalFormatFromTexFormat(format), GLsizei(data_len),
-                                                   reinterpret_cast<const void *>(uintptr_t(data_off)));
+    if (params.layer_count == 0) {
+        if (params.d == 0) {
+            if (IsCompressedFormat(format)) {
+                ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
+                                                       GLint(offsety), GLsizei(sizex), GLsizei(sizey),
+                                                       GLInternalFormatFromTexFormat(format), GLsizei(data_len),
+                                                       reinterpret_cast<const void *>(uintptr_t(data_off)));
+            } else {
+                ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
+                                             GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                             reinterpret_cast<const void *>(uintptr_t(data_off)));
+            }
         } else {
-            ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
-                                         GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
-                                         reinterpret_cast<const void *>(uintptr_t(data_off)));
+            if (IsCompressedFormat(format)) {
+                ren_glCompressedTextureSubImage3D_Comp(
+                    GL_TEXTURE_3D, GLuint(handle_.id), 0, GLint(offsetx), GLint(offsety), GLint(offsetz),
+                    GLsizei(sizex), GLsizei(sizey), GLsizei(sizez), GLInternalFormatFromTexFormat(format),
+                    GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
+            } else {
+                ren_glTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, offsetx, offsety, offsetz, sizex,
+                                             sizey, sizez, GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                             reinterpret_cast<const void *>(uintptr_t(data_off)));
+            }
         }
     } else {
         if (IsCompressedFormat(format)) {
-            ren_glCompressedTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, GLint(offsetx), GLint(offsety),
-                                                   GLint(offsetz), GLsizei(sizex), GLsizei(sizey), GLsizei(sizez),
-                                                   GLInternalFormatFromTexFormat(format), GLsizei(data_len),
-                                                   reinterpret_cast<const void *>(uintptr_t(data_off)));
+            ren_glCompressedTextureSubImage3D_Comp(
+                GL_TEXTURE_2D_ARRAY, GLuint(handle_.id), 0, GLint(offsetx), GLint(offsety), GLint(layer + offsetz),
+                GLsizei(sizex), GLsizei(sizey), GLsizei(sizez), GLInternalFormatFromTexFormat(format),
+                GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
         } else {
-            ren_glTextureSubImage3D_Comp(GL_TEXTURE_3D, GLuint(handle_.id), 0, offsetx, offsety, offsetz, sizex, sizey,
-                                         sizez, GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+            ren_glTextureSubImage3D_Comp(GL_TEXTURE_2D_ARRAY, GLuint(handle_.id), 0, offsetx, offsety, layer + offsetz,
+                                         sizex, sizey, sizez, GLFormatFromTexFormat(format),
+                                         GLTypeFromTexFormat(format),
                                          reinterpret_cast<const void *>(uintptr_t(data_off)));
         }
     }

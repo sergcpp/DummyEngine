@@ -126,8 +126,22 @@ class Texture : public RefCounter {
     void SetSampling(SamplingParams sampling);
     void ApplySampling(SamplingParams sampling, ILog *log) { SetSampling(sampling); }
 
-    void SetSubImage(int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
+    void SetSubImage(int layer, int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
                      eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);
+    void SetSubImage(int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
+                     eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) {
+        SetSubImage(0, level, offsetx, offsety, offsetz, sizex, sizey, sizez, format, sbuf, cmd_buf, data_off,
+                    data_len);
+    }
+    void SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez, eTexFormat format,
+                     const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) {
+        SetSubImage(0, 0, offsetx, offsety, offsetz, sizex, sizey, sizez, format, sbuf, cmd_buf, data_off, data_len);
+    }
+    void SetSubImage(int offsetx, int offsety, int sizex, int sizey, eTexFormat format, const Buffer &sbuf,
+                     CommandBuffer cmd_buf, int data_off, int data_len) {
+        SetSubImage(0, 0, offsetx, offsety, 0, sizex, sizey, 1, format, sbuf, cmd_buf, data_off, data_len);
+    }
+
     void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) const;
 };
 

@@ -1512,7 +1512,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
                                                         {tonemap_lut_.get(), Ren::eResState::CopyDst}};
         TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
 
-        tonemap_lut_->SetSubImage(0, 0, 0, 0, res, res, res, Ren::eTexFormat::RGB10_A2, temp_upload_buf, cmd_buf, 0,
+        tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RGB10_A2, temp_upload_buf, cmd_buf, 0,
                                   data_len);
 
         const Ren::TransitionInfo res_transitions2[] = {{tonemap_lut_.get(), Ren::eResState::ShaderResource}};
@@ -1805,7 +1805,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             const int w = output_image.ref->params.w;
             const int h = output_image.ref->params.h;
 
-            output_image.ref->SetSubImage(0, 0, 0, 0, w, h, 1, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
+            output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
                                           builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
         });
 
