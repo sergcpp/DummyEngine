@@ -61,6 +61,7 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/PrimDraw.cpp
                         renderer/Renderer.h
                         renderer/Renderer.cpp
+                        renderer/Renderer_Common.cpp
                         renderer/Renderer_DrawList.h
                         renderer/Renderer_DrawList.cpp
                         renderer/Renderer_Frontend.cpp
@@ -69,7 +70,7 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/Renderer_GIDiffuse.cpp
                         renderer/Renderer_GISpecular.cpp
                         renderer/Renderer_Names.h
-                        renderer/Renderer_Passes.cpp
+                        renderer/Renderer_Postprocess.cpp
                         renderer/Renderer_Structs.h
                         renderer/Renderer_SunShadows.cpp
                         renderer/Renderer_Transparency.cpp

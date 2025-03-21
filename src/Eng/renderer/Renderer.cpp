@@ -1184,6 +1184,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddForwardTransparentPass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
 
+        //
+        AddFogPasses(common_buffers, frame_textures);
+
         frame_textures.exposure = AddAutoexposurePasses(frame_textures.color);
 
         //

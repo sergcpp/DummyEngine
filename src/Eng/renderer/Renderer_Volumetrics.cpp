@@ -8,6 +8,7 @@
 
 #include "shaders/blit_fxaa_interface.h"
 #include "shaders/skydome_interface.h"
+#include "shaders/sun_brightness_interface.h"
 
 void Eng::Renderer::InitSkyResources() {
     if (p_list_->env.env_map_name != "physical_sky") {
@@ -329,5 +330,142 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                                     builder.rast_state(), bindings, &uniform_params, sizeof(FXAA::Params), 0);
             });
         }
+    }
+}
+
+void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
+    if (p_list_->env.env_map_name != "physical_sky") {
+        return;
+    }
+
+    FgResRef output;
+    { // Sample sun color
+        auto &sun_color = fg_builder_.AddNode("SUN COLOR SAMPLE");
+
+        struct PassData {
+            FgResRef shared_data;
+            FgResRef transmittance_lut;
+            FgResRef multiscatter_lut;
+            FgResRef moon_tex;
+            FgResRef weather_tex;
+            FgResRef cirrus_tex;
+            FgResRef noise3d_tex;
+            FgResRef output_buf;
+        };
+
+        auto *data = sun_color.AllocNodeData<PassData>();
+
+        data->shared_data = sun_color.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->transmittance_lut = sun_color.AddTextureInput(sky_transmittance_lut_, Stg::ComputeShader);
+        data->multiscatter_lut = sun_color.AddTextureInput(sky_multiscatter_lut_, Stg::ComputeShader);
+        data->moon_tex = sun_color.AddTextureInput(sky_moon_tex_, Stg::ComputeShader);
+        data->weather_tex = sun_color.AddTextureInput(sky_weather_tex_, Stg::ComputeShader);
+        data->cirrus_tex = sun_color.AddTextureInput(sky_cirrus_tex_, Stg::ComputeShader);
+        data->noise3d_tex = sun_color.AddTextureInput(sky_noise3d_tex_, Stg::ComputeShader);
+
+        FgBufDesc desc = {};
+        desc.type = Ren::eBufType::Storage;
+        desc.size = 8 * sizeof(float);
+        output = data->output_buf = sun_color.AddStorageOutput("Sun Brightness Result", desc, Stg::ComputeShader);
+
+        sun_color.set_execute_cb([data, this](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocTex &transmittance_lut = builder.GetReadTexture(data->transmittance_lut);
+            FgAllocTex &multiscatter_lut = builder.GetReadTexture(data->multiscatter_lut);
+            FgAllocTex &moon_tex = builder.GetReadTexture(data->moon_tex);
+            FgAllocTex &weather_tex = builder.GetReadTexture(data->weather_tex);
+            FgAllocTex &cirrus_tex = builder.GetReadTexture(data->cirrus_tex);
+            FgAllocTex &noise3d_tex = builder.GetReadTexture(data->noise3d_tex);
+            FgAllocBuf &output_buf = builder.GetWriteBuffer(data->output_buf);
+
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::Tex2DSampled, SunBrightness::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
+                {Trg::Tex2DSampled, SunBrightness::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
+                {Trg::Tex2DSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
+                {Trg::Tex2DSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
+                {Trg::Tex2DSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
+                {Trg::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.ref},
+                {Trg::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
+
+            DispatchCompute(*pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+    { // Update sun color
+        auto &sun_color = fg_builder_.AddNode("SUN COLOR UPDATE");
+
+        struct PassData {
+            FgResRef sample_buf;
+            FgResRef shared_data;
+        };
+
+        auto *data = sun_color.AllocNodeData<PassData>();
+
+        data->sample_buf = sun_color.AddTransferInput(output);
+        common_buffers.shared_data = data->shared_data = sun_color.AddTransferOutput(common_buffers.shared_data);
+
+        sun_color.set_execute_cb([data](FgBuilder &builder) {
+            FgAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
+            FgAllocBuf &unif_sh_data_buf = builder.GetWriteBuffer(data->shared_data);
+
+            CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(shared_data_t, sun_col),
+                               3 * sizeof(float), builder.ctx().current_cmd_buf());
+            CopyBufferToBuffer(*sample_buf.ref, 4 * sizeof(float), *unif_sh_data_buf.ref,
+                               offsetof(shared_data_t, sun_col_point_sh), 3 * sizeof(float),
+                               builder.ctx().current_cmd_buf());
+        });
+    }
+}
+
+void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+    FgResRef froxel_tex;
+    { // Inject light
+        auto &inject_light = fg_builder_.AddNode("VOL INJECT LIGHT");
+
+        struct PassData {
+            FgResRef output_tex;
+        };
+
+        auto *data = inject_light.AllocNodeData<PassData>();
+
+        { //
+            Ren::TexParams p;
+            p.w = (view_state_.act_res[0] + 7u) / 8u;
+            p.h = (view_state_.act_res[1] + 7u) / 8u;
+            p.d = 128;
+            p.format = Ren::eTexFormat::RGBA16F;
+            p.sampling.filter = Ren::eTexFilter::Bilinear;
+            p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            froxel_tex = data->output_tex =
+                inject_light.AddStorageImageOutput("Vol Froxels", p, Ren::eStageBits::ComputeShader);
+        }
+
+        inject_light.set_execute_cb(
+            [data, this](FgBuilder &builder) { FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex); });
+    }
+    { // Ray march
+        auto &ray_march = fg_builder_.AddNode("VOL RAY MARCH");
+
+        struct PassData {
+            FgResRef froxel_tex;
+            FgResRef output_tex;
+        };
+
+        auto *data = ray_march.AllocNodeData<PassData>();
+        data->froxel_tex = ray_march.AddTextureInput(froxel_tex, Ren::eStageBits::ComputeShader);
+
+        frame_textures.color = data->output_tex =
+            ray_march.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::ComputeShader);
+
+        ray_march.set_execute_cb([data, this](FgBuilder &builder) {
+            FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
+
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+        });
     }
 }

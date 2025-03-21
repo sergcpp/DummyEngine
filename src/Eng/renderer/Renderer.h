@@ -272,12 +272,8 @@ class Renderer {
         FgResRef oit_depth_buf;
     };
 
-    void InitSkyResources();
-
     void AddBuffersUpdatePass(CommonBuffers &common_buffers, const PersistentGpuData &persistent_data);
     void AddLightBuffersUpdatePass(CommonBuffers &common_buffers);
-    void AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
-    void AddSunColorUpdatePass(CommonBuffers &common_buffers);
     void AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                             const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool enable_gi);
@@ -285,21 +281,29 @@ class Renderer {
                           const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
-    void AddOITPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                      const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                      FgResRef depth_hierarchy, FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
-                      FrameTextures &frame_textures);
-    void AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                   const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
-    void AddSSAOPasses(FgResRef depth_down_2x, FgResRef depth_tex, FgResRef &out_ssao);
-    FgResRef AddGTAOPasses(eSSAOQuality quality, FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex);
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                    FgResRef &inout_velocity_tex);
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
                     FgResRef &resolved_color);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
+    // GI Cache
+    void AddGICachePasses(const Ren::WeakTexRef &env_map, const CommonBuffers &common_buffers,
+                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                          const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
+                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
+
+    // GI Diffuse
+    void AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::WeakTexRef &lm_direct,
+                          const Ren::WeakTexRef lm_indir_sh[4], bool debug_denoise, const CommonBuffers &common_buffers,
+                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                          const BindlessTextureData &bindless, FgResRef depth_hierarchy, FgResRef rt_geo_instances_res,
+                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
+    void AddSSAOPasses(FgResRef depth_down_2x, FgResRef depth_tex, FgResRef &out_ssao);
+    FgResRef AddGTAOPasses(eSSAOQuality quality, FgResRef depth_tex, FgResRef velocity_tex, FgResRef norm_tex);
+
+    // GI Specular
     void AddHQSpecularPasses(bool deferred_shading, bool debug_denoise, const CommonBuffers &common_buffers,
                              const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                              const BindlessTextureData &bindless, FgResRef depth_hierarchy,
@@ -308,17 +312,7 @@ class Renderer {
     void AddLQSpecularPasses(const CommonBuffers &common_buffers, FgResRef depth_down_2x,
                              FrameTextures &frame_textures);
 
-    void AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::WeakTexRef &lm_direct,
-                          const Ren::WeakTexRef lm_indir_sh[4], bool debug_denoise, const CommonBuffers &common_buffers,
-                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, FgResRef depth_hierarchy, FgResRef rt_geo_instances_res,
-                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
-
-    void AddGICachePasses(const Ren::WeakTexRef &env_map, const CommonBuffers &common_buffers,
-                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
-                          FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
-
+    // Sun Shadows
     FgResRef AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                    const AccelerationStructureData &acc_struct_data,
                                    const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
@@ -328,15 +322,30 @@ class Renderer {
                                  const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                                  const FrameTextures &frame_textures);
 
-    FgResRef AddBloomPasses(FgResRef hdr_texture, FgResRef exposure_texture, bool compressed);
+    // Transparency
+    void AddOITPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                      const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                      FgResRef depth_hierarchy, FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
+                      FrameTextures &frame_textures);
+    void AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                   const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
-    FgResRef AddAutoexposurePasses(FgResRef hdr_texture);
+    // Volumetrics
+    void InitSkyResources();
+    void AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
+    void AddSunColorUpdatePass(CommonBuffers &common_buffers);
+    void AddFogPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
 
+    // Debugging
     void AddDebugVelocityPass(FgResRef velocity, FgResRef &output_tex);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 
     void UpdatePixelFilterTable(ePixelFilter filter, float filter_width);
+
+    // Postprocess
+    FgResRef AddAutoexposurePasses(FgResRef hdr_texture);
+    FgResRef AddBloomPasses(FgResRef hdr_texture, FgResRef exposure_texture, bool compressed);
 
     // Parallel Jobs
     static void GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,

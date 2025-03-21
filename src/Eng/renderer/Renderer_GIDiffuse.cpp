@@ -4,6 +4,9 @@
 
 #include "Renderer_Names.h"
 
+#include "shaders/blit_bilateral_interface.h"
+#include "shaders/blit_ssao_interface.h"
+#include "shaders/blit_upscale_interface.h"
 #include "shaders/gi_classify_interface.h"
 #include "shaders/gi_filter_interface.h"
 #include "shaders/gi_reproject_interface.h"
@@ -12,8 +15,21 @@
 #include "shaders/gi_trace_ss_interface.h"
 #include "shaders/gi_write_indir_rt_dispatch_interface.h"
 #include "shaders/gi_write_indirect_args_interface.h"
+#include "shaders/gtao_interface.h"
 #include "shaders/probe_sample_interface.h"
 #include "shaders/tile_clear_interface.h"
+
+namespace RendererInternal {
+static const float GTAORandSamples[32][2] = {
+    {0.673997f, 0.678703f}, {0.381107f, 0.299157f}, {0.830422f, 0.123435f}, {0.110746f, 0.927141f},
+    {0.913511f, 0.797823f}, {0.160077f, 0.141460f}, {0.557984f, 0.453895f}, {0.323667f, 0.502007f},
+    {0.597559f, 0.967611f}, {0.284918f, 0.020696f}, {0.943984f, 0.367100f}, {0.228963f, 0.742073f},
+    {0.794414f, 0.611045f}, {0.025854f, 0.406871f}, {0.695394f, 0.243437f}, {0.476599f, 0.826670f},
+    {0.502447f, 0.539025f}, {0.353506f, 0.469774f}, {0.895886f, 0.159506f}, {0.131713f, 0.774900f},
+    {0.857590f, 0.887409f}, {0.067422f, 0.090030f}, {0.648406f, 0.253075f}, {0.435085f, 0.632276f},
+    {0.743669f, 0.861615f}, {0.442667f, 0.211039f}, {0.759943f, 0.403822f}, {0.037858f, 0.585661f},
+    {0.978491f, 0.693668f}, {0.195222f, 0.323286f}, {0.566908f, 0.055406f}, {0.256133f, 0.988877f}};
+}
 
 void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::WeakTexRef &lm_direct,
                                      const Ren::WeakTexRef lm_indir_sh[4], const bool debug_denoise,
@@ -1100,4 +1116,447 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
     } else {
         frame_textures.gi = gi_diffuse_tex;
     }
+}
+
+void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _depth_tex, FgResRef &out_ssao) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
+    FgResRef ssao_raw;
+    { // Main SSAO pass
+        auto &ssao = fg_builder_.AddNode("SSAO");
+
+        struct PassData {
+            FgResRef rand_tex;
+            FgResRef depth_tex;
+
+            FgResRef output_tex;
+        };
+
+        auto *data = ssao.AllocNodeData<PassData>();
+        data->rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Stg::FragmentShader);
+        data->depth_tex = ssao.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+
+        { // Allocate output texture
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0] / 2;
+            params.h = view_state_.scr_res[1] / 2;
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            ssao_raw = data->output_tex = ssao.AddColorOutput("SSAO RAW", params);
+        }
+
+        ssao.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &rand_tex = builder.GetReadTexture(data->rand_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 2;
+            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
+                                             {Trg::Tex2DSampled, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
+
+            SSAO::Params uniform_params;
+            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0] / 2, view_state_.act_res[1] / 2};
+            uniform_params.resolution = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, {}, render_targets, rast_state,
+                                builder.rast_state(), bindings, &uniform_params, sizeof(SSAO::Params), 0);
+        });
+    }
+
+    FgResRef ssao_blurred1;
+    { // Horizontal SSAO blur
+        auto &ssao_blur_h = fg_builder_.AddNode("SSAO BLUR H");
+
+        struct PassData {
+            FgResRef depth_tex;
+            FgResRef input_tex;
+
+            FgResRef output_tex;
+        };
+
+        auto *data = ssao_blur_h.AllocNodeData<PassData>();
+        data->depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+        data->input_tex = ssao_blur_h.AddTextureInput(ssao_raw, Stg::FragmentShader);
+
+        { // Allocate output texture
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0] / 2;
+            params.h = view_state_.scr_res[1] / 2;
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            ssao_blurred1 = data->output_tex = ssao_blur_h.AddColorOutput("SSAO BLUR TEMP1", params);
+        }
+
+        ssao_blur_h.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 2;
+            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+
+            { // blur ao buffer
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
+
+                Bilateral::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+                uniform_params.resolution = Ren::Vec2f{float(rast_state.viewport[2]), float(rast_state.viewport[3])};
+                uniform_params.vertical = 0.0f;
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, {}, render_targets, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(Bilateral::Params), 0);
+            }
+        });
+    }
+
+    FgResRef ssao_blurred2;
+    { // Vertical SSAO blur
+        auto &ssao_blur_v = fg_builder_.AddNode("SSAO BLUR V");
+
+        struct PassData {
+            FgResRef depth_tex;
+            FgResRef input_tex;
+
+            FgResRef output_tex;
+        };
+
+        auto *data = ssao_blur_v.AllocNodeData<PassData>();
+        data->depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+        data->input_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Stg::FragmentShader);
+
+        { // Allocate output texture
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0] / 2;
+            params.h = view_state_.scr_res[1] / 2;
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            ssao_blurred2 = data->output_tex = ssao_blur_v.AddColorOutput("SSAO BLUR TEMP2", params);
+        }
+
+        ssao_blur_v.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 2;
+            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+
+            { // blur ao buffer
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, Bilateral::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::Tex2DSampled, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
+
+                Bilateral::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+                uniform_params.resolution = Ren::Vec2f{float(rast_state.viewport[2]), float(rast_state.viewport[3])};
+                uniform_params.vertical = 1.0f;
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, {}, render_targets, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(Bilateral::Params), 0);
+            }
+        });
+    }
+
+    { // Upscale SSAO pass
+        auto &ssao_upscale = fg_builder_.AddNode("UPSCALE");
+
+        struct PassData {
+            FgResRef depth_down_2x_tex;
+            FgResRef depth_tex;
+            FgResRef input_tex;
+
+            FgResRef output_tex;
+        };
+
+        auto *data = ssao_upscale.AllocNodeData<PassData>();
+        data->depth_down_2x_tex = ssao_upscale.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+        data->depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Stg::FragmentShader);
+        data->input_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Stg::FragmentShader);
+
+        { // Allocate output texture
+            Ren::TexParams params;
+            params.w = view_state_.act_res[0];
+            params.h = view_state_.act_res[1];
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            out_ssao = data->output_tex = ssao_upscale.AddColorOutput("SSAO Final", params);
+        }
+
+        ssao_upscale.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_down_2x_tex);
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+            rast_state.viewport[2] = view_state_.act_res[0];
+            rast_state.viewport[3] = view_state_.act_res[1];
+            { // upsample ao
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+                const Ren::Binding bindings[] = {
+                    {Trg::Tex2DSampled, Upscale::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                    {Trg::Tex2DSampled, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
+                    {Trg::Tex2DSampled, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
+                Upscale::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+                uniform_params.resolution = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
+                                                       float(view_state_.scr_res[0]), float(view_state_.scr_res[1])};
+                uniform_params.clip_info = view_state_.clip_info;
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_upscale_prog_, {}, render_targets, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(Upscale::Params), 0);
+            }
+        });
+    }
+}
+
+Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef depth_tex, FgResRef velocity_tex,
+                                           FgResRef norm_tex) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
+    FgResRef gtao_result;
+    { // main pass
+        auto &gtao_main = fg_builder_.AddNode("GTAO MAIN");
+
+        struct PassData {
+            FgResRef depth_tex;
+            FgResRef norm_tex;
+            FgResRef output_tex;
+        };
+
+        auto *data = gtao_main.AllocNodeData<PassData>();
+        data->depth_tex = gtao_main.AddTextureInput(depth_tex, Stg::ComputeShader);
+        data->norm_tex = gtao_main.AddTextureInput(norm_tex, Stg::ComputeShader);
+
+        { // Output texture
+            Ren::TexParams params;
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gtao_result = data->output_tex = gtao_main.AddStorageImageOutput("GTAO RAW", params, Stg::ComputeShader);
+        }
+
+        gtao_main.set_execute_cb([this, data, quality](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
+
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, GTAO::NORM_TEX_SLOT, *norm_tex.ref},
+                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *output_tex.ref}};
+
+            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
+                                                                         : uint32_t(view_state_.act_res[0] / 2),
+                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
+                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+
+            GTAO::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
+            uniform_params.rand[0] = RendererInternal::GTAORandSamples[view_state_.frame_index % 32][0];
+            uniform_params.rand[1] = RendererInternal::GTAORandSamples[view_state_.frame_index % 32][1];
+            uniform_params.clip_info = view_state_.clip_info;
+            uniform_params.frustum_info = view_state_.frustum_info;
+            uniform_params.view_from_world = view_state_.view_from_world;
+
+            DispatchCompute(*pi_gtao_main_[quality == eSSAOQuality::High], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    { // filter pass
+        auto &gtao_filter = fg_builder_.AddNode("GTAO FILTER");
+
+        struct PassData {
+            FgResRef depth_tex;
+            FgResRef ao_tex;
+            FgResRef out_ao_tex;
+        };
+
+        auto *data = gtao_filter.AllocNodeData<PassData>();
+        data->depth_tex = gtao_filter.AddTextureInput(depth_tex, Stg::ComputeShader);
+        data->ao_tex = gtao_filter.AddTextureInput(gtao_result, Stg::ComputeShader);
+
+        { // Output texture
+            Ren::TexParams params;
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gtao_result = data->out_ao_tex =
+                gtao_filter.AddStorageImageOutput("GTAO FILTERED", params, Stg::ComputeShader);
+        }
+
+        gtao_filter.set_execute_cb([this, data, quality](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
+
+            FgAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
+
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
+                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
+
+            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
+                                                                         : uint32_t(view_state_.act_res[0] / 2),
+                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
+                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+
+            const auto grp_count =
+                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+
+            GTAO::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
+            uniform_params.clip_info = view_state_.clip_info;
+
+            DispatchCompute(*pi_gtao_filter_[quality == eSSAOQuality::High], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    { // accumulation pass
+        auto &gtao_accumulation = fg_builder_.AddNode("GTAO ACCUMULATE");
+
+        struct PassData {
+            FgResRef depth_tex, depth_hist_tex, velocity_tex, ao_tex, ao_hist_tex;
+            FgResRef out_ao_tex;
+        };
+
+        auto *data = gtao_accumulation.AllocNodeData<PassData>();
+        data->depth_tex = gtao_accumulation.AddTextureInput(depth_tex, Stg::ComputeShader);
+        data->depth_hist_tex = gtao_accumulation.AddHistoryTextureInput(depth_tex, Stg::ComputeShader);
+        data->velocity_tex = gtao_accumulation.AddTextureInput(velocity_tex, Stg::ComputeShader);
+        data->ao_tex = gtao_accumulation.AddTextureInput(gtao_result, Stg::ComputeShader);
+
+        { // Final ao
+            Ren::TexParams params;
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gtao_result = data->out_ao_tex =
+                gtao_accumulation.AddStorageImageOutput("GTAO PRE FINAL", params, Stg::ComputeShader);
+        }
+
+        data->ao_hist_tex = gtao_accumulation.AddHistoryTextureInput(gtao_result, Stg::ComputeShader);
+
+        gtao_accumulation.set_execute_cb([this, data, quality](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &depth_hist_tex = builder.GetReadTexture(data->depth_hist_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
+            FgAllocTex &ao_hist_tex = builder.GetReadTexture(data->ao_hist_tex);
+
+            FgAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
+
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, GTAO::DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, GTAO::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                                             {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
+                                             {Trg::Tex2DSampled, GTAO::GTAO_HIST_TEX_SLOT, *ao_hist_tex.ref},
+                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
+
+            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
+                                                                         : uint32_t(view_state_.act_res[0] / 2),
+                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
+                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+
+            GTAO::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
+            uniform_params.clip_info = view_state_.clip_info;
+
+            DispatchCompute(*pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+    if (quality != eSSAOQuality::Ultra) {
+        auto &gtao_upsample = fg_builder_.AddNode("GTAO UPSAMPLE");
+
+        struct PassData {
+            FgResRef depth_tex, ao_tex;
+            FgResRef out_ao_tex;
+        };
+
+        auto *data = gtao_upsample.AllocNodeData<PassData>();
+        data->depth_tex = gtao_upsample.AddTextureInput(depth_tex, Stg::ComputeShader);
+        data->ao_tex = gtao_upsample.AddTextureInput(gtao_result, Stg::ComputeShader);
+
+        { // Final ao
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::R8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            gtao_result = data->out_ao_tex =
+                gtao_upsample.AddStorageImageOutput("GTAO FINAL", params, Stg::ComputeShader);
+        }
+
+        gtao_upsample.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &ao_tex = builder.GetReadTexture(data->ao_tex);
+
+            FgAllocTex &out_ao_tex = builder.GetWriteTexture(data->out_ao_tex);
+
+            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
+                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+
+            GTAO::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+
+            DispatchCompute(*pi_gtao_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+    return gtao_result;
 }
