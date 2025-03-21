@@ -650,13 +650,19 @@ void Eng::SceneManager::LoadEnvMap() {
         p.format = Ren::eTexFormat::RGBA16F;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage |
                   Ren::eTexUsage::RenderTarget;
-        p.flags = Ren::eTexFlags::ExtendedViews;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
         scene_data_.env.env_map = ren_ctx_.LoadTextureCube("Sky Envmap", _black_cube, p,
                                                            scene_data_.persistent_data.mem_allocs.get(), &status);
+
+        for (int j = 0; j < scene_data_.env.env_map->params.mip_count; ++j) {
+            for (int i = 0; i < 6; ++i) {
+                const int view_index = scene_data_.env.env_map->AddImageView(Ren::eTexFormat::RGBA16F, j, 1, i, 1);
+                assert(view_index <= 1 + j * 6 + i);
+            }
+        }
     } else if (!scene_data_.env.env_map_name.empty()) {
         Sys::AssetFile in_file(std::string(paths_.textures_path) + scene_data_.env.env_map_name.c_str());
         [[maybe_unused]] const size_t in_file_size = in_file.size();
@@ -734,8 +740,9 @@ void Eng::SceneManager::AllocGICache() {
         Ren::TexParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_IRRADIANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_IRRADIANCE_RES;
-        p.layer_count = 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
+        p.d = 2 * PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
         p.format = Ren::eTexFormat::RGBA16F;
+        p.flags = Ren::eTexFlags::Array;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
 
@@ -748,8 +755,9 @@ void Eng::SceneManager::AllocGICache() {
         Ren::TexParams p;
         p.w = PROBE_VOLUME_RES_X * PROBE_DISTANCE_RES;
         p.h = PROBE_VOLUME_RES_Z * PROBE_DISTANCE_RES;
-        p.layer_count = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
+        p.d = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
         p.format = Ren::eTexFormat::RG16F;
+        p.flags = Ren::eTexFlags::Array;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
 
@@ -762,8 +770,9 @@ void Eng::SceneManager::AllocGICache() {
         Ren::TexParams p;
         p.w = PROBE_VOLUME_RES_X;
         p.h = PROBE_VOLUME_RES_Z;
-        p.layer_count = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
+        p.d = PROBE_VOLUME_RES_Y * PROBE_VOLUMES_COUNT;
         p.format = Ren::eTexFormat::RGBA16F;
+        p.flags = Ren::eTexFlags::Array;
         p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
         p.sampling.filter = Ren::eTexFilter::Bilinear;
 

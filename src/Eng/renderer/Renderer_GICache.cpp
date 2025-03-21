@@ -75,8 +75,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             Ren::TexParams p;
             p.w = PROBE_TOTAL_RAYS_COUNT;
             p.h = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Z;
-            p.layer_count = 4 * PROBE_VOLUME_RES_Y;
+            p.d = 4 * PROBE_VOLUME_RES_Y;
             p.format = Ren::eTexFormat::RGBA16F;
+            p.flags = Ren::eTexFlags::Array;
             p.usage = Ren::Bitmask(Ren::eTexUsage::Storage) | Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
 
             ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput("Probe Volume RayData", p, stage);

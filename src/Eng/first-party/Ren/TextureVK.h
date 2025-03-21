@@ -126,6 +126,8 @@ class Texture : public RefCounter {
     void SetSampling(SamplingParams sampling);
     void ApplySampling(SamplingParams sampling, ILog *log) { SetSampling(sampling); }
 
+    int AddImageView(eTexFormat format, int mip_level, int mip_count, int base_layer, int layer_count);
+
     void SetSubImage(int layer, int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
                      eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);
     void SetSubImage(int level, int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,

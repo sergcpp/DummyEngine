@@ -18,7 +18,7 @@
 
 namespace Ren {
 #define X(_0, _1, _2, _3, _4, _5, _6, _7, _8) {_6, _7, _8},
-extern struct {
+struct {
     uint32_t format;
     uint32_t internal_format;
     uint32_t type;
@@ -200,27 +200,15 @@ void Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
     params.mip_count = mip_count;
     params.samples = samples;
     params.format = format;
-
-    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
-        // create additional image views
-        for (int j = 0; j < mip_count; ++j) {
-            GLuint tex_view;
-            glGenTextures(1, &tex_view);
-            glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, 0, 1);
-#ifdef ENABLE_GPU_DEBUG
-            glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
-#endif
-            handle_.views.push_back(tex_view);
-        }
-    }
 }
 
 void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexParams &p, ILog *log) {
     Free();
 
     GLuint tex_id;
-    glCreateTextures(p.samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE
-                                   : (p.layer_count ? GL_TEXTURE_2D_ARRAY : (p.d ? GL_TEXTURE_3D : GL_TEXTURE_2D)),
+    glCreateTextures(p.samples > 1
+                         ? GL_TEXTURE_2D_MULTISAMPLE
+                         : ((p.flags & eTexFlags::Array) ? GL_TEXTURE_2D_ARRAY : (p.d ? GL_TEXTURE_3D : GL_TEXTURE_2D)),
                      1, &tex_id);
 #ifdef ENABLE_GPU_DEBUG
     glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
@@ -244,7 +232,7 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
             glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, GLsizei(p.samples), internal_format, GLsizei(p.w),
                                       GLsizei(p.h), GL_TRUE);
         } else {
-            if (p.layer_count == 0) {
+            if (!(p.flags & eTexFlags::Array)) {
                 if (p.d == 0) {
                     ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, GLsizei(p.w),
                                                 GLsizei(p.h));
@@ -254,7 +242,7 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
                 }
             } else {
                 ren_glTextureStorage3D_Comp(GL_TEXTURE_2D_ARRAY, tex_id, mip_count, internal_format, GLsizei(p.w),
-                                            GLsizei(p.h), GLsizei(p.layer_count));
+                                            GLsizei(p.h), GLsizei(p.d));
             }
             if (sbuf) {
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf->id());
@@ -268,7 +256,7 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
                         return;
                     }
 
-                    assert(p.layer_count == 0);
+                    assert(!(p.flags & eTexFlags::Array));
                     if (p.d == 0) {
                         if (IsCompressedFormat(p.format)) {
                             ren_glCompressedTextureSubImage2D_Comp(
@@ -304,20 +292,6 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
     if (IsDepthStencilFormat(p.format)) {
         // create additional 'depth-only' image view (for compatibility with VK)
         handle_.views.push_back(tex_id);
-    }
-
-    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
-        // create additional image views
-        assert(p.layer_count == 0);
-        for (int j = 0; j < mip_count; ++j) {
-            GLuint tex_view;
-            glGenTextures(1, &tex_view);
-            glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, 0, 1);
-#ifdef ENABLE_GPU_DEBUG
-            glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
-#endif
-            handle_.views.push_back(tex_view);
-        }
     }
 
     if (p.samples == 1) {
@@ -371,21 +345,6 @@ void Ren::Texture::InitFromRAWData(const Buffer &sbuf, int data_off[6], const Te
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
-        // create additional image views
-        for (int j = 0; j < mip_count; ++j) {
-            for (int i = 0; i < 6; ++i) {
-                GLuint tex_view;
-                glGenTextures(1, &tex_view);
-                glTextureView(tex_view, GL_TEXTURE_2D, tex_id, internal_format, j, 1, i, 1);
-#ifdef ENABLE_GPU_DEBUG
-                glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
-#endif
-                handle_.views.push_back(tex_view);
-            }
-        }
-    }
-
     ApplySampling(p.sampling, log);
 }
 
@@ -433,6 +392,20 @@ void Ren::Texture::ApplySampling(SamplingParams sampling, ILog *log) {
     params.sampling = sampling;
 }
 
+int Ren::Texture::AddImageView(const eTexFormat format, const int mip_level, const int mip_count, const int base_layer,
+                               const int layer_count) {
+    GLuint tex_view;
+    glGenTextures(1, &tex_view);
+    glTextureView(tex_view, GL_TEXTURE_2D, handle_.id, GLInternalFormatFromTexFormat(format), mip_level, mip_count,
+                  base_layer, layer_count);
+#ifdef ENABLE_GPU_DEBUG
+    glObjectLabel(GL_TEXTURE, tex_view, -1, name_.c_str());
+#endif
+    handle_.views.push_back(tex_view);
+
+    return int(handle_.views.size()) - 1;
+}
+
 void Ren::Texture::SetSubImage(const int layer, const int level, const int offsetx, const int offsety,
                                const int offsetz, const int sizex, const int sizey, const int sizez,
                                const eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, const int data_off,
@@ -446,7 +419,7 @@ void Ren::Texture::SetSubImage(const int layer, const int level, const int offse
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
-    if (params.layer_count == 0) {
+    if (!(Bitmask<eTexFlags>{params.flags} & eTexFlags::Array)) {
         if (params.d == 0) {
             if (IsCompressedFormat(format)) {
                 ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),

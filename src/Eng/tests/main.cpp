@@ -14,8 +14,8 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
 // void test_object_pool();
 void test_cmdline();
-void test_materials(Sys::ThreadPool &threads, bool full, std::string_view device_name, int validation_level,
-                    bool nohwrt, bool nosubgroup);
+void test_shading(Sys::ThreadPool &threads, bool full, std::string_view device_name, int validation_level,
+                  bool nohwrt, bool nosubgroup);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     // test_object_pool();
     test_cmdline();
     puts(" ---------------");
-    test_materials(mt_run_pool, full, device_name, validation_level, nohwrt, nosubgroup);
+    test_shading(mt_run_pool, full, device_name, validation_level, nohwrt, nosubgroup);
 
     bool tests_success_final = g_tests_success;
     tests_success_final &= !g_log_contains_errors;

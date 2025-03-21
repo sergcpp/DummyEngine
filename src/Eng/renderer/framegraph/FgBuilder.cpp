@@ -1666,19 +1666,19 @@ void Eng::FgBuilder::ClearImage_AsTransfer(Ren::TexRef &tex, Ren::CommandBuffer 
 }
 
 void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {
-    const Ren::TexParams &p = tex->params;
-    assert(p.d == 0);
+    const Ren::TexParams p = tex->params;
+    assert(p.d == 0 || (p.flags & Ren::eTexFlags::Array));
 
-    const Ren::PipelineRef &pi = pi_clear_image_[p.layer_count != 0][int(p.format)];
+    const Ren::PipelineRef &pi = pi_clear_image_[p.flags & Ren::eTexFlags::Array][int(p.format)];
     assert(pi);
 
     const Ren::Binding bindings[] = {
-        {p.layer_count ? Ren::eBindTarget::Image2DArray : Ren::eBindTarget::Image2D, ClearImage::OUT_IMG_SLOT, *tex}};
+        {(p.flags & Ren::eTexFlags::Array) ? Ren::eBindTarget::Image2DArray : Ren::eBindTarget::Image2D,
+         ClearImage::OUT_IMG_SLOT, *tex}};
 
-    const Ren::Vec3u grp_count =
-        Ren::Vec3u{(p.w + ClearImage::LOCAL_GROUP_SIZE_X - 1u) / ClearImage::LOCAL_GROUP_SIZE_X,
-                   (p.h + ClearImage::LOCAL_GROUP_SIZE_Y - 1u) / ClearImage::LOCAL_GROUP_SIZE_Y,
-                   std::max<uint32_t>(p.layer_count, 1)};
+    const Ren::Vec3u grp_count = Ren::Vec3u{
+        (p.w + ClearImage::LOCAL_GROUP_SIZE_X - 1u) / ClearImage::LOCAL_GROUP_SIZE_X,
+        (p.h + ClearImage::LOCAL_GROUP_SIZE_Y - 1u) / ClearImage::LOCAL_GROUP_SIZE_Y, std::max<uint32_t>(p.d, 1)};
 
     Ren::DispatchCompute(cmd_buf, *pi, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
 }

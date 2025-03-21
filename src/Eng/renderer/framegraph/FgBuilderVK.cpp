@@ -166,12 +166,13 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
             }
 
             VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-            img_info.imageType = (p.d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D);
+            img_info.imageType =
+                (p.flags & Ren::eTexFlags::Array) ? VK_IMAGE_TYPE_2D : (p.d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D);
             img_info.extent.width = uint32_t(p.w);
             img_info.extent.height = uint32_t(p.h);
-            img_info.extent.depth = std::max<uint32_t>(p.d, 1);
+            img_info.extent.depth = (p.flags & Ren::eTexFlags::Array) ? 1 : std::max<uint32_t>(p.d, 1);
             img_info.mipLevels = mip_count;
-            img_info.arrayLayers = std::max<uint32_t>(p.layer_count, 1);
+            img_info.arrayLayers = (p.flags & Ren::eTexFlags::Array) ? std::max<uint32_t>(p.d, 1) : 1;
             img_info.format = Ren::VKFormatFromTexFormat(p.format);
             img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
             img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;

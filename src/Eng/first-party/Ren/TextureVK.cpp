@@ -117,12 +117,13 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
     alloc_ = std::move(alloc);
     params = _params;
 
-    if (handle.views[0] == VkImageView{} && Bitmask<eTexUsage>{params.usage} != Bitmask(eTexUsage::Transfer) &&
+    if (handle.views[0] == VkImageView{} && _params.usage != Bitmask(eTexUsage::Transfer) &&
         !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
-        view_info.viewType = params.layer_count ? VK_IMAGE_VIEW_TYPE_2D_ARRAY
-                                                : (params.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
+        view_info.viewType = (_params.flags & eTexFlags::Array)
+                                 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+                                 : (params.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
         view_info.format = g_formats_vk[size_t(params.format)];
         if (IsDepthStencilFormat(params.format)) {
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -163,37 +164,6 @@ void Ren::Texture::Init(const TexHandle &handle, const TexParams &_params, MemAl
             api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
         }
 #endif
-
-        if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
-            // create additional image views
-            for (int j = 0; j < params.mip_count; ++j) {
-                VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-                view_info.image = handle_.img;
-                view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-                view_info.format = g_formats_vk[size_t(params.format)];
-                view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                view_info.subresourceRange.baseMipLevel = j;
-                view_info.subresourceRange.levelCount = 1;
-                view_info.subresourceRange.baseArrayLayer = 0;
-                view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-                handle_.views.emplace_back(VK_NULL_HANDLE);
-                const VkResult res =
-                    api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
-                if (res != VK_SUCCESS) {
-                    log->Error("Failed to create image view!");
-                    return;
-                }
-
-#ifdef ENABLE_GPU_DEBUG
-                VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-                name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-                name_info.objectHandle = uint64_t(handle_.views.back());
-                name_info.pObjectName = name_.c_str();
-                api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
-#endif
-            }
-        }
     }
 
     if (handle_.sampler == VkSampler{} && !(Bitmask<eTexFlags>{params.flags} & eTexFlags::NoOwnership)) {
@@ -490,38 +460,7 @@ bool Ren::Texture::Realloc(const int w, const int h, int mip_count, const int sa
     params.samples = samples;
     params.format = format;
 
-    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
-        // create additional image views
-        for (int j = 0; j < mip_count; ++j) {
-            VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-            view_info.image = handle_.img;
-            view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            view_info.format = g_formats_vk[size_t(params.format)];
-            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            view_info.subresourceRange.baseMipLevel = j;
-            view_info.subresourceRange.levelCount = 1;
-            view_info.subresourceRange.baseArrayLayer = 0;
-            view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-            handle_.views.emplace_back(VK_NULL_HANDLE);
-            const VkResult res =
-                api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
-            if (res != VK_SUCCESS) {
-                log->Error("Failed to create image view!");
-                return false;
-            }
-
-#ifdef ENABLE_GPU_DEBUG
-            VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-            name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-            name_info.objectHandle = uint64_t(handle_.views.back());
-            name_info.pObjectName = name_.c_str();
-            api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
-#endif
-        }
-    }
-
-    this->resource_state = new_resource_state;
+    resource_state = new_resource_state;
 
     return true;
 }
@@ -540,12 +479,13 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
 
     { // create image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-        img_info.imageType = (p.d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D);
+        img_info.imageType =
+            (p.flags & eTexFlags::Array) ? VK_IMAGE_TYPE_2D : (p.d ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D);
         img_info.extent.width = p.w;
         img_info.extent.height = p.h;
-        img_info.extent.depth = std::max<uint32_t>(p.d, 1u);
+        img_info.extent.depth = (p.flags & eTexFlags::Array) ? 1 : std::max<uint32_t>(p.d, 1u);
         img_info.mipLevels = mip_count;
-        img_info.arrayLayers = p.layer_count ? p.layer_count : 1;
+        img_info.arrayLayers = (p.flags & eTexFlags::Array) ? std::max<uint32_t>(p.d, 1u) : 1;
         img_info.format = g_formats_vk[size_t(p.format)];
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -596,8 +536,8 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
     if (p.usage != Bitmask(eTexUsage::Transfer)) { // not 'transfer only'
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
-        view_info.viewType =
-            p.layer_count ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : (p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
+        view_info.viewType = (p.flags & eTexFlags::Array) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+                                                          : (p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
         view_info.format = g_formats_vk[size_t(p.format)];
         if (IsDepthStencilFormat(p.format)) {
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -638,38 +578,6 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
             api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
         }
 #endif
-
-        if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
-            // create additional image views
-            for (int j = 0; j < mip_count; ++j) {
-                VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-                view_info.image = handle_.img;
-                view_info.viewType =
-                    p.layer_count ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : (p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
-                view_info.format = g_formats_vk[size_t(p.format)];
-                view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                view_info.subresourceRange.baseMipLevel = j;
-                view_info.subresourceRange.levelCount = 1;
-                view_info.subresourceRange.baseArrayLayer = 0;
-                view_info.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-                handle_.views.emplace_back(VK_NULL_HANDLE);
-                const VkResult res =
-                    api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
-                if (res != VK_SUCCESS) {
-                    log->Error("Failed to create image view!");
-                    return;
-                }
-
-#ifdef ENABLE_GPU_DEBUG
-                VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-                name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-                name_info.objectHandle = uint64_t(handle_.views.back());
-                name_info.pObjectName = name_.c_str();
-                api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
-#endif
-            }
-        }
     }
 
     this->resource_state = eResState::Undefined;
@@ -873,39 +781,6 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
 #endif
     }
 
-    if (Bitmask<eTexFlags>{params.flags} & eTexFlags::ExtendedViews) {
-        // create additional image views
-        for (int j = 0; j < mip_count; ++j) {
-            for (int i = 0; i < 6; ++i) {
-                VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-                view_info.image = handle_.img;
-                view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-                view_info.format = g_formats_vk[size_t(p.format)];
-                view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                view_info.subresourceRange.baseMipLevel = j;
-                view_info.subresourceRange.levelCount = 1;
-                view_info.subresourceRange.baseArrayLayer = i;
-                view_info.subresourceRange.layerCount = 1;
-
-                handle_.views.emplace_back(VK_NULL_HANDLE);
-                const VkResult res =
-                    api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
-                if (res != VK_SUCCESS) {
-                    log->Error("Failed to create image view!");
-                    return;
-                }
-
-#ifdef ENABLE_GPU_DEBUG
-                VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
-                name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
-                name_info.objectHandle = uint64_t(handle_.views.back());
-                name_info.pObjectName = name_.c_str();
-                api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
-#endif
-            }
-        }
-    }
-
     assert(p.samples == 1);
     assert(sbuf.type() == eBufType::Upload);
 
@@ -986,6 +861,38 @@ void Ren::Texture::InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer 
                                      uint32_t(regions.size()), regions.data());
 
     ApplySampling(p.sampling, log);
+}
+
+int Ren::Texture::AddImageView(const eTexFormat format, const int mip_level, const int mip_count, const int base_layer,
+                               const int layer_count) {
+    const TexParams p = params;
+
+    VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    view_info.image = handle_.img;
+    view_info.viewType = (p.flags & eTexFlags::Array) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY
+                                                      : (p.d ? VK_IMAGE_VIEW_TYPE_3D : VK_IMAGE_VIEW_TYPE_2D);
+    view_info.format = g_formats_vk[size_t(format)];
+    view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    view_info.subresourceRange.baseMipLevel = mip_level;
+    view_info.subresourceRange.levelCount = mip_count;
+    view_info.subresourceRange.baseArrayLayer = base_layer;
+    view_info.subresourceRange.layerCount = layer_count;
+
+    handle_.views.emplace_back(VK_NULL_HANDLE);
+    const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
+    if (res != VK_SUCCESS) {
+        return -1;
+    }
+
+#ifdef ENABLE_GPU_DEBUG
+    VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+    name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+    name_info.objectHandle = uint64_t(handle_.views.back());
+    name_info.pObjectName = name_.c_str();
+    api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
+
+    return int(handle_.views.size()) - 1;
 }
 
 void Ren::Texture::SetSubImage(const int layer, const int level, const int offsetx, const int offsety,

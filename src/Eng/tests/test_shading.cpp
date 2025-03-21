@@ -492,8 +492,8 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
 }
 
-void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view device_name, const int vl,
-                    const bool nohwrt, const bool nosubgroup) {
+void test_shading(Sys::ThreadPool &threads, const bool full, std::string_view device_name, const int vl,
+                  const bool nohwrt, const bool nosubgroup) {
     g_device_name = device_name;
     g_validation_level = vl;
     g_nohwrt = nohwrt;
