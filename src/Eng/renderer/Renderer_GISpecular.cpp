@@ -23,7 +23,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                         const BindlessTextureData &bindless, const FgResRef depth_hierarchy,
                                         FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                                         FrameTextures &frame_textures) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     // Reflection settings
@@ -1025,8 +1025,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
     auto *data = ssr_compose.AllocNodeData<PassData>();
 
-    data->shared_data =
-        ssr_compose.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
+    data->shared_data = ssr_compose.AddUniformBufferInput(common_buffers.shared_data,
+                                                          Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
     data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
     data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
     data->albedo_tex = ssr_compose.AddTextureInput(frame_textures.albedo, Stg::FragmentShader);
@@ -1091,7 +1091,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
 void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, const FgResRef depth_down_2x,
                                         FrameTextures &frame_textures) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     FgResRef ssr_temp1;
@@ -1106,8 +1106,8 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
         };
 
         auto *data = ssr_trace.AllocNodeData<PassData>();
-        data->shared_data =
-            ssr_trace.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
+        data->shared_data = ssr_trace.AddUniformBufferInput(common_buffers.shared_data,
+                                                            Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
         data->normal_tex = ssr_trace.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
         data->depth_down_2x_tex = ssr_trace.AddTextureInput(depth_down_2x, Stg::FragmentShader);
 

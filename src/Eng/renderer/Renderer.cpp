@@ -723,18 +723,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             auto &skinning = fg_builder_.AddNode("SKINNING");
 
             FgResRef skin_vtx_res =
-                skinning.AddStorageReadonlyInput(persistent_data.skin_vertex_buf, Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(persistent_data.skin_vertex_buf, Ren::eStage::ComputeShader);
             FgResRef in_skin_transforms_res =
-                skinning.AddStorageReadonlyInput(common_buffers.skin_transforms, Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(common_buffers.skin_transforms, Ren::eStage::ComputeShader);
             FgResRef in_shape_keys_res =
-                skinning.AddStorageReadonlyInput(common_buffers.shape_keys, Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(common_buffers.shape_keys, Ren::eStage::ComputeShader);
             FgResRef delta_buf_res =
-                skinning.AddStorageReadonlyInput(persistent_data.delta_buf, Ren::eStageBits::ComputeShader);
+                skinning.AddStorageReadonlyInput(persistent_data.delta_buf, Ren::eStage::ComputeShader);
 
-            FgResRef vtx_buf1_res =
-                skinning.AddStorageOutput(persistent_data.vertex_buf1, Ren::eStageBits::ComputeShader);
-            FgResRef vtx_buf2_res =
-                skinning.AddStorageOutput(persistent_data.vertex_buf2, Ren::eStageBits::ComputeShader);
+            FgResRef vtx_buf1_res = skinning.AddStorageOutput(persistent_data.vertex_buf1, Ren::eStage::ComputeShader);
+            FgResRef vtx_buf2_res = skinning.AddStorageOutput(persistent_data.vertex_buf2, Ren::eStage::ComputeShader);
 
             skinning.make_executor<ExSkinning>(p_list_, skin_vtx_res, in_skin_transforms_res, in_shape_keys_res,
                                                delta_buf_res, vtx_buf1_res, vtx_buf2_res);
@@ -917,21 +915,21 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef ndx_buf_res = shadow_depth.AddIndexBufferInput(persistent_data.indices_buf);
 
             FgResRef shared_data_res = shadow_depth.AddUniformBufferInput(
-                common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+                common_buffers.shared_data, Ren::Bitmask{Ren::eStage::VertexShader} | Ren::eStage::FragmentShader);
             FgResRef instances_res =
-                shadow_depth.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStageBits::VertexShader);
+                shadow_depth.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStage::VertexShader);
             FgResRef instance_indices_res =
-                shadow_depth.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
+                shadow_depth.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStage::VertexShader);
 
             FgResRef materials_buf_res =
-                shadow_depth.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+                shadow_depth.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStage::VertexShader);
 #if defined(REN_GL_BACKEND)
             FgResRef textures_buf_res =
-                shadow_depth.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
+                shadow_depth.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStage::VertexShader);
 #else
             FgResRef textures_buf_res;
 #endif
-            FgResRef noise_tex_res = shadow_depth.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            FgResRef noise_tex_res = shadow_depth.AddTextureInput(noise_tex_, Ren::eStage::VertexShader);
 
             frame_textures.shadow_depth = shadow_depth.AddDepthOutput(shadow_depth_tex_);
 
@@ -947,21 +945,21 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef ndx_buf_res = shadow_color.AddIndexBufferInput(persistent_data.indices_buf);
 
             FgResRef shared_data_res = shadow_color.AddUniformBufferInput(
-                common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+                common_buffers.shared_data, Ren::Bitmask{Ren::eStage::VertexShader} | Ren::eStage::FragmentShader);
             FgResRef instances_res =
-                shadow_color.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStageBits::VertexShader);
+                shadow_color.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStage::VertexShader);
             FgResRef instance_indices_res =
-                shadow_color.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
+                shadow_color.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStage::VertexShader);
 
             FgResRef materials_buf_res =
-                shadow_color.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+                shadow_color.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStage::VertexShader);
 #if defined(REN_GL_BACKEND)
             FgResRef textures_buf_res =
-                shadow_color.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
+                shadow_color.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStage::VertexShader);
 #else
             FgResRef textures_buf_res;
 #endif
-            FgResRef noise_tex_res = shadow_color.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            FgResRef noise_tex_res = shadow_color.AddTextureInput(noise_tex_, Ren::eStage::VertexShader);
 
             frame_textures.shadow_depth = shadow_color.AddDepthOutput(shadow_depth_tex_);
             frame_textures.shadow_color = shadow_color.AddColorOutput(shadow_color_tex_);
@@ -1031,21 +1029,21 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             FgResRef ndx_buf = depth_fill.AddIndexBufferInput(persistent_data.indices_buf);
 
             FgResRef shared_data_res = depth_fill.AddUniformBufferInput(
-                common_buffers.shared_data, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+                common_buffers.shared_data, Ren::Bitmask{Ren::eStage::VertexShader} | Ren::eStage::FragmentShader);
             FgResRef instances_res =
-                depth_fill.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStageBits::VertexShader);
+                depth_fill.AddStorageReadonlyInput(persistent_data.instance_buf, Ren::eStage::VertexShader);
             FgResRef instance_indices_res =
-                depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStageBits::VertexShader);
+                depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices, Ren::eStage::VertexShader);
 
             FgResRef materials_buf_res =
-                depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+                depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStage::VertexShader);
 #if defined(REN_GL_BACKEND)
             FgResRef textures_buf_res =
-                depth_fill.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
+                depth_fill.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStage::VertexShader);
 #else
             FgResRef textures_buf_res;
 #endif
-            FgResRef noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            FgResRef noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStage::VertexShader);
 
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
@@ -1078,9 +1076,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             auto &depth_hierarchy = fg_builder_.AddNode("DEPTH HIERARCHY");
             const FgResRef depth_tex =
-                depth_hierarchy.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+                depth_hierarchy.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
             const FgResRef atomic_buf =
-                depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt, Ren::eStageBits::ComputeShader);
+                depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt, Ren::eStage::ComputeShader);
 
             { // 32-bit float depth hierarchy
                 Ren::TexParams params;
@@ -1094,7 +1092,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 params.sampling.filter = Ren::eTexFilter::Nearest;
 
                 depth_hierarchy_tex =
-                    depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", params, Ren::eStageBits::ComputeShader);
+                    depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", params, Ren::eStage::ComputeShader);
             }
 
             depth_hierarchy.make_executor<ExDepthHierarchy>(fg_builder_, &view_state_, depth_tex, atomic_buf,
@@ -1197,13 +1195,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             auto *data = debug_probes.AllocNodeData<ExDebugProbes::Args>();
             data->shared_data =
-                debug_probes.AddUniformBufferInput(common_buffers.shared_data, Ren::eStageBits::VertexShader);
-            data->offset_tex =
-                debug_probes.AddTextureInput(frame_textures.gi_cache_offset, Ren::eStageBits::VertexShader);
+                debug_probes.AddUniformBufferInput(common_buffers.shared_data, Ren::eStage::VertexShader);
+            data->offset_tex = debug_probes.AddTextureInput(frame_textures.gi_cache_offset, Ren::eStage::VertexShader);
             data->irradiance_tex =
-                debug_probes.AddTextureInput(frame_textures.gi_cache_irradiance, Ren::eStageBits::FragmentShader);
+                debug_probes.AddTextureInput(frame_textures.gi_cache_irradiance, Ren::eStage::FragmentShader);
             data->distance_tex =
-                debug_probes.AddTextureInput(frame_textures.gi_cache_distance, Ren::eStageBits::FragmentShader);
+                debug_probes.AddTextureInput(frame_textures.gi_cache_distance, Ren::eStage::FragmentShader);
 
             data->volume_to_debug = list.render_settings.debug_probes;
             data->probe_volumes = persistent_data.probe_volumes;
@@ -1220,9 +1217,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             auto *data = debug_oit.AllocNodeData<ExDebugOIT::Args>();
             data->layer_index = list.render_settings.debug_oit_layer;
             frame_textures.oit_depth_buf = data->oit_depth_buf =
-                debug_oit.AddStorageReadonlyInput(frame_textures.oit_depth_buf, Ren::eStageBits::ComputeShader);
+                debug_oit.AddStorageReadonlyInput(frame_textures.oit_depth_buf, Ren::eStage::ComputeShader);
             frame_textures.color = data->output_tex =
-                debug_oit.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::ComputeShader);
+                debug_oit.AddStorageImageOutput(frame_textures.color, Ren::eStage::ComputeShader);
 
             debug_oit.make_executor<ExDebugOIT>(fg_builder_, &view_state_, data);
         }
@@ -1231,46 +1228,46 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             (ctx_.capabilities.hwrt || ctx_.capabilities.swrt)) {
             auto &debug_rt = fg_builder_.AddNode("DEBUG RT");
 
-            const Ren::eStageBits stages = Ren::eStageBits::ComputeShader;
+            const Ren::eStage stage = Ren::eStage::ComputeShader;
 
             auto *data = debug_rt.AllocNodeData<ExDebugRT::Args>();
-            data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data, stages);
+            data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data, stage);
             if (list.render_settings.debug_rt == eDebugRT::Main) {
-                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_geo_instances_res, stages);
+                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             } else if (list.render_settings.debug_rt == eDebugRT::Shadow) {
-                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_sh_geo_instances_res, stages);
+                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_sh_geo_instances_res, stage);
             }
-            data->materials_buf = debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, stages);
-            data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf1, stages);
-            data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf2, stages);
-            data->ndx_buf = debug_rt.AddStorageReadonlyInput(persistent_data.indices_buf, stages);
-            data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights, stages);
-            data->shadow_depth_tex = debug_rt.AddTextureInput(shadow_depth_tex_, stages);
-            data->shadow_color_tex = debug_rt.AddTextureInput(shadow_color_tex_, stages);
-            data->ltc_luts_tex = debug_rt.AddTextureInput(ltc_luts_, stages);
-            data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells, stages);
-            data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items, stages);
+            data->materials_buf = debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
+            data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
+            data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf2, stage);
+            data->ndx_buf = debug_rt.AddStorageReadonlyInput(persistent_data.indices_buf, stage);
+            data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights, stage);
+            data->shadow_depth_tex = debug_rt.AddTextureInput(shadow_depth_tex_, stage);
+            data->shadow_color_tex = debug_rt.AddTextureInput(shadow_color_tex_, stage);
+            data->ltc_luts_tex = debug_rt.AddTextureInput(ltc_luts_, stage);
+            data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells, stage);
+            data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items, stage);
 
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
-                data->swrt.rt_blas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stages);
+                data->swrt.rt_blas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx_buf =
-                    debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stages);
-                data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(rt_obj_instances_res, stages);
-                data->swrt.rt_tlas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_tlas_buf, stages);
+                    debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
+                data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(rt_obj_instances_res, stage);
+                data->swrt.rt_tlas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_tlas_buf, stage);
 
 #if defined(REN_GL_BACKEND)
-                data->swrt.textures_buf = debug_rt.AddStorageReadonlyInput(bindless_tex.textures_buf, stages);
+                data->swrt.textures_buf = debug_rt.AddStorageReadonlyInput(bindless_tex.textures_buf, stage);
 #endif
             }
 
-            data->env_tex = debug_rt.AddTextureInput(list.env.env_map, stages);
+            data->env_tex = debug_rt.AddTextureInput(list.env.env_map, stage);
 
-            data->irradiance_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_irradiance, stages);
-            data->distance_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_distance, stages);
-            data->offset_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_offset, stages);
+            data->irradiance_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_irradiance, stage);
+            data->distance_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_distance, stage);
+            data->offset_tex = debug_rt.AddTextureInput(frame_textures.gi_cache_offset, stage);
 
-            frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stages);
+            frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stage);
 
             const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlases[int(list.render_settings.debug_rt) - 1];
             debug_rt.make_executor<ExDebugRT>(fg_builder_, &view_state_, tlas_to_debug, &bindless_tex, data);
@@ -1375,18 +1372,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             ex_postprocess_args_ = {};
             ex_postprocess_args_.exposure_tex =
-                postprocess.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
-            ex_postprocess_args_.color_tex = postprocess.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
+                postprocess.AddTextureInput(frame_textures.exposure, Ren::eStage::FragmentShader);
+            ex_postprocess_args_.color_tex = postprocess.AddTextureInput(color_tex, Ren::eStage::FragmentShader);
             if (list.render_settings.enable_bloom && bloom_tex) {
-                ex_postprocess_args_.bloom_tex =
-                    postprocess.AddTextureInput(bloom_tex, Ren::eStageBits::FragmentShader);
+                ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStage::FragmentShader);
             } else {
-                ex_postprocess_args_.bloom_tex =
-                    postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+                ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStage::FragmentShader);
             }
             if (tonemap_lut_) {
-                ex_postprocess_args_.lut_tex =
-                    postprocess.AddTextureInput(tonemap_lut_, Ren::eStageBits::FragmentShader);
+                ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStage::FragmentShader);
             }
             if (output_tex) {
                 Ren::TexParams params;
@@ -1820,15 +1814,15 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         auto &postprocess = fg_builder_.AddNode("POSTPROCESS");
 
         ex_postprocess_args_ = {};
-        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
-        ex_postprocess_args_.color_tex = postprocess.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(exposure_tex, Ren::eStage::FragmentShader);
+        ex_postprocess_args_.color_tex = postprocess.AddTextureInput(output_tex_res, Ren::eStage::FragmentShader);
         if (bloom_tex) {
-            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStageBits::FragmentShader);
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStage::FragmentShader);
         } else {
-            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStage::FragmentShader);
         }
         if (tonemap_lut_) {
-            ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStageBits::FragmentShader);
+            ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStage::FragmentShader);
         }
         if (target) {
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
@@ -1936,15 +1930,15 @@ void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, con
         auto &postprocess = fg_builder_.AddNode("POSTPROCESS");
 
         ex_postprocess_args_ = {};
-        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
-        ex_postprocess_args_.color_tex = postprocess.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
+        ex_postprocess_args_.exposure_tex = postprocess.AddTextureInput(exposure_tex, Ren::eStage::FragmentShader);
+        ex_postprocess_args_.color_tex = postprocess.AddTextureInput(output_tex_res, Ren::eStage::FragmentShader);
         if (bloom_tex) {
-            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStageBits::FragmentShader);
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(bloom_tex, Ren::eStage::FragmentShader);
         } else {
-            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+            ex_postprocess_args_.bloom_tex = postprocess.AddTextureInput(dummy_black_, Ren::eStage::FragmentShader);
         }
         if (tonemap_lut_) {
-            ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStageBits::FragmentShader);
+            ex_postprocess_args_.lut_tex = postprocess.AddTextureInput(tonemap_lut_, Ren::eStage::FragmentShader);
         }
         if (target) {
             ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);

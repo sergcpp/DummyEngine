@@ -90,7 +90,7 @@ struct FgAllocRes {
     int history_of = -1;
     int history_index = -1;
 
-    Ren::eStageBits used_in_stages = {}, aliased_in_stages = {};
+    Ren::Bitmask<Ren::eStage> used_in_stages, aliased_in_stages;
     Ren::SmallVector<fg_node_slot_t, 32> written_in_nodes;
     Ren::SmallVector<fg_node_slot_t, 32> read_in_nodes;
     Ren::SmallVector<FgResRef, 32> overlaps_with; // used in case of memory-level aliasing
@@ -126,7 +126,7 @@ class FgBuilder {
 
     void InsertResourceTransitions(FgNode &node);
     void HandleResourceTransition(const FgResource &res, Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
-                                  Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages);
+                                  Ren::Bitmask<Ren::eStage> &src_stages, Ren::Bitmask<Ren::eStage> &dst_stages);
     void CheckResourceStates(FgNode &node);
 
     bool DependsOn_r(int16_t dst_node, int16_t src_node);
@@ -200,30 +200,34 @@ class FgBuilder {
         return new_data;
     }
 
-    FgResRef ReadBuffer(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef ReadBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node,
-                        int slot_index = -1);
+    FgResRef ReadBuffer(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages, FgNode &node);
+    FgResRef ReadBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                        FgNode &node, int slot_index = -1);
 
-    FgResRef ReadTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef ReadTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+    FgResRef ReadTexture(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages, FgNode &node);
+    FgResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                         FgNode &node);
+    FgResRef ReadTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                          FgNode &node);
 
-    FgResRef ReadHistoryTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef ReadHistoryTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages,
+    FgResRef ReadHistoryTexture(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                                FgNode &node);
+    FgResRef ReadHistoryTexture(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                                 FgNode &node);
 
-    FgResRef WriteBuffer(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
+    FgResRef WriteBuffer(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages, FgNode &node);
     FgResRef WriteBuffer(std::string_view name, const FgBufDesc &desc, Ren::eResState desired_state,
-                         Ren::eStageBits stages, FgNode &node);
-    FgResRef WriteBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                         Ren::Bitmask<Ren::eStage> stages, FgNode &node);
+    FgResRef WriteBuffer(const Ren::WeakBufRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                          FgNode &node);
 
-    FgResRef WriteTexture(FgResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
-    FgResRef WriteTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, FgNode &node);
+    FgResRef WriteTexture(FgResRef handle, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                          FgNode &node);
+    FgResRef WriteTexture(std::string_view name, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
+                          FgNode &node);
     FgResRef WriteTexture(std::string_view name, const Ren::TexParams &p, Ren::eResState desired_state,
-                          Ren::eStageBits stages, FgNode &node);
-    FgResRef WriteTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                          Ren::Bitmask<Ren::eStage> stages, FgNode &node);
+    FgResRef WriteTexture(const Ren::WeakTexRef &ref, Ren::eResState desired_state, Ren::Bitmask<Ren::eStage> stages,
                           FgNode &node, int slot_index = -1);
 
     FgResRef MakeTextureResource(const Ren::WeakTexRef &ref);

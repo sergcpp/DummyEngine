@@ -31,8 +31,8 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
     { // Sample histogram
         auto &histogram_sample = fg_builder_.AddNode("HISTOGRAM SAMPLE");
 
-        FgResRef input = histogram_sample.AddTextureInput(hdr_texture, Ren::eStageBits::ComputeShader);
-        histogram = histogram_sample.AddStorageImageOutput(histogram, Ren::eStageBits::ComputeShader);
+        FgResRef input = histogram_sample.AddTextureInput(hdr_texture, Ren::eStage::ComputeShader);
+        histogram = histogram_sample.AddStorageImageOutput(histogram, Ren::eStage::ComputeShader);
 
         histogram_sample.set_execute_cb([this, input, histogram](FgBuilder &builder) {
             FgAllocTex &input_tex = builder.GetReadTexture(input);
@@ -61,15 +61,15 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
 
         auto *data = histogram_exposure.AllocNodeData<PassData>();
 
-        data->histogram = histogram_exposure.AddTextureInput(histogram, Ren::eStageBits::ComputeShader);
+        data->histogram = histogram_exposure.AddTextureInput(histogram, Ren::eStage::ComputeShader);
 
         Ren::TexParams params;
         params.w = params.h = 1;
         params.format = Ren::eTexFormat::R32F;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         exposure = data->exposure =
-            histogram_exposure.AddStorageImageOutput(EXPOSURE_TEX, params, Ren::eStageBits::ComputeShader);
-        data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStageBits::ComputeShader);
+            histogram_exposure.AddStorageImageOutput(EXPOSURE_TEX, params, Ren::eStage::ComputeShader);
+        data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStage::ComputeShader);
 
         histogram_exposure.set_execute_cb([this, data](FgBuilder &builder) {
             FgAllocTex &histogram_tex = builder.GetReadTexture(data->histogram);
@@ -109,11 +109,11 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
         auto *data = bloom_downsample.AllocNodeData<PassData>();
         if (mip == 0) {
-            data->input_tex = bloom_downsample.AddTextureInput(hdr_texture, Ren::eStageBits::ComputeShader);
+            data->input_tex = bloom_downsample.AddTextureInput(hdr_texture, Ren::eStage::ComputeShader);
         } else {
-            data->input_tex = bloom_downsample.AddTextureInput(downsampled[mip - 1], Ren::eStageBits::ComputeShader);
+            data->input_tex = bloom_downsample.AddTextureInput(downsampled[mip - 1], Ren::eStage::ComputeShader);
         }
-        data->exposure_tex = bloom_downsample.AddTextureInput(exposure_texture, Ren::eStageBits::ComputeShader);
+        data->exposure_tex = bloom_downsample.AddTextureInput(exposure_texture, Ren::eStage::ComputeShader);
 
         { // Texture that holds downsampled bloom image
             Ren::TexParams params;
@@ -125,7 +125,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
             const std::string output_name = "Bloom Downsampled " + std::to_string(mip);
             downsampled[mip] = data->output_tex =
-                bloom_downsample.AddStorageImageOutput(output_name, params, Ren::eStageBits::ComputeShader);
+                bloom_downsample.AddStorageImageOutput(output_name, params, Ren::eStage::ComputeShader);
         }
 
         bloom_downsample.set_execute_cb([this, data, mip](FgBuilder &builder) {
@@ -164,11 +164,11 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
         auto *data = bloom_upsample.AllocNodeData<PassData>();
         if (mip == BloomMipCount - 2) {
-            data->input_tex = bloom_upsample.AddTextureInput(downsampled[mip + 1], Ren::eStageBits::ComputeShader);
+            data->input_tex = bloom_upsample.AddTextureInput(downsampled[mip + 1], Ren::eStage::ComputeShader);
         } else {
-            data->input_tex = bloom_upsample.AddTextureInput(upsampled[mip + 1], Ren::eStageBits::ComputeShader);
+            data->input_tex = bloom_upsample.AddTextureInput(upsampled[mip + 1], Ren::eStage::ComputeShader);
         }
-        data->blend_tex = bloom_upsample.AddTextureInput(downsampled[mip], Ren::eStageBits::ComputeShader);
+        data->blend_tex = bloom_upsample.AddTextureInput(downsampled[mip], Ren::eStage::ComputeShader);
 
         { // Texture that holds upsampled bloom image
             Ren::TexParams params;
@@ -180,7 +180,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
             const std::string output_name = "Bloom Upsampled " + std::to_string(mip);
             upsampled[mip] = data->output_tex =
-                bloom_upsample.AddStorageImageOutput(output_name, params, Ren::eStageBits::ComputeShader);
+                bloom_upsample.AddStorageImageOutput(output_name, params, Ren::eStage::ComputeShader);
         }
 
         bloom_upsample.set_execute_cb([this, data, mip](FgBuilder &builder) {

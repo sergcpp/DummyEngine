@@ -38,7 +38,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                      const BindlessTextureData &bindless, const FgResRef depth_hierarchy,
                                      FgResRef rt_geo_instances_res, FgResRef rt_obj_instances_res,
                                      FrameTextures &frame_textures) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     FgResRef gi_fallback;
@@ -1119,7 +1119,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 }
 
 void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _depth_tex, FgResRef &out_ssao) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     FgResRef ssao_raw;
@@ -1340,7 +1340,7 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
 
 Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef depth_tex, FgResRef velocity_tex,
                                            FgResRef norm_tex) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     FgResRef gtao_result;

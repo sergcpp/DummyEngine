@@ -15,7 +15,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                                  const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                                  const FgResRef depth_hierarchy, FgResRef rt_geo_instances_res,
                                  FgResRef rt_obj_instances_res, FrameTextures &frame_textures) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     FgResRef oit_depth_buf, oit_specular[OIT_REFLECTION_LAYERS], oit_rays_counter;
@@ -99,16 +99,16 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 #endif
 
         [[maybe_unused]] const FgResRef noise_tex =
-            oit_depth_peel.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+            oit_depth_peel.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
         const FgResRef white_tex =
-            oit_depth_peel.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
+            oit_depth_peel.AddTextureInput(dummy_white_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
         const FgResRef instances_buf =
             oit_depth_peel.AddStorageReadonlyInput(persistent_data.instance_buf, Stg::VertexShader);
         const FgResRef instances_indices_buf =
             oit_depth_peel.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
-        const FgResRef shader_data_buf =
-            oit_depth_peel.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
+        const FgResRef shader_data_buf = oit_depth_peel.AddUniformBufferInput(
+            common_buffers.shared_data, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
 
         frame_textures.depth = oit_depth_peel.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
         oit_depth_buf = oit_depth_peel.AddStorageOutput(oit_depth_buf, Stg::FragmentShader);
@@ -136,15 +136,16 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 #endif
 
         [[maybe_unused]] const FgResRef noise_tex =
-            oit_schedule.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
-        const FgResRef white_tex = oit_schedule.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
+            oit_schedule.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
+        const FgResRef white_tex =
+            oit_schedule.AddTextureInput(dummy_white_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
         const FgResRef instances_buf =
             oit_schedule.AddStorageReadonlyInput(persistent_data.instance_buf, Stg::VertexShader);
         const FgResRef instances_indices_buf =
             oit_schedule.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
-        const FgResRef shader_data_buf =
-            oit_schedule.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
+        const FgResRef shader_data_buf = oit_schedule.AddUniformBufferInput(
+            common_buffers.shared_data, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
 
         frame_textures.depth = oit_schedule.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
         oit_depth_buf = oit_schedule.AddStorageReadonlyInput(oit_depth_buf, Stg::FragmentShader);
@@ -484,16 +485,16 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 #endif
 
             const FgResRef noise_tex =
-                oit_blend_layer.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+                oit_blend_layer.AddTextureInput(noise_tex_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
             const FgResRef white_tex =
-                oit_blend_layer.AddTextureInput(dummy_white_, Stg::VertexShader | Stg::FragmentShader);
+                oit_blend_layer.AddTextureInput(dummy_white_, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
             const FgResRef instances_buf =
                 oit_blend_layer.AddStorageReadonlyInput(persistent_data.instance_buf, Stg::VertexShader);
             const FgResRef instances_indices_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.instance_indices, Stg::VertexShader);
 
             const FgResRef shader_data_buf = oit_blend_layer.AddUniformBufferInput(
-                common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
+                common_buffers.shared_data, Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
 
             const FgResRef cells_buf =
                 oit_blend_layer.AddStorageReadonlyInput(common_buffers.cells, Stg::FragmentShader);

@@ -3,8 +3,10 @@
 #include "GL.h"
 #include "Texture.h"
 
-void Ren::TransitionResourceStates(ApiContext *api_context, CommandBuffer cmd_buf, const eStageBits src_stages_mask,
-                                   const eStageBits dst_stages_mask, Span<const TransitionInfo> transitions) {
+void Ren::TransitionResourceStates(ApiContext *api_context, CommandBuffer cmd_buf,
+                                   const Ren::Bitmask<Ren::eStage> src_stages_mask,
+                                   const Ren::Bitmask<Ren::eStage> dst_stages_mask,
+                                   Span<const TransitionInfo> transitions) {
     GLbitfield mem_barrier_bits = 0;
 
     for (const TransitionInfo &tr : transitions) {

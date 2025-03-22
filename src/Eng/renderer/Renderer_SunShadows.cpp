@@ -17,7 +17,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                                                    const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
                                                    FgResRef rt_obj_instances_res, const FrameTextures &frame_textures,
                                                    const bool debug_denoise) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     const bool EnableFilter = (settings.taa_mode != eTAAMode::Static);
@@ -150,7 +150,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 
         auto *data = rt_shadows.AllocNodeData<ExRTShadows::Args>();
 
-        const Ren::eStageBits stage = Stg::ComputeShader;
+        const Ren::eStage stage = Stg::ComputeShader;
 
         data->geo_data = rt_shadows.AddStorageReadonlyInput(rt_geo_instances_res, stage);
         data->materials = rt_shadows.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -665,7 +665,7 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
                                                  const AccelerationStructureData &acc_struct_data,
                                                  const BindlessTextureData &bindless,
                                                  const FrameTextures &frame_textures) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     auto &sun_shadows = fg_builder_.AddNode("SUN SHADOWS");

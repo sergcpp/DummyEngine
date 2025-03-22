@@ -18,12 +18,12 @@ struct FgResource {
         uint16_t _generation = 0;
     };
     uint16_t index = 0xffff;
-    Ren::eStageBits stages = Ren::eStageBits::None;
+    Ren::Bitmask<Ren::eStage> stages;
     FgResource *next_use = nullptr;
 
     FgResource() = default;
     FgResource(const eFgResType _type, const uint16_t __generation, const Ren::eResState _desired_state,
-               const Ren::eStageBits _stages, const uint16_t _index)
+               const Ren::Bitmask<Ren::eStage> _stages, const uint16_t _index)
         : type(_type), desired_state(_desired_state), _generation(__generation), index(_index), stages(_stages) {}
 
     operator bool() const { return type != eFgResType::Undefined; }

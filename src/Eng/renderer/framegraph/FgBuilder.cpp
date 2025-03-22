@@ -134,7 +134,7 @@ void Eng::FgBuilder::GetResourceFrameLifetime(const FgAllocTex &t, uint16_t out_
 }
 
 Eng::FgResRef Eng::FgBuilder::ReadBuffer(const FgResRef handle, const Ren::eResState desired_state,
-                                         const Ren::eStageBits stages, FgNode &node) {
+                                         const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     assert(handle.type == eFgResType::Buffer);
 
     FgAllocBuf &buf = buffers_[handle.index];
@@ -156,7 +156,7 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const FgResRef handle, const Ren::eResS
 }
 
 Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufRef &ref, const Ren::eResState desired_state,
-                                         const Ren::eStageBits stages, FgNode &node, const int slot_index) {
+                                         const Ren::Bitmask<Ren::eStage> stages, FgNode &node, const int slot_index) {
     FgResource ret;
     ret.type = eFgResType::Buffer;
 
@@ -211,7 +211,7 @@ Eng::FgResRef Eng::FgBuilder::ReadBuffer(const Ren::WeakBufRef &ref, const Ren::
 }
 
 Eng::FgResRef Eng::FgBuilder::ReadTexture(const FgResRef handle, const Ren::eResState desired_state,
-                                          const Ren::eStageBits stages, FgNode &node) {
+                                          const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     assert(handle.type == eFgResType::Texture);
 
     FgAllocTex &tex = textures_[handle.index];
@@ -232,7 +232,7 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const FgResRef handle, const Ren::eRes
 }
 
 Eng::FgResRef Eng::FgBuilder::ReadTexture(std::string_view name, const Ren::eResState desired_state,
-                                          const Ren::eStageBits stages, FgNode &node) {
+                                          const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
 
@@ -253,7 +253,7 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(std::string_view name, const Ren::eRes
 }
 
 Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTexRef &ref, const Ren::eResState desired_state,
-                                          const Ren::eStageBits stages, FgNode &node) {
+                                          const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     FgResource ret;
     ret.type = eFgResType::Texture;
 
@@ -292,7 +292,7 @@ Eng::FgResRef Eng::FgBuilder::ReadTexture(const Ren::WeakTexRef &ref, const Ren:
 }
 
 Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(const FgResRef handle, const Ren::eResState desired_state,
-                                                 const Ren::eStageBits stages, FgNode &node) {
+                                                 const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     assert(handle.type == eFgResType::Texture);
 
     FgAllocTex *orig_tex = &textures_[handle.index];
@@ -329,8 +329,8 @@ Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(const FgResRef handle, const Re
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(std::string_view name, Ren::eResState desired_state,
-                                                 Ren::eStageBits stages, FgNode &node) {
+Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(const std::string_view name, const Ren::eResState desired_state,
+                                                 const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     FgResRef ret;
     ret.type = eFgResType::Texture;
 
@@ -350,7 +350,7 @@ Eng::FgResRef Eng::FgBuilder::ReadHistoryTexture(std::string_view name, Ren::eRe
 }
 
 Eng::FgResRef Eng::FgBuilder::WriteBuffer(const FgResRef handle, const Ren::eResState desired_state,
-                                          const Ren::eStageBits stages, FgNode &node) {
+                                          const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     assert(handle.type == eFgResType::Buffer);
 
     FgAllocBuf &buf = buffers_[handle.index];
@@ -371,8 +371,8 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const FgResRef handle, const Ren::eRes
     return ret;
 }
 
-Eng::FgResRef Eng::FgBuilder::WriteBuffer(std::string_view name, const FgBufDesc &desc,
-                                          const Ren::eResState desired_state, const Ren::eStageBits stages,
+Eng::FgResRef Eng::FgBuilder::WriteBuffer(const std::string_view name, const FgBufDesc &desc,
+                                          const Ren::eResState desired_state, const Ren::Bitmask<Ren::eStage> stages,
                                           FgNode &node) {
     FgResource ret;
     ret.type = eFgResType::Buffer;
@@ -410,7 +410,7 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(std::string_view name, const FgBufDesc
 }
 
 Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufRef &ref, const Ren::eResState desired_state,
-                                          const Ren::eStageBits stages, FgNode &node) {
+                                          const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     FgResource ret;
     ret.type = eFgResType::Buffer;
 
@@ -449,7 +449,7 @@ Eng::FgResRef Eng::FgBuilder::WriteBuffer(const Ren::WeakBufRef &ref, const Ren:
 }
 
 Eng::FgResRef Eng::FgBuilder::WriteTexture(const FgResRef handle, const Ren::eResState desired_state,
-                                           const Ren::eStageBits stages, FgNode &node) {
+                                           const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     assert(handle.type == eFgResType::Texture);
 
     FgAllocTex &tex = textures_[handle.index];
@@ -471,7 +471,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const FgResRef handle, const Ren::eRe
 }
 
 Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::eResState desired_state,
-                                           const Ren::eStageBits stages, FgNode &node) {
+                                           const Ren::Bitmask<Ren::eStage> stages, FgNode &node) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
 
@@ -493,7 +493,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::eRe
 }
 
 Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::TexParams &p,
-                                           const Ren::eResState desired_state, const Ren::eStageBits stages,
+                                           const Ren::eResState desired_state, const Ren::Bitmask<Ren::eStage> stages,
                                            FgNode &node) {
     FgResource ret;
     ret.type = eFgResType::Texture;
@@ -533,7 +533,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(std::string_view name, const Ren::Tex
 }
 
 Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTexRef &ref, const Ren::eResState desired_state,
-                                           const Ren::eStageBits stages, FgNode &node, const int slot_index) {
+                                           const Ren::Bitmask<Ren::eStage> stages, FgNode &node, const int slot_index) {
     FgResource ret;
     ret.type = eFgResType::Texture;
 
@@ -1479,16 +1479,16 @@ void Eng::FgBuilder::Execute() {
     // Reset resources
     for (FgAllocBuf &buf : buffers_) {
         buf._generation = 0;
-        buf.used_in_stages = Ren::eStageBits::None;
+        buf.used_in_stages = {};
         if (buf.ref) {
-            buf.used_in_stages = StageBitsForState(buf.ref->resource_state);
+            buf.used_in_stages = StagesForState(buf.ref->resource_state);
         }
     }
     for (FgAllocTex &tex : textures_) {
         tex._generation = 0;
-        tex.used_in_stages = Ren::eStageBits::None;
+        tex.used_in_stages = {};
         if (tex.ref) {
-            tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
+            tex.used_in_stages = StagesForState(tex.ref->resource_state);
         }
     }
 
@@ -1535,8 +1535,7 @@ void Eng::FgBuilder::InsertResourceTransitions(FgNode &node) {
     OPTICK_GPU_EVENT("InsertResourceTransitions");
 
     Ren::SmallVector<Ren::TransitionInfo, 32> res_transitions;
-    Ren::eStageBits src_stages = Ren::eStageBits::None;
-    Ren::eStageBits dst_stages = Ren::eStageBits::None;
+    Ren::Bitmask<Ren::eStage> src_stages, dst_stages;
 
     for (const FgResource &res : node.input_) {
         HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
@@ -1572,7 +1571,8 @@ void Eng::FgBuilder::CheckResourceStates(FgNode &node) {
 
 void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
                                               Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
-                                              Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages) {
+                                              Ren::Bitmask<Ren::eStage> &src_stages,
+                                              Ren::Bitmask<Ren::eStage> &dst_stages) {
     for (const FgResource *next_res = res.next_use; next_res; next_res = next_res->next_use) {
         if (next_res->desired_state != res.desired_state || IsRWState(next_res->desired_state)) {
             break;
@@ -1610,7 +1610,7 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
         if (buf->ref->resource_state != res.desired_state || IsRWState(buf->ref->resource_state)) {
             src_stages |= buf->used_in_stages;
             dst_stages |= res.stages;
-            buf->used_in_stages = Ren::eStageBits::None;
+            buf->used_in_stages = {};
             res_transitions.emplace_back(buf->ref.get(), res.desired_state);
         }
 
@@ -1645,7 +1645,7 @@ void Eng::FgBuilder::HandleResourceTransition(const FgResource &res,
         if (tex->ref->resource_state != res.desired_state || IsRWState(tex->ref->resource_state)) {
             src_stages |= tex->used_in_stages;
             dst_stages |= res.stages;
-            tex->used_in_stages = Ren::eStageBits::None;
+            tex->used_in_stages = {};
             res_transitions.emplace_back(tex->ref.get(), res.desired_state);
         }
 

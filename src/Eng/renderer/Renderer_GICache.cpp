@@ -11,7 +11,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, FgResRef rt_geo_instances_res,
                                      FgResRef rt_obj_instances_res, FrameTextures &frame_textures) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     if (settings.gi_quality == eGIQuality::Off || settings.gi_cache_update_mode == eGICacheUpdateMode::Off) {

@@ -455,7 +455,7 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
                                 insert_sorted(this_res->overlaps_with, it->res);
                                 it->barrier_placed = true;
                             }
-                            other_res->aliased_in_stages |= StageBitsForState(res.desired_state);
+                            other_res->aliased_in_stages |= StagesForState(res.desired_state);
 
                             if (this_alloc->offset > it->offset &&
                                 this_alloc->offset + this_alloc->block < it->offset + it->size) {
@@ -524,16 +524,16 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
         // Reset resources
         for (FgAllocBuf &buf : buffers_) {
             buf._generation = 0;
-            buf.used_in_stages = Ren::eStageBits::None;
+            buf.used_in_stages = {};
             if (buf.ref) {
-                buf.used_in_stages = StageBitsForState(buf.ref->resource_state);
+                buf.used_in_stages = StagesForState(buf.ref->resource_state);
             }
         }
         for (FgAllocTex &tex : textures_) {
             tex._generation = 0;
-            tex.used_in_stages = Ren::eStageBits::None;
+            tex.used_in_stages = {};
             if (tex.ref) {
-                tex.used_in_stages = StageBitsForState(tex.ref->resource_state);
+                tex.used_in_stages = StagesForState(tex.ref->resource_state);
             }
         }
 
@@ -547,8 +547,7 @@ void Eng::FgBuilder::ClearResources_MemHeaps() {
             const FgNode *node = reordered_nodes_[i];
 
             Ren::SmallVector<Ren::TransitionInfo, 32> res_transitions;
-            Ren::eStageBits src_stages = Ren::eStageBits::None;
-            Ren::eStageBits dst_stages = Ren::eStageBits::None;
+            Ren::Bitmask<Ren::eStage> src_stages, dst_stages;
 
             std::vector<Ren::BufRef> bufs_to_clear;
             std::vector<Ren::TexRef> texs_to_clear;

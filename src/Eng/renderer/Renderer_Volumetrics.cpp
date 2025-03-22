@@ -151,7 +151,7 @@ void Eng::Renderer::InitSkyResources() {
 }
 
 void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     // TODO: Remove this condition
@@ -164,8 +164,8 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
         auto *data = skydome_cube.AllocNodeData<ExSkydomeCube::Args>();
 
-        data->shared_data =
-            skydome_cube.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
+        data->shared_data = skydome_cube.AddUniformBufferInput(common_buffers.shared_data,
+                                                               Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
 
         data->transmittance_lut = skydome_cube.AddTextureInput(sky_transmittance_lut_, Stg::FragmentShader);
         data->multiscatter_lut = skydome_cube.AddTextureInput(sky_multiscatter_lut_, Stg::FragmentShader);
@@ -185,8 +185,8 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         auto &skymap = fg_builder_.AddNode("SKYDOME");
 
         auto *data = skymap.AllocNodeData<ExSkydomeScreen::Args>();
-        data->shared_data =
-            skymap.AddUniformBufferInput(common_buffers.shared_data, Stg::VertexShader | Stg::FragmentShader);
+        data->shared_data = skymap.AddUniformBufferInput(common_buffers.shared_data,
+                                                         Ren::Bitmask{Stg::VertexShader} | Stg::FragmentShader);
         if (p_list_->env.env_map_name != "physical_sky") {
             frame_textures.envmap = data->env_tex = skymap.AddTextureInput(p_list_->env.env_map, Stg::FragmentShader);
             frame_textures.color = data->color_tex = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
@@ -334,7 +334,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 }
 
 void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
-    using Stg = Ren::eStageBits;
+    using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     if (p_list_->env.env_map_name != "physical_sky") {
@@ -442,7 +442,7 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             froxel_tex = data->output_tex =
-                inject_light.AddStorageImageOutput("Vol Froxels", p, Ren::eStageBits::ComputeShader);
+                inject_light.AddStorageImageOutput("Vol Froxels", p, Ren::eStage::ComputeShader);
         }
 
         inject_light.set_execute_cb(
@@ -457,10 +457,10 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
         };
 
         auto *data = ray_march.AllocNodeData<PassData>();
-        data->froxel_tex = ray_march.AddTextureInput(froxel_tex, Ren::eStageBits::ComputeShader);
+        data->froxel_tex = ray_march.AddTextureInput(froxel_tex, Ren::eStage::ComputeShader);
 
         frame_textures.color = data->output_tex =
-            ray_march.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::ComputeShader);
+            ray_march.AddStorageImageOutput(frame_textures.color, Ren::eStage::ComputeShader);
 
         ray_march.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
