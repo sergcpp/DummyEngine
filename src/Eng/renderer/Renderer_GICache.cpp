@@ -113,10 +113,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             FgAllocTex &out_irr_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
-                {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_irr_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
+                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
+                                             {Trg::Image, ProbeBlend::OUT_IMG_SLOT, *out_irr_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -175,10 +174,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             FgAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
-                {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_dist_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
+                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.ref},
+                                             {Trg::Image, ProbeBlend::OUT_IMG_SLOT, *out_dist_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -224,7 +222,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
 
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.ref}};
+                {Trg::Image, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);
@@ -276,7 +274,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
 
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
-                {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.ref}};
+                {Trg::Image, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
             const bool partial = (settings.gi_cache_update_mode == eGICacheUpdateMode::Partial);

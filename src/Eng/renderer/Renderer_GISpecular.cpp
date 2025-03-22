@@ -150,8 +150,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                              {Trg::UTBuf, SOBOL_BUF_SLOT, *sobol_buf.ref},
                                              {Trg::UTBuf, SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.ref},
                                              {Trg::UTBuf, RANKING_TILE_BUF_SLOT, *ranking_tile_buf.ref},
-                                             {Trg::Image2D, REFL_IMG_SLOT, *refl_tex.ref},
-                                             {Trg::Image2D, NOISE_IMG_SLOT, *noise_tex.ref}};
+                                             {Trg::Image, REFL_IMG_SLOT, *refl_tex.ref},
+                                             {Trg::Image, NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
@@ -284,7 +284,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 {Trg::Tex2DSampled, NORM_TEX_SLOT, *normal_tex.ref},
                 {Trg::Tex2DSampled, NOISE_TEX_SLOT, *noise_tex.ref},
                 {Trg::SBufRO, IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                {Trg::Image2D, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                {Trg::Image, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                 {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
             if (irr_tex) {
@@ -530,10 +530,10 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     {Trg::Tex2DSampled, SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
                     {Trg::Tex2DSampled, REFL_TEX_SLOT, *relf_tex.ref},
                     {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::Image2D, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
-                    {Trg::Image2D, OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
-                    {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
-                    {Trg::Image2D, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
+                    {Trg::Image, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
+                    {Trg::Image, OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
+                    {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
+                    {Trg::Image, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
@@ -546,9 +546,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
-                                                 {Trg::Image2D, OUT_AVG_RAD_IMG_SLOT, *out_avg_refl_tex.ref},
-                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
+                                                 {Trg::Image, OUT_AVG_RAD_IMG_SLOT, *out_avg_refl_tex.ref},
+                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -626,7 +626,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                                  {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                                  {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                                  {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                                                 {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[0];
@@ -641,7 +641,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -731,8 +731,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                                  {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                                  {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                                  {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::Image, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
@@ -745,8 +745,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_refl_tex.ref},
-                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref},
+                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -825,7 +825,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                         {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                         {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                         {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                        {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                        {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[0];
@@ -840,7 +840,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     using namespace TileClear;
 
                     const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                                                     {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
@@ -916,7 +916,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                         {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                         {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                         {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                        {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                        {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[1];
@@ -931,7 +931,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     using namespace TileClear;
 
                     const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                                                     {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
@@ -986,7 +986,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                                  {Trg::Tex2DSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
                                                  {Trg::Tex2DSampled, SSR_TEX_SLOT, *gi_tex.ref},
                                                  {Trg::Tex2DSampled, SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                                                 {Trg::Image2D, OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
+                                                 {Trg::Image, OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =
                     Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,

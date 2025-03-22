@@ -38,7 +38,7 @@ void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) {
                                      {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
-                                     {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+                                     {Ren::eBindTarget::Image, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_->prog()->descr_set_layouts()[0], bindings,
@@ -94,7 +94,7 @@ void Eng::ExRTShadows::Execute_HWRT_Inline(FgBuilder &builder) {
                                      {Ren::eBindTarget::SBufRO, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
-                                     {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+                                     {Ren::eBindTarget::Image, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_->prog()->descr_set_layouts()[0], bindings,
@@ -152,7 +152,7 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::UTBuf, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBufRO, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
-        {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+        {Ren::eBindTarget::Image, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_->prog()->descr_set_layouts()[0], bindings,

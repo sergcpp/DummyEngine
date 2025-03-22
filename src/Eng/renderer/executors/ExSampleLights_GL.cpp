@@ -63,8 +63,8 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, SampleLights::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
         {Ren::eBindTarget::Tex2DSampled, SampleLights::NORM_TEX_SLOT, *norm_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, SampleLights::SPEC_TEX_SLOT, *spec_tex.ref},
-        {Ren::eBindTarget::Image2D, SampleLights::OUT_DIFFUSE_IMG_SLOT, *out_diffuse_tex.ref},
-        {Ren::eBindTarget::Image2D, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
+        {Ren::eBindTarget::Image, SampleLights::OUT_DIFFUSE_IMG_SLOT, *out_diffuse_tex.ref},
+        {Ren::eBindTarget::Image, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
         (view_state_->act_res[0] + SampleLights::LOCAL_GROUP_SIZE_X - 1u) / SampleLights::LOCAL_GROUP_SIZE_X,

@@ -60,7 +60,7 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.ref},
         {Ren::eBindTarget::UTBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
-        {Ren::eBindTarget::Image2D, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
+        {Ren::eBindTarget::Image, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
     if (irr_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTDebug::DISTANCE_TEX_SLOT, *dist_tex->ref);

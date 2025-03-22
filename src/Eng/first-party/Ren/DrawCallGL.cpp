@@ -25,8 +25,7 @@ const uint32_t g_binding_targets_gl[] = {
     GL_SHADER_STORAGE_BUFFER,  // SBufRW
     0xffffffff,                // STBufRO
     0xffffffff,                // STBufRW
-    0xffffffff,                // Image2D
-    0xffffffff,                // Image2DArray
+    0xffffffff,                // Image
     0xffffffff                 // AccStruct
 };
 static_assert(std::size(g_binding_targets_gl) == size_t(eBindTarget::_Count), "!");
@@ -74,7 +73,7 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Sampler) {
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
-        } else if (b.trg == eBindTarget::Image2D || b.trg == eBindTarget::Image2DArray) {
+        } else if (b.trg == eBindTarget::Image) {
             auto texture_id = GLuint(b.handle.tex->id());
             if (b.handle.view_index) {
                 texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
@@ -132,7 +131,7 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Sampler) {
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
-        } else if (b.trg == eBindTarget::Image2D || b.trg == eBindTarget::Image2DArray) {
+        } else if (b.trg == eBindTarget::Image) {
             glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         }

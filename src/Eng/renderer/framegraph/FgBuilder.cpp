@@ -51,6 +51,19 @@ Eng::FgBuilder::FgBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh, PrimDraw &pr
         sh.LoadPipeline("internal/clear_image@ARRAY;RG11F_B10F.comp.glsl");
     pi_clear_image_[1][int(Ren::eTexFormat::RGBA32F)] = sh.LoadPipeline("internal/clear_image@ARRAY;RGBA32F.comp.glsl");
     pi_clear_image_[1][int(Ren::eTexFormat::RGBA16F)] = sh.LoadPipeline("internal/clear_image@ARRAY;RGBA16F.comp.glsl");
+    // 3D Image
+    pi_clear_image_[2][int(Ren::eTexFormat::RGBA8)] = sh.LoadPipeline("internal/clear_image@_3D;RGBA8.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::R32F)] = sh.LoadPipeline("internal/clear_image@_3D;R32F.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::R16F)] = sh.LoadPipeline("internal/clear_image@_3D;R16F.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::R8)] = sh.LoadPipeline("internal/clear_image@_3D;R8.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::R32UI)] = sh.LoadPipeline("internal/clear_image@_3D;R32UI.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::RG8)] = sh.LoadPipeline("internal/clear_image@_3D;RG8.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::RG16F)] = sh.LoadPipeline("internal/clear_image@_3D;RG16F.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::RG32F)] = sh.LoadPipeline("internal/clear_image@_3D;RG32F.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::RG11F_B10F)] =
+        sh.LoadPipeline("internal/clear_image@_3D;RG11F_B10F.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::RGBA32F)] = sh.LoadPipeline("internal/clear_image@_3D;RGBA32F.comp.glsl");
+    pi_clear_image_[2][int(Ren::eTexFormat::RGBA16F)] = sh.LoadPipeline("internal/clear_image@_3D;RGBA16F.comp.glsl");
 
     pi_clear_buffer_ = sh.LoadPipeline("internal/clear_buffer.comp.glsl");
 }
@@ -1667,14 +1680,12 @@ void Eng::FgBuilder::ClearImage_AsTransfer(Ren::TexRef &tex, Ren::CommandBuffer 
 
 void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {
     const Ren::TexParams p = tex->params;
-    assert(p.d == 0 || (p.flags & Ren::eTexFlags::Array));
-
-    const Ren::PipelineRef &pi = pi_clear_image_[p.flags & Ren::eTexFlags::Array][int(p.format)];
+    const Ren::PipelineRef &pi = (p.flags & Ren::eTexFlags::Array) ? pi_clear_image_[1][int(p.format)]
+                                                                   : (p.d != 0 ? pi_clear_image_[2][int(p.format)]
+                                                                               : pi_clear_image_[0][int(p.format)]);
     assert(pi);
 
-    const Ren::Binding bindings[] = {
-        {(p.flags & Ren::eTexFlags::Array) ? Ren::eBindTarget::Image2DArray : Ren::eBindTarget::Image2D,
-         ClearImage::OUT_IMG_SLOT, *tex}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::Image, ClearImage::OUT_IMG_SLOT, *tex}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
         (p.w + ClearImage::LOCAL_GROUP_SIZE_X - 1u) / ClearImage::LOCAL_GROUP_SIZE_X,

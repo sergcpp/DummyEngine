@@ -124,7 +124,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << b.loc);
-        } else if (b.trg == eBindTarget::Image2D || b.trg == eBindTarget::Image2DArray) {
+        } else if (b.trg == eBindTarget::Image) {
             auto &info = img_storage_infos[descr_sizes.store_img_count++];
             info.sampler = b.handle.tex->handle().sampler;
             info.imageView = b.handle.tex->handle().views[b.handle.view_index];

@@ -98,7 +98,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 {Trg::Tex2DArraySampled, IRRADIANCE_TEX_SLOT, *irr_tex.ref},
                 {Trg::Tex2DArraySampled, DISTANCE_TEX_SLOT, *dist_tex.ref},
                 {Trg::Tex2DArraySampled, OFFSET_TEX_SLOT, *off_tex.ref},
-                {Trg::Image2D, OUT_IMG_SLOT, *out_tex.ref}};
+                {Trg::Image, OUT_IMG_SLOT, *out_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
@@ -250,8 +250,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                              {Trg::UTBuf, SOBOL_BUF_SLOT, *sobol_buf.ref},
                                              {Trg::UTBuf, SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.ref},
                                              {Trg::UTBuf, RANKING_TILE_BUF_SLOT, *ranking_tile_buf.ref},
-                                             {Trg::Image2D, GI_IMG_SLOT, *gi_tex.ref},
-                                             {Trg::Image2D, NOISE_IMG_SLOT, *noise_tex.ref}};
+                                             {Trg::Image, GI_IMG_SLOT, *gi_tex.ref},
+                                             {Trg::Image, NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
@@ -359,7 +359,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                              {Trg::Tex2DSampled, NORM_TEX_SLOT, *normal_tex.ref},
                                              {Trg::Tex2DSampled, NOISE_TEX_SLOT, *noise_tex.ref},
                                              {Trg::SBufRO, IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                                             {Trg::Image2D, OUT_GI_IMG_SLOT, *out_gi_tex.ref},
+                                             {Trg::Image, OUT_GI_IMG_SLOT, *out_gi_tex.ref},
                                              {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                                              {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
@@ -643,10 +643,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                     {Trg::Tex2DSampled, SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
                     {Trg::Tex2DSampled, GI_TEX_SLOT, *gi_tex.ref},
                     {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::Image2D, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
-                    {Trg::Image2D, OUT_AVG_GI_IMG_SLOT, *out_avg_gi_tex.ref},
-                    {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
-                    {Trg::Image2D, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
+                    {Trg::Image, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
+                    {Trg::Image, OUT_AVG_GI_IMG_SLOT, *out_avg_gi_tex.ref},
+                    {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
+                    {Trg::Image, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
@@ -660,9 +660,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
-                                                 {Trg::Image2D, OUT_AVG_RAD_IMG_SLOT, *out_avg_gi_tex.ref},
-                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
+                                                 {Trg::Image, OUT_AVG_RAD_IMG_SLOT, *out_avg_gi_tex.ref},
+                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -737,7 +737,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                  {Trg::Tex2DSampled, AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
                                                  {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                                  {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+                                                 {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[0];
@@ -752,7 +752,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
+                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -845,8 +845,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                  {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                                  {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                                  {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_GI_IMG_SLOT, *out_gi_tex.ref},
-                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::Image, OUT_GI_IMG_SLOT, *out_gi_tex.ref},
+                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
@@ -859,8 +859,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref},
-                                                 {Trg::Image2D, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_gi_tex.ref},
+                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -935,7 +935,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                      {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                                      //{Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                                      {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+                                                     {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[0];
@@ -950,7 +950,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                     using namespace TileClear;
 
                     const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
+                                                     {Trg::Image, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
@@ -1024,7 +1024,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                      {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                                      //{Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                                      {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image2D, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+                                                     {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[1];
@@ -1039,7 +1039,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                     using namespace TileClear;
 
                     const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image2D, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
+                                                     {Trg::Image, OUT_RAD_IMG_SLOT, *out_gi_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
@@ -1094,7 +1094,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                  {Trg::Tex2DSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
                                                  {Trg::Tex2DSampled, GI_TEX_SLOT, *gi_tex.ref},
                                                  {Trg::Tex2DSampled, GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                                                 {Trg::Image2D, OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+                                                 {Trg::Image, OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =
                     Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
@@ -1377,7 +1377,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::NORM_TEX_SLOT, *norm_tex.ref},
-                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *output_tex.ref}};
+                                             {Trg::Image, GTAO::OUT_IMG_SLOT, *output_tex.ref}};
 
             const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
                                                                          : uint32_t(view_state_.act_res[0] / 2),
@@ -1433,7 +1433,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
-                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
+                                             {Trg::Image, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
             const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
                                                                          : uint32_t(view_state_.act_res[0] / 2),
@@ -1494,7 +1494,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                              {Trg::Tex2DSampled, GTAO::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
                                              {Trg::Tex2DSampled, GTAO::GTAO_HIST_TEX_SLOT, *ao_hist_tex.ref},
-                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
+                                             {Trg::Image, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
             const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
                                                                          : uint32_t(view_state_.act_res[0] / 2),
@@ -1545,7 +1545,7 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
             const Ren::Binding bindings[] = {{Trg::Tex2DSampled, GTAO::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::Tex2DSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
-                                             {Trg::Image2D, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
+                                             {Trg::Image, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,

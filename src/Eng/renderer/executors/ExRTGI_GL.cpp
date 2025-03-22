@@ -79,7 +79,7 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
         {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT, *dist_tex.ref},
         {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT, *off_tex.ref},
-        {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+        {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->ref);

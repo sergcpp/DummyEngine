@@ -30,8 +30,7 @@ enum class eBindTarget : uint16_t {
     SBufRW,
     STBufRO,
     STBufRW,
-    Image2D,
-    Image2DArray,
+    Image,
     AccStruct,
     _Count
 };
@@ -49,6 +48,7 @@ struct OpaqueHandle {
 #if defined(REN_VK_BACKEND)
         const AccStructureVK *acc_struct;
 #endif
+        void *ptr;
     };
     const Sampler *sampler = nullptr;
     int view_index = 0;
@@ -59,7 +59,7 @@ struct OpaqueHandle {
         : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
     OpaqueHandle(const Buffer &_buf, int _view_index = 0) : buf(&_buf), view_index(_view_index) {}
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
-    OpaqueHandle(const Sampler &_sampler) : sampler(&_sampler) {}
+    OpaqueHandle(const Sampler &_sampler) : ptr(nullptr), sampler(&_sampler) {}
 #if defined(REN_VK_BACKEND)
     OpaqueHandle(const AccStructureVK &_acc_struct) : acc_struct(&_acc_struct) {}
 #endif

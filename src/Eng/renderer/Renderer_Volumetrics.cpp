@@ -271,7 +271,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                                                  {Trg::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
                                                  {Trg::Tex2DSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
                                                  {Trg::Tex2DSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
-                                                 {Trg::Image2D, Skydome::OUT_IMG_SLOT, *output_tex.ref}};
+                                                 {Trg::Image, Skydome::OUT_IMG_SLOT, *output_tex.ref}};
 
                 const Ren::Vec3u grp_count = Ren::Vec3u{
                     (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,

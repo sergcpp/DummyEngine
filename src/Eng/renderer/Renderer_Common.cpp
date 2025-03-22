@@ -761,7 +761,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Trg::Tex2DSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
             {Trg::Tex2DSampled, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
             {Trg::Tex2DSampled, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
-            {Trg::Image2D, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
+            {Trg::Image, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + GBufferShade::LOCAL_GROUP_SIZE_X - 1u) / GBufferShade::LOCAL_GROUP_SIZE_X,
@@ -1017,7 +1017,7 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::Tex2DSampled, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-            {Ren::eBindTarget::Image2D, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
+            {Ren::eBindTarget::Image, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,

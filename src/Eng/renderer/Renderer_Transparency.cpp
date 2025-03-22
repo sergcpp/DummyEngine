@@ -292,7 +292,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                 {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                bindings.emplace_back(Trg::Image2D, OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex[i]->ref);
+                bindings.emplace_back(Trg::Image, OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex[i]->ref);
             }
             if (irr_tex) {
                 bindings.emplace_back(Trg::Tex2DSampled, ALBEDO_TEX_SLOT, *albedo_tex->ref);

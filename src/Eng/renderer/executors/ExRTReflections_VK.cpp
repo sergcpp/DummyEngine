@@ -97,7 +97,7 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
             break;
         }
         FgAllocTex &out_refl_tex = builder.GetWriteTexture(args_->out_refl_tex[i]);
-        bindings.emplace_back(Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
     const Ren::Pipeline *pi = nullptr;
@@ -232,7 +232,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
             break;
         }
         FgAllocTex &out_refl_tex = builder.GetWriteTexture(args_->out_refl_tex[i]);
-        bindings.emplace_back(Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
     const Ren::Pipeline *pi = nullptr;

@@ -40,7 +40,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2DSampled, HistogramSample::HDR_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
-                {Ren::eBindTarget::Image2D, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
+                {Ren::eBindTarget::Image, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
 
             HistogramSample::Params uniform_params = {};
             uniform_params.pre_exposure = view_state_.pre_exposure;
@@ -79,7 +79,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2DSampled, HistogramExposure::HISTOGRAM_TEX_SLOT, *histogram_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, HistogramExposure::EXPOSURE_PREV_TEX_SLOT, *exposure_prev_tex.ref},
-                {Ren::eBindTarget::Image2D, HistogramExposure::OUT_TEX_SLOT, *exposure_tex.ref}};
+                {Ren::eBindTarget::Image, HistogramExposure::OUT_TEX_SLOT, *exposure_tex.ref}};
 
             HistogramExposure::Params uniform_params = {};
             uniform_params.min_exposure = min_exposure_;
@@ -141,7 +141,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
                 {Ren::eBindTarget::Tex2DSampled, Bloom::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-                {Ren::eBindTarget::Image2D, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
+                {Ren::eBindTarget::Image, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
@@ -195,7 +195,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
             const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, *input_tex.ref},
                                              {Ren::eBindTarget::Tex2DSampled, Bloom::BLEND_TEX_SLOT, *blend_tex.ref},
-                                             {Ren::eBindTarget::Image2D, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
+                                             {Ren::eBindTarget::Image, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
