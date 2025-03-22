@@ -284,24 +284,24 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
 
             Ren::SmallVector<Ren::Binding, 24> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
-                {Trg::Tex2DSampled, COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::Tex2DSampled, NORM_TEX_SLOT, *normal_tex.ref},
+                {Trg::TexSampled, DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
+                {Trg::TexSampled, COLOR_TEX_SLOT, *color_tex.ref},
+                {Trg::TexSampled, NORM_TEX_SLOT, *normal_tex.ref},
                 {Trg::UTBuf, OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref},
                 {Trg::SBufRO, IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
                 {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                 {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-                bindings.emplace_back(Trg::Image, OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex[i]->ref);
+                bindings.emplace_back(Trg::ImageRW, OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex[i]->ref);
             }
             if (irr_tex) {
-                bindings.emplace_back(Trg::Tex2DSampled, ALBEDO_TEX_SLOT, *albedo_tex->ref);
-                bindings.emplace_back(Trg::Tex2DSampled, SPEC_TEX_SLOT, *specular_tex->ref);
-                bindings.emplace_back(Trg::Tex2DSampled, LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, ALBEDO_TEX_SLOT, *albedo_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, SPEC_TEX_SLOT, *specular_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
 
-                bindings.emplace_back(Trg::Tex2DArraySampled, IRRADIANCE_TEX_SLOT, *irr_tex->ref);
-                bindings.emplace_back(Trg::Tex2DArraySampled, DISTANCE_TEX_SLOT, *dist_tex->ref);
-                bindings.emplace_back(Trg::Tex2DArraySampled, OFFSET_TEX_SLOT, *off_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, IRRADIANCE_TEX_SLOT, *irr_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, DISTANCE_TEX_SLOT, *dist_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, OFFSET_TEX_SLOT, *off_tex->ref);
             }
 
             Params uniform_params;

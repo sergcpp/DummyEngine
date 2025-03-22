@@ -12,17 +12,11 @@ class Buffer;
 class DescrMultiPoolAlloc;
 class ILog;
 class Pipeline;
-class ProbeStorage;
 class Texture;
 
 enum class eBindTarget : uint16_t {
-    Tex2D,
-    Tex2DSampled,
-    Tex2DArraySampled,
-    Tex2DMs,
-    TexCubeArray,
-    Tex3D,
-    Tex3DSampled,
+    Tex,
+    TexSampled,
     Sampler,
     UBuf,
     UTBuf,
@@ -30,13 +24,14 @@ enum class eBindTarget : uint16_t {
     SBufRW,
     STBufRO,
     STBufRW,
-    Image,
+    ImageRO,
+    ImageRW,
     AccStruct,
     _Count
 };
 
 #if defined(REN_GL_BACKEND)
-uint32_t GLBindTarget(eBindTarget binding);
+uint32_t GLBindTarget(const Texture &tex, int view);
 extern int g_param_buf_binding;
 #endif
 
@@ -44,7 +39,6 @@ struct OpaqueHandle {
     union {
         const Texture *tex;
         const Buffer *buf;
-        const ProbeStorage *cube_arr;
 #if defined(REN_VK_BACKEND)
         const AccStructureVK *acc_struct;
 #endif
@@ -58,7 +52,6 @@ struct OpaqueHandle {
     OpaqueHandle(const Texture &_tex, const Sampler &_sampler, int _view_index = 0)
         : tex(&_tex), sampler(&_sampler), view_index(_view_index) {}
     OpaqueHandle(const Buffer &_buf, int _view_index = 0) : buf(&_buf), view_index(_view_index) {}
-    OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
     OpaqueHandle(const Sampler &_sampler) : ptr(nullptr), sampler(&_sampler) {}
 #if defined(REN_VK_BACKEND)
     OpaqueHandle(const AccStructureVK &_acc_struct) : acc_struct(&_acc_struct) {}

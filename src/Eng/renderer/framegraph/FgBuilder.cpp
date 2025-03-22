@@ -1685,7 +1685,7 @@ void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer c
                                                                                : pi_clear_image_[0][int(p.format)]);
     assert(pi);
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::Image, ClearImage::OUT_IMG_SLOT, *tex}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::ImageRW, ClearImage::OUT_IMG_SLOT, *tex}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
         (p.w + ClearImage::LOCAL_GROUP_SIZE_X - 1u) / ClearImage::LOCAL_GROUP_SIZE_X,

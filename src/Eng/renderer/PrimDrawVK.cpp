@@ -38,7 +38,7 @@ void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const
         Ren::SmallVector<VkBufferMemoryBarrier, 4> buf_barriers;
 
         for (const auto &b : bindings) {
-            if (b.trg == Ren::eBindTarget::Tex2DSampled) {
+            if (b.trg == Ren::eBindTarget::Tex || b.trg == Ren::eBindTarget::TexSampled) {
                 assert(b.handle.tex->resource_state == Ren::eResState::ShaderResource ||
                        b.handle.tex->resource_state == Ren::eResState::DepthRead ||
                        b.handle.tex->resource_state == Ren::eResState::StencilTestDepthFetch);

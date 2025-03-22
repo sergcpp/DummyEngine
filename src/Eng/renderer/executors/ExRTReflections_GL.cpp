@@ -64,11 +64,11 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTReflections::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+        {Ren::eBindTarget::TexSampled, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
         {Ren::eBindTarget::SBufRO, RTReflections::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBufRO, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::BLAS_BUF_SLOT, *rt_blas_buf.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::TLAS_BUF_SLOT, *rt_tlas_buf.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.ref},
@@ -79,22 +79,22 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBufRO, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTReflections::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTReflections::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.ref},
         {Ren::eBindTarget::UTBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.ref}};
     if (irr_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::DISTANCE_TEX_SLOT, *dist_tex->ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *off_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTReflections::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTReflections::DISTANCE_TEX_SLOT, *dist_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTReflections::OFFSET_TEX_SLOT, *off_tex->ref);
     }
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->ref);
     }
     if (noise_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex->ref);
     }
     if (oit_depth_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::OIT_DEPTH_BUF_SLOT, *oit_depth_buf->ref);
@@ -104,7 +104,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
             break;
         }
         FgAllocTex &out_refl_tex = builder.GetWriteTexture(args_->out_refl_tex[i]);
-        bindings.emplace_back(Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::ImageRW, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
     const Ren::Pipeline *pi = nullptr;

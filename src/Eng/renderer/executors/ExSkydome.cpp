@@ -46,13 +46,13 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
-        {Ren::eBindTarget::Tex2DSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
-        {Ren::eBindTarget::Tex2DSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref},
-        {Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.ref}};
+        {Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
+        {Ren::eBindTarget::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
+        {Ren::eBindTarget::TexSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref},
+        {Ren::eBindTarget::TexSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref},
+        {Ren::eBindTarget::TexSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
+        {Ren::eBindTarget::TexSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref},
+        {Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.ref}};
 
 #if defined(REN_GL_BACKEND)
     static const Ren::Vec3f axises[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{-1.0f, 0.0f, 0.0f},
@@ -113,25 +113,25 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
             TransitionResourceStates(builder.ctx().api_ctx(), builder.ctx().current_cmd_buf(), Ren::AllStages,
                                      Ren::AllStages, transitions);
 
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled,
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled,
                                               SkydomeDownsample::INPUT_TEX_SLOT,
                                               {*color_tex.ref, (mip - 1) * 6 + face + 1}},
-                                             {Ren::eBindTarget::Image,
+                                             {Ren::eBindTarget::ImageRW,
                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
                                               0,
                                               1,
                                               {*color_tex.ref, mip * 6 + face + 1}},
-                                             {Ren::eBindTarget::Image,
+                                             {Ren::eBindTarget::ImageRW,
                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
                                               1,
                                               1,
                                               {*color_tex.ref, std::min(mip + 1, mip_count - 1) * 6 + face + 1}},
-                                             {Ren::eBindTarget::Image,
+                                             {Ren::eBindTarget::ImageRW,
                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
                                               2,
                                               1,
                                               {*color_tex.ref, std::min(mip + 2, mip_count - 1) * 6 + face + 1}},
-                                             {Ren::eBindTarget::Image,
+                                             {Ren::eBindTarget::ImageRW,
                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
                                               3,
                                               1,
@@ -210,13 +210,13 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         FgAllocTex &noise3d_tex = builder.GetReadTexture(args_->phys.noise3d_tex);
         FgAllocTex &depth_tex = builder.GetWriteTexture(args_->depth_tex);
 
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.ref);
 
         rast_state.viewport[2] = view_state_->act_res[0];
         rast_state.viewport[3] = view_state_->act_res[1];
@@ -235,14 +235,14 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         FgAllocTex &noise3d_tex = builder.GetReadTexture(args_->phys.noise3d_tex);
         FgAllocTex &depth_tex = builder.GetReadTexture(args_->depth_tex);
 
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::DEPTH_TEX_SLOT,
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::MOON_TEX_SLOT, *moon_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::WEATHER_TEX_SLOT, *weather_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CIRRUS_TEX_SLOT, *cirrus_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::DEPTH_TEX_SLOT,
                               Ren::OpaqueHandle{*depth_tex.ref, 1});
 
         rast_state.viewport[2] = color_tex.ref->params.w;
@@ -254,7 +254,7 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         FgAllocTex &env_tex = builder.GetReadTexture(args_->env_tex);
         FgAllocTex &depth_tex = builder.GetWriteTexture(args_->depth_tex);
 
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_tex.ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::ENV_TEX_SLOT, *env_tex.ref);
 
         rast_state.viewport[2] = view_state_->act_res[0];
         rast_state.viewport[3] = view_state_->act_res[1];

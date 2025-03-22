@@ -140,18 +140,18 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgAllocTex &refl_tex = builder.GetWriteTexture(data->out_refl_tex);
             FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                             {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                                             {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                                             {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+            const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                                             {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                                             {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                              {Trg::SBufRO, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                                              {Trg::SBufRO, RAY_LIST_SLOT, *ray_list_buf.ref},
                                              {Trg::SBufRO, TILE_LIST_SLOT, *tile_list_buf.ref},
                                              {Trg::UTBuf, SOBOL_BUF_SLOT, *sobol_buf.ref},
                                              {Trg::UTBuf, SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.ref},
                                              {Trg::UTBuf, RANKING_TILE_BUF_SLOT, *ranking_tile_buf.ref},
-                                             {Trg::Image, REFL_IMG_SLOT, *refl_tex.ref},
-                                             {Trg::Image, NOISE_IMG_SLOT, *noise_tex.ref}};
+                                             {Trg::ImageRW, OUT_REFL_IMG_SLOT, *refl_tex.ref},
+                                             {Trg::ImageRW, OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
@@ -279,22 +279,22 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             Ren::SmallVector<Ren::Binding, 24> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
-                {Trg::Tex2DSampled, COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::Tex2DSampled, NORM_TEX_SLOT, *normal_tex.ref},
-                {Trg::Tex2DSampled, NOISE_TEX_SLOT, *noise_tex.ref},
+                {Trg::TexSampled, DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
+                {Trg::TexSampled, COLOR_TEX_SLOT, *color_tex.ref},
+                {Trg::TexSampled, NORM_TEX_SLOT, *normal_tex.ref},
+                {Trg::TexSampled, NOISE_TEX_SLOT, *noise_tex.ref},
                 {Trg::SBufRO, IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                {Trg::Image, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                {Trg::ImageRW, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::SBufRW, INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                 {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
             if (irr_tex) {
-                bindings.emplace_back(Trg::Tex2DSampled, ALBEDO_TEX_SLOT, *albedo_tex->ref);
-                bindings.emplace_back(Trg::Tex2DSampled, SPEC_TEX_SLOT, *specular_tex->ref);
-                bindings.emplace_back(Trg::Tex2DSampled, LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, ALBEDO_TEX_SLOT, *albedo_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, SPEC_TEX_SLOT, *specular_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, LTC_LUTS_TEX_SLOT, *ltc_luts_tex->ref);
 
-                bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, IRRADIANCE_TEX_SLOT, *irr_tex->ref);
-                bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, DISTANCE_TEX_SLOT, *dist_tex->ref);
-                bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OFFSET_TEX_SLOT, *off_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, IRRADIANCE_TEX_SLOT, *irr_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, DISTANCE_TEX_SLOT, *dist_tex->ref);
+                bindings.emplace_back(Trg::TexSampled, OFFSET_TEX_SLOT, *off_tex->ref);
             }
 
             Params uniform_params;
@@ -520,20 +520,20 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 const Ren::Binding bindings[] = {
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-                    {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                    {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                    {Trg::Tex2DSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                    {Trg::Tex2DSampled, DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
-                    {Trg::Tex2DSampled, NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
-                    {Trg::Tex2DSampled, REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
-                    {Trg::Tex2DSampled, VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
-                    {Trg::Tex2DSampled, SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
-                    {Trg::Tex2DSampled, REFL_TEX_SLOT, *relf_tex.ref},
+                    {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                    {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                    {Trg::TexSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                    {Trg::TexSampled, DEPTH_HIST_TEX_SLOT, {*depth_hist_tex.ref, 1}},
+                    {Trg::TexSampled, NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
+                    {Trg::TexSampled, REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
+                    {Trg::TexSampled, VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
+                    {Trg::TexSampled, SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
+                    {Trg::TexSampled, REFL_TEX_SLOT, *relf_tex.ref},
                     {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                    {Trg::Image, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
-                    {Trg::Image, OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
-                    {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
-                    {Trg::Image, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
+                    {Trg::ImageRW, OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
+                    {Trg::ImageRW, OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
+                    {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref},
+                    {Trg::ImageRW, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
@@ -546,9 +546,9 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
-                                                 {Trg::Image, OUT_AVG_RAD_IMG_SLOT, *out_avg_refl_tex.ref},
-                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_reprojected_tex.ref},
+                                                 {Trg::ImageRW, OUT_AVG_RAD_IMG_SLOT, *out_avg_refl_tex.ref},
+                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -618,15 +618,15 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace SSRFilter;
 
                 const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                                 {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                                 {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                                                 {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                                                 {Trg::Tex2DSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
-                                                 {Trg::Tex2DSampled, AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                                                 {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                                                 {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                                 {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                                                 {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                                                 {Trg::TexSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
+                                                 {Trg::TexSampled, AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
+                                                 {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                                                 {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                                                  {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                                                 {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[0];
@@ -641,7 +641,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -724,15 +724,15 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace SSRResolveTemporal;
 
                 const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                                 {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                                                 {Trg::Tex2DSampled, AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                                                 {Trg::Tex2DSampled, REFL_TEX_SLOT, *refl_tex.ref},
-                                                 {Trg::Tex2DSampled, REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
-                                                 {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                                 {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                                                 {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                                                 {Trg::TexSampled, AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
+                                                 {Trg::TexSampled, REFL_TEX_SLOT, *refl_tex.ref},
+                                                 {Trg::TexSampled, REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
+                                                 {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                                 {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                                  {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::ImageRW, OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
@@ -745,8 +745,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                 using namespace TileClear;
 
                 const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                 {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref},
-                                                 {Trg::Image, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                                 {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref},
+                                                 {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
                 uniform_params.tile_count = tile_count;
@@ -818,14 +818,14 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                     const Ren::Binding bindings[] = {
                         {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                        {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                        {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                        {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                        {Trg::Tex2DSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
-                        {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                        {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                        {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                        {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                        {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                        {Trg::TexSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
+                        {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                        {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                         {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                        {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                        {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[0];
@@ -840,7 +840,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     using namespace TileClear;
 
                     const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                                                     {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
@@ -909,14 +909,14 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                     const Ren::Binding bindings[] = {
                         {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                        {Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                        {Trg::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                        {Trg::Tex2DSampled, NORM_TEX_SLOT, *norm_tex.ref},
-                        {Trg::Tex2DSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
-                        {Trg::Tex2DSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                        {Trg::Tex2DSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
+                        {Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                        {Trg::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                        {Trg::TexSampled, NORM_TEX_SLOT, *norm_tex.ref},
+                        {Trg::TexSampled, REFL_TEX_SLOT, {*refl_tex.ref, *nearest_sampler_}},
+                        {Trg::TexSampled, SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                        {Trg::TexSampled, VARIANCE_TEX_SLOT, *variance_tex.ref},
                         {Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                        {Trg::Image, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
+                        {Trg::ImageRW, OUT_DENOISED_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[1];
@@ -931,7 +931,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     using namespace TileClear;
 
                     const Ren::Binding bindings[] = {{Trg::SBufRO, TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                                     {Trg::Image, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
+                                                     {Trg::ImageRW, OUT_RAD_IMG_SLOT, *out_refl_tex.ref}};
 
                     Params uniform_params;
                     uniform_params.tile_count = tile_count;
@@ -982,11 +982,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 FgAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_ssr_tex);
 
-                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                                 {Trg::Tex2DSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                                                 {Trg::Tex2DSampled, SSR_TEX_SLOT, *gi_tex.ref},
-                                                 {Trg::Tex2DSampled, SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
-                                                 {Trg::Image, OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                                 {Trg::TexSampled, VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                                                 {Trg::TexSampled, SSR_TEX_SLOT, *gi_tex.ref},
+                                                 {Trg::TexSampled, SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
+                                                 {Trg::ImageRW, OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =
                     Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
@@ -1073,12 +1073,12 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             // TODO: get rid of global binding slots
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2DSampled, ALBEDO_TEX_SLOT, *albedo_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, SPEC_TEX_SLOT, *spec_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Ren::eBindTarget::Tex2DSampled, NORM_TEX_SLOT, *normal_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, REFL_TEX_SLOT, *refl_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
+                {Ren::eBindTarget::TexSampled, ALBEDO_TEX_SLOT, *albedo_tex.ref},
+                {Ren::eBindTarget::TexSampled, SPEC_TEX_SLOT, *spec_tex.ref},
+                {Ren::eBindTarget::TexSampled, DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Ren::eBindTarget::TexSampled, NORM_TEX_SLOT, *normal_tex.ref},
+                {Ren::eBindTarget::TexSampled, REFL_TEX_SLOT, *refl_tex.ref},
+                {Ren::eBindTarget::TexSampled, LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
 
             Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
@@ -1141,8 +1141,8 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 const Ren::Binding bindings[] = {
-                    {Trg::Tex2DSampled, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
-                    {Trg::Tex2DSampled, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
+                    {Trg::TexSampled, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
+                    {Trg::TexSampled, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_sh_data_buf.ref}};
 
                 SSRTrace::Params uniform_params;
@@ -1193,7 +1193,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::TexSampled, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
 
                 SSRDilate::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};

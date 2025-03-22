@@ -50,12 +50,12 @@ void Eng::ExSampleLights::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::SBufRO, SampleLights::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::UTBuf, SampleLights::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::UTBuf, SampleLights::NDX_BUF_SLOT, *ndx_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::NORM_TEX_SLOT, *norm_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::SPEC_TEX_SLOT, *spec_tex.ref},
-        {Ren::eBindTarget::Image, SampleLights::OUT_DIFFUSE_IMG_SLOT, *out_diffuse_tex.ref},
-        {Ren::eBindTarget::Image, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
+        {Ren::eBindTarget::TexSampled, SampleLights::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+        {Ren::eBindTarget::TexSampled, SampleLights::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+        {Ren::eBindTarget::TexSampled, SampleLights::NORM_TEX_SLOT, *norm_tex.ref},
+        {Ren::eBindTarget::TexSampled, SampleLights::SPEC_TEX_SLOT, *spec_tex.ref},
+        {Ren::eBindTarget::ImageRW, SampleLights::OUT_DIFFUSE_IMG_SLOT, *out_diffuse_tex.ref},
+        {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
         (view_state_->act_res[0] + SampleLights::LOCAL_GROUP_SIZE_X - 1u) / SampleLights::LOCAL_GROUP_SIZE_X,
@@ -127,12 +127,12 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::SBufRO, SampleLights::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::UTBuf, SampleLights::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::UTBuf, SampleLights::NDX_BUF_SLOT, *ndx_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::NORM_TEX_SLOT, *norm_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, SampleLights::SPEC_TEX_SLOT, *spec_tex.ref},
-        {Ren::eBindTarget::Image, SampleLights::OUT_DIFFUSE_IMG_SLOT, *out_diffuse_tex.ref},
-        {Ren::eBindTarget::Image, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
+        {Ren::eBindTarget::TexSampled, SampleLights::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+        {Ren::eBindTarget::TexSampled, SampleLights::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+        {Ren::eBindTarget::TexSampled, SampleLights::NORM_TEX_SLOT, *norm_tex.ref},
+        {Ren::eBindTarget::TexSampled, SampleLights::SPEC_TEX_SLOT, *spec_tex.ref},
+        {Ren::eBindTarget::ImageRW, SampleLights::OUT_DIFFUSE_IMG_SLOT, *out_diffuse_tex.ref},
+        {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
         (view_state_->act_res[0] + SampleLights::LOCAL_GROUP_SIZE_X - 1u) / SampleLights::LOCAL_GROUP_SIZE_X,

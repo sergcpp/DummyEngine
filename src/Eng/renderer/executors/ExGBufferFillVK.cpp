@@ -46,8 +46,8 @@ void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {
                                          {Ren::eBindTarget::UTBuf, BIND_ITEMS_BUF, *items_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-                                         {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref},
-                                         {Ren::eBindTarget::Tex2DSampled, BIND_DECAL_TEX, *dummy_black.ref}};
+                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref},
+                                         {Ren::eBindTarget::TexSampled, BIND_DECAL_TEX, *dummy_black.ref}};
         descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,
                                              ctx.default_descr_alloc(), ctx.log());
         descr_sets[1] = bindless_tex_->textures_descr_sets[0];

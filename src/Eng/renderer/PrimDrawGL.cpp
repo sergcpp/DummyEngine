@@ -30,28 +30,45 @@ void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, ePrim prim, const Ren::
     glBindFramebuffer(GL_FRAMEBUFFER, fb->id());
 
     for (const auto &b : bindings) {
-        if (b.trg == Ren::eBindTarget::UBuf) {
-            if (b.offset) {
-                assert(b.size != 0);
-                glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id(), b.offset, b.size);
-            } else {
-                glBindBufferBase(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id());
+        if (b.trg == Ren::eBindTarget::Tex || b.trg == Ren::eBindTarget::TexSampled) {
+            auto texture_id = GLuint(b.handle.tex->id());
+            if (b.handle.view_index) {
+                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
             }
-        } else if (b.trg == Ren::eBindTarget::TexCubeArray) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
-                                       GLuint(b.handle.cube_arr->handle().id));
-        } else if (b.trg == Ren::eBindTarget::UTBuf) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset),
-                                       GLuint(b.handle.buf->view(b.handle.view_index).second));
-        } else if (b.trg == Ren::eBindTarget::Sampler) {
-            ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
-        } else {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
+            ren_glBindTextureUnit_Comp(GLBindTarget(*b.handle.tex, b.handle.view_index), GLuint(b.loc + b.offset),
+                                       texture_id);
             if (b.handle.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             } else {
                 ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
+        } else if (b.trg == Ren::eBindTarget::UBuf) {
+            glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id(), b.offset,
+                              b.size ? b.size : b.handle.buf->size());
+        } else if (b.trg == Ren::eBindTarget::SBufRO || b.trg == Ren::eBindTarget::SBufRW) {
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, b.loc, b.handle.buf->id(), b.offset,
+                              b.size ? b.size : b.handle.buf->size());
+        } else if (b.trg == Ren::eBindTarget::UTBuf) {
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, GLuint(b.loc),
+                                       GLuint(b.handle.buf->view(b.handle.view_index).second));
+        } else if (b.trg == Ren::eBindTarget::STBufRO) {
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
+                               GL_FALSE, 0, GL_READ_ONLY,
+                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
+        } else if (b.trg == Ren::eBindTarget::STBufRW) {
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
+                               GL_FALSE, 0, GL_READ_WRITE,
+                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
+        } else if (b.trg == Ren::eBindTarget::Sampler) {
+            ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
+        } else if (b.trg == Ren::eBindTarget::ImageRO || b.trg == Ren::eBindTarget::ImageRW) {
+            auto texture_id = GLuint(b.handle.tex->id());
+            if (b.handle.view_index) {
+                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
+            }
+            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, GL_FALSE, 0,
+                               b.trg == Ren::eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
+                               GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         }
     }
 

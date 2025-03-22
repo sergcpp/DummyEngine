@@ -748,20 +748,20 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Trg::UTBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.ref},
             {Trg::UTBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.ref},
             {Trg::UTBuf, GBufferShade::DECAL_BUF_SLOT, *decals_buf.ref},
-            {Trg::Tex2DSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-            {Trg::Tex2DSampled, GBufferShade::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
-            {Trg::Tex2DSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::NORM_TEX_SLOT, *normal_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SPEC_TEX_SLOT, *spec_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SHADOW_DEPTH_VAL_TEX_SLOT, {*shad_depth_tex.ref, *nearest_sampler_}},
-            {Trg::Tex2DSampled, GBufferShade::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
-            {Trg::Tex2DSampled, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
-            {Trg::Tex2DSampled, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
-            {Trg::Image, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
+            {Trg::TexSampled, GBufferShade::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+            {Trg::TexSampled, GBufferShade::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
+            {Trg::TexSampled, GBufferShade::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+            {Trg::TexSampled, GBufferShade::NORM_TEX_SLOT, *normal_tex.ref},
+            {Trg::TexSampled, GBufferShade::SPEC_TEX_SLOT, *spec_tex.ref},
+            {Trg::TexSampled, GBufferShade::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
+            {Trg::TexSampled, GBufferShade::SHADOW_DEPTH_VAL_TEX_SLOT, {*shad_depth_tex.ref, *nearest_sampler_}},
+            {Trg::TexSampled, GBufferShade::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
+            {Trg::TexSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
+            {Trg::TexSampled, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
+            {Trg::TexSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
+            {Trg::TexSampled, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
+            {Trg::TexSampled, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
+            {Trg::ImageRW, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + GBufferShade::LOCAL_GROUP_SIZE_X - 1u) / GBufferShade::LOCAL_GROUP_SIZE_X,
@@ -847,7 +847,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
         rast_state.viewport[3] = view_state_.act_res[1];
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2DSampled, BlitStaticVel::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+            {Ren::eBindTarget::TexSampled, BlitStaticVel::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(shared_data_t), *unif_shared_data_buf.ref}};
 
         const Ren::RenderTarget render_targets[] = {{velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -916,11 +916,11 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_NEAREST_TEX_SLOT, {*clean_tex.ref, *nearest_sampler_}},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_LINEAR_TEX_SLOT, *clean_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
+                {Ren::eBindTarget::TexSampled, TempAA::CURR_NEAREST_TEX_SLOT, {*clean_tex.ref, *nearest_sampler_}},
+                {Ren::eBindTarget::TexSampled, TempAA::CURR_LINEAR_TEX_SLOT, *clean_tex.ref},
+                {Ren::eBindTarget::TexSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
+                {Ren::eBindTarget::TexSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Ren::eBindTarget::TexSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
 
             TempAA::Params uniform_params;
             uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
@@ -975,7 +975,7 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
         rast_state.viewport[3] = view_state_.act_res[1] / 2;
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2DSampled, DownDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}}};
+            {Ren::eBindTarget::TexSampled, DownDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}}};
 
         DownDepth::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};
@@ -1016,8 +1016,8 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
         FgAllocTex &output_tex = builder.GetWriteTexture(data->out_color_tex);
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2DSampled, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-            {Ren::eBindTarget::Image, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
+            {Ren::eBindTarget::TexSampled, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+            {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,

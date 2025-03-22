@@ -268,10 +268,10 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
                 const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                                 {Trg::Tex2DSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
-                                                 {Trg::Tex2DSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
-                                                 {Trg::Tex2DSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
-                                                 {Trg::Image, Skydome::OUT_IMG_SLOT, *output_tex.ref}};
+                                                 {Trg::TexSampled, Skydome::ENV_TEX_SLOT, *env_map_tex.ref},
+                                                 {Trg::TexSampled, Skydome::SKY_TEX_SLOT, *sky_temp_tex.ref},
+                                                 {Trg::TexSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
+                                                 {Trg::ImageRW, Skydome::OUT_IMG_SLOT, *output_tex.ref}};
 
                 const Ren::Vec3u grp_count = Ren::Vec3u{
                     (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
@@ -316,7 +316,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 rast_state.viewport[2] = view_state_.act_res[0];
                 rast_state.viewport[3] = view_state_.act_res[1];
 
-                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, FXAA::INPUT_TEX_SLOT, *sky_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::TexSampled, FXAA::INPUT_TEX_SLOT, *sky_tex.ref}};
 
                 FXAA::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
@@ -383,12 +383,12 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2DSampled, SunBrightness::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
-                {Trg::Tex2DSampled, SunBrightness::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
-                {Trg::Tex2DSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
-                {Trg::Tex2DSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
-                {Trg::Tex2DSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
-                {Trg::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.ref},
+                {Trg::TexSampled, SunBrightness::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
+                {Trg::TexSampled, SunBrightness::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
+                {Trg::TexSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
+                {Trg::TexSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
+                {Trg::TexSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
+                {Trg::TexSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.ref},
                 {Trg::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
 
             DispatchCompute(*pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,

@@ -10,75 +10,66 @@
 #include "Texture.h"
 
 namespace Ren {
-const uint32_t g_binding_targets_gl[] = {
-    GL_TEXTURE_2D,             // Tex2D
-    GL_TEXTURE_2D,             // Tex2DSampled
-    GL_TEXTURE_2D_ARRAY,       // Tex2DArraySampled
-    GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
-    GL_TEXTURE_CUBE_MAP_ARRAY, // TexCubeArray
-    GL_TEXTURE_3D,             // Tex3D
-    GL_TEXTURE_3D,             // Tex3DSampled
-    0xffffffff,                // Sampler
-    GL_UNIFORM_BUFFER,         // UBuf
-    GL_TEXTURE_BUFFER,         // UTBuf
-    GL_SHADER_STORAGE_BUFFER,  // SBufRO
-    GL_SHADER_STORAGE_BUFFER,  // SBufRW
-    0xffffffff,                // STBufRO
-    0xffffffff,                // STBufRW
-    0xffffffff,                // Image
-    0xffffffff                 // AccStruct
-};
-static_assert(std::size(g_binding_targets_gl) == size_t(eBindTarget::_Count), "!");
-
 extern const uint32_t g_internal_formats_gl[];
 
 int g_param_buf_binding;
 } // namespace Ren
 
-uint32_t Ren::GLBindTarget(const eBindTarget binding) { return g_binding_targets_gl[size_t(binding)]; }
+uint32_t Ren::GLBindTarget(const Texture &tex, const int view) {
+    if (view == 0) {
+        // NOTE: Assume all additional views are 2D textures
+        return GL_TEXTURE_2D;
+    }
+    if (Bitmask<eTexFlags>{tex.params.flags} & eTexFlags::Array) {
+        return GL_TEXTURE_2D_ARRAY;
+    }
+    if (tex.params.d != 0) {
+        return GL_TEXTURE_3D;
+    }
+    return GL_TEXTURE_2D;
+}
 
 void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
                           const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     for (const auto &b : bindings) {
-        if (b.trg == eBindTarget::Tex2D || b.trg == eBindTarget::Tex2DSampled ||
-            b.trg == eBindTarget::Tex2DArraySampled || b.trg == eBindTarget::Tex3D ||
-            b.trg == eBindTarget::Tex3DSampled) {
+        if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
             auto texture_id = GLuint(b.handle.tex->id());
             if (b.handle.view_index) {
                 texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
             }
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), texture_id);
+            ren_glBindTextureUnit_Comp(GLBindTarget(*b.handle.tex, b.handle.view_index), GLuint(b.loc + b.offset),
+                                       texture_id);
             if (b.handle.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
             } else {
                 ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
-        } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
-            if (b.offset) {
-                assert(b.size != 0);
-                glBindBufferRange(GLBindTarget(b.trg), b.loc, b.handle.buf->id(), b.offset, b.size);
-            } else {
-                glBindBufferBase(GLBindTarget(b.trg), b.loc, b.handle.buf->id());
-            }
+        } else if (b.trg == eBindTarget::UBuf) {
+            glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id(), b.offset,
+                              b.size ? b.size : b.handle.buf->size());
+        } else if (b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, b.loc, b.handle.buf->id(), b.offset,
+                              b.size ? b.size : b.handle.buf->size());
         } else if (b.trg == eBindTarget::UTBuf) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc),
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, GLuint(b.loc),
                                        GLuint(b.handle.buf->view(b.handle.view_index).second));
         } else if (b.trg == eBindTarget::STBufRO) {
-            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(0).second), 0, GL_FALSE, 0,
-                               GL_READ_ONLY, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first));
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
+                               GL_FALSE, 0, GL_READ_ONLY,
+                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
         } else if (b.trg == eBindTarget::STBufRW) {
-            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(0).second), 0, GL_FALSE, 0,
-                               GL_READ_WRITE, GLInternalFormatFromTexFormat(b.handle.buf->view(0).first));
-        } else if (b.trg == eBindTarget::TexCubeArray) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
+                               GL_FALSE, 0, GL_READ_WRITE,
+                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
         } else if (b.trg == eBindTarget::Sampler) {
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
-        } else if (b.trg == eBindTarget::Image) {
+        } else if (b.trg == eBindTarget::ImageRO || b.trg == eBindTarget::ImageRW) {
             auto texture_id = GLuint(b.handle.tex->id());
             if (b.handle.view_index) {
                 texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
             }
-            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, GL_FALSE, 0, GL_READ_WRITE,
+            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, GL_FALSE, 0,
+                               b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         }
     }
@@ -111,28 +102,44 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
                                   const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
                                   ILog *log) {
     for (const auto &b : bindings) {
-        if (b.trg == eBindTarget::Tex2D || b.trg == eBindTarget::Tex2DSampled ||
-            b.trg == eBindTarget::Tex2DArraySampled || b.trg == eBindTarget::Tex3D ||
-            b.trg == eBindTarget::Tex3DSampled) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
+        if (b.trg == eBindTarget::Tex || b.trg == eBindTarget::TexSampled) {
+            auto texture_id = GLuint(b.handle.tex->id());
+            if (b.handle.view_index) {
+                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
+            }
+            ren_glBindTextureUnit_Comp(GLBindTarget(*b.handle.tex, b.handle.view_index), GLuint(b.loc + b.offset),
+                                       texture_id);
             if (b.handle.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
-            }
-        } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
-            if (b.offset) {
-                assert(b.size != 0);
-                glBindBufferRange(GLBindTarget(b.trg), b.loc, b.handle.buf->id(), b.offset, b.size);
             } else {
-                glBindBufferBase(GLBindTarget(b.trg), b.loc, b.handle.buf->id());
+                ren_glBindSampler(GLuint(b.loc + b.offset), 0);
             }
+        } else if (b.trg == eBindTarget::UBuf) {
+            glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id(), b.offset,
+                              b.size ? b.size : b.handle.buf->size());
+        } else if (b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
+            glBindBufferRange(GL_SHADER_STORAGE_BUFFER, b.loc, b.handle.buf->id(), b.offset,
+                              b.size ? b.size : b.handle.buf->size());
         } else if (b.trg == eBindTarget::UTBuf) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.buf->view(0).second));
-        } else if (b.trg == eBindTarget::TexCubeArray) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, GLuint(b.loc),
+                                       GLuint(b.handle.buf->view(b.handle.view_index).second));
+        } else if (b.trg == eBindTarget::STBufRO) {
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
+                               GL_FALSE, 0, GL_READ_ONLY,
+                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
+        } else if (b.trg == eBindTarget::STBufRW) {
+            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.buf->view(b.handle.view_index).second), 0,
+                               GL_FALSE, 0, GL_READ_WRITE,
+                               GLInternalFormatFromTexFormat(b.handle.buf->view(b.handle.view_index).first));
         } else if (b.trg == eBindTarget::Sampler) {
             ren_glBindSampler(GLuint(b.loc + b.offset), b.handle.sampler->id());
-        } else if (b.trg == eBindTarget::Image) {
-            glBindImageTexture(GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
+        } else if (b.trg == eBindTarget::ImageRO || b.trg == eBindTarget::ImageRW) {
+            auto texture_id = GLuint(b.handle.tex->id());
+            if (b.handle.view_index) {
+                texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
+            }
+            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, GL_FALSE, 0,
+                               b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         }
     }

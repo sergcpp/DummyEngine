@@ -57,11 +57,11 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     uniform_params.pre_exposure = view_state_->pre_exposure;
 
     Ren::SmallVector<Ren::Binding, 8> bindings = {
-        {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::HDR_TEX_SLOT, {*color_tex.ref, *args_->linear_sampler}},
-        {Ren::eBindTarget::Tex2DSampled, BlitPostprocess::BLOOM_TEX_SLOT, *bloom_tex.ref}};
+        {Ren::eBindTarget::TexSampled, BlitPostprocess::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
+        {Ren::eBindTarget::TexSampled, BlitPostprocess::HDR_TEX_SLOT, {*color_tex.ref, *args_->linear_sampler}},
+        {Ren::eBindTarget::TexSampled, BlitPostprocess::BLOOM_TEX_SLOT, *bloom_tex.ref}};
     if (args_->tonemap_mode == 2) {
-        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, BlitPostprocess::LUT_TEX_SLOT, *lut_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, BlitPostprocess::LUT_TEX_SLOT, *lut_tex->ref);
     }
 
     Ren::SmallVector<Ren::RenderTarget, 2> render_targets = {

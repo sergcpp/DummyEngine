@@ -35,8 +35,8 @@ layout(binding = SOBOL_BUF_SLOT) uniform usamplerBuffer g_sobol_seq_tex;
 layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform usamplerBuffer g_scrambling_tile_tex;
 layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_tex;
 
-layout(binding = RAY_HITS_IMG_SLOT, r32ui) uniform restrict writeonly uimage2D g_ray_hits_img;
-layout(binding = NOISE_IMG_SLOT, rg8) uniform restrict writeonly image2D g_noise_img;
+layout(binding = OUT_RAY_HITS_IMG_SLOT, r32ui) uniform restrict writeonly uimage2D g_ray_hits_img;
+layout(binding = OUT_NOISE_IMG_SLOT, rg8) uniform restrict writeonly image2D g_noise_img;
 
 shared uint g_shared_mask;
 

@@ -39,8 +39,8 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             FgAllocTex &output_tex = builder.GetWriteTexture(histogram);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2DSampled, HistogramSample::HDR_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
-                {Ren::eBindTarget::Image, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
+                {Ren::eBindTarget::TexSampled, HistogramSample::HDR_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
+                {Ren::eBindTarget::ImageRW, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
 
             HistogramSample::Params uniform_params = {};
             uniform_params.pre_exposure = view_state_.pre_exposure;
@@ -77,9 +77,9 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             FgAllocTex &exposure_tex = builder.GetWriteTexture(data->exposure);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2DSampled, HistogramExposure::HISTOGRAM_TEX_SLOT, *histogram_tex.ref},
-                {Ren::eBindTarget::Tex2DSampled, HistogramExposure::EXPOSURE_PREV_TEX_SLOT, *exposure_prev_tex.ref},
-                {Ren::eBindTarget::Image, HistogramExposure::OUT_TEX_SLOT, *exposure_tex.ref}};
+                {Ren::eBindTarget::TexSampled, HistogramExposure::HISTOGRAM_TEX_SLOT, *histogram_tex.ref},
+                {Ren::eBindTarget::TexSampled, HistogramExposure::EXPOSURE_PREV_TEX_SLOT, *exposure_prev_tex.ref},
+                {Ren::eBindTarget::ImageRW, HistogramExposure::OUT_TEX_SLOT, *exposure_tex.ref}};
 
             HistogramExposure::Params uniform_params = {};
             uniform_params.min_exposure = min_exposure_;
@@ -139,9 +139,9 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             uniform_params.pre_exposure = view_state_.pre_exposure;
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
-                {Ren::eBindTarget::Tex2DSampled, Bloom::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
-                {Ren::eBindTarget::Image, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
+                {Ren::eBindTarget::TexSampled, Bloom::INPUT_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
+                {Ren::eBindTarget::TexSampled, Bloom::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
+                {Ren::eBindTarget::ImageRW, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
@@ -193,9 +193,9 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
             uniform_params.img_size[1] = output_tex.ref->params.h;
             uniform_params.blend_weight = 1.0f / float(1 + BloomMipCount - 1 - mip);
 
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, Bloom::INPUT_TEX_SLOT, *input_tex.ref},
-                                             {Ren::eBindTarget::Tex2DSampled, Bloom::BLEND_TEX_SLOT, *blend_tex.ref},
-                                             {Ren::eBindTarget::Image, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled, Bloom::INPUT_TEX_SLOT, *input_tex.ref},
+                                             {Ren::eBindTarget::TexSampled, Bloom::BLEND_TEX_SLOT, *blend_tex.ref},
+                                             {Ren::eBindTarget::ImageRW, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,

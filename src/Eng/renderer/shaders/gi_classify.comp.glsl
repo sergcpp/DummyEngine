@@ -33,8 +33,8 @@ layout(binding = SOBOL_BUF_SLOT) uniform usamplerBuffer g_sobol_seq_tex;
 layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform usamplerBuffer g_scrambling_tile_tex;
 layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_tex;
 
-layout(binding = GI_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_gi_img;
-layout(binding = NOISE_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_noise_img;
+layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_gi_img;
+layout(binding = OUT_NOISE_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_noise_img;
 
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
     switch (samples_per_quad) {

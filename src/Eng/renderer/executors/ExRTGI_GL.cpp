@@ -55,13 +55,13 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
-        //{Ren::eBindTarget::Tex2DSampled, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+        {Ren::eBindTarget::TexSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
+        //{Ren::eBindTarget::TexSampled, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBufRO, RTGI::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGI::BLAS_BUF_SLOT, *rt_blas_buf.ref},
         {Ren::eBindTarget::UTBuf, RTGI::TLAS_BUF_SLOT, *rt_tlas_buf.ref},
         {Ren::eBindTarget::UTBuf, RTGI::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.ref},
@@ -71,15 +71,15 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTGI::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::UTBuf, RTGI::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBufRO, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::UTBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.ref},
         {Ren::eBindTarget::UTBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.ref},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT, *dist_tex.ref},
-        {Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT, *off_tex.ref},
-        {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+        {Ren::eBindTarget::TexSampled, RTGI::IRRADIANCE_TEX_SLOT, *irr_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::DISTANCE_TEX_SLOT, *dist_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTGI::OFFSET_TEX_SLOT, *off_tex.ref},
+        {Ren::eBindTarget::ImageRW, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (stoch_lights_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::STOCH_LIGHTS_BUF_SLOT, *stoch_lights_buf->ref);
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTGI::LIGHT_NODES_BUF_SLOT, *light_nodes_buf->ref);

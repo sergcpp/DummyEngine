@@ -21,8 +21,8 @@ const int SOBOL_BUF_SLOT = 7;
 const int SCRAMLING_TILE_BUF_SLOT = 8;
 const int RANKING_TILE_BUF_SLOT = 9;
 
-const int RAY_HITS_IMG_SLOT = 0;
-const int NOISE_IMG_SLOT = 1;
+const int OUT_RAY_HITS_IMG_SLOT = 0;
+const int OUT_NOISE_IMG_SLOT = 1;
 
 INTERFACE_END
 

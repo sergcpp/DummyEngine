@@ -87,19 +87,19 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
         {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
         {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::SHADOW_TEX_SLOT, *shadow_map_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::ENV_TEX_SLOT, *env_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_COLOR_TEX_SLOT, *back_color_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, OITBlendLayer::BACK_DEPTH_TEX_SLOT, {*back_depth_tex.ref, 1}}};
+        {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::SHADOW_TEX_SLOT, *shadow_map_tex.ref},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::BACK_COLOR_TEX_SLOT, *back_color_tex.ref},
+        {Ren::eBindTarget::TexSampled, OITBlendLayer::BACK_DEPTH_TEX_SLOT, {*back_depth_tex.ref, 1}}};
     if (irr_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::DISTANCE_TEX_SLOT, *dist_tex->ref);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, OITBlendLayer::OFFSET_TEX_SLOT, *off_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::DISTANCE_TEX_SLOT, *dist_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::OFFSET_TEX_SLOT, *off_tex->ref);
     }
     if (specular_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DSampled, OITBlendLayer::SPEC_TEX_SLOT, *specular_tex->ref);
+        bindings.emplace_back(Ren::eBindTarget::TexSampled, OITBlendLayer::SPEC_TEX_SLOT, *specular_tex->ref);
     }
 
     VkDescriptorSet descr_sets[2];

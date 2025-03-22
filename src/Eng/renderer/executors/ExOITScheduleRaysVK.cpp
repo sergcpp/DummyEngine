@@ -42,7 +42,7 @@ void Eng::ExOITScheduleRays::DrawTransparent(FgBuilder &builder, FgAllocTex &dep
         {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
         {Ren::eBindTarget::SBufRO, OITScheduleRays::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBufRO, OITScheduleRays::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref}};
+        {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_vegetation_[0]->prog()->descr_set_layouts()[0], bindings,

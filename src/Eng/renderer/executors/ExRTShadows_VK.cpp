@@ -30,15 +30,15 @@ void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
+                                     {Ren::eBindTarget::TexSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
+                                     {Ren::eBindTarget::TexSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                     {Ren::eBindTarget::TexSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
                                      {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
-                                     {Ren::eBindTarget::Image, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+                                     {Ren::eBindTarget::ImageRW, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_->prog()->descr_set_layouts()[0], bindings,
@@ -85,16 +85,16 @@ void Eng::ExRTShadows::Execute_HWRT_Inline(FgBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
+                                     {Ren::eBindTarget::TexSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
+                                     {Ren::eBindTarget::TexSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                     {Ren::eBindTarget::TexSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
                                      {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
                                      {Ren::eBindTarget::SBufRO, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
-                                     {Ren::eBindTarget::Image, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+                                     {Ren::eBindTarget::ImageRW, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_->prog()->descr_set_layouts()[0], bindings,
@@ -140,9 +140,9 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-        {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-        {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
+        {Ren::eBindTarget::TexSampled, RTShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+        {Ren::eBindTarget::TexSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
         {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::UTBuf, RTShadows::BLAS_BUF_SLOT, *rt_blas_buf.ref},
@@ -152,7 +152,7 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::UTBuf, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
         {Ren::eBindTarget::UTBuf, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBufRO, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
-        {Ren::eBindTarget::Image, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+        {Ren::eBindTarget::ImageRW, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = PrepareDescriptorSet(api_ctx, pi_rt_shadows_->prog()->descr_set_layouts()[0], bindings,

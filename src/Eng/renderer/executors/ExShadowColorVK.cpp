@@ -89,7 +89,7 @@ void Eng::ExShadowColor::DrawShadowMaps(FgBuilder &builder) {
                                          {Ren::eBindTarget::UTBuf, BIND_INST_BUF, *instances_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_INST_NDX_BUF, *instance_indices_buf.ref},
                                          {Ren::eBindTarget::SBufRO, BIND_MATERIALS_BUF, *materials_buf.ref},
-                                         {Ren::eBindTarget::Tex2DSampled, BIND_NOISE_TEX, *noise_tex.ref}};
+                                         {Ren::eBindTarget::TexSampled, BIND_NOISE_TEX, *noise_tex.ref}};
         vege_descr_sets[0] =
             PrepareDescriptorSet(api_ctx, vege_descr_set_layout, bindings, ctx.default_descr_alloc(), ctx.log());
         vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
