@@ -128,8 +128,11 @@ void Eng::Renderer::InitPipelines() {
     pi_histogram_sample_ = sh_.LoadPipeline("internal/histogram_sample.comp.glsl");
     pi_histogram_exposure_ = sh_.LoadPipeline("internal/histogram_exposure.comp.glsl");
 
-    // Sky
+    // Volumetrics
     pi_sky_upsample_ = sh_.LoadPipeline("internal/skydome_upsample.comp.glsl");
+    pi_fog_inject_light_ = sh_.LoadPipeline("internal/fog_inject_light.comp.glsl");
+    pi_fog_ray_march_ = sh_.LoadPipeline("internal/fog_ray_march.comp.glsl");
+    pi_fog_apply_ = sh_.LoadPipeline("internal/fog_apply.comp.glsl");
 
     // Debugging
     pi_debug_velocity_ = sh_.LoadPipeline("internal/debug_velocity.comp.glsl");
@@ -269,8 +272,11 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
 
             shrd_data.clip_from_world = view_state_.clip_from_world =
                 (shrd_data.clip_from_view * shrd_data.view_from_world);
-            Ren::Mat4f view_matrix_no_translation = shrd_data.view_from_world;
-            view_matrix_no_translation[3][0] = view_matrix_no_translation[3][1] = view_matrix_no_translation[3][2] = 0;
+
+            Ren::Mat4f view_from_world_no_translation = shrd_data.view_from_world;
+            view_from_world_no_translation[3][0] = view_from_world_no_translation[3][1] =
+                view_from_world_no_translation[3][2] = 0;
+            view_state_.clip_from_world_no_translation = (shrd_data.clip_from_view * view_from_world_no_translation);
 
             shrd_data.prev_view_from_world = view_state_.prev_view_from_world;
             shrd_data.prev_clip_from_world = view_state_.prev_clip_from_world;

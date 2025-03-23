@@ -247,7 +247,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
 #ifdef PRE_FILTER
     const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-    const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb;
+    const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).xyz;
 #endif
 
     for (int i = 0; i < 8; ++i) {

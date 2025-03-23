@@ -47,8 +47,6 @@ __itt_string_handle *itt_on_loaded_str = __itt_string_handle_create("SceneManage
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
-std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height);
-
 template <typename T> class DefaultCompStorage : public Eng::CompStorage {
     Ren::SparseArray<T> data_;
 

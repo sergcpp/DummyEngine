@@ -138,16 +138,16 @@ void main() {
 
 #if 0
             float _dot1 = dot(L, normal);
-            vec3 l_diffuse = texture(SAMPLER2D(g_sss_tex), vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
+            vec3 l_diffuse = texture(SAMPLER2D(g_sss_tex), vec2(_dot1 * 0.5 + 0.5, curvature)).xyz;
 
             additional_light += col_and_index.xyz * atten * l_diffuse * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
 #else
             float _dot_r = dot(L, normal_r);
             float _dot_g = dot(L, normal_g);
             float _dot_b = dot(L, normal_b);
-            float l_diffuse_r = texture(SAMPLER2D(g_sss_tex), vec2(_dot_r * 0.5 + 0.5, curvature)).r;
-            float l_diffuse_g = texture(SAMPLER2D(g_sss_tex), vec2(_dot_g * 0.5 + 0.5, curvature)).g;
-            float l_diffuse_b = texture(SAMPLER2D(g_sss_tex), vec2(_dot_b * 0.5 + 0.5, curvature)).b;
+            float l_diffuse_r = texture(SAMPLER2D(g_sss_tex), vec2(_dot_r * 0.5 + 0.5, curvature)).x;
+            float l_diffuse_g = texture(SAMPLER2D(g_sss_tex), vec2(_dot_g * 0.5 + 0.5, curvature)).y;
+            float l_diffuse_b = texture(SAMPLER2D(g_sss_tex), vec2(_dot_b * 0.5 + 0.5, curvature)).z;
 
             additional_light += col_and_index.xyz * atten * vec3(l_diffuse_r, l_diffuse_g, l_diffuse_b) * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
 #endif
@@ -170,18 +170,18 @@ void main() {
                                                           g_shrd_data.probes[pi].sh_coeffs[1],
                                                           g_shrd_data.probes[pi].sh_coeffs[2]);
 #else
-        indirect_col.r += fade * EvalSHIrradiance_NonLinear(normal_r,
+        indirect_col.x += fade * EvalSHIrradiance_NonLinear(normal_r,
                                                             g_shrd_data.probes[pi].sh_coeffs[0],
                                                             g_shrd_data.probes[pi].sh_coeffs[1],
-                                                            g_shrd_data.probes[pi].sh_coeffs[2]).r;
-        indirect_col.g += fade * EvalSHIrradiance_NonLinear(normal_g,
+                                                            g_shrd_data.probes[pi].sh_coeffs[2]).x;
+        indirect_col.y += fade * EvalSHIrradiance_NonLinear(normal_g,
                                                             g_shrd_data.probes[pi].sh_coeffs[0],
                                                             g_shrd_data.probes[pi].sh_coeffs[1],
-                                                            g_shrd_data.probes[pi].sh_coeffs[2]).g;
-        indirect_col.b += fade * EvalSHIrradiance_NonLinear(normal_b,
+                                                            g_shrd_data.probes[pi].sh_coeffs[2]).y;
+        indirect_col.z += fade * EvalSHIrradiance_NonLinear(normal_b,
                                                             g_shrd_data.probes[pi].sh_coeffs[0],
                                                             g_shrd_data.probes[pi].sh_coeffs[1],
-                                                            g_shrd_data.probes[pi].sh_coeffs[2]).b;
+                                                            g_shrd_data.probes[pi].sh_coeffs[2]).z;
 #endif
 
         total_fade += fade;
@@ -198,10 +198,10 @@ void main() {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_vtx_sh_uvs);
     }
 
-    vec3 sun_diffuse = texture(SAMPLER2D(g_sss_tex), vec2(N_dot_L * 0.5 + 0.5, curvature)).rgb;
+    vec3 sun_diffuse = texture(SAMPLER2D(g_sss_tex), vec2(N_dot_L * 0.5 + 0.5, curvature)).xyz;
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
+    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * sun_diffuse * visibility + ambient_occlusion * indirect_col + additional_light);
 
     vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos);
@@ -213,6 +213,6 @@ void main() {
     g_out_normal = PackNormalAndRoughness(normal, spec_color.w);
     g_out_specular = spec_color;
 
-    //g_out_color.rgb *= 0.00001;
-    //g_out_color.rgb += vec3(curvature);
+    //g_out_color.xyz *= 0.00001;
+    //g_out_color.xyz += vec3(curvature);
 }

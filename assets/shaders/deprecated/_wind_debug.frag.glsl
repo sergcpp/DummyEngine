@@ -31,9 +31,9 @@ layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 
 void main() {
     vec3 lo_freq_bend_dir = 0.5 * texture(g_noise_tex, g_shrd_data.wind_scroll.xy +
-                                          (1.0 / 256.0) * vec2(g_vtx_pos.xz)).rgb + vec3(0.5);
+                                          (1.0 / 256.0) * vec2(g_vtx_pos.xz)).xyz + vec3(0.5);
     vec3 hi_freq_bend_dir = 0.5 * texture(g_noise_tex, g_shrd_data.wind_scroll.zw +
-                                          (1.0 / 8.0) * vec2(g_vtx_pos.xz)).rgb + vec3(0.5);
+                                          (1.0 / 8.0) * vec2(g_vtx_pos.xz)).xyz + vec3(0.5);
 
     g_out_color = vec4(pow(lo_freq_bend_dir + hi_freq_bend_dir, vec3(2.2)), 1.0);
     g_out_normal = vec4(0.0);

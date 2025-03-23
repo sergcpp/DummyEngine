@@ -53,7 +53,7 @@ void main() {
     } else
 #endif
     {
-        col += textureLod(g_tex, g_vtx_uvs, 0.0).rgb;
+        col += textureLod(g_tex, g_vtx_uvs, 0.0).xyz;
     }
 
     // add bloom

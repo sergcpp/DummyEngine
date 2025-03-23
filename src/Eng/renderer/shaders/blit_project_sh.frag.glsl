@@ -18,7 +18,7 @@ layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 4.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.xyz * rgbm.a;
 }
 
 #define M_PI 3.1415926535897932384626433832795
@@ -46,13 +46,13 @@ void main() {
 
     if (x < 8) {
         // red channel
-        sh *= color.r;
+        sh *= color.x;
     } else if (x < 16) {
         // green channel
-        sh *= color.g;
+        sh *= color.y;
     } else {
         // blue channel
-        sh *= color.b;
+        sh *= color.z;
     }
 
     g_out_color = sh;

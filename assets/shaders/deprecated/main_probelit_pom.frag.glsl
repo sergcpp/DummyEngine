@@ -57,12 +57,12 @@ vec2 ParallaxMapping(vec3 dir, vec2 uvs) {
     vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
+    float height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).x;
 
     while (height > cur_layer_height) {
         cur_layer_height += layer_height;
         cur_uvs -= duvs;
-        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
+        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).x;
     }
 
     return cur_uvs;
@@ -81,12 +81,12 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
     vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
+    float height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).x;
 
     while (height < cur_layer_height) {
         cur_layer_height -= layer_height;
         cur_uvs -= duvs;
-        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
+        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).x;
     }
 
     duvs = 0.5 * duvs;
@@ -99,7 +99,7 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
     for (int i = 0; i < BinSearchInterations; i++) {
         duvs = 0.5 * duvs;
         layer_height = 0.5 * layer_height;
-        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
+        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).x;
         if (height > cur_layer_height) {
             cur_uvs += duvs;
             cur_layer_height += layer_height;
@@ -123,18 +123,18 @@ vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs, out float iterations) {
     vec2 duvs = dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = 1.0 - texture(SAMPLER2D(g_mat3_tex), cur_uvs).g;
+    float height = 1.0 - texture(SAMPLER2D(g_mat3_tex), cur_uvs).y;
 
     while (height < cur_layer_height) {
         cur_layer_height -= layer_height;
         cur_uvs += duvs;
-        height = 1.0 - texture(SAMPLER2D(g_mat3_tex), cur_uvs).g;
+        height = 1.0 - texture(SAMPLER2D(g_mat3_tex), cur_uvs).y;
     }
 
     vec2 prev_uvs = cur_uvs - duvs;
 
     float next_height = height - cur_layer_height;
-    float prev_height = 1.0 - texture(SAMPLER2D(g_mat3_tex), prev_uvs).g - cur_layer_height - layer_height;
+    float prev_height = 1.0 - texture(SAMPLER2D(g_mat3_tex), prev_uvs).y - cur_layer_height - layer_height;
 
     float weight = next_height / (next_height - prev_height);
     vec2 final_uvs = mix(cur_uvs, prev_uvs, weight);
@@ -149,16 +149,16 @@ vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
 
     float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
 
-    vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs, 0.0).rg;
-    h.g = max(h.g, 1.0/255.0);
+    vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs, 0.0).xy;
+    h.y = max(h.y, 1.0/255.0);
 
     int counter = 0;
 
     float t = 0.0;
-    while (1.0 - dir.z * t > h.r) {
-        t += w + (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-        h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).rg;
-        h.g = max(h.g, 1.0/255.0);
+    while (1.0 - dir.z * t > h.x) {
+        t += w + (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+        h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).xy;
+        h.y = max(h.y, 1.0/255.0);
 
         counter += 1;
         if (counter > 1000) {
@@ -175,30 +175,30 @@ vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
 vec2 ConeSteppingFixed(vec3 dir, vec2 uvs) {
     float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
 
-    vec2 h = texture(SAMPLER2D(g_mat3_tex), uvs).rg;
-    float t = (1.0 - h.r) / (dir.z + iz / (h.g * h.g));
+    vec2 h = texture(SAMPLER2D(g_mat3_tex), uvs).xy;
+    float t = (1.0 - h.x) / (dir.z + iz / (h.y * h.y));
 
     // repeate 4 times
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
 
     // and 5 more times
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
-    t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).xy;
+    t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
 
     return uvs - t * dir.xy;
 }
@@ -213,8 +213,8 @@ vec2 ConeSteppingLoop(vec3 dir, vec2 uvs) {
     float t = 0.0;
 
     for (int i = 0; i < steps_count; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).rg;
-        t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).xy;
+        t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
     }
 
     return uvs - t * dir.xy;
@@ -230,8 +230,8 @@ vec2 ConeSteppingLoop32(vec3 dir, vec2 uvs) {
     float t = 0.0;
 
     for (int i = 0; i < steps_count; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).rg;
-        t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).xy;
+        t += (1.0 - dir.z * t - h.x) / (dir.z + iz / (h.y * h.y));
     }
 
     return uvs - t * dir.xy;
@@ -247,9 +247,9 @@ vec2 ConeSteppingRelaxed(vec3 dir, vec2 uvs) {
 
     vec3 pos = vec3(uvs, 0.0);
     for (int i = 0; i < ConeSteps; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), pos.xy, 0.0).rg;
-        float height = clamp(h.r - pos.z, 0.0, 1.0);
-        float d = h.g * height / (ray_ratio + h.g);
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), pos.xy, 0.0).xy;
+        float height = clamp(h.x - pos.z, 0.0, 1.0);
+        float d = h.y * height / (ray_ratio + h.y);
         pos += dir * d;
     }
 
@@ -257,9 +257,9 @@ vec2 ConeSteppingRelaxed(vec3 dir, vec2 uvs) {
     vec3 bs_pos = pos - bs_range;
 
     for (int i = 0; i < BinarySteps; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), bs_pos.xy, 0.0).rg;
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), bs_pos.xy, 0.0).xy;
         bs_range *= 0.5;
-        if (bs_pos.z < h.r) {
+        if (bs_pos.z < h.x) {
             bs_pos += bs_range;
         } else {
             bs_pos -= bs_range;
@@ -306,12 +306,12 @@ vec2 QuadTreeDisplacement(vec3 dir, vec2 uvs, out float iterations) {
         if (lod <= lim_lod) {
             // advance forward by a half of a pixel
             vec3 next_ray_pos = vec3(start_point, 0.0) + dir * (t_cursor + adv);
-            float next_height = textureLod(SAMPLER2D(g_mat3_tex), next_ray_pos.xy, lim_lod).g - next_ray_pos.z;
+            float next_height = textureLod(SAMPLER2D(g_mat3_tex), next_ray_pos.xy, lim_lod).y - next_ray_pos.z;
             // check if we intersect interpolated height map
             if (next_height <= 0.0) {
                 // step backward by a half of a pixel
                 vec3 prev_ray_pos = vec3(start_point, 0.0) + dir * (t_cursor - adv);
-                float prev_height = textureLod(SAMPLER2D(g_mat3_tex), prev_ray_pos.xy, lim_lod).g - prev_ray_pos.z;
+                float prev_height = textureLod(SAMPLER2D(g_mat3_tex), prev_ray_pos.xy, lim_lod).y - prev_ray_pos.z;
                 // compute interpolation factor
                 float weight = prev_height / (prev_height - next_height);
                 // final cursor position at intersection point
@@ -323,11 +323,11 @@ vec2 QuadTreeDisplacement(vec3 dir, vec2 uvs, out float iterations) {
 #if 0
         // fetch max bump map height at current level (manually because nearest sampling is required)
         ivec2 icursor = ivec2(fract(vec2(1.0) + fract(cursor)) * cur_tex_size);
-        float max_height = texelFetch(SAMPLER2D(g_mat3_tex), icursor, int(lod)).g;
+        float max_height = texelFetch(SAMPLER2D(g_mat3_tex), icursor, int(lod)).y;
 #else
         // snap cursor to pixel's center to emulate nearest sampling
         vec2 snapped_cursor = (vec2(0.5) + floor(cursor * cur_tex_size)) / cur_tex_size;
-        float max_height = textureLod(SAMPLER2D(g_mat3_tex), snapped_cursor, lod).g;
+        float max_height = textureLod(SAMPLER2D(g_mat3_tex), snapped_cursor, lod).y;
 #endif
         // intersection of ray with z-plane of pixel's bounding box
         float t = max_height / dir.z;
@@ -473,7 +473,7 @@ void main() {
             vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 3);
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
-                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
+                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).x;
             }
 
             vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 4);
@@ -579,7 +579,7 @@ void main() {
     }
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
+    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                          ambient_occlusion * ambient_occlusion * indirect_col +
                                          additional_light);

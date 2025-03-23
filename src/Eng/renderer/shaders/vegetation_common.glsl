@@ -134,7 +134,7 @@ vec3 TransformVegetation(vec3 old_pos, inout vec3 inout_normal, inout vec3 inout
         vec3 branch_tip_pos = branch_pivot_pos + branch_dir * branch_extent;
         vec2 branch_tip_pos_ts = uv_tr * branch_tip_pos.xz + vec2(2.0 * branch_tip_pos.y, 0.0);
 
-        vec3 wind_dir = get_wind_speed_mult(idx) * (wind_vec_ls.xyz + wind_vec_ls.w * textureLod(noise_tex, wind_scroll.xy + branch_tip_pos_ts, 0.0).rgb);
+        vec3 wind_dir = get_wind_speed_mult(idx) * (wind_vec_ls.xyz + wind_vec_ls.w * textureLod(noise_tex, wind_scroll.xy + branch_tip_pos_ts, 0.0).xyz);
         float wind_speed = length(wind_dir);
 
         float rotation_angle_animation = 0;

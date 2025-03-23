@@ -24,7 +24,7 @@ void main() {
     const vec2 uv = get_oct_coords(dir);
 
     const vec3 probe_uv = get_probe_uv(g_probe_index, g_volume_index, uv, PROBE_IRRADIANCE_RES - 2);
-    vec3 irradiance = textureLod(g_irradiance_tex, probe_uv, 0.0).rgb;
+    vec3 irradiance = textureLod(g_irradiance_tex, probe_uv, 0.0).xyz;
     irradiance = pow(irradiance, vec3(PROBE_RADIANCE_EXP));
     irradiance *= 2.0 * M_PI;
     if (g_probe_state < 0.5) {

@@ -7,6 +7,7 @@
 #include "Renderer_Names.h"
 
 #include "shaders/blit_fxaa_interface.h"
+#include "shaders/fog_interface.h"
 #include "shaders/skydome_interface.h"
 #include "shaders/sun_brightness_interface.h"
 
@@ -422,50 +423,177 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
 }
 
 void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+    using Stg = Ren::eStage;
+    using Trg = Ren::eBindTarget;
+
+    static const float FogDensity = 0.005f;
+    static const float FogAnisotropy = 0.7f;
+
     FgResRef froxel_tex;
     { // Inject light
-        auto &inject_light = fg_builder_.AddNode("VOL INJECT LIGHT");
+        auto &inject_light = fg_builder_.AddNode("FOG INJECT LIGHT");
 
         struct PassData {
+            FgResRef shared_data;
+            FgResRef random_seq;
+            FgResRef shadow_depth_tex, shadow_color_tex;
+            FgResRef froxels_hist_tex;
             FgResRef output_tex;
         };
 
         auto *data = inject_light.AllocNodeData<PassData>();
+        data->shared_data = inject_light.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->random_seq = inject_light.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
+        data->shadow_depth_tex = inject_light.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
+        data->shadow_color_tex = inject_light.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
         { //
             Ren::TexParams p;
-            p.w = (view_state_.act_res[0] + 7u) / 8u;
-            p.h = (view_state_.act_res[1] + 7u) / 8u;
-            p.d = 128;
+            p.w = (view_state_.act_res[0] + 11u) / 12u;
+            p.h = (view_state_.act_res[1] + 11u) / 12u;
+            p.d = 144;
             p.format = Ren::eTexFormat::RGBA16F;
             p.sampling.filter = Ren::eTexFilter::Bilinear;
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            froxel_tex = data->output_tex =
-                inject_light.AddStorageImageOutput("Vol Froxels", p, Ren::eStage::ComputeShader);
+            froxel_tex = data->output_tex = inject_light.AddStorageImageOutput("Fog Scattering", p, Stg::ComputeShader);
         }
 
-        inject_light.set_execute_cb(
-            [data, this](FgBuilder &builder) { FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex); });
+        data->froxels_hist_tex = inject_light.AddHistoryTextureInput(froxel_tex, Stg::ComputeShader);
+
+        inject_light.set_execute_cb([data, this](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocBuf &random_seq_buf = builder.GetReadBuffer(data->random_seq);
+
+            FgAllocTex &shad_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
+            FgAllocTex &shad_color_tex = builder.GetReadTexture(data->shadow_color_tex);
+
+            FgAllocTex &froxels_hist_tex = builder.GetReadTexture(data->froxels_hist_tex);
+
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                             {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
+                                             {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
+                                             {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
+                                             {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxels_hist_tex.ref},
+                                             {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
+
+            const auto froxel_res =
+                Ren::Vec4i{output_tex.ref->params.w, output_tex.ref->params.h, output_tex.ref->params.d, 0};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(froxel_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
+                           (froxel_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, froxel_res[2]};
+
+            Fog::Params uniform_params;
+            uniform_params.froxel_res = froxel_res;
+            uniform_params.density = FogDensity;
+            uniform_params.anisotropy = FogAnisotropy;
+            uniform_params.frame_index = view_state_.frame_index;
+            uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
+
+            DispatchCompute(*pi_fog_inject_light_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
     }
     { // Ray march
-        auto &ray_march = fg_builder_.AddNode("VOL RAY MARCH");
+        auto &ray_march = fg_builder_.AddNode("FOG RAY MARCH");
 
         struct PassData {
+            FgResRef shared_data;
             FgResRef froxel_tex;
             FgResRef output_tex;
         };
 
         auto *data = ray_march.AllocNodeData<PassData>();
-        data->froxel_tex = ray_march.AddTextureInput(froxel_tex, Ren::eStage::ComputeShader);
+        data->shared_data = ray_march.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->froxel_tex = ray_march.AddTextureInput(froxel_tex, Stg::ComputeShader);
 
-        frame_textures.color = data->output_tex =
-            ray_march.AddStorageImageOutput(frame_textures.color, Ren::eStage::ComputeShader);
+        { //
+            Ren::TexParams p;
+            p.w = (view_state_.act_res[0] + 11u) / 12u;
+            p.h = (view_state_.act_res[1] + 11u) / 12u;
+            p.d = 144;
+            p.format = Ren::eTexFormat::RGBA16F;
+            p.sampling.filter = Ren::eTexFilter::Bilinear;
+            p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            froxel_tex = data->output_tex =
+                ray_march.AddStorageImageOutput("Fog Scattering Final", p, Stg::ComputeShader);
+        }
 
         ray_march.set_execute_cb([data, this](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
 
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                             {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxel_tex.ref},
+                                             {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
+
+            const auto froxel_res =
+                Ren::Vec4i{output_tex.ref->params.w, output_tex.ref->params.h, output_tex.ref->params.d, 0};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(froxel_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
+                           (froxel_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, 1};
+
+            Fog::Params uniform_params;
+            uniform_params.froxel_res = froxel_res;
+            uniform_params.density = FogDensity;
+            uniform_params.anisotropy = FogAnisotropy;
+
+            DispatchCompute(*pi_fog_ray_march_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+    { // Apply
+        auto &apply = fg_builder_.AddNode("FOG APPLY");
+
+        struct PassData {
+            FgResRef shared_data;
+            FgResRef depth_tex;
+            FgResRef froxel_tex;
+            FgResRef output_tex;
+        };
+
+        auto *data = apply.AllocNodeData<PassData>();
+        data->shared_data = apply.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->depth_tex = apply.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->froxel_tex = apply.AddTextureInput(froxel_tex, Stg::ComputeShader);
+
+        frame_textures.color = data->output_tex = apply.AddStorageImageOutput(frame_textures.color, Stg::ComputeShader);
+
+        apply.set_execute_cb([data, this](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                             {Trg::TexSampled, Fog::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxel_tex.ref},
+                                             {Trg::ImageRW, Fog::INOUT_COLOR_IMG_SLOT, *output_tex.ref}};
+
+            const auto img_res = Ren::Vec2i{depth_tex.ref->params.w, depth_tex.ref->params.h};
+            const auto froxel_res =
+                Ren::Vec4i{froxel_tex.ref->params.w, froxel_tex.ref->params.h, froxel_tex.ref->params.d, 0};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(img_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
+                           (img_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, 1};
+
+            Fog::Params uniform_params;
+            uniform_params.froxel_res = froxel_res;
+            uniform_params.img_res = img_res;
+            uniform_params.density = FogDensity;
+            uniform_params.anisotropy = FogAnisotropy;
+
+            DispatchCompute(*pi_fog_apply_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 }

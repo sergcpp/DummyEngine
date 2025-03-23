@@ -88,13 +88,13 @@ void main() {
 
     vec3 base_color = YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
     const vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
-    const float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).r;
-    const float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).r;
-    const float alpha = (1.0 - g_mat_params2.x) * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
+    const float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).x;
+    const float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).x;
+    const float alpha = (1.0 - g_mat_params2.x) * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).x;
 
     // TODO: Apply decals here (?)
 
-    base_color = SRGBToLinear(base_color) * g_base_color.rgb;
+    base_color = SRGBToLinear(base_color) * g_base_color.xyz;
 
     vec3 normal;
     normal.xy = norm_color * 2.0 - 1.0;
@@ -189,7 +189,7 @@ void main() {
         if (is_portal) {
             // Sample environment to create slight color variation
             const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
         }
 
         int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);

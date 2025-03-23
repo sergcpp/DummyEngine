@@ -12,8 +12,8 @@ layout(location = 0) out float outCoc;
 void main() {
     ivec2 icoord = ivec2(g_vtx_uvs);
 
-    float shrunk_coc = texelFetch(g_shrunk_coc, icoord, 0).r;
-    float blurred_coc = texelFetch(g_blurred_coc, icoord, 0).r;
+    float shrunk_coc = texelFetch(g_shrunk_coc, icoord, 0).x;
+    float blurred_coc = texelFetch(g_blurred_coc, icoord, 0).x;
 
     float coc = 2.0 * max(blurred_coc, shrunk_coc) - shrunk_coc;
     outCoc = coc;

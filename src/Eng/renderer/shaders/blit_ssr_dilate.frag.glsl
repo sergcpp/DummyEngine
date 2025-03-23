@@ -12,28 +12,28 @@ layout(location = 0) out vec3 g_out_color;
 void main() {
     ivec2 icoord = ivec2(g_vtx_uvs);
 
-    g_out_color = texelFetch(g_source_tex, icoord, 0).rgb;
+    g_out_color = texelFetch(g_source_tex, icoord, 0).xyz;
 
-    if (g_out_color.b < 0.1) {
+    if (g_out_color.z < 0.1) {
         vec3 color;
         float normalization = 0.0;
 
-        color = texelFetch(g_source_tex, icoord - ivec2(1, 0), 0).rgb;
-        g_out_color.rg += color.rg * color.b;
-        normalization += color.b;
+        color = texelFetch(g_source_tex, icoord - ivec2(1, 0), 0).xyz;
+        g_out_color.xy += color.xy * color.z;
+        normalization += color.z;
 
-        color = texelFetch(g_source_tex, icoord + ivec2(1, 0), 0).rgb;
-        g_out_color.rg += color.rg * color.b;
-        normalization += color.b;
+        color = texelFetch(g_source_tex, icoord + ivec2(1, 0), 0).xyz;
+        g_out_color.xy += color.xy * color.z;
+        normalization += color.z;
 
-        color = texelFetch(g_source_tex, icoord - ivec2(0, 1), 0).rgb;
-        g_out_color.rg += color.rg * color.b;
-        normalization += color.b;
+        color = texelFetch(g_source_tex, icoord - ivec2(0, 1), 0).xyz;
+        g_out_color.xy += color.xy * color.z;
+        normalization += color.z;
 
-        color = texelFetch(g_source_tex, icoord + ivec2(0, 1), 0).rgb;
-        g_out_color.rg += color.rg * color.b;
-        normalization += color.b;
+        color = texelFetch(g_source_tex, icoord + ivec2(0, 1), 0).xyz;
+        g_out_color.xy += color.xy * color.z;
+        normalization += color.z;
 
-        g_out_color.rg /= normalization;
+        g_out_color.xy /= normalization;
     }
 }

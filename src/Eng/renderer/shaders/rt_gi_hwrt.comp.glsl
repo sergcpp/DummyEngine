@@ -107,7 +107,7 @@ vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id, int bounce) {
 
     vec2 u;
     if (bounce == 0) {
-        u = fetch.rg;
+        u = fetch.xy;
     } else {
         u = fetch.ba;
     }
@@ -153,7 +153,7 @@ void main() {
     UnpackRayCoords(packed_coords, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
 
     const ivec2 icoord = ivec2(ray_coords);
-    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     const vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x).xyz;
     const vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
@@ -221,7 +221,7 @@ void main() {
                     const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
                     const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).r;
+                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                     if (alpha < 0.5) {
                         continue;
                     }
@@ -269,7 +269,7 @@ void main() {
 
             const vec3 rotated_dir = rotate_xz(gi_ray_ws, g_shrd_data.env_col.w);
             const float env_mip_count = g_shrd_data.ambient_hack.w;
-            final_color += throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).rgb;
+            final_color += throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).xyz;
             break;
         } else {
             const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
@@ -334,12 +334,12 @@ void main() {
                 tint_color = base_color / base_color_lum;
             }
 
-            const float roughness = mat.params[0].w * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ROUGHNESS]), uv, tex_lod).r;
+            const float roughness = mat.params[0].w * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ROUGHNESS]), uv, tex_lod).x;
             const float sheen = mat.params[1].x;
             const float sheen_tint = mat.params[1].y;
             const float specular = mat.params[1].z;
             const float specular_tint = mat.params[1].w;
-            const float metallic = mat.params[2].x * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_METALLIC]), uv, tex_lod).r;
+            const float metallic = mat.params[2].x * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_METALLIC]), uv, tex_lod).x;
             const float transmission = mat.params[2].y;
             const float clearcoat = mat.params[2].z;
             const float clearcoat_roughness = mat.params[2].w;
@@ -425,7 +425,7 @@ void main() {
                     if (is_portal) {
                         // Sample environment to create slight color variation
                         const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                        light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).rgb;
+                        light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).xyz;
                     }
                     light_total += light_contribution * LightVisibility(litem, P);
                 }
@@ -452,7 +452,7 @@ void main() {
                         if (is_portal) {
                             // Sample environment to create slight color variation
                             const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).rgb;
+                            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).xyz;
                         }
                         light_total += light_contribution * LightVisibility(litem, P);
                     }

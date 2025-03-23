@@ -72,7 +72,7 @@ void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 _offset,
     radiance = texelFetch(g_gi_tex, dispatch_thread_id, 0);
     variance = sanitize(texelFetch(g_variance_tex, dispatch_thread_id, 0).x);
     normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).xyz;
-    depth = 1.0 - texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
+    depth = 1.0 - texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
 }
 
 void StoreWithOffset(ivec2 group_thread_id, ivec2 _offset, vec4 radiance, float variance, vec3 normal, float depth) {
@@ -144,7 +144,7 @@ void Resolve(ivec2 group_thread_id, f16vec3 avg_radiance, sample_t center,
              out f16vec4 resolved_radiance, out float16_t resolved_variance) {
     // Initial weight is important to remove fireflies.
     // That removes quite a bit of energy but makes everything much more stable.
-    float16_t accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance.rgb, center.variance);
+    float16_t accumulated_weight = GetRadianceWeight(avg_radiance, center.radiance.xyz, center.variance);
     f16vec4 accumulated_radiance = center.radiance * accumulated_weight;
     float16_t accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
     float16_t variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
@@ -171,7 +171,7 @@ void Resolve(ivec2 group_thread_id, f16vec3 avg_radiance, sample_t center,
         float16_t weight = float16_t(neighbor.radiance.w > 0.0);
         weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
         weight *= GetEdgeStoppingDepthWeight(center.depth, neighbor.depth);
-        weight *= GetRadianceWeight(avg_radiance, neighbor.radiance.rgb, center.variance);
+        weight *= GetRadianceWeight(avg_radiance, neighbor.radiance.xyz, center.variance);
         weight *= variance_weight;
 
         // Accumulate all contributions
@@ -203,7 +203,7 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     const bool needs_denoiser = (center.radiance.w > 0.0) && (center.variance > 0.0);
     if (needs_denoiser) {
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        const f16vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb;
+        const f16vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).xyz;
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 

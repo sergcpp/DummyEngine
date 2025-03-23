@@ -92,5 +92,5 @@ void main() {
         reflected_color /= total_fade;
     }
 
-    g_out_color = vec4(reflected_color * specular_color.rgb, fresnel);
+    g_out_color = vec4(reflected_color * specular_color.xyz, fresnel);
 }

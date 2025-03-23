@@ -70,9 +70,9 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs
     const vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs, 0.0)).xyz;
     const vec3 hit_point_ws = (g_shrd_data.world_from_view * vec4(hit_point_vs, 1.0)).xyz;
 #ifdef GI_CACHE
-    const vec4 normal = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).r);
-    const vec3 base_color = textureLod(g_albedo_tex, uv, 0.0).rgb;
-    const uint packed_mat_params = textureLod(g_specular_tex, uv, 0.0).r;
+    const vec4 normal = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0).x);
+    const vec3 base_color = textureLod(g_albedo_tex, uv, 0.0).xyz;
+    const uint packed_mat_params = textureLod(g_specular_tex, uv, 0.0).x;
 
     vec4 mat_params0, mat_params1;
     UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
@@ -140,7 +140,7 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs
         }
     }
 #endif
-    vec4 ss_color = textureLod(g_color_tex, uv, 0.0);
+    const vec4 ss_color = textureLod(g_color_tex, uv, 0.0);
     // Skip emissive surface
     discard_intersection = (ss_color.w > 0.0 && first_roughness > 1e-7);
     return ss_color.xyz + compress_hdr(approx_spec, g_shrd_data.cam_pos_and_exp.w);
@@ -162,7 +162,7 @@ void main() {
     vec4 norm_rough = UnpackNormalAndRoughness(texelFetch(g_normal_tex, pix_uvs, 0).x);
     const float roughness = norm_rough.w * norm_rough.w;
 
-    const float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
+    const float depth = texelFetch(g_depth_tex, pix_uvs, 0).x;
 
     const vec3 normal_ws = norm_rough.xyz;
     const vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
@@ -173,7 +173,7 @@ void main() {
     const float view_z = -ray_origin_vs.z;
 
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    const vec2 u = texelFetch(g_noise_tex, pix_uvs % 128, 0).rg;
+    const vec2 u = texelFetch(g_noise_tex, pix_uvs % 128, 0).xy;
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
 #else
     const uint packed_coords = g_in_ray_list[2 * ray_index + 0];

@@ -33,10 +33,10 @@ ivec2 limit_coords(ivec2 icoord) {
 #define REDUCE_OP max
 
 float ReduceSrcDepth4(ivec2 base) {
-    float v0 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 0)), 0).r;
-    float v1 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 1)), 0).r;
-    float v2 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 0)), 0).r;
-    float v3 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 1)), 0).r;
+    float v0 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 0)), 0).x;
+    float v1 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 1)), 0).x;
+    float v2 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 0)), 0).x;
+    float v3 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 1)), 0).x;
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
@@ -66,10 +66,10 @@ float ReduceIntermediate(ivec2 i0, ivec2 i1, ivec2 i2, ivec2 i3) {
 }
 
 float ReduceLoad4(ivec2 base) {
-    float v0 = imageLoad(g_depth_hierarchy[6], base + ivec2(0, 0)).r;
-    float v1 = imageLoad(g_depth_hierarchy[6], base + ivec2(0, 1)).r;
-    float v2 = imageLoad(g_depth_hierarchy[6], base + ivec2(1, 0)).r;
-    float v3 = imageLoad(g_depth_hierarchy[6], base + ivec2(1, 1)).r;
+    float v0 = imageLoad(g_depth_hierarchy[6], base + ivec2(0, 0)).x;
+    float v1 = imageLoad(g_depth_hierarchy[6], base + ivec2(0, 1)).x;
+    float v2 = imageLoad(g_depth_hierarchy[6], base + ivec2(1, 0)).x;
+    float v3 = imageLoad(g_depth_hierarchy[6], base + ivec2(1, 1)).x;
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
@@ -201,7 +201,7 @@ void main() {
             ivec2 icoord = ivec2(2 * gl_GlobalInvocationID.x + i, 8 * gl_GlobalInvocationID.y + j);
             float depth_val = 0.0;
             if (icoord.x < g_params.depth_size.x && icoord.y < g_params.depth_size.y) {
-                depth_val = texelFetch(g_depth_tex, icoord, 0).r;
+                depth_val = texelFetch(g_depth_tex, icoord, 0).x;
             }
             imageStore(g_depth_hierarchy[0], icoord, vec4(depth_val));
         }

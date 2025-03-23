@@ -98,6 +98,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     renderer->settings.taa_mode = eTAAMode::Static;
     renderer->settings.pixel_filter = ePixelFilter::Box;
     renderer->settings.gi_cache_update_mode = eGICacheUpdateMode::Full;
+    renderer->settings.fog_quality = eFogQuality::Off;
 
     if (img_test == eImgTest::NoShadow) {
         renderer->settings.reflections_quality = eReflectionsQuality::Off;

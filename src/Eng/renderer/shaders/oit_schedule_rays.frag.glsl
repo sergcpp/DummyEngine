@@ -50,7 +50,7 @@ layout (early_fragment_tests) in;
 
 void main() {
     const vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
-    const float alpha = (1.0 - g_mat_params2.x) * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
+    const float alpha = (1.0 - g_mat_params2.x) * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).x;
 
     vec3 normal;
     normal.xy = norm_color * 2.0 - 1.0;

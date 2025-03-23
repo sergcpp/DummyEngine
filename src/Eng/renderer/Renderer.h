@@ -230,8 +230,9 @@ class Renderer {
     Ren::PipelineRef pi_bloom_downsample_[2], pi_bloom_upsample_;
     // Autoexposure
     Ren::PipelineRef pi_histogram_sample_, pi_histogram_exposure_;
-    // Sky
+    // Volumetrics
     Ren::PipelineRef pi_sky_upsample_;
+    Ren::PipelineRef pi_fog_inject_light_, pi_fog_ray_march_, pi_fog_apply_;
     // Debug
     Ren::PipelineRef pi_debug_velocity_;
 

@@ -42,7 +42,7 @@ void main() {
     const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
     const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).r;
+    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
     if (alpha < 0.5) {
         ignoreIntersectionEXT;
     }

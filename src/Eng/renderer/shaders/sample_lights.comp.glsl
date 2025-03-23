@@ -83,7 +83,7 @@ void main() {
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     if (depth == 0.0) {
         imageStore(g_out_specular_img, icoord, vec4(0.0, 0.0, 0.0, -1.0));
         return;
@@ -94,9 +94,9 @@ void main() {
     const vec3 pos_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, pos_cs);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
-    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
-    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);
-    const uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).r;
+    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).xyz;
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).x);
+    const uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).x;
 
     //
 
@@ -246,7 +246,7 @@ void main() {
                 const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
                 const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                const float alpha = textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).r;
+                const float alpha = textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                 if (alpha < 0.5) {
                     continue;
                 }
@@ -309,7 +309,7 @@ void main() {
 
                 const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
     #if defined(BINDLESS_TEXTURES)
-                const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
+                const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
                 if (alpha < 0.5) {
                     ro += (inter.t + 0.0005) * L;
                     inter.mask = 0;

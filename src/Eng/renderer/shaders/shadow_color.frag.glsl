@@ -31,7 +31,7 @@ layout(location = 4) in flat float g_alpha;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    const float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
+    const float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).x;
 #ifdef ALPHATEST
     if (alpha < 0.5) {
         discard;

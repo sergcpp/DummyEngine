@@ -16,7 +16,7 @@ layout(location = 0) out vec4 g_out_color;
 
 float SampleDepthTexel(vec2 texcoord) {
     ivec2 coord = ivec2(texcoord);
-    return texelFetch(g_depth_tex, coord, 0).r;
+    return texelFetch(g_depth_tex, coord, 0).x;
 }
 
 void main() {

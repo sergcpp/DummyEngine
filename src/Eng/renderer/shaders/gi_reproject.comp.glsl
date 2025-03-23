@@ -256,7 +256,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
             sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
             float16_t s_max_samples = max_samples;
             sample_count = min(s_max_samples, sample_count + 1);
-            float16_t new_variance = ComputeTemporalVariance(gi.rgb, reprojection.rgb);
+            float16_t new_variance = ComputeTemporalVariance(gi.xyz, reprojection.xyz);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
@@ -282,7 +282,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     // Downsample 8x8 -> 1 radiance using shared memory
     // Initialize shared array for downsampling
     float16_t weight = float16_t(gi.w > 0.0);
-    weight *= GetLuminanceWeight(gi.rgb); // this dims down fireflies
+    weight *= GetLuminanceWeight(gi.xyz); // this dims down fireflies
 
     gi *= weight;
     if (any(greaterThanEqual(dispatch_thread_id, screen_size)) || any(isinf(gi)) || any(isnan(gi)) || weight > 1.0e3) {

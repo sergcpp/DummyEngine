@@ -16,7 +16,7 @@ layout(location = 0) out vec4 g_out_velocity;
 void main() {
     ivec2 pix_uvs = ivec2(g_vtx_uvs);
 
-    float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
+    float depth = texelFetch(g_depth_tex, pix_uvs, 0).x;
 
     vec4 point_cs = vec4(2.0 * (g_vtx_uvs.xy / g_shrd_data.res_and_fres.xy) - 1.0, depth, 1.0);
     const vec3 point_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, point_cs);

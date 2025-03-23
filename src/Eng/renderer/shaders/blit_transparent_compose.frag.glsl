@@ -29,7 +29,7 @@ void main() {
 #elif (OIT_MODE == OIT_WEIGHTED_BLENDED)
     float revealage = texelFetch(s_additional_tex, icoord, 0).x;
 
-    g_out_color = vec4(accum.rgb / clamp(accum.a, 1e-4, 5e4), revealage);
+    g_out_color = vec4(accum.xyz / clamp(accum.a, 1e-4, 5e4), revealage);
 #endif
 }
 

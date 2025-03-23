@@ -72,8 +72,8 @@ float PhaseMie(const float costh, float g) {
 const float WrenningePhaseScale = 0.9;
 const vec2 WrenningePhaseParameters = vec2(-0.2, 0.8);
 
-float HenyeyGreenstein(const float mu, const float inG) {
-    return (1.0 - inG * inG) / (pow(1.0 + inG * inG - 2.0 * inG * mu, 1.5) * 4.0 * M_PI);
+float HenyeyGreenstein(const float mu, const float g) {
+    return (1.0 - g * g) / (pow(1.0 + g * g - 2.0 * g * mu, 1.5) * 4.0 * M_PI);
 }
 
 float CloudPhaseFunction(const float mu) {

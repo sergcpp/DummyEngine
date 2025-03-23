@@ -19,7 +19,7 @@ layout(location = 0) rayPayloadInEXT RayPayload g_pld;
 
 void main() {
     const vec3 rotated_dir = rotate_xz(gl_WorldRayDirectionEXT, g_shrd_data.env_col.w);
-    g_pld.col = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb;
+    g_pld.col = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).xyz;
 
     for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
         const _light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];

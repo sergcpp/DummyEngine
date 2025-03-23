@@ -9,6 +9,8 @@ struct Params {
     mat4 clip_from_world;
     ivec2 sample_coord;
     ivec2 img_size;
+    float scale;
+    float _pad[3];
 };
 
 struct Params2 {

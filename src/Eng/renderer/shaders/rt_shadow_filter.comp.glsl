@@ -142,7 +142,7 @@ void InitializeSharedMemory(ivec2 did, ivec2 gtid) {
 }
 
 bool IsShadowReceiver(uvec2 p) {
-    float depth = texelFetch(g_depth_tex, ivec2(p), 0).r;
+    float depth = texelFetch(g_depth_tex, ivec2(p), 0).x;
     return (depth > 0.0) && (depth < 1.0);
 }
 
@@ -214,7 +214,7 @@ vec2 ApplyFilterWithPrecache(uvec2 did, uvec2 gtid, uint stepsize) {
     bool needs_denoiser = IsShadowReceiver(did);
     groupMemoryBarrier(); barrier();
     if (needs_denoiser) {
-        float depth = texelFetch(g_depth_tex, ivec2(did), 0).r;
+        float depth = texelFetch(g_depth_tex, ivec2(did), 0).x;
         gtid += 4; // Center threads in shared memory
         DenoiseFromSharedMemory(did, gtid, weight_sum, shadow_sum, depth, stepsize);
     }

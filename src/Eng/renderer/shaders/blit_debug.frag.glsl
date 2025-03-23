@@ -24,7 +24,7 @@ layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    float depth = texelFetch(g_tex, ivec2(g_vtx_uvs), 0).r;
+    float depth = texelFetch(g_tex, ivec2(g_vtx_uvs), 0).x;
     depth = g_clip_info[0] / (depth * (g_clip_info[1] - g_clip_info[2]) + g_clip_info[2]);
 
     float k = log2(depth / g_clip_info[1]) / g_clip_info[3];

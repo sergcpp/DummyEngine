@@ -7,9 +7,9 @@ const float RoughnessSigmaMax = 0.01;
 const float SpecularLobeTrim = 0.95;
 
 bool IsSpecularSurface(sampler2D depth_tex, usampler2D specular_tex, ivec2 px_coords) {
-    const float depth = texelFetch(depth_tex, px_coords, 0).r;
+    const float depth = texelFetch(depth_tex, px_coords, 0).x;
     if (depth > 0.0) {
-        const uint packed_mat_params = texelFetch(specular_tex, px_coords, 0).r;
+        const uint packed_mat_params = texelFetch(specular_tex, px_coords, 0).x;
         vec4 mat_params0, mat_params1;
         UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
         return mat_params0.z > 0.0; // has specular
@@ -19,7 +19,7 @@ bool IsSpecularSurface(sampler2D depth_tex, usampler2D specular_tex, ivec2 px_co
 
 bool IsSpecularSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
     if (depth_fetch > 0.0) {
-        const uint packed_mat_params = textureLod(specular_tex, uv, 0.0).r;
+        const uint packed_mat_params = textureLod(specular_tex, uv, 0.0).x;
         vec4 mat_params0, mat_params1;
         UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
         return mat_params0.z > 0.0; // has specular

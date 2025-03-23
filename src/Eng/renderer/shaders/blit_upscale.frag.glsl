@@ -18,12 +18,12 @@ void main() {
     vec2 norm_uvs = g_vtx_uvs;
     vec2 texel_size_low = vec2(0.5) / g_params.resolution.zw;
 
-    float d0 = LinearizeDepth(textureLod(g_depth_tex, norm_uvs, 0.0).r, g_params.clip_info);
+    float d0 = LinearizeDepth(textureLod(g_depth_tex, norm_uvs, 0.0).x, g_params.clip_info);
 
-    float d1 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs, 0.0).r);
-    float d2 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs + vec2(0, texel_size_low.y), 0.0).r);
-    float d3 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs + vec2(texel_size_low.x, 0), 0.0).r);
-    float d4 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs + texel_size_low, 0.0).r);
+    float d1 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs, 0.0).x);
+    float d2 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs + vec2(0, texel_size_low.y), 0.0).x);
+    float d3 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs + vec2(texel_size_low.x, 0), 0.0).x);
+    float d4 = abs(d0 - textureLod(g_depth_low_tex, norm_uvs + texel_size_low, 0.0).x);
 
     float dmin = min(min(d1, d2), min(d3, d4));
 

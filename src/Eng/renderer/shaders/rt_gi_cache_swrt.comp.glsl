@@ -224,7 +224,7 @@ void main() {
 
                     const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
             #if defined(BINDLESS_TEXTURES)
-                    const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
+                    const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
                     if (alpha < 0.5) {
                         ro += (inter.t + 0.0005) * L;
                         inter.mask = 0;
@@ -306,7 +306,7 @@ void main() {
 
             const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
     #if defined(BINDLESS_TEXTURES)
-            const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
+            const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
             if (alpha < 0.5) {
                 ro += (inter.t + 0.0005) * probe_ray_dir;
                 inter.mask = 0;
@@ -364,7 +364,7 @@ void main() {
         const vec3 rotated_dir = rotate_xz(probe_ray_dir, g_shrd_data.env_col.w);
         const float env_mip_count = g_shrd_data.ambient_hack.w;
 
-        final_diffuse_only = final_total = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).rgb;
+        final_diffuse_only = final_total = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).xyz;
         final_distance = 1e27;
     } else {
         const bool backfacing = (inter.prim_index < 0);
@@ -450,7 +450,7 @@ void main() {
         }
 
 #if defined(BINDLESS_TEXTURES)
-        const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS])), uv, tex_lod).r;
+        const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS])), uv, tex_lod).x;
 #else
         const float roughness = mat.params[0].w;
 #endif
@@ -459,7 +459,7 @@ void main() {
         const float specular = mat.params[1].z;
         const float specular_tint = mat.params[1].w;
 #if defined(BINDLESS_TEXTURES)
-        const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC])), uv, tex_lod).r;
+        const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC])), uv, tex_lod).x;
 #else
         const float metallic = mat.params[2].x;
 #endif
@@ -550,7 +550,7 @@ void main() {
                 if (is_portal) {
                     // Sample environment to create slight color variation
                     const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).rgb;
+                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).xyz;
                 }
                 light_total += light_contribution * LightVisibility(litem, P);
             }
@@ -577,7 +577,7 @@ void main() {
                     if (is_portal) {
                         // Sample environment to create slight color variation
                         const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                        light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).rgb;
+                        light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 4.0).xyz;
                     }
                     light_total += light_contribution * LightVisibility(litem, P);
                 }

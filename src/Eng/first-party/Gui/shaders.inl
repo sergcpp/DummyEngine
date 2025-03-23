@@ -73,7 +73,7 @@ void main() {
 	    outColor = aVertexColor_ * tex_color;
     } else if (aVertexMode_ < 0.75) {
         // SDF drawing
-        float sig_dist = median(tex_color.r, tex_color.g, tex_color.b);
+        float sig_dist = median(tex_color.x, tex_color.y, tex_color.z);
 
         float s = sig_dist - 0.5;
         float v = s / fwidth(s);
@@ -85,7 +85,7 @@ void main() {
         outColor = aVertexColor_ * base_color;
     } else {
         // SDF blitting
-        float sig_dist = median(tex_color.r, tex_color.g, tex_color.b);
+        float sig_dist = median(tex_color.x, tex_color.y, tex_color.z);
         outColor = aVertexColor_ * tex_color;
         outColor.a = step(0.1, sig_dist);
     }

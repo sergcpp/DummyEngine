@@ -21,7 +21,7 @@ layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 out_color;
 
 float LinearDepthFetch_Nearest(vec2 hit_uv) {
-    //return texelFetch(g_depth_tex, hit_pixel / 2, 0).r;
+    //return texelFetch(g_depth_tex, hit_pixel / 2, 0).x;
     return 0.0;
 }
 
@@ -41,7 +41,7 @@ void main() {
     vec4 normal_roughness = UnpackNormalAndRoughness(normal_fetch);
     if (normal_roughness.w > 0.95) return;
 
-    float depth = DelinearizeDepth(texelFetch(g_depth_tex, pix_uvs, 0).r, g_shrd_data.clip_info);
+    float depth = DelinearizeDepth(texelFetch(g_depth_tex, pix_uvs, 0).x, g_shrd_data.clip_info);
 
     vec3 normal_ws = normal_roughness.xyz;
     vec3 normal_vs = (g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz;
@@ -70,8 +70,8 @@ void main() {
         float mm = max(abs(0.5 - hit_prev.x), abs(0.5 - hit_prev.y));
         float mix_factor = min(4.0 * (1.0 - 2.0 * mm), 1.0);
 
-        out_color.rg = hit_prev.xy;
-        out_color.b = mix_factor;
+        out_color.xy = hit_prev.xy;
+        out_color.z = mix_factor;
     }
 }
 

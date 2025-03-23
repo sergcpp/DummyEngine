@@ -55,7 +55,7 @@ void main() {
         2.0 * (log(lin_depth) - g_shrd_data.transp_params_and_time[0]) / g_shrd_data.transp_params_and_time[1] - 1.0;
 
     vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs)));
-    float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).r;
+    float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).x;
 
     float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
@@ -100,7 +100,7 @@ void main() {
             vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 3);
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
-                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
+                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).x;
             }
 
             vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 4);

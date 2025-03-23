@@ -130,7 +130,7 @@ void main() {
 
             const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 #if defined(BINDLESS_TEXTURES)
-            const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).r;
+            const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
             if (alpha < 0.5) {
                 origin += (inter.t + 0.0005) * direction;
                 inter.mask = 0;
@@ -155,7 +155,7 @@ void main() {
     vec3 final_color;
     if (inter.mask == 0) {
         const vec3 rotated_dir = rotate_xz(direction, g_shrd_data.env_col.w);
-        final_color = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb;
+        final_color = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).xyz;
 
         for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
             const _light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
@@ -271,7 +271,7 @@ void main() {
         }
 
 #if defined(BINDLESS_TEXTURES)
-        const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS])), uv, tex_lod).r;
+        const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ROUGHNESS])), uv, tex_lod).x;
 #else
         const float roughness = mat.params[0].w;
 #endif
@@ -280,7 +280,7 @@ void main() {
         const float specular = mat.params[1].z;
         const float specular_tint = mat.params[1].w;
 #if defined(BINDLESS_TEXTURES)
-        const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC])), uv, tex_lod).r;
+        const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_METALLIC])), uv, tex_lod).x;
 #else
         const float metallic = mat.params[2].x;
 #endif
@@ -355,7 +355,7 @@ void main() {
             if ((floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0) {
                 // Sample environment to create slight color variation
                 const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
             }
 
             int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);

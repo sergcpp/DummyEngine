@@ -32,7 +32,7 @@ void main() {
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float depth = texelFetch(g_depth_tex, icoord, 0).x;
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
@@ -40,7 +40,7 @@ void main() {
     const vec3 P = pos_ws;
     const vec3 I = normalize(P - g_shrd_data.cam_pos_and_exp.xyz);
 
-    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).x);
 
     vec3 final_color = vec3(0.0);
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {

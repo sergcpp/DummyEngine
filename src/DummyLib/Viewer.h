@@ -50,6 +50,7 @@ struct AppParams {
     bool pt = false;
     bool pt_denoise = true;
     bool postprocess = true;
+    bool fog = true;
     bool freeze_sky = false;
     bool noshow = false;
     int pt_max_samples = 128;

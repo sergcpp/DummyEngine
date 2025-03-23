@@ -73,7 +73,7 @@ void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 _offset,
     radiance = texelFetch(g_refl_tex, dispatch_thread_id, 0);
     variance = sanitize(texelFetch(g_variance_tex, dispatch_thread_id, 0).x);
     normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x);
-    depth = 1.0 - texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
+    depth = 1.0 - texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
 }
 
 void StoreWithOffset(ivec2 group_thread_id, const ivec2 _offset, const vec4 radiance, const float variance, const vec4 normal, const float depth) {
@@ -200,7 +200,7 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     const bool needs_denoiser = (center.radiance.w > 0.0) && (center.variance > 0.0) && IsGlossyReflection(center.normal.w) && !IsMirrorReflection(center.normal.w);
     if (needs_denoiser) {
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        const f16vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb;
+        const f16vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).xyz;
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 

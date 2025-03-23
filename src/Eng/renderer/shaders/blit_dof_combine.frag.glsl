@@ -37,10 +37,10 @@ vec4 sampleWithOffset(sampler2D tex, vec2 uvs, vec2 offset_px) {
 vec3 GetSmallBlurSample(vec2 uvs) {
     const float weight = 4.0 / 17.0;
     vec3 sum = vec3(0.0);
-    sum += weight * sampleWithOffset(g_original, uvs, vec2(+0.5, +1.5)).rgb;
-    sum += weight * sampleWithOffset(g_original, uvs, vec2(-1.5, -0.5)).rgb;
-    sum += weight * sampleWithOffset(g_original, uvs, vec2(-0.5, +1.5)).rgb;
-    sum += weight * sampleWithOffset(g_original, uvs, vec2(+1.5, +0.5)).rgb;
+    sum += weight * sampleWithOffset(g_original, uvs, vec2(+0.5, +1.5)).xyz;
+    sum += weight * sampleWithOffset(g_original, uvs, vec2(-1.5, -0.5)).xyz;
+    sum += weight * sampleWithOffset(g_original, uvs, vec2(-0.5, +1.5)).xyz;
+    sum += weight * sampleWithOffset(g_original, uvs, vec2(+1.5, +0.5)).xyz;
     return sum;
 }
 
@@ -58,9 +58,9 @@ void main() {
     vec2 norm_uvs = g_vtx_uvs / g_ransform.zw;
 
     vec3 small = GetSmallBlurSample(norm_uvs);
-    vec3 med = textureLod(g_small_blur, norm_uvs, 0.0).rgb;
-    vec3 large = textureLod(g_large_blur, norm_uvs, 0.0).rgb;
-    float near_coc = textureLod(g_coc, norm_uvs, 0.0).r;
+    vec3 med = textureLod(g_small_blur, norm_uvs, 0.0).xyz;
+    vec3 large = textureLod(g_large_blur, norm_uvs, 0.0).xyz;
+    float near_coc = textureLod(g_coc, norm_uvs, 0.0).x;
 
     float depth = LinearizeDepth(texelFetch(g_depth, ivec2(g_vtx_uvs), 0).x, g_shrd_data.clip_info);
 
@@ -72,8 +72,8 @@ void main() {
         coc = max(near_coc, far_coc * g_dof_equation.z);
     }
 
-    vec4 col = InterpolateDof(small, med.rgb, large, coc);
+    vec4 col = InterpolateDof(small, med.xyz, large, coc);
 
-    g_out_color.rgb = col.rgb + texelFetch(g_original, ivec2(g_vtx_uvs), 0).rgb * (1.0 - col.a);
+    g_out_color.xyz = col.xyz + texelFetch(g_original, ivec2(g_vtx_uvs), 0).xyz * (1.0 - col.a);
     g_out_color.a = 1.0;
 }

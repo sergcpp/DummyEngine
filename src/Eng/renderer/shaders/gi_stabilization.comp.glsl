@@ -27,7 +27,7 @@ vec3 Tonemap(vec3 c) {
 }
 
 vec4 Tonemap(vec4 c) {
-    c.rgb = Tonemap(c.rgb);
+    c.xyz = Tonemap(c.xyz);
     return c;
 }
 
@@ -37,7 +37,7 @@ vec3 TonemapInvert(vec3 c) {
 }
 
 vec4 TonemapInvert(vec4 c) {
-    c.rgb = TonemapInvert(c.rgb);
+    c.xyz = TonemapInvert(c.xyz);
     return c;
 }
 
@@ -46,7 +46,7 @@ void Stabilize(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     const vec2 uvs = (vec2(dispatch_thread_id) + 0.5) * texel_size;
 
     const vec2 closest_frag = FindClosestFragment_3x3(g_depth_tex, uvs, texel_size).xy;
-    const vec2 closest_vel = textureLod(g_velocity_tex, closest_frag.xy, 0.0).rg * texel_size;
+    const vec2 closest_vel = textureLod(g_velocity_tex, closest_frag.xy, 0.0).xy * texel_size;
 
     const vec4 rad_curr = Tonemap(texelFetch(g_gi_curr_tex, dispatch_thread_id, 0));
 
@@ -74,15 +74,15 @@ void Stabilize(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
                                   max3(rad_ml, rad_mc, rad_mr),
                                   max3(rad_bl, rad_bc, rad_br));
 
-        rad_hist.rgb = ClipAABB(rad_min.rgb, rad_max.rgb, rad_hist.rgb);
+        rad_hist.xyz = ClipAABB(rad_min.xyz, rad_max.xyz, rad_hist.xyz);
         rad_hist.a = clamp(rad_hist.a, rad_min.a, rad_max.a);
     }
 
     const float HistoryWeightMin = 0.95;
     const float HistoryWeightMax = 0.98;
 
-    float lum_curr = Luma(rad_curr.rgb);
-    float lum_hist = Luma(rad_hist.rgb);
+    float lum_curr = Luma(rad_curr.xyz);
+    float lum_hist = Luma(rad_hist.xyz);
 
     float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.2);
     float unbiased_weight = 1.0 - unbiased_diff;

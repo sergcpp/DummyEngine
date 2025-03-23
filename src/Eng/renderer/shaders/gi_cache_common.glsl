@@ -307,7 +307,7 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
         vec3 probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_DISTANCE_RES - 2);
 
         // Sample the probe's distance texture to get the mean distance to nearby surfaces
-        const vec2 filtered_distance = 2.0 * textureLod(distance_tex, probe_texture_uv, 0.0).rg;
+        const vec2 filtered_distance = 2.0 * textureLod(distance_tex, probe_texture_uv, 0.0).xy;
 
         float chebyshev_weight = 1.0;
 
@@ -348,7 +348,7 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
         probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_IRRADIANCE_RES - 2);
 
         // Sample the probe's irradiance
-        vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).rgb;
+        vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).xyz;
         probe_irradiance = pow(probe_irradiance, vec3(0.5 * PROBE_RADIANCE_EXP));
 
         // Accumulate the weighted irradiance
@@ -443,7 +443,7 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         vec3 probe_texture_uv = get_probe_uv(adjacent_probe_index, volume_index, octant_coords, PROBE_DISTANCE_RES - 2);
 
         // Sample the probe's distance texture to get the mean distance to nearby surfaces
-        const vec2 filtered_distance = 2.0 * textureLod(distance_tex, probe_texture_uv, 0.0).rg;
+        const vec2 filtered_distance = 2.0 * textureLod(distance_tex, probe_texture_uv, 0.0).xy;
 
         float chebyshev_weight = 1.0;
 
@@ -487,7 +487,7 @@ vec3 get_volume_irradiance_sep(const int volume_index, sampler2DArray irradiance
         }
 
         // Sample the probe's irradiance
-        vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).rgb;
+        vec3 probe_irradiance = textureLod(irradiance_tex, probe_texture_uv, 0.0).xyz;
         probe_irradiance = pow(probe_irradiance, vec3(0.5 * PROBE_RADIANCE_EXP));
 
         // Accumulate the weighted irradiance

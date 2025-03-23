@@ -62,7 +62,7 @@ void main() {
                                     bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 base_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs)));
-    float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).r;
+    float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).x;
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
     vec3 normal_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
@@ -162,14 +162,14 @@ void main() {
     }
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
+    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                        ambient_occlusion * ambient_occlusion * indirect_col +
                                        additional_light);
 
     float N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
 
-    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
+    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.xyz, specular_color.a);
 
     g_out_color = vec4(diffuse_color * kD, mask_value);
     //g_out_normal = vec4(normal * 0.5 + 0.5, 1.0);

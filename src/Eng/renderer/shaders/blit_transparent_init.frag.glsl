@@ -8,6 +8,6 @@ layout(location = 1) out vec4 g_out_alpha_and_revealage;
 
 void main() {
     g_out_color_accum = vec4(0.0);
-    g_out_alpha_and_revealage.r = 1.0;
+    g_out_alpha_and_revealage.x = 1.0;
 }
 

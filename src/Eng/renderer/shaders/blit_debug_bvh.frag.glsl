@@ -24,7 +24,7 @@ layout(location = 0) out vec4 g_out_color;
 void main() {
     vec2 norm_uvs = g_vtx_uvs / g_shrd_data.res_and_fres.xy;
 
-    float depth = texelFetch(g_depth_tex, ivec2(g_vtx_uvs), 0).r;
+    float depth = texelFetch(g_depth_tex, ivec2(g_vtx_uvs), 0).x;
     depth = 2.0 * depth - 1.0;
 
     vec4 ray_start_cs = vec4(g_vtx_uvs / g_shrd_data.res_and_fres.xy, 0.0, 1.0);

@@ -128,7 +128,7 @@ moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
 }
 
 vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflected_ray_length) {
-    float z = texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
+    float z = texelFetch(g_depth_tex, dispatch_thread_id, 0).x;
     vec3 ray_vs = vec3(uv, z);
 
     vec2 unjitter = g_shrd_data.taa_info.xy;
@@ -219,7 +219,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             reprojection = hit_history;
         } else {
             // Reject surface reprojection based on simple distance
-            if (length2(surf_history.rgb - local_neighborhood.mean.rgb) <
+            if (length2(surf_history.xyz - local_neighborhood.mean.xyz) <
                 REPROJECT_SURFACE_DISCARD_VARIANCE_WEIGHT * length(local_neighborhood.variance)) {
                 // Surface reflection
                 history_normal = surf_normal;
@@ -347,7 +347,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
             float16_t sample_count = textureLod(g_sample_count_hist_tex, reprojection_uv, 0.0).x * disocclusion_factor;
             float16_t s_max_samples = max(8.0, max_samples * SAMPLES_FOR_ROUGHNESS(roughness));
             sample_count = min(s_max_samples, sample_count + 1);
-            float16_t new_variance = ComputeTemporalVariance(refl.rgb, reprojection.rgb);
+            float16_t new_variance = ComputeTemporalVariance(refl.xyz, reprojection.xyz);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
                 imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));

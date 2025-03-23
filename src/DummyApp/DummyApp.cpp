@@ -76,6 +76,8 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             out_params.sun_dir[2] = strtof(argv[i], nullptr);
         } else if (strcmp(argv[i], "--no-postprocess") == 0) {
             out_params.postprocess = false;
+        } else if (strcmp(argv[i], "--no-fog") == 0) {
+            out_params.fog = false;
         } else if (strcmp(argv[i], "--freeze-sky") == 0) {
             out_params.freeze_sky = true;
         } else if (strcmp(argv[i], "--tex-budget") == 0 && (i + 1 != argc)) {

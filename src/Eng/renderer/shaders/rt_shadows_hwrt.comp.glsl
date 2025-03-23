@@ -65,7 +65,7 @@ void main() {
     const uint bit_index = LaneIdToBitShift(group_thread_id);
     bool is_in_shadow = ((1u << bit_index) & mask) == 0u;
     if (!is_in_shadow) {
-        float depth = texelFetch(g_depth_tex, icoord, 0).r;
+        float depth = texelFetch(g_depth_tex, icoord, 0).x;
         vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x).xyz;
         vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
@@ -78,7 +78,7 @@ void main() {
         const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
         vec3 shadow_ray_ws = g_shrd_data.sun_dir.xyz;
 
-        vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).rg;
+        vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).xy;
         shadow_ray_ws = MapToCone(u, shadow_ray_ws, g_shrd_data.sun_dir.w);
 
         vec4 ray_origin_ws = g_shrd_data.world_from_view * vec4(ray_origin_vs, 1.0);
@@ -125,7 +125,7 @@ void main() {
                     const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
                     const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).r;
+                    const float alpha = (1.0 - mat.params[3].x) * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
                     if (alpha < 0.5) {
                         continue;
                     }
@@ -150,7 +150,7 @@ void main() {
         new_mask = g_shared_mask;
     }
     if (gl_LocalInvocationIndex == 0) {
-        uint old_mask = imageLoad(g_out_shadow_img, ivec2(tile_coord)).r;
+        uint old_mask = imageLoad(g_out_shadow_img, ivec2(tile_coord)).x;
         imageStore(g_out_shadow_img, ivec2(tile_coord), uvec4(old_mask & new_mask));
     }
 }

@@ -91,7 +91,7 @@ void main() {
             vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 3);
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
-                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
+                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).x;
             }
 
             vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 4);
@@ -170,13 +170,13 @@ void main() {
     }
 
     vec3 sh_l_00 = RGBMDecode(texture(g_lm_indirect_sh_texture[0], g_vtx_uvs.zw));
-    vec3 sh_l_10 = 2.0 * texture(g_lm_indirect_sh_texture[1], g_vtx_uvs.zw).rgb - vec3(1.0);
-    vec3 sh_l_11 = 2.0 * texture(g_lm_indirect_sh_texture[2], g_vtx_uvs.zw).rgb - vec3(1.0);
-    vec3 sh_l_12 = 2.0 * texture(g_lm_indirect_sh_texture[3], g_vtx_uvs.zw).rgb - vec3(1.0);
+    vec3 sh_l_10 = 2.0 * texture(g_lm_indirect_sh_texture[1], g_vtx_uvs.zw).xyz - vec3(1.0);
+    vec3 sh_l_11 = 2.0 * texture(g_lm_indirect_sh_texture[2], g_vtx_uvs.zw).xyz - vec3(1.0);
+    vec3 sh_l_12 = 2.0 * texture(g_lm_indirect_sh_texture[3], g_vtx_uvs.zw).xyz - vec3(1.0);
 
     vec3 cone_origin_ws = g_vtx_pos;
     // use green channel of L1 band as cone tracing direction
-    vec3 cone_dir_ws = normalize(vec3(sh_l_12.g, sh_l_10.g, sh_l_11.g));
+    vec3 cone_dir_ws = normalize(vec3(sh_l_12.y, sh_l_10.y, sh_l_11.y));
 
     float cone_occlusion = 1.0;
     float sph_occlusion = 1.0;
@@ -214,7 +214,7 @@ void main() {
         float sin_omega = pos_and_radius.w / sqrt(pos_and_radius.w * pos_and_radius.w + dist * dist);
         float cos_phi = dot(dir, cone_dir_ls) / dist;
 
-        //cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).r;
+        //cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).x;
         sph_occlusion *= clamp(1.0 - (pos_and_radius.w / dist) * (pos_and_radius.w / dist), 0.0, 1.0);
 #else
         vec3 dir = pos_and_radius.xyz - cone_origin_ws;
@@ -224,7 +224,7 @@ void main() {
                                                   dist * dist);
         float cos_phi = dot(dir, cone_dir_ws) / dist;
 
-        //cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).g;
+        //cone_occlusion *= textureLod(g_cone_rt_lut, vec2(cos_phi, sin_omega), 0.0).y;
         sph_occlusion *= clamp(1.0 - (pos_and_radius.w / dist) * (pos_and_radius.w / dist), 0.0, 1.0);
 #endif
     }
@@ -241,7 +241,7 @@ void main() {
     }
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
+    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                        ambient_occlusion * ambient_occlusion * indirect_col +
                                        additional_light);

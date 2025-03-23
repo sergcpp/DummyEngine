@@ -81,14 +81,14 @@ float DistributionGGX(float NdotH, float a) {
 vec4 RGBMEncode(vec3 color) {
     vec4 rgbm;
     color *= 1.0 / 4.0;
-    rgbm.a = clamp(max(max(color.r, color.g), max(color.b, 1e-6)), 0.0, 1.0);
+    rgbm.a = clamp(max(max(color.x, color.y), max(color.z, 1e-6)), 0.0, 1.0);
     rgbm.a = ceil(rgbm.a * 255.0) / 255.0;
-    rgbm.rgb = color / rgbm.a;
+    rgbm.xyz = color / rgbm.a;
     return rgbm;
 }
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 4.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.xyz * rgbm.a;
 }
 
 vec3 PrefilterEnvMap(float roughness, vec3 r) {

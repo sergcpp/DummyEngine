@@ -22,7 +22,7 @@ void main() {
         return;
     }
 
-    uint sun_mask = texelFetch(g_hit_mask_tex, ivec2(group_id), 0).r;
+    uint sun_mask = texelFetch(g_hit_mask_tex, ivec2(group_id), 0).x;
     float visibility = (sun_mask & (1u << (group_thread_id.y * 8 + group_thread_id.x))) != 0 ? 0.0 : 1.0;
 
     imageStore(g_out_result_img, ivec2(dispatch_thread_id), vec4(visibility));

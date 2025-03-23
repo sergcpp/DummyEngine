@@ -17,10 +17,10 @@ layout(location = 0) out float g_out_color;
 void main() {
     ivec2 coord = ivec2(g_vtx_uvs - vec2(0.5));
 
-    float d1 = texelFetch(g_depth_tex, coord + ivec2(0, 0), 0).r;
-    float d2 = texelFetch(g_depth_tex, coord + ivec2(0, 1), 0).r;
-    float d3 = texelFetch(g_depth_tex, coord + ivec2(1, 1), 0).r;
-    float d4 = texelFetch(g_depth_tex, coord + ivec2(1, 0), 0).r;
+    float d1 = texelFetch(g_depth_tex, coord + ivec2(0, 0), 0).x;
+    float d2 = texelFetch(g_depth_tex, coord + ivec2(0, 1), 0).x;
+    float d3 = texelFetch(g_depth_tex, coord + ivec2(1, 1), 0).x;
+    float d4 = texelFetch(g_depth_tex, coord + ivec2(1, 0), 0).x;
 
     //float res_depth = max(max(d1, d2), max(d3, d4));
     float res_depth = min(min(d1, d2), min(d3, d4));

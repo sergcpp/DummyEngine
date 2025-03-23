@@ -126,12 +126,12 @@ void main() {
         tint_color = base_color / base_color_lum;
     }
 
-    const float roughness = mat.params[0].w * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ROUGHNESS]), uv, tex_lod).r;
+    const float roughness = mat.params[0].w * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ROUGHNESS]), uv, tex_lod).x;
     const float sheen = mat.params[1].x;
     const float sheen_tint = mat.params[1].y;
     const float specular = mat.params[1].z;
     const float specular_tint = mat.params[1].w;
-    const float metallic = mat.params[2].x * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_METALLIC]), uv, tex_lod).r;
+    const float metallic = mat.params[2].x * textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_METALLIC]), uv, tex_lod).x;
     const float transmission = mat.params[2].y;
     const float clearcoat = mat.params[2].z;
     const float clearcoat_roughness = mat.params[2].w;
@@ -210,7 +210,7 @@ void main() {
         if (is_portal) {
             // Sample environment to create slight color variation
             const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
-            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+            light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
         }
 
         int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);

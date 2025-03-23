@@ -109,7 +109,7 @@ vec4 SampleColorMotion(sampler2D s, vec2 uv, vec2 vel) {
 
 float Luma(vec3 col) {
 #if defined(YCoCg)
-    return col.r;
+    return col.x;
 #else
     return dot(col, vec3(0.2125, 0.7154, 0.0721));
 #endif
@@ -120,7 +120,7 @@ void main() {
     vec2 texel_size = vec2(1.0) / g_params.tex_size;
     vec2 norm_uvs = g_vtx_uvs / g_params.tex_size;
 
-    const float depth = texelFetch(g_depth_curr, uvs_px, 0).r;
+    const float depth = texelFetch(g_depth_curr, uvs_px, 0).x;
     vec4 col_curr = textureLod(g_color_curr_nearest, norm_uvs, 0.0);
     col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
 
@@ -131,7 +131,7 @@ void main() {
     g_out_color = vec4(TonemapInvert(col), 0.0);
     g_out_history = g_out_color;
 #else // STATIC_ACCUMULATION
-    float min_depth = texelFetch(g_depth_curr, uvs_px, 0).r;
+    float min_depth = texelFetch(g_depth_curr, uvs_px, 0).x;
 
     const ivec2 offsets[8] = ivec2[8](
         ivec2(-1, 1),   ivec2(0, 1),    ivec2(1, 1),
@@ -144,7 +144,7 @@ void main() {
     ivec2 closest_frag = ivec2(0, 0);
 
     for (int i = 0; i < 8; i++) {
-        const float depth = texelFetch(g_depth_curr, uvs_px + offsets[i], 0).r;
+        const float depth = texelFetch(g_depth_curr, uvs_px + offsets[i], 0).x;
         if (depth > min_depth) {
             closest_frag = offsets[i];
             min_depth = depth;
@@ -193,8 +193,8 @@ void main() {
     #endif
 
     #if defined(YCoCg)
-        vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
-        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.gb;
+        vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.x - col_min.x));
+        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.yz;
         col_min.yz = chroma_center - chroma_extent;
         col_max.yz = chroma_center + chroma_extent;
         col_avg.yz = chroma_center;
@@ -216,8 +216,8 @@ void main() {
         col_min.x = col_min.x - blend * sqrt(col_hist.w);
         col_max.x = col_max.x + blend * sqrt(col_hist.w);
     #if defined(YCoCg)
-        vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
-        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.gb;
+        vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.x - col_min.x));
+        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.yz;
         col_min.yz = chroma_center - chroma_extent;
         col_max.yz = chroma_center + chroma_extent;
         col_avg.yz = chroma_center;

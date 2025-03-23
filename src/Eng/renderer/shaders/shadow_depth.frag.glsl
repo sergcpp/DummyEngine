@@ -32,7 +32,7 @@
 
 void main() {
 #ifdef ALPHATEST
-    float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
+    float alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).x;
     if (alpha < 0.5) {
         discard;
     }

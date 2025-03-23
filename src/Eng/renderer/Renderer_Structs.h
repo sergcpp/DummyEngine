@@ -87,7 +87,7 @@ struct instance_data_t {
 };
 static_assert(sizeof(instance_data_t) == 192, "!");
 
-struct basic_draw_batch_t {                          // NOLINT
+struct basic_draw_batch_t { // NOLINT
     static const uint64_t TypeSimple = 0b00ull;
     static const uint64_t TypeVege = 0b01ull;
     static const uint64_t TypeSkinned = 0b10ull;
@@ -102,7 +102,7 @@ struct basic_draw_batch_t {                          // NOLINT
     static const uint64_t BitMoving = (1ull << 29u);
     static const uint64_t BitTwoSided = (1ull << 28u);
     static const uint64_t BitBackSided = (1ull << 27u);
-    
+
     static const uint64_t FlagBits = (0b11111111ull << 27u);
 
     union {
@@ -237,6 +237,8 @@ enum class eGICacheUpdateMode : uint8_t { Off, Partial, Full };
 
 enum class eSkyQuality : uint8_t { Medium, High, Ultra };
 
+enum class eFogQuality : uint8_t { Off, High, Ultra };
+
 enum class eTransparencyQuality : uint8_t { High, Ultra };
 
 enum class eDebugRT : uint8_t { Off, Main, Shadow };
@@ -292,6 +294,7 @@ struct render_settings_t {
     eGIQuality gi_quality = eGIQuality::High;
     eGICacheUpdateMode gi_cache_update_mode = eGICacheUpdateMode::Partial;
     eSkyQuality sky_quality = eSkyQuality::High;
+    eFogQuality fog_quality = eFogQuality::High;
     eTransparencyQuality transparency_quality = eTransparencyQuality::High;
 
     eDebugRT debug_rt = eDebugRT::Off;
@@ -311,8 +314,8 @@ struct render_settings_t {
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
                ssao_quality == rhs.ssao_quality && gi_quality == rhs.gi_quality &&
                gi_cache_update_mode == rhs.gi_cache_update_mode && sky_quality == rhs.sky_quality &&
-               transparency_quality == rhs.transparency_quality && debug_rt == rhs.debug_rt &&
-               debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
+               fog_quality == rhs.fog_quality && transparency_quality == rhs.transparency_quality &&
+               debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
                debug_oit_layer == rhs.debug_oit_layer;
     }
     bool operator!=(const render_settings_t &rhs) const { return !operator==(rhs); }
@@ -332,6 +335,7 @@ struct render_settings_t {
         gi_cache_update_mode =
             eGICacheUpdateMode(std::min(uint8_t(gi_cache_update_mode), uint8_t(rhs.gi_cache_update_mode)));
         sky_quality = eSkyQuality(std::min(uint8_t(sky_quality), uint8_t(rhs.sky_quality)));
+        fog_quality = eFogQuality(std::min(uint8_t(fog_quality), uint8_t(rhs.fog_quality)));
         transparency_quality =
             eTransparencyQuality(std::min(uint8_t(transparency_quality), uint8_t(rhs.transparency_quality)));
 
@@ -381,8 +385,8 @@ struct view_state_t {
     float pixel_spread_angle;
     int frame_index, volume_to_update, stochastic_lights_count, stochastic_lights_count_cache;
     Ren::Vec3f prev_cam_pos, prev_sun_dir;
-    Ren::Mat4f clip_from_world, view_from_world, prev_view_from_world, prev_clip_from_world, down_buf_view_from_world,
-        prev_clip_from_view;
+    Ren::Mat4f clip_from_world, clip_from_world_no_translation, view_from_world, prev_view_from_world,
+        prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
     mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[2];
     float pre_exposure = 1.0f, prev_pre_exposure = 1.0f;
     Ren::Quatf probe_ray_rotator;

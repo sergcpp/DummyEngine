@@ -150,7 +150,7 @@ void main() {
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     if (depth == 0.0) {
         return;
     }
@@ -166,9 +166,9 @@ void main() {
     const vec3 pos_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, pos_cs);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
-    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
-    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);
-    const uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).r;
+    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).xyz;
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).x);
+    const uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).x;
 
     //
     // Artificial lights
@@ -268,7 +268,7 @@ void main() {
             if (is_portal) {
                 // Sample environment to create slight color variation
                 const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
-                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
             }
             light_contribution *= LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
             if (lum(light_contribution) > lum(brightest_light_contribution)) {
@@ -308,7 +308,7 @@ void main() {
                 if (is_portal) {
                     // Sample environment to create slight color variation
                     const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - P), g_shrd_data.env_col.w);
-                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
                 }
                 light_contribution *= LightVisibility(litem, P, pos_vs, N, lin_depth, rotator, hash);
                 if (lum(light_contribution) > lum(brightest_light_contribution)) {

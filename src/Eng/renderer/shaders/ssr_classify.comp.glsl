@@ -96,7 +96,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 
     if (enable_temporal_variance_guided_tracing && needs_denoiser && !needs_ray) {
         const float TemporalVarianceThreshold = 0.01;
-        bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold;
+        bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).x > TemporalVarianceThreshold;
         needs_ray = needs_ray || has_temporal_variance;
     }
 
@@ -201,13 +201,13 @@ float SampleRandomNumber(const uvec2 pixel, uint sample_index, uint sample_dimen
     sample_dimension = sample_dimension & 255u;
 
     // xor index based on optimized ranking
-    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
 
     // fetch value in sequence
-    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
+    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).x;
 
     // if the dimension is optimized, xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
 
     // convert to float and return
     return (float(value) + 0.5) / 256.0;

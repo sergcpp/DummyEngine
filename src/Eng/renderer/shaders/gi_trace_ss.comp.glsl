@@ -46,7 +46,7 @@ void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_v
 vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id) {
     mat3 tbn_transform = CreateTBN(normal);
 
-    vec2 u = texelFetch(g_noise_tex, ivec2(dispatch_thread_id) % 128, 0).rg;
+    vec2 u = texelFetch(g_noise_tex, ivec2(dispatch_thread_id) % 128, 0).xy;
 
     vec3 direction_tbn = SampleCosineHemisphere(u.x, u.y);
 
@@ -70,8 +70,8 @@ void main() {
     if (pix_uvs.x >= g_params.resolution.x || pix_uvs.y >= g_params.resolution.y) return;
     vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, pix_uvs, 0).r).xyz;
-    float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
+    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, pix_uvs, 0).x).xyz;
+    float depth = texelFetch(g_depth_tex, pix_uvs, 0).x;
 
     vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 

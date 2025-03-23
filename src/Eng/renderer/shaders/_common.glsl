@@ -221,15 +221,15 @@ void UnpackMaterialParams(uint _packed, out vec4 params0, out vec4 params1) {
 }
 
 vec3 YCoCg_to_RGB(vec4 col) {
-    const float scale = (col.b * (255.0 / 8.0)) + 1.0;
-    const float Y = col.a;
-    const float Co = (col.r - (0.5 * 256.0 / 255.0)) / scale;
-    const float Cg = (col.g - (0.5 * 256.0 / 255.0)) / scale;
+    const float scale = (col.z * (255.0 / 8.0)) + 1.0;
+    const float Y = col.w;
+    const float Co = (col.x - (0.5 * 256.0 / 255.0)) / scale;
+    const float Cg = (col.y - (0.5 * 256.0 / 255.0)) / scale;
 
     vec3 col_rgb;
-    col_rgb.r = Y + Co - Cg;
-    col_rgb.g = Y + Cg;
-    col_rgb.b = Y - Co - Cg;
+    col_rgb.x = Y + Co - Cg;
+    col_rgb.y = Y + Cg;
+    col_rgb.z = Y - Co - Cg;
 
     return saturate(col_rgb);
 }
@@ -270,12 +270,20 @@ vec4 sanitize(const vec4 val) {
     return vec4(sanitize(val.x), sanitize(val.y), sanitize(val.z), sanitize(val.w));
 }
 
-vec3 TransformFromClipSpace(const mat4 world_from_clip, vec4 pos_cs) {
+vec3 TransformFromClipSpace(const mat4 xxx_from_clip, vec4 pos_cs) {
 #if defined(VULKAN)
     pos_cs.y = -pos_cs.y;
 #endif // VULKAN
-    const vec4 pos_ws = world_from_clip * pos_cs;
-    return pos_ws.xyz / pos_ws.w;
+    const vec4 pos_xxx = xxx_from_clip * pos_cs;
+    return pos_xxx.xyz / pos_xxx.w;
+}
+
+vec3 TransformToClipSpace(const mat4 clip_from_xxx, vec3 pos_xxx) {
+    vec4 pos_cs = clip_from_xxx * vec4(pos_xxx, 1.0);
+#if defined(VULKAN)
+    pos_cs.y = -pos_cs.y;
+#endif // VULKAN
+    return pos_cs.xyz / pos_cs.w;
 }
 
 vec2 RotateVector(vec4 rotator, vec2 v) { return v.x * rotator.xz + v.y * rotator.yw; }
@@ -388,7 +396,7 @@ struct material_data_t {
 };
 
 vec3 RGBMDecode(vec4 rgbm) {
-    return 4.0 * rgbm.rgb * rgbm.a;
+    return 4.0 * rgbm.xyz * rgbm.a;
 }
 
 uint ReverseBits4(uint x) {

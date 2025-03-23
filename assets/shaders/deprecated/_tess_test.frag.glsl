@@ -57,12 +57,12 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
     vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = texture(g_bump_tex, cur_uvs).r;
+    float height = texture(g_bump_tex, cur_uvs).x;
 
     while (height > cur_layer_height) {
         cur_layer_height += layer_height;
         cur_uvs += duvs;
-        height = texture(g_bump_tex, cur_uvs).r;
+        height = texture(g_bump_tex, cur_uvs).x;
     }
 
     duvs = 0.5 * duvs;
@@ -75,7 +75,7 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
     for (int i = 0; i < BinSearchInterations; i++) {
         duvs = 0.5 * duvs;
         layer_height = 0.5 * layer_height;
-        height = texture(g_bump_tex, cur_uvs).r;
+        height = texture(g_bump_tex, cur_uvs).x;
         if (height > cur_layer_height) {
             cur_uvs += duvs;
             cur_layer_height += layer_height;
@@ -101,18 +101,18 @@ vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs) {
     vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = texture(g_bump_tex, cur_uvs).r;
+    float height = texture(g_bump_tex, cur_uvs).x;
 
     while (height > cur_layer_height) {
         cur_layer_height += layer_height;
         cur_uvs += duvs;
-        height = texture(g_bump_tex, cur_uvs).r;
+        height = texture(g_bump_tex, cur_uvs).x;
     }
 
     vec2 prev_uvs = cur_uvs - duvs;
 
     float next_height = height - cur_layer_height;
-    float prev_height = texture(g_bump_tex, prev_uvs).r - cur_layer_height + layer_height;
+    float prev_height = texture(g_bump_tex, prev_uvs).x - cur_layer_height + layer_height;
 
     float weight = next_height / (next_height - prev_height);
     vec2 final_uvs = mix(cur_uvs, prev_uvs, weight);
@@ -143,7 +143,7 @@ void main() {
     //vec2 modified_uvs = g_vtx_uvs;//ReliefParallaxMapping(view_ray_ts, g_vtx_uvs);
     vec2 modified_uvs = ParallaxOcclusionMapping(view_ray_ts, g_vtx_uvs);
 
-    vec3 albedo_color = texture(g_diff_tex, modified_uvs).rgb;
+    vec3 albedo_color = texture(g_diff_tex, modified_uvs).xyz;
 
     vec2 duv_dx = dFdx(modified_uvs), duv_dy = dFdy(modified_uvs);
     vec3 normal_color = texture(g_norm_tex, modified_uvs).wyz;
@@ -177,7 +177,7 @@ void main() {
             vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 3);
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
-                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
+                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).x;
             }
 
             vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 4);
@@ -281,14 +281,14 @@ void main() {
     }
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
+    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 diffuse_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                          ambient_occlusion * ambient_occlusion * indirect_col +
                                          additional_light);
 
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
 
-    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
+    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.xyz, specular_color.a);
 
     g_out_color = vec4(diffuse_color * kD, 1.0);
     g_out_normal = vec4(normal * 0.5 + 0.5, 1.0);
@@ -296,5 +296,5 @@ void main() {
 
     //vec3 view_vec_rec = normalize(mat3(cross(g_vtx_tangent, g_vtx_normal), g_vtx_tangent,
     //                            g_vtx_normal) * view_ray_ts);
-    //g_out_color.rgb = 0.0001 * g_out_color.rgb + 100.0 * abs(view_vec_rec - view_ray_ws);
+    //g_out_color.xyz = 0.0001 * g_out_color.xyz + 100.0 * abs(view_vec_rec - view_ray_ws);
 }

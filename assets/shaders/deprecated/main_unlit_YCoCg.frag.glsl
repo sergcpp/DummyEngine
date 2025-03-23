@@ -28,15 +28,15 @@ layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
 void main() {
     vec4 col = texture(SAMPLER2D(g_mat0_tex), g_vtx_uvs);
 
-    float scale = (col.b * (255.0 / 8.0)) + 1.0;
-    float Y = col.a;
-    float Co = (col.r - (0.5 * 256.0 / 255.0)) / scale;
-    float Cg = (col.g - (0.5 * 256.0 / 255.0)) / scale;
+    float scale = (col.z * (255.0 / 8.0)) + 1.0;
+    float Y = col.w;
+    float Co = (col.x - (0.5 * 256.0 / 255.0)) / scale;
+    float Cg = (col.y - (0.5 * 256.0 / 255.0)) / scale;
 
     vec3 col_rgb;
-    col_rgb.r = Y + Co - Cg;
-    col_rgb.g = Y + Cg;
-    col_rgb.b = Y - Co - Cg;
+    col_rgb.x = Y + Co - Cg;
+    col_rgb.y = Y + Cg;
+    col_rgb.z = Y - Co - Cg;
 
     g_out_color = vec4(SRGBToLinear(col_rgb), 1.0);
     g_out_normal = vec4(0.0);

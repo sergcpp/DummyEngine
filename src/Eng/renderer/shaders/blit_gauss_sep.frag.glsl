@@ -124,17 +124,17 @@ void main() {
     }
 
     //g_out_color = mix(col, g_out_color, g_out_color.a);
-    //g_out_color = vec4(g_out_color.xyz / g_out_color.b, alpha_weightened);
+    //g_out_color = vec4(g_out_color.xyz / g_out_color.z, alpha_weightened);
 
-    if (false && col.b < 0.5 && g_out_color.b > 0.01) {
-        g_out_color.rgb /= g_out_color.b;
+    if (false && col.z < 0.5 && g_out_color.z > 0.01) {
+        g_out_color.xyz /= g_out_color.z;
     } else {
-        g_out_color.rgb = col.rgb;
+        g_out_color.xyz = col.xyz;
     }
 
     g_out_color.a = alpha_weightened;
 
-    if (col.b > 0.9) {
+    if (col.z > 0.9) {
         //g_out_color.xyz = col.xyz;
     }
 }

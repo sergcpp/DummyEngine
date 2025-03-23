@@ -63,7 +63,7 @@ bool ThreadGroupAllTrue(bool val) {
 }
 
 bool IsShadowReceiver(uvec2 p) {
-    float depth = texelFetch(g_depth_tex, ivec2(p), 0).r;
+    float depth = texelFetch(g_depth_tex, ivec2(p), 0).x;
     return (depth > 0.0) && (depth < 1.0);
 }
 
@@ -169,7 +169,7 @@ bool IsDisoccluded(uvec2 did, float depth, vec3 velocity) {
         // Calculate the depth difference
         float linear_depth = LinearizeDepth(depth, g_shrd_data.clip_info) - velocity.z;
 
-        float previous_depth = LinearizeDepth(textureLod(g_prev_depth_tex, previous_uv, 0.0).r, g_shrd_data.clip_info);
+        float previous_depth = LinearizeDepth(textureLod(g_prev_depth_tex, previous_uv, 0.0).x, g_shrd_data.clip_info);
         float depth_difference = abs(previous_depth - linear_depth) / linear_depth;
 
         // Resolve into the disocclusion mask
@@ -203,10 +203,10 @@ bool IsDisoccluded2x2(uvec2 did, float depth, vec3 velocity) {
         // Calculate the depth difference
         float linear_depth = LinearizeDepth(depth, g_shrd_data.clip_info) - velocity.z;
 
-        float previous_depth00 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+0, +0)).r, g_shrd_data.clip_info);
-        float previous_depth01 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+1, +0)).r, g_shrd_data.clip_info);
-        float previous_depth10 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+0, +1)).r, g_shrd_data.clip_info);
-        float previous_depth11 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+1, +1)).r, g_shrd_data.clip_info);
+        float previous_depth00 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+0, +0)).x, g_shrd_data.clip_info);
+        float previous_depth01 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+1, +0)).x, g_shrd_data.clip_info);
+        float previous_depth10 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+0, +1)).x, g_shrd_data.clip_info);
+        float previous_depth11 = LinearizeDepth(textureLodOffset(g_prev_depth_tex, previous_uv_base, 0.0, ivec2(+1, +1)).x, g_shrd_data.clip_info);
         float depth_difference00 = abs(previous_depth00 - linear_depth) / linear_depth;
         float depth_difference01 = abs(previous_depth01 - linear_depth) / linear_depth;
         float depth_difference10 = abs(previous_depth10 - linear_depth) / linear_depth;
@@ -410,7 +410,7 @@ void TileClassification(uint group_index, uvec2 gid) {
 
     WriteTileMetaData(gid, gtid, false, false);
 
-    float depth = texelFetch(g_depth_tex, ivec2(did), 0).r;
+    float depth = texelFetch(g_depth_tex, ivec2(did), 0).x;
     vec3 velocity = GetClosestVelocity(did.xy, depth); // Must happen before we deactivate lanes
 
     float local_neighborhood = ComputeLocalNeighborhood(ivec2(did), ivec2(gtid));
@@ -461,7 +461,7 @@ void TileClassification(uint group_index, uvec2 gid) {
             // Clamp reprojected sample to local neighborhood
             float shadow_previous = shadow_current;
             if (/*FFX_DNSR_Shadows_IsFirstFrame() == 0*/ !is_disoccluded) {
-                shadow_previous = textureLod(g_hist_tex, history_uv, 0.0).r;
+                shadow_previous = textureLod(g_hist_tex, history_uv, 0.0).x;
             }
 
             shadow_clamped = clamp(shadow_previous, nmin, nmax);

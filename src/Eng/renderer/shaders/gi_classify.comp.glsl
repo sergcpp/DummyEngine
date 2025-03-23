@@ -94,7 +94,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
 
     if (enable_temporal_variance_guided_tracing && needs_denoiser && !needs_ray) {
         const float TemporalVarianceThreshold = 0.025;
-        needs_ray = (texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold);
+        needs_ray = (texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).x > TemporalVarianceThreshold);
     }
 
     groupMemoryBarrier(); barrier();
@@ -196,13 +196,13 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
     sample_dimension = sample_dimension & 255u;
 
     // xor index based on optimized ranking
-    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
 
     // fetch value in sequence
-    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
+    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).x;
 
     // if the dimension is optimized, xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
 
     // convert to float and return
     return (float(value) + 0.5) / 256.0;

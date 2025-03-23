@@ -46,7 +46,7 @@ layout(location = 0) out vec4 g_out_velocity;
 
 void main() {
 #ifdef ALPHATEST
-    const float tx_alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).r;
+    const float tx_alpha = g_alpha * texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs).x;
     const float max_deriv = max(length(dFdx(g_vtx_pos_ls)), length(dFdy(g_vtx_pos_ls)));
     const float HashScale = 0.1;
     const float pix_scale = 1.0 / (HashScale * max_deriv);

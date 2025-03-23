@@ -27,9 +27,9 @@ void main() {
     vec2 uv1 = uv0 + vec2(1.0, 0.0) / vec2(g_params.img_size);
     vec2 uv2 = uv0 + vec2(0.0, 1.0) / vec2(g_params.img_size);
 
-    float depth0_vs = LinearizeDepth(textureLod(g_depth_tex, uv0, 0.0).r, g_params.clip_info);
-    float depth1_vs = LinearizeDepth(textureLod(g_depth_tex, uv1, 0.0).r, g_params.clip_info);
-    float depth2_vs = LinearizeDepth(textureLod(g_depth_tex, uv2, 0.0).r, g_params.clip_info);
+    float depth0_vs = LinearizeDepth(textureLod(g_depth_tex, uv0, 0.0).x, g_params.clip_info);
+    float depth1_vs = LinearizeDepth(textureLod(g_depth_tex, uv1, 0.0).x, g_params.clip_info);
+    float depth2_vs = LinearizeDepth(textureLod(g_depth_tex, uv2, 0.0).x, g_params.clip_info);
 
     vec3 p0_vs = ReconstructViewPosition(uv0, g_params.frustum_info, -depth0_vs, 0.0 /* is_ortho */);
     vec3 p1_vs = ReconstructViewPosition(uv1, g_params.frustum_info, -depth1_vs, 0.0 /* is_ortho */);

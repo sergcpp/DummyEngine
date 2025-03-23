@@ -25,14 +25,14 @@ void main() {
     ivec2 icoord = ivec2(gl_FragCoord.xy);
     vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
-    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
-    const uint packed_mat_params = texelFetch(g_spec_tex, icoord, 0).r;
+    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).xyz;
+    const uint packed_mat_params = texelFetch(g_spec_tex, icoord, 0).x;
     const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x);
 
     const vec3 P = pos_ws;

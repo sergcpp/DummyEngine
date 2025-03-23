@@ -155,7 +155,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     if (center_radiance.w > 0.0 && IsGlossyReflection(roughness) && !IsMirrorReflection(roughness)) {
         float16_t sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        f16vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb;
+        f16vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).xyz;
 
         f16vec4 old_signal = texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0);
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
@@ -164,11 +164,11 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         local_neighborhood.mean.xyz = mix(local_neighborhood.mean.xyz, avg_radiance, 0.2);
         f16vec3 radiance_min = local_neighborhood.mean.xyz - color_std * 1.5;
         f16vec3 radiance_max = local_neighborhood.mean.xyz + color_std * 1.5;
-        f16vec3 clipped_old_signal = ClipAABB(radiance_min, radiance_max, old_signal.rgb);
+        f16vec3 clipped_old_signal = ClipAABB(radiance_min, radiance_max, old_signal.xyz);
         float16_t accumulation_speed = 1.0 / max(sample_count, 1.0);
         float16_t weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
-        new_signal.rgb = mix(new_signal.rgb, avg_radiance, 1.0 / max(sample_count + 1.0, 1.0));
+        new_signal.xyz = mix(new_signal.xyz, avg_radiance, 1.0 / max(sample_count + 1.0, 1.0));
         { // Clip outliers
 #ifdef RELAXED
             const f16vec3 radiance_min = avg_radiance - color_std * 0.75;
@@ -177,10 +177,10 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
             const f16vec3 radiance_min = avg_radiance - color_std * 0.45;
             const f16vec3 radiance_max = avg_radiance + color_std * 0.45;
 #endif
-            new_signal.rgb = ClipAABB(radiance_min, radiance_max, new_signal.rgb);
+            new_signal.xyz = ClipAABB(radiance_min, radiance_max, new_signal.xyz);
         }
         // Blend with history
-        new_signal.rgb = mix(new_signal.rgb, clipped_old_signal.rgb, weight);
+        new_signal.xyz = mix(new_signal.xyz, clipped_old_signal.xyz, weight);
         new_signal.w = mix(new_signal.w, old_signal.w, weight);
         new_variance = mix(ComputeTemporalVariance(new_signal.xyz, clipped_old_signal), new_variance, weight);
     }

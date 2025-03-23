@@ -51,7 +51,7 @@ void main() {
     mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
 
     vec3 vtx_pos_ls = g_in_vtx_pos;
-    float vtx_curvature = unpackUnorm4x8(g_in_vtx_color_packed).r;
+    float vtx_curvature = unpackUnorm4x8(g_in_vtx_color_packed).x;
 
     vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(g_in_vtx_normal.xyz, 0.0)).xyz);

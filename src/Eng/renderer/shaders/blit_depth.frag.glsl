@@ -21,7 +21,7 @@ layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    float depth = texelFetch(g_tex, ivec2(g_vtx_uvs), 0).r;
+    float depth = texelFetch(g_tex, ivec2(g_vtx_uvs), 0).x;
     if (near > 0.0001) {
         // cam is not orthographic
         depth = (near * far) / (depth * (near - far) + far);

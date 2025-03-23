@@ -43,7 +43,7 @@ shared uint g_shared_mask;
 void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool use_normal, bool use_cascades) {
     bool is_in_viewport = (px_coord.x < g_params.img_size.x && px_coord.y < g_params.img_size.y);
 
-    float depth = texelFetch(g_depth_tex, ivec2(px_coord), 0).r;
+    float depth = texelFetch(g_depth_tex, ivec2(px_coord), 0).x;
 
     bool is_active_lane = is_in_viewport && (depth < 1.0);
 
@@ -105,13 +105,13 @@ float SampleRandomNumber(uvec2 pixel, uint sample_index, uint sample_dimension) 
     sample_dimension = sample_dimension & 255u;
 
     // xor index based on optimized ranking
-    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
 
     // fetch value in sequence
-    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
+    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).x;
 
     // if the dimension is optimized, xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
 
     // convert to float and return
     return (float(value) + 0.5) / 256.0;

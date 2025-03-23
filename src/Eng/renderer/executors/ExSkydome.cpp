@@ -73,7 +73,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
     const int mip_count = color_tex.ref->params.mip_count;
 
     Ren::Camera temp_cam;
-    temp_cam.Perspective(Ren::eZRange::OneToZero, 90.0f, 1.0f, 1.0f, 10000.0f);
+    temp_cam.Perspective(Ren::eZRange::OneToZero, 90.0f, 1.0f, 1.0f, 1000.0f);
 
     const int faceq_start = last_updated_faceq_ + 1;
     const int faceq_end = (generation_ == 0xffffffff) ? 24 : faceq_start + 1;
@@ -95,6 +95,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
 
         Skydome::Params uniform_params = {};
         uniform_params.clip_from_world = temp_cam.proj_matrix() * temp_cam.view_matrix();
+        uniform_params.scale = 500.0f;
 
         const Ren::RenderTarget color_targets[] = {
             {color_tex.ref, uint8_t((faceq / 4) + 1), Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -194,9 +195,10 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref}};
 
     Skydome::Params uniform_params = {};
-    uniform_params.clip_from_world = view_state_->clip_from_world;
+    uniform_params.clip_from_world = view_state_->clip_from_world_no_translation;
     uniform_params.sample_coord = sample_pos(view_state_->frame_index);
     uniform_params.img_size = view_state_->scr_res;
+    uniform_params.scale = 0.95f * view_state_->clip_info[2];
 
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
