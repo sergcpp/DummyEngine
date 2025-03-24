@@ -181,6 +181,8 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
         style &= ~WS_THICKFRAME;
         style &= ~WS_MINIMIZEBOX;
         style &= ~WS_MAXIMIZEBOX;
+    }
+    if (app_params.noshow) {
         style &= ~WS_VISIBLE;
     }
 
@@ -189,9 +191,8 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
                          rect.bottom - rect.top, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
     device_context_ = GetDC(window_handle_);
 
-    if (!app_params.ref_name.empty()) {
+    if (app_params.noshow) {
         SetActiveWindow(window_handle_);
-        ShowWindow(window_handle_, SW_SHOWNOACTIVATE);
     }
 
     try {

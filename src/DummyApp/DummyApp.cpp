@@ -32,6 +32,8 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             out_params.nohwrt = true;
         } else if (strcmp(arg, "--nosubgroup") == 0) {
             out_params.nosubgroup = true;
+        } else if (strcmp(argv[i], "--noshow") == 0) {
+            out_params.noshow = true;
         } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
             out_params.scene_name = argv[i];
         } else if ((strcmp(argv[i], "--reference") == 0 || strcmp(argv[i], "-ref") == 0) && (++i != argc)) {

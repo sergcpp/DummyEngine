@@ -260,12 +260,18 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
         style &= ~WS_MINIMIZEBOX;
         style &= ~WS_MAXIMIZEBOX;
     }
+    if (app_params.noshow) {
+        style &= ~WS_VISIBLE;
+    }
 
     window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View [OpenGL]", style, CW_USEDEFAULT, CW_USEDEFAULT,
                                       rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
                                       GetModuleHandle(nullptr), nullptr);
-
     device_context_ = GetDC(window_handle_);
+
+    if (app_params.noshow) {
+        SetActiveWindow(window_handle_);
+    }
 
     static const int pixel_attribs[] = {WGL_DRAW_TO_WINDOW_ARB,
                                         GL_TRUE,

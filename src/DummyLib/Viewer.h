@@ -51,6 +51,7 @@ struct AppParams {
     bool pt_denoise = true;
     bool postprocess = true;
     bool freeze_sky = false;
+    bool noshow = false;
     int pt_max_samples = 128;
     int pt_max_diff_depth = 4;
     int pt_max_spec_depth = 8;
