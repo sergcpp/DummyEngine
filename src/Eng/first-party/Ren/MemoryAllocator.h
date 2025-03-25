@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "FreelistAlloc.h"
@@ -99,7 +100,7 @@ class MemAllocators {
     uint32_t initial_block_size_;
     float growth_factor_;
     uint32_t max_pool_size_;
-    SmallVector<MemAllocator, 4> allocators_;
+    SmallVector<std::unique_ptr<MemAllocator>, 4> allocators_;
 
   public:
     MemAllocators(std::string_view name, ApiContext *api_ctx, const uint32_t initial_block_size,
