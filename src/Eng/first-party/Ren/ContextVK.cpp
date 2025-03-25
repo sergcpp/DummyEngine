@@ -64,16 +64,18 @@ Ren::Context::~Context() {
         api_ctx_->vkDeviceWaitIdle(api_ctx_->device);
 
         for (int i = 0; i < MaxFramesInFlight; ++i) {
-            api_ctx_->backend_frame = i; // default_descr_alloc_'s destructors rely on this
+            api_ctx_->backend_frame = (api_ctx_->backend_frame + 1) % Ren::MaxFramesInFlight;
 
-            default_descr_alloc_[i] = {};
-            DestroyDeferredResources(api_ctx_.get(), i);
+            default_descr_alloc_[api_ctx_->backend_frame] = {};
+            DestroyDeferredResources(api_ctx_.get(), api_ctx_->backend_frame);
 
-            api_ctx_->vkDestroyFence(api_ctx_->device, api_ctx_->in_flight_fences[i], nullptr);
-            api_ctx_->vkDestroySemaphore(api_ctx_->device, api_ctx_->render_finished_semaphores[i], nullptr);
-            api_ctx_->vkDestroySemaphore(api_ctx_->device, api_ctx_->image_avail_semaphores[i], nullptr);
+            api_ctx_->vkDestroyFence(api_ctx_->device, api_ctx_->in_flight_fences[api_ctx_->backend_frame], nullptr);
+            api_ctx_->vkDestroySemaphore(api_ctx_->device,
+                                         api_ctx_->render_finished_semaphores[api_ctx_->backend_frame], nullptr);
+            api_ctx_->vkDestroySemaphore(api_ctx_->device, api_ctx_->image_avail_semaphores[api_ctx_->backend_frame],
+                                         nullptr);
 
-            api_ctx_->vkDestroyQueryPool(api_ctx_->device, api_ctx_->query_pools[i], nullptr);
+            api_ctx_->vkDestroyQueryPool(api_ctx_->device, api_ctx_->query_pools[api_ctx_->backend_frame], nullptr);
         }
 
         default_mem_allocs_ = {};
