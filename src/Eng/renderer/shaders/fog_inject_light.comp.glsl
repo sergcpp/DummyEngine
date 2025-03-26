@@ -74,9 +74,22 @@ void main() {
         const vec3 hist_uvw = cs_to_uvw(hist_pos_cs, hist_lin_depth);
 
         if (all(greaterThanEqual(hist_uvw, vec3(0.0))) && all(lessThanEqual(hist_uvw, vec3(1.0)))) {
-            const vec4 hist_fetch = textureLod(g_froxels_history_tex, hist_uvw, 0.0);
-            final_color = mix(g_params.hist_weight * hist_fetch.xyz, final_color, 0.05);
-            density = mix(hist_fetch.w, density, 0.05);
+            vec4 hist_fetch = textureLod(g_froxels_history_tex, hist_uvw, 0.0);
+            hist_fetch.xyz *= g_params.hist_weight;
+
+            const float HistoryWeightMin = 0.75;
+            const float HistoryWeightMax = 0.95;
+
+            const float lum_curr = lum(final_color);
+            const float lum_hist = lum(hist_fetch.xyz);
+
+            const float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.001);
+            const float unbiased_weight = 1.0 - unbiased_diff;
+            const float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
+            const float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
+
+            final_color = mix(final_color, hist_fetch.xyz, history_weight);
+            density = mix(density, hist_fetch.w, history_weight);
         }
     }
 
