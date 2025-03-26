@@ -42,7 +42,7 @@ void test_material() {
                                "    - alpha_test\n"
                                "textures:\n"
                                "    - checker.tga\n"
-                               "    - checker.tga signed\n"
+                               "    - checker.tga\n"
                                "    - metal_01.tga\n"
                                "    - checker.tga\n"
                                "params:\n"
