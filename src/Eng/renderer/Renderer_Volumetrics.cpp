@@ -426,7 +426,7 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
     using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
-    static const float FogDensity = 0.005f;
+    static const float FogDensity = 0.0015f;
     static const float FogAnisotropy = 0.7f;
 
     FgResRef froxel_tex;
@@ -438,6 +438,7 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             FgResRef random_seq;
             FgResRef shadow_depth_tex, shadow_color_tex;
             FgResRef froxels_hist_tex;
+            FgResRef irradiance_tex, distance_tex, offset_tex;
             FgResRef output_tex;
         };
 
@@ -461,6 +462,12 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
         data->froxels_hist_tex = inject_light.AddHistoryTextureInput(froxel_tex, Stg::ComputeShader);
 
+        if (settings.gi_quality != eGIQuality::Off) {
+            data->irradiance_tex = inject_light.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
+            data->distance_tex = inject_light.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
+            data->offset_tex = inject_light.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+        }
+
         inject_light.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocBuf &random_seq_buf = builder.GetReadBuffer(data->random_seq);
@@ -470,14 +477,27 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
             FgAllocTex &froxels_hist_tex = builder.GetReadTexture(data->froxels_hist_tex);
 
+            FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
+            if (data->irradiance_tex) {
+                irr_tex = &builder.GetReadTexture(data->irradiance_tex);
+                dist_tex = &builder.GetReadTexture(data->distance_tex);
+                off_tex = &builder.GetReadTexture(data->offset_tex);
+            }
+
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
-                                             {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
-                                             {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
-                                             {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxels_hist_tex.ref},
-                                             {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
+            Ren::SmallVector<Ren::Binding, 16> bindings = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
+                {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
+                {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
+                {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxels_hist_tex.ref},
+                {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
+            if (irr_tex) {
+                bindings.emplace_back(Ren::eBindTarget::TexSampled, Fog::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
+                bindings.emplace_back(Ren::eBindTarget::TexSampled, Fog::DISTANCE_TEX_SLOT, *dist_tex->ref);
+                bindings.emplace_back(Ren::eBindTarget::TexSampled, Fog::OFFSET_TEX_SLOT, *off_tex->ref);
+            }
 
             const auto froxel_res =
                 Ren::Vec4i{output_tex.ref->params.w, output_tex.ref->params.h, output_tex.ref->params.d, 0};
@@ -493,8 +513,8 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
-            DispatchCompute(*pi_fog_inject_light_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+            DispatchCompute(*pi_fog_inject_light_[irr_tex != nullptr], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
     { // Ray march

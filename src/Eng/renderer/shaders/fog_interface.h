@@ -24,6 +24,10 @@ const int FROXELS_TEX_SLOT = 4;
 const int DEPTH_TEX_SLOT = 5;
 const int RANDOM_SEQ_BUF_SLOT = 6;
 
+const int IRRADIANCE_TEX_SLOT = 7;
+const int DISTANCE_TEX_SLOT = 8;
+const int OFFSET_TEX_SLOT = 9;
+
 const int OUT_FROXELS_IMG_SLOT = 0;
 const int INOUT_COLOR_IMG_SLOT = 1;
 

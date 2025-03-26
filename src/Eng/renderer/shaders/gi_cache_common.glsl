@@ -239,7 +239,7 @@ bool IsScrollingPlaneProbe(const int probe_index, const ivec3 grid_scroll, const
 
 vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex, sampler2DArray distance_tex, sampler2DArray offset_tex,
                            const vec3 world_position, const vec3 surface_bias, const vec3 direction,
-                           const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool diffuse_only) {
+                           const ivec3 grid_scroll, const vec3 grid_origin, const vec3 grid_spacing, const bool diffuse_only, const bool skip_inactive) {
     // Bias the world space position
     const vec3 biased_world_position = (world_position + surface_bias);
 
@@ -272,7 +272,7 @@ vec3 get_volume_irradiance(const int volume_index, sampler2DArray irradiance_tex
 
         // Early Out: don 't allow inactive probes to contribute to irradiance
         const ivec3 adj_texel_coords = get_probe_texel_coords(adjacent_probe_index, volume_index);
-        if (texelFetch(offset_tex, adj_texel_coords, 0).w < 0.5) {
+        if (skip_inactive && texelFetch(offset_tex, adj_texel_coords, 0).w < 0.5) {
             continue;
         }
 

@@ -4,8 +4,11 @@
 #include "_fs_common.glsl"
 #include "fog_common.glsl"
 #include "pmj_common.glsl"
+#include "gi_cache_common.glsl"
 
 #include "fog_interface.h"
+
+#pragma multi_compile _ GI_CACHE
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -16,6 +19,12 @@ layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
 layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
 layout(binding = FROXELS_TEX_SLOT) uniform sampler3D g_froxels_history_tex;
+
+#ifdef GI_CACHE
+    layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
+    layout(binding = DISTANCE_TEX_SLOT) uniform sampler2DArray g_distance_tex;
+    layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
+#endif
 
 layout(binding = OUT_FROXELS_IMG_SLOT, rgba16f) uniform writeonly image3D g_out_froxels_img;
 
@@ -40,7 +49,7 @@ void main() {
     const float k = saturate(abs(pos_ws.y) / 20.0);
 
     float density = mix(g_params.density, 0.0, k);
-    vec3 final_color = vec3(0.0);
+    vec3 light_total = vec3(0.0);
 
     if (dot(g_shrd_data.sun_col_point.xyz, g_shrd_data.sun_col_point.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
         vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * vec4(pos_ws, 1.0)).xyz;
@@ -58,11 +67,24 @@ void main() {
 
             sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
         }
-        final_color += sun_visibility * g_shrd_data.sun_col_point.xyz * HenyeyGreenstein(dot(view_ray_ws, g_shrd_data.sun_dir.xyz), g_params.anisotropy);
+        light_total += sun_visibility * g_shrd_data.sun_col_point.xyz * HenyeyGreenstein(dot(view_ray_ws, g_shrd_data.sun_dir.xyz), g_params.anisotropy);
     }
 
-    final_color *= density;
-    final_color = compress_hdr(final_color, g_shrd_data.cam_pos_and_exp.w);
+#ifdef GI_CACHE
+    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+        const float weight = get_volume_blend_weight(pos_ws, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+        if (weight > 0.0 || i == PROBE_VOLUMES_COUNT - 1) {
+            const vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, pos_ws, vec3(0.0), view_ray_ws,
+                                                            g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, false);
+            light_total += (1.0 / M_PI) * avg_radiance;
+
+            break;
+        }
+    }
+#endif
+
+    light_total *= density;
+    light_total = compress_hdr(light_total, g_shrd_data.cam_pos_and_exp.w);
 
     { // history accumulation
         const vec3 pos_uvw_no_offset = froxel_to_uvw(icoord, 0.5, g_params.froxel_res.xyz);
@@ -80,7 +102,7 @@ void main() {
             const float HistoryWeightMin = 0.75;
             const float HistoryWeightMax = 0.95;
 
-            const float lum_curr = lum(final_color);
+            const float lum_curr = lum(light_total);
             const float lum_hist = lum(hist_fetch.xyz);
 
             const float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.001);
@@ -88,10 +110,10 @@ void main() {
             const float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
             const float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
-            final_color = mix(final_color, hist_fetch.xyz, history_weight);
+            light_total = mix(light_total, hist_fetch.xyz, history_weight);
             density = mix(density, hist_fetch.w, history_weight);
         }
     }
 
-    imageStore(g_out_froxels_img, icoord, vec4(final_color, density));
+    imageStore(g_out_froxels_img, icoord, vec4(light_total, density));
 }

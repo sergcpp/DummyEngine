@@ -130,7 +130,8 @@ void Eng::Renderer::InitPipelines() {
 
     // Volumetrics
     pi_sky_upsample_ = sh_.LoadPipeline("internal/skydome_upsample.comp.glsl");
-    pi_fog_inject_light_ = sh_.LoadPipeline("internal/fog_inject_light.comp.glsl");
+    pi_fog_inject_light_[0] = sh_.LoadPipeline("internal/fog_inject_light.comp.glsl");
+    pi_fog_inject_light_[1] = sh_.LoadPipeline("internal/fog_inject_light@GI_CACHE.comp.glsl");
     pi_fog_ray_march_ = sh_.LoadPipeline("internal/fog_ray_march.comp.glsl");
     pi_fog_apply_ = sh_.LoadPipeline("internal/fog_apply.comp.glsl");
 
