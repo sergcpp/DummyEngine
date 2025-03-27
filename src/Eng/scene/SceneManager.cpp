@@ -482,6 +482,23 @@ void Eng::SceneManager::LoadScene(const Sys::JsObjectP &js_scene, const Ren::Bit
         } else {
             scene_data_.env.atmosphere.clouds_density = 0.5f;
         }
+
+        scene_data_.env.fog = {};
+        if (js_env.Has("fog")) {
+            const Sys::JsObjectP &js_fog = js_env.at("fog").as_obj();
+            if (js_fog.Has("color")) {
+                const Sys::JsArrayP &js_col = js_fog.at("color").as_arr();
+                scene_data_.env.fog.color[0] = float(js_col[0].as_num().val);
+                scene_data_.env.fog.color[1] = float(js_col[1].as_num().val);
+                scene_data_.env.fog.color[2] = float(js_col[2].as_num().val);
+            }
+            if (js_fog.Has("density")) {
+                scene_data_.env.fog.density = float(js_fog.at("density").as_num().val);
+            }
+            if (js_fog.Has("anisotropy")) {
+                scene_data_.env.fog.anisotropy = float(js_fog.at("anisotropy").as_num().val);
+            }
+        }
     } else {
         scene_data_.env = {};
     }
@@ -560,6 +577,23 @@ void Eng::SceneManager::SaveScene(Sys::JsObjectP &js_scene) {
             js_sun_shadow_bias.Push(Sys::JsNumber(scene_data_.env.sun_shadow_bias[1]));
 
             js_env.Insert("sun_shadow_bias", std::move(js_sun_shadow_bias));
+        }
+
+        if (scene_data_.env.fog != volume_params_t{}) {
+            Sys::JsObjectP js_fog(alloc);
+
+            { // write color
+                Sys::JsArrayP js_col(alloc);
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.color[0]));
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.color[1]));
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.color[2]));
+                js_fog.Insert("color", js_col);
+            }
+
+            js_fog.Insert("density", Sys::JsNumber{scene_data_.env.fog.density});
+            js_fog.Insert("anisotropy", Sys::JsNumber{scene_data_.env.fog.anisotropy});
+
+            js_env.Insert("fog", js_fog);
         }
 
         js_scene.Insert("environment", std::move(js_env));

@@ -1182,7 +1182,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddForwardTransparentPass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
 
-        if (list.render_settings.fog_quality != eFogQuality::Off) {
+        if (list.render_settings.vol_quality != eVolQuality::Off) {
             AddFogPasses(common_buffers, frame_textures);
         }
 

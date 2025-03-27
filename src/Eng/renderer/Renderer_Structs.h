@@ -237,7 +237,7 @@ enum class eGICacheUpdateMode : uint8_t { Off, Partial, Full };
 
 enum class eSkyQuality : uint8_t { Medium, High, Ultra };
 
-enum class eFogQuality : uint8_t { Off, High, Ultra };
+enum class eVolQuality : uint8_t { Off, High, Ultra };
 
 enum class eTransparencyQuality : uint8_t { High, Ultra };
 
@@ -294,7 +294,7 @@ struct render_settings_t {
     eGIQuality gi_quality = eGIQuality::High;
     eGICacheUpdateMode gi_cache_update_mode = eGICacheUpdateMode::Partial;
     eSkyQuality sky_quality = eSkyQuality::High;
-    eFogQuality fog_quality = eFogQuality::High;
+    eVolQuality vol_quality = eVolQuality::High;
     eTransparencyQuality transparency_quality = eTransparencyQuality::High;
 
     eDebugRT debug_rt = eDebugRT::Off;
@@ -314,7 +314,7 @@ struct render_settings_t {
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
                ssao_quality == rhs.ssao_quality && gi_quality == rhs.gi_quality &&
                gi_cache_update_mode == rhs.gi_cache_update_mode && sky_quality == rhs.sky_quality &&
-               fog_quality == rhs.fog_quality && transparency_quality == rhs.transparency_quality &&
+               vol_quality == rhs.vol_quality && transparency_quality == rhs.transparency_quality &&
                debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
                debug_oit_layer == rhs.debug_oit_layer;
     }
@@ -335,7 +335,7 @@ struct render_settings_t {
         gi_cache_update_mode =
             eGICacheUpdateMode(std::min(uint8_t(gi_cache_update_mode), uint8_t(rhs.gi_cache_update_mode)));
         sky_quality = eSkyQuality(std::min(uint8_t(sky_quality), uint8_t(rhs.sky_quality)));
-        fog_quality = eFogQuality(std::min(uint8_t(fog_quality), uint8_t(rhs.fog_quality)));
+        vol_quality = eVolQuality(std::min(uint8_t(vol_quality), uint8_t(rhs.vol_quality)));
         transparency_quality =
             eTransparencyQuality(std::min(uint8_t(transparency_quality), uint8_t(rhs.transparency_quality)));
 

@@ -734,14 +734,14 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
         renderer_->settings.sky_quality = Eng::eSkyQuality::Medium;
-        renderer_->settings.fog_quality = Eng::eFogQuality::High;
+        renderer_->settings.vol_quality = Eng::eVolQuality::High;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::High) {
         renderer_->settings.gi_quality = Eng::eGIQuality::High;
         renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
         renderer_->settings.sky_quality = Eng::eSkyQuality::High;
         renderer_->settings.transparency_quality = Eng::eTransparencyQuality::High;
-        renderer_->settings.fog_quality = Eng::eFogQuality::High;
+        renderer_->settings.vol_quality = Eng::eVolQuality::High;
     } else if (viewer_->app_params.gfx_preset == eGfxPreset::Ultra) {
         renderer_->settings.ssao_quality = Eng::eSSAOQuality::Ultra;
         renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
@@ -749,11 +749,11 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer_->settings.sky_quality = Eng::eSkyQuality::Ultra;
         renderer_->settings.transparency_quality = Eng::eTransparencyQuality::Ultra;
-        renderer_->settings.fog_quality = Eng::eFogQuality::Ultra;
+        renderer_->settings.vol_quality = Eng::eVolQuality::Ultra;
     }
 
     if (!viewer_->app_params.fog) {
-        renderer_->settings.fog_quality = Eng::eFogQuality::Off;
+        renderer_->settings.vol_quality = Eng::eVolQuality::Off;
     }
 
     sun_dir_ = scene_manager_->scene_data().env.sun_dir;

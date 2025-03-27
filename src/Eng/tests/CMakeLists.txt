@@ -18,7 +18,10 @@ endif()
 add_executable(test_Eng main.cpp
                         test_common.h
                         test_cmdline.cpp
-                        test_shading.cpp)
+                        test_scene.h
+                        test_scene.cpp
+                        test_shading.cpp
+                        test_volumetrics.cpp)
 
 target_link_libraries(test_Eng ${LIBS} Eng)
 

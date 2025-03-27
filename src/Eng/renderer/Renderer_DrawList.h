@@ -56,6 +56,7 @@ struct EnvironmentWeak {
 
     Ren::String env_map_name;
     atmosphere_params_t atmosphere;
+    volume_params_t fog;
 
     EnvironmentWeak() = default;
     explicit EnvironmentWeak(const Environment &env) {
@@ -80,6 +81,7 @@ struct EnvironmentWeak {
         sun_shadow_bias[1] = env.sun_shadow_bias[1];
         env_map_name = env.env_map_name;
         atmosphere = env.atmosphere;
+        fog = env.fog;
         generation = env.generation;
     }
 };

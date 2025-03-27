@@ -10,6 +10,7 @@ struct Params {
     ivec2 img_res;
     float density;
     float anisotropy;
+    vec4 color;
     int frame_index;
     float hist_weight;
     int _pad[2];

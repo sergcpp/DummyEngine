@@ -14,12 +14,16 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
 // void test_object_pool();
 void test_cmdline();
-void test_shading(Sys::ThreadPool &threads, bool full, std::string_view device_name, int validation_level,
-                  bool nohwrt, bool nosubgroup);
+void test_shading(Sys::ThreadPool &threads, bool full);
+void test_volumetrics(Sys::ThreadPool &threads, bool full);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
 std::atomic_bool g_log_contains_errors{false};
+
+std::string_view g_device_name;
+int g_validation_level = 0;
+bool g_nohwrt = false, g_nosubgroup = false;
 
 #ifdef _WIN32
 #ifndef NOMINMAX
@@ -76,6 +80,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    g_device_name = device_name;
+    g_validation_level = validation_level;
+    g_nohwrt = nohwrt;
+    g_nosubgroup = nosubgroup;
+
 #ifdef _WIN32
     // Stupid workaround that should not exist.
     // Make sure vulkan will be able to use discrete Intel GPU when dual Xe/Arc GPUs are available.
@@ -87,7 +96,9 @@ int main(int argc, char *argv[]) {
     // test_object_pool();
     test_cmdline();
     puts(" ---------------");
-    test_shading(mt_run_pool, full, device_name, validation_level, nohwrt, nosubgroup);
+    test_shading(mt_run_pool, full);
+    puts(" ---------------");
+    test_volumetrics(mt_run_pool, full);
 
     bool tests_success_final = g_tests_success;
     tests_success_final &= !g_log_contains_errors;

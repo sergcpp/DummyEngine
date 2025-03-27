@@ -426,8 +426,7 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
     using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
-    static const float FogDensity = 0.0015f;
-    static const float FogAnisotropy = 0.7f;
+    const int TileSize = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra) ? 8 : 12;
 
     FgResRef froxel_tex;
     { // Inject light
@@ -452,8 +451,8 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
         { //
             Ren::TexParams p;
-            p.w = (view_state_.act_res[0] + 11u) / 12u;
-            p.h = (view_state_.act_res[1] + 11u) / 12u;
+            p.w = (view_state_.act_res[0] + TileSize - 1) / TileSize;
+            p.h = (view_state_.act_res[1] + TileSize - 1) / TileSize;
             p.d = 144;
             p.format = Ren::eTexFormat::RGBA16F;
             p.sampling.filter = Ren::eTexFilter::Bilinear;
@@ -500,6 +499,10 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
+            if (p_list_->env.fog.density == 0.0f) {
+                return;
+            }
+
             Ren::SmallVector<Ren::Binding, 16> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
@@ -527,8 +530,9 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;
-            uniform_params.density = FogDensity;
-            uniform_params.anisotropy = FogAnisotropy;
+            uniform_params.color = Ren::Saturate(Ren::Vec4f{p_list_->env.fog.color});
+            uniform_params.density = std::max(p_list_->env.fog.density, 0.0f);
+            uniform_params.anisotropy = Ren::Clamp(p_list_->env.fog.anisotropy, -0.99f, 0.99f);
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
@@ -551,8 +555,8 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
         { //
             Ren::TexParams p;
-            p.w = (view_state_.act_res[0] + 11u) / 12u;
-            p.h = (view_state_.act_res[1] + 11u) / 12u;
+            p.w = (view_state_.act_res[0] + TileSize - 1) / TileSize;
+            p.h = (view_state_.act_res[1] + TileSize - 1) / TileSize;
             p.d = 144;
             p.format = Ren::eTexFormat::RGBA16F;
             p.sampling.filter = Ren::eTexFilter::Bilinear;
@@ -568,6 +572,10 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
+            if (p_list_->env.fog.density == 0.0f) {
+                return;
+            }
+
             const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                              {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxel_tex.ref},
                                              {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
@@ -581,8 +589,6 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;
-            uniform_params.density = FogDensity;
-            uniform_params.anisotropy = FogAnisotropy;
 
             DispatchCompute(*pi_fog_ray_march_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -612,6 +618,10 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
+            if (p_list_->env.fog.density == 0.0f) {
+                return;
+            }
+
             const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                              {Trg::TexSampled, Fog::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
                                              {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxel_tex.ref},
@@ -628,8 +638,6 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;
             uniform_params.img_res = img_res;
-            uniform_params.density = FogDensity;
-            uniform_params.anisotropy = FogAnisotropy;
 
             DispatchCompute(*pi_fog_apply_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());

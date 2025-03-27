@@ -111,6 +111,18 @@ static_assert(sizeof(mesh_t) == 24, "!");
 
 const int MAX_STACK_SIZE = 64;
 
+struct volume_params_t {
+    Ren::Vec3f color = Ren::Vec3f{ 0.8f, 0.8f, 0.8f };
+    float density = 0.0f;
+    float anisotropy = 0.0f;
+};
+inline bool operator==(const volume_params_t &lhs, const volume_params_t &rhs) {
+    return lhs.color == rhs.color && lhs.density == rhs.density && lhs.anisotropy == rhs.anisotropy;
+}
+inline bool operator!=(const volume_params_t &lhs, const volume_params_t &rhs) {
+    return !operator==(lhs, rhs);
+}
+
 struct Environment {
     Ren::Vec3f sun_dir, sun_col;
     float sun_angle = 0.0f;
@@ -127,6 +139,7 @@ struct Environment {
 
     Ren::String env_map_name;
     atmosphere_params_t atmosphere;
+    volume_params_t fog;
 };
 
 struct BBox {

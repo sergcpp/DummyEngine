@@ -86,7 +86,6 @@ void main() {
     const vec3 view_ray_ws = normalize(pos_ws - g_shrd_data.cam_pos_and_exp.xyz);
     const float view_dist = length(pos_ws - g_shrd_data.cam_pos_and_exp.xyz);
 
-    float density = mix(g_params.density, 0.0, saturate(abs(pos_ws.y) / 20.0));
     vec3 light_total = vec3(0.0);
 
     // Artificial lights
@@ -186,8 +185,11 @@ void main() {
     }
 #endif
 
-    light_total *= density;
+    light_total *= g_params.density;
+    light_total *= g_params.color.xyz;
     light_total = compress_hdr(light_total, g_shrd_data.cam_pos_and_exp.w);
+
+    float density = g_params.density;
 
     { // history accumulation
         const vec3 pos_uvw_no_offset = froxel_to_uvw(icoord, 0.5, g_params.froxel_res.xyz);
@@ -202,7 +204,7 @@ void main() {
             vec4 hist_fetch = textureLod(g_froxels_history_tex, hist_uvw, 0.0);
             hist_fetch.xyz *= g_params.hist_weight;
 
-            const float HistoryWeightMin = 0.75;
+            const float HistoryWeightMin = 0.87;
             const float HistoryWeightMax = 0.95;
 
             const float lum_curr = lum(light_total);
