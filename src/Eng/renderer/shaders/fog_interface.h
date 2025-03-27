@@ -24,9 +24,15 @@ const int FROXELS_TEX_SLOT = 4;
 const int DEPTH_TEX_SLOT = 5;
 const int RANDOM_SEQ_BUF_SLOT = 6;
 
-const int IRRADIANCE_TEX_SLOT = 7;
-const int DISTANCE_TEX_SLOT = 8;
-const int OFFSET_TEX_SLOT = 9;
+const int LIGHT_BUF_SLOT = 7;
+const int DECAL_BUF_SLOT = 8;
+const int CELLS_BUF_SLOT = 9;
+const int ITEMS_BUF_SLOT = 10;
+const int ENVMAP_TEX_SLOT = 11;
+
+const int IRRADIANCE_TEX_SLOT = 12;
+const int DISTANCE_TEX_SLOT = 13;
+const int OFFSET_TEX_SLOT = 14;
 
 const int OUT_FROXELS_IMG_SLOT = 0;
 const int INOUT_COLOR_IMG_SLOT = 1;

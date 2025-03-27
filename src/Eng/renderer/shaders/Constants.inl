@@ -80,7 +80,8 @@ const int LIGHT_TYPE_BITS = 0x7;
 const int LIGHT_PORTAL_BIT = (1 << 3);
 const int LIGHT_DIFFUSE_BIT = (1 << 4);
 const int LIGHT_SPECULAR_BIT = (1 << 5);
-const int LIGHT_DOUBLESIDED_BIT = (1 << 6);
+const int LIGHT_VOLUME_BIT = (1 << 6);
+const int LIGHT_DOUBLESIDED_BIT = (1 << 7);
 
 // Shadow resolution
 const int SHADOWMAP_RES_PC = 8192;

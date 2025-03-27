@@ -142,7 +142,8 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
         ls.spot_blend = float(js_spot_blend.val);
     }
 
-    ls.flags = Ren::Bitmask{eLightFlags::AffectDiffuse} | eLightFlags::AffectSpecular | eLightFlags::AffectRefraction;
+    ls.flags = Ren::Bitmask{eLightFlags::AffectDiffuse} | eLightFlags::AffectSpecular | eLightFlags::AffectRefraction |
+               eLightFlags::AffectVolume;
 
     if (js_in.Has("sky_portal")) {
         const Sys::JsLiteral &js_sky_portal = js_in.at("sky_portal").as_lit();
@@ -172,6 +173,12 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
     if (js_in.Has("affect_refraction")) {
         if (js_in.at("affect_refraction").as_lit().val == Sys::JsLiteralType::False) {
             ls.flags &= ~Ren::Bitmask{eLightFlags::AffectRefraction};
+        }
+    }
+
+    if (js_in.Has("affect_volume")) {
+        if (js_in.at("affect_volume").as_lit().val == Sys::JsLiteralType::False) {
+            ls.flags &= ~Ren::Bitmask{eLightFlags::AffectVolume};
         }
     }
 
@@ -279,6 +286,10 @@ void Eng::LightSource::Write(const LightSource &ls, Sys::JsObjectP &js_out) {
 
     if (!(ls.flags & eLightFlags::AffectRefraction)) {
         js_out.Insert("affect_refraction", Sys::JsLiteral{Sys::JsLiteralType::False});
+    }
+
+    if (!(ls.flags & eLightFlags::AffectVolume)) {
+        js_out.Insert("affect_volume", Sys::JsLiteral{Sys::JsLiteralType::False});
     }
 
     if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {

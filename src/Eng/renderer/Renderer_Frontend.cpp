@@ -579,6 +579,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         ls.type_and_flags |= (light.flags & eLightFlags::SkyPortal) ? LIGHT_PORTAL_BIT : 0;
                         ls.type_and_flags |= (light.flags & eLightFlags::AffectDiffuse) ? LIGHT_DIFFUSE_BIT : 0;
                         ls.type_and_flags |= (light.flags & eLightFlags::AffectSpecular) ? LIGHT_SPECULAR_BIT : 0;
+                        ls.type_and_flags |= (light.flags & eLightFlags::AffectVolume) ? LIGHT_VOLUME_BIT : 0;
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light._radius;
                         memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -763,6 +764,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     ls.type_and_flags |= (light.flags & eLightFlags::SkyPortal) ? LIGHT_PORTAL_BIT : 0;
                     ls.type_and_flags |= (light.flags & eLightFlags::AffectDiffuse) ? LIGHT_DIFFUSE_BIT : 0;
                     ls.type_and_flags |= (light.flags & eLightFlags::AffectSpecular) ? LIGHT_SPECULAR_BIT : 0;
+                    ls.type_and_flags |= (light.flags & eLightFlags::AffectVolume) ? LIGHT_VOLUME_BIT : 0;
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                     ls.radius = light._radius;
                     memcpy(ls.dir, &dir[0], 3 * sizeof(float));

@@ -438,6 +438,8 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             FgResRef random_seq;
             FgResRef shadow_depth_tex, shadow_color_tex;
             FgResRef froxels_hist_tex;
+            FgResRef cells_buf, items_buf, lights_buf, decals_buf;
+            FgResRef envmap_tex;
             FgResRef irradiance_tex, distance_tex, offset_tex;
             FgResRef output_tex;
         };
@@ -462,6 +464,12 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
 
         data->froxels_hist_tex = inject_light.AddHistoryTextureInput(froxel_tex, Stg::ComputeShader);
 
+        data->cells_buf = inject_light.AddStorageReadonlyInput(common_buffers.cells, Stg::ComputeShader);
+        data->items_buf = inject_light.AddStorageReadonlyInput(common_buffers.items, Stg::ComputeShader);
+        data->lights_buf = inject_light.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
+        data->decals_buf = inject_light.AddStorageReadonlyInput(common_buffers.decals, Stg::ComputeShader);
+        data->envmap_tex = inject_light.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
+
         if (settings.gi_quality != eGIQuality::Off) {
             data->irradiance_tex = inject_light.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
             data->distance_tex = inject_light.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
@@ -476,6 +484,12 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             FgAllocTex &shad_color_tex = builder.GetReadTexture(data->shadow_color_tex);
 
             FgAllocTex &froxels_hist_tex = builder.GetReadTexture(data->froxels_hist_tex);
+
+            FgAllocBuf &cells_buf = builder.GetReadBuffer(data->cells_buf);
+            FgAllocBuf &items_buf = builder.GetReadBuffer(data->items_buf);
+            FgAllocBuf &lights_buf = builder.GetReadBuffer(data->lights_buf);
+            FgAllocBuf &decals_buf = builder.GetReadBuffer(data->decals_buf);
+            FgAllocTex &envmap_tex = builder.GetReadTexture(data->envmap_tex);
 
             FgAllocTex *irr_tex = nullptr, *dist_tex = nullptr, *off_tex = nullptr;
             if (data->irradiance_tex) {
@@ -492,6 +506,11 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
                 {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
                 {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
                 {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxels_hist_tex.ref},
+                {Trg::UTBuf, Fog::CELLS_BUF_SLOT, *cells_buf.ref},
+                {Trg::UTBuf, Fog::ITEMS_BUF_SLOT, *items_buf.ref},
+                {Trg::UTBuf, Fog::LIGHT_BUF_SLOT, *lights_buf.ref},
+                {Trg::UTBuf, Fog::DECAL_BUF_SLOT, *decals_buf.ref},
+                {Trg::TexSampled, Fog::ENVMAP_TEX_SLOT, *envmap_tex.ref},
                 {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
             if (irr_tex) {
                 bindings.emplace_back(Ren::eBindTarget::TexSampled, Fog::IRRADIANCE_TEX_SLOT, *irr_tex->ref);

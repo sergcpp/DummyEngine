@@ -159,8 +159,7 @@ void main() {
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
-    const int ix = int(gl_GlobalInvocationID.x), iy = int(gl_GlobalInvocationID.y);
-    const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
+    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.res_and_fres.xy);
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
     const vec3 pos_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, pos_cs);
@@ -355,7 +354,7 @@ void main() {
         }
     }
 
-    const vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
+    const vec2 px_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.zw;
     const vec4 gi_fetch = textureLod(g_gi_tex, px_uvs, 0.0);
     vec3 gi_contribution = lobe_weights.diffuse_mul * gi_fetch.xyz / g_shrd_data.cam_pos_and_exp.w;
     gi_contribution *= base_color * ltc.diff_t2.x;

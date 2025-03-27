@@ -9,7 +9,7 @@
 
 namespace Eng {
 enum class eLightType : uint8_t { Sphere, Rect, Disk, Line, _Count };
-enum class eLightFlags : uint8_t { SkyPortal, CastShadow, AffectDiffuse, AffectSpecular, AffectRefraction };
+enum class eLightFlags : uint8_t { SkyPortal, CastShadow, AffectDiffuse, AffectSpecular, AffectRefraction, AffectVolume };
 
 struct LightSource {
     eLightType type;
