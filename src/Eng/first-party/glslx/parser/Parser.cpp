@@ -3163,6 +3163,41 @@ int is_matrix_type(const ast_type *_type) {
     return is_matrix_type(static_cast<const ast_builtin *>(_type)->type);
 }
 
+const ast_type *to_matrix_subscript_type(const ast_type *_type) {
+    if (!_type->builtin) {
+        return nullptr;
+    }
+    const eKeyword type = static_cast<const ast_builtin *>(_type)->type;
+    switch (type) {
+    case eKeyword::K_mat2:
+    case eKeyword::K_mat3x2:
+    case eKeyword::K_mat4x2:
+        return &g_vec2_type;
+    case eKeyword::K_mat2x3:
+    case eKeyword::K_mat3:
+    case eKeyword::K_mat4x3:
+        return &g_vec3_type;
+    case eKeyword::K_mat2x4:
+    case eKeyword::K_mat4:
+    case eKeyword::K_mat3x4:
+        return &g_vec4_type;
+    case eKeyword::K_dmat2:
+    case eKeyword::K_dmat3x2:
+    case eKeyword::K_dmat4x2:
+        return &g_dvec2_type;
+    case eKeyword::K_dmat2x3:
+    case eKeyword::K_dmat3:
+    case eKeyword::K_dmat4x3:
+        return &g_dvec3_type;
+    case eKeyword::K_dmat2x4:
+    case eKeyword::K_dmat3x4:
+    case eKeyword::K_dmat4:
+        return &g_dvec4_type;
+    default:
+        return nullptr;
+    }
+}
+
 // TODO: make types atoms
 bool is_same_type(const ast_type *_type1, const ast_type *_type2) {
     if (_type1->builtin != _type2->builtin) {
@@ -3216,6 +3251,9 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
         }
         if (operand_type && get_vector_size(operand_type) > 1) {
             return to_scalar_type(operand_type);
+        }
+        if (operand_type && is_matrix_type(operand_type)) {
+            return to_matrix_subscript_type(operand_type);
         }
         return operand_type;
     }
