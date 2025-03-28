@@ -18,7 +18,14 @@
             22.747352511816967
         ],
         "env_map": "physical_sky",
-        "clouds_density": 0.25
+        "clouds_density": 0.25,
+        "fog" : {
+            "color" : [ 0.8, 0.8, 0.8 ],
+            "density" : 0.0015,
+            "anisotropy" : 0.7,
+            "bbox_min" : [ -100.0, 0.0, -100.0 ],
+            "bbox_max" : [ 100.0, 30.0, 100.0 ]
+        }
     },
     "camera": {
         "view_origin": [
