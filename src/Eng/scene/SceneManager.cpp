@@ -498,6 +498,18 @@ void Eng::SceneManager::LoadScene(const Sys::JsObjectP &js_scene, const Ren::Bit
             if (js_fog.Has("anisotropy")) {
                 scene_data_.env.fog.anisotropy = float(js_fog.at("anisotropy").as_num().val);
             }
+            if (js_fog.Has("bbox_min")) {
+                const Sys::JsArrayP &js_bbox_min = js_fog.at("bbox_min").as_arr();
+                scene_data_.env.fog.bbox_min[0] = float(js_bbox_min[0].as_num().val);
+                scene_data_.env.fog.bbox_min[1] = float(js_bbox_min[1].as_num().val);
+                scene_data_.env.fog.bbox_min[2] = float(js_bbox_min[2].as_num().val);
+            }
+            if (js_fog.Has("bbox_max")) {
+                const Sys::JsArrayP &js_bbox_max = js_fog.at("bbox_max").as_arr();
+                scene_data_.env.fog.bbox_max[0] = float(js_bbox_max[0].as_num().val);
+                scene_data_.env.fog.bbox_max[1] = float(js_bbox_max[1].as_num().val);
+                scene_data_.env.fog.bbox_max[2] = float(js_bbox_max[2].as_num().val);
+            }
         }
     } else {
         scene_data_.env = {};
@@ -592,6 +604,22 @@ void Eng::SceneManager::SaveScene(Sys::JsObjectP &js_scene) {
 
             js_fog.Insert("density", Sys::JsNumber{scene_data_.env.fog.density});
             js_fog.Insert("anisotropy", Sys::JsNumber{scene_data_.env.fog.anisotropy});
+
+            if (scene_data_.env.fog.bbox_min != volume_params_t{}.bbox_min) {
+                Sys::JsArrayP js_bbox_min(alloc);
+                js_bbox_min.Push(Sys::JsNumber(scene_data_.env.fog.bbox_min[0]));
+                js_bbox_min.Push(Sys::JsNumber(scene_data_.env.fog.bbox_min[1]));
+                js_bbox_min.Push(Sys::JsNumber(scene_data_.env.fog.bbox_min[2]));
+                js_fog.Insert("bbox_min", js_bbox_min);
+            }
+
+            if (scene_data_.env.fog.bbox_max != volume_params_t{}.bbox_max) {
+                Sys::JsArrayP js_bbox_max(alloc);
+                js_bbox_max.Push(Sys::JsNumber(scene_data_.env.fog.bbox_max[0]));
+                js_bbox_max.Push(Sys::JsNumber(scene_data_.env.fog.bbox_max[1]));
+                js_bbox_max.Push(Sys::JsNumber(scene_data_.env.fog.bbox_max[2]));
+                js_fog.Insert("bbox_max", js_bbox_max);
+            }
 
             js_env.Insert("fog", js_fog);
         }

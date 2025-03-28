@@ -1,9 +1,9 @@
 #version 430 core
 
 #include "_cs_common.glsl"
-#include "fog_common.glsl"
+#include "vol_common.glsl"
 
-#include "fog_interface.h"
+#include "vol_interface.h"
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

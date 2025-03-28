@@ -430,6 +430,12 @@ float copysign(const float val, const float sign) {
     return sign < 0.0 ? -abs(val) : abs(val);
 }
 
+bool bbox_test(const vec3 p, const vec3 bbox_min, const vec3 bbox_max) {
+    return p.x >= bbox_min.x && p.x <= bbox_max.x &&
+           p.y >= bbox_min.y && p.y <= bbox_max.y &&
+           p.z >= bbox_min.z && p.z <= bbox_max.z;
+}
+
 bool bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
     float low = inv_d.x * (bbox_min[0] - o.x);
     float high = inv_d.x * (bbox_max[0] - o.x);

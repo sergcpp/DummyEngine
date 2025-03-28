@@ -1183,7 +1183,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
 
         if (list.render_settings.vol_quality != eVolQuality::Off) {
-            AddFogPasses(common_buffers, frame_textures);
+            AddVolumetricPasses(common_buffers, frame_textures);
         }
 
         frame_textures.exposure = AddAutoexposurePasses(frame_textures.color);

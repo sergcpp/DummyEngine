@@ -7,9 +7,9 @@
 #include "Renderer_Names.h"
 
 #include "shaders/blit_fxaa_interface.h"
-#include "shaders/fog_interface.h"
 #include "shaders/skydome_interface.h"
 #include "shaders/sun_brightness_interface.h"
+#include "shaders/vol_interface.h"
 
 void Eng::Renderer::InitSkyResources() {
     if (p_list_->env.env_map_name != "physical_sky") {
@@ -422,15 +422,15 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
     }
 }
 
-void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
     using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
     const int TileSize = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra) ? 8 : 12;
 
     FgResRef froxel_tex;
-    { // Inject light
-        auto &inject_light = fg_builder_.AddNode("FOG INJECT LIGHT");
+    { // Scatter
+        auto &scatter = fg_builder_.AddNode("VOL SCATTER");
 
         struct PassData {
             FgResRef shared_data;
@@ -443,11 +443,11 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             FgResRef output_tex;
         };
 
-        auto *data = inject_light.AllocNodeData<PassData>();
-        data->shared_data = inject_light.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->random_seq = inject_light.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
-        data->shadow_depth_tex = inject_light.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
-        data->shadow_color_tex = inject_light.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
+        auto *data = scatter.AllocNodeData<PassData>();
+        data->shared_data = scatter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->random_seq = scatter.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
+        data->shadow_depth_tex = scatter.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
+        data->shadow_color_tex = scatter.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
         { //
             Ren::TexParams p;
@@ -458,24 +458,24 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             p.sampling.filter = Ren::eTexFilter::Bilinear;
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            froxel_tex = data->output_tex = inject_light.AddStorageImageOutput("Fog Scattering", p, Stg::ComputeShader);
+            froxel_tex = data->output_tex = scatter.AddStorageImageOutput("Vol Scattering", p, Stg::ComputeShader);
         }
 
-        data->froxels_hist_tex = inject_light.AddHistoryTextureInput(froxel_tex, Stg::ComputeShader);
+        data->froxels_hist_tex = scatter.AddHistoryTextureInput(froxel_tex, Stg::ComputeShader);
 
-        data->cells_buf = inject_light.AddStorageReadonlyInput(common_buffers.cells, Stg::ComputeShader);
-        data->items_buf = inject_light.AddStorageReadonlyInput(common_buffers.items, Stg::ComputeShader);
-        data->lights_buf = inject_light.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
-        data->decals_buf = inject_light.AddStorageReadonlyInput(common_buffers.decals, Stg::ComputeShader);
-        data->envmap_tex = inject_light.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
+        data->cells_buf = scatter.AddStorageReadonlyInput(common_buffers.cells, Stg::ComputeShader);
+        data->items_buf = scatter.AddStorageReadonlyInput(common_buffers.items, Stg::ComputeShader);
+        data->lights_buf = scatter.AddStorageReadonlyInput(common_buffers.lights, Stg::ComputeShader);
+        data->decals_buf = scatter.AddStorageReadonlyInput(common_buffers.decals, Stg::ComputeShader);
+        data->envmap_tex = scatter.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
 
         if (settings.gi_quality != eGIQuality::Off) {
-            data->irradiance_tex = inject_light.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
-            data->distance_tex = inject_light.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
-            data->offset_tex = inject_light.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
+            data->irradiance_tex = scatter.AddTextureInput(frame_textures.gi_cache_irradiance, Stg::ComputeShader);
+            data->distance_tex = scatter.AddTextureInput(frame_textures.gi_cache_distance, Stg::ComputeShader);
+            data->offset_tex = scatter.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
         }
 
-        inject_light.set_execute_cb([data, this](FgBuilder &builder) {
+        scatter.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocBuf &random_seq_buf = builder.GetReadBuffer(data->random_seq);
 
@@ -533,15 +533,17 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             uniform_params.color = Ren::Saturate(Ren::Vec4f{p_list_->env.fog.color});
             uniform_params.density = std::max(p_list_->env.fog.density, 0.0f);
             uniform_params.anisotropy = Ren::Clamp(p_list_->env.fog.anisotropy, -0.99f, 0.99f);
+            uniform_params.bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
+            uniform_params.bbox_max = Ren::Vec4f{p_list_->env.fog.bbox_max};
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
-            DispatchCompute(*pi_fog_inject_light_[irr_tex != nullptr], grp_count, bindings, &uniform_params,
+            DispatchCompute(*pi_vol_scatter_[irr_tex != nullptr], grp_count, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
     { // Ray march
-        auto &ray_march = fg_builder_.AddNode("FOG RAY MARCH");
+        auto &ray_march = fg_builder_.AddNode("VOL RAY MARCH");
 
         struct PassData {
             FgResRef shared_data;
@@ -563,7 +565,7 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             froxel_tex = data->output_tex =
-                ray_march.AddStorageImageOutput("Fog Scattering Final", p, Stg::ComputeShader);
+                ray_march.AddStorageImageOutput("Vol Scattering Final", p, Stg::ComputeShader);
         }
 
         ray_march.set_execute_cb([data, this](FgBuilder &builder) {
@@ -590,12 +592,12 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;
 
-            DispatchCompute(*pi_fog_ray_march_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_vol_ray_march_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
     { // Apply
-        auto &apply = fg_builder_.AddNode("FOG APPLY");
+        auto &apply = fg_builder_.AddNode("VOL APPLY");
 
         struct PassData {
             FgResRef shared_data;
@@ -639,7 +641,7 @@ void Eng::Renderer::AddFogPasses(const CommonBuffers &common_buffers, FrameTextu
             uniform_params.froxel_res = froxel_res;
             uniform_params.img_res = img_res;
 
-            DispatchCompute(*pi_fog_apply_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_vol_apply_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }

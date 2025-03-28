@@ -2,9 +2,9 @@
 
 #include "_cs_common.glsl"
 #include "_fs_common.glsl"
-#include "fog_common.glsl"
+#include "vol_common.glsl"
 
-#include "fog_interface.h"
+#include "vol_interface.h"
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -24,9 +24,9 @@ void main() {
 
     vec4 radiance_transmittance = vec4(0.0, 0.0, 0.0, 1.0);
 
-    float slice_dist_beg = fog_slice_distance(0, 0.0, g_params.froxel_res.z);
+    float slice_dist_beg = vol_slice_distance(0, 0.0, g_params.froxel_res.z);
     for (icoord.z = 0; icoord.z < g_params.froxel_res.z; ++icoord.z) {
-        const float slice_dist_end = fog_slice_distance(icoord.z + 1, 0.0, g_params.froxel_res.z);
+        const float slice_dist_end = vol_slice_distance(icoord.z + 1, 0.0, g_params.froxel_res.z);
 
         const vec4 scattering_density = texelFetch(g_froxels_tex, icoord, 0);
         if (scattering_density.w > 0.0) {

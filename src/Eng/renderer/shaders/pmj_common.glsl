@@ -6,7 +6,7 @@ const int RAND_DIMS_COUNT = 8;
 
 const int RAND_DIM_LIGHT_PICK = 0;
 const int RAND_DIM_LIGHT_UV = 1;
-const int RAND_DIM_FOG_OFFSET = 2;
+const int RAND_DIM_VOL_OFFSET = 2;
 
 uint hash_combine(uint seed, uint v) { return seed ^ (v + (seed << 6) + (seed >> 2)); }
 

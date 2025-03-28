@@ -8,12 +8,11 @@
 
 #include "_cs_common.glsl"
 #include "_fs_common.glsl"
-#include "fog_common.glsl"
-#include "pmj_common.glsl"
-#include "principled_common.glsl"
 #include "gi_cache_common.glsl"
+#include "pmj_common.glsl"
+#include "vol_common.glsl"
 
-#include "fog_interface.h"
+#include "vol_interface.h"
 
 #pragma multi_compile _ GI_CACHE
 #pragma multi_compile _ NO_SUBGROUP
@@ -77,7 +76,7 @@ void main() {
     }
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_FOG_OFFSET, px_hash, int(g_params.frame_index)).y;
+    const float offset_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_VOL_OFFSET, px_hash, int(g_params.frame_index)).y;
 
     const vec3 pos_uvw = froxel_to_uvw(icoord, offset_rand, g_params.froxel_res.xyz);
     const vec4 pos_cs = vec4(2.0 * pos_uvw.xy - 1.0, pos_uvw.z, 1.0);
@@ -185,11 +184,14 @@ void main() {
     }
 #endif
 
-    light_total *= g_params.density;
+    float density = g_params.density;
+    if (!bbox_test(pos_ws, g_params.bbox_min.xyz, g_params.bbox_max.xyz)) {
+        density = 0.0;
+    }
+
+    light_total *= density;
     light_total *= g_params.color.xyz;
     light_total = compress_hdr(light_total, g_shrd_data.cam_pos_and_exp.w);
-
-    float density = g_params.density;
 
     { // history accumulation
         const vec3 pos_uvw_no_offset = froxel_to_uvw(icoord, 0.5, g_params.froxel_res.xyz);

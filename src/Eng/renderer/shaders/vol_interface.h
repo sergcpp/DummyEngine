@@ -11,6 +11,8 @@ struct Params {
     float density;
     float anisotropy;
     vec4 color;
+    vec4 bbox_min;
+    vec4 bbox_max;
     int frame_index;
     float hist_weight;
     int _pad[2];
