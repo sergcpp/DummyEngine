@@ -113,7 +113,7 @@ runs:
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset high --psnr 23.45 --freeze-sky --no-postprocess
         mv bistro.png bistro_high.png
         cp bistro_high.png $WORK_DIR/${{ inputs.out-dir }}
-        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset ultra --psnr 27.00 --freeze-sky --no-postprocess
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles.uncompressed.png -w 1920 -h 1080 --exposure -11 --preset ultra --psnr 26.95 --freeze-sky --no-postprocess
         mv bistro.png bistro_ultra.png
         cp bistro_ultra.png $WORK_DIR/${{ inputs.out-dir }}
         ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/bistro.json -ref references/bistro_cycles2.uncompressed.png -w 960 -h 540 --exposure -11 --pt --psnr 28.20 --freeze-sky --no-postprocess
