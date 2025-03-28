@@ -91,32 +91,24 @@ void main() {
             visibility -= occlusion;
         }
 #endif
-
-        const vec2 cascade_offsets[4] = vec2[4](
-            vec2(0.0, 0.0),
-            vec2(0.25, 0.0),
-            vec2(0.0, 0.5),
-            vec2(0.25, 0.5)
-        );
-
         const vec2 shadow_offsets = get_shadow_offsets(dot_N_L);
         vec3 pos_ws_biased = pos_ws;
         pos_ws_biased += 0.001 * shadow_offsets.x * normal_ws;
         pos_ws_biased += 0.003 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 
-        vec4 g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2;
+        vec4 vtx_sh_uvs0, vtx_sh_uvs1, vtx_sh_uvs2;
         [[unroll]] for (int i = 0; i < 4; i++) {
             vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(pos_ws_biased, 1.0)).xyz;
             shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
             shadow_uvs.xy *= vec2(0.25, 0.5);
-            shadow_uvs.xy += cascade_offsets[i];
+            shadow_uvs.xy += SunCascadeOffsets[i];
     #if defined(VULKAN)
             shadow_uvs.y = 1.0 - shadow_uvs.y;
     #endif // VULKAN
 
-            g_vtx_sh_uvs0[i] = shadow_uvs[0];
-            g_vtx_sh_uvs1[i] = shadow_uvs[1];
-            g_vtx_sh_uvs2[i] = shadow_uvs[2];
+            vtx_sh_uvs0[i] = shadow_uvs[0];
+            vtx_sh_uvs1[i] = shadow_uvs[1];
+            vtx_sh_uvs2[i] = shadow_uvs[2];
         }
 
         float pix_scale = 3.0 / (g_params.pixel_spread_angle * lin_depth);
@@ -125,11 +117,11 @@ void main() {
 
 #ifndef RT_SHADOW
         final_color = visibility * GetSunVisibilityExt(lin_depth, g_shadow_depth_tex, g_shadow_depth_val_tex, g_shadow_color_tex,
-                                                       transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)), g_params.softness_factor, hash);
+                                                       transpose(mat3x4(vtx_sh_uvs0, vtx_sh_uvs1, vtx_sh_uvs2)), g_params.softness_factor, hash);
 #else
         final_color = textureLod(g_rt_shadow_tex, in_uv, 0.0).xxx;
         final_color *= GetSunVisColor(lin_depth, g_shadow_color_tex,
-                                      transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)), g_params.softness_factor, hash);
+                                      transpose(mat3x4(vtx_sh_uvs0, vtx_sh_uvs1, vtx_sh_uvs2)), g_params.softness_factor, hash);
 #endif
     }
 

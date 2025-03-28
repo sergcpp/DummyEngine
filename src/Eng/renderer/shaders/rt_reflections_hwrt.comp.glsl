@@ -20,18 +20,16 @@
 #include "rt_reflections_interface.h"
 
 #pragma multi_compile _ LAYERED STOCH_LIGHTS
-#pragma multi_compile _ TWO_BOUNCES FOUR_BOUNCES
+#pragma multi_compile _ FOUR_BOUNCES
 #pragma multi_compile _ GI_CACHE
 #pragma multi_compile _ NO_SUBGROUP
 
-#if defined(LAYERED) && (defined(TWO_BOUNCES) || defined(FOUR_BOUNCES))
+#if defined(LAYERED) && defined(FOUR_BOUNCES)
     #pragma dont_compile
 #endif
 
 #if defined(FOUR_BOUNCES)
     #define NUM_BOUNCES 4
-#elif defined(TWO_BOUNCES)
-    #define NUM_BOUNCES 2
 #else
     #define NUM_BOUNCES 1
 #endif
@@ -540,11 +538,10 @@ void main() {
                 vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
                 shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
                 shadow_uvs.xy *= vec2(0.25, 0.5);
-                shadow_uvs.xy += vec2(0.25, 0.5);
+                shadow_uvs.xy += SunCascadeOffsets[3];
         #if defined(VULKAN)
                 shadow_uvs.y = 1.0 - shadow_uvs.y;
         #endif // VULKAN
-
                 const vec3 sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
                 if (hsum(sun_visibility) > 0.0) {
                     light_total += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,

@@ -15,6 +15,8 @@
 #include "shaders/ssr_write_indirect_args_interface.h"
 #include "shaders/tile_clear_interface.h"
 
+#include "executors/ExRTReflections.h"
+
 #include "Renderer_Names.h"
 
 void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool debug_denoise,
@@ -351,8 +353,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             auto &rt_refl = fg_builder_.AddNode("RT REFLECTIONS");
 
             auto *data = rt_refl.AllocNodeData<ExRTReflections::Args>();
-            data->four_bounces = (settings.reflections_quality == eReflectionsQuality::Raytraced_High);
-
+            
             const auto stage = Stg::ComputeShader;
 
             data->geo_data = rt_refl.AddStorageReadonlyInput(rt_geo_instances_res, stage);
@@ -410,8 +411,10 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             refl_tex = data->out_refl_tex[0] = rt_refl.AddStorageImageOutput(refl_tex, stage);
 
-            ex_rt_reflections_.Setup(fg_builder_, &view_state_, &bindless, data);
-            rt_refl.set_executor(&ex_rt_reflections_);
+            data->layered = false;
+            data->four_bounces = (settings.reflections_quality == eReflectionsQuality::Raytraced_High);
+
+            rt_refl.make_executor<ExRTReflections>(&view_state_, &bindless, data);
         }
     }
 

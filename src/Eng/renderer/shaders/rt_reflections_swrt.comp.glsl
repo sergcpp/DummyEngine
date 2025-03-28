@@ -24,18 +24,16 @@
 #include "rt_reflections_interface.h"
 
 #pragma multi_compile _ LAYERED STOCH_LIGHTS
-#pragma multi_compile _ TWO_BOUNCES FOUR_BOUNCES
+#pragma multi_compile _ FOUR_BOUNCES
 #pragma multi_compile _ GI_CACHE
 #pragma multi_compile _ NO_SUBGROUP
 
-#if defined(LAYERED) && (defined(TWO_BOUNCES) || defined(FOUR_BOUNCES))
+#if defined(LAYERED) && defined(FOUR_BOUNCES)
     #pragma dont_compile
 #endif
 
 #if defined(FOUR_BOUNCES)
     #define NUM_BOUNCES 4
-#elif defined(TWO_BOUNCES)
-    #define NUM_BOUNCES 2
 #else
     #define NUM_BOUNCES 1
 #endif

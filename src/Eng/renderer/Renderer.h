@@ -18,7 +18,6 @@ extern "C" {
 #include "executors/ExPostprocess.h"
 #include "executors/ExRTGI.h"
 #include "executors/ExRTGICache.h"
-#include "executors/ExRTReflections.h"
 #include "executors/ExRTShadows.h"
 #include "executors/ExReadExposure.h"
 #include "executors/ExSampleLights.h"
@@ -193,10 +192,8 @@ class Renderer {
     ExTransparent ex_transparent_ = ExTransparent{prim_draw_};
     ExEmissive ex_emissive_;
 
-    ExRTReflections ex_oit_rt_reflections_ = ExRTReflections{true};
     ExRTGI ex_rt_gi_;
     ExRTGICache ex_rt_gi_cache_;
-    ExRTReflections ex_rt_reflections_ = ExRTReflections{false};
     ExRTShadows ex_rt_shadows_;
     ExSampleLights ex_sample_lights_;
     ExReadExposure ex_read_exposure_;

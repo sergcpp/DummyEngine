@@ -12,7 +12,6 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 #include "../scene/SceneManager.h"
 #include "test_common.h"
 
-// void test_object_pool();
 void test_cmdline();
 void test_shading(Sys::ThreadPool &threads, bool full);
 void test_volumetrics(Sys::ThreadPool &threads, bool full);
@@ -93,7 +92,6 @@ int main(int argc, char *argv[]) {
 
     Sys::ThreadPool mt_run_pool(threads_count);
 
-    // test_object_pool();
     test_cmdline();
     puts(" ---------------");
     test_shading(mt_run_pool, full);

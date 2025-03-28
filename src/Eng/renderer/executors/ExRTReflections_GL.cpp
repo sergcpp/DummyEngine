@@ -99,31 +99,16 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     if (oit_depth_buf) {
         bindings.emplace_back(Ren::eBindTarget::UTBuf, RTReflections::OIT_DEPTH_BUF_SLOT, *oit_depth_buf->ref);
     }
-    for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
-        if (!args_->out_refl_tex[i]) {
-            break;
-        }
+    for (int i = 0; i < OIT_REFLECTION_LAYERS && args_->out_refl_tex[i]; ++i) {
         FgAllocTex &out_refl_tex = builder.GetWriteTexture(args_->out_refl_tex[i]);
         bindings.emplace_back(Ren::eBindTarget::ImageRW, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
     const Ren::Pipeline *pi = nullptr;
-    if (args_->four_bounces) {
-        if (stoch_lights_buf) {
-            pi = pi_rt_reflections_4bounce_[2].get();
-        } else if (irr_tex) {
-            pi = pi_rt_reflections_4bounce_[1].get();
-        } else {
-            pi = pi_rt_reflections_4bounce_[0].get();
-        }
+    if (stoch_lights_buf) {
+        pi = pi_rt_reflections_[1].get();
     } else {
-        if (stoch_lights_buf) {
-            pi = pi_rt_reflections_[2].get();
-        } else if (irr_tex) {
-            pi = pi_rt_reflections_[1].get();
-        } else {
-            pi = pi_rt_reflections_[0].get();
-        }
+        pi = pi_rt_reflections_[0].get();
     }
 
     RTReflections::Params uniform_params;

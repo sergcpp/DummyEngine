@@ -6,6 +6,7 @@
 #include "executors/ExOITBlendLayer.h"
 #include "executors/ExOITDepthPeel.h"
 #include "executors/ExOITScheduleRays.h"
+#include "executors/ExRTReflections.h"
 
 #include "shaders/ssr_trace_hq_interface.h"
 #include "shaders/ssr_write_indir_rt_dispatch_interface.h"
@@ -413,8 +414,10 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 oit_specular[i] = data->out_refl_tex[i] = rt_refl.AddStorageImageOutput(oit_specular[i], stage);
             }
 
-            ex_oit_rt_reflections_.Setup(fg_builder_, &view_state_, &bindless, data);
-            rt_refl.set_executor(&ex_oit_rt_reflections_);
+            data->layered = true;
+            data->four_bounces = false;
+
+            rt_refl.make_executor<ExRTReflections>(&view_state_, &bindless, data);
         }
     }
 

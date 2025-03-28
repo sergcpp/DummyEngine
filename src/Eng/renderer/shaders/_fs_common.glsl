@@ -259,6 +259,13 @@ vec3 SampleShadowPCF5x5(sampler2DShadow shadow_depth_tex, sampler2D shadow_color
     return sum * sum;
 }
 
+const vec2 SunCascadeOffsets[4] = vec2[4](
+    vec2(0.0, 0.0),
+    vec2(0.25, 0.0),
+    vec2(0.0, 0.5),
+    vec2(0.25, 0.5)
+);
+
 float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in vec3 aVertexShUVs[4]) {
     float visibility = 0.0;
 

@@ -12,8 +12,6 @@ namespace Eng {
 class PrimDraw;
 class ExRTReflections final : public FgExecutor {
   public:
-    explicit ExRTReflections(const bool layered) : layered_(layered) {}
-
     struct Args {
         FgResRef noise_tex;
         FgResRef geo_data;
@@ -55,26 +53,22 @@ class ExRTReflections final : public FgExecutor {
             FgResRef textures_buf;
         } swrt;
 
+        bool layered = false;
         bool four_bounces = false;
 
         FgResRef out_refl_tex[OIT_REFLECTION_LAYERS];
     };
 
-    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
-               const Args *args) {
-        view_state_ = view_state;
-        bindless_tex_ = bindless_tex;
-        args_ = args;
-    }
+    explicit ExRTReflections(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)
+        : view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
 
     void Execute(FgBuilder &builder) override;
 
   private:
-    bool layered_ = false;
     bool initialized_ = false;
 
     // lazily initialized data
-    Ren::PipelineRef pi_rt_reflections_[3], pi_rt_reflections_4bounce_[3];
+    Ren::PipelineRef pi_rt_reflections_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const view_state_t *view_state_ = nullptr;
