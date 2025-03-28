@@ -427,6 +427,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
     using Trg = Ren::eBindTarget;
 
     const int TileSize = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra) ? 8 : 12;
+    const bool AllCascades = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra);
 
     FgResRef froxel_tex;
     { // Scatter
@@ -475,7 +476,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             data->offset_tex = scatter.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
         }
 
-        scatter.set_execute_cb([data, this](FgBuilder &builder) {
+        scatter.set_execute_cb([data, this, AllCascades](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocBuf &random_seq_buf = builder.GetReadBuffer(data->random_seq);
 
@@ -538,7 +539,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
-            DispatchCompute(*pi_vol_scatter_[irr_tex != nullptr], grp_count, bindings, &uniform_params,
+            DispatchCompute(*pi_vol_scatter_[AllCascades][irr_tex != nullptr], grp_count, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }

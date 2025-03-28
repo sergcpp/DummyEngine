@@ -130,10 +130,16 @@ void Eng::Renderer::InitPipelines() {
 
     // Volumetrics
     pi_sky_upsample_ = sh_.LoadPipeline("internal/skydome_upsample.comp.glsl");
-    pi_vol_scatter_[0] = sh_.LoadPipeline(subgroup_select("internal/vol_scatter.comp.glsl", //
-                                                          "internal/vol_scatter@NO_SUBGROUP.comp.glsl"));
-    pi_vol_scatter_[1] = sh_.LoadPipeline(subgroup_select("internal/vol_scatter@GI_CACHE.comp.glsl", //
-                                                          "internal/vol_scatter@GI_CACHE;NO_SUBGROUP.comp.glsl"));
+    pi_vol_scatter_[0][0] = sh_.LoadPipeline(subgroup_select("internal/vol_scatter.comp.glsl", //
+                                                             "internal/vol_scatter@NO_SUBGROUP.comp.glsl"));
+    pi_vol_scatter_[0][1] = sh_.LoadPipeline(subgroup_select("internal/vol_scatter@GI_CACHE.comp.glsl", //
+                                                             "internal/vol_scatter@GI_CACHE;NO_SUBGROUP.comp.glsl"));
+    pi_vol_scatter_[1][0] =
+        sh_.LoadPipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES.comp.glsl", //
+                                         "internal/vol_scatter@ALL_CASCADES;NO_SUBGROUP.comp.glsl"));
+    pi_vol_scatter_[1][1] =
+        sh_.LoadPipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES;GI_CACHE.comp.glsl", //
+                                         "internal/vol_scatter@ALL_CASCADES;GI_CACHE;NO_SUBGROUP.comp.glsl"));
     pi_vol_ray_march_ = sh_.LoadPipeline("internal/vol_ray_march.comp.glsl");
     pi_vol_apply_ = sh_.LoadPipeline("internal/vol_apply.comp.glsl");
 

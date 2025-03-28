@@ -14,6 +14,7 @@
 
 #include "vol_interface.h"
 
+#pragma multi_compile _ ALL_CASCADES
 #pragma multi_compile _ GI_CACHE
 #pragma multi_compile _ NO_SUBGROUP
 
@@ -153,21 +154,36 @@ void main() {
 
     // Sun light contribution
     if (dot(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_col_point_sh.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
+        vec3 sun_visibility = vec3(1.0);
+#ifdef ALL_CASCADES
+        mat4x3 sh_uvs;
+        [[unroll]] for (int i = 0; i < 4; i++) {
+            vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(pos_ws, 1.0)).xyz;
+            shadow_uvs.xy = clamp(0.5 * shadow_uvs.xy + 0.5, vec2(0.0), vec2(1.0));
+            shadow_uvs.xy *= vec2(0.25, 0.5);
+            shadow_uvs.xy += SunCascadeOffsets[i];
+    #if defined(VULKAN)
+            shadow_uvs.y = 1.0 - shadow_uvs.y;
+    #endif // VULKAN
+
+            //vec3 temp = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
+            sh_uvs[i] = shadow_uvs;
+        }
+        sun_visibility = GetSunVisibilityPCF5x5(lin_depth, g_shadow_depth_tex, g_shadow_color_tex, sh_uvs);
+#else // ALL_CASCADES
         vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * vec4(pos_ws, 1.0)).xyz;
         shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-
-        vec3 sun_visibility = vec3(1.0);
-
         // NOTE: We have to check the bounds manually as we access outside of scene bounds
         if (all(lessThan(shadow_uvs.xy, vec2(0.999))) && all(greaterThan(shadow_uvs.xy, vec2(0.001)))) {
             shadow_uvs.xy *= vec2(0.25, 0.5);
-            shadow_uvs.xy += vec2(0.25, 0.5);
+            shadow_uvs.xy += SunCascadeOffsets[3];
 #if defined(VULKAN)
             shadow_uvs.y = 1.0 - shadow_uvs.y;
 #endif // VULKAN
 
             sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
         }
+#endif // ALL_CASCADES
         light_total += sun_visibility * g_shrd_data.sun_col_point_sh.xyz * HenyeyGreenstein(dot(view_ray_ws, g_shrd_data.sun_dir.xyz), g_params.anisotropy);
     }
 

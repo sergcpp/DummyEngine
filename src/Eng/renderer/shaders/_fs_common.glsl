@@ -266,6 +266,17 @@ const vec2 SunCascadeOffsets[4] = vec2[4](
     vec2(0.25, 0.5)
 );
 
+vec3 GetSunVisibilityPCF5x5(const float frag_depth, sampler2DShadow shadow_depth_tex, sampler2D shadow_color_tex, const mat4x3 sh_uvs) {
+    if (frag_depth < SHADOWMAP_CASCADE0_DIST) {
+        return SampleShadowPCF5x5(shadow_depth_tex, shadow_color_tex, sh_uvs[0]);
+    } else if (frag_depth < SHADOWMAP_CASCADE1_DIST) {
+        return SampleShadowPCF5x5(shadow_depth_tex, shadow_color_tex, sh_uvs[1]);
+    } else if (frag_depth < SHADOWMAP_CASCADE2_DIST) {
+        return SampleShadowPCF5x5(shadow_depth_tex, shadow_color_tex, sh_uvs[2]);
+    }
+    return SampleShadowPCF5x5(shadow_depth_tex, shadow_color_tex, sh_uvs[3]);
+}
+
 float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in vec3 aVertexShUVs[4]) {
     float visibility = 0.0;
 
