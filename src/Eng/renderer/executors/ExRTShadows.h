@@ -38,12 +38,8 @@ class ExRTShadows final : public FgExecutor {
         FgResRef out_shadow_tex;
     };
 
-    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
-               const Args *args) {
-        view_state_ = view_state;
-        bindless_tex_ = bindless_tex;
-        args_ = args;
-    }
+    ExRTShadows(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)
+        : view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
 
     void Execute(FgBuilder &builder) override;
 

@@ -51,13 +51,13 @@ class ExGBufferFill final : public FgExecutor {
     void DrawOpaque(FgBuilder &builder);
 
   public:
-    void Setup(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
-               const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
-               const BindlessTextureData *bindless_tex, const FgResRef noise_tex, const FgResRef dummy_white,
-               const FgResRef dummy_black, const FgResRef instances_buf, const FgResRef instance_indices_buf,
-               const FgResRef shared_data_buf, const FgResRef cells_buf, const FgResRef items_buf,
-               const FgResRef decals_buf, const FgResRef out_albedo, const FgResRef out_normals,
-               const FgResRef out_spec, const FgResRef out_depth) {
+    ExGBufferFill(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
+                  const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
+                  const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef noise_tex,
+                  const FgResRef dummy_white, const FgResRef dummy_black, const FgResRef instances_buf,
+                  const FgResRef instance_indices_buf, const FgResRef shared_data_buf, const FgResRef cells_buf,
+                  const FgResRef items_buf, const FgResRef decals_buf, const FgResRef out_albedo,
+                  const FgResRef out_normals, const FgResRef out_spec, const FgResRef out_depth) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
 

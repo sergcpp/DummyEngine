@@ -45,12 +45,8 @@ class ExRTGICache final : public FgExecutor {
         Ren::Span<const probe_volume_t> probe_volumes;
     };
 
-    void Setup(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
-               const Args *args) {
-        view_state_ = view_state;
-        bindless_tex_ = bindless_tex;
-        args_ = args;
-    }
+    ExRTGICache(const view_state_t *view_state, const BindlessTextureData *bindless_tex, const Args *args)
+        : view_state_(view_state), bindless_tex_(bindless_tex), args_(args) {}
 
     void Execute(FgBuilder &builder) override;
 

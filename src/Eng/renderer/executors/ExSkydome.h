@@ -13,8 +13,6 @@ namespace Eng {
 class PrimDraw;
 class ExSkydomeCube final : public FgExecutor {
   public:
-    explicit ExSkydomeCube(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
-
     struct Args {
         FgResRef shared_data;
         FgResRef transmittance_lut;
@@ -28,10 +26,8 @@ class ExSkydomeCube final : public FgExecutor {
         FgResRef color_tex;
     };
 
-    void Setup(const view_state_t *view_state, const Args *args) {
-        view_state_ = view_state;
-        args_ = args;
-    }
+    ExSkydomeCube(PrimDraw &prim_draw, const view_state_t *view_state, const Args *args)
+        : prim_draw_(prim_draw), view_state_(view_state), args_(args) {}
 
     void Execute(FgBuilder &builder) override;
 
@@ -54,8 +50,6 @@ class ExSkydomeCube final : public FgExecutor {
 
 class ExSkydomeScreen final : public FgExecutor {
   public:
-    explicit ExSkydomeScreen(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
-
     struct Args {
         eSkyQuality sky_quality = eSkyQuality::Medium;
 
@@ -75,10 +69,8 @@ class ExSkydomeScreen final : public FgExecutor {
         FgResRef depth_tex;
     };
 
-    void Setup(const view_state_t *view_state, const Args *args) {
-        view_state_ = view_state;
-        args_ = args;
-    }
+    ExSkydomeScreen(PrimDraw &prim_draw, const view_state_t *view_state, const Args *args)
+        : prim_draw_(prim_draw), view_state_(view_state), args_(args) {}
 
     void Execute(FgBuilder &builder) override;
 

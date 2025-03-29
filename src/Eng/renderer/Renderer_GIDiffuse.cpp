@@ -3,6 +3,8 @@
 #include <Ren/Context.h>
 
 #include "Renderer_Names.h"
+#include "executors/ExRTGI.h"
+#include "executors/ExSampleLights.h"
 
 #include "shaders/blit_bilateral_interface.h"
 #include "shaders/blit_ssao_interface.h"
@@ -462,8 +464,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             gi_tex = data->out_gi_tex = rt_gi.AddStorageImageOutput(gi_tex, stage);
 
-            ex_rt_gi_.Setup(fg_builder_, &view_state_, &bindless, data);
-            rt_gi.set_executor(&ex_rt_gi_);
+            rt_gi.make_executor<ExRTGI>(&view_state_, &bindless, data);
         }
 
         { // Direct light sampling
@@ -518,8 +519,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 data->out_specular_tex = sample_lights.AddStorageImageOutput("SSR Temp 2", params, Stg::ComputeShader);
             }
 
-            ex_sample_lights_.Setup(fg_builder_, &view_state_, &bindless, data);
-            sample_lights.set_executor(&ex_sample_lights_);
+            sample_lights.make_executor<ExSampleLights>(&view_state_, &bindless, data);
         }
     }
 

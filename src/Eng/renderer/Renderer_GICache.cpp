@@ -2,6 +2,8 @@
 
 #include <Ren/Context.h>
 
+#include "executors/ExRTGICache.h"
+
 #include "shaders/probe_blend_interface.h"
 #include "shaders/probe_classify_interface.h"
 #include "shaders/probe_relocate_interface.h"
@@ -83,8 +85,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             ray_data = data->out_ray_data_tex = rt_gi_cache.AddStorageImageOutput("Probe Volume RayData", p, stage);
         }
 
-        ex_rt_gi_cache_.Setup(fg_builder_, &view_state_, &bindless, data);
-        rt_gi_cache.set_executor(&ex_rt_gi_cache_);
+        rt_gi_cache.make_executor<ExRTGICache>(&view_state_, &bindless, data);
     }
 
     if (!ray_data) {

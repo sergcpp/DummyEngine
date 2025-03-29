@@ -11,6 +11,7 @@
 #include "../utils/ShaderLoader.h"
 #include "CDFUtils.h"
 #include "Renderer_Names.h"
+#include "executors/ExBuildAccStructures.h"
 #include "executors/ExDebugOIT.h"
 #include "executors/ExDebugProbes.h"
 #include "executors/ExDebugRT.h"
@@ -18,6 +19,8 @@
 #include "executors/ExDepthHierarchy.h"
 #include "executors/ExShadowColor.h"
 #include "executors/ExShadowDepth.h"
+#include "executors/ExSkinning.h"
+#include "executors/ExUpdateAccBuffers.h"
 
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;

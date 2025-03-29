@@ -2,14 +2,15 @@
 
 #include <Ren/Context.h>
 
+#include "Renderer_Names.h"
+#include "executors/ExRTShadows.h"
+
 #include "shaders/rt_shadow_classify_interface.h"
 #include "shaders/rt_shadow_classify_tiles_interface.h"
 #include "shaders/rt_shadow_debug_interface.h"
 #include "shaders/rt_shadow_filter_interface.h"
 #include "shaders/rt_shadow_prepare_mask_interface.h"
 #include "shaders/sun_shadows_interface.h"
-
-#include "Renderer_Names.h"
 
 Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers,
                                                    const PersistentGpuData &persistent_data,
@@ -180,8 +181,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 #endif
         }
 
-        ex_rt_shadows_.Setup(fg_builder_, &view_state_, &bindless, data);
-        rt_shadows.set_executor(&ex_rt_shadows_);
+        rt_shadows.make_executor<ExRTShadows>(&view_state_, &bindless, data);
     }
 
     if (debug_denoise) {

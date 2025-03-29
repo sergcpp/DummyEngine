@@ -11,20 +11,8 @@ extern "C" {
 
 #include "../scene/SceneData.h"
 #include "PrimDraw.h"
-#include "executors/ExBuildAccStructures.h"
-#include "executors/ExEmissive.h"
-#include "executors/ExGBufferFill.h"
-#include "executors/ExOpaque.h"
 #include "executors/ExPostprocess.h"
-#include "executors/ExRTGI.h"
-#include "executors/ExRTGICache.h"
-#include "executors/ExRTShadows.h"
 #include "executors/ExReadExposure.h"
-#include "executors/ExSampleLights.h"
-#include "executors/ExSkinning.h"
-#include "executors/ExSkydome.h"
-#include "executors/ExTransparent.h"
-#include "executors/ExUpdateAccBuffers.h"
 
 #include "Renderer_DrawList.h"
 
@@ -185,17 +173,6 @@ class Renderer {
     float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
     float pre_exposure_ = 1.0f;
 
-    ExSkydomeCube ex_skydome_cube_ = ExSkydomeCube{prim_draw_};
-    ExSkydomeScreen ex_skydome_ = ExSkydomeScreen{prim_draw_};
-    ExGBufferFill ex_gbuffer_fill_;
-    ExOpaque ex_opaque_;
-    ExTransparent ex_transparent_ = ExTransparent{prim_draw_};
-    ExEmissive ex_emissive_;
-
-    ExRTGI ex_rt_gi_;
-    ExRTGICache ex_rt_gi_cache_;
-    ExRTShadows ex_rt_shadows_;
-    ExSampleLights ex_sample_lights_;
     ExReadExposure ex_read_exposure_;
     ExPostprocess::Args ex_postprocess_args_;
 

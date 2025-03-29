@@ -9,6 +9,10 @@
 #include "../utils/Random.h"
 #include "../utils/ShaderLoader.h"
 #include "Renderer_Names.h"
+#include "executors/ExEmissive.h"
+#include "executors/ExGBufferFill.h"
+#include "executors/ExOpaque.h"
+#include "executors/ExTransparent.h"
 
 #include "shaders/blit_down_depth_interface.h"
 #include "shaders/blit_down_interface.h"
@@ -569,11 +573,10 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     frame_textures.specular = gbuf_fill.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = gbuf_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    ex_gbuffer_fill_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
-                           noise_tex, dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf,
-                           cells_buf, items_buf, decals_buf, frame_textures.albedo, frame_textures.normal,
-                           frame_textures.specular, frame_textures.depth);
-    gbuf_fill.set_executor(&ex_gbuffer_fill_);
+    gbuf_fill.make_executor<ExGBufferFill>(
+        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless, noise_tex,
+        dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf, cells_buf, items_buf,
+        decals_buf, frame_textures.albedo, frame_textures.normal, frame_textures.specular, frame_textures.depth);
 }
 
 void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
@@ -625,12 +628,11 @@ void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, co
     frame_textures.specular = opaque.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = opaque.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    ex_opaque_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-                     persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
-                     instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf,
-                     decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color, frame_textures.normal,
-                     frame_textures.specular, frame_textures.depth);
-    opaque.set_executor(&ex_opaque_);
+    opaque.make_executor<ExOpaque>(
+        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+        persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black, instances_buf,
+        instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf, decals_buf, shadowmap_tex, ssao_tex,
+        lmap_tex, frame_textures.color, frame_textures.normal, frame_textures.specular, frame_textures.depth);
 }
 
 void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers,
@@ -684,12 +686,11 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
     frame_textures.specular = transparent.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = transparent.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    ex_transparent_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
-                          persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
-                          instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf,
-                          decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color, frame_textures.normal,
-                          frame_textures.specular, frame_textures.depth);
-    transparent.set_executor(&ex_transparent_);
+    transparent.make_executor<ExTransparent>(
+        &p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+        persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black, instances_buf,
+        instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf, decals_buf, shadowmap_tex, ssao_tex,
+        lmap_tex, frame_textures.color, frame_textures.normal, frame_textures.specular, frame_textures.depth);
 }
 
 void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
@@ -824,10 +825,9 @@ void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const 
     frame_textures.color = emissive.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
     frame_textures.depth = emissive.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    ex_emissive_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
-                       noise_tex, dummy_white, instances_buf, instances_indices_buf, shared_data_buf,
-                       frame_textures.color, frame_textures.depth);
-    emissive.set_executor(&ex_emissive_);
+    emissive.make_executor<ExEmissive>(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+                                       &bindless, noise_tex, dummy_white, instances_buf, instances_indices_buf,
+                                       shared_data_buf, frame_textures.color, frame_textures.depth);
 }
 
 void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,

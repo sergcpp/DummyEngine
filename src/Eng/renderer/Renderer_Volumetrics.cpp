@@ -5,6 +5,7 @@
 
 #include "../utils/Load.h"
 #include "Renderer_Names.h"
+#include "executors/ExSkydome.h"
 
 #include "shaders/blit_fxaa_interface.h"
 #include "shaders/skydome_interface.h"
@@ -177,8 +178,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
         data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_, Stg::FragmentShader);
         frame_textures.envmap = data->color_tex = skydome_cube.AddColorOutput(p_list_->env.env_map);
 
-        ex_skydome_cube_.Setup(&view_state_, data);
-        skydome_cube.set_executor(&ex_skydome_cube_);
+        skydome_cube.make_executor<ExSkydomeCube>(prim_draw_, &view_state_, data);
     }
 
     FgResRef sky_temp;
@@ -223,8 +223,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             }
         }
 
-        ex_skydome_.Setup(&view_state_, data);
-        skymap.set_executor(&ex_skydome_);
+        skymap.make_executor<ExSkydomeScreen>(prim_draw_, &view_state_, data);
     }
 
     if (p_list_->env.env_map_name != "physical_sky") {

@@ -8,7 +8,6 @@
 namespace Eng {
 class PrimDraw;
 class ExTransparent final : public FgExecutor {
-    PrimDraw &prim_draw_;
     bool initialized = false;
 
     // lazily initialized data
@@ -71,17 +70,15 @@ class ExTransparent final : public FgExecutor {
 #endif
 
   public:
-    explicit ExTransparent(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
-    ~ExTransparent() final;
-
-    void Setup(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
-               const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
-               const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const FgResRef brdf_lut,
-               const FgResRef noise_tex, const FgResRef cone_rt_lut, const FgResRef dummy_black,
-               const FgResRef instances_buf, const FgResRef instance_indices_buf, const FgResRef shared_data_buf,
-               const FgResRef cells_buf, const FgResRef items_buf, const FgResRef lights_buf, const FgResRef decals_buf,
-               const FgResRef shad_tex, const FgResRef ssao_tex, const FgResRef lm_tex[4], const FgResRef color_tex,
-               const FgResRef normal_tex, const FgResRef spec_tex, const FgResRef depth_tex) {
+    ExTransparent(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
+                  const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
+                  const FgResRef textures_buf, const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
+                  const FgResRef brdf_lut, const FgResRef noise_tex, const FgResRef cone_rt_lut,
+                  const FgResRef dummy_black, const FgResRef instances_buf, const FgResRef instance_indices_buf,
+                  const FgResRef shared_data_buf, const FgResRef cells_buf, const FgResRef items_buf,
+                  const FgResRef lights_buf, const FgResRef decals_buf, const FgResRef shad_tex,
+                  const FgResRef ssao_tex, const FgResRef lm_tex[4], const FgResRef color_tex,
+                  const FgResRef normal_tex, const FgResRef spec_tex, const FgResRef depth_tex) {
         view_state_ = view_state;
         pipelines_ = pipelines;
         bindless_tex_ = bindless_tex;
@@ -118,6 +115,7 @@ class ExTransparent final : public FgExecutor {
         spec_tex_ = spec_tex;
         depth_tex_ = depth_tex;
     }
+    ~ExTransparent() final;
 
     void Execute(FgBuilder &builder) override;
 };

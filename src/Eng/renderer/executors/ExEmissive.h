@@ -16,7 +16,7 @@ class ExEmissive final : public FgExecutor {
     Ren::Framebuffer main_draw_fb_[Ren::MaxFramesInFlight][2];
     int fb_to_use_ = 0;
 
-    // temp data (valid only between Setup and Execute calls)
+    // temp data
     const view_state_t *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
@@ -43,10 +43,10 @@ class ExEmissive final : public FgExecutor {
     void DrawOpaque(FgBuilder &builder);
 
   public:
-    void Setup(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1, const FgResRef vtx_buf2,
-               const FgResRef ndx_buf, const FgResRef materials_buf, const FgResRef textures_buf,
-               const BindlessTextureData *bindless_tex, const FgResRef noise_tex, const FgResRef dummy_white,
-               const FgResRef instances_buf, const FgResRef instance_indices_buf,
+    ExEmissive(const DrawList **p_list, const view_state_t *view_state, const FgResRef vtx_buf1,
+               const FgResRef vtx_buf2, const FgResRef ndx_buf, const FgResRef materials_buf,
+               const FgResRef textures_buf, const BindlessTextureData *bindless_tex, const FgResRef noise_tex,
+               const FgResRef dummy_white, const FgResRef instances_buf, const FgResRef instance_indices_buf,
                const FgResRef shared_data_buf, const FgResRef out_color, const FgResRef out_depth) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
