@@ -15,6 +15,8 @@ struct Params {
     ivec4 grid_scroll_diff;
     vec4 grid_spacing;
     vec4 quat_rot;
+    vec4 vol_bbox_min;
+    vec4 vol_bbox_max;
 };
 
 const int LOCAL_GROUP_SIZE_X = 32;

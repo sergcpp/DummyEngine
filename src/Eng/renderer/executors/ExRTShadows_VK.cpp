@@ -50,7 +50,7 @@ void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTShadows::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_->layout(),
@@ -106,7 +106,7 @@ void Eng::ExRTShadows::Execute_HWRT_Inline(FgBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTShadows::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
@@ -164,7 +164,7 @@ void Eng::ExRTShadows::Execute_SWRT(FgBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTShadows::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,

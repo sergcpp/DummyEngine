@@ -19,7 +19,14 @@
         ],
         "env_map" : "physical_sky",
         "sun_angle" : 10.0,
-        "sun_shadow_bias" : [ 0.0, 0.0 ]
+        "sun_shadow_bias" : [ 0.0, 0.0 ],
+        "fog" : {
+            "color" : [ 0.8, 0.8, 0.8 ],
+            "density" : 0.0015,
+            "anisotropy" : 0.7,
+            "bbox_min" : [ -100.0, 0.0, -100.0 ],
+            "bbox_max" : [ 100.0, 30.0, 100.0 ]
+        }
     },
     "objects" : [
         {
@@ -197,7 +204,7 @@
             -0.364128768, -0.555621922, -0.747458696
         ],
         "view_target" : [ -0.000594, 0.047674, 0.00025 ],
-        "fwd_speed" : 0.015,
+        "fwd_speed" : 0.035,
         "fov0" : 18.1806,
         "fov" : 45.0,
         "view_transform": "agx",

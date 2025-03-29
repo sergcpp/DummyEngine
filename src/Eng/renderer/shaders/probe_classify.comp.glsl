@@ -5,7 +5,7 @@
 
 #include "probe_classify_interface.h"
 
-#pragma multi_compile _ RESET
+#pragma multi_compile _ VOL RESET
 #pragma multi_compile _ PARTIAL
 
 #if defined(RESET) && defined(PARTIAL)
@@ -20,24 +20,19 @@ layout(binding = RAY_DATA_TEX_SLOT) uniform sampler2DArray g_ray_data;
 
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2DArray g_out_img;
 
-vec3 _get_probe_pos_ws(const ivec3 coords, const ivec3 offset, const vec3 grid_origin, const vec3 grid_spacing) {
-    const vec3 pos_ws = get_probe_pos_ws(coords, offset, grid_origin, grid_spacing);
-
-    const int probe_index = get_scrolling_probe_index(coords, offset);
-    const ivec3 tex_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
-
-    return pos_ws + imageLoad(g_out_img, tex_coords).xyz;
-}
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    const int probe_index = int(gl_GlobalInvocationID.x);
+    int probe_index = int(gl_GlobalInvocationID.x);
     if (probe_index >= PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z) {
         return;
     }
 
+    const ivec3 probe_coords = get_probe_coords(probe_index);
+    probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
     const ivec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+
     vec4 offset = imageLoad(g_out_img, output_coords);
 
 #ifdef RESET
@@ -68,12 +63,11 @@ void main() {
         }
     }
 
+    const vec3 probe_pos = get_probe_pos_ws(probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz) + offset.xyz;
+
     if (backface_count > (PROBE_FIXED_RAYS_COUNT / 4)) {
         offset.w = PROBE_STATE_INACTIVE;
     } else {
-        const ivec3 probe_coords = get_probe_coords(probe_index);
-        const vec3 probe_pos = _get_probe_pos_ws(probe_coords, g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
-
         offset.w = PROBE_STATE_INACTIVE;
         for (int i = 0; i < PROBE_FIXED_RAYS_COUNT; ++i) {
             if (hit_distances[i] < 0.0) {
@@ -108,6 +102,18 @@ void main() {
             }
         }
     }
+
+#ifdef VOL
+    if (offset.w < 0.5) {
+        const bool is_inside_volume = bbox_test(probe_pos, g_params.vol_bbox_min.xyz - g_params.grid_spacing.xyz,
+                                                           g_params.vol_bbox_max.xyz + g_params.grid_spacing.xyz);
+        if (is_inside_volume) {
+            offset.w = (outdoor_count > (PROBE_FIXED_RAYS_COUNT - backface_count) / 3) ? PROBE_STATE_ACTIVE_OUTDOOR : PROBE_STATE_ACTIVE;
+        }
+    }
+#endif
+
+
 #endif // RESET
 
     imageStore(g_out_img, output_coords, offset);

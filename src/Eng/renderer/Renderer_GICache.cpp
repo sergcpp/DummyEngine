@@ -294,9 +294,19 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
                 Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
             uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
+            uniform_params.vol_bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
+            uniform_params.vol_bbox_max = Ren::Vec4f{p_list_->env.fog.bbox_max};
 
-            const int pi_index =
-                persistent_data.probe_volumes[volume_to_update].reset_classification ? 2 : (partial ? 1 : 0);
+            int pi_index = 4;
+            if (p_list_->env.fog.density > 0.0f) {
+                pi_index = (partial ? 3 : 2);
+            } else {
+                pi_index = (partial ? 1 : 0);
+            }
+            if (persistent_data.probe_volumes[volume_to_update].reset_classification) {
+                pi_index = 4;
+            }
+
             DispatchCompute(*pi_probe_classify_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
             persistent_data.probe_volumes[volume_to_update].reset_classification = false;

@@ -23,12 +23,15 @@ layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2DArray g_out_img;
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    const int probe_index = int(gl_GlobalInvocationID.x);
+    int probe_index = int(gl_GlobalInvocationID.x);
     if (probe_index >= PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z) {
         return;
     }
 
+    const ivec3 probe_coords = get_probe_coords(probe_index);
+    probe_index = get_scrolling_probe_index(probe_coords, g_params.grid_scroll.xyz);
     const ivec3 output_coords = get_probe_texel_coords(probe_index, g_params.volume_index);
+
     vec4 offset = imageLoad(g_out_img, output_coords);
 
 #ifdef RESET

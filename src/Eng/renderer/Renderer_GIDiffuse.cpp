@@ -129,7 +129,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
     }
 
     // GI settings
-    const int SamplesPerQuad = (settings.gi_quality == eGIQuality::Ultra) ? 4 : 1;
+    const uint32_t SamplesPerQuad = (settings.gi_quality == eGIQuality::Ultra) ? 4 : 1;
     static const bool VarianceGuided = true;
     static const bool EnableBlur = true;
     const bool EnableStabilization = false;
@@ -261,7 +261,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             Params uniform_params;
             uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
-            uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
+            uniform_params.samples_and_guided = Ren::Vec2u{SamplesPerQuad, VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.tile_count = tile_count;
 

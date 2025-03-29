@@ -188,7 +188,7 @@ class Renderer {
     Ren::PipelineRef pi_ssr_reproject_, pi_ssr_temporal_[2], pi_ssr_filter_[4], pi_ssr_stabilization_;
     Ren::PipelineRef pi_tile_clear_[4];
     // GI Cache
-    Ren::PipelineRef pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[3], pi_probe_sample_;
+    Ren::PipelineRef pi_probe_blend_[3][2], pi_probe_relocate_[3], pi_probe_classify_[5], pi_probe_sample_;
     // GTAO
     Ren::PipelineRef pi_gtao_main_[2], pi_gtao_filter_[2], pi_gtao_accumulate_, pi_gtao_upsample_;
     // GI

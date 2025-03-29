@@ -77,7 +77,9 @@ void Eng::Renderer::InitPipelines() {
     pi_probe_relocate_[2] = sh_.LoadPipeline("internal/probe_relocate@RESET.comp.glsl");
     pi_probe_classify_[0] = sh_.LoadPipeline("internal/probe_classify.comp.glsl");
     pi_probe_classify_[1] = sh_.LoadPipeline("internal/probe_classify@PARTIAL.comp.glsl");
-    pi_probe_classify_[2] = sh_.LoadPipeline("internal/probe_classify@RESET.comp.glsl");
+    pi_probe_classify_[2] = sh_.LoadPipeline("internal/probe_classify@VOL.comp.glsl");
+    pi_probe_classify_[3] = sh_.LoadPipeline("internal/probe_classify@VOL;PARTIAL.comp.glsl");
+    pi_probe_classify_[4] = sh_.LoadPipeline("internal/probe_classify@RESET.comp.glsl");
     pi_probe_sample_ = sh_.LoadPipeline("internal/probe_sample.comp.glsl");
 
     // GTAO

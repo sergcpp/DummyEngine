@@ -114,7 +114,7 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
                                      nullptr);
 
     RTReflections::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
@@ -234,7 +234,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
                                      nullptr);
 
     RTReflections::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     if (oit_depth_buf) {
         // Expected to be half resolution
