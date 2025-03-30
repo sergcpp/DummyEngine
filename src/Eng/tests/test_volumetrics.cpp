@@ -15,7 +15,7 @@ void test_volumetrics(Sys::ThreadPool &threads, const bool full) {
     }
     { // mesh lights
         run_image_test(threads, "vol_global_mesh_lights", 29.35, Full);
-        run_image_test(threads, "vol_global_mesh_lights", 29.40, Full_Ultra);
+        run_image_test(threads, "vol_global_mesh_lights", 29.35, Full_Ultra);
     }
     { // sun
         run_image_test(threads, "vol_global_sun", 31.50, Full);

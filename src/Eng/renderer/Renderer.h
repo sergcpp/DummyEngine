@@ -206,13 +206,13 @@ class Renderer {
     Ren::PipelineRef pi_histogram_sample_, pi_histogram_exposure_;
     // Volumetrics
     Ren::PipelineRef pi_sky_upsample_;
-    Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_, pi_vol_apply_;
+    Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_;
     // Debug
     Ren::PipelineRef pi_debug_velocity_;
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_[2],
         blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
-        blit_down_depth_prog_, blit_ssr_compose_prog_, blit_fxaa_prog_;
+        blit_down_depth_prog_, blit_ssr_compose_prog_, blit_fxaa_prog_, blit_vol_compose_prog_;
 
     struct CommonBuffers {
         FgResRef skin_transforms, shape_keys, instance_indices, cells, rt_cells, lights, decals, items, rt_items,

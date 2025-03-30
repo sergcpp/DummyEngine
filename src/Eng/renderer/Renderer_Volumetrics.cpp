@@ -8,6 +8,7 @@
 #include "executors/ExSkydome.h"
 
 #include "shaders/blit_fxaa_interface.h"
+#include "shaders/blit_vol_compose_interface.h"
 #include "shaders/skydome_interface.h"
 #include "shaders/sun_brightness_interface.h"
 #include "shaders/vol_interface.h"
@@ -607,11 +608,11 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
         };
 
         auto *data = apply.AllocNodeData<PassData>();
-        data->shared_data = apply.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->depth_tex = apply.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        data->froxel_tex = apply.AddTextureInput(froxel_tex, Stg::ComputeShader);
+        data->shared_data = apply.AddUniformBufferInput(common_buffers.shared_data, Stg::FragmentShader);
+        data->depth_tex = apply.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
+        data->froxel_tex = apply.AddTextureInput(froxel_tex, Stg::FragmentShader);
 
-        frame_textures.color = data->output_tex = apply.AddStorageImageOutput(frame_textures.color, Stg::ComputeShader);
+        frame_textures.color = data->output_tex = apply.AddColorOutput(frame_textures.color);
 
         apply.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
@@ -624,25 +625,35 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
                 return;
             }
 
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+            rast_state.depth.write_enabled = false;
+            rast_state.depth.test_enabled = false;
+            rast_state.blend.enabled = true;
+            rast_state.blend.src_color = uint8_t(Ren::eBlendFactor::One);
+            rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
+            rast_state.blend.dst_color = uint8_t(Ren::eBlendFactor::SrcAlpha);
+            rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::Zero);
+
+            rast_state.viewport[2] = view_state_.act_res[0];
+            rast_state.viewport[3] = view_state_.act_res[1];
+
             const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::TexSampled, Fog::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                                             {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxel_tex.ref},
-                                             {Trg::ImageRW, Fog::INOUT_COLOR_IMG_SLOT, *output_tex.ref}};
+                                             {Trg::TexSampled, VolCompose::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::TexSampled, VolCompose::FROXELS_TEX_SLOT, *froxel_tex.ref}};
 
             const auto img_res = Ren::Vec2i{depth_tex.ref->params.w, depth_tex.ref->params.h};
             const auto froxel_res =
                 Ren::Vec4i{froxel_tex.ref->params.w, froxel_tex.ref->params.h, froxel_tex.ref->params.d, 0};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(img_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
-                           (img_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, 1};
+            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
-            Fog::Params uniform_params;
-            uniform_params.froxel_res = froxel_res;
-            uniform_params.img_res = img_res;
+            VolCompose::Params uniform_params;
+            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+            uniform_params.froxel_res = Ren::Vec4f(froxel_res);
 
-            DispatchCompute(*pi_vol_apply_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_vol_compose_prog_, {}, render_targets, rast_state,
+                                builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
         });
     }
 }

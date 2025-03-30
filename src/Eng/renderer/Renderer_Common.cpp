@@ -147,7 +147,6 @@ void Eng::Renderer::InitPipelines() {
         sh_.LoadPipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES;GI_CACHE.comp.glsl", //
                                          "internal/vol_scatter@ALL_CASCADES;GI_CACHE;NO_SUBGROUP.comp.glsl"));
     pi_vol_ray_march_ = sh_.LoadPipeline("internal/vol_ray_march.comp.glsl");
-    pi_vol_apply_ = sh_.LoadPipeline("internal/vol_apply.comp.glsl");
 
     // Debugging
     pi_debug_velocity_ = sh_.LoadPipeline("internal/debug_velocity.comp.glsl");
@@ -173,6 +172,8 @@ void Eng::Renderer::InitPipelines() {
     blit_down_prog_ = sh_.LoadProgram("internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
     blit_down_depth_prog_ = sh_.LoadProgram("internal/blit_down_depth.vert.glsl", "internal/blit_down_depth.frag.glsl");
     blit_fxaa_prog_ = sh_.LoadProgram("internal/blit_fxaa.vert.glsl", "internal/blit_fxaa.frag.glsl");
+    blit_vol_compose_prog_ =
+        sh_.LoadProgram("internal/blit_vol_compose.vert.glsl", "internal/blit_vol_compose.frag.glsl");
 }
 
 void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const PersistentGpuData &persistent_data) {
