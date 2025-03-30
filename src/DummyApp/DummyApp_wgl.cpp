@@ -269,10 +269,6 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
                                       GetModuleHandle(nullptr), nullptr);
     device_context_ = GetDC(window_handle_);
 
-    if (app_params.noshow) {
-        SetActiveWindow(window_handle_);
-    }
-
     static const int pixel_attribs[] = {WGL_DRAW_TO_WINDOW_ARB,
                                         GL_TRUE,
                                         WGL_SUPPORT_OPENGL_ARB,

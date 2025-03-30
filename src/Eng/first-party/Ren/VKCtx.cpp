@@ -12,7 +12,9 @@
 #include "Texture.h"
 
 namespace Ren {
-#if defined(__linux__)
+#if defined(_WIN32)
+HWND g_win = {};
+#elif defined(__linux__)
 Display *g_dpy = nullptr;
 Window g_win = {};
 #elif defined(__APPLE__)
@@ -400,7 +402,10 @@ bool Ren::ApiContext::InitVkInstance(const char *enabled_layers[], const int ena
 
 bool Ren::ApiContext::InitVkSurface(ILog *log) {
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-    HWND window = GetActiveWindow();
+    HWND window = g_win;
+    if (!window) {
+        window = GetActiveWindow();
+    }
     if (!window) {
         return true;
     }

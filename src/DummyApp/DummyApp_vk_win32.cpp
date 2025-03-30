@@ -63,6 +63,10 @@ class AuxGfxThread : public Sys::ThreadWorker {
 };
 } // namespace
 
+namespace Ren {
+extern HWND g_win;
+}
+
 extern "C" {
 // Enable High Performance Graphics while using Integrated Graphics
 DLL_EXPORT int32_t NvOptimusEnablement = 0x00000001;     // Nvidia
@@ -191,9 +195,7 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
                          rect.bottom - rect.top, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
     device_context_ = GetDC(window_handle_);
 
-    if (app_params.noshow) {
-        SetActiveWindow(window_handle_);
-    }
+    Ren::g_win = window_handle_;
 
     try {
         Viewer::PrepareAssets("pc");
