@@ -12,6 +12,10 @@
     #pragma dont_compile
 #endif
 
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
+    shared_data_t g_shrd_data;
+};
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -108,7 +112,14 @@ void main() {
         const bool is_inside_volume = bbox_test(probe_pos, g_params.vol_bbox_min.xyz - g_params.grid_spacing.xyz,
                                                            g_params.vol_bbox_max.xyz + g_params.grid_spacing.xyz);
         if (is_inside_volume) {
-            offset.w = (outdoor_count > (PROBE_FIXED_RAYS_COUNT - backface_count) / 3) ? PROBE_STATE_ACTIVE_OUTDOOR : PROBE_STATE_ACTIVE;
+            bool is_inside_frustum = true;
+            for (int i = 0; i < 6; ++i) {
+                const float dist = dot(probe_pos, g_shrd_data.frustum_planes[i].xyz) + g_shrd_data.frustum_planes[i].w;
+                is_inside_frustum = is_inside_frustum && (dist > -g_params.grid_spacing.w);
+            }
+            if (is_inside_frustum) {
+                offset.w = (outdoor_count > (PROBE_FIXED_RAYS_COUNT - backface_count) / 3) ? PROBE_STATE_ACTIVE_OUTDOOR : PROBE_STATE_ACTIVE;
+            }
         }
     }
 #endif

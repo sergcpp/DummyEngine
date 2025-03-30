@@ -282,6 +282,11 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
                 };*/
             }
 
+            for (int i = 0; i < 6; ++i) {
+                shrd_data.frustum_planes[i] =
+                    Ren::Vec4f(p_list_->draw_cam.frustum_plane(i).n, p_list_->draw_cam.frustum_plane(i).d);
+            }
+
             shrd_data.clip_from_view[2][0] += p_list_->draw_cam.px_offset()[0];
             shrd_data.clip_from_view[2][1] += p_list_->draw_cam.px_offset()[1];
 

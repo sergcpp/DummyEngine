@@ -257,22 +257,25 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
         auto &probe_classify = fg_builder_.AddNode("PROBE CLASSIFY");
 
         struct PassData {
+            FgResRef shared_data;
             FgResRef ray_data;
             FgResRef output_tex;
         };
 
         auto *data = probe_classify.AllocNodeData<PassData>();
-
+        data->shared_data = probe_classify.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         ray_data = data->ray_data = probe_classify.AddTextureInput(ray_data, Stg::ComputeShader);
 
         frame_textures.gi_cache_offset = data->output_tex =
             probe_classify.AddStorageImageOutput(persistent_data.probe_offset, Stg::ComputeShader);
 
         probe_classify.set_execute_cb([this, data, &persistent_data](FgBuilder &builder) {
+            FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             FgAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::TexSampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
+                                             {Trg::TexSampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.ref},
                                              {Trg::ImageRW, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.ref}};
 
             const int volume_to_update = p_list_->volume_to_update;
@@ -292,7 +295,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
             uniform_params.grid_scroll_diff =
                 Ren::Vec4i{grid_scroll_diff[0], grid_scroll_diff[1], grid_scroll_diff[2], 0};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.grid_spacing =
+                Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], Length(grid_spacing)};
             uniform_params.quat_rot = view_state_.probe_ray_rotator;
             uniform_params.vol_bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
             uniform_params.vol_bbox_max = Ren::Vec4f{p_list_->env.fog.bbox_max};

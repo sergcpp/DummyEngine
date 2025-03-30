@@ -409,6 +409,7 @@ struct shared_data_t {
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     Ren::Vec4u item_counts;
     Ren::Vec4f ambient_hack;
+    Ren::Vec4f frustum_planes[6];
     Types::probe_volume_t probe_volumes[PROBE_VOLUMES_COUNT];
     uint32_t portals[MAX_PORTALS_TOTAL] = {0xffffffff};
     probe_item_t probes[MAX_PROBES_TOTAL] = {};
@@ -417,7 +418,7 @@ struct shared_data_t {
 };
 static_assert(sizeof(shared_data_t) == sizeof(Ren::Mat4f) * 10 +                                 //
                                            sizeof(shadow_map_region_t) * MAX_SHADOWMAPS_TOTAL +  //
-                                           sizeof(Ren::Vec4f) * 18 +                             //
+                                           sizeof(Ren::Vec4f) * 24 +                             //
                                            sizeof(Types::probe_volume_t) * PROBE_VOLUMES_COUNT + //
                                            sizeof(uint32_t) * MAX_PORTALS_TOTAL +
                                            sizeof(probe_item_t) * MAX_PROBES_TOTAL +     //

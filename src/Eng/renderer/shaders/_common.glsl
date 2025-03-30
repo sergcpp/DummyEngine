@@ -382,6 +382,7 @@ struct shared_data_t {
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;
     vec4 ambient_hack;
+    vec4 frustum_planes[6];
     probe_volume_t probe_volumes[PROBE_VOLUMES_COUNT];
     uvec4 portals[MAX_PORTALS_TOTAL / 4];
     probe_item_t probes[MAX_PROBES_TOTAL];
