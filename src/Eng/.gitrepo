@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = probes_frustum
-	commit = 04bda780ad658ff12b83145ed20fcd160c55f41a
+	branch = vol_compose
+	commit = 10d5cc05c481617e724b218d1924bb8da2caa2ce
 	method = merge
 	cmdver = 0.4.6
-	parent = 02d2632c6aa6fc745bd0b2f9673014b5321136e9
+	parent = 1ca21efb947022b5bbc10b6f8561fcfdd399beff
