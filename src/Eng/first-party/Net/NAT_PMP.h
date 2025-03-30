@@ -156,7 +156,7 @@ struct PMPUnsupportedVersionResponse {
     void set_time(uint32_t t) { *(uint32_t *)(&buf[4]) = htonl(t); }
 };
 
-static_assert(sizeof(PMPUnsupportedVersionResponse) == 8, "!");
+static_assert(sizeof(PMPUnsupportedVersionResponse) == 8);
 
 class PMPSession {
   public:

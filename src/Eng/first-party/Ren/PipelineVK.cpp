@@ -37,17 +37,17 @@ const VkCullModeFlagBits g_cull_modes_vk[] = {
     VK_CULL_MODE_FRONT_BIT, // Front
     VK_CULL_MODE_BACK_BIT   // Back
 };
-static_assert(std::size(g_cull_modes_vk) == int(eCullFace::_Count), "!");
+static_assert(std::size(g_cull_modes_vk) == int(eCullFace::_Count));
 
 const VkPolygonMode g_poly_mode_vk[] = {
     VK_POLYGON_MODE_FILL, // Fill
     VK_POLYGON_MODE_LINE  // Line
 };
-static_assert(std::size(g_poly_mode_vk) == int(ePolygonMode::_Count), "!");
+static_assert(std::size(g_poly_mode_vk) == int(ePolygonMode::_Count));
 
 uint32_t align_up(const uint32_t size, const uint32_t alignment) { return (size + alignment - 1) & ~(alignment - 1); }
 
-static_assert(sizeof(TraceRaysIndirectCommand) == sizeof(VkTraceRaysIndirectCommandKHR), "!");
+static_assert(sizeof(TraceRaysIndirectCommand) == sizeof(VkTraceRaysIndirectCommandKHR));
 } // namespace Ren
 
 Ren::Pipeline &Ren::Pipeline::operator=(Pipeline &&rhs) noexcept {

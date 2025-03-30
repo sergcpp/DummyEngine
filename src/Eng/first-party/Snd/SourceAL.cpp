@@ -9,9 +9,9 @@
 
 #include "Buffer.h"
 
-static_assert(AL_PLAYING - AL_INITIAL == int(Snd::eSrcState::Playing), "!");
-static_assert(AL_PAUSED - AL_INITIAL == int(Snd::eSrcState::Paused), "!");
-static_assert(AL_STOPPED - AL_INITIAL == int(Snd::eSrcState::Stopped), "!");
+static_assert(AL_PLAYING - AL_INITIAL == int(Snd::eSrcState::Playing));
+static_assert(AL_PAUSED - AL_INITIAL == int(Snd::eSrcState::Paused));
+static_assert(AL_STOPPED - AL_INITIAL == int(Snd::eSrcState::Stopped));
 
 void Snd::Source::Init(const float gain, const float pos[3]) {
     assert(source_ == 0xffffffff);

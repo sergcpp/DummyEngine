@@ -13,7 +13,7 @@ template <typename T> class SparseArray {
     uint32_t capacity_, size_;
     uint32_t first_free_;
 
-    static_assert(sizeof(T) >= sizeof(uint32_t), "!");
+    static_assert(sizeof(T) >= sizeof(uint32_t));
 
   public:
     SparseArray() : SparseArray(0) {}

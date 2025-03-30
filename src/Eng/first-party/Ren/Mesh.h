@@ -77,15 +77,15 @@ enum class eMeshFileChunk { Info = 0, VtxAttributes, TriIndices, Materials, TriG
 struct MeshChunkPos {
     int32_t offset, length;
 };
-static_assert(sizeof(MeshChunkPos) == 8, "!");
+static_assert(sizeof(MeshChunkPos) == 8);
 
 struct MeshFileInfo {
     char name[32] = "ModelName";
     float bbox_min[3] = {FLT_MAX, FLT_MAX, FLT_MAX}, bbox_max[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
 };
-static_assert(sizeof(MeshFileInfo) == 56, "!");
-static_assert(offsetof(MeshFileInfo, bbox_min) == 32, "!");
-static_assert(offsetof(MeshFileInfo, bbox_max) == 44, "!");
+static_assert(sizeof(MeshFileInfo) == 56);
+static_assert(offsetof(MeshFileInfo, bbox_min) == 32);
+static_assert(offsetof(MeshFileInfo, bbox_max) == 44);
 
 class Mesh : public RefCounter {
     eMeshType type_ = eMeshType::Undefined;

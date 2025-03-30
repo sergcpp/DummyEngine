@@ -72,7 +72,7 @@ struct Binding {
     Binding(eBindTarget _trg, int _loc, size_t _offset, size_t _size, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
 };
-static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *), "!");
+static_assert(sizeof(Binding) == sizeof(void *) + 8 + 8 + sizeof(void *));
 
 #if defined(REN_VK_BACKEND)
 [[nodiscard]] VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,

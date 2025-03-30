@@ -63,7 +63,7 @@ struct bezier_seg_t {
     Vec2d c0, c1;
     Vec2d dAdt1, dBdt0;
 };
-static_assert(sizeof(bezier_seg_t) == 104, "!");
+static_assert(sizeof(bezier_seg_t) == 104);
 
 void PreprocessBezierShape(bezier_seg_t *segs, int count, double max_soft_angle_rad);
 dist_result_t BezierSegmentDistance(const bezier_seg_t &seg, const Vec2d &p);

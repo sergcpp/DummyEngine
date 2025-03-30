@@ -37,7 +37,7 @@ struct SamplingParams {
     SamplingParams(const eTexFilter _filter, const eTexWrap _wrap, const eTexCompare _compare, const Fixed8 _lod_bias)
         : filter(_filter), wrap(_wrap), compare(_compare), lod_bias(_lod_bias) {}
 };
-static_assert(sizeof(SamplingParams) == 4, "!");
+static_assert(sizeof(SamplingParams) == 4);
 
 inline bool operator==(const SamplingParams lhs, const SamplingParams rhs) {
     return lhs.filter == rhs.filter && lhs.wrap == rhs.wrap && lhs.compare == rhs.compare &&
@@ -63,7 +63,7 @@ struct SamplingParamsPacked {
         return SamplingParams{eTexFilter(filter), eTexWrap(wrap), eTexCompare(compare), lod_bias};
     }
 };
-static_assert(sizeof(SamplingParamsPacked) == 2, "!");
+static_assert(sizeof(SamplingParamsPacked) == 2);
 
 inline bool operator==(const SamplingParamsPacked lhs, const SamplingParamsPacked rhs) {
     return lhs.filter == rhs.filter && lhs.wrap == rhs.wrap && lhs.compare == rhs.compare &&

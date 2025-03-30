@@ -38,7 +38,7 @@ extern const uint32_t g_wrap_mode_gl[];
 extern const float AnisotropyLevel;
 } // namespace Ren
 
-static_assert(sizeof(GLsync) == sizeof(void *), "!");
+static_assert(sizeof(GLsync) == sizeof(void *));
 
 Ren::Texture::Texture(std::string_view name, ApiContext *api_ctx, const TexParams &p, MemAllocators *, ILog *log)
     : name_(name) {

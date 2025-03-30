@@ -14,7 +14,7 @@
 namespace Net {
     template<typename T>
     T swap_endian(T u) {
-        static_assert(CHAR_BIT == 8, "CHAR_BIT != 8");
+        static_assert(CHAR_BIT == 8);
         union {
             T u;
             unsigned char u8[sizeof(T)];

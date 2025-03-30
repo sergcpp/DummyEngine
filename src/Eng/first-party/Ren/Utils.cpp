@@ -143,7 +143,7 @@ const eTexFormat g_tex_format_from_dxgi_format[] = {
     eTexFormat::Undefined,   // DXGI_FORMAT_A8P8
     eTexFormat::Undefined,   // DXGI_FORMAT_B4G4R4A4_UNORM = 115
 };
-static_assert(std::size(g_tex_format_from_dxgi_format) == 116, "!");
+static_assert(std::size(g_tex_format_from_dxgi_format) == 116);
 
 uint16_t f32_to_f16(const float value) {
     int32_t i;

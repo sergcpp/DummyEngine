@@ -31,7 +31,7 @@ struct fg_node_slot_t {
     int16_t node_index;
     int16_t slot_index;
 };
-static_assert(sizeof(fg_node_slot_t) == 4, "!");
+static_assert(sizeof(fg_node_slot_t) == 4);
 
 struct fg_node_range_t {
     int16_t first_write_node = SHRT_MAX;

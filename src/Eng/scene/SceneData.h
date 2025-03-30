@@ -73,7 +73,7 @@ struct SceneObject {
     SceneObject &operator=(const SceneObject &rhs) = delete;
     SceneObject &operator=(SceneObject &&rhs) = default;
 };
-// static_assert(sizeof(SceneObject) == 156 + 4, "!");
+// static_assert(sizeof(SceneObject) == 156 + 4);
 
 struct bvh_node_t { // NOLINT
     Ren::Vec3f bbox_min;
@@ -100,14 +100,14 @@ struct bvh_node_t { // NOLINT
     };
     uint32_t parent;
 };
-static_assert(sizeof(bvh_node_t) == 36, "!");
+static_assert(sizeof(bvh_node_t) == 36);
 
 struct mesh_t {
     uint32_t node_index, node_count;
     uint32_t tris_index, tris_count;
     uint32_t vert_index, geo_count;
 };
-static_assert(sizeof(mesh_t) == 24, "!");
+static_assert(sizeof(mesh_t) == 24);
 
 const int MAX_STACK_SIZE = 64;
 
@@ -158,7 +158,7 @@ struct TexEntry {
         uint32_t sort_key = 0;
     };
 };
-static_assert(sizeof(TexEntry) == 8, "!");
+static_assert(sizeof(TexEntry) == 8);
 
 class CompStorage {
   public:
@@ -208,7 +208,7 @@ struct light_item_t {
     float shadow_pos[3];
     uint32_t tri_index;
 };
-static_assert(sizeof(light_item_t) == 96, "!");
+static_assert(sizeof(light_item_t) == 96);
 
 static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
 

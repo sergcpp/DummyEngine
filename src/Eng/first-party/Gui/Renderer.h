@@ -24,7 +24,7 @@ struct vertex_t {
     uint8_t col[4];
     uint16_t uvs[4];
 };
-static_assert(sizeof(vertex_t) == 24, "!");
+static_assert(sizeof(vertex_t) == 24);
 
 inline uint8_t f32_to_u8(const float value) { return uint8_t(value * 255); }
 inline uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }

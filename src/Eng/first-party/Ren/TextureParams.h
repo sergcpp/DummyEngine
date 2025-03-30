@@ -66,7 +66,7 @@ struct TexParams {
         : w(_w), h(_h), d(_d), mip_count(_mip_count), samples(_samples), flags(_flags), usage(_usage), format(_format),
           sampling(_sampling) {}
 };
-static_assert(sizeof(TexParams) == 14, "!");
+static_assert(sizeof(TexParams) == 14);
 
 inline bool operator==(const TexParams &lhs, const TexParams &rhs) {
     return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.mip_count == rhs.mip_count &&
@@ -98,7 +98,7 @@ struct TexParamsPacked {
                          SamplingParams{sampling});
     }
 };
-static_assert(sizeof(TexParamsPacked) == 10, "!");
+static_assert(sizeof(TexParamsPacked) == 10);
 
 inline bool operator==(const TexParamsPacked &lhs, const TexParamsPacked &rhs) {
     return lhs.w == rhs.w && lhs.h == rhs.h && lhs.d == rhs.d && lhs.mip_count == rhs.mip_count &&

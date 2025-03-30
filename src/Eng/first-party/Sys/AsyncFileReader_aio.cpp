@@ -70,7 +70,7 @@ bool FileReadEvent::ReadFile(int fd, size_t read_offset, size_t read_size, uint8
     assert(!fd_);
     fd_ = fd;
 
-    static_assert(sizeof(cb_buf_) >= sizeof(struct iocb), "!");
+    static_assert(sizeof(cb_buf_) >= sizeof(struct iocb));
     auto *cb = reinterpret_cast<struct iocb *>(cb_buf_);
 
     cb->aio_fildes = fd;

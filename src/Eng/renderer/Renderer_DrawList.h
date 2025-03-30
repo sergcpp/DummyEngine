@@ -85,7 +85,7 @@ struct EnvironmentWeak {
         generation = env.generation;
     }
 };
-// static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
+// static_assert(sizeof(EnvironmentWeak) == sizeof(Environment));
 
 // TODO: use persistent mapping of stage buffers
 struct DrawList {

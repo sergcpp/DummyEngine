@@ -83,7 +83,7 @@ struct KTXHeader { // NOLINT
     uint32_t mipmap_levels_count;
     uint32_t key_value_data_size;
 };
-static_assert(sizeof(KTXHeader) == 64, "!");
+static_assert(sizeof(KTXHeader) == 64);
 
 // the following constants were copied directly off the MSDN website
 
@@ -161,7 +161,7 @@ struct DDSHeader {
     } sCaps;
     uint32_t dwReserved2;
 };
-static_assert(sizeof(DDSHeader) == 128, "!");
+static_assert(sizeof(DDSHeader) == 128);
 
 enum DXGI_FORMAT {
     DXGI_FORMAT_UNKNOWN = 0,

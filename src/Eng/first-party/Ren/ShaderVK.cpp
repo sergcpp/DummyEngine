@@ -20,13 +20,13 @@ extern const VkShaderStageFlagBits g_shader_stages_vk[] = {
     VK_SHADER_STAGE_ANY_HIT_BIT_KHR,             // AnyHit
     VK_SHADER_STAGE_INTERSECTION_BIT_KHR         // Intersection
 };
-static_assert(std::size(g_shader_stages_vk) == int(eShaderType::_Count), "!");
+static_assert(std::size(g_shader_stages_vk) == int(eShaderType::_Count));
 
 // TODO: not rely on this order somehow
-static_assert(int(eShaderType::RayGen) < int(eShaderType::Miss), "!");
-static_assert(int(eShaderType::Miss) < int(eShaderType::ClosestHit), "!");
-static_assert(int(eShaderType::ClosestHit) < int(eShaderType::AnyHit), "!");
-static_assert(int(eShaderType::AnyHit) < int(eShaderType::Intersection), "!");
+static_assert(int(eShaderType::RayGen) < int(eShaderType::Miss));
+static_assert(int(eShaderType::Miss) < int(eShaderType::ClosestHit));
+static_assert(int(eShaderType::ClosestHit) < int(eShaderType::AnyHit));
+static_assert(int(eShaderType::AnyHit) < int(eShaderType::Intersection));
 } // namespace Ren
 
 Ren::Shader::Shader(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> shader_code, const eShaderType type,

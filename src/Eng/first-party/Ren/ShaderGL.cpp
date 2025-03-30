@@ -24,7 +24,7 @@ const GLenum GLShaderTypes[] = {GL_VERTEX_SHADER,
                                 0xffffffff /* AnyHit */,
                                 0xffffffff /* Miss */,
                                 0xffffffff /*Intersection*/};
-static_assert(std::size(GLShaderTypes) == int(eShaderType::_Count), "!");
+static_assert(std::size(GLShaderTypes) == int(eShaderType::_Count));
 } // namespace Ren
 
 Ren::Shader::Shader(std::string_view name, ApiContext *api_ctx, std::string_view shader_src, const eShaderType type,

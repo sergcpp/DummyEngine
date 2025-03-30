@@ -37,7 +37,7 @@ const eTexUsage g_tex_usage_per_state[] = {
     {},                      // BuildASWrite
     {}                       // RayTracing
 };
-static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count), "!");
+static_assert(std::size(g_tex_usage_per_state) == int(eResState::_Count));
 } // namespace Ren
 
 int Ren::GetBlockLenBytes(const eTexFormat format) {

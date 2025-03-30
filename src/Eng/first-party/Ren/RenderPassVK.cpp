@@ -7,15 +7,14 @@
 #endif
 
 namespace Ren {
-static_assert(int(eImageLayout::Undefined) == VK_IMAGE_LAYOUT_UNDEFINED, "!");
-static_assert(int(eImageLayout::General) == VK_IMAGE_LAYOUT_GENERAL, "!");
-static_assert(int(eImageLayout::ColorAttachmentOptimal) == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, "!");
-static_assert(int(eImageLayout::DepthStencilAttachmentOptimal) == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-              "!");
-static_assert(int(eImageLayout::DepthStencilReadOnlyOptimal) == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, "!");
-static_assert(int(eImageLayout::ShaderReadOnlyOptimal) == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, "!");
-static_assert(int(eImageLayout::TransferSrcOptimal) == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, "!");
-static_assert(int(eImageLayout::TransferDstOptimal) == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, "!");
+static_assert(int(eImageLayout::Undefined) == VK_IMAGE_LAYOUT_UNDEFINED);
+static_assert(int(eImageLayout::General) == VK_IMAGE_LAYOUT_GENERAL);
+static_assert(int(eImageLayout::ColorAttachmentOptimal) == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+static_assert(int(eImageLayout::DepthStencilAttachmentOptimal) == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+static_assert(int(eImageLayout::DepthStencilReadOnlyOptimal) == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+static_assert(int(eImageLayout::ShaderReadOnlyOptimal) == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+static_assert(int(eImageLayout::TransferSrcOptimal) == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+static_assert(int(eImageLayout::TransferDstOptimal) == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 extern const VkAttachmentLoadOp vk_load_ops[] = {
     VK_ATTACHMENT_LOAD_OP_LOAD,      // Load
@@ -23,20 +22,20 @@ extern const VkAttachmentLoadOp vk_load_ops[] = {
     VK_ATTACHMENT_LOAD_OP_DONT_CARE, // DontCare
     VK_ATTACHMENT_LOAD_OP_NONE_EXT   // None
 };
-static_assert(std::size(vk_load_ops) == int(eLoadOp::_Count), "!");
+static_assert(std::size(vk_load_ops) == int(eLoadOp::_Count));
 
 extern const VkAttachmentStoreOp vk_store_ops[] = {
     VK_ATTACHMENT_STORE_OP_STORE,     // Store
     VK_ATTACHMENT_STORE_OP_DONT_CARE, // DontCare
     VK_ATTACHMENT_STORE_OP_NONE_EXT   // None
 };
-static_assert(std::size(vk_store_ops) == int(eStoreOp::_Count), "!");
+static_assert(std::size(vk_store_ops) == int(eStoreOp::_Count));
 
 // make sure we can simply cast these
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT == 1, "!");
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2, "!");
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT == 4, "!");
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT == 8, "!");
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT == 1);
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2);
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT == 4);
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT == 8);
 } // namespace Ren
 
 Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {

@@ -17,7 +17,7 @@ class Renderer;
 struct typgraph_info_t {
     uint32_t line_height;
 };
-static_assert(sizeof(typgraph_info_t) == 4, "!");
+static_assert(sizeof(typgraph_info_t) == 4);
 
 struct glyph_info_t {
     int16_t pos[2];
@@ -25,12 +25,12 @@ struct glyph_info_t {
     int8_t off[2];
     int8_t adv[2];
 };
-static_assert(sizeof(glyph_info_t) == 10, "!");
+static_assert(sizeof(glyph_info_t) == 10);
 
 struct glyph_range_t {
     uint32_t beg, end;
 };
-static_assert(sizeof(glyph_range_t) == 8, "!");
+static_assert(sizeof(glyph_range_t) == 8);
 
 enum class eFontFileChunk { FontChTypoData, FontChImageData, FontChGlyphData, FontChCount };
 

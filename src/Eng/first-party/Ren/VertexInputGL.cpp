@@ -14,7 +14,7 @@ const uint32_t g_attrib_types_gl[] = {
     GL_UNSIGNED_BYTE,  // Uint8UNorm
     GL_INT,            // Int32
 };
-static_assert(std::size(g_attrib_types_gl) == size_t(eType::_Count), "!");
+static_assert(std::size(g_attrib_types_gl) == size_t(eType::_Count));
 
 bool IsIntegerType(const eType type) { return type == eType::Uint32 || type == eType::Int32 || type == eType::Uint16; }
 bool IsNormalizedType(const eType type) {

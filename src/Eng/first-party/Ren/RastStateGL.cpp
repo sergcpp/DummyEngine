@@ -34,19 +34,19 @@ const uint32_t g_cull_face_gl[] = {
     GL_FRONT,   // Front
     GL_BACK,    // Back
 };
-static_assert(std::size(g_cull_face_gl) == size_t(eCullFace::_Count), "!");
+static_assert(std::size(g_cull_face_gl) == size_t(eCullFace::_Count));
 
 const uint32_t g_polygon_mode_gl[] = {
     GL_FILL, // Fill
     GL_LINE, // Line
 };
-static_assert(std::size(g_polygon_mode_gl) == size_t(ePolygonMode::_Count), "!");
+static_assert(std::size(g_polygon_mode_gl) == size_t(ePolygonMode::_Count));
 
 const uint32_t g_depth_range_mode_gl[] = {
     GL_ZERO_TO_ONE,        // ZeroToOne
     GL_NEGATIVE_ONE_TO_ONE // NegOneToOne
 };
-static_assert(std::size(g_depth_range_mode_gl) == size_t(eDepthRangeMode::_Count), "!");
+static_assert(std::size(g_depth_range_mode_gl) == size_t(eDepthRangeMode::_Count));
 } // namespace Ren
 
 void Ren::RastState::Apply(const RastState *ref) const {

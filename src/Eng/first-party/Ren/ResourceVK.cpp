@@ -22,18 +22,18 @@ const VkPipelineStageFlags g_stage_flags_vk[] = {
 };
 
 static_assert(uint16_t(Bitmask{eStage::VertexInput}) == 0b0000000000001u);
-static_assert(uint16_t(Bitmask{eStage::VertexShader}) == 0b0000000000010u, "!");
-static_assert(uint16_t(Bitmask{eStage::TessCtrlShader}) == 0b0000000000100u, "!");
-static_assert(uint16_t(Bitmask{eStage::TessEvalShader}) == 0b0000000001000u, "!");
-static_assert(uint16_t(Bitmask{eStage::GeometryShader}) == 0b0000000010000u, "!");
-static_assert(uint16_t(Bitmask{eStage::FragmentShader}) == 0b0000000100000u, "!");
-static_assert(uint16_t(Bitmask{eStage::ComputeShader}) == 0b0000001000000u, "!");
-static_assert(uint16_t(Bitmask{eStage::RayTracingShader}) == 0b0000010000000u, "!");
-static_assert(uint16_t(Bitmask{eStage::ColorAttachment}) == 0b0000100000000u, "!");
-static_assert(uint16_t(Bitmask{eStage::DepthAttachment}) == 0b0001000000000u, "!");
-static_assert(uint16_t(Bitmask{eStage::DrawIndirect}) == 0b0010000000000u, "!");
-static_assert(uint16_t(Bitmask{eStage::Transfer}) == 0b0100000000000u, "!");
-static_assert(uint16_t(Bitmask{eStage::AccStructureBuild}) == 0b1000000000000u, "!");
+static_assert(uint16_t(Bitmask{eStage::VertexShader}) == 0b0000000000010u);
+static_assert(uint16_t(Bitmask{eStage::TessCtrlShader}) == 0b0000000000100u);
+static_assert(uint16_t(Bitmask{eStage::TessEvalShader}) == 0b0000000001000u);
+static_assert(uint16_t(Bitmask{eStage::GeometryShader}) == 0b0000000010000u);
+static_assert(uint16_t(Bitmask{eStage::FragmentShader}) == 0b0000000100000u);
+static_assert(uint16_t(Bitmask{eStage::ComputeShader}) == 0b0000001000000u);
+static_assert(uint16_t(Bitmask{eStage::RayTracingShader}) == 0b0000010000000u);
+static_assert(uint16_t(Bitmask{eStage::ColorAttachment}) == 0b0000100000000u);
+static_assert(uint16_t(Bitmask{eStage::DepthAttachment}) == 0b0001000000000u);
+static_assert(uint16_t(Bitmask{eStage::DrawIndirect}) == 0b0010000000000u);
+static_assert(uint16_t(Bitmask{eStage::Transfer}) == 0b0100000000000u);
+static_assert(uint16_t(Bitmask{eStage::AccStructureBuild}) == 0b1000000000000u);
 
 VkPipelineStageFlags to_pipeline_stage_flags_vk(const Bitmask<eStage> stage_mask) {
     auto mask_u16 = uint16_t(stage_mask);
@@ -67,7 +67,7 @@ const VkImageLayout g_image_layout_per_state_vk[] = {
     VK_IMAGE_LAYOUT_UNDEFINED,                        // BuildASWrite
     VK_IMAGE_LAYOUT_UNDEFINED                         // RayTracing
 };
-static_assert(std::size(g_image_layout_per_state_vk) == int(eResState::_Count), "!");
+static_assert(std::size(g_image_layout_per_state_vk) == int(eResState::_Count));
 
 const VkAccessFlags g_access_flags_per_state_vk[] = {
     0,                                                                                          // Undefined
@@ -88,7 +88,7 @@ const VkAccessFlags g_access_flags_per_state_vk[] = {
     VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, // BuildASWrite
     VK_ACCESS_SHADER_READ_BIT,                                                                      // RayTracing
 };
-static_assert(std::size(g_access_flags_per_state_vk) == int(eResState::_Count), "!");
+static_assert(std::size(g_access_flags_per_state_vk) == int(eResState::_Count));
 
 const VkPipelineStageFlags VKAllStages =
     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
@@ -126,7 +126,7 @@ const VkPipelineStageFlags g_pipeline_stages_per_state_vk[] = {
     VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, // BuildASWrite
     VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR            // RayTracing
 };
-static_assert(std::size(g_pipeline_stages_per_state_vk) == int(eResState::_Count), "!");
+static_assert(std::size(g_pipeline_stages_per_state_vk) == int(eResState::_Count));
 } // namespace Ren
 
 int Ren::VKImageLayoutForState(const eResState state) { return g_image_layout_per_state_vk[int(state)]; }

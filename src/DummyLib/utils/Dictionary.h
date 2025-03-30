@@ -32,7 +32,7 @@ class Dictionary {
         uint32_t entry_index;
         uint32_t entry_count;
     };
-    static_assert(sizeof(dict_link_compact_t) == 12, "!");
+    static_assert(sizeof(dict_link_compact_t) == 12);
 
     struct dict_link_nokey_t {
         uint32_t entry_index;
@@ -48,7 +48,7 @@ class Dictionary {
         uint32_t pron_str_off;
         uint32_t trans_str_off;
     };
-    static_assert(sizeof(dict_entry_compact_t) == 16, "!");
+    static_assert(sizeof(dict_entry_compact_t) == 16);
 
     enum class eDictChunks { DictChInfo, DictChLinks, DictChEntries, DictChStrings, DictChCount };
 
@@ -56,7 +56,7 @@ class Dictionary {
         char src_lang[2], dst_lang[2];
         uint32_t keys_count, entries_count;
     };
-    static_assert(sizeof(dict_info_t) == 12, "!");
+    static_assert(sizeof(dict_info_t) == 12);
 
   private:
     dict_info_t info_;

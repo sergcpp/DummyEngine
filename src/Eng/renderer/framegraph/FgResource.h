@@ -35,7 +35,7 @@ struct FgResource {
         return lhs.index < rhs.index;
     }
 };
-static_assert(sizeof(FgResource) == 16, "!");
+static_assert(sizeof(FgResource) == 16);
 
 struct FgResRef {
     eFgResType type = eFgResType::Undefined;
@@ -61,7 +61,7 @@ struct FgResRef {
         return index < rhs.index;
     }
 };
-static_assert(sizeof(FgResRef) == 6, "!");
+static_assert(sizeof(FgResRef) == 6);
 
 struct FgBufDesc {
     Ren::eBufType type;

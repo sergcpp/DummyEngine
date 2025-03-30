@@ -19,7 +19,7 @@ template <typename OffsetType, bool InPlace> struct tlsf_index_t {
     static const int FL_INDEX_COUNT = (FL_INDEX_MAX - FL_INDEX_SHIFT + 1);
     static const int SMALL_BLOCK_SIZE = (1 << FL_INDEX_SHIFT);
 
-    static_assert(InPlace || (SMALL_BLOCK_SIZE / SL_INDEX_COUNT) == 1, "!");
+    static_assert(InPlace || (SMALL_BLOCK_SIZE / SL_INDEX_COUNT) == 1);
 
     // First and second level bitmap
     uint32_t fl_bitmap = 0; // zero means 'no free blocks'
@@ -53,7 +53,7 @@ class FreelistAlloc {
         uint32_t offset = 0, size = 0;
         uint32_t prev_free = 0xffffffff, next_free = 0xffffffff;
     };
-    static_assert(sizeof(block_t) == 28, "!");
+    static_assert(sizeof(block_t) == 28);
 
     std::vector<block_t> all_blocks_;
     std::vector<uint32_t> unused_blocks_;

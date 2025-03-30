@@ -20,7 +20,7 @@ struct orig_vertex_t {
     float t0[2];
     float t1[2];
 };
-static_assert(sizeof(orig_vertex_t) == 52, "!");
+static_assert(sizeof(orig_vertex_t) == 52);
 
 struct orig_vertex_colored_t {
     float p[3];
@@ -29,40 +29,40 @@ struct orig_vertex_colored_t {
     float t0[2];
     uint8_t c[4];
 };
-static_assert(sizeof(orig_vertex_colored_t) == 48, "!");
+static_assert(sizeof(orig_vertex_colored_t) == 48);
 
 struct orig_vertex_skinned_t {
     orig_vertex_t v;
     int32_t bone_indices[4];
     float bone_weights[4];
 };
-static_assert(sizeof(orig_vertex_skinned_t) == 84, "!");
+static_assert(sizeof(orig_vertex_skinned_t) == 84);
 
 struct orig_vertex_skinned_colored_t {
     orig_vertex_colored_t v;
     int32_t bone_indices[4];
     float bone_weights[4];
 };
-static_assert(sizeof(orig_vertex_skinned_t) == 84, "!");
+static_assert(sizeof(orig_vertex_skinned_t) == 84);
 
 struct packed_vertex_data1_t {
     float p[3];
     uint16_t t0[2];
 };
-static_assert(sizeof(packed_vertex_data1_t) == 16, "!");
+static_assert(sizeof(packed_vertex_data1_t) == 16);
 
 struct packed_vertex_data2_t {
     int16_t n_and_bx[4];
     int16_t byz[2];
     uint16_t t1[2];
 };
-static_assert(sizeof(packed_vertex_data2_t) == 16, "!");
+static_assert(sizeof(packed_vertex_data2_t) == 16);
 
 // make sure attributes are aligned to 4-bytes
-static_assert(offsetof(packed_vertex_data1_t, t0) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_data2_t, n_and_bx) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_data2_t, byz) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_data2_t, t1) % 4 == 0, "!");
+static_assert(offsetof(packed_vertex_data1_t, t0) % 4 == 0);
+static_assert(offsetof(packed_vertex_data2_t, n_and_bx) % 4 == 0);
+static_assert(offsetof(packed_vertex_data2_t, byz) % 4 == 0);
+static_assert(offsetof(packed_vertex_data2_t, t1) % 4 == 0);
 
 struct packed_vertex_t {
     float p[3];
@@ -71,35 +71,35 @@ struct packed_vertex_t {
     uint16_t t0[2];
     uint16_t t1[2];
 };
-static_assert(sizeof(packed_vertex_t) == 32, "!");
+static_assert(sizeof(packed_vertex_t) == 32);
 
 // make sure attributes are aligned to 4-bytes
-static_assert(offsetof(packed_vertex_t, n_and_bx) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_t, byz) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_t, t0) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_t, t1) % 4 == 0, "!");
+static_assert(offsetof(packed_vertex_t, n_and_bx) % 4 == 0);
+static_assert(offsetof(packed_vertex_t, byz) % 4 == 0);
+static_assert(offsetof(packed_vertex_t, t0) % 4 == 0);
+static_assert(offsetof(packed_vertex_t, t1) % 4 == 0);
 
 struct packed_vertex_skinned_t {
     packed_vertex_t v;
     uint16_t bone_indices[4];
     uint16_t bone_weights[4];
 };
-static_assert(sizeof(packed_vertex_skinned_t) == 48, "!");
+static_assert(sizeof(packed_vertex_skinned_t) == 48);
 
 // make sure attributes are aligned to 4-bytes
-static_assert(offsetof(packed_vertex_skinned_t, v.n_and_bx) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_skinned_t, v.byz) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_skinned_t, v.t0) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_skinned_t, v.t1) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_skinned_t, bone_indices) % 4 == 0, "!");
-static_assert(offsetof(packed_vertex_skinned_t, bone_weights) % 4 == 0, "!");
+static_assert(offsetof(packed_vertex_skinned_t, v.n_and_bx) % 4 == 0);
+static_assert(offsetof(packed_vertex_skinned_t, v.byz) % 4 == 0);
+static_assert(offsetof(packed_vertex_skinned_t, v.t0) % 4 == 0);
+static_assert(offsetof(packed_vertex_skinned_t, v.t1) % 4 == 0);
+static_assert(offsetof(packed_vertex_skinned_t, bone_indices) % 4 == 0);
+static_assert(offsetof(packed_vertex_skinned_t, bone_weights) % 4 == 0);
 
 struct packed_vertex_delta_t {
     float dp[3];
     int16_t dn[3]; // normalized, delta normal is limited but it is fine
     int16_t db[3];
 };
-static_assert(sizeof(packed_vertex_delta_t) == 24, "!");
+static_assert(sizeof(packed_vertex_delta_t) == 24);
 
 void pack_vertex(const orig_vertex_t &in_v, packed_vertex_t &out_v) {
     out_v.p[0] = in_v.p[0];

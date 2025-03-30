@@ -688,11 +688,11 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
         float bind_pos[3], bind_rot[4];
     };
     vector<OutBone> out_bones;
-    static_assert(sizeof(OutBone) == 100, "fix struct packing!");
-    static_assert(offsetof(OutBone, id) == 64, "!");
-    static_assert(offsetof(OutBone, parent_id) == 68, "!");
-    static_assert(offsetof(OutBone, bind_pos) == 72, "!");
-    static_assert(offsetof(OutBone, bind_rot) == 84, "!");
+    static_assert(sizeof(OutBone) == 100);
+    static_assert(offsetof(OutBone, id) == 64);
+    static_assert(offsetof(OutBone, parent_id) == 68);
+    static_assert(offsetof(OutBone, bind_pos) == 72);
+    static_assert(offsetof(OutBone, bind_rot) == 84);
 
     struct ShapeKeyElement {
         int index;
@@ -1547,7 +1547,7 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, co
     } file_header;
 
     static_assert(sizeof(Header) == 36, "fix struct packing!");
-    static_assert(offsetof(Header, p) == 4, "!");
+    static_assert(offsetof(Header, p) == 4);
 
     size_t file_offset = 12 + sizeof(Header);
     file_header.num_chunks = 4;

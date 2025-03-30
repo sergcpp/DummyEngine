@@ -24,7 +24,7 @@ struct TexHandle {
 
     explicit operator bool() const { return id != 0; }
 };
-static_assert(sizeof(TexHandle) == 40, "!");
+static_assert(sizeof(TexHandle) == 40);
 
 inline bool operator==(const TexHandle lhs, const TexHandle rhs) {
     return lhs.id == rhs.id && lhs.views == rhs.views && lhs.generation == rhs.generation;

@@ -28,7 +28,7 @@ struct WaveChunk {
     uint32_t channel_mask;
     char sub_format[16];
 };
-static_assert(sizeof(WaveChunk) == 48, "!");
+static_assert(sizeof(WaveChunk) == 48);
 
 int LoadWAV(std::istream &in_data, int &channels, int &samples_per_second,
             int &bits_per_sample, std::unique_ptr<uint8_t[]> &samples);

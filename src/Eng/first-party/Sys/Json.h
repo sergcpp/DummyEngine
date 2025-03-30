@@ -29,7 +29,7 @@ struct JsFlags {
 
     JsFlags() : ident_levels(1), use_new_lines(1), use_identation(1), prefer_spaces(0), level(0) {}
 };
-static_assert(sizeof(JsFlags) == 4, "!");
+static_assert(sizeof(JsFlags) == 4);
 
 template <typename Alloc> struct JsElementT;
 

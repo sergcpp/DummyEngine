@@ -47,8 +47,8 @@ static const eKeyword g_GenTypesTable[][4] = {
     {eKeyword::K_imageBuffer, eKeyword::K_iimageBuffer, eKeyword::K_uimageBuffer},
     {eKeyword::K_subpassInput, eKeyword::K_isubpassInput, eKeyword::K_usubpassInput},
     {eKeyword::K_subpassInputMS, eKeyword::K_isubpassInputMS, eKeyword::K_usubpassInputMS}};
-static_assert(int(eKeyword::K_genFType) == 331, "!");
-static_assert(int(eKeyword::K_gsubpassInputMS) == 364, "!");
+static_assert(int(eKeyword::K_genFType) == 331);
+static_assert(int(eKeyword::K_gsubpassInputMS) == 364);
 
 extern const char g_builtin_prototypes[] =
 #include "BuiltinPrototypes.inl"

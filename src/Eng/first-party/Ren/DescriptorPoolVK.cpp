@@ -15,7 +15,7 @@ const VkDescriptorType g_descr_types_vk[] = {
     VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,      // StorageTexBuffer
     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR // AccStructure
 };
-static_assert(std::size(g_descr_types_vk) == int(eDescrType::_Count), "!");
+static_assert(std::size(g_descr_types_vk) == int(eDescrType::_Count));
 } // namespace Ren
 
 Ren::DescrPool &Ren::DescrPool::operator=(DescrPool &&rhs) noexcept {

@@ -27,10 +27,10 @@ extern const VkFormat g_formats_vk[] = {
 uint32_t TextureHandleCounter = 0;
 
 // make sure we can simply cast these
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT == 1, "!");
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2, "!");
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT == 4, "!");
-static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT == 8, "!");
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT == 1);
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2);
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT == 4);
+static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT == 8);
 
 VkImageUsageFlags to_vk_image_usage(const Bitmask<eTexUsage> usage, const eTexFormat format) {
     VkImageUsageFlags ret = 0;

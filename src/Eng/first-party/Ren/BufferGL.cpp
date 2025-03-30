@@ -21,7 +21,7 @@ const uint32_t g_buf_targets_gl[] = {
     0xffffffff,               // ShaderBinding
     GL_DRAW_INDIRECT_BUFFER   // Indirect
 };
-static_assert(std::size(g_buf_targets_gl) == size_t(eBufType::_Count), "!");
+static_assert(std::size(g_buf_targets_gl) == size_t(eBufType::_Count));
 
 GLenum GetGLBufUsage(const eBufType type) {
     if (type == eBufType::Upload || type == eBufType::Readback) {

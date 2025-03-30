@@ -21,11 +21,11 @@ struct IVFHeader {
     uint32_t num_frames;
     uint32_t unused;
 };
-static_assert(sizeof(IVFHeader) == 32, "!");
+static_assert(sizeof(IVFHeader) == 32);
 
-static_assert(int(Eng::eYUVComp::Y) == VPX_PLANE_Y, "!");
-static_assert(int(Eng::eYUVComp::U) == VPX_PLANE_U, "!");
-static_assert(int(Eng::eYUVComp::V) == VPX_PLANE_V, "!");
+static_assert(int(Eng::eYUVComp::Y) == VPX_PLANE_Y);
+static_assert(int(Eng::eYUVComp::U) == VPX_PLANE_U);
+static_assert(int(Eng::eYUVComp::V) == VPX_PLANE_V);
 
 int vpx_plane_width(const vpx_image_t *img, int plane) {
     if (plane && img->x_chroma_shift) {

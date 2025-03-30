@@ -31,7 +31,7 @@ const Bitmask<eStage> g_stage_bits_per_state[] = {
     eStage::AccStructureBuild,                            // BuildASWrite
     eStage::RayTracingShader                              // RayTracing
 };
-static_assert(std::size(g_stage_bits_per_state) == int(eResState::_Count), "!");
+static_assert(std::size(g_stage_bits_per_state) == int(eResState::_Count));
 } // namespace Ren
 
 Ren::Bitmask<Ren::eStage> Ren::StagesForState(const eResState state) { return g_stage_bits_per_state[int(state)]; }

@@ -22,7 +22,7 @@ void *g_metal_layer = nullptr;
 
 bool Ren::ApiContext::Load(ILog *log) {
 #if defined(_WIN32)
-    static_assert(sizeof(void *) == sizeof(HMODULE), "!");
+    static_assert(sizeof(void *) == sizeof(HMODULE));
     vulkan_module = LoadLibrary("vulkan-1.dll");
     if (!vulkan_module) {
         log->Error("Failed to load vulkan-1.dll");

@@ -36,7 +36,7 @@ void DefaultFileReadBuf::Free() {
 }
 
 FileReadEvent::FileReadEvent() {
-    static_assert(sizeof(OVERLAPPED) <= sizeof(ov_), "!");
+    static_assert(sizeof(OVERLAPPED) <= sizeof(ov_));
 
     h_file_ = NULL;
     ev_ = ::CreateEvent(NULL /* attribs */, TRUE /* manual reset */, FALSE /* initial state */, NULL /* name */);

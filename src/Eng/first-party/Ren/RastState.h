@@ -81,7 +81,7 @@ union PolyState {
         multisample = 1;
     }
 };
-static_assert(sizeof(PolyState) == 1, "!");
+static_assert(sizeof(PolyState) == 1);
 
 inline bool operator==(const PolyState &lhs, const PolyState &rhs) { return lhs.bits == rhs.bits; }
 inline bool operator!=(const PolyState &lhs, const PolyState &rhs) { return lhs.bits != rhs.bits; }
@@ -103,7 +103,7 @@ union DepthState {
         compare_op = uint8_t(eCompareOp::Always);
     }
 };
-static_assert(sizeof(DepthState) == 1, "!");
+static_assert(sizeof(DepthState) == 1);
 
 inline bool operator==(const DepthState &lhs, const DepthState &rhs) { return lhs.bits == rhs.bits; }
 inline bool operator!=(const DepthState &lhs, const DepthState &rhs) { return lhs.bits != rhs.bits; }
@@ -129,7 +129,7 @@ union BlendState {
         src_alpha = dst_alpha = uint8_t(eBlendFactor::Zero);
     }
 };
-static_assert(sizeof(BlendState) == 3, "!");
+static_assert(sizeof(BlendState) == 3);
 
 inline bool operator==(const BlendState &lhs, const BlendState &rhs) {
     return lhs.bits[0] == rhs.bits[0] && lhs.bits[1] == rhs.bits[1] && lhs.bits[2] == rhs.bits[2];
@@ -176,7 +176,7 @@ union StencilState {
         compare_mask = 0xff;
     }
 };
-static_assert(sizeof(StencilState) == 6, "!");
+static_assert(sizeof(StencilState) == 6);
 
 inline bool operator==(const StencilState &lhs, const StencilState &rhs) {
     return lhs.bits[0] == rhs.bits[0] && lhs.bits[1] == rhs.bits[1] && lhs.bits[2] == rhs.bits[2];

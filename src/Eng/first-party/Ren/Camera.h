@@ -16,7 +16,7 @@ struct Plane {
     Plane(const Vec3f &v0, const Vec3f &v1, const Vec3f &v2);
     explicit Plane(eUninitialized) : n(Uninitialize) {} // NOLINT
 
-    ePointPos ClassifyPoint(const float point[3]) const;
+    ePointPos ClassifyPoint(const float point[3], float eps = 0.002f) const;
 };
 
 enum class eCamPlane { Left, Right, Top, Bottom, Near, Far, _Count };

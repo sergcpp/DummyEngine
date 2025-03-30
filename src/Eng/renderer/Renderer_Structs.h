@@ -22,28 +22,31 @@ namespace Eng {
 #include "shaders/Constants.inl"
 
 using namespace Types;
-static_assert(sizeof(Types::light_item_t) == 96, "!");
+static_assert(sizeof(Types::light_item_t) == 96);
+static_assert(sizeof(Types::probe_volume_t) == 64);
+static_assert(sizeof(Types::light_wbvh_node_t) == 320);
+static_assert(sizeof(Types::light_cwbvh_node_t) == 208);
 
 struct decal_item_t {
     float mat[3][4];
     // TODO: use 16-bit unorms
     float mask[4], diff[4], norm[4], spec[4];
 };
-static_assert(sizeof(decal_item_t) == DECALS_BUF_STRIDE * 4 * sizeof(float), "!");
+static_assert(sizeof(decal_item_t) == DECALS_BUF_STRIDE * 4 * sizeof(float));
 
 struct probe_item_t {
     float position[3], radius;
     float _unused[3], layer;
     float sh_coeffs[3][4];
 };
-static_assert(sizeof(probe_item_t) == 20 * sizeof(float), "!");
+static_assert(sizeof(probe_item_t) == 20 * sizeof(float));
 
 struct ellipse_item_t {
     float position[3], radius;
     float axis[3];
     uint32_t perp;
 };
-static_assert(sizeof(ellipse_item_t) == 8 * sizeof(float), "!");
+static_assert(sizeof(ellipse_item_t) == 8 * sizeof(float));
 
 struct cell_data_t {
     uint32_t item_offset : 24;
@@ -53,7 +56,7 @@ struct cell_data_t {
     uint32_t ellips_count : 8;
     uint32_t _unused : 8;
 };
-static_assert(sizeof(cell_data_t) == 8, "!");
+static_assert(sizeof(cell_data_t) == 8);
 
 struct item_data_t {
     uint32_t light_index : 12;
@@ -62,7 +65,7 @@ struct item_data_t {
     uint32_t ellips_index : 8;
     uint32_t _unused : 24;
 };
-static_assert(sizeof(item_data_t) == 8, "!");
+static_assert(sizeof(item_data_t) == 8);
 
 struct instance_data_t {
     float model_matrix[3][4];
@@ -85,7 +88,7 @@ struct instance_data_t {
     float prev_model_matrix[3][4];
     float _pad1[4];
 };
-static_assert(sizeof(instance_data_t) == 192, "!");
+static_assert(sizeof(instance_data_t) == 192);
 
 struct basic_draw_batch_t { // NOLINT
     static const uint64_t TypeSimple = 0b00ull;
@@ -126,7 +129,7 @@ struct basic_draw_batch_t { // NOLINT
     uint32_t instance_start;
     uint32_t instance_count;
 };
-static_assert(offsetof(basic_draw_batch_t, indices_count) == 8, "!");
+static_assert(offsetof(basic_draw_batch_t, indices_count) == 8);
 
 enum class eFwdPipeline { FrontfaceDraw, BackfaceDraw, Wireframe, _Count };
 
@@ -163,7 +166,7 @@ struct custom_draw_batch_t { // NOLINT
     uint32_t instance_start;
     uint32_t instance_count;
 };
-static_assert(offsetof(custom_draw_batch_t, indices_count) == 8, "!");
+static_assert(offsetof(custom_draw_batch_t, indices_count) == 8);
 
 struct shadow_list_t { // NOLINT
     int shadow_map_pos[2], shadow_map_size[2];
@@ -183,26 +186,26 @@ struct shadow_map_region_t {
     Ren::Vec4f transform;
     Ren::Mat4f clip_from_world;
 };
-static_assert(sizeof(shadow_map_region_t) == 80, "!");
+static_assert(sizeof(shadow_map_region_t) == 80);
 
 struct sort_span_32_t {
     uint32_t key;
     uint32_t base;
     uint32_t count;
 };
-static_assert(sizeof(sort_span_32_t) == 12, "!");
+static_assert(sizeof(sort_span_32_t) == 12);
 
 struct sort_span_64_t {
     uint64_t key;
     uint32_t base;
     uint32_t count;
 };
-static_assert(sizeof(sort_span_64_t) == 16, "!");
+static_assert(sizeof(sort_span_64_t) == 16);
 
 struct skin_transform_t {
     float matr[3][4];
 };
-static_assert(sizeof(skin_transform_t) == 48, "!");
+static_assert(sizeof(skin_transform_t) == 48);
 
 struct skin_region_t {
     uint32_t in_vtx_offset, out_vtx_offset;
@@ -412,9 +415,14 @@ struct shared_data_t {
     ellipse_item_t ellipsoids[MAX_ELLIPSES_TOTAL] = {};
     Types::atmosphere_params_t atmosphere;
 };
-static_assert(sizeof(shared_data_t) ==
-                  7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 192 + 16 + 16 + 16 + 16 + PROBE_VOLUMES_COUNT * 64,
-              "!");
+static_assert(sizeof(shared_data_t) == sizeof(Ren::Mat4f) * 10 +                                 //
+                                           sizeof(shadow_map_region_t) * MAX_SHADOWMAPS_TOTAL +  //
+                                           sizeof(Ren::Vec4f) * 18 +                             //
+                                           sizeof(Types::probe_volume_t) * PROBE_VOLUMES_COUNT + //
+                                           sizeof(uint32_t) * MAX_PORTALS_TOTAL +
+                                           sizeof(probe_item_t) * MAX_PROBES_TOTAL +     //
+                                           sizeof(ellipse_item_t) * MAX_ELLIPSES_TOTAL + //
+                                           sizeof(Types::atmosphere_params_t));
 
 const int MAX_MATERIAL_PARAMS = 4;
 
@@ -423,7 +431,7 @@ struct material_data_t {
     uint32_t _pad[2];
     Ren::Vec4f params[MAX_MATERIAL_PARAMS];
 };
-static_assert(sizeof(material_data_t) == 96, "!");
+static_assert(sizeof(material_data_t) == 96);
 
 const uint32_t RTGeoProbeBits = 0xff;
 const uint32_t RTGeoLightmappedBit = (1u << 8u);
@@ -435,7 +443,7 @@ struct rt_geo_instance_t {
     uint32_t flags;
     float lmap_transform[4];
 };
-static_assert(sizeof(rt_geo_instance_t) == 32, "!");
+static_assert(sizeof(rt_geo_instance_t) == 32);
 
 struct rt_obj_instance_t {
     float xform[3][4];
@@ -446,7 +454,7 @@ struct rt_obj_instance_t {
     uint32_t geo_count;
     const Ren::IAccStructure *blas_ref;
 };
-static_assert(sizeof(rt_obj_instance_t) == 64 + 24, "!");
+static_assert(sizeof(rt_obj_instance_t) == 64 + 24);
 
 struct BindlessTextureData {
 #if defined(REN_VK_BACKEND)
@@ -495,7 +503,7 @@ struct gpu_bvh_node_t { // NOLINT
         uint32_t right_child;
     };
 };
-static_assert(sizeof(gpu_bvh_node_t) == 32, "!");
+static_assert(sizeof(gpu_bvh_node_t) == 32);
 
 struct gpu_bvh2_node_t {
     Ren::Vec4f ch_data0;  // [ ch0.min.x, ch0.max.x, ch0.min.y, ch0.max.y ]
@@ -505,15 +513,15 @@ struct gpu_bvh2_node_t {
     uint32_t right_child; // First three bits identify primitive count in leaf nodes
     uint32_t _unused0, _unused1;
 };
-static_assert(sizeof(gpu_bvh2_node_t) == 64, "!");
-static_assert(sizeof(gpu_bvh2_node_t) == BVH2_NODE_BUF_STRIDE * 4 * sizeof(float), "!");
+static_assert(sizeof(gpu_bvh2_node_t) == 64);
+static_assert(sizeof(gpu_bvh2_node_t) == BVH2_NODE_BUF_STRIDE * 4 * sizeof(float));
 
 struct alignas(32) gpu_wbvh_node_t {
     float bbox_min[3][8];
     float bbox_max[3][8];
     uint32_t child[8];
 };
-static_assert(sizeof(gpu_wbvh_node_t) == 224, "!");
+static_assert(sizeof(gpu_wbvh_node_t) == 224);
 
 struct gpu_light_bvh_node_t : public gpu_bvh_node_t {
     float flux;
@@ -521,14 +529,14 @@ struct gpu_light_bvh_node_t : public gpu_bvh_node_t {
     float omega_n; // cone angle enclosing light normals
     float omega_e; // emission angle around each normal
 };
-static_assert(sizeof(gpu_light_bvh_node_t) == 56, "!");
+static_assert(sizeof(gpu_light_bvh_node_t) == 56);
 
 struct gpu_light_wbvh_node_t : public gpu_wbvh_node_t {
     float flux[8];
     uint32_t axis[8];
     uint32_t cos_omega_ne[8];
 };
-static_assert(sizeof(gpu_light_wbvh_node_t) == 320, "!");
+static_assert(sizeof(gpu_light_wbvh_node_t) == 320);
 
 struct gpu_cwbvh_node_t {
     Ren::Vec3f bbox_min;
@@ -539,14 +547,14 @@ struct gpu_cwbvh_node_t {
     uint8_t ch_bbox_max[3][8];
     uint32_t child[8];
 };
-static_assert(sizeof(gpu_cwbvh_node_t) == 112, "!");
+static_assert(sizeof(gpu_cwbvh_node_t) == 112);
 
 struct gpu_light_cwbvh_node_t : public gpu_cwbvh_node_t {
     float flux[8];
     uint32_t axis[8];
     uint32_t cos_omega_ne[8];
 };
-static_assert(sizeof(gpu_light_cwbvh_node_t) == 208, "!");
+static_assert(sizeof(gpu_light_cwbvh_node_t) == 208);
 
 struct gpu_mesh_instance_t {
     uint32_t visibility;
@@ -557,8 +565,8 @@ struct gpu_mesh_instance_t {
     Ren::Mat3x4f inv_transform;
     Ren::Mat3x4f transform;
 };
-static_assert(sizeof(gpu_mesh_instance_t) == 112, "!");
-static_assert(sizeof(gpu_mesh_instance_t) == MESH_INSTANCE_BUF_STRIDE * 4 * sizeof(float), "!");
+static_assert(sizeof(gpu_mesh_instance_t) == 112);
+static_assert(sizeof(gpu_mesh_instance_t) == MESH_INSTANCE_BUF_STRIDE * 4 * sizeof(float));
 
 const size_t sizeof_VkAccelerationStructureInstanceKHR = 64;
 
@@ -578,6 +586,6 @@ const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT
 const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh2_node_t) * MAX_RT_TLAS_NODES;
 const size_t SharedDataBlockSize = 12 * 1024;
 
-static_assert(sizeof(shared_data_t) <= SharedDataBlockSize, "!");
+static_assert(sizeof(shared_data_t) <= SharedDataBlockSize);
 
 } // namespace Eng

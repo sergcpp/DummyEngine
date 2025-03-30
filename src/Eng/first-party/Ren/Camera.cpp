@@ -10,13 +10,11 @@ Ren::Plane::Plane(const Vec3f &v0, const Vec3f &v1, const Vec3f &v2) : n(Uniniti
     d = -Dot(v0, n);
 }
 
-Ren::ePointPos Ren::Plane::ClassifyPoint(const float point[3]) const {
-    const float epsilon = 0.002f;
-
+Ren::ePointPos Ren::Plane::ClassifyPoint(const float point[3], const float eps) const {
     float result = Dot(MakeVec3(point), n) + d;
-    if (result > epsilon) {
+    if (result > eps) {
         return ePointPos::Front;
-    } else if (result < -epsilon) {
+    } else if (result < -eps) {
         return ePointPos::Back;
     }
     return ePointPos::OnPlane;
