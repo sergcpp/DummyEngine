@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = vol_compose
-	commit = 10d5cc05c481617e724b218d1924bb8da2caa2ce
+	branch = vol_absorb
+	commit = be0685d9646eb48729b672ade80d3b69dd46867a
 	method = merge
 	cmdver = 0.4.6
-	parent = 1ca21efb947022b5bbc10b6f8561fcfdd399beff
+	parent = e80146ac836be9287bd56646513fb4cba7053247
