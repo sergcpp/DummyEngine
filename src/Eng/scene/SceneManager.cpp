@@ -486,17 +486,26 @@ void Eng::SceneManager::LoadScene(const Sys::JsObjectP &js_scene, const Ren::Bit
         scene_data_.env.fog = {};
         if (js_env.Has("fog")) {
             const Sys::JsObjectP &js_fog = js_env.at("fog").as_obj();
-            if (js_fog.Has("color")) {
-                const Sys::JsArrayP &js_col = js_fog.at("color").as_arr();
-                scene_data_.env.fog.color[0] = float(js_col[0].as_num().val);
-                scene_data_.env.fog.color[1] = float(js_col[1].as_num().val);
-                scene_data_.env.fog.color[2] = float(js_col[2].as_num().val);
+            if (js_fog.Has("scatter_color")) {
+                const Sys::JsArrayP &js_col = js_fog.at("scatter_color").as_arr();
+                scene_data_.env.fog.scatter_color[0] = float(js_col[0].as_num().val);
+                scene_data_.env.fog.scatter_color[1] = float(js_col[1].as_num().val);
+                scene_data_.env.fog.scatter_color[2] = float(js_col[2].as_num().val);
             }
             if (js_fog.Has("density")) {
                 scene_data_.env.fog.density = float(js_fog.at("density").as_num().val);
             }
             if (js_fog.Has("anisotropy")) {
                 scene_data_.env.fog.anisotropy = float(js_fog.at("anisotropy").as_num().val);
+            }
+            if (js_fog.Has("absorption")) {
+                scene_data_.env.fog.absorption = float(js_fog.at("absorption").as_num().val);
+            }
+            if (js_fog.Has("emission_color")) {
+                const Sys::JsArrayP &js_col = js_fog.at("emission_color").as_arr();
+                scene_data_.env.fog.emission_color[0] = float(js_col[0].as_num().val);
+                scene_data_.env.fog.emission_color[1] = float(js_col[1].as_num().val);
+                scene_data_.env.fog.emission_color[2] = float(js_col[2].as_num().val);
             }
             if (js_fog.Has("bbox_min")) {
                 const Sys::JsArrayP &js_bbox_min = js_fog.at("bbox_min").as_arr();
@@ -594,16 +603,32 @@ void Eng::SceneManager::SaveScene(Sys::JsObjectP &js_scene) {
         if (scene_data_.env.fog != volume_params_t{}) {
             Sys::JsObjectP js_fog(alloc);
 
-            { // write color
+            /*if (scene_data_.env.fog.scatter_color != volume_params_t{}.scatter_color)*/ {
                 Sys::JsArrayP js_col(alloc);
-                js_col.Push(Sys::JsNumber(scene_data_.env.fog.color[0]));
-                js_col.Push(Sys::JsNumber(scene_data_.env.fog.color[1]));
-                js_col.Push(Sys::JsNumber(scene_data_.env.fog.color[2]));
-                js_fog.Insert("color", js_col);
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.scatter_color[0]));
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.scatter_color[1]));
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.scatter_color[2]));
+                js_fog.Insert("scatter_color", js_col);
             }
 
-            js_fog.Insert("density", Sys::JsNumber{scene_data_.env.fog.density});
-            js_fog.Insert("anisotropy", Sys::JsNumber{scene_data_.env.fog.anisotropy});
+            if (scene_data_.env.fog.density != volume_params_t{}.density) {
+                js_fog.Insert("density", Sys::JsNumber{scene_data_.env.fog.density});
+            }
+            if (scene_data_.env.fog.anisotropy != volume_params_t{}.anisotropy) {
+                js_fog.Insert("anisotropy", Sys::JsNumber{scene_data_.env.fog.anisotropy});
+            }
+
+            if (scene_data_.env.fog.absorption != volume_params_t{}.absorption) {
+                js_fog.Insert("absorption", Sys::JsNumber{scene_data_.env.fog.absorption});
+            }
+
+            if (scene_data_.env.fog.emission_color != volume_params_t{}.emission_color) {
+                Sys::JsArrayP js_col(alloc);
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.emission_color[0]));
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.emission_color[1]));
+                js_col.Push(Sys::JsNumber(scene_data_.env.fog.emission_color[2]));
+                js_fog.Insert("emission_color", js_col);
+            }
 
             if (scene_data_.env.fog.bbox_min != volume_params_t{}.bbox_min) {
                 Sys::JsArrayP js_bbox_min(alloc);

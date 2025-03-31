@@ -16,9 +16,8 @@
         "sun_angle" : 10.0,
         "sun_shadow_bias" : [ 0.0, 0.0 ],
         "fog" : {
-            "color" : [ 0.8, 0.8, 0.8 ],
+            "scatter_color" : [ 0.8, 0.8, 0.8 ],
             "density" : 4.0,
-            "anisotropy" : 0.0,
             "bbox_min" : [ -100.0, -5.0, -100.0 ],
             "bbox_max" : [ 100.0, 5.0, 100.0 ]
         }

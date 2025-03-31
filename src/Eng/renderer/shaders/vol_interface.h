@@ -10,7 +10,8 @@ struct Params {
     ivec2 img_res;
     float density;
     float anisotropy;
-    vec4 color;
+    vec4 scatter_color; // w is absorption
+    vec4 emission_color;
     vec4 bbox_min;
     vec4 bbox_max;
     int frame_index;
@@ -21,9 +22,10 @@ struct Params {
 const int LOCAL_GROUP_SIZE_X = 8;
 const int LOCAL_GROUP_SIZE_Y = 8;
 
-const int SHADOW_DEPTH_TEX_SLOT = 2;
-const int SHADOW_COLOR_TEX_SLOT = 3;
-const int FROXELS_TEX_SLOT = 4;
+const int SHADOW_DEPTH_TEX_SLOT = 1;
+const int SHADOW_COLOR_TEX_SLOT = 2;
+const int FR_EMISSION_DENSITY_TEX_SLOT = 3;
+const int FR_SCATTER_ABSORPTION_TEX_SLOT = 4;
 const int DEPTH_TEX_SLOT = 5;
 const int RANDOM_SEQ_BUF_SLOT = 6;
 
@@ -38,7 +40,6 @@ const int DISTANCE_TEX_SLOT = 13;
 const int OFFSET_TEX_SLOT = 14;
 
 const int OUT_FROXELS_IMG_SLOT = 0;
-const int INOUT_COLOR_IMG_SLOT = 1;
 
 INTERFACE_END
 

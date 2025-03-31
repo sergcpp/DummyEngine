@@ -112,14 +112,16 @@ static_assert(sizeof(mesh_t) == 24);
 const int MAX_STACK_SIZE = 64;
 
 struct volume_params_t {
-    Ren::Vec3f color = Ren::Vec3f{0.8f, 0.8f, 0.8f};
+    Ren::Vec3f scatter_color = Ren::Vec3f{0.8f, 0.8f, 0.8f};
     float density = 0.0f;
     float anisotropy = 0.0f;
+    float absorption = 0.0f;
+    Ren::Vec3f emission_color = Ren::Vec3f{0.0f, 0.0f, 0.0f};
     Ren::Vec3f bbox_min = Ren::Vec3f{-1e6f, -1e6f, -1e6f};
     Ren::Vec3f bbox_max = Ren::Vec3f{1e6f, 1e6f, 1e6f};
 };
 inline bool operator==(const volume_params_t &lhs, const volume_params_t &rhs) {
-    return lhs.color == rhs.color && lhs.density == rhs.density && lhs.anisotropy == rhs.anisotropy &&
+    return lhs.scatter_color == rhs.scatter_color && lhs.density == rhs.density && lhs.anisotropy == rhs.anisotropy &&
            lhs.bbox_min == rhs.bbox_min && lhs.bbox_max == rhs.bbox_max;
 }
 inline bool operator!=(const volume_params_t &lhs, const volume_params_t &rhs) { return !operator==(lhs, rhs); }

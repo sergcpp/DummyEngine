@@ -429,7 +429,79 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
     const int TileSize = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra) ? 8 : 12;
     const bool AllCascades = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra);
 
-    FgResRef froxel_tex;
+    FgResRef fr_emission_density_tex;
+    { // Voxelize
+        auto &voxelize = fg_builder_.AddNode("VOL VOXELIZE");
+
+        struct PassData {
+            FgResRef shared_data;
+            FgResRef random_seq;
+            FgResRef fr_emission_density_hist_tex;
+            FgResRef output_tex;
+        };
+
+        auto *data = voxelize.AllocNodeData<PassData>();
+        data->shared_data = voxelize.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
+        data->random_seq = voxelize.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
+
+        { // Emission/density
+            Ren::TexParams p;
+            p.w = (view_state_.act_res[0] + TileSize - 1) / TileSize;
+            p.h = (view_state_.act_res[1] + TileSize - 1) / TileSize;
+            p.d = 144;
+            p.format = Ren::eTexFormat::RGBA16F;
+            p.sampling.filter = Ren::eTexFilter::Bilinear;
+            p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            fr_emission_density_tex = data->output_tex =
+                voxelize.AddStorageImageOutput("Vol Emission/Density", p, Stg::ComputeShader);
+        }
+
+        data->fr_emission_density_hist_tex =
+            voxelize.AddHistoryTextureInput(fr_emission_density_tex, Stg::ComputeShader);
+
+        voxelize.set_execute_cb([data, this, AllCascades](FgBuilder &builder) {
+            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            FgAllocBuf &random_seq_buf = builder.GetReadBuffer(data->random_seq);
+
+            FgAllocTex &fr_emission_density_hist_tex = builder.GetReadTexture(data->fr_emission_density_hist_tex);
+
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            if (p_list_->env.fog.density == 0.0f && Ren::Length2(p_list_->env.fog.emission_color) == 0.0f) {
+                return;
+            }
+
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
+                {Trg::TexSampled, Fog::FR_EMISSION_DENSITY_TEX_SLOT, *fr_emission_density_hist_tex.ref},
+                {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
+
+            const auto froxel_res =
+                Ren::Vec4i{output_tex.ref->params.w, output_tex.ref->params.h, output_tex.ref->params.d, 0};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(froxel_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
+                           (froxel_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, froxel_res[2]};
+
+            Fog::Params uniform_params;
+            uniform_params.froxel_res = froxel_res;
+            uniform_params.scatter_color =
+                Ren::Saturate(Ren::Vec4f{p_list_->env.fog.scatter_color, p_list_->env.fog.absorption});
+            uniform_params.emission_color = Ren::Vec4f{p_list_->env.fog.emission_color};
+            uniform_params.density = std::max(p_list_->env.fog.density, 0.0f);
+            uniform_params.anisotropy = Ren::Clamp(p_list_->env.fog.anisotropy, -0.99f, 0.99f);
+            uniform_params.bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
+            uniform_params.bbox_max = Ren::Vec4f{p_list_->env.fog.bbox_max};
+            uniform_params.frame_index = view_state_.frame_index;
+            uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
+
+            DispatchCompute(*pi_vol_voxelize_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+    FgResRef fr_scatter_absorption_tex;
     { // Scatter
         auto &scatter = fg_builder_.AddNode("VOL SCATTER");
 
@@ -437,7 +509,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             FgResRef shared_data;
             FgResRef random_seq;
             FgResRef shadow_depth_tex, shadow_color_tex;
-            FgResRef froxels_hist_tex;
+            FgResRef fr_emission_density_tex, fr_scatter_hist_tex;
             FgResRef cells_buf, items_buf, lights_buf, decals_buf;
             FgResRef envmap_tex;
             FgResRef irradiance_tex, distance_tex, offset_tex;
@@ -459,10 +531,12 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             p.sampling.filter = Ren::eTexFilter::Bilinear;
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            froxel_tex = data->output_tex = scatter.AddStorageImageOutput("Vol Scattering", p, Stg::ComputeShader);
+            fr_scatter_absorption_tex = data->output_tex =
+                scatter.AddStorageImageOutput("Vol Scatter/Absorption", p, Stg::ComputeShader);
         }
 
-        data->froxels_hist_tex = scatter.AddHistoryTextureInput(froxel_tex, Stg::ComputeShader);
+        data->fr_emission_density_tex = scatter.AddTextureInput(fr_emission_density_tex, Stg::ComputeShader);
+        data->fr_scatter_hist_tex = scatter.AddHistoryTextureInput(fr_scatter_absorption_tex, Stg::ComputeShader);
 
         data->cells_buf = scatter.AddStorageReadonlyInput(common_buffers.cells, Stg::ComputeShader);
         data->items_buf = scatter.AddStorageReadonlyInput(common_buffers.items, Stg::ComputeShader);
@@ -483,7 +557,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             FgAllocTex &shad_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
             FgAllocTex &shad_color_tex = builder.GetReadTexture(data->shadow_color_tex);
 
-            FgAllocTex &froxels_hist_tex = builder.GetReadTexture(data->froxels_hist_tex);
+            FgAllocTex &fr_emission_density_tex = builder.GetReadTexture(data->fr_emission_density_tex);
+            FgAllocTex &fr_scatter_hist_tex = builder.GetReadTexture(data->fr_scatter_hist_tex);
 
             FgAllocBuf &cells_buf = builder.GetReadBuffer(data->cells_buf);
             FgAllocBuf &items_buf = builder.GetReadBuffer(data->items_buf);
@@ -500,7 +575,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
 
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            if (p_list_->env.fog.density == 0.0f) {
+            if (p_list_->env.fog.density == 0.0f && Ren::Length2(p_list_->env.fog.emission_color) == 0.0f) {
                 return;
             }
 
@@ -509,7 +584,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
                 {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
                 {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
                 {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
-                {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxels_hist_tex.ref},
+                {Trg::TexSampled, Fog::FR_EMISSION_DENSITY_TEX_SLOT, *fr_emission_density_tex.ref},
+                {Trg::TexSampled, Fog::FR_SCATTER_ABSORPTION_TEX_SLOT, *fr_scatter_hist_tex.ref},
                 {Trg::UTBuf, Fog::CELLS_BUF_SLOT, *cells_buf.ref},
                 {Trg::UTBuf, Fog::ITEMS_BUF_SLOT, *items_buf.ref},
                 {Trg::UTBuf, Fog::LIGHT_BUF_SLOT, *lights_buf.ref},
@@ -531,7 +607,9 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
 
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;
-            uniform_params.color = Ren::Saturate(Ren::Vec4f{p_list_->env.fog.color});
+            uniform_params.scatter_color =
+                Ren::Saturate(Ren::Vec4f{p_list_->env.fog.scatter_color, p_list_->env.fog.absorption});
+            uniform_params.emission_color = Ren::Vec4f{p_list_->env.fog.emission_color};
             uniform_params.density = std::max(p_list_->env.fog.density, 0.0f);
             uniform_params.anisotropy = Ren::Clamp(p_list_->env.fog.anisotropy, -0.99f, 0.99f);
             uniform_params.bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
@@ -543,18 +621,21 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
+    FgResRef froxel_tex;
     { // Ray march
         auto &ray_march = fg_builder_.AddNode("VOL RAY MARCH");
 
         struct PassData {
             FgResRef shared_data;
-            FgResRef froxel_tex;
+            FgResRef fr_emission_density_tex;
+            FgResRef fr_scatter_absorption_tex;
             FgResRef output_tex;
         };
 
         auto *data = ray_march.AllocNodeData<PassData>();
         data->shared_data = ray_march.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->froxel_tex = ray_march.AddTextureInput(froxel_tex, Stg::ComputeShader);
+        data->fr_emission_density_tex = ray_march.AddTextureInput(fr_emission_density_tex, Stg::ComputeShader);
+        data->fr_scatter_absorption_tex = ray_march.AddTextureInput(fr_scatter_absorption_tex, Stg::ComputeShader);
 
         { //
             Ren::TexParams p;
@@ -571,17 +652,20 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
 
         ray_march.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
+            FgAllocTex &fr_emission_density_tex = builder.GetReadTexture(data->fr_emission_density_tex);
+            FgAllocTex &fr_scatter_absorption_tex = builder.GetReadTexture(data->fr_scatter_absorption_tex);
 
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            if (p_list_->env.fog.density == 0.0f) {
+            if (p_list_->env.fog.density == 0.0f && Ren::Length2(p_list_->env.fog.emission_color) == 0.0f) {
                 return;
             }
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::TexSampled, Fog::FROXELS_TEX_SLOT, *froxel_tex.ref},
-                                             {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::TexSampled, Fog::FR_EMISSION_DENSITY_TEX_SLOT, *fr_emission_density_tex.ref},
+                {Trg::TexSampled, Fog::FR_SCATTER_ABSORPTION_TEX_SLOT, *fr_scatter_absorption_tex.ref},
+                {Trg::ImageRW, Fog::OUT_FROXELS_IMG_SLOT, *output_tex.ref}};
 
             const auto froxel_res =
                 Ren::Vec4i{output_tex.ref->params.w, output_tex.ref->params.h, output_tex.ref->params.d, 0};
@@ -592,6 +676,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
 
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;
+            uniform_params.scatter_color =
+                Ren::Saturate(Ren::Vec4f{p_list_->env.fog.scatter_color, p_list_->env.fog.absorption});
 
             DispatchCompute(*pi_vol_ray_march_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -621,7 +707,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            if (p_list_->env.fog.density == 0.0f) {
+            if (p_list_->env.fog.density == 0.0f && Ren::Length2(p_list_->env.fog.emission_color) == 0.0f) {
                 return;
             }
 

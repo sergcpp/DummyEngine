@@ -108,7 +108,7 @@ atmosphere_medium_t SampleAtmosphereMedium(const atmosphere_params_t &params, co
     s.extinction_ray = s.scattering_ray + s.absorption_ray;
 
     s.scattering_ozo = 0.0;
-    s.absorption_ozo = local_density[2] * params.ozone_absorbtion;
+    s.absorption_ozo = local_density[2] * params.ozone_absorption;
     s.extinction_ozo = s.scattering_ozo + s.absorption_ozo;
 
     s.scattering = s.scattering_mie + s.scattering_ray + s.scattering_ozo;

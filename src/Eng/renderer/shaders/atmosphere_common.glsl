@@ -148,7 +148,7 @@ atmosphere_medium_t SampleAtmosphereMedium(const float h) {
     s.extinction_ray = s.scattering_ray + s.absorption_ray;
 
     s.scattering_ozo = vec3(0.0);
-    s.absorption_ozo = local_density.z * g_shrd_data.atmosphere.ozone_absorbtion.xyz;
+    s.absorption_ozo = local_density.z * g_shrd_data.atmosphere.ozone_absorption.xyz;
     s.extinction_ozo = s.scattering_ozo + s.absorption_ozo;
 
     s.scattering = s.scattering_mie + s.scattering_ray + s.scattering_ozo;

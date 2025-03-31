@@ -34,7 +34,7 @@ struct atmosphere_params_t {
     Ren::Vec4f mie_scattering = Ren::Vec4f{3.996f * 1e-6f, 3.996f * 1e-6f, 3.996f * 1e-6f, 0.0f};
     Ren::Vec4f mie_extinction = Ren::Vec4f{4.440f * 1e-6f, 4.440f * 1e-6f, 4.440f * 1e-6f, 0.0f};
     Ren::Vec4f mie_absorption = Ren::Vec4f{0.444f * 1e-6f, 0.444f * 1e-6f, 0.444f * 1e-6f, 0.0f};
-    Ren::Vec4f ozone_absorbtion = Ren::Vec4f{0.650f * 1e-6f, 1.881f * 1e-6f, 0.085f * 1e-6f, 0.0f};
+    Ren::Vec4f ozone_absorption = Ren::Vec4f{0.650f * 1e-6f, 1.881f * 1e-6f, 0.085f * 1e-6f, 0.0f};
     Ren::Vec4f ground_albedo = Ren::Vec4f{0.05f, 0.05f, 0.05f, 0.0f};
 };
 

@@ -30,7 +30,8 @@ layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_t
 layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
 layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
-layout(binding = FROXELS_TEX_SLOT) uniform sampler3D g_froxels_history_tex;
+layout(binding = FR_SCATTER_ABSORPTION_TEX_SLOT) uniform sampler3D g_fr_scatter_history_tex;
+layout(binding = FR_EMISSION_DENSITY_TEX_SLOT) uniform sampler3D g_fr_emission_density_tex;
 
 layout(binding = LIGHT_BUF_SLOT) uniform samplerBuffer g_lights_buf;
 layout(binding = DECAL_BUF_SLOT) uniform samplerBuffer g_decals_buf;
@@ -77,7 +78,7 @@ void main() {
     }
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_VOL_OFFSET, px_hash, int(g_params.frame_index)).y;
+    const float offset_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_VOL_OFFSET, px_hash, int(g_params.frame_index)).x;
 
     const vec3 pos_uvw = froxel_to_uvw(icoord, offset_rand, g_params.froxel_res.xyz);
     const vec4 pos_cs = vec4(2.0 * pos_uvw.xy - 1.0, pos_uvw.z, 1.0);
@@ -88,49 +89,22 @@ void main() {
 
     vec3 light_total = vec3(0.0);
 
-    // Artificial lights
-    const float lin_depth = LinearizeDepth(pos_uvw.z, g_shrd_data.clip_info);
-    const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
-    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_params.froxel_res.xy);
-#if !defined(NO_SUBGROUP)
-    [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
-        const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
-        const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
-        const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
-        for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
-            const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
-            const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
+    const float density = texelFetch(g_fr_emission_density_tex, icoord, 0).w;
+    if (density > 0.0) {
+        // Artificial lights
+        const float lin_depth = LinearizeDepth(pos_uvw.z, g_shrd_data.clip_info);
+        const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
+        const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
+        const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_params.froxel_res.xy);
+    #if !defined(NO_SUBGROUP)
+        [[dont_flatten]] if (subgroupAllEqual(cell_index)) {
+            const int s_first_cell_index = subgroupBroadcastFirst(cell_index);
+            const uvec2 s_cell_data = texelFetch(g_cells_buf, s_first_cell_index).xy;
+            const uvec2 s_offset_and_lcount = uvec2(bitfieldExtract(s_cell_data.x, 0, 24), bitfieldExtract(s_cell_data.x, 24, 8));
+            for (uint i = s_offset_and_lcount.x; i < s_offset_and_lcount.x + s_offset_and_lcount.y; ++i) {
+                const uint s_item_data = texelFetch(g_items_buf, int(i)).x;
+                const int s_li = int(bitfieldExtract(s_item_data, 0, 12));
 
-            const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
-            const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
-            const bool is_volume = (floatBitsToUint(litem.col_and_type.w) & LIGHT_VOLUME_BIT) != 0;
-            if (!is_volume) {
-                continue;
-            }
-
-            vec3 light_contribution = EvaluateLightSource_Vol(litem, pos_ws, view_ray_ws, g_params.anisotropy);
-            if (all(equal(light_contribution, vec3(0.0)))) {
-                continue;
-            }
-            if (is_portal) {
-                // Sample environment to create slight color variation
-                const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - pos_ws), g_shrd_data.env_col.w);
-                light_contribution *= textureLod(g_envmap_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
-            }
-            light_total += light_contribution * LightVisibility(litem, pos_ws);
-        }
-    } else
-#endif // !defined(NO_SUBGROUP)
-    {
-        const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
-        const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
-        for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
-            const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
-            const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
-            const int s_li = subgroupMin(v_li);
-            [[flatten]] if (s_li == v_li) {
-                ++i;
                 const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
                 const bool is_volume = (floatBitsToUint(litem.col_and_type.w) & LIGHT_VOLUME_BIT) != 0;
@@ -149,65 +123,92 @@ void main() {
                 }
                 light_total += light_contribution * LightVisibility(litem, pos_ws);
             }
-        }
-    }
+        } else
+    #endif // !defined(NO_SUBGROUP)
+        {
+            const uvec2 v_cell_data = texelFetch(g_cells_buf, cell_index).xy;
+            const uvec2 v_offset_and_lcount = uvec2(bitfieldExtract(v_cell_data.x, 0, 24), bitfieldExtract(v_cell_data.x, 24, 8));
+            for (uint i = v_offset_and_lcount.x; i < v_offset_and_lcount.x + v_offset_and_lcount.y; ) {
+                const uint v_item_data = texelFetch(g_items_buf, int(i)).x;
+                const int v_li = int(bitfieldExtract(v_item_data, 0, 12));
+                const int s_li = subgroupMin(v_li);
+                [[flatten]] if (s_li == v_li) {
+                    ++i;
+                    const _light_item_t litem = FetchLightItem(g_lights_buf, s_li);
+                    const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+                    const bool is_volume = (floatBitsToUint(litem.col_and_type.w) & LIGHT_VOLUME_BIT) != 0;
+                    if (!is_volume) {
+                        continue;
+                    }
 
-    // Sun light contribution
-    if (dot(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_col_point_sh.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
-        vec3 sun_visibility = vec3(1.0);
-#ifdef ALL_CASCADES
-        mat4x3 sh_uvs;
-        [[unroll]] for (int i = 0; i < 4; i++) {
-            vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(pos_ws, 1.0)).xyz;
-            shadow_uvs.xy = clamp(0.5 * shadow_uvs.xy + 0.5, vec2(0.0), vec2(1.0));
-            shadow_uvs.xy *= vec2(0.25, 0.5);
-            shadow_uvs.xy += SunCascadeOffsets[i];
+                    vec3 light_contribution = EvaluateLightSource_Vol(litem, pos_ws, view_ray_ws, g_params.anisotropy);
+                    if (all(equal(light_contribution, vec3(0.0)))) {
+                        continue;
+                    }
+                    if (is_portal) {
+                        // Sample environment to create slight color variation
+                        const vec3 rotated_dir = rotate_xz(normalize(litem.shadow_pos_and_tri_index.xyz - pos_ws), g_shrd_data.env_col.w);
+                        light_contribution *= textureLod(g_envmap_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).xyz;
+                    }
+                    light_total += light_contribution * LightVisibility(litem, pos_ws);
+                }
+            }
+        }
+
+        // Sun light contribution
+        if (dot(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_col_point_sh.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
+            vec3 sun_visibility = vec3(1.0);
+    #ifdef ALL_CASCADES
+            mat4x3 sh_uvs;
+            [[unroll]] for (int i = 0; i < 4; i++) {
+                vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(pos_ws, 1.0)).xyz;
+                shadow_uvs.xy = clamp(0.5 * shadow_uvs.xy + 0.5, vec2(0.0), vec2(1.0));
+                shadow_uvs.xy *= vec2(0.25, 0.5);
+                shadow_uvs.xy += SunCascadeOffsets[i];
+        #if defined(VULKAN)
+                shadow_uvs.y = 1.0 - shadow_uvs.y;
+        #endif // VULKAN
+
+                //vec3 temp = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
+                sh_uvs[i] = shadow_uvs;
+            }
+            sun_visibility = GetSunVisibilityPCF5x5(lin_depth, g_shadow_depth_tex, g_shadow_color_tex, sh_uvs);
+    #else // ALL_CASCADES
+            vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * vec4(pos_ws, 1.0)).xyz;
+            shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+            // NOTE: We have to check the bounds manually as we access outside of scene bounds
+            if (all(lessThan(shadow_uvs.xy, vec2(0.999))) && all(greaterThan(shadow_uvs.xy, vec2(0.001)))) {
+                shadow_uvs.xy *= vec2(0.25, 0.5);
+                shadow_uvs.xy += SunCascadeOffsets[3];
     #if defined(VULKAN)
-            shadow_uvs.y = 1.0 - shadow_uvs.y;
+                shadow_uvs.y = 1.0 - shadow_uvs.y;
     #endif // VULKAN
 
-            //vec3 temp = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
-            sh_uvs[i] = shadow_uvs;
+                sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
+            }
+    #endif // ALL_CASCADES
+            light_total += sun_visibility * g_shrd_data.sun_col_point_sh.xyz * HenyeyGreenstein(dot(view_ray_ws, g_shrd_data.sun_dir.xyz), g_params.anisotropy);
         }
-        sun_visibility = GetSunVisibilityPCF5x5(lin_depth, g_shadow_depth_tex, g_shadow_color_tex, sh_uvs);
-#else // ALL_CASCADES
-        vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * vec4(pos_ws, 1.0)).xyz;
-        shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-        // NOTE: We have to check the bounds manually as we access outside of scene bounds
-        if (all(lessThan(shadow_uvs.xy, vec2(0.999))) && all(greaterThan(shadow_uvs.xy, vec2(0.001)))) {
-            shadow_uvs.xy *= vec2(0.25, 0.5);
-            shadow_uvs.xy += SunCascadeOffsets[3];
-#if defined(VULKAN)
-            shadow_uvs.y = 1.0 - shadow_uvs.y;
-#endif // VULKAN
 
-            sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
+    #ifdef GI_CACHE
+        for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+            const float weight = get_volume_blend_weight(pos_ws, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
+            if (weight > 0.0 || i == PROBE_VOLUMES_COUNT - 1) {
+                const vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, pos_ws, vec3(0.0), view_ray_ws,
+                                                                g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, false);
+                light_total += (1.0 / M_PI) * avg_radiance;
+
+                break;
+            }
         }
-#endif // ALL_CASCADES
-        light_total += sun_visibility * g_shrd_data.sun_col_point_sh.xyz * HenyeyGreenstein(dot(view_ray_ws, g_shrd_data.sun_dir.xyz), g_params.anisotropy);
+    #endif
     }
 
-#ifdef GI_CACHE
-    for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
-        const float weight = get_volume_blend_weight(pos_ws, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
-        if (weight > 0.0 || i == PROBE_VOLUMES_COUNT - 1) {
-            const vec3 avg_radiance = get_volume_irradiance(i, g_irradiance_tex, g_distance_tex, g_offset_tex, pos_ws, vec3(0.0), view_ray_ws,
-                                                            g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false, false);
-            light_total += (1.0 / M_PI) * avg_radiance;
-
-            break;
-        }
-    }
-#endif
-
-    float density = g_params.density;
-    if (!bbox_test(pos_ws, g_params.bbox_min.xyz, g_params.bbox_max.xyz)) {
-        density = 0.0;
-    }
-
+    light_total *= g_params.scatter_color.xyz;
     light_total *= density;
-    light_total *= g_params.color.xyz;
     light_total = compress_hdr(light_total, g_shrd_data.cam_pos_and_exp.w);
+
+    float absorption = g_params.scatter_color.w;
 
     { // history accumulation
         const vec3 pos_uvw_no_offset = froxel_to_uvw(icoord, 0.5, g_params.froxel_res.xyz);
@@ -219,7 +220,7 @@ void main() {
         const vec3 hist_uvw = cs_to_uvw(hist_pos_cs, hist_lin_depth);
 
         if (all(greaterThanEqual(hist_uvw, vec3(0.0))) && all(lessThanEqual(hist_uvw, vec3(1.0)))) {
-            vec4 hist_fetch = textureLod(g_froxels_history_tex, hist_uvw, 0.0);
+            vec4 hist_fetch = textureLod(g_fr_scatter_history_tex, hist_uvw, 0.0);
             hist_fetch.xyz *= g_params.hist_weight;
 
             const float HistoryWeightMin = 0.87;
@@ -234,9 +235,9 @@ void main() {
             const float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
             light_total = mix(light_total, hist_fetch.xyz, history_weight);
-            density = mix(density, hist_fetch.w, history_weight);
+            absorption = mix(absorption, hist_fetch.w, history_weight);
         }
     }
 
-    imageStore(g_out_froxels_img, icoord, vec4(light_total, density));
+    imageStore(g_out_froxels_img, icoord, vec4(light_total, absorption));
 }

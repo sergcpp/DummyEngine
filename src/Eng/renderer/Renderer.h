@@ -206,7 +206,7 @@ class Renderer {
     Ren::PipelineRef pi_histogram_sample_, pi_histogram_exposure_;
     // Volumetrics
     Ren::PipelineRef pi_sky_upsample_;
-    Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_;
+    Ren::PipelineRef pi_vol_voxelize_, pi_vol_scatter_[2][2], pi_vol_ray_march_;
     // Debug
     Ren::PipelineRef pi_debug_velocity_;
 
