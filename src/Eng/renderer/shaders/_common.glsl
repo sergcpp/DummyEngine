@@ -477,12 +477,6 @@ bool bbox_test_fma(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bb
     return tmin <= tmax && tmin <= t && tmax > 0.0;
 }
 
-bool bbox_test(const vec3 p, const vec3 bbox_min, const vec3 bbox_max) {
-    return p.x >= bbox_min.x && p.x <= bbox_max.x &&
-           p.y >= bbox_min.y && p.y <= bbox_max.y &&
-           p.z >= bbox_min.z && p.z <= bbox_max.z;
-}
-
 bool bbox_test(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_max, out float dist) {
     float low = fma(inv_d.x, bbox_min.x, neg_inv_d_o.x);
     float high = fma(inv_d.x, bbox_max.x, neg_inv_d_o.x);
@@ -503,6 +497,26 @@ bool bbox_test(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_m
     dist = tmin;
 
     return tmin <= tmax && tmin <= t && tmax > 0.0;
+}
+
+vec2 bbox_test(vec3 inv_d, vec3 neg_inv_d_o, vec3 bbox_min, vec3 bbox_max) {
+    float low = fma(inv_d.x, bbox_min.x, neg_inv_d_o.x);
+    float high = fma(inv_d.x, bbox_max.x, neg_inv_d_o.x);
+    float tmin = min(low, high);
+    float tmax = max(low, high);
+
+    low = fma(inv_d.y, bbox_min.y, neg_inv_d_o.y);
+    high = fma(inv_d.y, bbox_max.y, neg_inv_d_o.y);
+    tmin = max(tmin, min(low, high));
+    tmax = min(tmax, max(low, high));
+
+    low = fma(inv_d.z, bbox_min.z, neg_inv_d_o.z);
+    high = fma(inv_d.z, bbox_max.z, neg_inv_d_o.z);
+    tmin = max(tmin, min(low, high));
+    tmax = min(tmax, max(low, high));
+    //tmax *= 1.00000024;
+
+    return vec2(tmin, tmax);
 }
 
 #endif // COMMON_GLSL

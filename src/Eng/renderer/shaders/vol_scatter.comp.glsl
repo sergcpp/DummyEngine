@@ -30,8 +30,8 @@ layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_t
 layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
 layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
-layout(binding = FR_SCATTER_ABSORPTION_TEX_SLOT) uniform sampler3D g_fr_scatter_history_tex;
-layout(binding = FR_EMISSION_DENSITY_TEX_SLOT) uniform sampler3D g_fr_emission_density_tex;
+layout(binding = FR_SCATTER_ABSORPTION_TEX_SLOT) uniform sampler3D g_fr_scatter_hist_tex;
+layout(binding = FR_EMISSION_DENSITY_TEX_SLOT) uniform sampler3D g_fr_emission_hist_tex;
 
 layout(binding = LIGHT_BUF_SLOT) uniform samplerBuffer g_lights_buf;
 layout(binding = DECAL_BUF_SLOT) uniform samplerBuffer g_decals_buf;
@@ -45,7 +45,8 @@ layout(binding = ENVMAP_TEX_SLOT) uniform samplerCube g_envmap_tex;
     layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 #endif
 
-layout(binding = OUT_FROXELS_IMG_SLOT, rgba16f) uniform writeonly image3D g_out_froxels_img;
+layout(binding = OUT_FR_EMISSION_DENSITY_IMG_SLOT, rgba16f) uniform image3D g_out_fr_emission_density_img;
+layout(binding = OUT_FR_SCATTER_ABSORPTION_IMG_SLOT, rgba16f) uniform image3D g_out_fr_scatter_absorption_img;
 
 vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
@@ -89,8 +90,10 @@ void main() {
 
     vec3 light_total = vec3(0.0);
 
-    const float density = texelFetch(g_fr_emission_density_tex, icoord, 0).w;
-    if (density > 0.0) {
+    vec4 emission_density = imageLoad(g_out_fr_emission_density_img, icoord);
+    vec4 scatter_absorption = imageLoad(g_out_fr_scatter_absorption_img, icoord);
+
+    if (emission_density.w > 0.0) {
         // Artificial lights
         const float lin_depth = LinearizeDepth(pos_uvw.z, g_shrd_data.clip_info);
         const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
@@ -204,11 +207,11 @@ void main() {
     #endif
     }
 
-    light_total *= g_params.scatter_color.xyz;
-    light_total *= density;
+    light_total *= scatter_absorption.xyz;
+    light_total *= emission_density.w;
     light_total = compress_hdr(light_total, g_shrd_data.cam_pos_and_exp.w);
 
-    float absorption = g_params.scatter_color.w;
+    scatter_absorption.xyz = light_total;
 
     { // history accumulation
         const vec3 pos_uvw_no_offset = froxel_to_uvw(icoord, 0.5, g_params.froxel_res.xyz);
@@ -217,27 +220,32 @@ void main() {
 
         const vec3 hist_pos_cs = TransformToClipSpace(g_shrd_data.prev_clip_from_world, pos_ws_no_offset);
         const float hist_lin_depth = LinearizeDepth(hist_pos_cs.z, g_shrd_data.clip_info);
-        const vec3 hist_uvw = cs_to_uvw(hist_pos_cs, hist_lin_depth);
+        const vec3 hist_uvw = cs_to_uvw(hist_pos_cs.xy, hist_lin_depth);
 
         if (all(greaterThanEqual(hist_uvw, vec3(0.0))) && all(lessThanEqual(hist_uvw, vec3(1.0)))) {
-            vec4 hist_fetch = textureLod(g_fr_scatter_history_tex, hist_uvw, 0.0);
-            hist_fetch.xyz *= g_params.hist_weight;
+            vec4 emission_density_hist = textureLod(g_fr_emission_hist_tex, hist_uvw, 0.0);
+            emission_density_hist.xyz *= g_params.hist_weight;
+            vec4 scatter_absorption_hist = textureLod(g_fr_scatter_hist_tex, hist_uvw, 0.0);
+            scatter_absorption_hist.xyz *= g_params.hist_weight;
 
             const float HistoryWeightMin = 0.87;
             const float HistoryWeightMax = 0.95;
 
-            const float lum_curr = lum(light_total);
-            const float lum_hist = lum(hist_fetch.xyz);
+            const float lum_curr = lum(scatter_absorption.xyz + emission_density.xyz);
+            const float lum_hist = lum(scatter_absorption_hist.xyz + emission_density_hist.xyz);
 
             const float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.001);
             const float unbiased_weight = 1.0 - unbiased_diff;
             const float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
             const float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
-            light_total = mix(light_total, hist_fetch.xyz, history_weight);
-            absorption = mix(absorption, hist_fetch.w, history_weight);
+            scatter_absorption.xyz = mix(scatter_absorption.xyz, scatter_absorption_hist.xyz, history_weight);
+            scatter_absorption.w = mix(scatter_absorption.w * emission_density.w, scatter_absorption_hist.w * emission_density_hist.w, history_weight);
+            emission_density = mix(emission_density, emission_density_hist, history_weight);
+            scatter_absorption.w = saturate(scatter_absorption.w / emission_density.w);
         }
     }
 
-    imageStore(g_out_froxels_img, icoord, vec4(light_total, absorption));
+    imageStore(g_out_fr_emission_density_img, icoord, emission_density);
+    imageStore(g_out_fr_scatter_absorption_img, icoord, scatter_absorption);
 }

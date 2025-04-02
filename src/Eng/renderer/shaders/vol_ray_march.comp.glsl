@@ -13,7 +13,7 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = FR_SCATTER_ABSORPTION_TEX_SLOT) uniform sampler3D g_fr_scatter_absorption_tex;
 layout(binding = FR_EMISSION_DENSITY_TEX_SLOT) uniform sampler3D g_fr_emission_density_tex;
 
-layout(binding = OUT_FROXELS_IMG_SLOT, rgba16f) uniform writeonly image3D g_out_froxels_img;
+layout(binding = OUT_FR_FINAL_IMG_SLOT, rgba16f) uniform writeonly image3D g_out_fr_final_img;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
@@ -45,6 +45,6 @@ void main() {
 
         slice_dist_beg = slice_dist_end;
 
-        imageStore(g_out_froxels_img, icoord, radiance_transmittance);
+        imageStore(g_out_fr_final_img, icoord, radiance_transmittance);
     }
 }

@@ -22,24 +22,26 @@ struct Params {
 const int LOCAL_GROUP_SIZE_X = 8;
 const int LOCAL_GROUP_SIZE_Y = 8;
 
-const int SHADOW_DEPTH_TEX_SLOT = 1;
-const int SHADOW_COLOR_TEX_SLOT = 2;
-const int FR_EMISSION_DENSITY_TEX_SLOT = 3;
-const int FR_SCATTER_ABSORPTION_TEX_SLOT = 4;
-const int DEPTH_TEX_SLOT = 5;
-const int RANDOM_SEQ_BUF_SLOT = 6;
+const int SHADOW_DEPTH_TEX_SLOT = 2;
+const int SHADOW_COLOR_TEX_SLOT = 3;
+const int FR_EMISSION_DENSITY_TEX_SLOT = 4;
+const int FR_SCATTER_ABSORPTION_TEX_SLOT = 5;
+const int DEPTH_TEX_SLOT = 6;
+const int RANDOM_SEQ_BUF_SLOT = 7;
 
-const int LIGHT_BUF_SLOT = 7;
-const int DECAL_BUF_SLOT = 8;
-const int CELLS_BUF_SLOT = 9;
-const int ITEMS_BUF_SLOT = 10;
-const int ENVMAP_TEX_SLOT = 11;
+const int LIGHT_BUF_SLOT = 8;
+const int DECAL_BUF_SLOT = 9;
+const int CELLS_BUF_SLOT = 10;
+const int ITEMS_BUF_SLOT = 11;
+const int ENVMAP_TEX_SLOT = 12;
 
-const int IRRADIANCE_TEX_SLOT = 12;
-const int DISTANCE_TEX_SLOT = 13;
-const int OFFSET_TEX_SLOT = 14;
+const int IRRADIANCE_TEX_SLOT = 13;
+const int DISTANCE_TEX_SLOT = 14;
+const int OFFSET_TEX_SLOT = 15;
 
-const int OUT_FROXELS_IMG_SLOT = 0;
+const int OUT_FR_EMISSION_DENSITY_IMG_SLOT = 0;
+const int OUT_FR_SCATTER_ABSORPTION_IMG_SLOT = 1;
+const int OUT_FR_FINAL_IMG_SLOT = 0;
 
 INTERFACE_END
 

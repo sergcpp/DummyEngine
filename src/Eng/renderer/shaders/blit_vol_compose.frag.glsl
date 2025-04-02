@@ -22,7 +22,7 @@ void main() {
     const vec4 pos_cs = vec4(2.0 * pos_ss.xy - 1.0, pos_ss.z, 1.0);
     const vec3 pos_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs);
 
-    const vec3 uvw = cs_to_uvw(pos_cs.xyz, lin_depth);
+    const vec3 uvw = cs_to_uvw(pos_cs.xy, lin_depth);
     const vec4 scattering_transmittance = SampleTricubic(g_froxels_tex, uvw, g_params.froxel_res.xyz);
 
     g_out_color = scattering_transmittance;

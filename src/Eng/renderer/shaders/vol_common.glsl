@@ -16,8 +16,8 @@ vec3 froxel_to_uvw(const ivec3 coord, const float z_offset, const ivec3 froxel_r
     return vec3((vec2(coord.xy) + 0.5) / vec2(froxel_res.xy), DelinearizeDepth(z, g_shrd_data.clip_info));
 }
 
-vec3 cs_to_uvw(const vec3 ndc, const float lin_depth) {
-    return vec3(ndc.xy * 0.5 + 0.5,
+vec3 cs_to_uvw(const vec2 ndc, const float lin_depth) {
+    return vec3(ndc * 0.5 + 0.5,
                 log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3]);
 }
 

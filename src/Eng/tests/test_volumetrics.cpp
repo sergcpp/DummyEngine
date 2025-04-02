@@ -19,14 +19,14 @@ void test_volumetrics(Sys::ThreadPool &threads, const bool full) {
     }
     { // sun
         run_image_test(threads, "vol_global_sun", 31.50, Full);
-        run_image_test(threads, "vol_global_sun", 31.85, Full_Ultra);
+        run_image_test(threads, "vol_global_sun", 30.50, Full_Ultra);
     }
     { // absorption
         run_image_test(threads, "vol_global_absorption", 25.60, Full);
         run_image_test(threads, "vol_global_absorption", 25.80, Full_Ultra);
     }
     { // emission
-        run_image_test(threads, "vol_global_emission", 26.65, Full);
-        run_image_test(threads, "vol_global_emission", 26.75, Full_Ultra);
+        run_image_test(threads, "vol_global_emission", 26.60, Full);
+        run_image_test(threads, "vol_global_emission", 26.70, Full_Ultra);
     }
 }
