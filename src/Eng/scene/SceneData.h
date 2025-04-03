@@ -239,7 +239,7 @@ struct PersistentGpuData {
         std::vector<Ren::BufRef> rt_blas_buffers;
     } hwrt;
 
-    Ren::BufRef rt_tlas_buf, rt_sh_tlas_buf;
+    Ren::BufRef rt_tlas_buf[3];
 
     struct {
         Ren::BufRef rt_prim_indices_buf;
@@ -248,7 +248,7 @@ struct PersistentGpuData {
         Ren::SparseArray<mesh_t> rt_meshes;
     } swrt;
 
-    std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;
+    std::unique_ptr<Ren::IAccStructure> rt_tlas[3];
 
     Ren::TexRef probe_irradiance;
     Ren::TexRef probe_distance;

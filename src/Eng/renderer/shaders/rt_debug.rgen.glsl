@@ -4,6 +4,10 @@
 #include "_common.glsl"
 #include "rt_debug_interface.h"
 
+LAYOUT_PARAMS uniform UniformParams {
+    Params g_params;
+};
+
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     shared_data_t g_shrd_data;
 };
@@ -30,7 +34,7 @@ void main() {
 
     traceRayEXT(g_tlas,                     // topLevel
                 ray_flags,                  // rayFlags
-                (1u << RAY_TYPE_CAMERA),    // cullMask
+                g_params.cull_mask,         // cullMask
                 0,                          // sbtRecordOffset
                 0,                          // sbtRecordStride
                 0,                          // missIndex

@@ -6,6 +6,7 @@
 #include "../utils/Load.h"
 #include "Renderer_Names.h"
 #include "executors/ExSkydome.h"
+#include "executors/ExVolVoxelize.h"
 
 #include "shaders/blit_fxaa_interface.h"
 #include "shaders/blit_vol_compose_interface.h"
@@ -422,30 +423,40 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
     }
 }
 
-void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                        const AccelerationStructureData &acc_struct_data, FgResRef rt_geo_instances_res,
+                                        FgResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 
-    const bool ShouldSkip =
-        (p_list_->env.fog.density == 0.0f ||
-         (Ren::Length2(p_list_->env.fog.scatter_color) == 0.0f) && p_list_->env.fog.absorption == 1.0f) &&
-        Ren::Length2(p_list_->env.fog.emission_color) == 0.0f;
     const int TileSize = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra) ? 8 : 12;
     const bool AllCascades = (p_list_->render_settings.vol_quality == Eng::eVolQuality::Ultra);
 
-    FgResRef fr_emission_density_tex, fr_scatter_absorption_tex;
+    FgResRef fr_emission_tex, fr_scatter_tex;
     { // Voxelize
         auto &voxelize = fg_builder_.AddNode("VOL VOXELIZE");
 
-        struct PassData {
-            FgResRef shared_data;
-            FgResRef random_seq;
-            FgResRef out_emission_tex, out_scatter_tex;
-        };
-
-        auto *data = voxelize.AllocNodeData<PassData>();
+        auto *data = voxelize.AllocNodeData<ExVolVoxelize::Args>();
         data->shared_data = voxelize.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->random_seq = voxelize.AddStorageReadonlyInput(pmj_samples_buf_, Stg::ComputeShader);
+
+        data->geo_data = voxelize.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);
+        data->materials = voxelize.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::ComputeShader);
+
+        data->tlas_buf =
+            voxelize.AddStorageReadonlyInput(persistent_data.rt_tlas_buf[int(eTLASIndex::Volume)], Stg::ComputeShader);
+        data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Volume)];
+
+        if (!ctx_.capabilities.hwrt) {
+            data->swrt.root_node = persistent_data.swrt.rt_root_node;
+            data->swrt.rt_blas_buf =
+                voxelize.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, Stg::ComputeShader);
+            data->swrt.prim_ndx_buf =
+                voxelize.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, Stg::ComputeShader);
+            data->swrt.mesh_instances_buf = voxelize.AddStorageReadonlyInput(rt_obj_instances_res, Stg::ComputeShader);
+            data->swrt.vtx_buf1 = voxelize.AddStorageReadonlyInput(persistent_data.vertex_buf1, Stg::ComputeShader);
+            data->swrt.ndx_buf = voxelize.AddStorageReadonlyInput(persistent_data.indices_buf, Stg::ComputeShader);
+        }
 
         { // Emission/Density and Scatter/Absorption textures
             Ren::TexParams p;
@@ -456,51 +467,13 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             p.sampling.filter = Ren::eTexFilter::Bilinear;
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            fr_emission_density_tex = data->out_emission_tex =
+            fr_emission_tex = data->out_emission_tex =
                 voxelize.AddStorageImageOutput("Vol Emission/Density", p, Stg::ComputeShader);
-            fr_scatter_absorption_tex = data->out_scatter_tex =
+            fr_scatter_tex = data->out_scatter_tex =
                 voxelize.AddStorageImageOutput("Vol Scatter/Absorption", p, Stg::ComputeShader);
         }
 
-        voxelize.set_execute_cb([data, this, ShouldSkip, AllCascades](FgBuilder &builder) {
-            FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocBuf &random_seq_buf = builder.GetReadBuffer(data->random_seq);
-
-            FgAllocTex &out_emission_tex = builder.GetWriteTexture(data->out_emission_tex);
-            FgAllocTex &out_scatter_tex = builder.GetWriteTexture(data->out_scatter_tex);
-
-            if (ShouldSkip) {
-                return;
-            }
-
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
-                {Trg::ImageRW, Fog::OUT_FR_EMISSION_DENSITY_IMG_SLOT, *out_emission_tex.ref},
-                {Trg::ImageRW, Fog::OUT_FR_SCATTER_ABSORPTION_IMG_SLOT, *out_scatter_tex.ref}};
-
-            const auto froxel_res = Ren::Vec4i{out_emission_tex.ref->params.w, out_emission_tex.ref->params.h,
-                                               out_emission_tex.ref->params.d, 0};
-
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(froxel_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
-                           (froxel_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, 1u};
-
-            Fog::Params uniform_params;
-            uniform_params.froxel_res = froxel_res;
-            uniform_params.scatter_color =
-                Ren::Saturate(Ren::Vec4f{p_list_->env.fog.scatter_color, p_list_->env.fog.absorption});
-            uniform_params.emission_color = Ren::Vec4f{p_list_->env.fog.emission_color};
-            uniform_params.density = std::max(p_list_->env.fog.density, 0.0f);
-            uniform_params.anisotropy = Ren::Clamp(p_list_->env.fog.anisotropy, -0.99f, 0.99f);
-            uniform_params.bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
-            uniform_params.bbox_max = Ren::Vec4f{p_list_->env.fog.bbox_max};
-            uniform_params.frame_index = view_state_.frame_index;
-            uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
-
-            DispatchCompute(*pi_vol_voxelize_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.ctx().log());
-        });
+        voxelize.make_executor<ExVolVoxelize>(&p_list_, &view_state_, data);
     }
     { // Scatter
         auto &scatter = fg_builder_.AddNode("VOL SCATTER");
@@ -509,7 +482,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             FgResRef shared_data;
             FgResRef random_seq;
             FgResRef shadow_depth_tex, shadow_color_tex;
-            FgResRef fr_emission_density_tex, fr_scatter_absorption_tex;
+            FgResRef fr_emission_tex, fr_scatter_tex;
             FgResRef cells_buf, items_buf, lights_buf, decals_buf;
             FgResRef envmap_tex;
             FgResRef irradiance_tex, distance_tex, offset_tex;
@@ -522,13 +495,11 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
         data->shadow_depth_tex = scatter.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
         data->shadow_color_tex = scatter.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
-        fr_emission_density_tex = data->out_emission_tex =
-            scatter.AddStorageImageOutput(fr_emission_density_tex, Stg::ComputeShader);
-        fr_scatter_absorption_tex = data->out_scatter_tex =
-            scatter.AddStorageImageOutput(fr_scatter_absorption_tex, Stg::ComputeShader);
+        fr_emission_tex = data->out_emission_tex = scatter.AddStorageImageOutput(fr_emission_tex, Stg::ComputeShader);
+        fr_scatter_tex = data->out_scatter_tex = scatter.AddStorageImageOutput(fr_scatter_tex, Stg::ComputeShader);
 
-        data->fr_emission_density_tex = scatter.AddHistoryTextureInput(fr_emission_density_tex, Stg::ComputeShader);
-        data->fr_scatter_absorption_tex = scatter.AddHistoryTextureInput(fr_scatter_absorption_tex, Stg::ComputeShader);
+        data->fr_emission_tex = scatter.AddHistoryTextureInput(fr_emission_tex, Stg::ComputeShader);
+        data->fr_scatter_tex = scatter.AddHistoryTextureInput(fr_scatter_tex, Stg::ComputeShader);
 
         data->cells_buf = scatter.AddStorageReadonlyInput(common_buffers.cells, Stg::ComputeShader);
         data->items_buf = scatter.AddStorageReadonlyInput(common_buffers.items, Stg::ComputeShader);
@@ -542,15 +513,15 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             data->offset_tex = scatter.AddTextureInput(frame_textures.gi_cache_offset, Stg::ComputeShader);
         }
 
-        scatter.set_execute_cb([data, this, ShouldSkip, AllCascades](FgBuilder &builder) {
+        scatter.set_execute_cb([data, this, AllCascades](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocBuf &random_seq_buf = builder.GetReadBuffer(data->random_seq);
 
             FgAllocTex &shad_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
             FgAllocTex &shad_color_tex = builder.GetReadTexture(data->shadow_color_tex);
 
-            FgAllocTex &fr_emission_density_tex = builder.GetReadTexture(data->fr_emission_density_tex);
-            FgAllocTex &fr_scatter_absorption_tex = builder.GetReadTexture(data->fr_scatter_absorption_tex);
+            FgAllocTex &fr_emission_tex = builder.GetReadTexture(data->fr_emission_tex);
+            FgAllocTex &fr_scatter_tex = builder.GetReadTexture(data->fr_scatter_tex);
 
             FgAllocBuf &cells_buf = builder.GetReadBuffer(data->cells_buf);
             FgAllocBuf &items_buf = builder.GetReadBuffer(data->items_buf);
@@ -568,7 +539,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             FgAllocTex &out_emission_tex = builder.GetWriteTexture(data->out_emission_tex);
             FgAllocTex &out_scatter_tex = builder.GetWriteTexture(data->out_scatter_tex);
 
-            if (ShouldSkip) {
+            if (view_state_.skip_volumetrics) {
                 return;
             }
 
@@ -577,15 +548,15 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
                 {Trg::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
                 {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
                 {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
-                {Trg::TexSampled, Fog::FR_EMISSION_DENSITY_TEX_SLOT, *fr_emission_density_tex.ref},
-                {Trg::TexSampled, Fog::FR_SCATTER_ABSORPTION_TEX_SLOT, *fr_scatter_absorption_tex.ref},
+                {Trg::TexSampled, Fog::FR_EMISSION_TEX_SLOT, *fr_emission_tex.ref},
+                {Trg::TexSampled, Fog::FR_SCATTER_TEX_SLOT, *fr_scatter_tex.ref},
                 {Trg::UTBuf, Fog::CELLS_BUF_SLOT, *cells_buf.ref},
                 {Trg::UTBuf, Fog::ITEMS_BUF_SLOT, *items_buf.ref},
                 {Trg::UTBuf, Fog::LIGHT_BUF_SLOT, *lights_buf.ref},
                 {Trg::UTBuf, Fog::DECAL_BUF_SLOT, *decals_buf.ref},
                 {Trg::TexSampled, Fog::ENVMAP_TEX_SLOT, *envmap_tex.ref},
-                {Trg::ImageRW, Fog::OUT_FR_EMISSION_DENSITY_IMG_SLOT, *out_emission_tex.ref},
-                {Trg::ImageRW, Fog::OUT_FR_SCATTER_ABSORPTION_IMG_SLOT, *out_scatter_tex.ref}};
+                {Trg::ImageRW, Fog::OUT_FR_EMISSION_IMG_SLOT, *out_emission_tex.ref},
+                {Trg::ImageRW, Fog::OUT_FR_SCATTER_IMG_SLOT, *out_scatter_tex.ref}};
             if (irr_tex) {
                 bindings.emplace_back(Ren::eBindTarget::TexSampled, Fog::IRRADIANCE_TEX_SLOT, *irr_tex->ref);
                 bindings.emplace_back(Ren::eBindTarget::TexSampled, Fog::DISTANCE_TEX_SLOT, *dist_tex->ref);
@@ -603,8 +574,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
             uniform_params.froxel_res = froxel_res;
             uniform_params.scatter_color =
                 Ren::Saturate(Ren::Vec4f{p_list_->env.fog.scatter_color, p_list_->env.fog.absorption});
-            uniform_params.emission_color = Ren::Vec4f{p_list_->env.fog.emission_color};
-            uniform_params.density = std::max(p_list_->env.fog.density, 0.0f);
+            uniform_params.emission_color =
+                Ren::Vec4f{p_list_->env.fog.emission_color, std::max(p_list_->env.fog.density, 0.0f)};
             uniform_params.anisotropy = Ren::Clamp(p_list_->env.fog.anisotropy, -0.99f, 0.99f);
             uniform_params.bbox_min = Ren::Vec4f{p_list_->env.fog.bbox_min};
             uniform_params.bbox_max = Ren::Vec4f{p_list_->env.fog.bbox_max};
@@ -621,15 +592,15 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
 
         struct PassData {
             FgResRef shared_data;
-            FgResRef fr_emission_density_tex;
-            FgResRef fr_scatter_absorption_tex;
+            FgResRef fr_emission_tex;
+            FgResRef fr_scatter_tex;
             FgResRef output_tex;
         };
 
         auto *data = ray_march.AllocNodeData<PassData>();
         data->shared_data = ray_march.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
-        data->fr_emission_density_tex = ray_march.AddTextureInput(fr_emission_density_tex, Stg::ComputeShader);
-        data->fr_scatter_absorption_tex = ray_march.AddTextureInput(fr_scatter_absorption_tex, Stg::ComputeShader);
+        data->fr_emission_tex = ray_march.AddTextureInput(fr_emission_tex, Stg::ComputeShader);
+        data->fr_scatter_tex = ray_march.AddTextureInput(fr_scatter_tex, Stg::ComputeShader);
 
         { //
             Ren::TexParams p;
@@ -644,22 +615,21 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
                 ray_march.AddStorageImageOutput("Vol Scattering Final", p, Stg::ComputeShader);
         }
 
-        ray_march.set_execute_cb([data, this, ShouldSkip](FgBuilder &builder) {
+        ray_march.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocTex &fr_emission_density_tex = builder.GetReadTexture(data->fr_emission_density_tex);
-            FgAllocTex &fr_scatter_absorption_tex = builder.GetReadTexture(data->fr_scatter_absorption_tex);
+            FgAllocTex &fr_emission_tex = builder.GetReadTexture(data->fr_emission_tex);
+            FgAllocTex &fr_scatter_tex = builder.GetReadTexture(data->fr_scatter_tex);
 
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            if (ShouldSkip) {
+            if (view_state_.skip_volumetrics) {
                 return;
             }
 
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::TexSampled, Fog::FR_EMISSION_DENSITY_TEX_SLOT, *fr_emission_density_tex.ref},
-                {Trg::TexSampled, Fog::FR_SCATTER_ABSORPTION_TEX_SLOT, *fr_scatter_absorption_tex.ref},
-                {Trg::ImageRW, Fog::OUT_FR_FINAL_IMG_SLOT, *output_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                             {Trg::TexSampled, Fog::FR_EMISSION_TEX_SLOT, *fr_emission_tex.ref},
+                                             {Trg::TexSampled, Fog::FR_SCATTER_TEX_SLOT, *fr_scatter_tex.ref},
+                                             {Trg::ImageRW, Fog::OUT_FR_FINAL_IMG_SLOT, *output_tex.ref}};
 
             const auto froxel_res =
                 Ren::Vec4i{output_tex.ref->params.w, output_tex.ref->params.h, output_tex.ref->params.d, 0};
@@ -694,14 +664,14 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, Fra
 
         frame_textures.color = data->output_tex = apply.AddColorOutput(frame_textures.color);
 
-        apply.set_execute_cb([data, this, ShouldSkip](FgBuilder &builder) {
+        apply.set_execute_cb([data, this](FgBuilder &builder) {
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
 
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             FgAllocTex &froxel_tex = builder.GetReadTexture(data->froxel_tex);
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
-            if (ShouldSkip) {
+            if (view_state_.skip_volumetrics) {
                 return;
             }
 

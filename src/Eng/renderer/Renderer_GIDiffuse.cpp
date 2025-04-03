@@ -430,7 +430,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             data->ray_counter = rt_gi.AddStorageReadonlyInput(ray_counter, stage);
             data->ray_list = rt_gi.AddStorageReadonlyInput(ray_rt_list, stage);
             data->indir_args = rt_gi.AddIndirectBufferInput(indir_rt_disp_buf);
-            data->tlas_buf = rt_gi.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
+            data->tlas_buf = rt_gi.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Main)], stage);
             data->lights_buf = rt_gi.AddStorageReadonlyInput(common_buffers.lights, stage);
             data->shadow_depth_tex = rt_gi.AddTextureInput(shadow_depth_tex_, stage);
             data->shadow_color_tex = rt_gi.AddTextureInput(shadow_color_tex_, stage);
@@ -484,7 +484,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
             data->materials = sample_lights.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::ComputeShader);
             data->vtx_buf1 = sample_lights.AddStorageReadonlyInput(persistent_data.vertex_buf1, Stg::ComputeShader);
             data->ndx_buf = sample_lights.AddStorageReadonlyInput(persistent_data.indices_buf, Stg::ComputeShader);
-            data->tlas_buf = sample_lights.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, Stg::ComputeShader);
+            data->tlas_buf = sample_lights.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Main)],
+                                                                   Stg::ComputeShader);
 
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;

@@ -155,13 +155,19 @@ BaseState::BaseState(Viewer *viewer) : viewer_(viewer) {
     Ren::BufRef rt_sh_geo_instances_stage_buf =
         ren_ctx_->LoadBuffer("RT Shadow Geo Instances (Upload)", Ren::eBufType::Upload,
                              Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
-        rt_sh_tlas_nodes_stage_buf;
+    Ren::BufRef rt_vol_geo_instances_stage_buf =
+        ren_ctx_->LoadBuffer("RT Volume Geo Instances (Upload)", Ren::eBufType::Upload,
+                             Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_vol_obj_instances_stage_buf,
+        rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf, rt_vol_tlas_nodes_stage_buf;
     if (ren_ctx_->capabilities.hwrt) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
                                                           Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf =
             ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
+                                 Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_vol_obj_instances_stage_buf =
+            ren_ctx_->LoadBuffer("RT Volume Obj Instances (Upload)", Ren::eBufType::Upload,
                                  Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
     } else if (ren_ctx_->capabilities.swrt) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
@@ -169,10 +175,15 @@ BaseState::BaseState(Viewer *viewer) : viewer_(viewer) {
         rt_sh_obj_instances_stage_buf =
             ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
                                  Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_vol_obj_instances_stage_buf =
+            ren_ctx_->LoadBuffer("RT Volume Obj Instances (Upload)", Ren::eBufType::Upload,
+                                 Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT TLAS Nodes (Upload)", Ren::eBufType::Upload,
                                                        Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT Shadow TLAS Nodes (Upload)", Ren::eBufType::Upload,
                                                           Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_vol_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT Volume TLAS Nodes (Upload)", Ren::eBufType::Upload,
+                                                           Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
     Ren::BufRef shared_data_stage_buf = ren_ctx_->LoadBuffer("Shared Data (Upload)", Ren::eBufType::Upload,
@@ -182,11 +193,12 @@ BaseState::BaseState(Viewer *viewer) : viewer_(viewer) {
     // Initialize draw lists
     //
     for (int i = 0; i < 2; i++) {
-        main_view_lists_[i].Init(shared_data_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf,
-                                 shape_keys_stage_buf, cells_stage_buf, rt_cells_stage_buf, items_stage_buf,
-                                 rt_items_stage_buf, lights_stage_buf, decals_stage_buf, rt_geo_instances_stage_buf,
-                                 rt_sh_geo_instances_stage_buf, rt_obj_instances_stage_buf,
-                                 rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf);
+        main_view_lists_[i].Init(
+            shared_data_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf, shape_keys_stage_buf,
+            cells_stage_buf, rt_cells_stage_buf, items_stage_buf, rt_items_stage_buf, lights_stage_buf,
+            decals_stage_buf, rt_geo_instances_stage_buf, rt_sh_geo_instances_stage_buf, rt_vol_geo_instances_stage_buf,
+            rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_vol_obj_instances_stage_buf,
+            rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf, rt_vol_tlas_nodes_stage_buf);
     }
 }
 
@@ -388,6 +400,17 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_volumetrics", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        if (args[1].val > 1.5) {
+            renderer_->settings.vol_quality = Eng::eVolQuality::Ultra;
+        } else if (args[1].val > 0.5) {
+            renderer_->settings.vol_quality = Eng::eVolQuality::High;
+        } else {
+            renderer_->settings.vol_quality = Eng::eVolQuality::Off;
+        }
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_shadowJitter", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         renderer_->settings.enable_shadow_jitter = !renderer_->settings.enable_shadow_jitter;
         return true;
@@ -563,7 +586,9 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showRT", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val > 0.5) {
+            if (args[1].val > 1.5) {
+                renderer_->settings.debug_rt = Eng::eDebugRT::Volume;
+            } else if (args[1].val > 0.5) {
                 renderer_->settings.debug_rt = Eng::eDebugRT::Shadow;
             } else {
                 renderer_->settings.debug_rt = Eng::eDebugRT::Main;
@@ -722,7 +747,6 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.usage = Ren::Bitmask(Ren::eTexUsage::RenderTarget) | Ren::eTexUsage::Transfer;
-
 
         Ren::eTexLoadStatus status;
         capture_result_ = ren_ctx_->LoadTexture("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);
@@ -1450,12 +1474,12 @@ void BaseState::InitScene_PT() {
 
                 std::vector<Ray::mat_group_desc_t> mat_groups;
 
-                const Ren::Span<const Ren::TriGroup> groups = mesh->groups();
+                const Ren::Span<const Ren::tri_group_t> groups = mesh->groups();
                 for (int j = 0; j < int(groups.size()); ++j) {
-                    const Ren::TriGroup &grp = groups[j];
+                    const Ren::tri_group_t &grp = groups[j];
 
                     const Ren::Material *front_mat =
-                        (j >= dr.material_override.size()) ? grp.front_mat.get() : dr.material_override[j].first.get();
+                        (j >= dr.material_override.size()) ? grp.front_mat.get() : dr.material_override[j][0].get();
                     const char *mat_name = front_mat->name().c_str();
 
                     std::pair<Ray::MaterialHandle, Ray::MaterialHandle> mat_handles;
@@ -1506,7 +1530,7 @@ void BaseState::InitScene_PT() {
                     mat_handles = {mat_it->second, mat_it->second};
 
                     const Ren::Material *back_mat =
-                        (j >= dr.material_override.size()) ? grp.back_mat.get() : dr.material_override[j].second.get();
+                        (j >= dr.material_override.size()) ? grp.back_mat.get() : dr.material_override[j][1].get();
                     if (front_mat != back_mat) {
                         Ray::principled_mat_desc_t mat_desc;
                         memcpy(mat_desc.base_color, ValuePtr(back_mat->params[0]), 3 * sizeof(float));

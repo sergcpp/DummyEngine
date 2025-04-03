@@ -75,7 +75,7 @@ void Eng::Drawable::Write(const Drawable &dr, Sys::JsObjectP &js_out) {
         Sys::JsArrayP js_material_override(alloc);
 
         for (const auto &mat : dr.material_override) {
-            js_material_override.Push(Sys::JsStringP{mat.first->name(), alloc});
+            js_material_override.Push(Sys::JsStringP{mat[0]->name(), alloc});
         }
 
         js_out.Insert("material_override", std::move(js_material_override));

@@ -255,12 +255,16 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const bool shadows_enabled = (list.render_settings.shadows_quality != eShadowsQuality::Off);
     const bool shadows_jitter_enabled = list.render_settings.enable_shadow_jitter;
     const bool rt_shadows_enabled = (list.render_settings.shadows_quality == eShadowsQuality::Raytraced);
+    const bool volumetrics_enabled = (list.render_settings.vol_quality != eVolQuality::Off);
 
     if (!lighting_enabled) {
         list.env.sun_col = {};
     }
 
     const auto render_mask = Ren::Bitmask<Drawable::eVisibility>(list.draw_cam.render_mask());
+    const auto gi_mask = Ren::Bitmask<AccStructure::eRayType>(AccStructure::eRayType::Camera) |
+                         AccStructure::eRayType::Diffuse | AccStructure::eRayType::Specular |
+                         AccStructure::eRayType::Refraction | AccStructure::eRayType::Shadow;
 
     int pipeline_index = int(eFwdPipeline::FrontfaceDraw);
     if (list.render_settings.debug_wireframe) {
@@ -406,7 +410,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
         std::future<void> futures[2 * ITEM_GRID_RES_Z];
 
-        const uint64_t CompMask = (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
+        const uint64_t CompMask =
+            (CompDrawableBit | CompAccStructureBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
         for (auto it = temp_visible_objects_.begin(); it != temp_visible_objects_.end(); ++it) {
             it->val.objects.clear();
             it->val.count = 0;
@@ -455,7 +460,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     const Mesh *mesh = dr.mesh.get();
 
                     const float cam_dist = Distance(cam.world_position(), 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws));
-                    const auto cam_dist_u8 = (uint8_t)std::min(255 * cam_dist / 500.0f, 255.0f);
+                    const auto cam_dist_u8 = uint8_t(std::min(255 * cam_dist / 500.0f, 255.0f));
                     const uint16_t cam_dist_u16 = uint16_t(0xffffu * (cam_dist / 500.0f));
 
                     uint32_t base_vertex = mesh->attribs_buf1().sub.offset / 16;
@@ -469,12 +474,12 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     __push_ellipsoids(dr, tr.world_from_object, list);
 
                     const uint32_t indices_start = mesh->indices_buf().sub.offset;
-                    const Ren::Span<const Ren::TriGroup> groups = mesh->groups();
+                    const Ren::Span<const Ren::tri_group_t> groups = mesh->groups();
                     for (int j = 0; j < int(groups.size()); ++j) {
-                        const Ren::TriGroup &grp = groups[j];
+                        const Ren::tri_group_t &grp = groups[j];
 
                         const MaterialRef &front_mat =
-                            (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j].first;
+                            (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j][0];
 
                         __record_textures(list.visible_textures, front_mat.get(), (obj.comp_mask & CompAnimStateBit),
                                           cam_dist_u16);
@@ -529,7 +534,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             }
 
                             const MaterialRef &back_mat =
-                                (j >= dr.material_override.size()) ? grp.back_mat : dr.material_override[j].second;
+                                (j >= dr.material_override.size()) ? grp.back_mat : dr.material_override[j][1];
                             if (front_mat != back_mat) {
                                 __record_textures(list.visible_textures, back_mat.get(),
                                                   (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
@@ -539,6 +544,53 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 back_batch.alpha_test_bit = (back_mat->flags & eMatFlags::AlphaTest) ? 1 : 0;
                                 back_batch.material_index = int32_t(back_mat.index());
                             }
+                        }
+                    }
+                }
+            }
+            if (volumetrics_enabled && (it->key & CompAccStructureBit)) {
+                for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
+                    const SceneObject &obj = scene.objects[i.index];
+
+                    const Transform &tr = transforms[obj.components[CompTransform]];
+                    const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+                    if (!(acc.vis_mask & AccStructure::eRayType::Volume)) {
+                        continue;
+                    }
+                    if (acc.mesh->blas && list.rt_obj_instances[2].count < MAX_RT_OBJ_INSTANCES_TOTAL) {
+                        const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
+
+                        rt_obj_instance_t &new_instance =
+                            list.rt_obj_instances[2].data[list.rt_obj_instances[2].count++];
+                        memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                        memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
+                        new_instance.geo_index = list.rt_geo_instances[2].count;
+                        new_instance.geo_count = 0;
+                        new_instance.mask = uint8_t(acc.vis_mask);
+                        memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
+                        new_instance.blas_ref = acc.mesh->blas.get();
+
+                        const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
+                        const Ren::Span<const Ren::tri_group_t> groups = acc.mesh->groups();
+                        for (int j = 0; j < int(groups.size()); ++j) {
+                            const Ren::tri_group_t &grp = groups[j];
+
+                            const Ren::MaterialRef &vol_mat =
+                                (j >= acc.material_override.size()) ? grp.vol_mat : acc.material_override[j][2];
+                            if (!vol_mat) {
+                                continue;
+                            }
+
+                            rt_geo_instance_t &geo = list.rt_geo_instances[2].data[list.rt_geo_instances[2].count++];
+                            geo.indices_start = (indices_start + grp.byte_offset) / sizeof(uint32_t);
+                            geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
+                            geo.material_index = vol_mat.index();
+                            geo.flags = 0;
+
+                            ++new_instance.geo_count;
+                        }
+                        if (!new_instance.geo_count) {
+                            --list.rt_obj_instances[2].count;
                         }
                     }
                 }
@@ -685,6 +737,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             const Transform &tr = transforms[obj.components[CompTransform]];
             const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+            if (!(acc.vis_mask & gi_mask)) {
+                continue;
+            }
 
             rt_obj_instance_t &new_instance = list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
             memcpy(new_instance.xform, ValuePtr(Transpose(tr.world_from_object)), 12 * sizeof(float));
@@ -696,14 +751,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             new_instance.blas_ref = acc.mesh->blas.get();
 
             const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
-            const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+            const Ren::Span<const Ren::tri_group_t> groups = acc.mesh->groups();
             for (int j = 0; j < int(groups.size()); ++j) {
-                const Ren::TriGroup &grp = groups[j];
+                const Ren::tri_group_t &grp = groups[j];
 
                 const Ren::MaterialRef &front_mat =
-                    (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
+                    (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j][0];
                 const Ren::MaterialRef &back_mat =
-                    (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
+                    (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j][1];
 
                 rt_geo_instance_t &geo = list.rt_geo_instances[0].data[list.rt_geo_instances[0].count++];
                 geo.indices_start = (indices_start + grp.byte_offset) / sizeof(uint32_t);
@@ -1186,16 +1241,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             new_instance.blas_ref = acc.mesh->blas.get();
 
                             const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
-                            const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+                            const Ren::Span<const Ren::tri_group_t> groups = acc.mesh->groups();
                             for (int j = 0; j < int(groups.size()); ++j) {
-                                const Ren::TriGroup &grp = groups[j];
+                                const Ren::tri_group_t &grp = groups[j];
 
-                                const Ren::MaterialRef &front_mat = (j >= acc.material_override.size())
-                                                                        ? grp.front_mat
-                                                                        : acc.material_override[j].first;
-                                const Ren::MaterialRef &back_mat = (j >= acc.material_override.size())
-                                                                       ? grp.back_mat
-                                                                       : acc.material_override[j].second;
+                                const Ren::MaterialRef &front_mat =
+                                    (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j][0];
+                                const Ren::MaterialRef &back_mat =
+                                    (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j][1];
                                 const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags;
                                 if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                                     // Include only opaque surfaces
@@ -1227,12 +1280,12 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
                     }
 
-                    const Ren::Span<const Ren::TriGroup> groups = mesh->groups();
+                    const Ren::Span<const Ren::tri_group_t> groups = mesh->groups();
                     for (int j = 0; j < int(groups.size()); ++j) {
-                        const Ren::TriGroup &grp = groups[j];
+                        const Ren::tri_group_t &grp = groups[j];
 
                         const MaterialRef &front_mat =
-                            (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j].first;
+                            (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j][0];
 
                         if ((front_mat->flags & eMatFlags::AlphaTest) && front_mat->textures.size() > 4 &&
                             front_mat->textures[4]) {
@@ -1250,7 +1303,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
 
                         const MaterialRef &back_mat =
-                            (j >= dr.material_override.size()) ? grp.back_mat : dr.material_override[j].second;
+                            (j >= dr.material_override.size()) ? grp.back_mat : dr.material_override[j][1];
 
                         const bool simple_twosided =
                             (front_mat->flags & eMatFlags::TwoSided) ||
@@ -1507,12 +1560,12 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 }
                             }
 
-                            const Ren::Span<const Ren::TriGroup> groups = mesh->groups();
+                            const Ren::Span<const Ren::tri_group_t> groups = mesh->groups();
                             for (int j = 0; j < int(groups.size()); ++j) {
-                                const Ren::TriGroup &grp = groups[j];
+                                const Ren::tri_group_t &grp = groups[j];
 
                                 const MaterialRef &front_mat =
-                                    (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j].first;
+                                    (j >= dr.material_override.size()) ? grp.front_mat : dr.material_override[j][0];
 
                                 if ((front_mat->flags & eMatFlags::AlphaTest) && front_mat->textures.size() > 4 &&
                                     front_mat->textures[4]) {
@@ -1530,7 +1583,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 }
 
                                 const MaterialRef &back_mat =
-                                    (j >= dr.material_override.size()) ? grp.back_mat : dr.material_override[j].second;
+                                    (j >= dr.material_override.size()) ? grp.back_mat : dr.material_override[j][1];
 
                                 const bool simple_twosided = (front_mat->flags & eMatFlags::TwoSided) ||
                                                              (!(front_mat->flags & eMatFlags::AlphaTest) &&

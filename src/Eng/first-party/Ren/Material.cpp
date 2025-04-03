@@ -57,11 +57,7 @@ void Ren::Material::Init(const Bitmask<eMatFlags> _flags, Span<const PipelineRef
 void Ren::Material::Init(std::string_view mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
                          const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load,
                          ILog *log) {
-    // if (name_.EndsWith(".mat")) {
     InitFromMAT(mat_src, status, on_pipes_load, on_tex_load, on_sampler_load, log);
-    /*} else {
-        assert(false);
-    }*/
 }
 
 void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status,

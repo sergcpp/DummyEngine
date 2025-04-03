@@ -18,7 +18,7 @@
 #include <Gui/Utils.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 59;
+const uint32_t AssetsBuildVersion = 60;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -1181,7 +1181,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
 
             struct Header {
                 int32_t num_chunks;
-                Ren::MeshChunkPos p[7];
+                Ren::mesh_chunk_pos_t p[7];
             } file_header = {};
             file_header.num_chunks = 5;
 
@@ -1193,7 +1193,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
                 }
             }
 
-            const int32_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(Ren::MeshChunkPos);
+            const int32_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(Ren::mesh_chunk_pos_t);
             int32_t file_offset = 12 + header_size;
 
             file_header.p[int(Ren::eMeshFileChunk::Info)].offset = file_offset;

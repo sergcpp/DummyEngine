@@ -5,8 +5,10 @@ void Eng::DrawList::Init(Ren::BufRef _shared_data_stage_buf, Ren::BufRef _instan
                          Ren::BufRef _cells_stage_buf, Ren::BufRef _rt_cells_stage_buf, Ren::BufRef _items_stage_buf,
                          Ren::BufRef _rt_items_stage_buf, Ren::BufRef _lights_stage_buf, Ren::BufRef _decals_stage_buf,
                          Ren::BufRef _rt_geo_instances_stage_buf, Ren::BufRef _rt_sh_geo_instances_stage_buf,
-                         Ren::BufRef _rt_obj_instances_stage_buf, Ren::BufRef _rt_sh_obj_instances_stage_buf,
-                         Ren::BufRef _rt_tlas_nodes_stage_buf, Ren::BufRef _rt_sh_tlas_nodes_stage_buf) {
+                         Ren::BufRef _rt_vol_geo_instances_stage_buf, Ren::BufRef _rt_obj_instances_stage_buf,
+                         Ren::BufRef _rt_sh_obj_instances_stage_buf, Ren::BufRef _rt_vol_obj_instances_stage_buf,
+                         Ren::BufRef _rt_tlas_nodes_stage_buf, Ren::BufRef _rt_sh_tlas_nodes_stage_buf,
+                         Ren::BufRef _rt_vol_tlas_nodes_stage_buf) {
     instance_indices_stage_buf = std::move(_instance_indices_stage_buf);
     shadow_lists.realloc(MAX_SHADOWMAPS_TOTAL);
     shadow_regions.realloc(MAX_SHADOWMAPS_TOTAL);
@@ -28,16 +30,19 @@ void Eng::DrawList::Init(Ren::BufRef _shared_data_stage_buf, Ren::BufRef _instan
     rt_items.realloc(MAX_ITEMS_TOTAL);
     rt_items_stage_buf = std::move(_rt_items_stage_buf);
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < int(eTLASIndex::_Count); ++i) {
         rt_geo_instances[i].realloc(MAX_RT_GEO_INSTANCES);
         rt_obj_instances[i].realloc(MAX_RT_OBJ_INSTANCES_TOTAL);
     }
-    rt_geo_instances_stage_buf[0] = std::move(_rt_geo_instances_stage_buf);
-    rt_geo_instances_stage_buf[1] = std::move(_rt_sh_geo_instances_stage_buf);
-    rt_obj_instances_stage_buf[0] = std::move(_rt_obj_instances_stage_buf);
-    rt_obj_instances_stage_buf[1] = std::move(_rt_sh_obj_instances_stage_buf);
-    swrt.rt_tlas_nodes_stage_buf[0] = std::move(_rt_tlas_nodes_stage_buf);
-    swrt.rt_tlas_nodes_stage_buf[1] = std::move(_rt_sh_tlas_nodes_stage_buf);
+    rt_geo_instances_stage_buf[int(eTLASIndex::Main)] = std::move(_rt_geo_instances_stage_buf);
+    rt_geo_instances_stage_buf[int(eTLASIndex::Shadow)] = std::move(_rt_sh_geo_instances_stage_buf);
+    rt_geo_instances_stage_buf[int(eTLASIndex::Volume)] = std::move(_rt_vol_geo_instances_stage_buf);
+    rt_obj_instances_stage_buf[int(eTLASIndex::Main)] = std::move(_rt_obj_instances_stage_buf);
+    rt_obj_instances_stage_buf[int(eTLASIndex::Shadow)] = std::move(_rt_sh_obj_instances_stage_buf);
+    rt_obj_instances_stage_buf[int(eTLASIndex::Volume)] = std::move(_rt_vol_obj_instances_stage_buf);
+    swrt.rt_tlas_nodes_stage_buf[int(eTLASIndex::Main)] = std::move(_rt_tlas_nodes_stage_buf);
+    swrt.rt_tlas_nodes_stage_buf[int(eTLASIndex::Shadow)] = std::move(_rt_sh_tlas_nodes_stage_buf);
+    swrt.rt_tlas_nodes_stage_buf[int(eTLASIndex::Volume)] = std::move(_rt_vol_tlas_nodes_stage_buf);
 
     shared_data_stage_buf = std::move(_shared_data_stage_buf);
 

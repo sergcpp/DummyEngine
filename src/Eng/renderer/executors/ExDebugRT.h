@@ -25,25 +25,28 @@ class ExDebugRT final : public FgExecutor {
         FgResRef ltc_luts_tex;
         FgResRef cells_buf;
         FgResRef items_buf;
+        FgResRef tlas_buf;
 
         FgResRef irradiance_tex;
         FgResRef distance_tex;
         FgResRef offset_tex;
 
+        const Ren::IAccStructure *tlas = nullptr;
+        uint32_t cull_mask = 0xffffffff;
+
         struct {
-            uint32_t root_node;
+            uint32_t root_node = 0xffffffff;
             FgResRef rt_blas_buf;
             FgResRef prim_ndx_buf;
             FgResRef mesh_instances_buf;
-            FgResRef rt_tlas_buf;
             FgResRef textures_buf;
         } swrt;
 
         FgResRef output_tex;
     };
 
-    ExDebugRT(FgBuilder &builder, const view_state_t *view_state, const Ren::IAccStructure *tlas_to_debug,
-              const BindlessTextureData *bindless_tex, const Args *args);
+    ExDebugRT(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
+              const Args *args);
 
     void Execute(FgBuilder &builder) override;
 
@@ -52,7 +55,6 @@ class ExDebugRT final : public FgExecutor {
 
     // temp data (valid only between Setup and Execute calls)
     const view_state_t *view_state_ = nullptr;
-    const Ren::IAccStructure *tlas_to_debug_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
     int depth_w_ = 0, depth_h_ = 0;
 

@@ -17,20 +17,13 @@ class ILog;
 
 enum class eMeshFlags { HasAlpha = 0 };
 
-struct TriGroup {
-    int byte_offset = -1;
-    int num_indices = 0;
-    MaterialRef front_mat, back_mat;
+struct tri_group_t {
+    int byte_offset = -1, num_indices = 0;
+    MaterialRef front_mat, back_mat, vol_mat;
     Bitmask<eMeshFlags> flags;
-
-    TriGroup() = default;
-    TriGroup(const TriGroup &rhs) = delete;
-    TriGroup(TriGroup &&rhs) noexcept = default;
-    TriGroup &operator=(const TriGroup &rhs) = delete;
-    TriGroup &operator=(TriGroup &&rhs) noexcept = default;
 };
 
-struct VtxDelta {
+struct vtx_delta_t {
     float dp[3], dn[3], db[3];
 };
 
@@ -40,7 +33,7 @@ struct BufferRange {
     uint32_t size = 0;
 
     BufferRange() = default;
-    BufferRange(BufRef &_buf, const SubAllocation _sub, uint32_t _size) : buf(_buf), sub(_sub), size(_size) {}
+    BufferRange(BufRef &_buf, const SubAllocation _sub, const uint32_t _size) : buf(_buf), sub(_sub), size(_size) {}
     ~BufferRange() { Release(); }
 
     BufferRange(const BufferRange &rhs) = delete;
@@ -70,14 +63,14 @@ enum class eMeshLoadStatus { Error, Found, CreatedFromData };
 
 enum class eMeshType { Undefined, Simple, Colored, Skeletal };
 
-using material_load_callback = std::function<std::pair<MaterialRef, MaterialRef>(std::string_view name)>;
+using material_load_callback = std::function<std::array<MaterialRef, 3>(std::string_view name)>;
 
 enum class eMeshFileChunk { Info = 0, VtxAttributes, TriIndices, Materials, TriGroups, Bones, ShapeKeys };
 
-struct MeshChunkPos {
+struct mesh_chunk_pos_t {
     int32_t offset, length;
 };
-static_assert(sizeof(MeshChunkPos) == 8);
+static_assert(sizeof(mesh_chunk_pos_t) == 8);
 
 struct MeshFileInfo {
     char name[32] = "ModelName";
@@ -94,8 +87,8 @@ class Mesh : public RefCounter {
     BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_, indices_buf_;
     std::vector<float> attribs_;
     std::vector<uint32_t> indices_;
-    std::vector<VtxDelta> deltas_;
-    SmallVector<TriGroup, 8> groups_;
+    std::vector<vtx_delta_t> deltas_;
+    SmallVector<tri_group_t, 8> groups_;
     Vec3f bbox_min_, bbox_max_;
     String name_;
 
@@ -139,8 +132,8 @@ class Mesh : public RefCounter {
     const BufferRange &sk_deltas_buf() const { return sk_deltas_buf_; }
     Span<const uint32_t> indices() const { return indices_; }
     const BufferRange &indices_buf() const { return indices_buf_; }
-    Span<const TriGroup> groups() const { return groups_; }
-    SmallVectorImpl<TriGroup> &groups() { return groups_; }
+    Span<const tri_group_t> groups() const { return groups_; }
+    SmallVectorImpl<tri_group_t> &groups() { return groups_; }
     const Vec3f &bbox_min() const { return bbox_min_; }
     const Vec3f &bbox_max() const { return bbox_max_; }
     const String &name() const { return name_; }

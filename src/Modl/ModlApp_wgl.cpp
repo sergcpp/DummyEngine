@@ -696,7 +696,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
 
     struct ShapeKeyElement {
         int index;
-        Ren::VtxDelta delta;
+        Ren::vtx_delta_t delta;
     };
     using ShapeKeyData = vector<ShapeKeyElement>;
 
@@ -1275,7 +1275,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
 
     struct Header {
         int32_t num_chunks;
-        Ren::MeshChunkPos p[7];
+        Ren::mesh_chunk_pos_t p[7];
     } file_header;
 
     if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_COLORED) {
@@ -1286,7 +1286,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
             file_header.num_chunks++;
         }
     }
-    size_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(Ren::MeshChunkPos);
+    size_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(Ren::mesh_chunk_pos_t);
     size_t file_offset = 12 + header_size;
 
     file_header.p[int(Ren::eMeshFileChunk::Info)].offset = (int32_t)file_offset;
@@ -1543,10 +1543,10 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, co
 
     struct Header {
         int32_t num_chunks;
-        Ren::MeshChunkPos p[4];
+        Ren::mesh_chunk_pos_t p[4];
     } file_header;
 
-    static_assert(sizeof(Header) == 36, "fix struct packing!");
+    static_assert(sizeof(Header) == 36);
     static_assert(offsetof(Header, p) == 4);
 
     size_t file_offset = 12 + sizeof(Header);
@@ -1960,7 +1960,7 @@ void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std:
 #endif
 }
 
-std::pair<Ren::MaterialRef, Ren::MaterialRef> ModlApp::OnMaterialNeeded(std::string_view name) {
+std::array<Ren::MaterialRef, 3> ModlApp::OnMaterialNeeded(std::string_view name) {
     using namespace std;
 
     Ren::eMatLoadStatus status;
@@ -1985,5 +1985,5 @@ std::pair<Ren::MaterialRef, Ren::MaterialRef> ModlApp::OnMaterialNeeded(std::str
             std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
-    return {ret, ret};
+    return {ret, ret, {}};
 }

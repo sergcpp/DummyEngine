@@ -157,9 +157,10 @@ struct DrawList {
               Ren::BufRef skin_transforms_stage_buf, Ren::BufRef shape_keys_stage_buf, Ren::BufRef cells_stage_buf,
               Ren::BufRef rt_cells_stage_buf, Ren::BufRef items_stage_buf, Ren::BufRef rt_items_stage_buf,
               Ren::BufRef lights_stage_buf, Ren::BufRef decals_stage_buf, Ren::BufRef rt_geo_instances_stage_buf,
-              Ren::BufRef rt_sh_geo_instances_stage_buf, Ren::BufRef rt_obj_instances_stage_buf,
-              Ren::BufRef rt_sh_obj_instances_stage_buf, Ren::BufRef rt_tlas_nodes_stage_buf,
-              Ren::BufRef rt_sh_tlas_nodes_stage_buf);
+              Ren::BufRef rt_sh_geo_instances_stage_buf, Ren::BufRef rt_vol_geo_instances_stage_buf,
+              Ren::BufRef rt_obj_instances_stage_buf, Ren::BufRef rt_sh_obj_instances_stage_buf,
+              Ren::BufRef rt_vol_obj_instances_stage_buf, Ren::BufRef rt_tlas_nodes_stage_buf,
+              Ren::BufRef rt_sh_tlas_nodes_stage_buf, Ren::BufRef rt_vol_tlas_nodes_stage_buf);
     void Clear();
 };
 } // namespace Eng

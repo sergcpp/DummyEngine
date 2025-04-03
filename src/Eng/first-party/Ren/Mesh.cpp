@@ -199,7 +199,7 @@ void pack_vertex_data2(const orig_vertex_colored_t &in_v, packed_vertex_data2_t 
     out_v.t1[1] = uint16_t(uint16_t(in_v.c[3]) << 8u) | uint16_t(in_v.c[2]);
 }
 
-void pack_vertex_delta(const VtxDelta &in_v, packed_vertex_delta_t &out_v) {
+void pack_vertex_delta(const vtx_delta_t &in_v, packed_vertex_delta_t &out_v) {
     out_v.dp[0] = in_v.dp[0];
     out_v.dp[1] = in_v.dp[1];
     out_v.dp[2] = in_v.dp[2];
@@ -328,7 +328,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 
     struct Header {
         int num_chunks;
-        MeshChunkPos p[5];
+        mesh_chunk_pos_t p[5];
     } file_header = {};
     data.read((char *)&file_header, sizeof(file_header));
 
@@ -376,7 +376,10 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
             flags_ |= eMeshFlags::HasAlpha;
         }
 
-        std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
+        std::array<MaterialRef, 3> mats = on_mat_load(&material_names[i][0]);
+        grp.front_mat = std::move(mats[0]);
+        grp.back_mat = std::move(mats[1]);
+        grp.vol_mat = std::move(mats[2]);
     }
 
     InitBufferData(api_ctx, vertex_buf1, vertex_buf2, index_buf);
@@ -394,7 +397,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 
     struct Header {
         int num_chunks;
-        MeshChunkPos p[5];
+        mesh_chunk_pos_t p[5];
     } file_header = {};
     data.read((char *)&file_header, sizeof(file_header));
 
@@ -442,7 +445,10 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
             flags_ |= eMeshFlags::HasAlpha;
         }
 
-        std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
+        std::array<MaterialRef, 3> mats = on_mat_load(&material_names[i][0]);
+        grp.front_mat = std::move(mats[0]);
+        grp.back_mat = std::move(mats[1]);
+        grp.vol_mat = std::move(mats[2]);
     }
 
     assert(attribs_size % sizeof(orig_vertex_colored_t) == 0);
@@ -504,10 +510,10 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
 
     struct Header {
         int num_chunks;
-        MeshChunkPos p[7];
+        mesh_chunk_pos_t p[7];
     } file_header = {};
     data.read((char *)&file_header.num_chunks, sizeof(int));
-    data.read((char *)&file_header.p[0], std::streamsize(file_header.num_chunks * sizeof(MeshChunkPos)));
+    data.read((char *)&file_header.p[0], std::streamsize(file_header.num_chunks * sizeof(mesh_chunk_pos_t)));
 
     // Skip name, cant remember why i put it there
     data.seekg(32, std::ios::cur);
@@ -554,7 +560,10 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
             flags_ |= eMeshFlags::HasAlpha;
         }
 
-        std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
+        std::array<MaterialRef, 3> mats = on_mat_load(&material_names[i][0]);
+        grp.front_mat = std::move(mats[0]);
+        grp.back_mat = std::move(mats[1]);
+        grp.vol_mat = std::move(mats[2]);
     }
 
     const int bones_count = file_header.p[int(eMeshFileChunk::Bones)].length / (64 + 8 + 12 + 16);
@@ -624,7 +633,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
             sh_key.delta_count = shape_keyed_vertices_count;
             sh_key.cur_weight_packed = 0;
 
-            data.read((char *)&deltas_[sh_key.delta_offset], std::streamsize(sh_key.delta_count * sizeof(VtxDelta)));
+            data.read((char *)&deltas_[sh_key.delta_offset], std::streamsize(sh_key.delta_count * sizeof(vtx_delta_t)));
         }
 
         sk_deltas_buf_.size = uint32_t(shapes_count * shape_keyed_vertices_count * sizeof(packed_vertex_delta_t));

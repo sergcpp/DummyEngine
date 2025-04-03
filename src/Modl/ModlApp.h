@@ -129,7 +129,7 @@ class ModlApp {
     void OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std::string_view fs_shader,
                            std::string_view arg3, std::string_view arg4,
                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    std::pair<Ren::MaterialRef, Ren::MaterialRef> OnMaterialNeeded(std::string_view name);
+    std::array<Ren::MaterialRef, 3> OnMaterialNeeded(std::string_view name);
 
     static void ClearColorAndDepth(float r, float g, float b, float a);
 };

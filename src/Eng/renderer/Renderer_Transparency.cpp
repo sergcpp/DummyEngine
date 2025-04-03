@@ -379,7 +379,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
                 data->ray_list = rt_refl.AddStorageReadonlyInput(oit_ray_list, stage);
             }
             data->indir_args = rt_refl.AddIndirectBufferInput(indir_rt_disp_buf);
-            data->tlas_buf = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
+            data->tlas_buf = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Main)], stage);
             data->lights_buf = rt_refl.AddStorageReadonlyInput(common_buffers.lights, stage);
             data->shadow_depth_tex = rt_refl.AddTextureInput(shadow_depth_tex_, stage);
             data->shadow_color_tex = rt_refl.AddTextureInput(shadow_color_tex_, stage);

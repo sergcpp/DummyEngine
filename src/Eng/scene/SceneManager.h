@@ -205,7 +205,7 @@ class SceneManager {
     void PostloadSoundSource(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void PostloadAccStructure(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
 
-    std::pair<Ren::MaterialRef, Ren::MaterialRef> OnLoadMaterial(std::string_view name);
+    std::array<Ren::MaterialRef, 3> OnLoadMaterial(std::string_view name);
     void OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader, std::string_view f_shader,
                          std::string_view tc_shader, std::string_view te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);

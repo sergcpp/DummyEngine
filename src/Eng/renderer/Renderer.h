@@ -30,6 +30,7 @@ static_assert(RAY_TYPE_DIFFUSE == int(AccStructure::eRayType::Diffuse));
 static_assert(RAY_TYPE_SPECULAR == int(AccStructure::eRayType::Specular));
 static_assert(RAY_TYPE_REFRACTION == int(AccStructure::eRayType::Refraction));
 static_assert(RAY_TYPE_SHADOW == int(AccStructure::eRayType::Shadow));
+static_assert(RAY_TYPE_VOLUME == int(AccStructure::eRayType::Volume));
 
 class Renderer {
   public:
@@ -206,7 +207,7 @@ class Renderer {
     Ren::PipelineRef pi_histogram_sample_, pi_histogram_exposure_;
     // Volumetrics
     Ren::PipelineRef pi_sky_upsample_;
-    Ren::PipelineRef pi_vol_voxelize_, pi_vol_scatter_[2][2], pi_vol_ray_march_;
+    Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_;
     // Debug
     Ren::PipelineRef pi_debug_velocity_;
 
@@ -309,7 +310,9 @@ class Renderer {
     void InitSkyResources();
     void AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
     void AddSunColorUpdatePass(CommonBuffers &common_buffers);
-    void AddVolumetricPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
+    void AddVolumetricPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                             const AccelerationStructureData &acc_struct_data, FgResRef rt_geo_instances_res,
+                             FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
     // Debugging
     void AddDebugVelocityPass(FgResRef velocity, FgResRef &output_tex);

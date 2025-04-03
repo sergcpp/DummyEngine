@@ -136,7 +136,6 @@ void Eng::Renderer::InitPipelines() {
 
     // Volumetrics
     pi_sky_upsample_ = sh_.LoadPipeline("internal/skydome_upsample.comp.glsl");
-    pi_vol_voxelize_ = sh_.LoadPipeline("internal/vol_voxelize.comp.glsl");
     pi_vol_scatter_[0][0] = sh_.LoadPipeline(subgroup_select("internal/vol_scatter.comp.glsl", //
                                                              "internal/vol_scatter@NO_SUBGROUP.comp.glsl"));
     pi_vol_scatter_[0][1] = sh_.LoadPipeline(subgroup_select("internal/vol_scatter@GI_CACHE.comp.glsl", //

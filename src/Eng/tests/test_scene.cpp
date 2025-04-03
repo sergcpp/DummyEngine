@@ -242,22 +242,30 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
                                                                 RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufRef rt_sh_geo_instances_stage_buf = ren_ctx.LoadBuffer(
         "RT Shadow Geo Instances (Upload)", Ren::eBufType::Upload, RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
-        rt_sh_tlas_nodes_stage_buf;
+    Ren::BufRef rt_vol_geo_instances_stage_buf = ren_ctx.LoadBuffer(
+        "RT Volume Geo Instances (Upload)", Ren::eBufType::Upload, RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_vol_obj_instances_stage_buf,
+        rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf, rt_vol_tlas_nodes_stage_buf;
     if (ren_ctx.capabilities.hwrt) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
                                                         HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
                                                            HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_vol_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Volume Obj Instances (Upload)", Ren::eBufType::Upload,
+                                                            HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
     } else if (ren_ctx.capabilities.swrt) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
                                                         SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
                                                            SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_vol_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Volume Obj Instances (Upload)", Ren::eBufType::Upload,
+                                                            SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_tlas_nodes_stage_buf = ren_ctx.LoadBuffer("SWRT TLAS Nodes (Upload)", Ren::eBufType::Upload,
                                                      SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_tlas_nodes_stage_buf = ren_ctx.LoadBuffer("SWRT Shadow TLAS Nodes (Upload)", Ren::eBufType::Upload,
                                                         SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_vol_tlas_nodes_stage_buf = ren_ctx.LoadBuffer("SWRT Volume TLAS Nodes (Upload)", Ren::eBufType::Upload,
+                                                         SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
     Ren::BufRef shared_data_stage_buf =
@@ -270,8 +278,9 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     draw_list.Init(shared_data_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf, shape_keys_stage_buf,
                    cells_stage_buf, rt_cells_stage_buf, items_stage_buf, rt_items_stage_buf, lights_stage_buf,
                    decals_stage_buf, rt_geo_instances_stage_buf, rt_sh_geo_instances_stage_buf,
-                   rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
-                   rt_sh_tlas_nodes_stage_buf);
+                   rt_vol_geo_instances_stage_buf, rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf,
+                   rt_vol_obj_instances_stage_buf, rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf,
+                   rt_vol_tlas_nodes_stage_buf);
     draw_list.render_settings = renderer->settings;
 
     renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);

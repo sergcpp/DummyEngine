@@ -4,10 +4,9 @@
 
 #include "../../utils/ShaderLoader.h"
 
-Eng::ExDebugRT::ExDebugRT(FgBuilder &builder, const view_state_t *view_state, const Ren::IAccStructure *tlas_to_debug,
-                          const BindlessTextureData *bindless_tex, const Args *args) {
+Eng::ExDebugRT::ExDebugRT(FgBuilder &builder, const view_state_t *view_state, const BindlessTextureData *bindless_tex,
+                          const Args *args) {
     view_state_ = view_state;
-    tlas_to_debug_ = tlas_to_debug;
     bindless_tex_ = bindless_tex;
     args_ = args;
 #if defined(REN_VK_BACKEND)

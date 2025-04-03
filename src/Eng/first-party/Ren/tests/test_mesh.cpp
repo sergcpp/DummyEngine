@@ -110,7 +110,7 @@ void test_mesh() {
             eMatLoadStatus status;
             MaterialRef ret =
                 test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
-            return std::pair{ret, ret};
+            return std::array<MaterialRef, 3>{ret, ret, {}};
         };
 
         eMeshLoadStatus load_status;

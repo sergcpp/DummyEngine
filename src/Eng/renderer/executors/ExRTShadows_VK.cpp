@@ -25,7 +25,7 @@ void Eng::ExRTShadows::Execute_HWRT_Pipeline(FgBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *acc_struct = static_cast<Ren::AccStructureVK *>(args_->tlas);
+    auto *acc_struct = static_cast<const Ren::AccStructureVK *>(args_->tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
@@ -80,7 +80,7 @@ void Eng::ExRTShadows::Execute_HWRT_Inline(FgBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *acc_struct = static_cast<Ren::AccStructureVK *>(args_->tlas);
+    auto *acc_struct = static_cast<const Ren::AccStructureVK *>(args_->tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 

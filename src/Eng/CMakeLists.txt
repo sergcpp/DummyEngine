@@ -147,7 +147,9 @@ set(EXECUTORS_SOURCES   renderer/executors/ExBuildAccStructures.h
                         renderer/executors/ExTransparent.h
                         renderer/executors/ExTransparent.cpp
                         renderer/executors/ExUpdateAccBuffers.h
-                        renderer/executors/ExUpdateAccBuffers.cpp)
+                        renderer/executors/ExUpdateAccBuffers.cpp
+                        renderer/executors/ExVolVoxelize.h
+                        renderer/executors/ExVolVoxelize.cpp)
 
 if(${REN_BACKEND} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
@@ -167,10 +169,10 @@ if(${REN_BACKEND} STREQUAL "GL")
                             renderer/executors/ExOITScheduleRaysGL.cpp
                             renderer/executors/ExOpaqueGL.cpp
                             renderer/executors/ExRTGI_GL.cpp
-                            renderer/executors/ExRTGICache_GL.cpp
-                            renderer/executors/ExRTReflections_GL.cpp
+                            renderer/executors/ExRTGICacheGL.cpp
+                            renderer/executors/ExRTReflectionsGL.cpp
                             renderer/executors/ExRTShadows_GL.cpp
-                            renderer/executors/ExSampleLights_GL.cpp
+                            renderer/executors/ExSampleLightsGL.cpp
                             renderer/executors/ExShadowColorGL.cpp
                             renderer/executors/ExShadowDepthGL.cpp
                             renderer/executors/ExSkinningGL.cpp
@@ -194,15 +196,16 @@ elseif(${REN_BACKEND} STREQUAL "VK")
                             renderer/executors/ExOITScheduleRaysVK.cpp
                             renderer/executors/ExOpaqueVK.cpp
                             renderer/executors/ExRTGI_VK.cpp
-                            renderer/executors/ExRTGICache_VK.cpp
-                            renderer/executors/ExRTReflections_VK.cpp
+                            renderer/executors/ExRTGICacheVK.cpp
+                            renderer/executors/ExRTReflectionsVK.cpp
                             renderer/executors/ExRTShadows_VK.cpp
-                            renderer/executors/ExSampleLights_VK.cpp
+                            renderer/executors/ExSampleLightsVK.cpp
                             renderer/executors/ExShadowColorVK.cpp
                             renderer/executors/ExShadowDepthVK.cpp
                             renderer/executors/ExSkinningVK.cpp
                             renderer/executors/ExTransparentVK.cpp
-                            renderer/executors/ExUpdateAccBuffersVK.cpp)
+                            renderer/executors/ExUpdateAccBuffersVK.cpp
+                            renderer/executors/ExVolVoxelizeVK.cpp)
 elseif(${REN_BACKEND} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                          renderer/RendererSW.cpp)

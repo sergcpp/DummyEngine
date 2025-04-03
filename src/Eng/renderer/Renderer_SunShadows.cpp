@@ -161,7 +161,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->noise_tex = rt_shadows.AddTextureInput(noise_tex, stage);
         data->depth_tex = rt_shadows.AddTextureInput(frame_textures.depth, stage);
         data->normal_tex = rt_shadows.AddTextureInput(frame_textures.normal, stage);
-        data->tlas_buf = rt_shadows.AddStorageReadonlyInput(acc_struct_data.rt_sh_tlas_buf, stage);
+        data->tlas_buf = rt_shadows.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Shadow)], stage);
         data->tile_list_buf = rt_shadows.AddStorageReadonlyInput(tile_list, stage);
         data->indir_args = rt_shadows.AddIndirectBufferInput(indir_args);
 

@@ -292,9 +292,10 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     }
 
     materials_upload_buf.Unmap();
-    scene_data_.persistent_data.materials_buf->UpdateSubRegion(
-        update_range.first * sizeof(material_data_t), (update_range.second - update_range.first) * sizeof(material_data_t),
-        materials_upload_buf, 0, ren_ctx_.current_cmd_buf());
+    scene_data_.persistent_data.materials_buf->UpdateSubRegion(update_range.first * sizeof(material_data_t),
+                                                               (update_range.second - update_range.first) *
+                                                                   sizeof(material_data_t),
+                                                               materials_upload_buf, 0, ren_ctx_.current_cmd_buf());
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 
@@ -325,20 +326,26 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
     Ren::SmallVector<uint32_t, 16> prim_counts;
 
     const uint32_t indices_start = indices.sub.offset;
-    const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+    const Ren::Span<const Ren::tri_group_t> groups = acc.mesh->groups();
     for (int j = 0; j < int(groups.size()); ++j) {
-        const Ren::TriGroup &grp = groups[j];
-        const Ren::Material *front_mat =
-            (j >= acc.material_override.size()) ? grp.front_mat.get() : acc.material_override[j].first.get();
-        const Ren::Material *back_mat =
-            (j >= acc.material_override.size()) ? grp.back_mat.get() : acc.material_override[j].second.get();
+        const Ren::tri_group_t &grp = groups[j];
+        const Ren::MaterialRef &front_mat =
+            (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j][0];
+        const Ren::MaterialRef &back_mat =
+            (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j][1];
+        const Ren::MaterialRef &vol_mat =
+            (j >= acc.material_override.size()) ? grp.vol_mat : acc.material_override[j][2];
 
         auto &new_geo = geometries.emplace_back();
         new_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
         new_geo.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
         new_geo.flags = 0;
-        if (!(front_mat->flags & Ren::eMatFlags::AlphaTest) && !(back_mat->flags & Ren::eMatFlags::AlphaTest) &&
-            !(front_mat->flags & Ren::eMatFlags::AlphaBlend) && !(back_mat->flags & Ren::eMatFlags::AlphaBlend)) {
+        if (front_mat && back_mat && !(front_mat->flags & Ren::eMatFlags::AlphaTest) &&
+            !(back_mat->flags & Ren::eMatFlags::AlphaTest) && !(front_mat->flags & Ren::eMatFlags::AlphaBlend) &&
+            !(back_mat->flags & Ren::eMatFlags::AlphaBlend)) {
+            new_geo.flags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
+        }
+        if (vol_mat) {
             new_geo.flags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
         }
         new_geo.geometry.triangles = tri_data;
@@ -540,15 +547,17 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
     api_ctx->vkGetAccelerationStructureBuildSizesKHR(api_ctx->device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
                                                      &tlas_build_info, &max_instance_count, &size_info);
 
-    scene_data_.persistent_data.rt_tlas_buf = scene_data_.buffers.Insert(
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Main)] = scene_data_.buffers.Insert(
         "TLAS Buf", api_ctx, Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
-    scene_data_.persistent_data.rt_sh_tlas_buf = scene_data_.buffers.Insert(
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Shadow)] = scene_data_.buffers.Insert(
         "TLAS Shadow Buf", api_ctx, Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Volume)] = scene_data_.buffers.Insert(
+        "TLAS Volume Buf", api_ctx, Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
 
     { // Main TLAS
         VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
         create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-        create_info.buffer = scene_data_.persistent_data.rt_tlas_buf->vk_handle();
+        create_info.buffer = scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Main)]->vk_handle();
         create_info.offset = 0;
         create_info.size = size_info.accelerationStructureSize;
 
@@ -562,13 +571,12 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
         if (!vk_tlas->Init(api_ctx, tlas_handle)) {
             ren_ctx_.log()->Error("Failed to init TLAS!");
         }
-        scene_data_.persistent_data.rt_tlas = std::move(vk_tlas);
+        scene_data_.persistent_data.rt_tlas[int(eTLASIndex::Main)] = std::move(vk_tlas);
     }
-
     { // Shadow TLAS
         VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
         create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-        create_info.buffer = scene_data_.persistent_data.rt_sh_tlas_buf->vk_handle();
+        create_info.buffer = scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Shadow)]->vk_handle();
         create_info.offset = 0;
         create_info.size = size_info.accelerationStructureSize;
 
@@ -582,7 +590,26 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
         if (!vk_tlas->Init(api_ctx, tlas_handle)) {
             ren_ctx_.log()->Error("Failed to init TLAS!");
         }
-        scene_data_.persistent_data.rt_sh_tlas = std::move(vk_tlas);
+        scene_data_.persistent_data.rt_tlas[int(eTLASIndex::Shadow)] = std::move(vk_tlas);
+    }
+    { // Volume TLAS
+        VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
+        create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        create_info.buffer = scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Volume)]->vk_handle();
+        create_info.offset = 0;
+        create_info.size = size_info.accelerationStructureSize;
+
+        VkAccelerationStructureKHR tlas_handle;
+        VkResult res = api_ctx->vkCreateAccelerationStructureKHR(api_ctx->device, &create_info, nullptr, &tlas_handle);
+        if (res != VK_SUCCESS) {
+            ren_ctx_.log()->Error("Failed to create acceleration structure!");
+        }
+
+        std::unique_ptr<Ren::AccStructureVK> vk_tlas = std::make_unique<Ren::AccStructureVK>();
+        if (!vk_tlas->Init(api_ctx, tlas_handle)) {
+            ren_ctx_.log()->Error("Failed to init TLAS!");
+        }
+        scene_data_.persistent_data.rt_tlas[int(eTLASIndex::Volume)] = std::move(vk_tlas);
     }
 
     scene_data_.persistent_data.hwrt.rt_tlas_build_scratch_size = uint32_t(size_info.buildScratchSize);

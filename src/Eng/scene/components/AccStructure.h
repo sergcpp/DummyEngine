@@ -8,12 +8,12 @@
 
 namespace Eng {
 struct AccStructure {
-    enum class eRayType : uint8_t { Camera, Diffuse, Specular, Refraction, Shadow };
+    enum class eRayType : uint8_t { Camera, Diffuse, Specular, Refraction, Shadow, Volume };
     static const Ren::Bitmask<eRayType> DefaultVisMask;
 
     Ren::Bitmask<eRayType> vis_mask = DefaultVisMask;
     Ren::MeshRef mesh;
-    std::vector<std::pair<Ren::MaterialRef, Ren::MaterialRef>> material_override;
+    std::vector<std::array<Ren::MaterialRef, 3>> material_override;
     float surf_area = 0.0f;
 
     static void Read(const Sys::JsObjectP &js_in, AccStructure &acc);

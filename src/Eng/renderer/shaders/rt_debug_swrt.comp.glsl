@@ -93,7 +93,7 @@ void main() {
     int transp_depth = 0;
     while (true) {
         Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0,
-                                g_vtx_indices, g_prim_indices, origin, direction, inv_d, (1u << RAY_TYPE_CAMERA), 0 /* root_node */, inter);
+                                g_vtx_indices, g_prim_indices, origin, direction, inv_d, g_params.cull_mask, 0 /* root_node */, inter);
         if (inter.mask != 0 /*&& transp_depth++ < 4*/) {
             // perform alpha test, account for alpha blending
             const bool backfacing = (inter.prim_index < 0);

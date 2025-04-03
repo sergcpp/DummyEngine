@@ -35,7 +35,7 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    const auto *acc_struct = static_cast<const Ren::AccStructureVK *>(tlas_to_debug_);
+    const auto *acc_struct = static_cast<const Ren::AccStructureVK *>(args_->tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
@@ -74,6 +74,7 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     uniform_params.img_size[0] = view_state_->scr_res[0];
     uniform_params.img_size[1] = view_state_->scr_res[1];
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
+    uniform_params.cull_mask = args_->cull_mask;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_->layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
                                 sizeof(uniform_params), &uniform_params);
@@ -90,8 +91,8 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(args_->vtx_buf2);
     FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
+    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
-    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->swrt.rt_tlas_buf);
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
@@ -148,6 +149,7 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     uniform_params.img_size[1] = view_state_->act_res[1];
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.root_node = args_->swrt.root_node;
+    uniform_params.cull_mask = args_->cull_mask;
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 

@@ -588,7 +588,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
     Ren::Span<const float> positions = acc.mesh->attribs();
     Ren::Span<const uint32_t> tri_indices = acc.mesh->indices();
 
-    for (const Ren::TriGroup &grp : acc.mesh->groups()) {
+    for (const Ren::tri_group_t &grp : acc.mesh->groups()) {
         const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
         const uint32_t index_end = index_beg + grp.num_indices;
 
@@ -691,12 +691,15 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const Acc
 void Eng::SceneManager::Alloc_SWRT_TLAS() {
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
-    scene_data_.persistent_data.rt_tlas_buf = scene_data_.buffers.Insert(
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Main)] = scene_data_.buffers.Insert(
         "TLAS", api_ctx, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
-    scene_data_.persistent_data.rt_tlas_buf->AddBufferView(Ren::eTexFormat::RGBA32F);
-    scene_data_.persistent_data.rt_sh_tlas_buf = scene_data_.buffers.Insert(
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Main)]->AddBufferView(Ren::eTexFormat::RGBA32F);
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Shadow)] = scene_data_.buffers.Insert(
         "TLAS Shadow", api_ctx, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
-    scene_data_.persistent_data.rt_sh_tlas_buf->AddBufferView(Ren::eTexFormat::RGBA32F);
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Shadow)]->AddBufferView(Ren::eTexFormat::RGBA32F);
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Volume)] = scene_data_.buffers.Insert(
+        "TLAS Volume", api_ctx, Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh2_node_t)));
+    scene_data_.persistent_data.rt_tlas_buf[int(eTLASIndex::Volume)]->AddBufferView(Ren::eTexFormat::RGBA32F);
 
     if (!scene_data_.persistent_data.swrt.rt_prim_indices_buf) {
         scene_data_.persistent_data.swrt.rt_prim_indices_buf =
@@ -1253,16 +1256,16 @@ void Eng::SceneManager::RebuildLightTree() {
         Ren::Span<const uint32_t> tri_indices = acc.mesh->indices();
         const uint32_t indices_start = acc.mesh->indices_buf().sub.offset / sizeof(uint32_t);
 
-        const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+        const Ren::Span<const Ren::tri_group_t> groups = acc.mesh->groups();
         for (int j = 0; j < int(groups.size()); ++j) {
-            const Ren::TriGroup &grp = groups[j];
+            const Ren::tri_group_t &grp = groups[j];
 
             const Ren::MaterialRef &front_mat =
-                (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
+                (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j][0];
             const Ren::MaterialRef &back_mat =
-                (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
+                (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j][1];
 
-            if ((front_mat->flags & Ren::eMatFlags::Emissive) == 0) {
+            if (!front_mat || (front_mat->flags & Ren::eMatFlags::Emissive) == 0) {
                 continue;
             }
 

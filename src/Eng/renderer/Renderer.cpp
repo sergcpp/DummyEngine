@@ -641,6 +641,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     view_state_.pre_exposure = readback_exposure();
     view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
 
+    view_state_.skip_volumetrics =
+        (list.env.fog.density == 0.0f ||
+         (Ren::Length2(list.env.fog.scatter_color) == 0.0f) && list.env.fog.absorption == 1.0f) &&
+        Ren::Length2(list.env.fog.emission_color) == 0.0f && list.rt_obj_instances[int(eTLASIndex::Volume)].count == 0;
+
     if (list.render_settings.taa_mode != eTAAMode::Off) {
         const int samples_to_use =
             (list.render_settings.taa_mode == eTAAMode::Static) ? TaaSampleCountStatic : TaaSampleCountNormal;
@@ -745,48 +750,51 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // RT acceleration structures
         //
         auto &acc_struct_data = *fg_builder_.AllocNodeData<AccelerationStructureData>();
-        acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
-        acc_struct_data.rt_sh_tlas_buf = persistent_data.rt_sh_tlas_buf;
+        for (int i = 0; i < int(eTLASIndex::_Count); ++i) {
+            acc_struct_data.rt_tlas_buf[i] = persistent_data.rt_tlas_buf[i];
+            if (persistent_data.rt_tlas) {
+                acc_struct_data.rt_tlases[i] = persistent_data.rt_tlas[i].get();
+            }
+        }
         acc_struct_data.hwrt.rt_tlas_build_scratch_size = persistent_data.hwrt.rt_tlas_build_scratch_size;
-        if (persistent_data.rt_tlas) {
-            acc_struct_data.rt_tlases[int(eTLASIndex::Main)] = persistent_data.rt_tlas.get();
-        }
-        if (persistent_data.rt_sh_tlas) {
-            acc_struct_data.rt_tlases[int(eTLASIndex::Shadow)] = persistent_data.rt_sh_tlas.get();
-        }
 
-        FgResRef rt_geo_instances_res, rt_obj_instances_res, rt_sh_geo_instances_res, rt_sh_obj_instances_res;
+        FgResRef rt_geo_instances_res[int(eTLASIndex::_Count)], rt_obj_instances_res[int(eTLASIndex::_Count)];
 
         if (ctx_.capabilities.hwrt) {
             auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
-            { // create geo instances buffer
+            { // geo instances buffer
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = RTGeoInstancesBufChunkSize;
 
-                rt_geo_instances_res = update_rt_bufs.AddTransferOutput("RT Geo Instances", desc);
+                rt_geo_instances_res[int(eTLASIndex::Main)] =
+                    update_rt_bufs.AddTransferOutput("RT Geo Instances", desc);
             }
-
-            { // create obj instances buffer
+            { // obj instances buffer
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = HWRTObjInstancesBufChunkSize;
                 desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
-                rt_obj_instances_res = update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
+                rt_obj_instances_res[int(eTLASIndex::Main)] =
+                    update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
             }
 
-            update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 0, rt_geo_instances_res, rt_obj_instances_res);
+            update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, int(eTLASIndex::Main),
+                                                             rt_geo_instances_res[int(eTLASIndex::Main)],
+                                                             rt_obj_instances_res[int(eTLASIndex::Main)]);
 
-            auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRCTS");
+            auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRUCTS");
 
-            rt_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res);
-            FgResRef rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
+            rt_obj_instances_res[int(eTLASIndex::Main)] =
+                build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res[int(eTLASIndex::Main)]);
+            FgResRef rt_tlas_res =
+                build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Main)]);
 
             FgResRef rt_tlas_build_scratch_res;
 
-            { // create scratch buffer
+            { // scratch buffer
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = acc_struct_data.hwrt.rt_tlas_build_scratch_size;
@@ -794,38 +802,42 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
 
             build_acc_structs.make_executor<ExBuildAccStructures>(
-                p_list_, 0, rt_obj_instances_res, &acc_struct_data,
+                p_list_, 0, rt_obj_instances_res[int(eTLASIndex::Main)], &acc_struct_data,
                 Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                         persistent_data.swrt.rt_meshes.capacity()},
                 rt_tlas_res, rt_tlas_build_scratch_res);
         } else if (ctx_.capabilities.swrt && acc_struct_data.rt_tlas_buf) {
             auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
 
-            { // create geo instances buffer
+            { // geo instances buffer
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = RTGeoInstancesBufChunkSize;
 
-                rt_geo_instances_res = update_rt_bufs.AddTransferOutput("RT Geo Instances", desc);
+                rt_geo_instances_res[int(eTLASIndex::Main)] =
+                    update_rt_bufs.AddTransferOutput("RT Geo Instances", desc);
             }
 
-            update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 0, rt_geo_instances_res, FgResRef{});
+            update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, int(eTLASIndex::Main),
+                                                             rt_geo_instances_res[int(eTLASIndex::Main)], FgResRef{});
 
-            auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRCTS");
+            auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRUCTS");
 
-            { // create obj instances buffer
+            { // obj instances buffer
                 FgBufDesc desc;
                 desc.type = Ren::eBufType::Storage;
                 desc.size = SWRTObjInstancesBufChunkSize;
                 desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
-                rt_obj_instances_res = build_acc_structs.AddTransferOutput("RT Obj Instances", desc);
+                rt_obj_instances_res[int(eTLASIndex::Main)] =
+                    build_acc_structs.AddTransferOutput("RT Obj Instances", desc);
             }
 
-            FgResRef rt_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf);
+            FgResRef rt_tlas_res =
+                build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Main)]);
 
             build_acc_structs.make_executor<ExBuildAccStructures>(
-                p_list_, 0, rt_obj_instances_res, &acc_struct_data,
+                p_list_, 0, rt_obj_instances_res[int(eTLASIndex::Main)], &acc_struct_data,
                 Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                         persistent_data.swrt.rt_meshes.capacity()},
                 rt_tlas_res, FgResRef{});
@@ -835,35 +847,39 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (ctx_.capabilities.hwrt) {
                 auto &update_rt_bufs = fg_builder_.AddNode("UPDATE SH ACC BUFS");
 
-                { // create geo instances buffer
+                { // geo instances buffer
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = RTGeoInstancesBufChunkSize;
 
-                    rt_sh_geo_instances_res = update_rt_bufs.AddTransferOutput("RT SH Geo Instances", desc);
+                    rt_geo_instances_res[int(eTLASIndex::Shadow)] =
+                        update_rt_bufs.AddTransferOutput("RT SH Geo Instances", desc);
                 }
-
-                { // create obj instances buffer
+                { // obj instances buffer
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = HWRTObjInstancesBufChunkSize;
                     desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
-                    rt_sh_obj_instances_res = update_rt_bufs.AddTransferOutput("RT SH Obj Instances", desc);
+                    rt_obj_instances_res[int(eTLASIndex::Shadow)] =
+                        update_rt_bufs.AddTransferOutput("RT SH Obj Instances", desc);
                 }
 
-                update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 1, rt_sh_geo_instances_res,
-                                                                 rt_sh_obj_instances_res);
+                update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, int(eTLASIndex::Shadow),
+                                                                 rt_geo_instances_res[int(eTLASIndex::Shadow)],
+                                                                 rt_obj_instances_res[int(eTLASIndex::Shadow)]);
 
                 ////
 
-                auto &build_acc_structs = fg_builder_.AddNode("SH ACC STRCTS");
-                rt_sh_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_sh_obj_instances_res);
-                FgResRef rt_sh_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_sh_tlas_buf);
+                auto &build_acc_structs = fg_builder_.AddNode("SH ACC STRUCTS");
+                rt_obj_instances_res[int(eTLASIndex::Shadow)] =
+                    build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res[int(eTLASIndex::Shadow)]);
+                FgResRef rt_sh_tlas_res =
+                    build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Shadow)]);
 
                 FgResRef rt_sh_tlas_build_scratch_res;
 
-                { // create scratch buffer
+                { // scratch buffer
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = acc_struct_data.hwrt.rt_tlas_build_scratch_size;
@@ -871,41 +887,131 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 }
 
                 build_acc_structs.make_executor<ExBuildAccStructures>(
-                    p_list_, 1, rt_sh_obj_instances_res, &acc_struct_data,
+                    p_list_, 1, rt_obj_instances_res[int(eTLASIndex::Shadow)], &acc_struct_data,
                     Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                             persistent_data.swrt.rt_meshes.capacity()},
                     rt_sh_tlas_res, rt_sh_tlas_build_scratch_res);
-            } else if (ctx_.capabilities.swrt && acc_struct_data.rt_sh_tlas_buf) {
-                auto &update_rt_bufs = fg_builder_.AddNode("UPDATE ACC BUFS");
+            } else if (ctx_.capabilities.swrt && acc_struct_data.rt_tlas_buf[int(eTLASIndex::Shadow)]) {
+                auto &update_rt_bufs = fg_builder_.AddNode("UPDATE SH ACC BUFS");
 
-                { // create geo instances buffer
+                { // geo instances buffer
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = RTGeoInstancesBufChunkSize;
 
-                    rt_sh_geo_instances_res = update_rt_bufs.AddTransferOutput("RT SH Geo Instances", desc);
+                    rt_geo_instances_res[int(eTLASIndex::Shadow)] =
+                        update_rt_bufs.AddTransferOutput("RT SH Geo Instances", desc);
                 }
 
-                update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, 1, rt_sh_geo_instances_res, FgResRef{});
+                update_rt_bufs.make_executor<ExUpdateAccBuffers>(
+                    p_list_, 1, rt_geo_instances_res[int(eTLASIndex::Shadow)], FgResRef{});
 
-                auto &build_acc_structs = fg_builder_.AddNode("BUILD ACC STRCTS");
+                auto &build_acc_structs = fg_builder_.AddNode("BUILD SH ACC STRUCTS");
 
-                { // create obj instances buffer
+                { // obj instances buffer
                     FgBufDesc desc;
                     desc.type = Ren::eBufType::Storage;
                     desc.size = SWRTObjInstancesBufChunkSize;
                     desc.views.push_back(Ren::eTexFormat::RGBA32F);
 
-                    rt_sh_obj_instances_res = build_acc_structs.AddTransferOutput("RT SH Obj Instances", desc);
+                    rt_obj_instances_res[int(eTLASIndex::Shadow)] =
+                        build_acc_structs.AddTransferOutput("RT SH Obj Instances", desc);
                 }
 
-                FgResRef rt_sh_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_sh_tlas_buf);
+                FgResRef rt_sh_tlas_res =
+                    build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Shadow)]);
 
                 build_acc_structs.make_executor<ExBuildAccStructures>(
-                    p_list_, 1, rt_sh_obj_instances_res, &acc_struct_data,
+                    p_list_, int(eTLASIndex::Shadow), rt_obj_instances_res[int(eTLASIndex::Shadow)], &acc_struct_data,
                     Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
                                             persistent_data.swrt.rt_meshes.capacity()},
                     rt_sh_tlas_res, FgResRef{});
+            }
+        }
+
+        if (list.render_settings.vol_quality != eVolQuality::Off) {
+            if (ctx_.capabilities.hwrt) {
+                auto &update_rt_bufs = fg_builder_.AddNode("UPDATE VOL ACC BUF");
+
+                { // geo instances buffer
+                    FgBufDesc desc;
+                    desc.type = Ren::eBufType::Storage;
+                    desc.size = RTGeoInstancesBufChunkSize;
+
+                    rt_geo_instances_res[int(eTLASIndex::Volume)] =
+                        update_rt_bufs.AddTransferOutput("RT VOL Geo Instances", desc);
+                }
+                { // obj instances buffer
+                    FgBufDesc desc;
+                    desc.type = Ren::eBufType::Storage;
+                    desc.size = HWRTObjInstancesBufChunkSize;
+                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
+
+                    rt_obj_instances_res[int(eTLASIndex::Volume)] =
+                        update_rt_bufs.AddTransferOutput("RT VOL Obj Instances", desc);
+                }
+
+                update_rt_bufs.make_executor<ExUpdateAccBuffers>(p_list_, int(eTLASIndex::Volume),
+                                                                 rt_geo_instances_res[int(eTLASIndex::Volume)],
+                                                                 rt_obj_instances_res[int(eTLASIndex::Volume)]);
+
+                ////
+
+                auto &build_acc_structs = fg_builder_.AddNode("VOL ACC STRUCTS");
+                rt_obj_instances_res[int(eTLASIndex::Volume)] =
+                    build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res[int(eTLASIndex::Volume)]);
+                FgResRef rt_vol_tlas_res =
+                    build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Volume)]);
+
+                FgResRef rt_vol_tlas_build_scratch_res;
+
+                { // scratch buffer
+                    FgBufDesc desc;
+                    desc.type = Ren::eBufType::Storage;
+                    desc.size = acc_struct_data.hwrt.rt_tlas_build_scratch_size;
+                    rt_vol_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("VOL TLAS Scratch Buf", desc);
+                }
+
+                build_acc_structs.make_executor<ExBuildAccStructures>(
+                    p_list_, int(eTLASIndex::Volume), rt_obj_instances_res[int(eTLASIndex::Volume)], &acc_struct_data,
+                    Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
+                                            persistent_data.swrt.rt_meshes.capacity()},
+                    rt_vol_tlas_res, rt_vol_tlas_build_scratch_res);
+            } else if (ctx_.capabilities.swrt && acc_struct_data.rt_tlas_buf[int(eTLASIndex::Volume)]) {
+                auto &update_rt_bufs = fg_builder_.AddNode("UPDATE VOL ACC BUF");
+
+                { // geo instances buffer
+                    FgBufDesc desc;
+                    desc.type = Ren::eBufType::Storage;
+                    desc.size = RTGeoInstancesBufChunkSize;
+
+                    rt_geo_instances_res[int(eTLASIndex::Volume)] =
+                        update_rt_bufs.AddTransferOutput("RT VOL Geo Instances", desc);
+                }
+
+                update_rt_bufs.make_executor<ExUpdateAccBuffers>(
+                    p_list_, int(eTLASIndex::Volume), rt_geo_instances_res[int(eTLASIndex::Volume)], FgResRef{});
+
+                auto &build_acc_structs = fg_builder_.AddNode("BUILD VOL ACC STRUCTS");
+
+                { // obj instances buffer
+                    FgBufDesc desc;
+                    desc.type = Ren::eBufType::Storage;
+                    desc.size = SWRTObjInstancesBufChunkSize;
+                    desc.views.push_back(Ren::eTexFormat::RGBA32F);
+
+                    rt_obj_instances_res[int(eTLASIndex::Volume)] =
+                        build_acc_structs.AddTransferOutput("RT VOL Obj Instances", desc);
+                }
+
+                FgResRef rt_vol_tlas_res =
+                    build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Volume)]);
+
+                build_acc_structs.make_executor<ExBuildAccStructures>(
+                    p_list_, int(eTLASIndex::Volume), rt_obj_instances_res[int(eTLASIndex::Volume)], &acc_struct_data,
+                    Ren::Span<const mesh_t>{persistent_data.swrt.rt_meshes.data(),
+                                            persistent_data.swrt.rt_meshes.capacity()},
+                    rt_vol_tlas_res, FgResRef{});
             }
         }
 
@@ -1119,10 +1225,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             if ((ctx_.capabilities.hwrt || ctx_.capabilities.swrt) &&
                 list.render_settings.shadows_quality == eShadowsQuality::Raytraced) {
-                frame_textures.sun_shadow =
-                    AddHQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                                          rt_sh_geo_instances_res, rt_sh_obj_instances_res, frame_textures,
-                                          list.render_settings.debug_denoise == eDebugDenoise::Shadow);
+                frame_textures.sun_shadow = AddHQSunShadowsPasses(
+                    common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                    rt_geo_instances_res[int(eTLASIndex::Shadow)], rt_obj_instances_res[int(eTLASIndex::Shadow)],
+                    frame_textures, list.render_settings.debug_denoise == eDebugDenoise::Shadow);
             } else if (list.render_settings.shadows_quality != eShadowsQuality::Off) {
                 frame_textures.sun_shadow =
                     AddLQSunShadowsPass(common_buffers, persistent_data, acc_struct_data, bindless_tex, frame_textures);
@@ -1132,13 +1238,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             // GI cache
             AddGICachePasses(list.env.env_map, common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                             rt_geo_instances_res, rt_obj_instances_res, frame_textures);
+                             rt_geo_instances_res[int(eTLASIndex::Main)], rt_obj_instances_res[int(eTLASIndex::Main)],
+                             frame_textures);
 
             // GI
             AddDiffusePasses(list.env.env_map, lm_direct_, lm_indir_sh_,
                              list.render_settings.debug_denoise == eDebugDenoise::GI, common_buffers, persistent_data,
-                             acc_struct_data, bindless_tex, depth_hierarchy_tex, rt_geo_instances_res,
-                             rt_obj_instances_res, frame_textures);
+                             acc_struct_data, bindless_tex, depth_hierarchy_tex,
+                             rt_geo_instances_res[int(eTLASIndex::Main)], rt_obj_instances_res[int(eTLASIndex::Main)],
+                             frame_textures);
 
             // GBuffer shading pass
             AddDeferredShadingPass(common_buffers, frame_textures, list.render_settings.gi_quality != eGIQuality::Off);
@@ -1168,7 +1276,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (cur_hq_ssr_enabled) {
                 AddHQSpecularPasses(deferred_shading, list.render_settings.debug_denoise == eDebugDenoise::Reflection,
                                     common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
-                                    rt_geo_instances_res, rt_obj_instances_res, frame_textures);
+                                    rt_geo_instances_res[int(eTLASIndex::Main)],
+                                    rt_obj_instances_res[int(eTLASIndex::Main)], frame_textures);
             } else {
                 AddLQSpecularPasses(common_buffers, depth_down_2x, frame_textures);
             }
@@ -1179,14 +1288,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         if (deferred_shading) {
             AddOITPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
-                         rt_geo_instances_res, rt_obj_instances_res, frame_textures);
+                         rt_geo_instances_res[int(eTLASIndex::Main)], rt_obj_instances_res[int(eTLASIndex::Main)],
+                         frame_textures);
         } else {
             // Simple transparent pass
             AddForwardTransparentPass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
 
         if (list.render_settings.vol_quality != eVolQuality::Off) {
-            AddVolumetricPasses(common_buffers, frame_textures);
+            AddVolumetricPasses(common_buffers, persistent_data, acc_struct_data,
+                                rt_geo_instances_res[int(eTLASIndex::Volume)],
+                                rt_obj_instances_res[int(eTLASIndex::Volume)], frame_textures);
         }
 
         frame_textures.exposure = AddAutoexposurePasses(frame_textures.color);
@@ -1228,19 +1340,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             debug_oit.make_executor<ExDebugOIT>(fg_builder_, &view_state_, data);
         }
 
-        if (list.render_settings.debug_rt != eDebugRT::Off && list.env.env_map &&
-            (ctx_.capabilities.hwrt || ctx_.capabilities.swrt)) {
+        if (list.render_settings.debug_rt != eDebugRT::Off && (ctx_.capabilities.hwrt || ctx_.capabilities.swrt)) {
             auto &debug_rt = fg_builder_.AddNode("DEBUG RT");
 
-            const Ren::eStage stage = Ren::eStage::ComputeShader;
+            const Ren::eStage stage =
+                ctx_.capabilities.hwrt ? Ren::eStage::RayTracingShader : Ren::eStage::ComputeShader;
 
             auto *data = debug_rt.AllocNodeData<ExDebugRT::Args>();
             data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data, stage);
-            if (list.render_settings.debug_rt == eDebugRT::Main) {
-                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_geo_instances_res, stage);
-            } else if (list.render_settings.debug_rt == eDebugRT::Shadow) {
-                data->geo_data_buf = debug_rt.AddStorageReadonlyInput(rt_sh_geo_instances_res, stage);
-            }
+            data->geo_data_buf =
+                debug_rt.AddStorageReadonlyInput(rt_geo_instances_res[int(list.render_settings.debug_rt) - 1], stage);
             data->materials_buf = debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
             data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf1, stage);
             data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(persistent_data.vertex_buf2, stage);
@@ -1252,13 +1361,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells, stage);
             data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items, stage);
 
+            data->tlas_buf = debug_rt.AddStorageReadonlyInput(
+                persistent_data.rt_tlas_buf[int(list.render_settings.debug_rt) - 1], stage);
+            data->tlas = acc_struct_data.rt_tlases[int(list.render_settings.debug_rt) - 1];
+
             if (!ctx_.capabilities.hwrt) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
                 data->swrt.rt_blas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx_buf =
                     debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
-                data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(rt_obj_instances_res, stage);
-                data->swrt.rt_tlas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_tlas_buf, stage);
+                data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(
+                    rt_obj_instances_res[int(list.render_settings.debug_rt) - 1], stage);
 
 #if defined(REN_GL_BACKEND)
                 data->swrt.textures_buf = debug_rt.AddStorageReadonlyInput(bindless_tex.textures_buf, stage);
@@ -1273,8 +1386,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stage);
 
-            const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlases[int(list.render_settings.debug_rt) - 1];
-            debug_rt.make_executor<ExDebugRT>(fg_builder_, &view_state_, tlas_to_debug, &bindless_tex, data);
+            debug_rt.make_executor<ExDebugRT>(fg_builder_, &view_state_, &bindless_tex, data);
         }
 
         FgResRef resolved_color;

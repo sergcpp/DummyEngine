@@ -25,7 +25,7 @@ class ExRTShadows final : public FgExecutor {
         FgResRef tile_list_buf;
         FgResRef indir_args;
 
-        Ren::IAccStructure *tlas = nullptr;
+        const Ren::IAccStructure *tlas = nullptr;
 
         struct {
             uint32_t root_node = 0xffffffff;

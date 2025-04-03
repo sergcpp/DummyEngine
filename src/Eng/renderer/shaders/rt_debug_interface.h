@@ -9,6 +9,8 @@ struct Params {
     uvec2 img_size;
     float pixel_spread_angle;
     uint root_node;
+    uint cull_mask;
+    uint _pad[3];
 };
 
 struct RayPayload {

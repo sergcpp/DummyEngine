@@ -10,8 +10,8 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = FR_SCATTER_ABSORPTION_TEX_SLOT) uniform sampler3D g_fr_scatter_absorption_tex;
-layout(binding = FR_EMISSION_DENSITY_TEX_SLOT) uniform sampler3D g_fr_emission_density_tex;
+layout(binding = FR_SCATTER_TEX_SLOT) uniform sampler3D g_fr_scatter_tex;
+layout(binding = FR_EMISSION_TEX_SLOT) uniform sampler3D g_fr_emission_tex;
 
 layout(binding = OUT_FR_FINAL_IMG_SLOT, rgba16f) uniform writeonly image3D g_out_fr_final_img;
 
@@ -30,11 +30,11 @@ void main() {
         const float slice_dist_end = vol_slice_distance(icoord.z + 1, 0.0, g_params.froxel_res.z);
         const float slice_depth = (slice_dist_end - slice_dist_beg);
 
-        const vec4 emission_density = texelFetch(g_fr_emission_density_tex, icoord, 0);
+        const vec4 emission_density = texelFetch(g_fr_emission_tex, icoord, 0);
 
         radiance_transmittance.xyz += slice_depth * radiance_transmittance.w * emission_density.xyz;
         if (emission_density.w > 0.0) {
-            const vec4 scatter_absorption = texelFetch(g_fr_scatter_absorption_tex, icoord, 0);
+            const vec4 scatter_absorption = texelFetch(g_fr_scatter_tex, icoord, 0);
 
             const float optical_depth = slice_depth * emission_density.w;
             const float local_transmittance = exp(-optical_depth * (1.0 - scatter_absorption.w));

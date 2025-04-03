@@ -1,0 +1,7 @@
+---
+---
+pipelines:
+textures:
+params:
+    - 0.0 0.0 0.0 1.0      # scatter color, absorption
+    - 40.0 0.0 0.0 0.0     # emission color, density

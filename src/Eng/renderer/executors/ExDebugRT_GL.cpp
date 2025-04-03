@@ -16,8 +16,8 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &vtx_buf2 = builder.GetReadBuffer(args_->vtx_buf2);
     FgAllocBuf &ndx_buf = builder.GetReadBuffer(args_->ndx_buf);
     FgAllocBuf &lights_buf = builder.GetReadBuffer(args_->lights_buf);
+    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
     FgAllocBuf &rt_blas_buf = builder.GetReadBuffer(args_->swrt.rt_blas_buf);
-    FgAllocBuf &rt_tlas_buf = builder.GetReadBuffer(args_->swrt.rt_tlas_buf);
     FgAllocBuf &prim_ndx_buf = builder.GetReadBuffer(args_->swrt.prim_ndx_buf);
     FgAllocBuf &mesh_instances_buf = builder.GetReadBuffer(args_->swrt.mesh_instances_buf);
     FgAllocBuf &textures_buf = builder.GetReadBuffer(args_->swrt.textures_buf);
@@ -76,6 +76,7 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     uniform_params.img_size[1] = view_state_->act_res[1];
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.root_node = args_->swrt.root_node;
+    uniform_params.cull_mask = args_->cull_mask;
 
     DispatchCompute(*pi_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params), ctx.default_descr_alloc(),
                     ctx.log());

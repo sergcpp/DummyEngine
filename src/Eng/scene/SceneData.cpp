@@ -43,12 +43,11 @@ void Eng::PersistentGpuData::Release() {
     delta_buf->Free();
     indices_buf->Free();
     stoch_lights_buf = stoch_lights_nodes_buf = {};
-    rt_tlas_buf = rt_sh_tlas_buf = {};
+    std::fill(std::begin(rt_tlas_buf), std::end(rt_tlas_buf), Ren::BufRef{});
     hwrt = {};
     swrt = {};
 
-    rt_tlas = {};
-    rt_sh_tlas = {};
+    std::fill(std::begin(rt_tlas), std::end(rt_tlas), nullptr);
 
     probe_irradiance = {};
     probe_distance = {};

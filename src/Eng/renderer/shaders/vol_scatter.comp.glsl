@@ -30,8 +30,8 @@ layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_t
 layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
 layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
-layout(binding = FR_SCATTER_ABSORPTION_TEX_SLOT) uniform sampler3D g_fr_scatter_hist_tex;
-layout(binding = FR_EMISSION_DENSITY_TEX_SLOT) uniform sampler3D g_fr_emission_hist_tex;
+layout(binding = FR_SCATTER_TEX_SLOT) uniform sampler3D g_fr_scatter_hist_tex;
+layout(binding = FR_EMISSION_TEX_SLOT) uniform sampler3D g_fr_emission_hist_tex;
 
 layout(binding = LIGHT_BUF_SLOT) uniform samplerBuffer g_lights_buf;
 layout(binding = DECAL_BUF_SLOT) uniform samplerBuffer g_decals_buf;
@@ -45,8 +45,8 @@ layout(binding = ENVMAP_TEX_SLOT) uniform samplerCube g_envmap_tex;
     layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 #endif
 
-layout(binding = OUT_FR_EMISSION_DENSITY_IMG_SLOT, rgba16f) uniform image3D g_out_fr_emission_density_img;
-layout(binding = OUT_FR_SCATTER_ABSORPTION_IMG_SLOT, rgba16f) uniform image3D g_out_fr_scatter_absorption_img;
+layout(binding = OUT_FR_EMISSION_IMG_SLOT, rgba16f) uniform image3D g_out_fr_emission_img;
+layout(binding = OUT_FR_SCATTER_IMG_SLOT, rgba16f) uniform image3D g_out_fr_scatter_img;
 
 vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
@@ -90,8 +90,8 @@ void main() {
 
     vec3 light_total = vec3(0.0);
 
-    vec4 emission_density = imageLoad(g_out_fr_emission_density_img, icoord);
-    vec4 scatter_absorption = imageLoad(g_out_fr_scatter_absorption_img, icoord);
+    vec4 emission_density = imageLoad(g_out_fr_emission_img, icoord);
+    vec4 scatter_absorption = imageLoad(g_out_fr_scatter_img, icoord);
 
     if (emission_density.w > 0.0) {
         // Artificial lights
@@ -246,6 +246,6 @@ void main() {
         }
     }
 
-    imageStore(g_out_fr_emission_density_img, icoord, emission_density);
-    imageStore(g_out_fr_scatter_absorption_img, icoord, scatter_absorption);
+    imageStore(g_out_fr_emission_img, icoord, emission_density);
+    imageStore(g_out_fr_scatter_img, icoord, scatter_absorption);
 }

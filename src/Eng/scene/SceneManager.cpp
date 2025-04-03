@@ -202,10 +202,10 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         Ren::eMeshLoadStatus status;
         cam_rig_ = ren_ctx.LoadMesh(
             "__cam_rig", &in_mesh,
-            [this](std::string_view name) -> std::pair<Ren::MaterialRef, Ren::MaterialRef> {
+            [this](std::string_view name) -> std::array<Ren::MaterialRef, 3> {
                 Ren::eMatLoadStatus status;
                 Ren::MaterialRef mat = ren_ctx_.LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
-                return std::pair{mat, mat};
+                return std::array<Ren::MaterialRef, 3>{mat, mat, {}};
             },
             &status);
         assert(status == Ren::eMeshLoadStatus::CreatedFromData);
@@ -892,18 +892,17 @@ void Eng::SceneManager::Alloc_TLAS() {
 
 void Eng::SceneManager::Release_TLAS(const bool immediate) {
     if (immediate) {
-        scene_data_.persistent_data.rt_tlas_buf->FreeImmediate();
-        scene_data_.persistent_data.rt_sh_tlas_buf->FreeImmediate();
-        if (scene_data_.persistent_data.rt_tlas) {
-            scene_data_.persistent_data.rt_tlas->FreeImmediate();
+        for (auto &buf : scene_data_.persistent_data.rt_tlas_buf) {
+            buf->FreeImmediate();
         }
-        if (scene_data_.persistent_data.rt_sh_tlas) {
-            scene_data_.persistent_data.rt_sh_tlas->FreeImmediate();
+        for (auto &tlas : scene_data_.persistent_data.rt_tlas) {
+            tlas->FreeImmediate();
         }
     }
-    scene_data_.persistent_data.rt_tlas_buf = scene_data_.persistent_data.rt_sh_tlas_buf = {};
-    scene_data_.persistent_data.rt_tlas = {};
-    scene_data_.persistent_data.rt_sh_tlas = {};
+    std::fill(std::begin(scene_data_.persistent_data.rt_tlas_buf), std::end(scene_data_.persistent_data.rt_tlas_buf),
+              Ren::BufRef{});
+    std::fill(std::begin(scene_data_.persistent_data.rt_tlas), std::end(scene_data_.persistent_data.rt_tlas),
+              nullptr);
 }
 
 void Eng::SceneManager::AllocMeshBuffers() {
@@ -1522,21 +1521,35 @@ void Eng::SceneManager::PostloadAccStructure(const Sys::JsObjectP &js_comp_obj, 
     }
 }
 
-std::pair<Ren::MaterialRef, Ren::MaterialRef> Eng::SceneManager::OnLoadMaterial(std::string_view name) {
+std::array<Ren::MaterialRef, 3> Eng::SceneManager::OnLoadMaterial(std::string_view name) {
     using namespace SceneManagerConstants;
 
-    std::pair<Ren::MaterialRef, Ren::MaterialRef> ret;
+    std::array<Ren::MaterialRef, 3> ret;
 
-    Ren::eMatLoadStatus status;
-    ret.first = LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
-    if (ret.first->ready()) {
-        const std::string backside_name = std::string(name) + "@back";
-        ret.second = scene_data_.materials.FindByName(backside_name);
-        if (!ret.second) {
-            ret.second = ret.first;
+    const std::string backside_name = std::string(name) + "@back";
+    const std::string volumetric_name = std::string(name) + "@vol";
+
+    /*Ren::eMatLoadStatus status;
+    ret[0] = LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
+    if (ret[0]->ready()) {
+        ret[1] = scene_data_.materials.FindByName(backside_name);
+        if (!ret[1]) {
+            ret[1] = ret[0];
         }
+    }*/
+
+    if (name == "mat_test/vol_mat0.mat") {
+        volatile int ii = 0;
     }
-    if (!ret.first->ready()) {
+
+    ret[0] = scene_data_.materials.FindByName(name);
+    ret[1] = scene_data_.materials.FindByName(backside_name);
+    if (!ret[1]) {
+        ret[1] = ret[0];
+    }
+    ret[2] = scene_data_.materials.FindByName(volumetric_name);
+
+    if (!ret[0] && !ret[1] && !ret[2]) {
         Sys::AssetFile in_file(std::string(paths_.materials_path).append(name));
         if (!in_file) {
             ren_ctx_.log()->Error("Error loading material %s", name.data());
@@ -1551,24 +1564,44 @@ std::pair<Ren::MaterialRef, Ren::MaterialRef> Eng::SceneManager::OnLoadMaterial(
 
         using namespace std::placeholders;
 
-        ret.first = ret.second = LoadMaterial(name, mat_src, &status,
-                                              std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
-                                              std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
-                                              std::bind(&SceneManager::OnLoadSampler, this, _1));
+        Ren::eMatLoadStatus status;
+        if (mat_src[0] == '-' && mat_src[1] == '-' && mat_src[2] == '-') {
+            status = Ren::eMatLoadStatus::CreatedFromData_NeedsMore;
+        } else {
+            ret[0] = ret[1] = LoadMaterial(name, mat_src, &status,
+                                           std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
+                                           std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
+                                           std::bind(&SceneManager::OnLoadSampler, this, _1));
+        }
         if (status == Ren::eMatLoadStatus::CreatedFromData_NeedsMore) {
             const size_t n = mat_src.find("---");
             mat_src = mat_src.substr(n + 4);
-            const std::string backside_name = std::string(name) + "@back";
-            ret.second = LoadMaterial(backside_name, mat_src, &status,
+            if (mat_src[0] == '-' && mat_src[1] == '-' && mat_src[2] == '-') {
+                status = Ren::eMatLoadStatus::CreatedFromData_NeedsMore;
+            } else {
+                const std::string backside_name = std::string(name) + "@back";
+                ret[1] = LoadMaterial(backside_name, mat_src, &status,
                                       std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
                                       std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
                                       std::bind(&SceneManager::OnLoadSampler, this, _1));
+            }
+            if (status == Ren::eMatLoadStatus::CreatedFromData_NeedsMore) {
+                const size_t n = mat_src.find("---");
+                mat_src = mat_src.substr(n + 4);
+                ret[2] = LoadMaterial(volumetric_name, mat_src, &status,
+                                      std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
+                                      std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
+                                      std::bind(&SceneManager::OnLoadSampler, this, _1));
+            }
         }
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
-    scene_data_.material_changes.push_back(ret.first.index());
-    if (ret.second != ret.first) {
-        scene_data_.material_changes.push_back(ret.second.index());
+    scene_data_.material_changes.push_back(ret[0].index());
+    if (ret[1] != ret[0]) {
+        scene_data_.material_changes.push_back(ret[1].index());
+    }
+    if (ret[2]) {
+        scene_data_.material_changes.push_back(ret[2].index());
     }
     return ret;
 }

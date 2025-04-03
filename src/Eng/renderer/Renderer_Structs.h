@@ -244,7 +244,7 @@ enum class eVolQuality : uint8_t { Off, High, Ultra };
 
 enum class eTransparencyQuality : uint8_t { High, Ultra };
 
-enum class eDebugRT : uint8_t { Off, Main, Shadow };
+enum class eDebugRT : uint8_t { Off, Main, Shadow, Volume };
 
 enum class eDebugDenoise : uint8_t { Off, Reflection, GI, Shadow };
 
@@ -395,6 +395,8 @@ struct view_state_t {
     Ren::Quatf probe_ray_rotator;
     uint32_t probe_ray_hash = 0;
     uint32_t env_generation = 0xffffffff;
+
+    bool skip_volumetrics = false;
 };
 
 struct shared_data_t {
@@ -466,10 +468,10 @@ struct BindlessTextureData {
 #endif
 };
 
-enum class eTLASIndex { Main, Shadow, _Count };
+enum class eTLASIndex { Main, Shadow, Volume, _Count };
 
 struct AccelerationStructureData {
-    Ren::WeakBufRef rt_tlas_buf, rt_sh_tlas_buf;
+    Ren::WeakBufRef rt_tlas_buf[int(eTLASIndex::_Count)];
     struct {
         uint32_t rt_tlas_build_scratch_size = 0;
     } hwrt;

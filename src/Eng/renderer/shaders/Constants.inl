@@ -68,6 +68,7 @@ const int RAY_TYPE_DIFFUSE = 1;
 const int RAY_TYPE_SPECULAR = 2;
 const int RAY_TYPE_REFRACTION = 3;
 const int RAY_TYPE_SHADOW = 4;
+const int RAY_TYPE_VOLUME = 5;
 
 // Light
 const int LIGHT_TYPE_SPHERE = 0;
