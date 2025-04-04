@@ -400,30 +400,30 @@ jobs:
   #       with:
   #         name: linux-x86_64-vk-amd-img-output
   #         path: linux-x86_64-vk-amd-img-output/
-  test-img-windows-x86_64-gl-nv:
-    runs-on: [ windows, x86_64, nv ]
-    needs:
-      - build-windows-x86_64-gl-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test-img
-        with:
-          bin-name: "DummyAppGL"
-          bin-dir: "windows-x86_64-gl"
-          out-dir: "windows-x86_64-gl-nv-img-output"
-          test-args: "-d NV"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: windows-x86_64-gl-nv-img-output
-          path: windows-x86_64-gl-nv-img-output/
+  # test-img-windows-x86_64-gl-nv:
+  #   runs-on: [ windows, x86_64, nv ]
+  #   needs:
+  #     - build-windows-x86_64-gl-rel
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test-img
+  #       with:
+  #         bin-name: "DummyAppGL"
+  #         bin-dir: "windows-x86_64-gl"
+  #         out-dir: "windows-x86_64-gl-nv-img-output"
+  #         test-args: "-d NV"
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v3
+  #       if: always()
+  #       with:
+  #         name: windows-x86_64-gl-nv-img-output
+  #         path: windows-x86_64-gl-nv-img-output/
   pack-assets-windows-x86_64-vk:
     runs-on: [ windows, x86_64 ]
     needs:

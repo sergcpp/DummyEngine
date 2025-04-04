@@ -254,63 +254,63 @@ jobs:
         with:
           name: linux-x86_64-vk-tsan
           path: linux-x86_64-vk-tsan/
-  build-macos-x86_64-vk-rel:
-    runs-on: [ macos, builder ]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Compile the code
-        uses: ./.github/actions/build-macos
-        with:
-          cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
-          config: "Release"
-          bin-dir: "macos-x86_64-vk"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: macos-x86_64-vk
-          path: macos-x86_64-vk/
-  build-macos-x86_64-vk-dbg:
-    runs-on: [ macos, builder ]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Compile the code
-        uses: ./.github/actions/build-macos
-        with:
-          cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
-          config: "Debug"
-  build-macos-x86_64-vk-dev:
-    runs-on: [ macos, builder ]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Compile the code
-        uses: ./.github/actions/build-macos
-        with:
-          cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
-          config: "RelWithDebInfo"
+  # build-macos-x86_64-vk-rel:
+  #   runs-on: [ macos, builder ]
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-macos
+  #       with:
+  #         cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
+  #         config: "Release"
+  #         bin-dir: "macos-x86_64-vk"
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: macos-x86_64-vk
+  #         path: macos-x86_64-vk/
+  # build-macos-x86_64-vk-dbg:
+  #   runs-on: [ macos, builder ]
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-macos
+  #       with:
+  #         cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
+  #         config: "Debug"
+  # build-macos-x86_64-vk-dev:
+  #   runs-on: [ macos, builder ]
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-macos
+  #       with:
+  #         cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
+  #         config: "RelWithDebInfo"
   # build-windows-x86_64-vk-asan:
   #   runs-on: [ windows, builder ]
   #   steps:
@@ -354,29 +354,52 @@ jobs:
         with:
           name: windows-x86_64-vk-amd-output
           path: windows-x86_64-vk-amd-output/
-  test-windows-x86_64-vk-nv:
-    runs-on: [ windows, x86_64, nv ]
-    needs:
-      - build-windows-x86_64-vk-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "windows-x86_64-vk"
-          out-dir: "windows-x86_64-vk-nv-output"
-          test-args: "-d NV --full"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: windows-x86_64-vk-nv-output
-          path: windows-x86_64-vk-nv-output/
+  # test-windows-x86_64-vk-nv:
+  #   runs-on: [ windows, x86_64, nv ]
+  #   needs:
+  #     - build-windows-x86_64-vk-rel
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test
+  #       with:
+  #         bin-dir: "windows-x86_64-vk"
+  #         out-dir: "windows-x86_64-vk-nv-output"
+  #         test-args: "-d NV --full"
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v3
+  #       if: always()
+  #       with:
+  #         name: windows-x86_64-vk-nv-output
+  #         path: windows-x86_64-vk-nv-output/
+  # test-windows-x86_64-gl-nv:
+  #   runs-on: [ windows, x86_64, nv ]
+  #   needs:
+  #     - build-windows-x86_64-gl-rel
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test
+  #       with:
+  #         bin-dir: "windows-x86_64-gl"
+  #         out-dir: "windows-x86_64-gl-nv-output"
+  #         test-args: "-j2 --full"
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v3
+  #       if: always()
+  #       with:
+  #         name: windows-x86_64-gl-nv-output
+  #         path: windows-x86_64-gl-nv-output/
   # test-windows-x86_64-vk-arc:
   #   runs-on: [ windows, x86_64, arc ]
   #   needs:
@@ -423,29 +446,6 @@ jobs:
   #       with:
   #         name: windows-x86_64-vk-xe-output
   #         path: windows-x86_64-vk-xe-output/
-  test-windows-x86_64-gl-nv:
-    runs-on: [ windows, x86_64, nv ]
-    needs:
-      - build-windows-x86_64-gl-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "windows-x86_64-gl"
-          out-dir: "windows-x86_64-gl-nv-output"
-          test-args: "-j2 --full"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: windows-x86_64-gl-nv-output
-          path: windows-x86_64-gl-nv-output/
   # test-windows-x86_64-gl-arc:
   #   runs-on: [ windows, x86_64, arc ]
   #   needs:
@@ -469,29 +469,29 @@ jobs:
   #       with:
   #         name: windows-x86_64-gl-arc-output
   #         path: windows-x86_64-gl-arc-output/
-#  test-linux-x86_64-vk-amd:
-#    runs-on: [ linux, x86_64, amd ]
-#    needs:
-#      - build-linux-x86_64-vk-rel
-#    steps:
-#      - name: Checkout Workflows
-#        uses: actions/checkout@v4
-#        with:
-#          sparse-checkout: .github
-#      - name: Re-initialize repository
-#        uses: ./.github/actions/checkout
-#      - name: Run Tests
-#        uses: ./.github/actions/test
-#        with:
-#          bin-dir: "linux-x86_64-vk"
-#          out-dir: "linux-x86_64-vk-amd-output"
-#          test-args: "-d AMD --full"
-#      - name: Upload artifacts
-#        uses: actions/upload-artifact@v3
-#        if: always()
-#        with:
-#          name: linux-x86_64-vk-amd-output
-#          path: linux-x86_64-vk-amd-output/
+  test-linux-x86_64-vk-amd:
+    runs-on: [ linux, x86_64, amd ]
+    needs:
+      - build-linux-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "linux-x86_64-vk"
+          out-dir: "linux-x86_64-vk-amd-output"
+          test-args: "-d AMD --full"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: linux-x86_64-vk-amd-output
+          path: linux-x86_64-vk-amd-output/
   test-linux-x86_64-vk-nv:
     runs-on: [ linux, x86_64, nv ]
     needs:
@@ -572,25 +572,25 @@ jobs:
   #         test-args: "-j2"
   analyze-output:
     runs-on: [ linux ]
-    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-gl-nv, test-linux-x86_64-vk-nv, test-linux-x86_64-gl-nv ]
+    needs: [ test-windows-x86_64-vk-amd, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv, test-linux-x86_64-gl-nv ]
     if: always()
     steps:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
           sparse-checkout: scripts/analyze_output.py
-      - uses: actions/download-artifact@v3
-        with:
-          name: windows-x86_64-vk-nv-output
-          path: windows-x86_64-vk-nv-output/
-      - uses: actions/download-artifact@v3
-        with:
-          name: windows-x86_64-gl-nv-output
-          path: windows-x86_64-gl-nv-output/
-      - uses: actions/download-artifact@v3
-        with:
-          name: windows-x86_64-vk-amd-output
-          path: windows-x86_64-vk-amd-output/
+      # - uses: actions/download-artifact@v3
+      #   with:
+      #     name: windows-x86_64-vk-nv-output
+      #     path: windows-x86_64-vk-nv-output/
+      # - uses: actions/download-artifact@v3
+      #   with:
+      #     name: windows-x86_64-gl-nv-output
+      #     path: windows-x86_64-gl-nv-output/
+      # - uses: actions/download-artifact@v3
+      #   with:
+      #     name: windows-x86_64-vk-amd-output
+      #     path: windows-x86_64-vk-amd-output/
       # - uses: actions/download-artifact@v3
       #   with:
       #     name: windows-x86_64-vk-arc-output
@@ -603,10 +603,10 @@ jobs:
       #  with:
       #    name: windows-x86_64-gl-arc-output
       #    path: windows-x86_64-gl-arc-output/
-      #- uses: actions/download-artifact@v3
-      #  with:
-      #    name: linux-x86_64-vk-amd-output
-      #    path: linux-x86_64-vk-amd-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x86_64-vk-amd-output
+          path: linux-x86_64-vk-amd-output/
       - uses: actions/download-artifact@v3
         with:
           name: linux-x86_64-vk-nv-output
@@ -617,5 +617,5 @@ jobs:
           path: linux-x86_64-gl-nv-output/
       - name: Analyze Output
         run: |
-          python scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-gl-nv-output/test_Eng_output.txt
+          python scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt linux-x86_64-vk-amd-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-gl-nv-output/test_Eng_output.txt
         shell: bash
