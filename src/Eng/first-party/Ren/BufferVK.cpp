@@ -25,7 +25,9 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
     } else if (type == eBufType::Storage) {
         flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     } else if (type == eBufType::Upload) {
+        flags &= ~VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     } else if (type == eBufType::Readback) {
+        flags &= ~VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     } else if (type == eBufType::AccStructure) {
         flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     } else if (type == eBufType::ShaderBinding) {
@@ -275,6 +277,11 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
 
     VkMemoryRequirements memory_requirements = {};
     api_ctx_->vkGetBufferMemoryRequirements(api_ctx_->device, new_buf, &memory_requirements);
+    if (api_ctx_->raytracing_supported && type_ == eBufType::Storage) {
+        // Account for acceleration structure scratch usage
+        memory_requirements.alignment = std::max<VkDeviceSize>(
+            memory_requirements.alignment, api_ctx_->acc_props.minAccelerationStructureScratchOffsetAlignment);
+    }
 
     VkMemoryPropertyFlags memory_props = GetVkMemoryPropertyFlags(type_);
 
@@ -317,8 +324,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
                                memory_requirements.memoryTypeBits, memory_props, mem_alloc_info.allocationSize);
         }
         if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-            // api_ctx_->log()->Warning("Not enough device memory, falling back to CPU RAM!");
-            memory_props &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            memory_props &= ~VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
 
             mem_alloc_info.memoryTypeIndex =
                 FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits, memory_props,

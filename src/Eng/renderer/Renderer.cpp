@@ -747,7 +747,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         auto &acc_struct_data = *fg_builder_.AllocNodeData<AccelerationStructureData>();
         acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
         acc_struct_data.rt_sh_tlas_buf = persistent_data.rt_sh_tlas_buf;
-        acc_struct_data.hwrt.rt_tlas_build_scratch_size = persistent_data.rt_tlas_build_scratch_size;
+        acc_struct_data.hwrt.rt_tlas_build_scratch_size = persistent_data.hwrt.rt_tlas_build_scratch_size;
         if (persistent_data.rt_tlas) {
             acc_struct_data.rt_tlases[int(eTLASIndex::Main)] = persistent_data.rt_tlas.get();
         }

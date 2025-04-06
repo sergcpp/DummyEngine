@@ -233,6 +233,8 @@ struct PersistentGpuData {
     Ren::PipelineStorage pipelines;
 
     struct {
+        uint32_t rt_tlas_build_scratch_size = 0;
+
         Ren::FreelistAlloc rt_blas_mem_alloc;
         std::vector<Ren::BufRef> rt_blas_buffers;
     } hwrt;
@@ -245,7 +247,7 @@ struct PersistentGpuData {
         Ren::BufRef rt_blas_buf;
         Ren::SparseArray<mesh_t> rt_meshes;
     } swrt;
-    uint32_t rt_tlas_build_scratch_size = 0;
+
     std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;
 
     Ren::TexRef probe_irradiance;

@@ -585,5 +585,5 @@ void Eng::SceneManager::Alloc_HWRT_TLAS() {
         scene_data_.persistent_data.rt_sh_tlas = std::move(vk_tlas);
     }
 
-    scene_data_.persistent_data.rt_tlas_build_scratch_size = uint32_t(size_info.buildScratchSize);
+    scene_data_.persistent_data.hwrt.rt_tlas_build_scratch_size = uint32_t(size_info.buildScratchSize);
 }
