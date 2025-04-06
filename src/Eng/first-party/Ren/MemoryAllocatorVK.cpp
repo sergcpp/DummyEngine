@@ -104,22 +104,13 @@ Ren::MemAllocation Ren::MemAllocators::Allocate(uint32_t alignment, uint32_t siz
         return {};
     }
 
-    int alloc_index = -1;
-    for (int i = 0; i < int(allocators_.size()); ++i) {
-        if (allocators_[i]->mem_type_index() == mem_type_index) {
-            alloc_index = i;
-            break;
-        }
-    }
-
-    if (alloc_index == -1) {
+    if (!allocators_[mem_type_index]) {
         const std::string name = name_ + " (type " + std::to_string(mem_type_index) + ")";
-        alloc_index = int(allocators_.size());
-        allocators_.emplace_back(std::make_unique<MemAllocator>(name, api_ctx_, initial_block_size_, mem_type_index,
-                                                                growth_factor_, max_pool_size_));
+        allocators_[mem_type_index] = std::make_unique<MemAllocator>(name, api_ctx_, initial_block_size_,
+                                                                     mem_type_index, growth_factor_, max_pool_size_);
     }
 
-    return allocators_[alloc_index]->Allocate(alignment, size);
+    return allocators_[mem_type_index]->Allocate(alignment, size);
 }
 
 Ren::MemAllocation Ren::MemAllocators::Allocate(const VkMemoryRequirements &mem_req,

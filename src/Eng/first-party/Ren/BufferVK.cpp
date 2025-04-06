@@ -49,7 +49,9 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
 }
 
 VkMemoryPropertyFlags GetVkMemoryPropertyFlags(const eBufType type) {
-    if (type == eBufType::Upload || type == eBufType::Readback) {
+    if (type == eBufType::Upload) {
+        return (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    } else if (type == eBufType::Readback) {
         return (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
@@ -294,6 +296,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
             memory_props &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             new_allocation = mem_allocs_->Allocate(memory_requirements, memory_props);
         }
+        assert(new_allocation);
 
         res = api_ctx_->vkBindBufferMemory(api_ctx_->device, new_buf, new_allocation.owner->mem(new_allocation.pool),
                                            new_allocation.offset);
@@ -309,7 +312,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
         VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
 
         if ((buf_create_info.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0) {
-            additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+            additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
             mem_alloc_info.pNext = &additional_flags;
         }
 
@@ -324,7 +327,7 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
                                memory_requirements.memoryTypeBits, memory_props, mem_alloc_info.allocationSize);
         }
         if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-            memory_props &= ~VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            memory_props &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
             mem_alloc_info.memoryTypeIndex =
                 FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits, memory_props,
