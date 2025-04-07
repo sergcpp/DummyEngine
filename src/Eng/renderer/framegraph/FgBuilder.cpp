@@ -1276,7 +1276,9 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
 
                 for (const fg_node_slot_t slot : *read_in_nodes) {
                     const FgNode *_node = nodes_[slot.node_index];
-                    if (_node != node && _node->visited_) {
+                    // NOTE: write_count check is skipped because of history textures
+                    if (_node != node && _node->visited_ /*&&
+                        handle.write_count == _node->input_[slot.slot_index].write_count*/) {
                         has_consumers = true;
                         break;
                     }
@@ -1295,7 +1297,8 @@ void Eng::FgBuilder::Compile(Ren::Span<const FgResRef> backbuffer_sources) {
 
                 for (const fg_node_slot_t slot : *written_in) {
                     const FgNode *_node = nodes_[slot.node_index];
-                    if (_node != node && node->visited_) {
+                    if (_node != node && _node->visited_ &&
+                        handle.write_count + 1 == _node->output_[slot.slot_index].write_count) {
                         has_consumers = true;
                         break;
                     }
