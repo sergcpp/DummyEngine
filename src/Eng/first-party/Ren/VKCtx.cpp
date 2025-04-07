@@ -532,6 +532,11 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
         device_extensions.push_back(VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME);
     }
 
+    if (this->pageable_memory_supported) {
+        device_extensions.push_back(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
+        device_extensions.push_back(VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME);
+    }
+
     device_info.enabledExtensionCount = device_extensions.size();
     device_info.ppEnabledExtensionNames = device_extensions.cdata();
 
@@ -643,6 +648,15 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
         pp_next = &coop_matrix_features.pNext;
     }
 
+    VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT pageable_mem_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT};
+    pageable_mem_features.pageableDeviceLocalMemory = VK_TRUE;
+
+    if (this->pageable_memory_supported) {
+        (*pp_next) = &pageable_mem_features;
+        pp_next = &pageable_mem_features.pNext;
+    }
+
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
     VkPhysicalDevicePortabilitySubsetFeaturesKHR subset_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR};
@@ -676,7 +690,8 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
         bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false,
              renderpass_loadstore_none_supported = false, subgroup_size_control_supported = false,
              shader_fp16_supported = false, storage_fp16_supported = false, shader_int64_supported = false,
-             shader_buf_int64_atomics_supported = false, coop_matrix_supported = false;
+             shader_buf_int64_atomics_supported = false, coop_matrix_supported = false,
+             memory_priority_supported = false, pageable_memory_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -711,6 +726,10 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                     shader_buf_int64_atomics_supported = true;
                 } else if (strcmp(ext.extensionName, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME) == 0) {
                     coop_matrix_supported = true;
+                } else if (strcmp(ext.extensionName, VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME) == 0) {
+                    memory_priority_supported = true;
+                } else if (strcmp(ext.extensionName, VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME) == 0) {
+                    pageable_memory_supported = true;
                 }
             }
 
@@ -852,6 +871,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 this->shader_int64_supported = shader_int64_supported;
                 this->shader_buf_int64_atomics_supported = shader_buf_int64_atomics_supported;
                 this->coop_matrix_supported = coop_matrix_supported;
+                this->pageable_memory_supported = (memory_priority_supported && pageable_memory_supported);
             }
         }
     }

@@ -70,6 +70,8 @@ struct ApiContext {
 
     bool coop_matrix_supported = false;
 
+    bool pageable_memory_supported = false;
+
     uint32_t supported_stages_mask = 0xffffffff;
 
     // resources scheduled for deferred destruction
