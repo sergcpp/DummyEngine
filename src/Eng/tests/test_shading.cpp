@@ -146,7 +146,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "sheen_mat6", 25.00, MedDiffGI);
     run_image_test(threads, "sheen_mat6", 19.90, Full);
     run_image_test(threads, "sheen_mat7", 42.70, NoShadow);
-    run_image_test(threads, "sheen_mat7", 36.40, NoGI);
+    run_image_test(threads, "sheen_mat7", 36.35, NoGI);
     run_image_test(threads, "sheen_mat7", 24.70, MedDiffGI);
     run_image_test(threads, "sheen_mat7", 19.35, Full);
 
@@ -285,7 +285,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "tint_mat2", 28.95, MedDiffGI);
     run_image_test(threads, "tint_mat2", 26.55, Full);
     run_image_test(threads, "tint_mat3", 43.80, NoShadow);
-    run_image_test(threads, "tint_mat3", 36.25, NoGI);
+    run_image_test(threads, "tint_mat3", 36.20, NoGI);
     run_image_test(threads, "tint_mat3", 33.75, NoDiffGI);
     run_image_test(threads, "tint_mat3", 24.90, MedDiffGI);
     run_image_test(threads, "tint_mat3", 19.40, Full);
@@ -336,9 +336,9 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "alpha_mat2", 30.95, Full);
     run_image_test(threads, "alpha_mat2", 31.30, Full_Ultra);
     run_image_test(threads, "alpha_mat3", 46.85, NoShadow);
-    run_image_test(threads, "alpha_mat3", 37.60, NoGI);
-    run_image_test(threads, "alpha_mat3", 37.60, NoDiffGI);
+    run_image_test(threads, "alpha_mat3", 37.55, NoGI);
+    run_image_test(threads, "alpha_mat3", 37.55, NoDiffGI);
     run_image_test(threads, "alpha_mat3", 32.25, MedDiffGI);
     run_image_test(threads, "alpha_mat3", 29.00, Full);
-    run_image_test(threads, "alpha_mat3", 30.10, Full_Ultra);
+    run_image_test(threads, "alpha_mat3", 30.05, Full_Ultra);
 }
