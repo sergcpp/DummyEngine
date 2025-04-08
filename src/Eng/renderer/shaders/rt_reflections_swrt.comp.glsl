@@ -515,11 +515,7 @@ void main() {
                     const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
                     lobe_weights_t _lobe_weights = lobe_weights;
-                    if (!is_last_bounce && is_portal) {
-                        // Portal lights affect only diffuse
-                        _lobe_weights.specular *= portals_specular_ltc_weight;
-                        _lobe_weights.clearcoat *= portals_specular_ltc_weight;
-                    }
+                    if (!is_last_bounce && is_portal) _lobe_weights.specular_mul *= portals_specular_ltc_weight;
                     if (!is_diffuse) _lobe_weights.diffuse = 0.0;
                     if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
                     vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
@@ -554,9 +550,7 @@ void main() {
 
                         lobe_weights_t _lobe_weights = lobe_weights;
                         if (!is_last_bounce && is_portal) {
-                            // Portal lights affect only diffuse
-                            _lobe_weights.specular *= portals_specular_ltc_weight;
-                            _lobe_weights.clearcoat *= portals_specular_ltc_weight;
+                            _lobe_weights.specular_mul *= portals_specular_ltc_weight;
                         }
                         if (!is_diffuse) _lobe_weights.diffuse = 0.0;
                         if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;

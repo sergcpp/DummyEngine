@@ -95,7 +95,7 @@ float PrincipledClearcoat(const float alpha, const float N_dot_V, const float N_
 
 struct lobe_weights_t {
     float diffuse, specular, clearcoat, refraction;
-    float diffuse_mul;
+    float diffuse_mul, specular_mul;
 };
 
 lobe_weights_t get_lobe_weights(float base_color_lum, float spec_color_lum, float specular,
@@ -107,6 +107,7 @@ lobe_weights_t get_lobe_weights(float base_color_lum, float spec_color_lum, floa
     float final_transmission = transmission * (1.0 - metallic);
     ret.specular = (specular != 0.0 || metallic != 0.0) ? spec_color_lum * (1.0 - final_transmission) : 0.0;
     ret.clearcoat = 0.25 * clearcoat * (1.0 - metallic);
+    ret.specular_mul = 1.0;
     ret.refraction = final_transmission * base_color_lum;
 
     float total_weight = ret.diffuse + ret.specular + ret.clearcoat + ret.refraction;
@@ -277,7 +278,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, P, ltc.spec_t1, points, TwoSided);
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
 
-            ret += litem.col_and_type.xyz * spec / M_PI;
+            ret += lobe_weights.specular_mul * litem.col_and_type.xyz * spec / M_PI;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
             const vec3 ccol = clearcoat_color;
@@ -285,7 +286,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, P, ltc.coat_t1, points, TwoSided);
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
 
-            ret += 0.25 * litem.col_and_type.xyz * coat / M_PI;
+            ret += 0.25 * lobe_weights.specular_mul * litem.col_and_type.xyz * coat / M_PI;
         }
     } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
         vec3 points[4];
@@ -313,7 +314,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 spec = vec3(LTC_Evaluate_Rect(ltc_luts, 0.625, N, I, P, ltc.spec_t1, points, TwoSided));
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
 
-            ret += litem.col_and_type.xyz * spec / 4.0;
+            ret += lobe_weights.specular_mul * litem.col_and_type.xyz * spec / 4.0;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
             const vec3 ccol = clearcoat_color;
@@ -321,7 +322,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 coat = vec3(LTC_Evaluate_Rect(ltc_luts, 0.875, N, I, P, ltc.coat_t1, points, TwoSided));
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
 
-            ret += 0.25 * litem.col_and_type.xyz * coat / 4.0;
+            ret += 0.25 * lobe_weights.specular_mul * litem.col_and_type.xyz * coat / 4.0;
         }
     } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
         vec3 points[4];
@@ -349,7 +350,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, P, ltc.spec_t1, points, TwoSided);
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
 
-            ret += litem.col_and_type.xyz * spec / 4.0;
+            ret += lobe_weights.specular_mul * litem.col_and_type.xyz * spec / 4.0;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
             const vec3 ccol = clearcoat_color;
@@ -357,7 +358,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, P, ltc.coat_t1, points, TwoSided);
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
 
-            ret += 0.25 * litem.col_and_type.xyz * coat / 4.0;
+            ret += 0.25 * lobe_weights.specular_mul * litem.col_and_type.xyz * coat / 4.0;
         }
     } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
         vec3 points[2];
@@ -383,7 +384,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 spec = LTC_Evaluate_Line(N, I, P, ltc.spec_t1, points, 0.01);
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
 
-            ret += litem.col_and_type.xyz * spec;
+            ret += lobe_weights.specular_mul * litem.col_and_type.xyz * spec;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
             const vec3 ccol = clearcoat_color;
@@ -391,7 +392,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             vec3 coat = LTC_Evaluate_Line(N, I, P, ltc.coat_t1, points, 0.01);
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
 
-            ret += 0.25 * litem.col_and_type.xyz * coat / 4.0;
+            ret += 0.25 * lobe_weights.specular_mul * litem.col_and_type.xyz * coat / 4.0;
         }
     }
 
@@ -441,7 +442,7 @@ vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const fl
         vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, P, ltc.spec_t1, points, false);
         spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
 
-        ret += light_color * spec;
+        ret += lobe_weights.specular_mul * light_color * spec;
     }
     if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
         const vec3 ccol = clearcoat_color;
@@ -449,7 +450,7 @@ vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const fl
         vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, P, ltc.coat_t1, points, false);
         coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
 
-        ret += 0.25 * light_color * coat;
+        ret += 0.25 * lobe_weights.specular_mul * light_color * coat;
     }
 
     return ret;
@@ -485,10 +486,10 @@ vec3 EvaluateSunLight_Approx(const vec3 light_color, const vec3 light_dir, const
 #endif
     if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
         const float roughness2 = sqr(max(roughness, MIN_SPEC_ROUGHNESS));
-        ret += spec_color * N_dot_L * PrincipledSpecular(max(roughness2, 0.00001), N_dot_V, N_dot_L, N_dot_H);
+        ret += lobe_weights.specular_mul * spec_color * N_dot_L * PrincipledSpecular(max(roughness2, 0.00001), N_dot_V, N_dot_L, N_dot_H);
     }
     if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
-        ret += 0.25 * N_dot_L * clearcoat_color * PrincipledClearcoat(max(clearcoat_roughness2, 0.00001), N_dot_V, N_dot_L, N_dot_H);
+        ret += 0.25 * lobe_weights.specular_mul * N_dot_L * clearcoat_color * PrincipledClearcoat(max(clearcoat_roughness2, 0.00001), N_dot_V, N_dot_L, N_dot_H);
     }
 
     ret *= light_color;
@@ -563,7 +564,7 @@ vec3 EvaluateLightSource_Approx(const _light_item_t litem, const vec3 P, const v
         const float roughness_mod = saturate(roughness + litem.pos_and_radius.w / (3.0 * dist));
         const float roughness2 = sqr(max(roughness_mod, MIN_SPEC_ROUGHNESS));
         const vec3 spec = spec_color * PrincipledSpecular(roughness2, N_dot_V, N_dot_L, N_dot_H);
-        ret += litem.col_and_type.xyz * brightness_mul * N_dot_L * spec / max(0.001, sqr_dist);
+        ret += lobe_weights.specular_mul * litem.col_and_type.xyz * brightness_mul * N_dot_L * spec / max(0.001, sqr_dist);
     }
 
     if (type == LIGHT_TYPE_SPHERE && litem.v_and_blend.w > 0.0) {
