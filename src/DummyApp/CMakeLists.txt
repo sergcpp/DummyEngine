@@ -74,8 +74,8 @@ add_custom_command(TARGET DummyApp
 
 if(${REN_BACKEND} STREQUAL "VK")
     add_custom_command(TARGET DummyApp
-                    POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:spirv_compiler> ${WORKING_DIRECTORY})
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:spirv_compiler> ${WORKING_DIRECTORY})
 endif()
 
 set_target_properties(DummyApp PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

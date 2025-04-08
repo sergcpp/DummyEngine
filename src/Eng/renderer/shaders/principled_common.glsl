@@ -221,7 +221,7 @@ _light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
     #define ENABLE_DIFFUSE 1
 #endif
 #ifndef ENABLE_SHEEN
-    #define ENABLE_SHEEN 1
+    #define ENABLE_SHEEN 0
 #endif
 #ifndef ENABLE_SPECULAR
     #define ENABLE_SPECULAR 1

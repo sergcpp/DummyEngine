@@ -117,7 +117,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
 
     puts(" ---------------");
     // sheen material
-    run_image_test(threads, "sheen_mat0", 46.55, NoShadow);
+    /*run_image_test(threads, "sheen_mat0", 46.55, NoShadow);
     run_image_test(threads, "sheen_mat0", 36.95, NoGI);
     run_image_test(threads, "sheen_mat0", 30.35, MedDiffGI);
     run_image_test(threads, "sheen_mat0", 28.85, Full);
@@ -148,7 +148,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "sheen_mat7", 42.70, NoShadow);
     run_image_test(threads, "sheen_mat7", 36.35, NoGI);
     run_image_test(threads, "sheen_mat7", 24.70, MedDiffGI);
-    run_image_test(threads, "sheen_mat7", 19.35, Full);
+    run_image_test(threads, "sheen_mat7", 19.35, Full);*/
 
     puts(" ---------------");
     // specular material
