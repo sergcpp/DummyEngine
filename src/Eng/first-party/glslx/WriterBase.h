@@ -14,6 +14,7 @@ const Bitmask<eOutputFlags> DefaultOutputFlags =
 struct writer_config_t {
     std::string tab = "    ";
     bool write_hidden = false;
+    bool drop_half_float_literals = false;
 };
 
 class WriterBase {
@@ -22,8 +23,12 @@ class WriterBase {
     int nest_level_ = 0;
 
     void Write_Tabs(std::ostream &out_stream);
+    void Write_Constant(const ast_short_constant *expression, std::ostream &out_stream);
+    void Write_Constant(const ast_ushort_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_int_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_uint_constant *expression, std::ostream &out_stream);
+    void Write_Constant(const ast_long_constant *expression, std::ostream &out_stream);
+    void Write_Constant(const ast_ulong_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_half_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_float_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_double_constant *expression, std::ostream &out_stream);

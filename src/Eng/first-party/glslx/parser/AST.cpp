@@ -31,7 +31,9 @@ glslx::TrUnit::~TrUnit() {
 }
 
 bool glslx::IsConstantValue(const ast_expression *expression) {
-    return expression->type == eExprType::IntConstant || expression->type == eExprType::UIntConstant ||
+    return expression->type == eExprType::ShortConstant || expression->type == eExprType::UShortConstant ||
+           expression->type == eExprType::IntConstant || expression->type == eExprType::UIntConstant ||
+           expression->type == eExprType::LongConstant || expression->type == eExprType::ULongConstant ||
            expression->type == eExprType::HalfConstant || expression->type == eExprType::FloatConstant ||
            expression->type == eExprType::DoubleConstant || expression->type == eExprType::BoolConstant;
 }

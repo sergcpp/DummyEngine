@@ -461,8 +461,12 @@ struct ast_ext_jump_statement : ast_jump_statement {
 };
 
 enum class eExprType {
+    ShortConstant,
+    UShortConstant,
     IntConstant,
     UIntConstant,
+    LongConstant,
+    ULongConstant,
     HalfConstant,
     FloatConstant,
     DoubleConstant,
@@ -493,6 +497,18 @@ struct ast_expression : ast_node<ast_expression> {
     explicit ast_expression(eExprType _type) noexcept : type(_type) {}
 };
 
+struct ast_short_constant : ast_expression {
+    int16_t value;
+
+    explicit ast_short_constant(int16_t _value) noexcept : ast_expression(eExprType::ShortConstant), value(_value) {}
+};
+
+struct ast_ushort_constant : ast_expression {
+    uint16_t value;
+
+    explicit ast_ushort_constant(uint16_t _value) noexcept : ast_expression(eExprType::UShortConstant), value(_value) {}
+};
+
 struct ast_int_constant : ast_expression {
     int32_t value;
 
@@ -503,6 +519,18 @@ struct ast_uint_constant : ast_expression {
     uint32_t value;
 
     explicit ast_uint_constant(uint32_t _value) noexcept : ast_expression(eExprType::UIntConstant), value(_value) {}
+};
+
+struct ast_long_constant : ast_expression {
+    int64_t value;
+
+    explicit ast_long_constant(int64_t _value) noexcept : ast_expression(eExprType::LongConstant), value(_value) {}
+};
+
+struct ast_ulong_constant : ast_expression {
+    uint64_t value;
+
+    explicit ast_ulong_constant(uint64_t _value) noexcept : ast_expression(eExprType::ULongConstant), value(_value) {}
 };
 
 struct ast_half_constant : ast_expression {

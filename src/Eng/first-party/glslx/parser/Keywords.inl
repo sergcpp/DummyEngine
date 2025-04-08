@@ -1,5 +1,6 @@
 // https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#keywords
-X(const,                 false /* is_typename */, false /* reserved */)
+X(_invalid,              false /* is_typename */, false /* reserved */)
+X(const,                 false,  false)
 X(uniform,               false,  false)
 X(buffer,                false,  false)
 X(shared,                false,  false)

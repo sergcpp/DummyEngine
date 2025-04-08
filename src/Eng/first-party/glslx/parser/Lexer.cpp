@@ -42,6 +42,8 @@ void glslx::Lexer::ReadSingle(token_t &out) {
         bool is_half = false;
         bool is_float = false;
         bool is_double = false;
+        bool is_short = false;
+        bool is_long = false;
         bool is_unsigned = false;
         bool is_octal = false;
         bool is_hex = false;
@@ -100,12 +102,40 @@ void glslx::Lexer::ReadSingle(token_t &out) {
                 is_double = true;
                 is_octal = false;
                 loc_.advance();
+            } else if (at() == 's' || at() == 'S') {
+                if (is_float) {
+                    error_ = "Invalid use of suffix on literal";
+                    return;
+                }
+                is_short = true;
+            } else if ((at() == 'u' && at(1) == 's') || (at() == 'U' && at(1) == 'S')) {
+                if (is_float) {
+                    error_ = "Invalid use of suffix on literal";
+                    return;
+                }
+                is_short = true;
+                is_unsigned = true;
+                loc_.advance();
+            } else if ((at() == 'u' && at(1) == 'l') || (at() == 'U' && at(1) == 'L')) {
+                if (is_float) {
+                    error_ = "Invalid use of suffix on literal";
+                    return;
+                }
+                is_long = true;
+                is_unsigned = true;
+                loc_.advance();
             } else if (at() == 'u' || at() == 'U') {
                 if (is_float) {
                     error_ = "Invalid use of suffix on literal";
                     return;
                 }
                 is_unsigned = true;
+            } else if (at() == 'l' || at() == 'L') {
+                if (is_float) {
+                    error_ = "Invalid use of suffix on literal";
+                    return;
+                }
+                is_long = true;
             } else {
                 error_ = "Invalid numeric literal";
                 return;
@@ -144,24 +174,54 @@ void glslx::Lexer::ReadSingle(token_t &out) {
                 return;
             }
         } else if (is_unsigned) {
-            out.type = eTokType::Const_uint;
-            const unsigned long long value = strtoull(numeric.data(), nullptr, base);
-            if (value <= UINT_MAX) {
-                out.as_uint = uint32_t(value);
+            if (is_short) {
+                out.type = eTokType::Const_ushort;
+                const unsigned long value = strtoul(numeric.data(), nullptr, base);
+                if (value <= USHRT_MAX) {
+                    out.as_ushort = uint16_t(value);
+                } else {
+                    error_ = "Literal needs more than 16-bits";
+                }
+            } else if (is_long) {
+                out.type = eTokType::Const_ulong;
+                const unsigned long long value = strtoul(numeric.data(), nullptr, base);
+                // TODO: Check if it actually fits
+                out.as_ulong = uint64_t(value);
             } else {
-                error_ = "Literal needs more than 32-bits";
-            }
-        } else {
-            out.type = eTokType::Const_int;
-            const long long value = strtoll(numeric.data(), nullptr, base);
-            if (value >= INT_MIN && value <= INT_MAX) {
-                out.as_int = int32_t(value);
-            } else {
-                const unsigned long long uvalue = strtoull(numeric.data(), nullptr, base);
+                out.type = eTokType::Const_uint;
+                const unsigned long long value = strtoull(numeric.data(), nullptr, base);
                 if (value <= UINT_MAX) {
-                    out.as_int = int32_t(uvalue);
+                    out.as_uint = uint32_t(value);
                 } else {
                     error_ = "Literal needs more than 32-bits";
+                }
+            }
+        } else {
+            if (is_short) {
+                out.type = eTokType::Const_short;
+                const long value = strtol(numeric.data(), nullptr, base);
+                if (value >= SHRT_MIN && value <= SHRT_MAX) {
+                    out.as_short = int16_t(value);
+                } else {
+                    error_ = "Literal needs more than 16-bits";
+                }
+            } else if (is_long) {
+                out.type = eTokType::Const_long;
+                const long long value = strtoll(numeric.data(), nullptr, base);
+                // TODO: Check if it actually fits
+                out.as_long = int64_t(value);
+            } else {
+                out.type = eTokType::Const_int;
+                const long long value = strtoll(numeric.data(), nullptr, base);
+                if (value >= INT_MIN && value <= INT_MAX) {
+                    out.as_int = int32_t(value);
+                } else {
+                    const unsigned long long uvalue = strtoull(numeric.data(), nullptr, base);
+                    if (value <= UINT_MAX) {
+                        out.as_int = int32_t(uvalue);
+                    } else {
+                        error_ = "Literal needs more than 32-bits";
+                    }
                 }
             }
         }

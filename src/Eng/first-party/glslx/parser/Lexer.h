@@ -16,8 +16,12 @@ enum class eTokType {
     Comment,
     Keyword,
     Identifier,
+    Const_short,
+    Const_ushort,
     Const_int,
     Const_uint,
+    Const_long,
+    Const_ulong,
     Const_half,
     Const_float,
     Const_double,
@@ -64,8 +68,12 @@ struct token_t {
     eTokType type = eTokType::Eof;
     union {
         const char *as_identifier = nullptr;
+        int16_t as_short;
+        uint16_t as_ushort;
         int32_t as_int;
         uint32_t as_uint;
+        int64_t as_long;
+        uint64_t as_ulong;
         float as_half;
         float as_float;
         double as_double;

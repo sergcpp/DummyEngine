@@ -1,4 +1,5 @@
-X(const,                 false /* is_typename */)
+X(_invalid,              false /* is_typename */)
+X(const,                 false)
 X(__uniform,             false)
 X(__buffer,              false)
 X(__shared,              false)

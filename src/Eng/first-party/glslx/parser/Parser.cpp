@@ -47,8 +47,8 @@ static const eKeyword g_GenTypesTable[][4] = {
     {eKeyword::K_imageBuffer, eKeyword::K_iimageBuffer, eKeyword::K_uimageBuffer},
     {eKeyword::K_subpassInput, eKeyword::K_isubpassInput, eKeyword::K_usubpassInput},
     {eKeyword::K_subpassInputMS, eKeyword::K_isubpassInputMS, eKeyword::K_usubpassInputMS}};
-static_assert(int(eKeyword::K_genFType) == 331);
-static_assert(int(eKeyword::K_gsubpassInputMS) == 364);
+static_assert(int(eKeyword::K_genFType) == 332);
+static_assert(int(eKeyword::K_gsubpassInputMS) == 365);
 
 extern const char g_builtin_prototypes[] =
 #include "BuiltinPrototypes.inl"
@@ -113,6 +113,7 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
             }
         }
 
+        // Try to find exact match
         for (ast_function *func : ast_->functions) {
             if (func->is_prototype && call->func) {
                 continue;
@@ -134,6 +135,34 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
                             break;
                         }
                         args_match &= is_same_type(type, func->parameters[i]->base_type);
+                    }
+                    if (args_match) {
+                        call->func = func;
+                        if (!func->is_prototype) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Try to find compatible
+        if (!call->func) {
+            for (ast_function *func : ast_->functions) {
+                if (func->is_prototype && call->func) {
+                    continue;
+                }
+                if (strcmp(func->name, call->name) == 0 && func->parameters.size() == call->parameters.size()) {
+                    bool args_match = true;
+                    for (int i = 0; i < int(func->parameters.size()); ++i) {
+                        int array_dims = 0;
+                        const ast_type *type =
+                            Evaluate_ExpressionResultType(ast_.get(), call->parameters[i], array_dims);
+                        if (!type) {
+                            args_match = false;
+                            break;
+                        }
+                        args_match &= is_compatible_type(type, func->parameters[i]->base_type);
                     }
                     if (args_match) {
                         call->func = func;
@@ -1887,10 +1916,18 @@ glslx::ast_expression *glslx::Parser::ParseUnaryPrefix(const Bitmask<eEndConditi
         return astnew<ast_bool_constant>(true);
     } else if (is_keyword(eKeyword::K_false)) {
         return astnew<ast_bool_constant>(false);
+    } else if (is_type(eTokType::Const_short)) {
+        return astnew<ast_short_constant>(tok_.as_short);
+    } else if (is_type(eTokType::Const_ushort)) {
+        return astnew<ast_ushort_constant>(tok_.as_ushort);
     } else if (is_type(eTokType::Const_int)) {
         return astnew<ast_int_constant>(tok_.as_int);
     } else if (is_type(eTokType::Const_uint)) {
         return astnew<ast_uint_constant>(tok_.as_uint);
+    } else if (is_type(eTokType::Const_long)) {
+        return astnew<ast_long_constant>(tok_.as_long);
+    } else if (is_type(eTokType::Const_ulong)) {
+        return astnew<ast_ulong_constant>(tok_.as_ulong);
     } else if (is_type(eTokType::Const_half)) {
         return astnew<ast_half_constant>(tok_.as_half);
     } else if (is_type(eTokType::Const_float)) {
@@ -2995,49 +3032,117 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
 }
 
 namespace glslx {
+const ast_builtin g_short_type(eKeyword::K_int16_t);
+const ast_builtin g_ushort_type(eKeyword::K_uint16_t);
 const ast_builtin g_int_type(eKeyword::K_int);
 const ast_builtin g_uint_type(eKeyword::K_uint);
+const ast_builtin g_long_type(eKeyword::K_int64_t);
+const ast_builtin g_ulong_type(eKeyword::K_uint64_t);
+const ast_builtin g_half_type(eKeyword::K_float16_t);
 const ast_builtin g_float_type(eKeyword::K_float);
 const ast_builtin g_double_type(eKeyword::K_double);
 const ast_builtin g_bool_type(eKeyword::K_bool);
 
+const ast_builtin g_i16vec2_type(eKeyword::K_i16vec2);
+const ast_builtin g_u16vec2_type(eKeyword::K_u16vec2);
 const ast_builtin g_ivec2_type(eKeyword::K_ivec2);
 const ast_builtin g_uvec2_type(eKeyword::K_uvec2);
+const ast_builtin g_i64vec2_type(eKeyword::K_i64vec2);
+const ast_builtin g_u64vec2_type(eKeyword::K_u64vec2);
+const ast_builtin g_f16vec2_type(eKeyword::K_f16vec2);
 const ast_builtin g_vec2_type(eKeyword::K_vec2);
 const ast_builtin g_dvec2_type(eKeyword::K_dvec2);
 const ast_builtin g_bvec2_type(eKeyword::K_bvec2);
 
+const ast_builtin g_i16vec3_type(eKeyword::K_i16vec3);
+const ast_builtin g_u16vec3_type(eKeyword::K_u16vec3);
 const ast_builtin g_ivec3_type(eKeyword::K_ivec3);
 const ast_builtin g_uvec3_type(eKeyword::K_uvec3);
+const ast_builtin g_i64vec3_type(eKeyword::K_i64vec3);
+const ast_builtin g_u64vec3_type(eKeyword::K_u64vec3);
+const ast_builtin g_f16vec3_type(eKeyword::K_f16vec3);
 const ast_builtin g_vec3_type(eKeyword::K_vec3);
 const ast_builtin g_dvec3_type(eKeyword::K_dvec3);
 const ast_builtin g_bvec3_type(eKeyword::K_bvec3);
 
+const ast_builtin g_i16vec4_type(eKeyword::K_i16vec4);
+const ast_builtin g_u16vec4_type(eKeyword::K_u16vec4);
 const ast_builtin g_ivec4_type(eKeyword::K_ivec4);
 const ast_builtin g_uvec4_type(eKeyword::K_uvec4);
+const ast_builtin g_i64vec4_type(eKeyword::K_i64vec4);
+const ast_builtin g_u64vec4_type(eKeyword::K_u64vec4);
+const ast_builtin g_f16vec4_type(eKeyword::K_f16vec4);
 const ast_builtin g_vec4_type(eKeyword::K_vec4);
 const ast_builtin g_dvec4_type(eKeyword::K_dvec4);
 const ast_builtin g_bvec4_type(eKeyword::K_bvec4);
+
+const eKeyword g_convertible_types[][3] = {{eKeyword::K_int16_t, eKeyword::K_int, eKeyword::K_int64_t},
+                                           {eKeyword::K_i16vec2, eKeyword::K_ivec2, eKeyword::K_i64vec2},
+                                           {eKeyword::K_i16vec3, eKeyword::K_ivec3, eKeyword::K_i64vec3},
+                                           {eKeyword::K_i16vec4, eKeyword::K_ivec4, eKeyword::K_i64vec4},
+
+                                           {eKeyword::K_int, eKeyword::K_int64_t},
+                                           {eKeyword::K_ivec2, eKeyword::K_i64vec2},
+                                           {eKeyword::K_ivec3, eKeyword::K_i64vec3},
+                                           {eKeyword::K_ivec4, eKeyword::K_i64vec4},
+
+                                           {eKeyword::K_uint16_t, eKeyword::K_uint, eKeyword::K_uint64_t},
+                                           {eKeyword::K_u16vec2, eKeyword::K_uvec2, eKeyword::K_u64vec2},
+                                           {eKeyword::K_u16vec3, eKeyword::K_uvec3, eKeyword::K_u64vec3},
+                                           {eKeyword::K_u16vec4, eKeyword::K_uvec4, eKeyword::K_u64vec4},
+
+                                           {eKeyword::K_uint, eKeyword::K_uint64_t},
+                                           {eKeyword::K_uvec2, eKeyword::K_u64vec2},
+                                           {eKeyword::K_uvec3, eKeyword::K_u64vec3},
+                                           {eKeyword::K_uvec4, eKeyword::K_u64vec4},
+
+                                           {eKeyword::K_float16_t, eKeyword::K_float, eKeyword::K_double},
+                                           {eKeyword::K_f16vec2, eKeyword::K_vec2, eKeyword::K_dvec2},
+                                           {eKeyword::K_f16vec3, eKeyword::K_vec3, eKeyword::K_dvec3},
+                                           {eKeyword::K_f16vec4, eKeyword::K_vec4, eKeyword::K_dvec4},
+
+                                           {eKeyword::K_float, eKeyword::K_double},
+                                           {eKeyword::K_vec2, eKeyword::K_dvec2},
+                                           {eKeyword::K_vec3, eKeyword::K_dvec3},
+                                           {eKeyword::K_vec4, eKeyword::K_dvec4}};
 
 extern const char *g_atomic_functions[];
 extern const int g_atomic_functions_count;
 
 int get_vector_size(const eKeyword type) {
     switch (type) {
-    case eKeyword::K_vec4:
+    case eKeyword::K_i16vec4:
+    case eKeyword::K_u16vec4:
     case eKeyword::K_ivec4:
     case eKeyword::K_uvec4:
+    case eKeyword::K_i64vec4:
+    case eKeyword::K_u64vec4:
+    case eKeyword::K_f16vec4:
+    case eKeyword::K_vec4:
     case eKeyword::K_dvec4:
+    case eKeyword::K_bvec4:
         return 4;
-    case eKeyword::K_vec3:
+    case eKeyword::K_i16vec3:
+    case eKeyword::K_u16vec3:
     case eKeyword::K_ivec3:
     case eKeyword::K_uvec3:
+    case eKeyword::K_i64vec3:
+    case eKeyword::K_u64vec3:
+    case eKeyword::K_f16vec3:
+    case eKeyword::K_vec3:
     case eKeyword::K_dvec3:
+    case eKeyword::K_bvec3:
         return 3;
-    case eKeyword::K_vec2:
+    case eKeyword::K_i16vec2:
+    case eKeyword::K_u16vec2:
     case eKeyword::K_ivec2:
     case eKeyword::K_uvec2:
+    case eKeyword::K_i64vec2:
+    case eKeyword::K_u64vec2:
+    case eKeyword::K_f16vec2:
+    case eKeyword::K_vec2:
     case eKeyword::K_dvec2:
+    case eKeyword::K_bvec2:
         return 2;
     default:
         return 1;
@@ -3057,6 +3162,14 @@ const ast_type *to_scalar_type(const ast_type *_type) {
     }
     const auto *type = static_cast<const ast_builtin *>(_type);
     switch (type->type) {
+    case eKeyword::K_i16vec4:
+    case eKeyword::K_i16vec3:
+    case eKeyword::K_i16vec2:
+        return &g_short_type;
+    case eKeyword::K_u16vec4:
+    case eKeyword::K_u16vec3:
+    case eKeyword::K_u16vec2:
+        return &g_ushort_type;
     case eKeyword::K_ivec4:
     case eKeyword::K_ivec3:
     case eKeyword::K_ivec2:
@@ -3065,6 +3178,18 @@ const ast_type *to_scalar_type(const ast_type *_type) {
     case eKeyword::K_uvec3:
     case eKeyword::K_uvec2:
         return &g_uint_type;
+    case eKeyword::K_i64vec4:
+    case eKeyword::K_i64vec3:
+    case eKeyword::K_i64vec2:
+        return &g_long_type;
+    case eKeyword::K_u64vec4:
+    case eKeyword::K_u64vec3:
+    case eKeyword::K_u64vec2:
+        return &g_ulong_type;
+    case eKeyword::K_f16vec4:
+    case eKeyword::K_f16vec3:
+    case eKeyword::K_f16vec2:
+        return &g_half_type;
     case eKeyword::K_vec4:
     case eKeyword::K_vec3:
     case eKeyword::K_vec2:
@@ -3073,6 +3198,10 @@ const ast_type *to_scalar_type(const ast_type *_type) {
     case eKeyword::K_dvec3:
     case eKeyword::K_dvec2:
         return &g_double_type;
+    case eKeyword::K_bvec4:
+    case eKeyword::K_bvec3:
+    case eKeyword::K_bvec2:
+        return &g_bool_type;
     default:
         return type;
     }
@@ -3083,8 +3212,27 @@ const ast_type *to_vector_type(const ast_type *_scalar_type, int channels) {
         return _scalar_type;
     }
     const auto *scalar_type = static_cast<const ast_builtin *>(_scalar_type);
-
-    if (scalar_type->type == eKeyword::K_int) {
+    if (scalar_type->type == eKeyword::K_int16_t) {
+        if (channels == 1) {
+            return &g_short_type;
+        } else if (channels == 2) {
+            return &g_i16vec2_type;
+        } else if (channels == 3) {
+            return &g_i16vec3_type;
+        } else if (channels == 4) {
+            return &g_i16vec4_type;
+        }
+    } else if (scalar_type->type == eKeyword::K_uint16_t) {
+        if (channels == 1) {
+            return &g_ushort_type;
+        } else if (channels == 2) {
+            return &g_u16vec2_type;
+        } else if (channels == 3) {
+            return &g_u16vec3_type;
+        } else if (channels == 4) {
+            return &g_u16vec4_type;
+        }
+    } else if (scalar_type->type == eKeyword::K_int) {
         if (channels == 1) {
             return &g_int_type;
         } else if (channels == 2) {
@@ -3103,6 +3251,36 @@ const ast_type *to_vector_type(const ast_type *_scalar_type, int channels) {
             return &g_uvec3_type;
         } else if (channels == 4) {
             return &g_uvec4_type;
+        }
+    } else if (scalar_type->type == eKeyword::K_long) {
+        if (channels == 1) {
+            return &g_long_type;
+        } else if (channels == 2) {
+            return &g_i64vec2_type;
+        } else if (channels == 3) {
+            return &g_i64vec3_type;
+        } else if (channels == 4) {
+            return &g_i64vec4_type;
+        }
+    } else if (scalar_type->type == eKeyword::K_uint64_t) {
+        if (channels == 1) {
+            return &g_ulong_type;
+        } else if (channels == 2) {
+            return &g_u64vec2_type;
+        } else if (channels == 3) {
+            return &g_u64vec3_type;
+        } else if (channels == 4) {
+            return &g_u64vec4_type;
+        }
+    } else if (scalar_type->type == eKeyword::K_float16_t) {
+        if (channels == 1) {
+            return &g_half_type;
+        } else if (channels == 2) {
+            return &g_f16vec2_type;
+        } else if (channels == 3) {
+            return &g_f16vec3_type;
+        } else if (channels == 4) {
+            return &g_f16vec4_type;
         }
     } else if (scalar_type->type == eKeyword::K_float) {
         if (channels == 1) {
@@ -3124,14 +3302,28 @@ const ast_type *to_vector_type(const ast_type *_scalar_type, int channels) {
         } else if (channels == 4) {
             return &g_dvec4_type;
         }
+    } else if (scalar_type->type == eKeyword::K_bool) {
+        if (channels == 1) {
+            return &g_bool_type;
+        } else if (channels == 2) {
+            return &g_bvec2_type;
+        } else if (channels == 3) {
+            return &g_bvec3_type;
+        } else if (channels == 4) {
+            return &g_bvec4_type;
+        }
     }
     return scalar_type;
 }
 
 bool is_integer_type(const eKeyword type) {
     switch (type) {
+    case eKeyword::K_int16_t:
+    case eKeyword::K_uint16_t:
     case eKeyword::K_int:
     case eKeyword::K_uint:
+    case eKeyword::K_int64_t:
+    case eKeyword::K_uint64_t:
         return true;
     default:
         return false;
@@ -3237,7 +3429,6 @@ const ast_type *to_matrix_subscript_type(const ast_type *_type) {
     }
 }
 
-// TODO: make types atoms
 bool is_same_type(const ast_type *_type1, const ast_type *_type2) {
     if (_type1->builtin != _type2->builtin) {
         return false;
@@ -3249,16 +3440,51 @@ bool is_same_type(const ast_type *_type1, const ast_type *_type2) {
     const auto *type2 = static_cast<const ast_builtin *>(_type2);
     return type1->type == type2->type;
 }
+
+bool is_compatible_type(const ast_type *_type1, const ast_type *_type2) {
+    if (_type1->builtin != _type2->builtin) {
+        return false;
+    }
+    if (!_type1->builtin) {
+        return _type1 == _type2;
+    }
+    const auto *type1 = static_cast<const ast_builtin *>(_type1);
+    const auto *type2 = static_cast<const ast_builtin *>(_type2);
+    if (type1->type == type2->type) {
+        return true;
+    }
+
+    for (int i = 0; i < std::size(g_convertible_types); ++i) {
+        if (g_convertible_types[i][0] == type1->type) {
+            for (int j = 1; j < std::size(g_convertible_types[0]); ++j) {
+                if (g_convertible_types[i][j] == type2->type) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
 } // namespace glslx
 
 const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, const ast_expression *expression,
                                                             int &array_dims) {
     array_dims = 0;
     switch (expression->type) {
+    case eExprType::ShortConstant:
+        return &g_short_type;
+    case eExprType::UShortConstant:
+        return &g_ushort_type;
     case eExprType::IntConstant:
         return &g_int_type;
     case eExprType::UIntConstant:
         return &g_uint_type;
+    case eExprType::LongConstant:
+        return &g_long_type;
+    case eExprType::ULongConstant:
+        return &g_ulong_type;
+    case eExprType::HalfConstant:
+        return &g_half_type;
     case eExprType::FloatConstant:
         return &g_float_type;
     case eExprType::DoubleConstant:
@@ -3333,6 +3559,7 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
                 }
             }
         }
+
         return nullptr;
     } break;
     case eExprType::ConstructorCall: {

@@ -163,6 +163,7 @@ int get_vector_size(const ast_type *type);
 int is_matrix_type(const ast_type *type);
 
 bool is_same_type(const ast_type *type1, const ast_type *type2);
+bool is_compatible_type(const ast_type *_type1, const ast_type *_type2);
 
 const ast_type *Evaluate_ExpressionResultType(const TrUnit *tu, const ast_expression *expression, int &array_dims);
 } // namespace glslx

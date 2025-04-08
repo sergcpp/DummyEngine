@@ -21,6 +21,14 @@ void glslx::WriterBase::Write_Tabs(std::ostream &out_stream) {
     }
 }
 
+void glslx::WriterBase::Write_Constant(const ast_short_constant *expression, std::ostream &out_stream) {
+    out_stream << expression->value << "s";
+}
+
+void glslx::WriterBase::Write_Constant(const ast_ushort_constant *expression, std::ostream &out_stream) {
+    out_stream << expression->value << "us";
+}
+
 void glslx::WriterBase::Write_Constant(const ast_int_constant *expression, std::ostream &out_stream) {
     out_stream << expression->value;
 }
@@ -29,12 +37,26 @@ void glslx::WriterBase::Write_Constant(const ast_uint_constant *expression, std:
     out_stream << expression->value << "u";
 }
 
+void glslx::WriterBase::Write_Constant(const ast_long_constant *expression, std::ostream &out_stream) {
+    out_stream << expression->value << "l";
+}
+
+void glslx::WriterBase::Write_Constant(const ast_ulong_constant *expression, std::ostream &out_stream) {
+    out_stream << expression->value << "ul";
+}
+
 void glslx::WriterBase::Write_Constant(const ast_bool_constant *expression, std::ostream &out_stream) {
     out_stream << std::boolalpha << expression->value << std::noboolalpha;
 }
 
 void glslx::WriterBase::Write_Constant(const ast_half_constant *expression, std::ostream &out_stream) {
-    out_stream << expression->value << "hf";
+    out_stream << expression->value;
+    if (std::round(expression->value) == expression->value) {
+        out_stream << ".0";
+    }
+    if (!config_.drop_half_float_literals) {
+        out_stream << "hf";
+    }
 }
 
 void glslx::WriterBase::Write_Constant(const ast_float_constant *expression, std::ostream &out_stream) {

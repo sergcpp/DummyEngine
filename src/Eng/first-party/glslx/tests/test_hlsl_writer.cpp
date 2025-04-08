@@ -345,6 +345,16 @@ void test_hlsl_writer() {
                                      "    uint test_hex_suffix_mixed = 0xFfU;\n"
                                      "    int test_negative = -1;\n"
                                      "    uint test_octal = 0777;\n"
+                                     "    int16_t test_int16 = 42s;\n"
+                                     "    uint16_t test_uint16_lower = 42us;\n"
+                                     "    uint16_t test_uint16_upper = 42US;\n"
+                                     "    int32_t test_int32 = 42;\n"
+                                     "    uint32_t test_uint32_lower = 42u;\n"
+                                     "    uint32_t test_uint32_upper = 42U;\n"
+                                     "    int64_t test_int64_lower = 42l;\n"
+                                     "    int64_t test_int64_upper = 42L;\n"
+                                     "    uint64_t test_uint64_lower = 42ul;\n"
+                                     "    uint64_t test_uint64_upper = 42UL;\n"
                                      "}\n";
         static const char expected[] = "void test(int a, int b) {\n"
                                        "    int test_uninitialized_int;\n"
@@ -360,6 +370,16 @@ void test_hlsl_writer() {
                                        "    uint test_hex_suffix_mixed = 255u;\n"
                                        "    int test_negative = (-1);\n"
                                        "    uint test_octal = 511;\n"
+                                       "    short test_int16 = 42s;\n"
+                                       "    ushort test_uint16_lower = 42us;\n"
+                                       "    ushort test_uint16_upper = 42us;\n"
+                                       "    int test_int32 = 42;\n"
+                                       "    uint test_uint32_lower = 42u;\n"
+                                       "    uint test_uint32_upper = 42u;\n"
+                                       "    int64_t test_int64_lower = 42l;\n"
+                                       "    int64_t test_int64_upper = 42l;\n"
+                                       "    uint64_t test_uint64_lower = 42ul;\n"
+                                       "    uint64_t test_uint64_upper = 42ul;\n"
                                        "}\n";
 
         Parser parser(source, "int_literals.glsl");
