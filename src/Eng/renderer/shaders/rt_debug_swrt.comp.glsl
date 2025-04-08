@@ -308,8 +308,8 @@ void main() {
         const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
         const float spec_color_lum = lum(approx_spec_col);
 
-        const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular,
-                                                                metallic, transmission, clearcoat);
+        const lobe_masks_t lobe_masks = get_lobe_masks(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular,
+                                                       metallic, transmission, clearcoat);
 
         const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -347,7 +347,7 @@ void main() {
 
             _light_item_t litem = g_lights[li];
 
-            vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
+            vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, lobe_masks, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             if (all(equal(light_contribution, vec3(0.0)))) {
                 continue;
@@ -397,7 +397,7 @@ void main() {
             const vec3 sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, g_shadow_color_tex, shadow_uvs);
             if (hsum(sun_visibility) > 0.0) {
                 light_total += sun_visibility * EvaluateSunLight_Approx(g_shrd_data.sun_col_point_sh.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w,
-                                                                        I, N, lobe_weights, roughness, clearcoat_roughness2,
+                                                                        I, N, lobe_masks, roughness, clearcoat_roughness2,
                                                                         base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             }
         }
@@ -406,12 +406,12 @@ void main() {
         for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
             const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
             if (weight > 0.0) {
-                if (lobe_weights.diffuse > 0.0) {
+                if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
                     vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(-I, g_shrd_data.probe_volumes[i].spacing.xyz), N,
                                                                 g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
-                    light_total += lobe_weights.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
+                    light_total += lobe_masks.diffuse_mul * (1.0 / M_PI) * base_color * irradiance;
                 }
-                if (lobe_weights.specular > 0.0) {
+                if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                     const vec3 refl_dir = reflect(-I, N);
                     vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(-I, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
                                                                   g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);

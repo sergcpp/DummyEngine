@@ -449,7 +449,7 @@ void main() {
             const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
             const float spec_color_lum = lum(approx_spec_col);
 
-            const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+            const lobe_masks_t lobe_masks = get_lobe_masks(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
             const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -514,11 +514,11 @@ void main() {
                     const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
                     const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
-                    lobe_weights_t _lobe_weights = lobe_weights;
-                    if (!is_last_bounce && is_portal) _lobe_weights.specular_mul *= portals_specular_ltc_weight;
-                    if (!is_diffuse) _lobe_weights.diffuse = 0.0;
-                    if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-                    vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                    lobe_masks_t _lobe_masks = lobe_masks;
+                    if (!is_last_bounce && is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
+                    if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
+                    if (!is_specular) _lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
+                    vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, ltc, g_ltc_luts,
                                                                       sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                     if (all(equal(light_contribution, vec3(0.0)))) {
                         continue;
@@ -548,13 +548,11 @@ void main() {
                         const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
                         const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
-                        lobe_weights_t _lobe_weights = lobe_weights;
-                        if (!is_last_bounce && is_portal) {
-                            _lobe_weights.specular_mul *= portals_specular_ltc_weight;
-                        }
-                        if (!is_diffuse) _lobe_weights.diffuse = 0.0;
-                        if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-                        vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+                        lobe_masks_t _lobe_masks = lobe_masks;
+                        if (!is_last_bounce && is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
+                        if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
+                        if (!is_specular) _lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
+                        vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, ltc, g_ltc_luts,
                                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                         if (all(equal(light_contribution, vec3(0.0)))) {
                             continue;
@@ -586,7 +584,7 @@ void main() {
 
                 const float sun_visibility = SampleShadowPCF5x5(g_shadow_depth_tex, shadow_uvs);
                 if (sun_visibility > 0.0) {
-                    light_total += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                    light_total += sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_masks, ltc, g_ltc_luts,
                                                                          sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 }
             }
@@ -595,14 +593,14 @@ void main() {
             for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
                 const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
                 if (weight > 0.0) {
-                    if (lobe_weights.diffuse > 0.0) {
+                    if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
                         vec3 irradiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), N,
                                                                     g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, !is_last_bounce);
                         irradiance *= base_color * ltc.diff_t2.x;
                         irradiance *= mix(1.0, saturate(inter.t / (0.5 * length(g_shrd_data.probe_volumes[i].spacing.xyz))), saturate(16.0 * first_roughness));
-                        light_total += lobe_weights.diffuse_mul * (1.0 / M_PI) * irradiance;
+                        light_total += lobe_masks.diffuse_mul * (1.0 / M_PI) * irradiance;
                     }
-                    if ((is_last_bounce || roughness > RECURSION_ROUGHNESS_THRES) && lobe_weights.specular > 0.0) {
+                    if ((is_last_bounce || roughness > RECURSION_ROUGHNESS_THRES) && (lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                         const vec3 refl_dir = reflect(refl_ray_ws, N);
                         vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
                                                                       g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
@@ -619,7 +617,7 @@ void main() {
             if (j == 0) {
                 first_ray_len = inter.t;
             }
-            if (lobe_weights.specular > 0.0) {
+            if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                 throughput *= approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y;
             } else {
                 break;

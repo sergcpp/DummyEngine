@@ -143,7 +143,7 @@ void main() {
     vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
     const float spec_color_lum = lum(approx_spec_col);
 
-    lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+    lobe_masks_t lobe_masks = get_lobe_masks(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
     const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -159,8 +159,8 @@ void main() {
 
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
 
-    if (lobe_weights.refraction > 0.0) {
-        lobe_weights.specular = 1.0;
+    if ((lobe_masks.bits & LOBE_REFRACTION_BIT) != 0) {
+        lobe_masks.bits |= LOBE_SPECULAR_BIT;
         approx_spec_col = vec3(1.0);
     }
 
@@ -174,11 +174,11 @@ void main() {
         const bool is_diffuse = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DIFFUSE_BIT) != 0;
         const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
-        lobe_weights_t _lobe_weights = lobe_weights;
-        [[flatten]] if (is_portal) _lobe_weights.specular_mul *= portals_specular_ltc_weight;
-        [[flatten]] if (!is_diffuse) _lobe_weights.diffuse = 0.0;
-        [[flatten]] if (!is_specular) _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
-        vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
+        lobe_masks_t _lobe_masks = lobe_masks;
+        [[flatten]] if (is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
+        [[flatten]] if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
+        [[flatten]] if (!is_specular) _lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
+        vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, ltc, g_ltc_luts,
                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         if (all(equal(light_contribution, vec3(0.0)))) {
             continue;
@@ -243,7 +243,7 @@ void main() {
 
         const float sun_visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
         if (sun_visibility > 0.0) {
-            sun_color = sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+            sun_color = sun_visibility * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_masks, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }
     }
@@ -253,18 +253,18 @@ void main() {
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
-            if (lobe_weights.diffuse > 0.0) {
+            if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0) {
                 gi_color += weight * get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i].spacing.xyz), normal.xyz,
                                                             g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
                 if (weight < 1.0 && i < PROBE_VOLUMES_COUNT - 1) {
                     gi_color += (1.0 - weight) * get_volume_irradiance_sep(i + 1, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_shrd_data.probe_volumes[i + 1].spacing.xyz), normal.xyz,
                                                                         g_shrd_data.probe_volumes[i + 1].scroll.xyz, g_shrd_data.probe_volumes[i + 1].origin.xyz, g_shrd_data.probe_volumes[i + 1].spacing.xyz, false);
                 }
-                gi_color *= (lobe_weights.diffuse_mul / M_PI);
+                gi_color *= (lobe_masks.diffuse_mul / M_PI);
                 gi_color *= base_color * ltc.diff_t2.x;
             }
 #ifndef SPECULAR
-            if (lobe_weights.specular > 0.0) {
+            if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                 const vec3 refl_dir = reflect(I, N);
                 vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(I, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
                                                                 g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);
@@ -283,7 +283,7 @@ void main() {
     final_color += gi_color;
 
     float fresnel = 1.0;
-    [[dont_flatten]] if (lobe_weights.refraction > 0.0) {
+    [[dont_flatten]] if ((lobe_masks.bits & LOBE_REFRACTION_BIT) != 0) {
         const float eta = 1.0 / ior;//gl_FrontFacing ? (1.0 / ior) : (ior / 1.0);
         fresnel = fresnel_dielectric_cos(dot(I, N), 1.0 / eta);
 
@@ -310,7 +310,7 @@ void main() {
     vec4 refl = SampleTextureCatmullRom(g_specular_tex, norm_uvs, vec2(g_shrd_data.ires_and_ifres.xy / 2));
     refl.xyz /= g_shrd_data.cam_pos_and_exp.w;
     refl.xyz /= max(refl.w, 0.001);
-    if (lobe_weights.specular > 0.0 || lobe_weights.refraction > 0.0) {
+    if ((lobe_masks.bits & (LOBE_SPECULAR_BIT | LOBE_REFRACTION_BIT)) != 0) {
         final_color += fresnel * refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
     }
 #endif

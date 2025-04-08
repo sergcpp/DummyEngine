@@ -72,7 +72,7 @@ void main() {
     const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
     const float spec_color_lum = lum(approx_spec_col);
 
-    const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+    const lobe_masks_t lobe_masks = get_lobe_masks(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
     const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
@@ -85,11 +85,11 @@ void main() {
 
     vec3 final_color = vec3(0.0);
 
-    if (lobe_weights.specular > 0.0) {
+    if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
         final_color += refl.xyz * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
     }
 
-    /*if (lobe_weights.clearcoat > 0.0) {
+    /*if ((lobe_masks.bits & LOBE_CLEARCOAT_BIT) != 0) {
         float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
         float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
         float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;

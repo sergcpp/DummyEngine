@@ -111,7 +111,7 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs
     const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
     const float spec_color_lum = lum(approx_spec_col);
 
-    const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+    const lobe_masks_t lobe_masks = get_lobe_masks(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
     const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -128,7 +128,7 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const float weight = get_volume_blend_weight(P, g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz);
         if (weight > 0.0) {
-            if (lobe_weights.specular > 0.0) {
+            if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0) {
                 const vec3 refl_dir = reflect(refl_ray_ws, N);
                 vec3 avg_radiance = get_volume_irradiance_sep(i, g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_shrd_data.probe_volumes[i].spacing.xyz), refl_dir,
                                                               g_shrd_data.probe_volumes[i].scroll.xyz, g_shrd_data.probe_volumes[i].origin.xyz, g_shrd_data.probe_volumes[i].spacing.xyz, false);

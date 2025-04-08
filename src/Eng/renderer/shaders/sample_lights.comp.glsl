@@ -137,7 +137,7 @@ void main() {
     const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
     const float spec_color_lum = lum(approx_spec_col);
 
-    lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+    lobe_masks_t lobe_masks = get_lobe_masks(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
     const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -168,8 +168,8 @@ void main() {
     const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
     const bool is_doublesided = (floatBitsToUint(litem.col_and_type.w) & LIGHT_DOUBLESIDED_BIT) != 0;
 
-    [[flatten]] if (!is_diffuse) lobe_weights.diffuse = 0.0;
-    [[flatten]] if (!is_specular) lobe_weights.specular = lobe_weights.clearcoat = 0.0;
+    [[flatten]] if (!is_diffuse) lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
+    [[flatten]] if (!is_specular) lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
 
     const vec3 p1 = litem.pos_and_radius.xyz,
                p2 = litem.u_and_reg.xyz,
@@ -333,7 +333,7 @@ void main() {
     vec3 diffuse_col = vec3(0.0);
     vec4 specular_col = vec4(0.0, 0.0, 0.0, -1.0);
 
-    if (lobe_weights.diffuse > 1e-7 && ls_pdf > 1e-7) {
+    if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ls_pdf > 1e-7) {
         diffuse_col += litem.col_and_type.xyz * saturate(dot(N, L)) / (ls_pdf * M_PI);
         diffuse_col *= (1.0 - metallic) * (1.0 - transmission);
 
@@ -343,7 +343,7 @@ void main() {
         //diffuse_col = limit_intensity(diffuse_col, 10.0);
     }
 
-    if (lobe_weights.specular > 1e-7 && roughness * roughness > 1e-7 && ls_pdf > 1e-7) {
+    if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0 && roughness * roughness > 1e-7 && ls_pdf > 1e-7) {
         const mat3 tbn_transform = CreateTBN(N);
         const vec3 view_dir_ts = tbn_transform * I;
         const vec3 sampled_normal_ts = tbn_transform * normalize(L + I);
