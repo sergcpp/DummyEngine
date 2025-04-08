@@ -14,6 +14,8 @@
     #define SIMPLIFIED_LTC_DIFFUSE 0
 #endif
 
+#define LTC_SHARED_MEM 64
+
 #include "_fs_common.glsl"
 #include "principled_common.glsl"
 #include "taa_common.glsl"
@@ -222,7 +224,7 @@ void main() {
     const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
     const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
-    const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
+    g_ltc[gl_LocalInvocationIndex] = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
     //
     // Evaluate artifitial lights
@@ -253,10 +255,10 @@ void main() {
             const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
             lobe_masks_t _lobe_masks = lobe_masks;
-            if (is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
-            if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
-            if (!is_specular) _lobe_masks.bits = ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
-            vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, ltc, g_ltc_luts,
+            [[flatten]] if (is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
+            [[flatten]] if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
+            [[flatten]] if (!is_specular) _lobe_masks.bits = ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
+            vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             if (all(equal(light_contribution, vec3(0.0)))) {
                 continue;
@@ -290,10 +292,10 @@ void main() {
                 const bool is_specular = (floatBitsToUint(litem.col_and_type.w) & LIGHT_SPECULAR_BIT) != 0;
 
                 lobe_masks_t _lobe_masks = lobe_masks;
-                if (is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
-                if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
-                if (!is_specular) _lobe_masks.bits = ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
-                vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, ltc, g_ltc_luts,
+                [[flatten]] if (is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
+                [[flatten]] if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
+                [[flatten]] if (!is_specular) _lobe_masks.bits = ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
+                vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, g_ltc_luts,
                                                                   sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;
@@ -343,7 +345,7 @@ void main() {
     if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0 && g_shrd_data.sun_dir.y > 0.0) {
         const vec3 sun_color = textureLod(g_sun_shadow_tex, norm_uvs, 0.0).xyz;
         if (hsum(sun_color) > 0.0) {
-            final_color += sun_color * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_masks, ltc, g_ltc_luts,
+            final_color += sun_color * EvaluateSunLight_LTC(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_masks, g_ltc_luts,
 -                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }
     }
@@ -351,7 +353,7 @@ void main() {
     const vec2 px_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.zw;
     const vec4 gi_fetch = textureLod(g_gi_tex, px_uvs, 0.0);
     vec3 gi_contribution = lobe_masks.diffuse_mul * gi_fetch.xyz / g_shrd_data.cam_pos_and_exp.w;
-    gi_contribution *= base_color * ltc.diff_t2.x;
+    gi_contribution *= base_color * g_ltc[gl_LocalInvocationIndex].diff_t2.x;
     // Recover small details lost during denoising
     gi_contribution *= pow(saturate(2.0 * gi_fetch.w), 0.2);
 

@@ -489,6 +489,235 @@ vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const fl
     return ret;
 }
 
+#ifdef LTC_SHARED_MEM
+shared ltc_params_t g_ltc[LTC_SHARED_MEM];
+
+vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3 I, const vec3 N, const lobe_masks_t lobe_masks,
+                             sampler2D ltc_luts, const float sheen, const vec3 base_color, const vec3 sheen_color, const vec3 spec_color, const vec3 clearcoat_color) {
+    const bool TwoSided = false;
+
+    const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;
+    const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
+    const float _dot = -dot(from_light, litem.dir_and_spot.xyz);
+    const float _angle = approx_acos(_dot);
+    if (type != LIGHT_TYPE_LINE && _angle > litem.dir_and_spot.w) {
+        return vec3(0.0);
+    }
+
+    vec3 ret = vec3(0.0);
+
+    if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
+        // TODO: simplify this!
+        vec3 u = normalize(I - from_light * dot(I, from_light));
+        vec3 v = cross(from_light, u);
+
+        u *= litem.pos_and_radius.w;
+        v *= litem.pos_and_radius.w;
+
+        vec3 points[4];
+        points[0] = litem.pos_and_radius.xyz + u + v;
+        points[1] = litem.pos_and_radius.xyz + u - v;
+        points[2] = litem.pos_and_radius.xyz - u - v;
+        points[3] = litem.pos_and_radius.xyz - u + v;
+
+        if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
+            const vec3 dcol = base_color;
+
+            vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided);
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+
+            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+                const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, TwoSided);
+                diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
+            }
+
+            ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / M_PI;
+        }
+        if ((lobe_masks.bits & (LOBE_SPECULAR_BIT | LOBE_REFRACTION_BIT)) != 0 && ENABLE_SPECULAR != 0) {
+            const vec3 scol = spec_color;
+
+            vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, P, g_ltc[gl_LocalInvocationIndex].spec_t1, points, TwoSided);
+            spec *= scol * g_ltc[gl_LocalInvocationIndex].spec_t2.x + (1.0 - scol) * g_ltc[gl_LocalInvocationIndex].spec_t2.y;
+
+            ret += lobe_masks.specular_mul * litem.col_and_type.xyz * spec / M_PI;
+        }
+        if ((lobe_masks.bits & LOBE_CLEARCOAT_BIT) != 0 && ENABLE_CLEARCOAT != 0) {
+            const vec3 ccol = clearcoat_color;
+
+            vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, P, g_ltc[gl_LocalInvocationIndex].coat_t1, points, TwoSided);
+            coat *= ccol * g_ltc[gl_LocalInvocationIndex].coat_t2.x + (1.0 - ccol) * g_ltc[gl_LocalInvocationIndex].coat_t2.y;
+
+            ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / M_PI;
+        }
+    } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
+        vec3 points[4];
+        points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_blend.xyz;
+        points[1] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[2] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_blend.xyz;
+
+        [[dont_flatten]] if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
+            const vec3 dcol = base_color;
+
+            vec3 diff = vec3(LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided));
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+
+            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+                const float _sheen = LTC_Evaluate_Rect(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, TwoSided);
+                diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
+            }
+
+            ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
+        }
+        [[dont_flatten]] if ((lobe_masks.bits & (LOBE_SPECULAR_BIT | LOBE_REFRACTION_BIT)) != 0 && ENABLE_SPECULAR != 0) {
+            const vec3 scol = spec_color;
+
+            vec3 spec = vec3(LTC_Evaluate_Rect(ltc_luts, 0.625, N, I, P, g_ltc[gl_LocalInvocationIndex].spec_t1, points, TwoSided));
+            spec *= scol * g_ltc[gl_LocalInvocationIndex].spec_t2.x + (1.0 - scol) * g_ltc[gl_LocalInvocationIndex].spec_t2.y;
+
+            ret += lobe_masks.specular_mul * litem.col_and_type.xyz * spec / 4.0;
+        }
+        [[dont_flatten]] if ((lobe_masks.bits & LOBE_CLEARCOAT_BIT) != 0 && ENABLE_CLEARCOAT != 0) {
+            const vec3 ccol = clearcoat_color;
+
+            vec3 coat = vec3(LTC_Evaluate_Rect(ltc_luts, 0.875, N, I, P, g_ltc[gl_LocalInvocationIndex].coat_t1, points, TwoSided));
+            coat *= ccol * g_ltc[gl_LocalInvocationIndex].coat_t2.x + (1.0 - ccol) * g_ltc[gl_LocalInvocationIndex].coat_t2.y;
+
+            ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
+        }
+    } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
+        vec3 points[4];
+        points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_blend.xyz;
+        points[1] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[2] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_blend.xyz;
+
+        if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
+            const vec3 dcol = base_color;
+
+            vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, TwoSided);
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+
+            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+                const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, TwoSided);
+                diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
+            }
+
+            ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
+        }
+        if ((lobe_masks.bits & (LOBE_SPECULAR_BIT | LOBE_REFRACTION_BIT)) != 0 && ENABLE_SPECULAR != 0) {
+            const vec3 scol = spec_color;
+
+            vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, P, g_ltc[gl_LocalInvocationIndex].spec_t1, points, TwoSided);
+            spec *= scol * g_ltc[gl_LocalInvocationIndex].spec_t2.x + (1.0 - scol) * g_ltc[gl_LocalInvocationIndex].spec_t2.y;
+
+            ret += lobe_masks.specular_mul * litem.col_and_type.xyz * spec / 4.0;
+        }
+        if ((lobe_masks.bits & LOBE_CLEARCOAT_BIT) != 0 && ENABLE_CLEARCOAT != 0) {
+            const vec3 ccol = clearcoat_color;
+
+            vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, P, g_ltc[gl_LocalInvocationIndex].coat_t1, points, TwoSided);
+            coat *= ccol * g_ltc[gl_LocalInvocationIndex].coat_t2.x + (1.0 - ccol) * g_ltc[gl_LocalInvocationIndex].coat_t2.y;
+
+            ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
+        }
+    } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
+        vec3 points[2];
+        points[0] = litem.pos_and_radius.xyz + litem.v_and_blend.xyz;
+        points[1] = litem.pos_and_radius.xyz - litem.v_and_blend.xyz;
+
+        [[dont_flatten]] if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
+            const vec3 dcol = base_color;
+
+            vec3 diff = LTC_Evaluate_Line(N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, 0.01);
+            diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+
+            if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+                const vec3 _sheen = LTC_Evaluate_Line(N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, 0.01);
+                diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
+            }
+
+            ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff;
+        }
+        [[dont_flatten]] if ((lobe_masks.bits & (LOBE_SPECULAR_BIT | LOBE_REFRACTION_BIT)) != 0 && ENABLE_SPECULAR != 0) {
+            const vec3 scol = spec_color;
+
+            vec3 spec = LTC_Evaluate_Line(N, I, P, g_ltc[gl_LocalInvocationIndex].spec_t1, points, 0.01);
+            spec *= scol * g_ltc[gl_LocalInvocationIndex].spec_t2.x + (1.0 - scol) * g_ltc[gl_LocalInvocationIndex].spec_t2.y;
+
+            ret += lobe_masks.specular_mul * litem.col_and_type.xyz * spec;
+        }
+        [[dont_flatten]] if ((lobe_masks.bits & LOBE_CLEARCOAT_BIT) != 0 && ENABLE_CLEARCOAT != 0) {
+            const vec3 ccol = clearcoat_color;
+
+            vec3 coat = LTC_Evaluate_Line(N, I, P, g_ltc[gl_LocalInvocationIndex].coat_t1, points, 0.01);
+            coat *= ccol * g_ltc[gl_LocalInvocationIndex].coat_t2.x + (1.0 - ccol) * g_ltc[gl_LocalInvocationIndex].coat_t2.y;
+
+            ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
+        }
+    }
+
+    if (type == LIGHT_TYPE_SPHERE && litem.v_and_blend.w > 0.0) {
+        ret *= saturate((litem.dir_and_spot.w - _angle) / litem.v_and_blend.w);
+    }
+
+    return ret;
+}
+
+vec3 EvaluateSunLight_LTC(const vec3 light_color, const vec3 light_dir, const float light_radius, const vec3 P,
+                          const vec3 I, const vec3 N, const lobe_masks_t lobe_masks,
+                          sampler2D ltc_luts, const float sheen, const vec3 base_color, const vec3 sheen_color,
+                          const vec3 spec_color, const vec3 clearcoat_color) {
+    vec3 u = vec3(1.0, 0.0, 0.0);
+    if (abs(light_dir.y) < 0.999) {
+        u = vec3(0.0, 1.0, 0.0);
+    }
+
+    vec3 v = normalize(cross(u, light_dir));
+    u = cross(light_dir, v);
+
+    vec3 points[4];
+    points[0] = P + light_dir + light_radius * u + light_radius * v;
+    points[1] = P + light_dir + light_radius * u - light_radius * v;
+    points[2] = P + light_dir - light_radius * u - light_radius * v;
+    points[3] = P + light_dir - light_radius * u + light_radius * v;
+
+    vec3 ret = vec3(0.0);
+
+    if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
+        const vec3 dcol = base_color;
+
+        vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, P, g_ltc[gl_LocalInvocationIndex].diff_t1, points, false);
+        diff *= dcol * g_ltc[gl_LocalInvocationIndex].diff_t2.x;// + (1.0 - dcol) * g_ltc[gl_LocalInvocationIndex].diff_t2.y;
+
+        if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+            const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, P, g_ltc[gl_LocalInvocationIndex].sheen_t1, points, false);
+            diff += _sheen * (sheen_color * g_ltc[gl_LocalInvocationIndex].sheen_t2.x + (1.0 - sheen_color) * g_ltc[gl_LocalInvocationIndex].sheen_t2.y);
+        }
+
+        ret += lobe_masks.diffuse_mul * light_color * diff;
+    }
+    if ((lobe_masks.bits & LOBE_SPECULAR_BIT) != 0 && ENABLE_SPECULAR != 0) {
+        const vec3 scol = spec_color;
+
+        vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, P, g_ltc[gl_LocalInvocationIndex].spec_t1, points, false);
+        spec *= scol * g_ltc[gl_LocalInvocationIndex].spec_t2.x + (1.0 - scol) * g_ltc[gl_LocalInvocationIndex].spec_t2.y;
+
+        ret += lobe_masks.specular_mul * light_color * spec;
+    }
+    if ((lobe_masks.bits & LOBE_CLEARCOAT_BIT) != 0 && ENABLE_CLEARCOAT != 0) {
+        const vec3 ccol = clearcoat_color;
+
+        vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, P, g_ltc[gl_LocalInvocationIndex].coat_t1, points, false);
+        coat *= ccol * g_ltc[gl_LocalInvocationIndex].coat_t2.x + (1.0 - ccol) * g_ltc[gl_LocalInvocationIndex].coat_t2.y;
+
+        ret += 0.25 * lobe_masks.specular_mul * light_color * coat;
+    }
+
+    return ret;
+}
+#endif
+
 vec3 EvaluateSunLight_Approx(const vec3 light_color, const vec3 light_dir, const float light_radius,
                              const vec3 I, const vec3 N, const lobe_masks_t lobe_masks, const float roughness, const float clearcoat_roughness2,
                              const vec3 base_color, const vec3 sheen_color, const vec3 spec_color, const vec3 clearcoat_color) {
