@@ -248,6 +248,8 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool 
         return Write_Constant(static_cast<const ast_int_constant *>(expression), out_stream);
     case eExprType::UIntConstant:
         return Write_Constant(static_cast<const ast_uint_constant *>(expression), out_stream);
+    case eExprType::HalfConstant:
+        return Write_Constant(static_cast<const ast_half_constant *>(expression), out_stream);
     case eExprType::FloatConstant:
         return Write_Constant(static_cast<const ast_float_constant *>(expression), out_stream);
     case eExprType::DoubleConstant:

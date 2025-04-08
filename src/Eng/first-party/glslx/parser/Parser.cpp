@@ -57,6 +57,7 @@ extern const char g_builtin_prototypes[] =
 
 #define IVAL(x) static_cast<ast_int_constant *>(x)->value
 #define UVAL(x) static_cast<ast_uint_constant *>(x)->value
+#define HVAL(x) static_cast<ast_half_constant *>(x)->value
 #define FVAL(x) static_cast<ast_float_constant *>(x)->value
 #define DVAL(x) static_cast<ast_double_constant *>(x)->value
 #define BVAL(x) static_cast<ast_bool_constant *>(x)->value
@@ -983,6 +984,8 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         switch (operand->type) {
         case eExprType::IntConstant:
             return astnew<ast_int_constant>(-IVAL(operand));
+        case eExprType::HalfConstant:
+            return astnew<ast_half_constant>(-HVAL(operand));
         case eExprType::FloatConstant:
             return astnew<ast_float_constant>(-FVAL(operand));
         case eExprType::DoubleConstant:
@@ -999,6 +1002,7 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         switch (operand->type) {
         case eExprType::IntConstant:
         case eExprType::UIntConstant:
+        case eExprType::HalfConstant:
         case eExprType::FloatConstant:
         case eExprType::DoubleConstant:
             return operand;
@@ -1110,6 +1114,39 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
                 return astnew<ast_bool_constant>(UVAL(lhs) || UVAL(rhs));
             case eOperator::bit_or:
                 return astnew<ast_uint_constant>(UVAL(lhs) | UVAL(rhs));
+            default:
+                fatal("invalid operation in constant expression");
+                return nullptr;
+            }
+            break;
+        case eExprType::HalfConstant:
+            switch (oper) {
+            case eOperator::multiply:
+                return astnew<ast_half_constant>(HVAL(lhs) * HVAL(rhs));
+            case eOperator::divide:
+                return astnew<ast_half_constant>(HVAL(lhs) / HVAL(rhs));
+            case eOperator::plus:
+                return astnew<ast_half_constant>(HVAL(lhs) + HVAL(rhs));
+            case eOperator::minus:
+                return astnew<ast_half_constant>(HVAL(lhs) - HVAL(rhs));
+            case eOperator::less:
+                return astnew<ast_half_constant>(HVAL(lhs) < HVAL(rhs));
+            case eOperator::greater:
+                return astnew<ast_half_constant>(HVAL(lhs) > HVAL(rhs));
+            case eOperator::less_equal:
+                return astnew<ast_half_constant>(HVAL(lhs) <= HVAL(rhs));
+            case eOperator::greater_equal:
+                return astnew<ast_half_constant>(HVAL(lhs) >= HVAL(rhs));
+            case eOperator::equal:
+                return astnew<ast_half_constant>(HVAL(lhs) == HVAL(rhs));
+            case eOperator::not_equal:
+                return astnew<ast_half_constant>(HVAL(lhs) != HVAL(rhs));
+            case eOperator::logical_and:
+                return astnew<ast_half_constant>(HVAL(lhs) && HVAL(rhs));
+            case eOperator::logical_xor:
+                return astnew<ast_half_constant>(!HVAL(lhs) != !HVAL(rhs));
+            case eOperator::logical_or:
+                return astnew<ast_half_constant>(HVAL(lhs) || HVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1854,6 +1891,8 @@ glslx::ast_expression *glslx::Parser::ParseUnaryPrefix(const Bitmask<eEndConditi
         return astnew<ast_int_constant>(tok_.as_int);
     } else if (is_type(eTokType::Const_uint)) {
         return astnew<ast_uint_constant>(tok_.as_uint);
+    } else if (is_type(eTokType::Const_half)) {
+        return astnew<ast_half_constant>(tok_.as_half);
     } else if (is_type(eTokType::Const_float)) {
         return astnew<ast_float_constant>(tok_.as_float);
     } else if (is_type(eTokType::Const_double)) {

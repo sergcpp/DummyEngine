@@ -463,6 +463,7 @@ struct ast_ext_jump_statement : ast_jump_statement {
 enum class eExprType {
     IntConstant,
     UIntConstant,
+    HalfConstant,
     FloatConstant,
     DoubleConstant,
     BoolConstant,
@@ -502,6 +503,12 @@ struct ast_uint_constant : ast_expression {
     uint32_t value;
 
     explicit ast_uint_constant(uint32_t _value) noexcept : ast_expression(eExprType::UIntConstant), value(_value) {}
+};
+
+struct ast_half_constant : ast_expression {
+    float value;
+
+    explicit ast_half_constant(float _value) noexcept : ast_expression(eExprType::HalfConstant), value(_value) {}
 };
 
 struct ast_float_constant : ast_expression {

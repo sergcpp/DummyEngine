@@ -33,6 +33,10 @@ void glslx::WriterBase::Write_Constant(const ast_bool_constant *expression, std:
     out_stream << std::boolalpha << expression->value << std::noboolalpha;
 }
 
+void glslx::WriterBase::Write_Constant(const ast_half_constant *expression, std::ostream &out_stream) {
+    out_stream << expression->value << "hf";
+}
+
 void glslx::WriterBase::Write_Constant(const ast_float_constant *expression, std::ostream &out_stream) {
     out_stream << std::setprecision(std::numeric_limits<float>::max_digits10) << expression->value;
     // TODO: there must be a better way to do this
@@ -44,4 +48,7 @@ void glslx::WriterBase::Write_Constant(const ast_float_constant *expression, std
 
 void glslx::WriterBase::Write_Constant(const ast_double_constant *expression, std::ostream &out_stream) {
     out_stream << expression->value;
+    if (expression->value != float(expression->value)) {
+        out_stream << "lf";
+    }
 }

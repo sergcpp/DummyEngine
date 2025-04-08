@@ -39,6 +39,7 @@ void glslx::Lexer::ReadSingle(token_t &out) {
     }
 
     if (isdigit(at()) || (at() == '.' && isdigit(at(1)))) {
+        bool is_half = false;
         bool is_float = false;
         bool is_double = false;
         bool is_unsigned = false;
@@ -87,7 +88,11 @@ void glslx::Lexer::ReadSingle(token_t &out) {
         }
 
         if (position() != source_.size() && isalpha(at())) {
-            if (at() == 'f' || at() == 'F') {
+            if ((at() == 'h' && at(1) == 'f') || (at() == 'H' && at(1) == 'F')) {
+                is_half = true;
+                is_octal = false;
+                loc_.advance();
+            } else if (at() == 'f' || at() == 'F') {
                 is_float = true;
                 is_octal = false;
             } else if ((at() == 'l' && at(1) == 'f') || (at() == 'L' && at(1) == 'F')) {
@@ -108,13 +113,21 @@ void glslx::Lexer::ReadSingle(token_t &out) {
             loc_.advance();
         }
 
-        if (is_hex && (is_float || is_double)) {
+        if (is_hex && (is_half || is_float || is_double)) {
             error_ = "Invalid numeric literal";
             return;
         }
 
         const int base = is_hex ? 16 : (is_octal ? 8 : 10);
-        if (is_float) {
+        if (is_half) {
+            out.type = eTokType::Const_half;
+            char *end;
+            out.as_half = strtof(numeric.data(), &end);
+            if (end == numeric.data()) {
+                error_ = "Invalid numeric literal";
+                return;
+            }
+        } else if (is_float) {
             out.type = eTokType::Const_float;
             char *end;
             out.as_float = strtof(numeric.data(), &end);

@@ -380,6 +380,10 @@ void test_parser() {
                                      "    double test_double_lf_lower = 1.5lf;\n"
                                      "    double test_double_lf_upper = 1.5LF;\n"
                                      "    float test_float_f_zero = 1.0f;\n"
+                                     "    float32_t test_f32 = 1.5;\n"
+                                     "    float64_t test_f64_lf = 1.3lf;\n"
+                                     "    float16_t test_f16_hf_lower = 1.5hf;\n"
+                                     "    float16_t test_f16_hf_upper = 1.5HF;\n"
                                      "}\n";
         static const char expected[] = "void test() {\n"
                                        "    float test_float_uninitialized;\n"
@@ -391,7 +395,13 @@ void test_parser() {
                                        "    double test_double_lf_lower = 1.5;\n"
                                        "    double test_double_lf_upper = 1.5;\n"
                                        "    float test_float_f_zero = 1.0;\n"
+                                       "    float32_t test_f32 = 1.5;\n"
+                                       "    float64_t test_f64_lf = 1.3lf;\n"
+                                       "    float16_t test_f16_hf_lower = 1.5hf;\n"
+                                       "    float16_t test_f16_hf_upper = 1.5hf;\n"
                                        "}\n";
+
+        float f = 1.3f;
 
         Parser parser(source, "float_literals.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);

@@ -18,6 +18,7 @@ enum class eTokType {
     Identifier,
     Const_int,
     Const_uint,
+    Const_half,
     Const_float,
     Const_double,
     Operator,
@@ -65,6 +66,7 @@ struct token_t {
         const char *as_identifier = nullptr;
         int32_t as_int;
         uint32_t as_uint;
+        float as_half;
         float as_float;
         double as_double;
         eKeyword as_keyword;

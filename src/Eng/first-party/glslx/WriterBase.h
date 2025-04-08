@@ -24,6 +24,7 @@ class WriterBase {
     void Write_Tabs(std::ostream &out_stream);
     void Write_Constant(const ast_int_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_uint_constant *expression, std::ostream &out_stream);
+    void Write_Constant(const ast_half_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_float_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_double_constant *expression, std::ostream &out_stream);
     void Write_Constant(const ast_bool_constant *expression, std::ostream &out_stream);
