@@ -511,7 +511,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
     OPTICK_EVENT("DrawTest::UpdateFixed");
     BaseState::UpdateFixed(dt_us);
 
-    const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
+    const Ren::Vec3d up = Ren::Vec3d{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
     prev_view_origin_ = next_view_origin_;
 
@@ -524,7 +524,8 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
         next_view_origin_ += view_dir_ * fwd_speed;
         next_view_origin_ += side * side_speed;
     } else {
-        int next_point = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
+        assert(false);
+        /*int next_point = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
 
         { // update param
             const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_], &p2 = cam_follow_path_[next_point];
@@ -542,7 +543,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
 
         next_view_origin_ = 0.95f * next_view_origin_ + 0.05f * Mix(p1, p2, cam_follow_param_);
         view_dir_ = 0.9f * view_dir_ + 0.1f * Normalize(p2 - next_view_origin_);
-        view_dir_ = Normalize(view_dir_);
+        view_dir_ = Normalize(view_dir_);*/
     }
 
     Eng::SceneData &scene = scene_manager_->scene_data();
@@ -610,14 +611,14 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
     TestUpdateAnims(delta_time_s);
 
     const Eng::FrameInfo &fr = fr_info_;
-    const Vec3f smooth_view_origin = Mix(prev_view_origin_, next_view_origin_, float(fr.time_fract));
+    const Vec3d smooth_view_origin = Mix(prev_view_origin_, next_view_origin_, fr.time_fract);
 
     // Invalidate view if camera has moved
-    invalidate_view_ |= Distance(view_origin_, smooth_view_origin) > 0.00001f;
+    invalidate_view_ |= Distance(view_origin_, smooth_view_origin) > 0.00001;
     view_origin_ = smooth_view_origin;
 
     // Make sure we use latest camera rotation (reduce lag)
-    Vec3f view_dir = view_dir_;
+    Vec3d view_dir = view_dir_;
     int view_pointer = view_pointer_;
     for (const Eng::input_event_t &evt : viewer_->input_manager()->peek_events()) {
         switch (evt.type) {
@@ -643,15 +644,15 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
             break;
         case Eng::eInputEvent::P1Move:
             if (view_pointer == 1) {
-                auto up = Vec3f{0, 1, 0};
-                Vec3f side = Normalize(Cross(view_dir, up));
+                auto up = Vec3d{0, 1, 0};
+                Vec3d side = Normalize(Cross(view_dir, up));
                 up = Cross(side, view_dir);
 
-                Mat4f rot;
-                rot = Rotate(rot, -0.005f * evt.move[0], up);
-                rot = Rotate(rot, 0.005f * evt.move[1], side);
+                Mat4d rot;
+                rot = Rotate(rot, -0.005 * evt.move[0], up);
+                rot = Rotate(rot, 0.005 * evt.move[1], side);
 
-                auto rot_m3 = Mat3f(rot);
+                auto rot_m3 = Mat3d(rot);
                 view_dir = rot_m3 * view_dir;
 
                 invalidate_view_ = true;
@@ -659,15 +660,15 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
             break;
         case Eng::eInputEvent::P2Move:
             if (view_pointer == 2) {
-                auto up = Vec3f{0, 1, 0};
-                Vec3f side = Normalize(Cross(view_dir, up));
+                auto up = Vec3d{0, 1, 0};
+                Vec3d side = Normalize(Cross(view_dir, up));
                 up = Cross(side, view_dir);
 
-                Mat4f rot;
-                rot = Rotate(rot, 0.01f * evt.move[0], up);
-                rot = Rotate(rot, -0.01f * evt.move[1], side);
+                Mat4d rot;
+                rot = Rotate(rot, 0.01 * evt.move[0], up);
+                rot = Rotate(rot, -0.01 * evt.move[1], side);
 
-                auto rot_m3 = Mat3f(rot);
+                auto rot_m3 = Mat3d(rot);
                 view_dir = rot_m3 * view_dir;
 
                 invalidate_view_ = true;
@@ -684,8 +685,8 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
     }
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir), Vec3f{0, 1, 0}, view_fov_, view_sensor_shift_,
-                              gamma_, min_exposure_, max_exposure_);
+    scene_manager_->SetupView(Vec3f(view_origin_), Vec3f(view_origin_ + view_dir), Vec3f{0, 1, 0}, view_fov_,
+                              view_sensor_shift_, gamma_, min_exposure_, max_exposure_);
 
     BaseState::UpdateAnim(dt_us);
 }
@@ -717,7 +718,7 @@ bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
         }
     }
 
-    const Ren::Vec3f view_dir_before = view_dir_;
+    const Ren::Vec3d view_dir_before = view_dir_;
 
     switch (evt.type) {
     case Eng::eInputEvent::P1Down:
@@ -764,29 +765,29 @@ bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
             fwd_touch_speed_ += evt.move[1] * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
-            auto up = Vec3f{0, 1, 0};
-            Vec3f side = Normalize(Cross(view_dir_, up));
+            auto up = Vec3d{0, 1, 0};
+            Vec3d side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 
-            Mat4f rot;
-            rot = Rotate(rot, -0.005f * evt.move[0], up);
-            rot = Rotate(rot, 0.005f * evt.move[1], side);
+            Mat4d rot;
+            rot = Rotate(rot, -0.005 * evt.move[0], up);
+            rot = Rotate(rot, 0.005 * evt.move[1], side);
 
-            auto rot_m3 = Mat3f(rot);
+            auto rot_m3 = Mat3d(rot);
             view_dir_ = rot_m3 * view_dir_;
 
             invalidate_view_ = true;
         } else if (sun_pointer_ == 2) {
-            auto up = Vec3f{0, 1, 0};
-            Vec3f side = Normalize(Cross(view_dir_, up));
+            auto up = Vec3d{0, 1, 0};
+            Vec3d side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 
-            Mat4f rot;
-            rot = Rotate(rot, -0.005f * evt.move[0], up);
-            rot = Rotate(rot, 0.005f * evt.move[1], side);
+            Mat4d rot;
+            rot = Rotate(rot, -0.005 * evt.move[0], up);
+            rot = Rotate(rot, 0.005 * evt.move[1], side);
 
-            auto rot_m3 = Mat3f(rot);
-            sun_dir_ = Normalize(rot_m3 * sun_dir_);
+            auto rot_m3 = Mat3d(rot);
+            sun_dir_ = Vec3f(Normalize(rot_m3 * Vec3d(sun_dir_)));
         }
         break;
     case Eng::eInputEvent::P2Move:
@@ -797,15 +798,15 @@ bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
             fwd_touch_speed_ += evt.move[1] * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
-            auto up = Vec3f{0, 1, 0};
-            Vec3f side = Normalize(Cross(view_dir_, up));
+            auto up = Vec3d{0, 1, 0};
+            Vec3d side = Normalize(Cross(view_dir_, up));
             up = Cross(side, view_dir_);
 
-            Mat4f rot;
-            rot = Rotate(rot, 0.01f * evt.move[0], up);
-            rot = Rotate(rot, -0.01f * evt.move[1], side);
+            Mat4d rot;
+            rot = Rotate(rot, 0.01 * evt.move[0], up);
+            rot = Rotate(rot, -0.01 * evt.move[1], side);
 
-            auto rot_m3 = Mat3f(rot);
+            auto rot_m3 = Mat3d(rot);
             view_dir_ = rot_m3 * view_dir_;
 
             invalidate_view_ = true;

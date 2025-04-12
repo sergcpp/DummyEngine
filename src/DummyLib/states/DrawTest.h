@@ -27,10 +27,10 @@ class Renderer;
 class DrawTest final : public BaseState {
     int view_pointer_ = 0, move_pointer_ = 0, sun_pointer_ = 0;
 
-    Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
+    Ren::Vec3d initial_view_pos_ = Ren::Vec3d{0, 1, 0}, initial_view_dir_ = Ren::Vec3d{0, 0, -1};
 
-    Ren::Vec3f next_view_origin_ = Ren::Vec3f{0}, prev_view_origin_ = Ren::Vec3f{0};
-    Ren::Vec3f view_origin_ = Ren::Vec3f{0}, view_dir_ = Ren::Vec3f{0, 0, -1};
+    Ren::Vec3d next_view_origin_ = Ren::Vec3d{0}, prev_view_origin_ = Ren::Vec3d{0};
+    Ren::Vec3d view_origin_ = Ren::Vec3d{0}, view_dir_ = Ren::Vec3d{0, 0, -1};
     Ren::Vec2f view_sensor_shift_ = Ren::Vec2f{};
 
     float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0, side_touch_speed_ = 0;
