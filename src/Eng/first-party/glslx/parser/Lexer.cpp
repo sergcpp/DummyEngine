@@ -28,7 +28,11 @@ int glslx::token_t::precedence() const {
     return -1;
 }
 
-glslx::Lexer::Lexer(MultiPoolAllocator<char> &alloc, std::string_view source) : source_(source), temp_tok_(alloc) {}
+glslx::Lexer::Lexer(MultiPoolAllocator<char> &alloc, std::string_view source) : source_(source), temp_tok_(alloc) {
+    for (int i = 0; i < std::size(g_keywords); ++i) {
+        keywords_by_name_.Insert(g_keywords[i].name, i);
+    }
+}
 
 void glslx::Lexer::ReadSingle(token_t &out) {
     out.string_mem.clear();
@@ -234,12 +238,10 @@ void glslx::Lexer::ReadSingle(token_t &out) {
         out.string_mem.push_back('\0');
         out.as_identifier = out.string_mem.data();
 
-        for (int i = 0; i < std::size(g_keywords); ++i) {
-            if (strcmp(g_keywords[i].name, out.as_identifier) == 0) {
-                out.type = eTokType::Keyword;
-                out.as_keyword = g_keywords[i].type;
-                break;
-            }
+        const int *keyword_index = keywords_by_name_.Find(out.as_identifier);
+        if (keyword_index) {
+            out.type = eTokType::Keyword;
+            out.as_keyword = g_keywords[*keyword_index].type;
         }
     } else if (at() == '#') {
         loc_.advance(); // skip '#'

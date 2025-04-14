@@ -95,7 +95,6 @@ class Preprocessor {
     struct token_t {
         eTokenType type;
 
-        // std::string raw_view;
         string raw_view;
 
         size_t line, pos;
@@ -109,6 +108,15 @@ class Preprocessor {
             : type(_type), raw_view(_raw_view), line(_line), pos(_pos) {}
         token_t(const eTokenType _type, string &&_raw_view, const size_t _line = 0, const size_t _pos = 0)
             : type(_type), raw_view(std::move(_raw_view)), line(_line), pos(_pos) {}
+
+        void set(const eTokenType _type, std::string_view _raw_view = {}, const size_t _line = 0,
+                 const size_t _pos = 0) {
+            type = _type;
+            raw_view = _raw_view;
+            line = _line;
+            pos = _pos;
+        }
+
         bool operator==(const token_t &rhs) const { return type == rhs.type && raw_view == rhs.raw_view; }
     };
 

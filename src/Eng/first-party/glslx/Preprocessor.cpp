@@ -257,7 +257,7 @@ void glslx::Preprocessor::GetNextToken(token_t &out_tok) {
     if (current_line_.empty()) {
         RequestSourceLine(current_line_);
         if (current_line_.empty()) {
-            out_tok = {eTokenType::End, alloc_};
+            out_tok.set(eTokenType::End);
             return;
         }
     }
@@ -346,7 +346,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
                 if (inout_line.rfind(dir.first, 0) == 0) {
                     inout_line.erase(0, dir.first.length());
                     curr_pos_ += dir.first.length();
-                    out_tok = {dir.second, dir.first, source_line_, curr_pos_};
+                    out_tok.set(dir.second, dir.first, source_line_, curr_pos_);
                     return;
                 }
             }
@@ -356,13 +356,13 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
                 if (next == '#') { // concatenation operator
                     inout_line.erase(0, 1);
                     ++curr_pos_;
-                    out_tok = {eTokenType::Concat_Op, {}, alloc_, source_line_, curr_pos_};
+                    out_tok.set(eTokenType::Concat_Op, {}, source_line_, curr_pos_);
                     return;
                 } else if (next != ' ') { // stringification operator
-                    out_tok = {eTokenType::Stringize_Op, {}, alloc_, source_line_, curr_pos_};
+                    out_tok.set(eTokenType::Stringize_Op, {}, source_line_, curr_pos_);
                     return;
                 } else {
-                    out_tok = {eTokenType::Blob, "#", alloc_, source_line_, curr_pos_};
+                    out_tok.set(eTokenType::Blob, "#", source_line_, curr_pos_);
                     return;
                 }
             }
@@ -455,7 +455,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
         return;
     }
 
-    out_tok = {eTokenType::End, alloc_};
+    out_tok.set(eTokenType::End);
 }
 
 void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, string &inout_line) {
@@ -463,13 +463,13 @@ void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, string 
 
     switch (ch) {
     case ',':
-        out_tok = {eTokenType::Comma, ",", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Comma, ",", source_line_, curr_pos_);
         return;
     case '(':
-        out_tok = {eTokenType::Bracket_Begin, "(", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Bracket_Begin, "(", source_line_, curr_pos_);
         return;
     case ')':
-        out_tok = {eTokenType::Bracket_End, ")", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Bracket_End, ")", source_line_, curr_pos_);
         return;
     case '<':
         if (!inout_line.empty()) {
@@ -477,16 +477,16 @@ void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, string 
             if (next == '<') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::LShift, "<<", alloc_, source_line_, curr_pos_};
+                out_tok.set(eTokenType::LShift, "<<", source_line_, curr_pos_);
                 return;
             } else if (next == '=') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::LessEqual, "<=", alloc_, source_line_, curr_pos_};
+                out_tok.set(eTokenType::LessEqual, "<=", source_line_, curr_pos_);
                 return;
             }
         }
-        out_tok = {eTokenType::Less, "<", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Less, "<", source_line_, curr_pos_);
         return;
     case '>':
         if (!inout_line.empty()) {
@@ -494,76 +494,76 @@ void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, string 
             if (next == '>') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::RShift, ">>", alloc_, source_line_, curr_pos_};
+                out_tok.set(eTokenType::RShift, ">>", source_line_, curr_pos_);
                 return;
             } else if (next == '=') {
                 inout_line.erase(0, 1);
                 ++curr_pos_;
-                out_tok = {eTokenType::GreaterEqual, ">=", alloc_, source_line_, curr_pos_};
+                out_tok.set(eTokenType::GreaterEqual, ">=", source_line_, curr_pos_);
                 return;
             }
         }
-        out_tok = {eTokenType::Greater, ">", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Greater, ">", source_line_, curr_pos_);
         return;
     case '\"':
-        out_tok = {eTokenType::Quotes, "\"", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Quotes, "\"", source_line_, curr_pos_);
         return;
     case '+':
-        out_tok = {eTokenType::Plus, "+", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Plus, "+", source_line_, curr_pos_);
         return;
     case '-':
-        out_tok = {eTokenType::Minus, "-", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Minus, "-", source_line_, curr_pos_);
         return;
     case '*':
-        out_tok = {eTokenType::Star, "*", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Star, "*", source_line_, curr_pos_);
         return;
     case '/':
-        out_tok = {eTokenType::Slash, "/", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Slash, "/", source_line_, curr_pos_);
         return;
     case '&':
         if (!inout_line.empty() && inout_line.front() == '&') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::And, "&&", alloc_, source_line_, curr_pos_};
+            out_tok.set(eTokenType::And, "&&", source_line_, curr_pos_);
             return;
         }
-        out_tok = {eTokenType::Ampersand, "&", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Ampersand, "&", source_line_, curr_pos_);
         return;
     case '|':
         if (!inout_line.empty() && inout_line.front() == '|') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::Or, "||", alloc_, source_line_, curr_pos_};
+            out_tok.set(eTokenType::Or, "||", source_line_, curr_pos_);
             return;
         }
-        out_tok = {eTokenType::Vline, "|", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Vline, "|", source_line_, curr_pos_);
         return;
     case '!':
         if (!inout_line.empty() && inout_line.front() == '=') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::NotEqual, "!=", alloc_, source_line_, curr_pos_};
+            out_tok.set(eTokenType::NotEqual, "!=", source_line_, curr_pos_);
             return;
         }
-        out_tok = {eTokenType::Not, "!", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Not, "!", source_line_, curr_pos_);
         return;
     case '=':
         if (!inout_line.empty() && inout_line.front() == '=') {
             inout_line.erase(0, 1);
             ++curr_pos_;
-            out_tok = {eTokenType::Equal, "==", alloc_, source_line_, curr_pos_};
+            out_tok.set(eTokenType::Equal, "==", source_line_, curr_pos_);
             return;
         }
-        out_tok = {eTokenType::Blob, "=", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Blob, "=", source_line_, curr_pos_);
         return;
     case ':':
-        out_tok = {eTokenType::Colon, ":", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Colon, ":", source_line_, curr_pos_);
         return;
     case ';':
-        out_tok = {eTokenType::Semicolon, ";", alloc_, source_line_, curr_pos_};
+        out_tok.set(eTokenType::Semicolon, ";", source_line_, curr_pos_);
         return;
     }
-    out_tok = {eTokenType::End, alloc_};
+    out_tok.set(eTokenType::End);
 }
 
 glslx::string glslx::Preprocessor::ExtractSingleLineComment(const string &line) {

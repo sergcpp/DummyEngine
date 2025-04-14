@@ -21,6 +21,7 @@ set(SOURCE_FILES AlignedAlloc.h
                  Fixup.cpp
                  glslx.h
                  glslx.cpp
+                 HashMap32.h
                  KeywordsHLSL.inl
                  PreludeGLSL.h
                  PreludeGLSL.cpp

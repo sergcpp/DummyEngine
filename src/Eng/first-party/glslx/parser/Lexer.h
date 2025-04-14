@@ -4,6 +4,7 @@
 
 #include <string>
 
+#include "../HashMap32.h"
 #include "../SmallVector.h"
 #include "PoolAlloc.h"
 
@@ -123,6 +124,8 @@ class Lexer {
     location_t loc_;
     token_t temp_tok_;
     const char *error_ = nullptr;
+
+    HashMap32<const char *, int> keywords_by_name_;
 
     void ReadNumeric(bool octal, bool hex, std::string &out_digits);
 
