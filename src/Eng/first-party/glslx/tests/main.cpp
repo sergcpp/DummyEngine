@@ -10,6 +10,7 @@ void test_hlsl_writer();
 void test_scope_exit();
 void test_small_vector();
 void test_span();
+void test_lexer();
 void test_parser();
 void test_pool_alloc();
 void test_preprocessor();
@@ -27,6 +28,7 @@ int main() {
     test_span();
     test_pool_alloc();
     test_preprocessor();
+    test_lexer();
     test_parser();
     test_fixup();
     test_hlsl_writer();

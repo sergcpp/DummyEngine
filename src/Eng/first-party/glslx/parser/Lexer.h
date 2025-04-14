@@ -4,7 +4,6 @@
 
 #include <string>
 
-#include "../HashMap32.h"
 #include "../SmallVector.h"
 #include "PoolAlloc.h"
 
@@ -125,10 +124,9 @@ class Lexer {
     token_t temp_tok_;
     const char *error_ = nullptr;
 
-    HashMap32<const char *, int> keywords_by_name_;
-
     void ReadNumeric(bool octal, bool hex, std::string &out_digits);
 
+    static std::string CalcKeywordsLookupTable();
   public:
     explicit Lexer(MultiPoolAllocator<char> &alloc) : temp_tok_(alloc) {}
     Lexer(MultiPoolAllocator<char> &alloc, std::string_view source);

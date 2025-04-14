@@ -12,12 +12,37 @@ extern const keyword_info_t g_keywords[] = {
 #include "Keywords.inl"
 };
 #undef X
+extern const int g_keywords_count = std::size(g_keywords);
+
+#define X(_0, _1) {_0, _1},
+extern const short g_keywords_lookup[][2] = {
+#include "KeywordsLookup.inl"
+};
+#undef X
 
 #define X(_0, _1, _2) {#_0, _1, _2},
 extern const operator_info_t g_operators[] = {
 #include "Operators.inl"
 };
 #undef X
+
+inline uint32_t _str_hash(uint32_t h, const char *s) {
+    static const uint32_t A = 54059;
+    static const uint32_t B = 76963;
+    while (*s) {
+        h = (h * A) ^ (s[0] * B);
+        s++;
+    }
+    return h;
+}
+
+int lookup_keyword(const char *name) {
+    const int d = g_keywords_lookup[_str_hash(0, name) % std::size(g_keywords)][0];
+    if (d < 0) {
+        return g_keywords_lookup[-d - 1][1];
+    }
+    return g_keywords_lookup[_str_hash(d, name) % std::size(g_keywords)][1];
+}
 } // namespace glslx
 
 int glslx::token_t::precedence() const {
@@ -28,11 +53,7 @@ int glslx::token_t::precedence() const {
     return -1;
 }
 
-glslx::Lexer::Lexer(MultiPoolAllocator<char> &alloc, std::string_view source) : source_(source), temp_tok_(alloc) {
-    for (int i = 0; i < std::size(g_keywords); ++i) {
-        keywords_by_name_.Insert(g_keywords[i].name, i);
-    }
-}
+glslx::Lexer::Lexer(MultiPoolAllocator<char> &alloc, std::string_view source) : source_(source), temp_tok_(alloc) {}
 
 void glslx::Lexer::ReadSingle(token_t &out) {
     out.string_mem.clear();
@@ -238,10 +259,10 @@ void glslx::Lexer::ReadSingle(token_t &out) {
         out.string_mem.push_back('\0');
         out.as_identifier = out.string_mem.data();
 
-        const int *keyword_index = keywords_by_name_.Find(out.as_identifier);
-        if (keyword_index) {
+        const int keyword_index = lookup_keyword(out.as_identifier);
+        if (strcmp(out.as_identifier, g_keywords[keyword_index].name) == 0) {
             out.type = eTokType::Keyword;
-            out.as_keyword = g_keywords[*keyword_index].type;
+            out.as_keyword = g_keywords[keyword_index].type;
         }
     } else if (at() == '#') {
         loc_.advance(); // skip '#'
@@ -616,4 +637,83 @@ void glslx::Lexer::ReadNumeric(const bool octal, const bool hex, std::string &ou
             loc_.advance();
         }
     }
+}
+
+std::string glslx::Lexer::CalcKeywordsLookupTable() {
+    const int sz = int(std::size(g_keywords));
+
+    std::vector<std::vector<int>> buckets(sz);
+    for (int i = 0; i < std::size(g_keywords); ++i) {
+        const int j = int(_str_hash(0, g_keywords[i].name) % sz);
+        buckets[j].push_back(i);
+    }
+
+    std::sort(begin(buckets), end(buckets),
+              [](const std::vector<int> &lhs, const std::vector<int> &rhs) { return lhs.size() > rhs.size(); });
+
+    std::vector<int> intermediate(sz, 0), values(sz, -1);
+
+    int i = 0;
+    for (; i < buckets.size(); ++i) {
+        const std::vector<int> &bucket = buckets[i];
+        if (bucket.size() <= 1) {
+            break;
+        }
+
+        int d = 1;
+        int item = 0;
+
+        std::vector<int> slots;
+        while (item < bucket.size()) {
+            const int slot = int(_str_hash(d, g_keywords[bucket[item]].name) % sz);
+            if (values[slot] != -1 || std::find(begin(slots), end(slots), slot) != end(slots)) {
+                ++d;
+                item = 0;
+                slots.clear();
+            } else {
+                slots.push_back(slot);
+                ++item;
+            }
+        }
+
+        intermediate[_str_hash(0, g_keywords[bucket[0]].name) % sz] = d;
+
+        for (int i = 0; i < bucket.size(); ++i) {
+            values[slots[i]] = bucket[i];
+        }
+    }
+
+    for (; i < buckets.size(); ++i) {
+        const std::vector<int> &bucket = buckets[i];
+        if (bucket.empty()) {
+            break;
+        }
+        assert(bucket.size() == 1);
+
+        auto it = std::find(begin(values), end(values), -1);
+        assert(it != end(values));
+
+        const int slot = int(std::distance(begin(values), it));
+        intermediate[_str_hash(0, g_keywords[bucket[0]].name) % sz] = -slot - 1;
+        values[slot] = bucket[0];
+    }
+
+    auto lookup_keyword = [&](const char *name) {
+        const int d = intermediate[_str_hash(0, name) % sz];
+        if (d < 0) {
+            return values[-d - 1];
+        }
+        return values[_str_hash(d, name) % sz];
+    };
+
+    std::string out;
+    for (int i = 0; i < sz; ++i) {
+        out += "X(";
+        out += std::to_string(intermediate[i]);
+        out += ", ";
+        out += std::to_string(values[i]);
+        out += ")\n";
+    }
+
+    return out;
 }
