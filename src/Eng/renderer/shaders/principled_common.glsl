@@ -279,18 +279,22 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
     vec3 ret = vec3(0.0);
 
     if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
-        // TODO: simplify this!
-        vec3 u = normalize(I - from_light * dot(I, from_light));
-        vec3 v = cross(from_light, u);
+        const vec3 surface_to_center = litem.pos_and_radius.xyz - P;
+        const float d = length(surface_to_center);
 
-        u *= litem.pos_and_radius.w;
-        v *= litem.pos_and_radius.w;
+        const float temp = sqrt(d * d - litem.pos_and_radius.w * litem.pos_and_radius.w);
+        const float disk_radius = (temp * litem.pos_and_radius.w) / d;
+        const float k = (temp * disk_radius) / (litem.pos_and_radius.w * d);
+        const vec3 disk_center = P + k * surface_to_center;
+
+        const vec3 u = normalize(I - from_light * dot(I, from_light)) * disk_radius;
+        const vec3 v = cross(from_light, u);
 
         vec3 points[4];
-        points[0] = litem.pos_and_radius.xyz + u + v;
-        points[1] = litem.pos_and_radius.xyz + u - v;
-        points[2] = litem.pos_and_radius.xyz - u - v;
-        points[3] = litem.pos_and_radius.xyz - u + v;
+        points[0] = disk_center + u + v;
+        points[1] = disk_center + u - v;
+        points[2] = disk_center - u - v;
+        points[3] = disk_center - u + v;
 
         if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
             const vec3 dcol = base_color;
@@ -507,18 +511,22 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
     vec3 ret = vec3(0.0);
 
     if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
-        // TODO: simplify this!
-        vec3 u = normalize(I - from_light * dot(I, from_light));
-        vec3 v = cross(from_light, u);
+        const vec3 surface_to_center = litem.pos_and_radius.xyz - P;
+        const float d = length(surface_to_center);
 
-        u *= litem.pos_and_radius.w;
-        v *= litem.pos_and_radius.w;
+        const float temp = sqrt(d * d - litem.pos_and_radius.w * litem.pos_and_radius.w);
+        const float disk_radius = (temp * litem.pos_and_radius.w) / d;
+        const float k = (temp * disk_radius) / (litem.pos_and_radius.w * d);
+        const vec3 disk_center = P + k * surface_to_center;
+
+        const vec3 u = normalize(I - from_light * dot(I, from_light)) * disk_radius;
+        const vec3 v = cross(from_light, u);
 
         vec3 points[4];
-        points[0] = litem.pos_and_radius.xyz + u + v;
-        points[1] = litem.pos_and_radius.xyz + u - v;
-        points[2] = litem.pos_and_radius.xyz - u - v;
-        points[3] = litem.pos_and_radius.xyz - u + v;
+        points[0] = disk_center + u + v;
+        points[1] = disk_center + u - v;
+        points[2] = disk_center - u - v;
+        points[3] = disk_center - u + v;
 
         if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
             const vec3 dcol = base_color;
