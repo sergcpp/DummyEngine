@@ -125,31 +125,31 @@ inline void PoolAllocator::MemChunk::Free(void *p, size_t _block_size) {
 
 struct SharedState {
     uint32_t users_count = 0;
+
+    size_t mem_step;
+    size_t max_object_size;
+
     std::vector<PoolAllocator> allocators;
 };
 
-template <typename T, typename FallBackAllocator = std::allocator<T>> class MultiPoolAllocator {
+template <typename T, typename FallBackAllocator = std::allocator<T>> class MultiPoolAllocator : FallBackAllocator {
     template <typename U, typename FallBackAllocator2> friend class MultiPoolAllocator;
 
-    size_t mem_step_;
-    size_t max_object_size_;
     SharedState *shared_state_;
-    FallBackAllocator fallback_allocator_;
 
   public:
-    MultiPoolAllocator(size_t mem_step, size_t max_object_size)
-        : mem_step_(mem_step), max_object_size_(max_object_size) {
+    MultiPoolAllocator(const size_t mem_step, const size_t max_object_size) {
         shared_state_ = new SharedState;
         shared_state_->users_count = 1;
+        shared_state_->mem_step = mem_step;
+        shared_state_->max_object_size = max_object_size;
 
         for (size_t s = mem_step; s < max_object_size + mem_step; s += mem_step) {
             shared_state_->allocators.emplace_back(s, 255);
         }
     }
 
-    MultiPoolAllocator(const MultiPoolAllocator &other)
-        : mem_step_(other.mem_step_), max_object_size_(other.max_object_size_), shared_state_(other.shared_state_),
-          fallback_allocator_(other.fallback_allocator_) {
+    MultiPoolAllocator(const MultiPoolAllocator &other) : FallBackAllocator(other), shared_state_(other.shared_state_) {
         shared_state_->users_count++;
     }
 
@@ -157,8 +157,7 @@ template <typename T, typename FallBackAllocator = std::allocator<T>> class Mult
 
     template <typename U>
     /*explicit*/ MultiPoolAllocator(const MultiPoolAllocator<U> &other)
-        : mem_step_(other.mem_step_), max_object_size_(other.max_object_size_), shared_state_(other.shared_state_),
-          fallback_allocator_(other.fallback_allocator_) {
+        : FallBackAllocator(other), shared_state_(other.shared_state_) {
         shared_state_->users_count++;
     }
 
@@ -169,22 +168,22 @@ template <typename T, typename FallBackAllocator = std::allocator<T>> class Mult
     }
 
     T *allocate(const size_t n) {
-        if (n == 0)
+        if (n == 0) {
             return nullptr;
-
-        if (sizeof(T) * n > max_object_size_) {
-            return fallback_allocator_.allocate(n);
+        }
+        if (sizeof(T) * n > shared_state_->max_object_size) {
+            return FallBackAllocator::allocate(n);
         } else {
-            size_t i = (sizeof(T) * n + mem_step_ - 1) / mem_step_ - 1;
+            const size_t i = (sizeof(T) * n + shared_state_->mem_step - 1) / shared_state_->mem_step - 1;
             return (T *)shared_state_->allocators[i].Alloc();
         }
     }
 
     void deallocate(T *const p, const size_t n) {
-        if (sizeof(T) * n > max_object_size_) {
-            fallback_allocator_.deallocate(p, n);
+        if (sizeof(T) * n > shared_state_->max_object_size) {
+            FallBackAllocator::deallocate(p, n);
         } else {
-            size_t i = (sizeof(T) * n + mem_step_ - 1) / mem_step_ - 1;
+            const size_t i = (sizeof(T) * n + shared_state_->mem_step - 1) / shared_state_->mem_step - 1;
             shared_state_->allocators[i].Free(p);
         }
     }

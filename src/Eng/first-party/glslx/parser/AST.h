@@ -14,7 +14,7 @@ template <typename T> static inline void ast_destroy(MultiPoolAllocator<char> &a
 }
 
 struct ast_node_base {
-    int gc = 0;
+    int8_t gc = 0;
 };
 
 struct ast_memory {
@@ -52,7 +52,7 @@ template <typename T> struct ast_node : public ast_node_base {
 };
 
 // https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#storage-qualifiers
-enum class eStorage {
+enum class eStorage : int8_t {
     None = -1, // local read/write memory, or an input parameter to a function
     Const,     // a variable whose value cannot be changed
     In,        // linkage into a shader from a previous stage, variable is copied in
@@ -77,7 +77,7 @@ enum class eStorage {
                     // written in the callable stage
 };
 
-enum class eAuxStorage {
+enum class eAuxStorage : int8_t {
     None = -1,
     Centroid, // centroid-based interpolation
     Sample,   // per-sample interpolation
@@ -85,7 +85,7 @@ enum class eAuxStorage {
 };
 
 // https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#interpolation-qualifiers
-enum class eInterpolation {
+enum class eInterpolation : int8_t {
     None = -1,
     Smooth,       // perspective correct interpolation
     Flat,         // no interpolation
@@ -93,7 +93,7 @@ enum class eInterpolation {
 };
 
 // https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#precision-and-precision-qualifiers
-enum class ePrecision {
+enum class ePrecision : int8_t {
     None = -1,
     Highp,   // 32-bit two�s complement for integers, 32-bit IEEE 754 floating-point for float
     Mediump, // SPIR-V RelaxedPrecision when targeting Vulkan, otherwise none.
@@ -101,7 +101,7 @@ enum class ePrecision {
 };
 
 // https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#memory-qualifiers
-enum class eMemory : uint32_t {
+enum class eMemory : uint8_t {
     Coherent, // memory variable where reads and writes are coherent with reads and writes from other shader invocations
     Volatile, // memory variable whose underlying value may be changed at any point during shader execution by some
               // source other than the current shader invocation
@@ -113,7 +113,7 @@ enum class eMemory : uint32_t {
               // underlying memory
 };
 
-enum class eParamQualifier {
+enum class eParamQualifier : uint8_t {
     None,
     Const, // for function parameters that cannot be written to
     In,    // for function parameters passed into a function
@@ -121,7 +121,7 @@ enum class eParamQualifier {
     Inout  // for function parameters passed both into and out of a function
 };
 
-enum class eCtrlFlowAttribute {
+enum class eCtrlFlowAttribute : uint16_t {
     // loop attributes
     Unroll,
     DontUnroll,
@@ -139,7 +139,7 @@ enum class eCtrlFlowAttribute {
     Branch = DontFlatten
 };
 
-enum class eFunctionAttribute { Builtin };
+enum class eFunctionAttribute : uint8_t { Builtin };
 
 const Bitmask<eCtrlFlowAttribute> LoopAttributesMask =
     Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll | eCtrlFlowAttribute::DependencyInfinite |
@@ -160,7 +160,7 @@ struct ast_interface_block;
 struct ast_variable;
 struct ast_default_precision;
 
-enum class eTrUnitType {
+enum class eTrUnitType : uint8_t {
     Compute,
     Vertex,
     TessControl,
@@ -224,15 +224,15 @@ struct ast_interface_block : ast_struct {
 };
 
 struct ast_version_directive : ast_type {
-    int number = -1;
     eVerType type = eVerType::Core;
+    int number = -1;
 
     ast_version_directive() noexcept : ast_type(false) {}
 };
 
 struct ast_extension_directive : ast_type {
-    char *name = nullptr;
     eExtBehavior behavior = eExtBehavior::Invalid;
+    char *name = nullptr;
 
     ast_extension_directive() noexcept : ast_type(false) {}
 };
@@ -244,15 +244,16 @@ struct ast_default_precision : ast_type {
     ast_default_precision() noexcept : ast_type(false) {}
 };
 
-enum class eVariableType { Function, Parameter, Global, Field };
+enum class eVariableType : uint8_t { Function, Parameter, Global, Field };
 
 struct ast_variable : ast_node<ast_variable> {
-    const char *name = nullptr;
-    ast_type *base_type = nullptr;
     bool is_array = false;
     bool is_precise = false;
     eVariableType type;
     ePrecision precision = ePrecision::None;
+
+    const char *name = nullptr;
+    ast_type *base_type = nullptr;
     vector<ast_constant_expression *> array_sizes;
 
     ast_variable(eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept : type(_type), array_sizes(_alloc) {}
@@ -260,8 +261,8 @@ struct ast_variable : ast_node<ast_variable> {
 };
 
 struct ast_function_variable : ast_variable {
-    ast_expression *initial_value = nullptr;
     bool is_const = false;
+    ast_expression *initial_value = nullptr;
 
     explicit ast_function_variable(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_variable(eVariableType::Function, _alloc) {}
@@ -301,14 +302,14 @@ struct ast_function : ast_node<ast_function> {
     vector<ast_function_parameter *> parameters;
     vector<ast_statement *> statements;
     bool is_prototype = false;
-    ast_function *prototype = nullptr;
     Bitmask<eFunctionAttribute> attributes;
+    ast_function *prototype = nullptr;
 
     explicit ast_function(MultiPoolAllocator<char> &_alloc) noexcept : parameters(_alloc), statements(_alloc) {}
     OPERATOR_NEW(ast_function)
 };
 
-enum class eStatement {
+enum class eStatement : uint8_t {
     Compound,
     Empty,
     Declaration,
@@ -364,19 +365,19 @@ struct ast_expression_statement : ast_simple_statement {
 };
 
 struct ast_if_statement : ast_simple_statement {
+    Bitmask<eCtrlFlowAttribute> attributes;
     ast_expression *condition = nullptr;
     ast_statement *then_statement = nullptr;
     ast_statement *else_statement = nullptr;
-    Bitmask<eCtrlFlowAttribute> attributes;
 
     explicit ast_if_statement(Bitmask<eCtrlFlowAttribute> _attributes) noexcept
         : ast_simple_statement(eStatement::If), attributes(_attributes) {}
 };
 
 struct ast_switch_statement : ast_simple_statement {
+    Bitmask<eCtrlFlowAttribute> attributes;
     ast_expression *expression = nullptr;
     vector<ast_statement *> statements;
-    Bitmask<eCtrlFlowAttribute> attributes;
 
     ast_switch_statement(MultiPoolAllocator<char> &_alloc, Bitmask<eCtrlFlowAttribute> _attributes) noexcept
         : ast_simple_statement(eStatement::Switch), statements(_alloc), attributes(_attributes) {}
@@ -384,8 +385,8 @@ struct ast_switch_statement : ast_simple_statement {
 };
 
 struct ast_case_label_statement : ast_simple_statement {
-    ast_constant_expression *condition = nullptr;
     bool is_default = false;
+    ast_constant_expression *condition = nullptr;
 
     ast_case_label_statement() noexcept : ast_simple_statement(eStatement::CaseLabel) {}
 };
@@ -460,7 +461,7 @@ struct ast_ext_jump_statement : ast_jump_statement {
         : ast_jump_statement(eStatement::ExtJump), keyword(_keyword) {}
 };
 
-enum class eExprType {
+enum class eExprType : uint8_t {
     ShortConstant,
     UShortConstant,
     IntConstant,

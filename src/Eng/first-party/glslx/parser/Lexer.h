@@ -33,22 +33,22 @@ enum class eTokType {
 };
 
 #define X(_0, _1, _2) K_##_0,
-enum class eKeyword {
+enum class eKeyword : uint16_t {
 #include "Keywords.inl"
 };
 #undef X
 
 #define X(_0, _1, _2) _0,
-enum class eOperator {
+enum class eOperator : uint8_t {
 #include "Operators.inl"
 };
 #undef X
 
-enum class eDirType { Version, Extension };
+enum class eDirType : uint8_t { Version, Extension };
 
-enum class eVerType { Core, Compatibility, ES };
+enum class eVerType : uint8_t { Core, Compatibility, ES };
 
-enum class eExtBehavior { Invalid, Enable, Require, Warn, Disable };
+enum class eExtBehavior : uint8_t { Invalid, Enable, Require, Warn, Disable };
 
 struct directive_t {
     eDirType type;
