@@ -1239,6 +1239,7 @@ void BaseState::InitRenderer_PT() {
         s.vk_device.instance = api_ctx->instance;
         s.vk_device.physical_device = api_ctx->physical_device;
         s.vk_device.device = api_ctx->device;
+        s.vk_device.pipeline_cache = api_ctx->pipeline_cache;
         s.vk_functions = {
             api_ctx->vkGetInstanceProcAddr,
             api_ctx->vkGetDeviceProcAddr,
