@@ -108,6 +108,7 @@ class Context {
 
 #if defined(REN_VK_BACKEND) || defined(REN_GL_BACKEND)
     ApiContext *api_ctx() { return api_ctx_.get(); }
+    uint64_t device_id() const;
 #elif defined(REN_SW_BACKEND)
 
 #endif
@@ -187,13 +188,13 @@ class Context {
 
     /*** RenderPass ***/
     RenderPassRef LoadRenderPass(const RenderTarget &depth_rt, Span<const RenderTarget> color_rts) {
-        SmallVector<Ren::RenderTargetInfo, 4> infos;
+        SmallVector<RenderTargetInfo, 4> infos;
         for (int i = 0; i < color_rts.size(); ++i) {
             infos.emplace_back(color_rts[i]);
         }
-        return LoadRenderPass(Ren::RenderTargetInfo{depth_rt}, infos);
+        return LoadRenderPass(RenderTargetInfo{depth_rt}, infos);
     }
-    RenderPassRef LoadRenderPass(const RenderTargetInfo &depth_rt, Span<const Ren::RenderTargetInfo> color_rts);
+    RenderPassRef LoadRenderPass(const RenderTargetInfo &depth_rt, Span<const RenderTargetInfo> color_rts);
 
     /*** Pipeline ***/
     PipelineRef LoadPipeline(const ProgramRef &prog_ref, int subgroup_size = -1);
@@ -243,11 +244,11 @@ class Context {
     void ReleaseAll();
 
     int next_frontend_frame = 0;
-    int in_flight_frontend_frame[Ren::MaxFramesInFlight];
+    int in_flight_frontend_frame[MaxFramesInFlight];
     int backend_frame() const;
     int active_present_image() const;
 
-    Ren::TexRef backbuffer_ref() const;
+    TexRef backbuffer_ref() const;
 
     int WriteTimestamp(bool start);
     uint64_t GetTimestampIntervalDurationUs(int query_start, int query_end) const;
@@ -289,6 +290,9 @@ class Context {
         uint32_t max_combined_image_samplers = 16;
         bool subgroup = false;
     } capabilities;
+
+    bool InitPipelineCache(Span<const uint8_t> in_data);
+    size_t WritePipelineCache(Span<uint8_t> out_data);
 #elif defined(REN_SW_BACKEND)
     int max_uniform_vec4 = 0;
 #endif

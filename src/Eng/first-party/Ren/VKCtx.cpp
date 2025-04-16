@@ -197,6 +197,10 @@ bool Ren::ApiContext::Load(ILog *log) {
     LOAD_VK_FUN(vkDestroyQueryPool)
     LOAD_VK_FUN(vkGetQueryPoolResults)
 
+    LOAD_VK_FUN(vkCreatePipelineCache)
+    LOAD_VK_FUN(vkGetPipelineCacheData)
+    LOAD_VK_FUN(vkDestroyPipelineCache)
+
     LOAD_VK_FUN(vkCmdPipelineBarrier)
     LOAD_VK_FUN(vkCmdBeginRenderPass)
     LOAD_VK_FUN(vkCmdBindPipeline)

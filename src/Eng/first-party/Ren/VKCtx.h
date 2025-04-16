@@ -21,6 +21,7 @@ struct ApiContext {
     VkPhysicalDeviceLimits phys_device_limits = {};
     VkPhysicalDeviceProperties device_properties = {};
     VkPhysicalDeviceMemoryProperties mem_properties = {};
+    VkPipelineCache pipeline_cache = {};
     uint32_t present_family_index = 0, graphics_family_index = 0;
 
     VkDevice device = {};
@@ -241,6 +242,10 @@ struct ApiContext {
     PFN_vkCreateQueryPool vkCreateQueryPool = {};
     PFN_vkDestroyQueryPool vkDestroyQueryPool = {};
     PFN_vkGetQueryPoolResults vkGetQueryPoolResults = {};
+
+    PFN_vkCreatePipelineCache vkCreatePipelineCache = {};
+    PFN_vkGetPipelineCacheData vkGetPipelineCacheData = {};
+    PFN_vkDestroyPipelineCache vkDestroyPipelineCache = {};
 
     PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = {};
     PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = {};

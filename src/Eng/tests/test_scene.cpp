@@ -129,6 +129,8 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
         renderer->settings.vol_quality = eVolQuality::Ultra;
     }
 
+    shader_loader.LoadPipelineCache("assets_pc/");
+
     path_config_t paths;
     SceneManager scene_manager(ren_ctx, shader_loader, nullptr, threads, paths);
 
@@ -429,6 +431,8 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
         renderer->ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
         end_frame();
     }
+
+    shader_loader.WritePipelineCache("assets_pc/");
 
     Ren::BufRef stage_buf = ren_ctx.LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * ref_w * ref_h);
 

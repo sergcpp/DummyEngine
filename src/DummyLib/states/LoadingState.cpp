@@ -40,6 +40,8 @@ LoadingState::LoadingState(Viewer *viewer) : viewer_(viewer), alloc_(32, 512), p
 LoadingState::~LoadingState() = default;
 
 void LoadingState::Enter() {
+    sh_loader_->LoadPipelineCache("assets_pc/");
+
     Ren::TexParams params;
     params.w = params.h = 1;
     params.format = Ren::eTexFormat::RGBA8;
@@ -91,7 +93,7 @@ void LoadingState::Enter() {
     loading_start_ = Sys::GetTimeUs();
 }
 
-void LoadingState::Exit() {}
+void LoadingState::Exit() { sh_loader_->WritePipelineCache("assets_pc/"); }
 
 void LoadingState::Draw() {
     { // Update loop using fixed timestep

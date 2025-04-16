@@ -212,8 +212,8 @@ Ren::VertexInputRef Ren::Context::LoadVertexInput(Span<const VtxAttribDesc> attr
 
 Ren::RenderPassRef Ren::Context::LoadRenderPass(const RenderTargetInfo &depth_rt,
                                                 Span<const RenderTargetInfo> color_rts) {
-    Ren::RenderPassRef ref =
-        render_passes_.LowerBound([&](const Ren::RenderPass &rp) { return rp.LessThan(depth_rt, color_rts); });
+    RenderPassRef ref =
+        render_passes_.LowerBound([&](const RenderPass &rp) { return rp.LessThan(depth_rt, color_rts); });
     if (!ref || !ref->Equals(depth_rt, color_rts)) {
         ref = render_passes_.Insert(api_ctx_.get(), depth_rt, color_rts, log_);
     }
@@ -232,8 +232,8 @@ Ren::PipelineRef Ren::Context::LoadPipeline(const ProgramRef &prog_ref, const in
 Ren::PipelineRef Ren::Context::LoadPipeline(const RastState &rast_state, const ProgramRef &prog,
                                             const VertexInputRef &vtx_input, const RenderPassRef &render_pass,
                                             const uint32_t subpass_index) {
-    Ren::PipelineRef ref = pipelines_.LowerBound(
-        [&](const Ren::Pipeline &pi) { return pi.LessThan(rast_state, prog, vtx_input, render_pass); });
+    PipelineRef ref = pipelines_.LowerBound(
+        [&](const Pipeline &pi) { return pi.LessThan(rast_state, prog, vtx_input, render_pass); });
     if (!ref || !ref->Equals(rast_state, prog, vtx_input, render_pass)) {
         ref = pipelines_.Insert(api_ctx_.get(), rast_state, prog, vtx_input, render_pass, subpass_index, log_);
     }
@@ -426,7 +426,7 @@ void Ren::Context::ReleaseAnims() {
 
 Ren::BufRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const uint32_t initial_size,
                                      const uint32_t size_alignment, MemAllocators *mem_allocs) {
-    Ren::BufRef ref = buffers_.FindByName(name);
+    BufRef ref = buffers_.FindByName(name);
     if (!ref) {
         ref = buffers_.Insert(name, api_ctx_.get(), type, initial_size, size_alignment, mem_allocs);
     } else if (ref->size() < initial_size) {
@@ -439,7 +439,7 @@ Ren::BufRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type,
 Ren::BufRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const BufHandle &handle,
                                      MemAllocation &&alloc, const uint32_t initial_size,
                                      const uint32_t size_alignment) {
-    Ren::BufRef ref = buffers_.FindByName(name);
+    BufRef ref = buffers_.FindByName(name);
     if (!ref) {
         ref = buffers_.Insert(name, api_ctx_.get(), type, handle, std::move(alloc), initial_size, size_alignment);
     } else if (ref->size() < initial_size) {

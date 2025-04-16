@@ -22,6 +22,7 @@
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Load.h>
 #include <Eng/utils/Random.h>
+#include <Eng/utils/ShaderLoader.h>
 #include <Eng/widgets/CmdlineUI.h>
 #include <Eng/widgets/DebugFrameUI.h>
 #include <Gui/Image9Patch.h>
@@ -809,6 +810,8 @@ void BaseState::Exit() {
             background_thread_.join();
         }
     }
+
+    shader_loader_->WritePipelineCache("assets_pc/");
 }
 
 void BaseState::UpdateAnim(const uint64_t dt_us) {

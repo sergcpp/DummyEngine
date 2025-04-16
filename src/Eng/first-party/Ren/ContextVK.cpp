@@ -46,6 +46,32 @@ VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT f
 
 const std::pair<uint32_t, const char *> KnownVendors[] = {
     {0x1002, "AMD"}, {0x10DE, "NVIDIA"}, {0x8086, "INTEL"}, {0x13B5, "ARM"}};
+
+static const uint32_t PipelineCacheVersion = 1;
+
+struct pipeline_cache_header_t {
+    uint32_t version;
+    uint32_t data_size;
+    uint32_t data_hash;
+    uint32_t vendor_id;
+    uint32_t device_id;
+    uint32_t driver_version;
+    uint32_t driver_abi;
+    uint8_t uuid[VK_UUID_SIZE];
+};
+
+uint32_t adler32(uint32_t h, Span<const uint8_t> buffer) {
+    uint32_t s1 = h & 0xffff;
+    uint32_t s2 = (h >> 16) & 0xffff;
+    for (ptrdiff_t n = 0; n < buffer.size(); n++) {
+        s1 = (s1 + buffer[n]) % 65521;
+        s2 = (s2 + s1) % 65521;
+    }
+    return (s2 << 16) | s1;
+}
+
+uint32_t adler32(Span<const uint8_t> buffer) { return adler32(1, buffer); }
+
 } // namespace Ren
 
 Ren::Context::Context() {
@@ -79,6 +105,8 @@ Ren::Context::~Context() {
         }
 
         default_mem_allocs_ = {};
+
+        api_ctx_->vkDestroyPipelineCache(api_ctx_->device, api_ctx_->pipeline_cache, nullptr);
 
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &api_ctx_->setup_cmd_buf);
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, MaxFramesInFlight,
@@ -441,6 +469,67 @@ uint64_t Ren::Context::GetTimestampIntervalDurationUs(const int query_beg, const
 }
 
 void Ren::Context::WaitIdle() { api_ctx_->vkDeviceWaitIdle(api_ctx_->device); }
+
+uint64_t Ren::Context::device_id() const {
+    return (uint64_t(api_ctx_->device_properties.vendorID) << 32) | api_ctx_->device_properties.deviceID;
+}
+
+bool Ren::Context::InitPipelineCache(Ren::Span<const uint8_t> data) {
+    VkPipelineCacheCreateInfo cache_create_info = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
+
+    if (data.size() > sizeof(pipeline_cache_header_t)) {
+        pipeline_cache_header_t header = {};
+        memcpy(&header, data.data(), sizeof(pipeline_cache_header_t));
+        if (header.version == PipelineCacheVersion &&
+            data.size() >= ptrdiff_t(sizeof(pipeline_cache_header_t) + header.data_size)) {
+            const uint32_t orig_hash = header.data_hash;
+            header.data_hash = 0;
+
+            uint32_t data_hash =
+                adler32(Span<const uint8_t>{(const uint8_t *)&header, sizeof(pipeline_cache_header_t)});
+            data_hash = adler32(data_hash,
+                                Span<const uint8_t>{data.data() + sizeof(pipeline_cache_header_t), header.data_size});
+            if (data_hash == orig_hash && header.vendor_id == api_ctx_->device_properties.vendorID &&
+                header.device_id == api_ctx_->device_properties.deviceID &&
+                header.driver_version == api_ctx_->device_properties.driverVersion &&
+                memcmp(header.uuid, api_ctx_->device_properties.pipelineCacheUUID, VK_UUID_SIZE) == 0) {
+                cache_create_info.pInitialData = data.data() + sizeof(pipeline_cache_header_t);
+                cache_create_info.initialDataSize = header.data_size;
+            }
+        }
+    }
+
+    const VkResult res =
+        api_ctx_->vkCreatePipelineCache(api_ctx_->device, &cache_create_info, nullptr, &api_ctx_->pipeline_cache);
+    return res == VK_SUCCESS;
+}
+
+size_t Ren::Context::WritePipelineCache(Span<uint8_t> out_data) {
+    Ren::Span<uint8_t> orig_data = out_data;
+    if (!out_data.empty()) {
+        out_data = Ren::Span<uint8_t>{out_data.data() + sizeof(pipeline_cache_header_t),
+                                      out_data.size() - sizeof(pipeline_cache_header_t)};
+    }
+    size_t data_size = out_data.size();
+    const VkResult res =
+        api_ctx_->vkGetPipelineCacheData(api_ctx_->device, api_ctx_->pipeline_cache, &data_size, out_data.data());
+    if (res == VK_SUCCESS && !orig_data.empty()) {
+        pipeline_cache_header_t header = {};
+        header.version = PipelineCacheVersion;
+        header.data_size = uint32_t(data_size);
+        header.data_hash = 0;
+        header.vendor_id = api_ctx_->device_properties.vendorID;
+        header.device_id = api_ctx_->device_properties.deviceID;
+        header.driver_version = api_ctx_->device_properties.driverVersion;
+        header.driver_abi = sizeof(void *);
+        memcpy(header.uuid, api_ctx_->device_properties.pipelineCacheUUID, VK_UUID_SIZE);
+
+        memcpy(orig_data.data(), &header, sizeof(pipeline_cache_header_t));
+        header.data_hash = adler32(orig_data);
+        memcpy(orig_data.data() + offsetof(pipeline_cache_header_t, data_hash), &header.data_hash, sizeof(uint32_t));
+    }
+    return res == VK_SUCCESS ? sizeof(pipeline_cache_header_t) + data_size : 0;
+}
 
 #ifdef _MSC_VER
 #pragma warning(pop)

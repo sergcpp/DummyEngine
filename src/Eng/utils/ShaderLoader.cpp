@@ -1,5 +1,7 @@
 #include "ShaderLoader.h"
 
+#include <fstream>
+
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/MemBuf.h>
@@ -41,6 +43,60 @@ Ren::eShaderType ShaderTypeFromName(std::string_view name) {
     return type;
 }
 } // namespace ShaderLoaderInternal
+
+void Eng::ShaderLoader::LoadPipelineCache(const char *base_path) {
+#if defined(REN_VK_BACKEND)
+    { // Load pipeline cache
+        std::vector<uint8_t> cache_data;
+
+        std::string file_name = base_path;
+        file_name += std::to_string(ctx_.device_id());
+        file_name += ".vk_cache";
+
+        std::ifstream in_file(file_name, std::ios::binary | std::ios::ate);
+        if (in_file) {
+            const size_t in_file_size = size_t(in_file.tellg());
+            in_file.seekg(0, std::ios::beg);
+            cache_data.resize(in_file_size);
+            in_file.read((char *)cache_data.data(), in_file_size);
+        }
+
+        ctx_.InitPipelineCache(cache_data);
+    }
+#endif
+}
+
+void Eng::ShaderLoader::WritePipelineCache(const char *base_path) {
+#if defined(REN_VK_BACKEND)
+    const size_t data_size = ctx_.WritePipelineCache({});
+    if (data_size) {
+        std::vector<uint8_t> data(data_size);
+        const size_t written_size = ctx_.WritePipelineCache(data);
+        if (written_size != data_size) {
+            ctx_.log()->Error("Failed to write pipeline cache");
+        }
+
+        std::string file_name = base_path;
+        file_name += std::to_string(ctx_.device_id());
+        file_name += ".vk_cache";
+
+        { // Write out file
+            std::ofstream out_file(file_name + "_temp", std::ios::binary);
+            out_file.write((char *)data.data(), data_size);
+            if (!out_file.good() || out_file.tellp() != data_size) {
+                ctx_.log()->Error("Failed to write pipeline cache");
+            }
+        }
+
+        remove(file_name.c_str());
+        if (rename((file_name + "_temp").c_str(), file_name.c_str()) != 0) {
+            ctx_.log()->Error("Failed to rename pipeline cache");
+        }
+    } else {
+        ctx_.log()->Error("Failed to write pipeline cache");
+    }
+#endif
+}
 
 Ren::VertexInputRef Eng::ShaderLoader::LoadVertexInput(Ren::Span<const Ren::VtxAttribDesc> attribs,
                                                        const Ren::BufRef &elem_buf) {

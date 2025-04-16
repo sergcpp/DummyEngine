@@ -33,6 +33,9 @@ class ShaderLoader {
         pipelines_.reserve(2048);
     }
 
+    void LoadPipelineCache(const char *base_path);
+    void WritePipelineCache(const char *base_path);
+
     Ren::VertexInputRef LoadVertexInput(Ren::Span<const Ren::VtxAttribDesc> attribs, const Ren::BufRef &elem_buf);
 
     Ren::RenderPassRef LoadRenderPass(const Ren::RenderTarget &depth_rt, Ren::Span<const Ren::RenderTarget> color_rts) {
