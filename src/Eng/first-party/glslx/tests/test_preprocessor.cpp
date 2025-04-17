@@ -23,30 +23,30 @@ void test_preprocessor() {
                                      "void main/* this is a comment*/(/*void*/) {\n"
                                      "    return/*   */ 42;\n"
                                      "}";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == source);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == source);
+        require(preprocessor->error().empty());
     }
     { // no macros (2)
         static const char source[] = "1.0001 1.00001f vec4(1.0f, 0.2, 0.223, 1.0001f);";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == source);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == source);
+        require(preprocessor->error().empty());
     }
     { // no macros (3)
         static const char source[] = "float c = nebula(layer2_coord * 3.0) * 0.35 - 0.05";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == source);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == source);
+        require(preprocessor->error().empty());
     }
     { // no macros (4)
         static const char source[] = R"(
 		void main() {
 			printf("test \n"); 
 		})";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == source);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == source);
+        require(preprocessor->error().empty());
     }
     { // no macros (5)
         static const char source[] = R"(
@@ -57,15 +57,15 @@ void test_preprocessor() {
 		float getNumber() {
 			return 1.0;
 		})";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == source);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == source);
+        require(preprocessor->error().empty());
     }
     { // no macros (6)
         static const char source[] = "A;// Commentary";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == source);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == source);
+        require(preprocessor->error().empty());
     }
     { // object-like macro
         static const char source[] = "#define VALUE 42\n"
@@ -76,35 +76,35 @@ void test_preprocessor() {
         static const char expected[] = "void main() {\n"
                                        "    return 42;\n"
                                        "}";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // object-like macro (2)
         static const char source[] = "#   define Foo";
         static const char expected[] = "";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
-        require(preprocessor.macros().size() == 1);
-        require(HasMacro(preprocessor, "Foo"));
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
+        require(preprocessor->macros().size() == 1);
+        require(HasMacro(*preprocessor, "Foo"));
     }
     { // default-initialized macro
         static const char source[] = "#define VALUE\n"
                                      "VALUE";
         static const char expected[] = "";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // line directive
         static const char source[] = "__LINE__\n"
                                      "__LINE__\n"
                                      "__LINE__";
         static const char expected[] = "1\n2\n3";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro
         static const char source[] = "#define ADD(X, Y) X + Y\n"
@@ -115,48 +115,48 @@ void test_preprocessor() {
         static const char expected[] = "void main() {\n"
                                        "    return 2 + 3;\n"
                                        "}";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro (2)
         static const char source[] = "#define FOO(X, Y) Foo.getValue(X, Y)\n"
                                      "FOO(42, input.value)";
         static const char expected[] = "Foo.getValue(42, input.value)";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro (3)
         static const char source[] = "#define FOO(X) \\\nint X; \\\nint X ## _Additional;\nFOO(Test)";
         static const char expected[] = "int Test;int Test_Additional;";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro (4)
         static const char source[] = "#define FOO(X, Y) X(Y)\n"
                                      "FOO(Foo, Test(0, 0))";
         static const char expected[] = "Foo(Test(0, 0))";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro (5)
         static const char source[] = "#define FOO(X)\n"
                                      "FOO(42)";
         static const char expected[] = "";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro (6)
         static const char source[] = "#define unpack_unorm_16(x) (float(x) / 65535.0)\n"
                                      "unpack_unorm_16((42) + 1)";
         static const char expected[] = "(float((42) + 1) / 65535.0)";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro (7)
         static const char source[] = "#define ADD(X, Y) X + Y\n"
@@ -167,9 +167,9 @@ void test_preprocessor() {
         static const char expected[] = "void main() {\n"
                                        "    return 2 + 3;\n"
                                        "}";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // function-like macro (8)
         static const char source[] = "#define ADD(X, Y) X + Y\n"
@@ -179,24 +179,24 @@ void test_preprocessor() {
         static const char expected[] = "void main() {\n"
                                        "    return 2 + 1 + 3;\n"
                                        "}";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // stringify
         static const char source[] = "#define FOO(Name) #Name\n"
                                      " FOO(Text)";
         static const char expected[] = " Text";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // concatenate
         static const char source[] = "AAA   ## BB";
         static const char expected[] = "AAABB";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // include directive
         static const char input[] = "#include <system>\n"
@@ -210,9 +210,9 @@ void test_preprocessor() {
             require(strcmp(path, "system") == 0);
             return std::make_unique<std::istringstream>(system_input);
         };
-        Preprocessor preprocessor(input, config);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(input, config);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // system/non-system include directives
         static const char source[] = "#include <system>\n"
@@ -236,9 +236,9 @@ void test_preprocessor() {
             ++include_count;
             return std::make_unique<std::istringstream>();
         };
-        Preprocessor preprocessor(source, config);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source, config);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
         require(include_count == 2);
     }
     { // include directive without newline
@@ -250,16 +250,16 @@ void test_preprocessor() {
             require(strcmp(path, "iostream") == 0);
             return std::make_unique<std::istringstream>();
         };
-        Preprocessor preprocessor(source, config);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source, config);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // simple #if #endif
         static const char source[] = "#if FOO\none#endif\n two three";
         static const char expected[] = "\n two three";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // simple #if #else #endif
         static const char source[] = "#if FOO\n"
@@ -268,9 +268,9 @@ void test_preprocessor() {
                                      "#else\n"
                                      " else block #endif";
         static const char expected[] = "\n else block ";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // simple #if #else #endif (2)
         static const char source[] = "#if 1\n"
@@ -278,23 +278,23 @@ void test_preprocessor() {
                                      "#else\n"
                                      " else block #endif";
         static const char expected[] = " if block\n";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // simple #if #elif #else #endif
         static const char source[] = "#if 0\none\n#elif 1\ntwo\n#else\nthree\n#endif";
         static const char expected[] = "two\n";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // simple #if #elif #else #endif (2)
         static const char source[] = "#if( 0 )\none\n#elif( 1 )\ntwo\n#else\nthree\n#endif";
         static const char expected[] = "two\n";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // more complex #elif case
         static const char source[] = "#if 0\n"
@@ -307,9 +307,9 @@ void test_preprocessor() {
                                      "    four\n"
                                      "#endif";
         static const char expected[] = "    three\n";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // invalid else
         static const char source[] = "#if 0\n"
@@ -321,9 +321,9 @@ void test_preprocessor() {
                                      "#elif 1\n"
                                      "    three\n"
                                      "#endif";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process().empty());
-        require(!preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process().empty());
+        require(!preprocessor->error().empty());
     }
     { // nested conditions
         static const char source[] = "#if 1\n"
@@ -338,9 +338,9 @@ void test_preprocessor() {
         static const char expected[] = "    one\n"
                                        "\n"
                                        "    four\n";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // #ifdef block
         static const char source[] = "#ifdef FOO\n"
@@ -349,9 +349,9 @@ void test_preprocessor() {
                                      "    two";
         static const char expected[] = "\n"
                                        "    two";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // #ifdef (2)
         static const char source[] = "#define FOO\n"
@@ -359,9 +359,9 @@ void test_preprocessor() {
                                      "    one\n"
                                      "#endif";
         static const char expected[] = "    one\n";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // #ifndef block
         static const char source[] = "#ifndef FOO\n"
@@ -371,9 +371,9 @@ void test_preprocessor() {
         static const char expected[] = "    one\n"
                                        "\n"
                                        "    two";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // #ifndef + #undef
         static const char source[] = "#define FOO\n"
@@ -383,9 +383,9 @@ void test_preprocessor() {
                                      "#endif\n"
                                      "#undef FOO";
         static const char expected[] = "    one\n\n";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // include directive with guards
         static const char source_main[] = R"(
@@ -503,9 +503,9 @@ void test_preprocessor() {
                 return std::make_unique<std::istringstream>(system_source);
             }
         };
-        Preprocessor preprocessor(source_main, config);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source_main, config);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // expressions
         static const char source[] = R"(
@@ -561,33 +561,33 @@ void test_preprocessor() {
 				#define FAILED_7
 			#endif
 )";
-        Preprocessor preprocessor(source);
-        [[maybe_unused]] const std::string output = preprocessor.Process();
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        [[maybe_unused]] const std::string output = preprocessor->Process();
+        require(preprocessor->error().empty());
 
-        require(!HasMacro(preprocessor, "PASSED_0"));
-        require(HasMacro(preprocessor, "FAILED_0"));
+        require(!HasMacro(*preprocessor, "PASSED_0"));
+        require(HasMacro(*preprocessor, "FAILED_0"));
 
-        require(HasMacro(preprocessor, "PASSED_1"));
-        require(!HasMacro(preprocessor, "FAILED_1"));
+        require(HasMacro(*preprocessor, "PASSED_1"));
+        require(!HasMacro(*preprocessor, "FAILED_1"));
 
-        require(!HasMacro(preprocessor, "PASSED_2"));
-        require(HasMacro(preprocessor, "FAILED_2"));
+        require(!HasMacro(*preprocessor, "PASSED_2"));
+        require(HasMacro(*preprocessor, "FAILED_2"));
 
-        require(HasMacro(preprocessor, "PASSED_3"));
-        require(!HasMacro(preprocessor, "FAILED_3"));
+        require(HasMacro(*preprocessor, "PASSED_3"));
+        require(!HasMacro(*preprocessor, "FAILED_3"));
 
-        require(HasMacro(preprocessor, "PASSED_4"));
-        require(!HasMacro(preprocessor, "FAILED_4"));
+        require(HasMacro(*preprocessor, "PASSED_4"));
+        require(!HasMacro(*preprocessor, "FAILED_4"));
 
-        require(!HasMacro(preprocessor, "PASSED_5"));
-        require(HasMacro(preprocessor, "FAILED_5"));
+        require(!HasMacro(*preprocessor, "PASSED_5"));
+        require(HasMacro(*preprocessor, "FAILED_5"));
 
-        require(!HasMacro(preprocessor, "PASSED_6"));
-        require(HasMacro(preprocessor, "FAILED_6"));
+        require(!HasMacro(*preprocessor, "PASSED_6"));
+        require(HasMacro(*preprocessor, "FAILED_6"));
 
-        require(!HasMacro(preprocessor, "PASSED_7"));
-        require(HasMacro(preprocessor, "FAILED_7"));
+        require(!HasMacro(*preprocessor, "PASSED_7"));
+        require(HasMacro(*preprocessor, "FAILED_7"));
     }
     { // expressions (2)
         static const char source[] = R"(
@@ -606,15 +606,15 @@ void test_preprocessor() {
 				#define FAILED_1
 			#endif
 )";
-        Preprocessor preprocessor(source);
-        [[maybe_unused]] const std::string output = preprocessor.Process();
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        [[maybe_unused]] const std::string output = preprocessor->Process();
+        require(preprocessor->error().empty());
 
-        require(!HasMacro(preprocessor, "PASSED"));
-        require(HasMacro(preprocessor, "FAILED"));
+        require(!HasMacro(*preprocessor, "PASSED"));
+        require(HasMacro(*preprocessor, "FAILED"));
 
-        require(HasMacro(preprocessor, "PASSED_1"));
-        require(!HasMacro(preprocessor, "FAILED_1"));
+        require(HasMacro(*preprocessor, "PASSED_1"));
+        require(!HasMacro(*preprocessor, "FAILED_1"));
     }
     { // expressions (3)
         static const char source[] = R"(
@@ -633,15 +633,15 @@ void test_preprocessor() {
 	#define FAILED_2
 #endif
 )";
-        Preprocessor preprocessor(source);
-        [[maybe_unused]] const std::string output = preprocessor.Process();
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        [[maybe_unused]] const std::string output = preprocessor->Process();
+        require(preprocessor->error().empty());
 
-        require(HasMacro(preprocessor, "PASSED_0"));
-        require(!HasMacro(preprocessor, "FAILED_0"));
+        require(HasMacro(*preprocessor, "PASSED_0"));
+        require(!HasMacro(*preprocessor, "FAILED_0"));
 
-        require(HasMacro(preprocessor, "PASSED_1"));
-        require(!HasMacro(preprocessor, "FAILED_1"));
+        require(HasMacro(*preprocessor, "PASSED_1"));
+        require(!HasMacro(*preprocessor, "FAILED_1"));
     }
     { // ???
         static const char source[] = R"(
@@ -666,9 +666,9 @@ void test_preprocessor() {
 
 
 )";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // strip comments
         static const char source[] = R"(
@@ -685,9 +685,9 @@ int main(int argc, char** argv) {
 )";
         preprocessor_config_t config;
         config.strip_comments = true;
-        Preprocessor preprocessor(source, config);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source, config);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
     { // extension macros
         static const char source[] = "#version 450\n"
@@ -706,9 +706,9 @@ int main(int argc, char** argv) {
                                        "int func() {\n"
                                        "    return 42;\n"
                                        "}";
-        Preprocessor preprocessor(source);
-        require(preprocessor.Process() == expected);
-        require(preprocessor.error().empty());
+        auto preprocessor = std::make_unique<Preprocessor>(source);
+        require(preprocessor->Process() == expected);
+        require(preprocessor->error().empty());
     }
 
     printf("OK\n");

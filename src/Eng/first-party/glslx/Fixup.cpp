@@ -158,15 +158,24 @@ void glslx::Fixup::Apply(TrUnit *tu) {
             auto *variable_identifier = new (&tu->alloc) ast_variable_identifier(gl_Position);
 
             auto *lhs = new (&tu->alloc) ast_field_or_swizzle();
+            if (!lhs) {
+                return;
+            }
             lhs->operand = variable_identifier;
             lhs->name = "y";
 
             auto *y_field = new (&tu->alloc) ast_field_or_swizzle();
+            if (!y_field) {
+                return;
+            }
             y_field->operand = variable_identifier;
             y_field->name = "y";
             auto *rhs = new (&tu->alloc) ast_unary_expression(eExprType::UnaryMinus, y_field);
 
             auto *expr = new (&tu->alloc) ast_assignment_expression(eOperator::assign);
+            if (!expr) {
+                return;
+            }
             expr->operand1 = lhs;
             expr->operand2 = rhs;
 

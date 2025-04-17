@@ -2,6 +2,15 @@
 
 #include <memory>
 
+#if defined(_MSC_VER)
+#include <sal.h>
+#define CHECK_FORMAT_STRING(format_string_index_one_based, vargs_index_one_based)
+#else
+#define _Printf_format_string_
+#define CHECK_FORMAT_STRING(format_string_index_one_based, vargs_index_one_based)                                      \
+    __attribute__((format(printf, format_string_index_one_based, vargs_index_one_based)))
+#endif
+
 #include "../Bitmask.h"
 #include "AST.h"
 #include "Lexer.h"
@@ -55,7 +64,7 @@ class Parser {
         return copy;
     }
 
-    template <class T, class... Args> T *astnew(Args&&... args) {
+    template <class T, class... Args> T *astnew(Args &&...args) {
         return new (&ast_->alloc) T(std::forward<Args>(args)...);
     }
 
@@ -102,13 +111,15 @@ class Parser {
     static bool is_reserved_keyword(eKeyword keyword);
     static bool is_interface_block_storage(eStorage storage);
     static bool is_generic_type(eKeyword keyword);
-    [[nodiscard]] bool is_operator(const eOperator oper) const { return tok_.type == eTokType::Operator && tok_.as_operator == oper; }
+    [[nodiscard]] bool is_operator(const eOperator oper) const {
+        return tok_.type == eTokType::Operator && tok_.as_operator == oper;
+    }
     [[nodiscard]] bool is_end_condition(Bitmask<eEndCondition> condition) const;
     [[nodiscard]] bool is_builtin() const;
 
     static bool is_vector_type(const ast_type *type);
 
-    void fatal(const char *fmt, ...);
+    void fatal(_Printf_format_string_ const char *fmt, ...) CHECK_FORMAT_STRING(2, 3);
 
     ast_constant_expression *Evaluate(ast_expression *expression);
 

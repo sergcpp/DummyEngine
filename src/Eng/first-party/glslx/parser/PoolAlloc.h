@@ -126,8 +126,8 @@ inline void PoolAllocator::MemChunk::Free(void *p, size_t _block_size) {
 struct SharedState {
     uint32_t users_count = 0;
 
-    size_t mem_step;
-    size_t max_object_size;
+    size_t mem_step = 0;
+    size_t max_object_size = 0;
 
     std::vector<PoolAllocator> allocators;
 };

@@ -298,17 +298,17 @@ void glslx::Lexer::ReadSingle(token_t &out) {
 
             SkipWhitespace();
 
-            std::string chars;
+            std::string compat_chars;
             while (isalpha(at())) {
-                chars.push_back(at());
+                compat_chars.push_back(at());
                 loc_.advance();
             }
 
-            if (!chars.empty()) {
-                if (chars == "core") {
-                } else if (chars == "compatibility") {
+            if (!compat_chars.empty()) {
+                if (compat_chars == "core") {
+                } else if (compat_chars == "compatibility") {
                     out.as_directive.as_version.type = eVerType::Compatibility;
-                } else if (chars == "es") {
+                } else if (compat_chars == "es") {
                     out.as_directive.as_version.type = eVerType::ES;
                 } else {
                     error_ = "Invalid profile in #version directive";
@@ -678,8 +678,8 @@ std::string glslx::Lexer::CalcKeywordsLookupTable() {
 
         intermediate[_str_hash(0, g_keywords[bucket[0]].name) % sz] = d;
 
-        for (int i = 0; i < bucket.size(); ++i) {
-            values[slots[i]] = bucket[i];
+        for (int j = 0; j < bucket.size(); ++j) {
+            values[slots[j]] = bucket[j];
         }
     }
 
@@ -707,11 +707,11 @@ std::string glslx::Lexer::CalcKeywordsLookupTable() {
     };
 
     std::string out;
-    for (int i = 0; i < sz; ++i) {
+    for (int j = 0; j < sz; ++j) {
         out += "X(";
-        out += std::to_string(intermediate[i]);
+        out += std::to_string(intermediate[j]);
         out += ", ";
-        out += std::to_string(values[i]);
+        out += std::to_string(values[j]);
         out += ")\n";
     }
 

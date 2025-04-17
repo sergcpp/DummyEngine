@@ -44,7 +44,7 @@ void test_pool_alloc() {
     { // Multi-pool alloc
         MultiPoolAllocator<uint8_t> allocator(32, 512);
 
-        uint8_t *pointers[16][256];
+        static uint8_t *pointers[16][256];
 
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 256; j++) {

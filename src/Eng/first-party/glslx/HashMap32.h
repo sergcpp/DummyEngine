@@ -398,7 +398,7 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
 
   private:
     void CheckRealloc() {
-        if ((size_ + 1) > uint32_t(0.8 * capacity_)) {
+        if ((size_ + 1) > uint32_t(0.8f * capacity_)) {
             uint8_t *old_ctrl = ctrl_;
             Node *old_nodes = nodes_;
             uint32_t old_capacity = capacity_;
@@ -417,6 +417,9 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
             mem_size += sizeof(Node) * capacity_;
 
             ctrl_ = new uint8_t[mem_size];
+            if (!ctrl_ || mem_size < capacity_) {
+                return;
+            }
             nodes_ = (Node *)&ctrl_[node_begin];
 
             memset(ctrl_, 0, capacity_);
@@ -437,10 +440,12 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
             Node *old_nodes = nodes_;
             uint32_t old_capacity = capacity_;
 
-            if (!capacity_)
+            if (!capacity_) {
                 capacity_ = 8;
-            while (capacity_ < desired_capacity)
+            }
+            while (capacity_ < desired_capacity) {
                 capacity_ *= 2;
+            }
 
             size_ = 0;
 

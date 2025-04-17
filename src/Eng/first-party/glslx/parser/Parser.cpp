@@ -128,13 +128,13 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
                     bool args_match = true;
                     for (int i = 0; i < int(func->parameters.size()); ++i) {
                         int array_dims = 0;
-                        const ast_type *type =
+                        const ast_type *result_type =
                             Evaluate_ExpressionResultType(ast_.get(), call->parameters[i], array_dims);
-                        if (!type) {
+                        if (!result_type) {
                             args_match = false;
                             break;
                         }
-                        args_match &= is_same_type(type, func->parameters[i]->base_type);
+                        args_match &= is_same_type(result_type, func->parameters[i]->base_type);
                     }
                     if (args_match) {
                         call->func = func;
@@ -156,13 +156,13 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
                     bool args_match = true;
                     for (int i = 0; i < int(func->parameters.size()); ++i) {
                         int array_dims = 0;
-                        const ast_type *type =
+                        const ast_type *result_type =
                             Evaluate_ExpressionResultType(ast_.get(), call->parameters[i], array_dims);
-                        if (!type) {
+                        if (!result_type) {
                             args_match = false;
                             break;
                         }
-                        args_match &= is_compatible_type(type, func->parameters[i]->base_type);
+                        args_match &= is_compatible_type(result_type, func->parameters[i]->base_type);
                     }
                     if (args_match) {
                         call->func = func;
@@ -517,13 +517,13 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
         level.memory_flags |= next.memory_flags;
         level.is_invariant = next.is_invariant;
 
-        for (int i = 0; i < int(next.layout_qualifiers.size()); ++i) {
-            for (int j = 0; j < int(level.layout_qualifiers.size()); ++j) {
-                if (next.layout_qualifiers[i]->name == level.layout_qualifiers[j]->name) {
-                    level.layout_qualifiers.erase(begin(level.layout_qualifiers) + j);
+        for (int j = 0; j < int(next.layout_qualifiers.size()); ++j) {
+            for (int k = 0; k < int(level.layout_qualifiers.size()); ++k) {
+                if (next.layout_qualifiers[j]->name == level.layout_qualifiers[k]->name) {
+                    level.layout_qualifiers.erase(begin(level.layout_qualifiers) + k);
                 }
             }
-            level.layout_qualifiers.push_back(next.layout_qualifiers[i]);
+            level.layout_qualifiers.push_back(next.layout_qualifiers[j]);
         }
     }
 
@@ -955,7 +955,7 @@ bool glslx::Parser::is_vector_type(const ast_type *type) {
            btype->type == eKeyword::K_uvec2 || btype->type == eKeyword::K_uvec3 || btype->type == eKeyword::K_uvec4;
 }
 
-void glslx::Parser::fatal(const char *fmt, ...) {
+void CHECK_FORMAT_STRING(2, 3) glslx::Parser::fatal(_Printf_format_string_ const char *fmt, ...) {
     char *banner = nullptr;
     const int banner_len = allocfmt(&banner, "%s:%zu:%zu: error: ", file_name_, lexer_.line(), lexer_.column());
     if (banner_len == -1) {
@@ -2292,8 +2292,7 @@ glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<e
         return nullptr;
     }
 
-    std::vector<int> seen_ints;
-    std::vector<unsigned> seen_uints;
+    SmallVector<int64_t, 16> seen_labels;
     bool had_default = false;
     while (!is_type(eTokType::Scope_End)) {
         ast_statement *next_statement = ParseStatement();
@@ -2308,24 +2307,24 @@ glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<e
                     return nullptr;
                 }
                 ast_constant_expression *value = Evaluate(case_label->condition);
+
+                int64_t label_value;
+                // TODO: Add other explicit types (uint64_t etc.)
                 if (value->type == eExprType::IntConstant) {
-                    const int val = IVAL(value);
-                    if (std::find(begin(seen_ints), end(seen_ints), val) != end(seen_ints)) {
-                        fatal("duplicate case label '%d'", val);
-                        return nullptr;
-                    }
-                    seen_ints.push_back(val);
+                    label_value = IVAL(value);
                 } else if (value->type == eExprType::UIntConstant) {
-                    const unsigned val = UVAL(value);
-                    if (std::find(begin(seen_uints), end(seen_uints), val) != end(seen_uints)) {
-                        fatal("duplicate case label '%u'", val);
-                        return nullptr;
-                    }
-                    seen_uints.push_back(val);
+                    label_value = UVAL(value);
                 } else {
                     fatal("case label must be scalar 'int' or 'uint'");
                     return nullptr;
                 }
+
+                const auto it = std::lower_bound(std::begin(seen_labels), std::end(seen_labels), label_value);
+                if (it != std::end(seen_labels) && label_value == (*it)) {
+                    fatal("duplicate case label '%lld'", label_value);
+                    return nullptr;
+                }
+                seen_labels.insert(it, label_value);
             } else {
                 if (had_default) {
                     fatal("duplicate 'default' case label");
@@ -3527,8 +3526,8 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
 
         std::vector<const ast_type *> arg_types;
         for (int i = 0; i < int(func_call->parameters.size()); ++i) {
-            int array_dims = 0;
-            arg_types.push_back(Evaluate_ExpressionResultType(tu, func_call->parameters[i], array_dims));
+            int param_array_dims = 0;
+            arg_types.push_back(Evaluate_ExpressionResultType(tu, func_call->parameters[i], param_array_dims));
             if (!arg_types.back()) {
                 return nullptr;
             }

@@ -93,11 +93,11 @@ class Preprocessor {
     };
 
     struct token_t {
-        eTokenType type;
+        eTokenType type = eTokenType::Unknown;
 
         string raw_view;
 
-        size_t line, pos;
+        size_t line = 0, pos = 0;
 
         explicit token_t(MultiPoolAllocator<char> &alloc) : raw_view(alloc) {}
         token_t(const eTokenType _type, MultiPoolAllocator<char> &alloc) : type(_type), raw_view(alloc) {}

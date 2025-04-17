@@ -183,8 +183,8 @@ int get_variable_size(const ast_variable *v, const int array_dim) {
     } else {
         int ret = 0;
         const auto *type = static_cast<const ast_struct *>(v->base_type);
-        for (const ast_variable *v : type->fields) {
-            ret += get_variable_size(v, array_dim);
+        for (const ast_variable *_v : type->fields) {
+            ret += get_variable_size(_v, array_dim);
         }
         return ret;
     }
@@ -1578,18 +1578,18 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
         const ast_interface_block *block = tu->interface_blocks[i];
 
         bool skip = false;
-        for (int i = 0; i < int(block->layout_qualifiers.size()); ++i) {
+        for (int j = 0; j < int(block->layout_qualifiers.size()); ++j) {
             int assign_index = -1;
-            if (strcmp(block->layout_qualifiers[i]->name, "local_size_x") == 0) {
+            if (strcmp(block->layout_qualifiers[j]->name, "local_size_x") == 0) {
                 assign_index = 0;
-            } else if (strcmp(block->layout_qualifiers[i]->name, "local_size_y") == 0) {
+            } else if (strcmp(block->layout_qualifiers[j]->name, "local_size_y") == 0) {
                 assign_index = 1;
-            } else if (strcmp(block->layout_qualifiers[i]->name, "local_size_z") == 0) {
+            } else if (strcmp(block->layout_qualifiers[j]->name, "local_size_z") == 0) {
                 assign_index = 2;
             }
 
             if (assign_index != -1) {
-                const ast_constant_expression *value = block->layout_qualifiers[i]->initial_value;
+                const ast_constant_expression *value = block->layout_qualifiers[j]->initial_value;
                 if (value->type == eExprType::IntConstant) {
                     compute_group_sizes_[assign_index] = static_cast<const ast_int_constant *>(value)->value;
                 } else if (value->type == eExprType::UIntConstant) {
@@ -1622,7 +1622,7 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
     }
 }
 
-std::pair<int, int> glslx::WriterHLSL::Find_BufferAccessExpression(const ast_expression *expression, int offset,
+std::pair<int, int> glslx::WriterHLSL::Find_BufferAccessExpression(const ast_expression *expression, const int offset,
                                                                    std::vector<access_index_t> &out_indices) {
     if (expression->type == eExprType::VariableIdentifier) {
         const auto *var = static_cast<const ast_variable_identifier *>(expression);
@@ -1644,8 +1644,8 @@ std::pair<int, int> glslx::WriterHLSL::Find_BufferAccessExpression(const ast_exp
         const auto *field = static_cast<const ast_field_or_swizzle *>(expression);
         int array_dims = 0;
         const ast_type *operand_type = Evaluate_ExpressionResultType(tu_, field->operand, array_dims);
-        const int offset = Calc_FieldOffset(operand_type, field->name);
-        return Find_BufferAccessExpression(field->operand, offset, out_indices);
+        const int field_offset = Calc_FieldOffset(operand_type, field->name);
+        return Find_BufferAccessExpression(field->operand, field_offset, out_indices);
     }
     return {-1, -1};
 }
@@ -1729,8 +1729,8 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
                 out_stream << buf_it->size << " * ";
                 Write_Expression(subscript->index, false, out_stream);
                 out_stream << ", ";
-                for (int i = 1; i < int(call->parameters.size()); ++i) {
-                    Write_Expression(call->parameters[i], false, out_stream);
+                for (int j = 1; j < int(call->parameters.size()); ++j) {
+                    Write_Expression(call->parameters[j], false, out_stream);
                     out_stream << ", ";
                 }
                 out_stream << atomic_operations[i].var_name;
