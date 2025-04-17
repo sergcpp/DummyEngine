@@ -34,7 +34,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
                                     capacity * 6);
     }
 
-    const int blank_block_res = 64;
+    const int blank_block_res = 16;
     uint8_t blank_block[blank_block_res * blank_block_res * 4] = {};
     if (IsCompressedFormat(format)) {
         for (int i = 0; i < (blank_block_res / 4) * (blank_block_res / 4) * 16;) {

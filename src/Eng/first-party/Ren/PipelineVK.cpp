@@ -476,9 +476,9 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, const 
             const uint32_t data_size = HandleCount * handle_size;
             SmallVector<uint8_t, 128> handles_data(data_size);
 
-            const VkResult res = api_ctx->vkGetRayTracingShaderGroupHandlesKHR(api_ctx->device, handle_, 0, HandleCount,
-                                                                               data_size, &handles_data[0]);
-            if (res != VK_SUCCESS) {
+            const VkResult _res = api_ctx->vkGetRayTracingShaderGroupHandlesKHR(
+                api_ctx->device, handle_, 0, HandleCount, data_size, &handles_data[0]);
+            if (_res != VK_SUCCESS) {
                 log->Error("Failed to get shader group handles!");
                 return false;
             }

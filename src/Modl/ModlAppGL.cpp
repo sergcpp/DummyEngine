@@ -70,14 +70,14 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
     glCullFace(GL_BACK);
 
     for (const auto &grp : m->groups()) {
-        const Ren::Material *mat = grp.front_mat.get();
+        const Ren::Material *_mat = grp.front_mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->id());
+            BindTexture(DIFFUSEMAP_SLOT, _mat->textures[0]->id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
+        BindTexture(NORMALMAP_SLOT, _mat->textures[1]->id());
 
         glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
                        reinterpret_cast<void *>(uintptr_t(grp.byte_offset)));
@@ -123,15 +123,15 @@ void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
     glCullFace(GL_BACK);
 
     for (const auto &grp : m->groups()) {
-        const Ren::Material *mat = grp.front_mat.get();
+        const Ren::Material *_mat = grp.front_mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
         } else if (view_mode_ == eViewMode::DiagVtxColor) {
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->id());
+            BindTexture(DIFFUSEMAP_SLOT, _mat->textures[0]->id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
+        BindTexture(NORMALMAP_SLOT, _mat->textures[1]->id());
 
         glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
                        reinterpret_cast<const void *>(uintptr_t(grp.byte_offset)));
@@ -154,7 +154,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
         skel->ApplyAnim(0);
     }
 
-    skel->UpdateBones(matr_palette_);
+    matr_palette_.resize(256);
+    skel->UpdateBones(matr_palette_.data());
 
     CheckInitVAOs();
 
@@ -308,9 +309,9 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     glCullFace(GL_BACK);
 
     for (const auto &grp : m->groups()) {
-        const Ren::Material *mat = grp.front_mat.get();
+        const Ren::Material *_mat = grp.front_mat.get();
 
-        if (mat->flags & Ren::eMatFlags::TwoSided) {
+        if (_mat->flags & Ren::eMatFlags::TwoSided) {
             glDisable(GL_CULL_FACE);
         } else {
             glEnable(GL_CULL_FACE);
@@ -319,9 +320,9 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
         } else {
-            BindTexture(DIFFUSEMAP_SLOT, mat->textures[0]->id());
+            BindTexture(DIFFUSEMAP_SLOT, _mat->textures[0]->id());
         }
-        BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
+        BindTexture(NORMALMAP_SLOT, _mat->textures[1]->id());
 
         glDrawElementsBaseVertex(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
                                  reinterpret_cast<void *>(uintptr_t(grp.byte_offset)), 0);

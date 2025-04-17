@@ -20,7 +20,7 @@
 
 Net::Address::Address(const char *str) : address_(0), port_(0) {
     long int pport;
-    char hostNameChar[256];
+    char hostNameChar[256] = {};
     if (sscanf(str, "%[^:]:%ld", hostNameChar, &pport) == 2) {
         address_ = ntohl(inet_addr(hostNameChar));
         port_ = (unsigned short) pport;

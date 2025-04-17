@@ -398,6 +398,8 @@ int main(int arg, char **argv)
 }
 #endif
 
+#pragma warning(push)
+#pragma warning(disable : 6387 6011 6385)
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -4886,3 +4888,5 @@ ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------------------
 */
+
+#pragma warning(pop)

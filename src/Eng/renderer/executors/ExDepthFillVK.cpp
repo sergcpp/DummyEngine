@@ -91,7 +91,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
-    backend_info_t _dummy = {};
+    static backend_info_t _dummy = {};
     uint32_t i = 0;
 
     using BDB = basic_draw_batch_t;

@@ -214,12 +214,12 @@ Phy::Vec3 Phy::SignedVolume2D(const Vec3 &a, const Vec3 &b, const Vec3 &c) {
     // Get sub-areas of the triangles formed from the projected origin and the edges
     Vec3 areas;
     for (int i = 0; i < 3; i++) {
-        const int j = (i + 1) % 3;
-        const int k = (i + 2) % 3;
+        const int _j = (i + 1) % 3;
+        const int _k = (i + 2) % 3;
 
         const Vec2 _a = _p;
-        const Vec2 _b = s[j];
-        const Vec2 _c = s[k];
+        const Vec2 _b = s[_j];
+        const Vec2 _c = s[_k];
         const Vec2 ab = _b - _a;
         const Vec2 ac = _c - _a;
 
@@ -238,16 +238,16 @@ Phy::Vec3 Phy::SignedVolume2D(const Vec3 &a, const Vec3 &b, const Vec3 &c) {
     real min_dist2 = std::numeric_limits<real>::max();
     auto lambdas = Vec3{1, 0, 0};
     for (int i = 0; i < 3; i++) {
-        const int j = (i + 1) % 3;
-        const int k = (i + 2) % 3;
+        const int _j = (i + 1) % 3;
+        const int _k = (i + 2) % 3;
 
-        const Vec2 lambda_edge = SignedVolume1D(edges_pts[j], edges_pts[k]);
-        const Vec3 pt = edges_pts[j] * lambda_edge[0] + edges_pts[k] * lambda_edge[1];
+        const Vec2 lambda_edge = SignedVolume1D(edges_pts[_j], edges_pts[_k]);
+        const Vec3 pt = edges_pts[_j] * lambda_edge[0] + edges_pts[_k] * lambda_edge[1];
         if (Length2(pt) < min_dist2) {
             min_dist2 = Length2(pt);
             lambdas[i] = real(0);
-            lambdas[j] = lambda_edge[0];
-            lambdas[k] = lambda_edge[1];
+            lambdas[_j] = lambda_edge[0];
+            lambdas[_k] = lambda_edge[1];
         }
     }
 

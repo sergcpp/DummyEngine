@@ -86,7 +86,7 @@ void Eng::SceneManager::TextureLoaderProc() {
 
             if (iteration++ % SortInterval == 0) {
                 __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_sort_tex_str);
-                if (SortPortion != -1) {
+                if constexpr (SortPortion != -1) {
                     const size_t sort_portion = std::min(SortPortion, requested_textures_.size());
                     std::partial_sort(std::begin(requested_textures_), std::begin(requested_textures_) + sort_portion,
                                       std::end(requested_textures_),
@@ -282,44 +282,44 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
         {
             std::lock_guard<std::mutex> _(tex_requests_lock_);
             finished &= requested_textures_.empty();
-            for (int i = 0; i < int(io_pending_tex_.size()); i++) {
-                finished &= io_pending_tex_[i].state == eRequestState::Idle;
-                if (io_pending_tex_[i].state == eRequestState::PendingIO) {
-                    res = io_pending_tex_[i].ev.GetResult(false /* block */, &bytes_read);
+            for (int j = 0; j < int(io_pending_tex_.size()); j++) {
+                finished &= io_pending_tex_[j].state == eRequestState::Idle;
+                if (io_pending_tex_[j].state == eRequestState::PendingIO) {
+                    res = io_pending_tex_[j].ev.GetResult(false /* block */, &bytes_read);
                     if (res != Sys::eFileReadResult::Pending) {
-                        req = &io_pending_tex_[i];
+                        req = &io_pending_tex_[j];
                         break;
                     }
-                } else if (io_pending_tex_[i].state == eRequestState::PendingUpdate) {
-                    TextureRequestPending *req = &io_pending_tex_[i];
-                    auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
-                    const auto res = stage_buf->fence.ClientWaitSync(0 /* timeout_us */);
-                    if (res == Ren::eWaitResult::Fail) {
+                } else if (io_pending_tex_[j].state == eRequestState::PendingUpdate) {
+                    TextureRequestPending *_req = &io_pending_tex_[j];
+                    auto *stage_buf = static_cast<TextureUpdateFileBuf *>(_req->buf.get());
+                    const auto _res = stage_buf->fence.ClientWaitSync(0 /* timeout_us */);
+                    if (_res == Ren::eWaitResult::Fail) {
                         ren_ctx_.log()->Error("Waiting on fence failed!");
 
-                        static_cast<TextureRequest &>(*req) = {};
-                        req->state = eRequestState::Idle;
+                        static_cast<TextureRequest &>(*_req) = {};
+                        _req->state = eRequestState::Idle;
                         tex_loader_cnd_.notify_one();
-                    } else if (res != Ren::eWaitResult::Timeout) {
-                        SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req->ref);
+                    } else if (_res != Ren::eWaitResult::Timeout) {
+                        SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, _req->ref);
 
-                        if (req->ref->params.w != req->orig_w || req->ref->params.h != req->orig_h) {
+                        if (_req->ref->params.w != _req->orig_w || _req->ref->params.h != _req->orig_h) {
                             // process texture further (for next mip levels)
-                            req->sort_key = 0xffffffff;
-                            requested_textures_.push_back(std::move(*req));
+                            _req->sort_key = 0xffffffff;
+                            requested_textures_.push_back(std::move(*_req));
                         } else {
                             std::lock_guard<std::mutex> _lock(gc_textures_mtx_);
-                            finished_textures_.push_back(std::move(*req));
+                            finished_textures_.push_back(std::move(*_req));
                         }
 
-                        static_cast<TextureRequest &>(*req) = {};
-                        req->state = eRequestState::Idle;
+                        static_cast<TextureRequest &>(*_req) = {};
+                        _req->state = eRequestState::Idle;
                         tex_loader_cnd_.notify_one();
                     }
-                } else if (io_pending_tex_[i].state == eRequestState::PendingError) {
-                    TextureRequestPending *req = &io_pending_tex_[i];
-                    static_cast<TextureRequest &>(*req) = {};
-                    req->state = eRequestState::Idle;
+                } else if (io_pending_tex_[j].state == eRequestState::PendingError) {
+                    TextureRequestPending *_req = &io_pending_tex_[j];
+                    static_cast<TextureRequest &>(*_req) = {};
+                    _req->state = eRequestState::Idle;
                     tex_loader_cnd_.notify_one();
                 }
             }
@@ -352,14 +352,14 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                                   scene_data_.persistent_data.mem_allocs.get(), ren_ctx_.log());
 
                 int data_off = int(req->buf->data_off());
-                for (int i = int(req->mip_offset_to_init); i < int(req->mip_offset_to_init) + req->mip_count_to_init;
-                     i++) {
+                for (int j = int(req->mip_offset_to_init); j < int(req->mip_offset_to_init) + req->mip_count_to_init;
+                     j++) {
                     if (data_off >= int(bytes_read)) {
                         ren_ctx_.log()->Error("File %s has not enough data!", tex_name.c_str());
                         break;
                     }
                     const int data_len = Ren::GetDataLenBytes(w, h, req->orig_format);
-                    const int mip_index = i - req->mip_offset_to_init;
+                    const int mip_index = j - req->mip_offset_to_init;
 
                     req->ref->SetSubImage(mip_index, 0, 0, 0, w, h, 1, req->orig_format, stage_buf->stage_buf(),
                                           stage_buf->cmd_buf, data_off, data_len);

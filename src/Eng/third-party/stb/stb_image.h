@@ -340,6 +340,9 @@ RECENT REVISION HISTORY:
 #include <stdio.h>
 #endif // STBI_NO_STDIO
 
+#pragma warning(push)
+#pragma warning(disable : 6011 6308 6262 6829 28182)
+
 #define STBI_VERSION 1
 
 enum
@@ -7532,6 +7535,8 @@ STBIDEF int stbi_is_16_bit_from_callbacks(stbi_io_callbacks const *c, void *user
    stbi__start_callbacks(&s, (stbi_io_callbacks *) c, user);
    return stbi__is_16_main(&s);
 }
+
+#pragma warning(pop)
 
 #endif // STB_IMAGE_IMPLEMENTATION
 

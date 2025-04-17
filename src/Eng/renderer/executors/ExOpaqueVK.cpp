@@ -358,7 +358,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     Ren::Span<const custom_draw_batch_t> batches = {(*p_list_)->custom_batches};
     Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices};
 
-    backend_info_t _dummy = {};
+    static backend_info_t _dummy = {};
 
     { // actual drawing
         using CDB = custom_draw_batch_t;

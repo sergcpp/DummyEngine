@@ -68,7 +68,10 @@ struct item_data_t {
 static_assert(sizeof(item_data_t) == 8);
 
 struct instance_data_t {
-    float model_matrix[3][4];
+    union {
+        float model_matrix[3][4];
+        float _model_matrix[12];
+    };
     union {
         float lmap_transform[4];
         struct {
@@ -85,7 +88,10 @@ struct instance_data_t {
     float normal_matrix[3][4];
     uint32_t vis_mask;
     float _pad0[3];
-    float prev_model_matrix[3][4];
+    union {
+        float prev_model_matrix[3][4];
+        float _prev_model_matrix[12];
+    };
     float _pad1[4];
 };
 static_assert(sizeof(instance_data_t) == 192);

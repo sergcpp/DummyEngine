@@ -13,6 +13,10 @@
 #define force_inline __forceinline
 #endif
 
+#pragma warning(push)
+#pragma warning(disable : 6294) // Ill-defined for-loop
+#pragma warning(disable : 6201) // Index is out of valid index range
+
 namespace Gui {
 enum eUninitialized { Uninitialize };
 
@@ -295,5 +299,7 @@ using Vec2d = Vec<double, 2>;
 using Vec3d = Vec<double, 3>;
 using Vec4d = Vec<double, 4>;
 } // namespace Gui
+
+#pragma warning(pop)
 
 #undef force_inline

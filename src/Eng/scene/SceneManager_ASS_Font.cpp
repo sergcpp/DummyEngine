@@ -89,9 +89,9 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
     std::fill(&temp_bitmap[0], &temp_bitmap[0] + 4 * temp_bitmap_res[0] * temp_bitmap_res[1], 0);
 
     for (const Gui::glyph_range_t &range : glyph_ranges) {
-        ctx.log->Info("Processing glyph range (%i - %i)", range.beg, range.end);
-        for (uint32_t i = range.beg; i < range.end; i++) {
-            const int glyph_index = stbtt_FindGlyphIndex(&font, int(i));
+        ctx.log->Info("Processing glyph range (%u - %u)", range.beg, range.end);
+        for (uint32_t glyph = range.beg; glyph < range.end; glyph++) {
+            const int glyph_index = stbtt_FindGlyphIndex(&font, int(glyph));
 
             int x0, y0, x1, y1;
             const bool is_drawable = stbtt_GetGlyphBox(&font, glyph_index, &x0, &y0, &x1, &y1) != 0;

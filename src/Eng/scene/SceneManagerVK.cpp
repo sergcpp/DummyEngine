@@ -109,9 +109,9 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             extended_info.pBindingFlags = &bind_flag;
             layout_info.pNext = &extended_info;
 
-            const VkResult res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
-                                                                      &pers_data.textures_descr_layout);
-            assert(res == VK_SUCCESS);
+            const VkResult _res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
+                                                                       &pers_data.textures_descr_layout);
+            assert(_res == VK_SUCCESS);
         }
 
         if (ren_ctx_.capabilities.hwrt && !pers_data.rt_textures_descr_layout) {
@@ -133,9 +133,9 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             extended_info.pBindingFlags = &bind_flag;
             layout_info.pNext = &extended_info;
 
-            const VkResult res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
-                                                                      &pers_data.rt_textures_descr_layout);
-            assert(res == VK_SUCCESS);
+            const VkResult _res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
+                                                                       &pers_data.rt_textures_descr_layout);
+            assert(_res == VK_SUCCESS);
         }
 
         if ((ren_ctx_.capabilities.hwrt || ren_ctx_.capabilities.swrt) && !pers_data.rt_inline_textures_descr_layout) {
@@ -157,9 +157,9 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
             extended_info.pBindingFlags = &bind_flag;
             layout_info.pNext = &extended_info;
 
-            const VkResult res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
-                                                                      &pers_data.rt_inline_textures_descr_layout);
-            assert(res == VK_SUCCESS);
+            const VkResult _res = api_ctx->vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
+                                                                       &pers_data.rt_inline_textures_descr_layout);
+            assert(_res == VK_SUCCESS);
         }
 
         for (int j = 0; j < Ren::MaxFramesInFlight; ++j) {
@@ -411,9 +411,9 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
         acc_create_info.offset = 0;
         acc_create_info.size = size_info.accelerationStructureSize;
 
-        VkResult res = api_ctx->vkCreateAccelerationStructureKHR(api_ctx->device, &acc_create_info, nullptr,
-                                                                 &blas_before_compaction);
-        if (res != VK_SUCCESS) {
+        VkResult _res = api_ctx->vkCreateAccelerationStructureKHR(api_ctx->device, &acc_create_info, nullptr,
+                                                                  &blas_before_compaction);
+        if (_res != VK_SUCCESS) {
             ren_ctx_.log()->Error("Failed to create acceleration structure!");
             return nullptr;
         }
@@ -489,9 +489,9 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
         acc_create_info.size = compact_size;
 
         VkAccelerationStructureKHR compact_acc_struct;
-        const VkResult res =
+        const VkResult _res =
             api_ctx->vkCreateAccelerationStructureKHR(api_ctx->device, &acc_create_info, nullptr, &compact_acc_struct);
-        if (res != VK_SUCCESS) {
+        if (_res != VK_SUCCESS) {
             ren_ctx_.log()->Error("Failed to create acceleration structure!");
         }
 

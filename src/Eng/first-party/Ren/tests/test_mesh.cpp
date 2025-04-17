@@ -135,7 +135,6 @@ void test_mesh() {
         require(m_ref->groups()[0].flags == eMeshFlags::HasAlpha);
 
         {
-            eMeshLoadStatus load_status;
             MeshRef m_ref2 = test.LoadMesh("ivy", &in, on_material_needed, &load_status);
             require(load_status == eMeshLoadStatus::Found);
             require(bool(m_ref2));

@@ -16,6 +16,9 @@ typedef struct SWztile {
     uint32_t mask;
 } SWztile;
 
+#pragma warning(push)
+#pragma warning(disable : 6385) // Reading invalid data
+
 void _swComputeDepthPlane(const SWfloat v0[3], const SWfloat v1[3], const SWfloat v2[3],
                           SWfloat *z_px_dx, SWfloat *z_px_dy) {
     // depth plane z(x,y) = z0 + dx * x + dy * y
@@ -1070,3 +1073,5 @@ void _swCullCtxClearBuf_Ref(SWcull_ctx *ctx) {
 #endif
     }
 }
+
+#pragma warning(pop)

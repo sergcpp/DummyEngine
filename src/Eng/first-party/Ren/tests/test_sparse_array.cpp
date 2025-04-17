@@ -100,10 +100,10 @@ void test_sparse_array() {
             require(s1_stolen.at(1) == 32);
             require(s1_stolen[3] == 78);
 
-            auto it = s1_stolen.begin();
-            require(*it == 1);
-            ++it;
-            require(*it == 32);
+            auto it2 = s1_stolen.begin();
+            require(*it2 == 1);
+            ++it2;
+            require(*it2 == 32);
         }
     }
 

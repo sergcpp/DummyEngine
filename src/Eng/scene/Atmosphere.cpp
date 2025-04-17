@@ -242,8 +242,8 @@ Eng::IntegrateScatteringMain(const atmosphere_params_t &params, const Ren::Vec4f
                 LutTransmittanceParamsToUv(params, local_height + params.planet_radius, view_zenith_cos_angle);
             const Ren::Vec4f light_transmittance = SampleTransmittanceLUT(transmittance_lut, uv);
 
-            const Ren::Vec2f planet_intersection = PlanetIntersection(params, local_position, light_dir);
-            const float planet_shadow = planet_intersection[0] > 0 ? 0.0f : 1.0f;
+            const Ren::Vec2f _planet_intersection = PlanetIntersection(params, local_position, light_dir);
+            const float planet_shadow = _planet_intersection[0] > 0 ? 0.0f : 1.0f;
 
             Ren::Vec4f multiscattered_lum = 0.0f;
             if (!multiscatter_lut.empty()) {

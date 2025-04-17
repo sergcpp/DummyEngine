@@ -37,7 +37,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
 
         GLenum internal_format;
 
-        const int blank_block_res = 64;
+        const int blank_block_res = 16;
         uint8_t blank_block[blank_block_res * blank_block_res * 4] = {};
         if (IsCompressedFormat(formats[i])) {
             for (int j = 0; j < (blank_block_res / 4) * (blank_block_res / 4) * 16;) {

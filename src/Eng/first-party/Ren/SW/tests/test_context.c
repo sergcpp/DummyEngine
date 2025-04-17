@@ -9,6 +9,7 @@ void test_context() {
     printf("Test context            | ");
 
     SWcontext *ctx = malloc(sizeof(SWcontext));
+    require(ctx);
     swCtxInit(ctx, 100, 100);
     require(ctx->framebuffers[0].pixels != NULL);
 

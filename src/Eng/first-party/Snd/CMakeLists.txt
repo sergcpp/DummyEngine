@@ -16,7 +16,7 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;Asan" CACHE STRING "
 
 IF(MSVC)
 	if (NOT DEFINED CMAKE_CXX_FLAGS_ASAN OR CMAKE_CXX_FLAGS_ASAN STREQUAL "")
-        set(CMAKE_CXX_FLAGS_ASAN "/MTd /Zi /Od /RTC1 /fsanitize=address")
+        set(CMAKE_CXX_FLAGS_ASAN "/MDd /Zi /Od /RTC1 /fsanitize=address /analyze /WX")
         set(CMAKE_EXE_LINKER_FLAGS_ASAN "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
     endif()
 ELSE(MSVC)
@@ -36,7 +36,15 @@ if(WIN32)
 			set(OPENAL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/third-party/OpenAL/include")
 			set(OPENAL_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/third-party/OpenAL/libs/Win32")
 		endif()
-		set(LIBS winmm debug OpenAL32d optimized OpenAL32)
+		if(MSVC)
+			set(LIBS winmm $<$<CONFIG:Debug>:OpenAL32d>
+			               $<$<CONFIG:Asan>:OpenAL32asan>
+			               $<$<CONFIG:Release>:OpenAL32>
+			               $<$<CONFIG:RelWithDebInfo>:OpenAL32>
+			               $<$<CONFIG:Tsan>:OpenAL32>)
+		else(MSVC)
+			set(LIBS winmm debug OpenAL32d optimized OpenAL32)
+		endif(MSVC)
 	endif()
 else(WIN32)
     if(${SOUND_BACKEND} STREQUAL "AL")

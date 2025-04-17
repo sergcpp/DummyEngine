@@ -1274,8 +1274,8 @@ void Eng::SceneManager::RebuildLightTree() {
             const uint32_t index_beg = grp.byte_offset / sizeof(uint32_t);
             const uint32_t index_end = index_beg + grp.num_indices;
 
-            for (uint32_t i = index_beg; i < index_end; i += 3) {
-                const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
+            for (uint32_t k = index_beg; k < index_end; k += 3) {
+                const uint32_t i0 = tri_indices[k + 0], i1 = tri_indices[k + 1], i2 = tri_indices[k + 2];
 
                 const Phy::Vec3f p0 = Phy::MakeVec3(&positions[i0 * VertexStride]),
                                  p1 = Phy::MakeVec3(&positions[i1 * VertexStride]),
@@ -1309,7 +1309,7 @@ void Eng::SceneManager::RebuildLightTree() {
                     additional_data.push_back({axis, flux, omega_n, omega_e});
 
                     temp_primitives.push_back({0, 0, 0, bbox_min, bbox_max});
-                    temp_indices.push_back(i / 3);
+                    temp_indices.push_back(k / 3);
 
                     light_item_t &tri_light = stochastic_lights.emplace_back();
                     tri_light.type_and_flags = LIGHT_TYPE_TRI;
@@ -1336,7 +1336,7 @@ void Eng::SceneManager::RebuildLightTree() {
                     // use as emissive texture index
                     tri_light.shadowreg_index = front_mat.index() * MAX_TEX_PER_MATERIAL + MAT_TEX_EMISSION;
                     // store triangle index
-                    tri_light.tri_index = (indices_start + i) / 3;
+                    tri_light.tri_index = (indices_start + k) / 3;
                 }
             }
         }

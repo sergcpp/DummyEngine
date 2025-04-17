@@ -90,7 +90,7 @@ void swCPUInfoInit(SWcpu_info *info) {
 #if defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
     int CPUInfo[4] = { -1 };
     unsigned nExIds, i = 0;
-    char CPUBrandString[0x40];
+    char CPUBrandString[0x40] = {0};
     // Get the information associated with each extended ID.
     cpuid(CPUInfo, 0x80000000);
     nExIds = CPUInfo[0];

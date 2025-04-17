@@ -135,8 +135,8 @@ void Ren::Texture::Free() {
         glDeleteTextures(1, &tex_id);
         for (uint32_t view : handle_.views) {
             if (view != tex_id) {
-                auto tex_id = GLuint(view);
-                glDeleteTextures(1, &tex_id);
+                auto view_id = GLuint(view);
+                glDeleteTextures(1, &view_id);
             }
         }
         handle_ = {};

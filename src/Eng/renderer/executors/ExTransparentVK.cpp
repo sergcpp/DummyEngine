@@ -258,7 +258,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
-    backend_info_t backend_info;
+    static backend_info_t backend_info;
 
     {
         uint64_t cur_pipe_id = 0xffffffffffffffff;

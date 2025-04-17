@@ -11,6 +11,9 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
+#pragma warning(push)
+#pragma warning(disable : 6262) // Function uses a lot of stack
+
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
     return p[0] > bbox_min[0] && p[0] < bbox_max[0] && p[1] > bbox_min[1] && p[1] < bbox_max[1] && p[2] > bbox_min[2] &&
@@ -133,14 +136,14 @@ const Ren::Vec3f SpherePoints64[64] = {
 
 Ren::Vec4f JitterLightOffset(const Eng::eLightType type, const float radius, const Ren::Vec4f &u, const Ren::Vec4f &v,
                              const int sample_index) {
-    const Ren::Vec2f r = PMJSamples64[sample_index % 64];
+    const Ren::Vec2f sample = PMJSamples64[sample_index % 64];
     if (type == Eng::eLightType::Sphere) {
         const Ren::Vec3f rv = radius * SpherePoints64[sample_index % 64];
         return Ren::Vec4f{rv};
     } else if (type == Eng::eLightType::Rect) {
-        return u * (2.0f * r[0] - 1.0f) + v * (2.0f * r[1] - 1.0f);
+        return u * (2.0f * sample[0] - 1.0f) + v * (2.0f * sample[1] - 1.0f);
     } else if (type == Eng::eLightType::Disk) {
-        Ren::Vec2f offset = 2.0f * r - Ren::Vec2f(1.0f);
+        Ren::Vec2f offset = 2.0f * sample - Ren::Vec2f(1.0f);
         if (offset[0] != 0.0f && offset[1] != 0.0f) {
             float theta, r;
             if (std::abs(offset[0]) > std::abs(offset[1])) {
@@ -155,7 +158,7 @@ Ren::Vec4f JitterLightOffset(const Eng::eLightType type, const float radius, con
         }
         return u * offset[0] + v * offset[1];
     } else if (type == Eng::eLightType::Line) {
-        return u * (2.0f * r[0] - 1.0f);
+        return u * (2.0f * sample[0] - 1.0f);
     }
     return Ren::Vec4f{0.0f};
 }
@@ -654,10 +657,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     const Transform &tr = transforms[obj.components[CompTransform]];
                     const Decal &decal = decals[obj.components[CompDecal]];
 
-                    const Mat4f &view_from_object = decal.view, &clip_from_view = decal.proj;
+                    const Mat4f &_view_from_object = decal.view, &_clip_from_view = decal.proj;
 
-                    const Mat4f view_from_world = view_from_object * tr.object_from_world,
-                                clip_from_world = clip_from_view * view_from_world;
+                    const Mat4f _view_from_world = _view_from_object * tr.object_from_world,
+                                clip_from_world = _clip_from_view * _view_from_world;
 
                     const Mat4f world_from_clip = Inverse(clip_from_world);
 
@@ -1455,18 +1458,18 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             l.shadowreg_index = int(list.shadow_regions.count);
 
-            for (int i = 0; i < int(regions.size()); ++i) {
-                ShadReg *region = regions[i];
+            for (int k = 0; k < int(regions.size()); ++k) {
+                ShadReg *region = regions[k];
 
                 Vec3f _light_dir, _light_up;
-                if (i == 0 || i == 1) {
-                    _light_dir = (i == 0) ? light_up : -light_up;
+                if (k == 0 || k == 1) {
+                    _light_dir = (k == 0) ? light_up : -light_up;
                     _light_up = -light_dir;
-                } else if (i == 2 || i == 3) {
-                    _light_dir = (i == 2) ? light_side : -light_side;
+                } else if (k == 2 || k == 3) {
+                    _light_dir = (k == 2) ? light_side : -light_side;
                     _light_up = -light_dir;
-                } else if (i == 4 || i == 5) {
-                    _light_dir = (i == 4) ? light_dir : -light_dir;
+                } else if (k == 4 || k == 5) {
+                    _light_dir = (k == 4) ? light_dir : -light_dir;
                     _light_up = light_up;
                 }
 
@@ -1475,7 +1478,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 shadow_cam.Perspective(Ren::eZRange::OneToZero, light_angle, 1.0f, ls->cull_offset, ls->cull_radius);
                 shadow_cam.UpdatePlanes();
 
-                if (i < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
+                if (k < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
                     // cut top half of a frustum
                     Ren::Plane plane;
                     plane.n = _light_up;
@@ -1491,7 +1494,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 sh_list.shadow_map_pos[1] = sh_list.scissor_test_pos[1] = region->pos[1];
                 sh_list.shadow_map_size[0] = sh_list.scissor_test_size[0] = region->size[0];
                 sh_list.shadow_map_size[1] = sh_list.scissor_test_size[1] = region->size[1];
-                if (i < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
+                if (k < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
                     // set to half of a region
                     sh_list.scissor_test_size[1] /= 2;
                 }
@@ -1749,25 +1752,25 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     temp_sort_spans_64_[0].resize(list.custom_batches.size());
     temp_sort_spans_64_[1].resize(list.custom_batches.size());
     list.custom_batch_indices.resize(list.custom_batches.size());
-    uint32_t spans_count = 0;
+    uint32_t _spans_count = 0;
 
     // compress batches into spans with indentical key values (makes sorting faster)
     for (uint32_t start = 0, end = 1; end <= uint32_t(list.custom_batches.size()); end++) {
         if (end == list.custom_batches.size() ||
             (list.custom_batches[start].sort_key != list.custom_batches[end].sort_key)) {
-            temp_sort_spans_64_[0][spans_count].key = list.custom_batches[start].sort_key;
-            temp_sort_spans_64_[0][spans_count].base = start;
-            temp_sort_spans_64_[0][spans_count++].count = end - start;
+            temp_sort_spans_64_[0][_spans_count].key = list.custom_batches[start].sort_key;
+            temp_sort_spans_64_[0][_spans_count].base = start;
+            temp_sort_spans_64_[0][_spans_count++].count = end - start;
             start = end;
         }
     }
 
-    RadixSort_LSB<sort_span_64_t>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + spans_count,
+    RadixSort_LSB<sort_span_64_t>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + _spans_count,
                                   temp_sort_spans_64_[1].data());
 
     // decompress sorted spans
     size_t counter = 0;
-    for (uint32_t i = 0; i < spans_count; i++) {
+    for (uint32_t i = 0; i < _spans_count; i++) {
         for (uint32_t j = 0; j < temp_sort_spans_64_[0][i].count; j++) {
             list.custom_batch_indices[counter++] = temp_sort_spans_64_[0][i].base + j;
         }
@@ -1829,9 +1832,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                       temp_sort_spans_64_[1].data());
 
         // decompress sorted spans
-        for (uint32_t i = 0; i < spans_count; i++) {
-            for (uint32_t j = 0; j < temp_sort_spans_64_[0][i].count; j++) {
-                list.shadow_batch_indices[sh_batch_indices_counter++] = temp_sort_spans_64_[0][i].base + j;
+        for (uint32_t j = 0; j < spans_count; j++) {
+            for (uint32_t k = 0; k < temp_sort_spans_64_[0][j].count; k++) {
+                list.shadow_batch_indices[sh_batch_indices_counter++] = temp_sort_spans_64_[0][j].base + k;
             }
         }
         assert(sh_batch_indices_counter == shadow_batch_end);
@@ -1850,10 +1853,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     list.instance_indices.emplace_back(b1.instance_index, b1.material_index);
                 }
 
-                for (uint32_t i = start + 1; i < end; i++) {
-                    basic_draw_batch_t &b2 = list.shadow_batches[list.shadow_batch_indices[i]];
+                for (uint32_t ii = start + 1; ii < end; ii++) {
+                    basic_draw_batch_t &b2 = list.shadow_batches[list.shadow_batch_indices[ii]];
                     b2.instance_start = uint32_t(list.instance_indices.size());
-                    for (uint32_t j = 0; j < b2.instance_count; ++j) {
+                    for (uint32_t jj = 0; jj < b2.instance_count; ++jj) {
                         list.instance_indices.emplace_back(b2.instance_index, b2.material_index);
                     }
 
@@ -2074,11 +2077,11 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
             if (obj.comp_mask & comp_mask) {
                 const Transform &tr = transforms[obj.components[CompTransform]];
 
-                const float bbox_points[8][3] = {BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
+                const float _bbox_points[8][3] = {BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
 
                 if (!skip_frustum_check) {
                     // Node has slightly enlarged bounds, so we need to check object's bounding box here
-                    cam_visibility = frustum.CheckVisibility(bbox_points);
+                    cam_visibility = frustum.CheckVisibility(_bbox_points);
                     if (cam_visibility == eVisResult::Invisible) {
                         continue;
                     }
@@ -2094,7 +2097,7 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
                         surf.type = SW_OCCLUDEE;
                         surf.prim_type = SW_TRIANGLES;
                         surf.index_type = SW_UNSIGNED_INT;
-                        surf.attribs = &bbox_points[0][0];
+                        surf.attribs = &_bbox_points[0][0];
                         surf.indices = &bbox_indices[0];
                         surf.stride = 3 * sizeof(float);
                         surf.count = 36;
@@ -2632,6 +2635,8 @@ void RendererInternal::__record_textures(std::vector<Eng::TexEntry> &storage, co
         __record_texture(storage, mat->textures[i], prio, distance);
     }
 }
+
+#pragma warning(pop)
 
 #undef BBOX_POINTS
 #undef _CROSS

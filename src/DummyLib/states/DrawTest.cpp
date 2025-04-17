@@ -342,12 +342,7 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
             auto view_vec = Ren::Vec4f{0, -1, 0, 0};
             view_vec = transform * view_vec;
 
-            memcpy(&initial_view_dir_[0], ValuePtr(view_vec), 3 * sizeof(float));
-
-            // Ren::Vec4f view_up_vec = {0, 0, -1, 0};
-            // view_up_vec = transform * view_up_vec;
-
-            // memcpy(&view_up[0], ValuePtr(view_up_vec), 3 * sizeof(float));
+            initial_view_dir_ = Ren::Vec3d{view_vec};
         }
 
         if (js_cam.Has("fwd_speed")) {

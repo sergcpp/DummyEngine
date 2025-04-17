@@ -236,7 +236,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
     log_->Info("============================================================================");
     log_->Info("Device info:");
 
-    log_->Info("\tVulkan version\t: %i.%i", VK_API_VERSION_MAJOR(api_ctx_->device_properties.apiVersion),
+    log_->Info("\tVulkan version\t: %u.%u", VK_API_VERSION_MAJOR(api_ctx_->device_properties.apiVersion),
                VK_API_VERSION_MINOR(api_ctx_->device_properties.apiVersion));
 
     auto it = std::find_if(

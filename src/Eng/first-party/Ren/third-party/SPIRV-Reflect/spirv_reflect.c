@@ -19,6 +19,9 @@
 #include <stdbool.h>
 #include <string.h>
 
+#pragma warning(push)
+#pragma warning(disable : 6011 6387)
+
 #if defined(WIN32)
   #define _CRTDBG_MAP_ALLOC
   #include <stdlib.h>
@@ -4898,3 +4901,5 @@ const char* spvReflectSourceLanguage(SpvSourceLanguage source_lang)
   }
   return "";
 }
+
+#pragma warning(pop)

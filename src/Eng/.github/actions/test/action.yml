@@ -1,5 +1,8 @@
 name: 'Test'
 inputs:
+  bin-suffix:
+    required: false
+    default: ""
   bin-dir:
     required: true
   out-dir:
@@ -14,26 +17,27 @@ runs:
         name: ${{ inputs.bin-dir }}
         path: ${{ inputs.bin-dir }}/
     - run: |
-        chmod +x ./${{ inputs.bin-dir }}/test_SW
-        chmod +x ./${{ inputs.bin-dir }}/test_Sys
-        chmod +x ./${{ inputs.bin-dir }}/test_Net
-        chmod +x ./${{ inputs.bin-dir }}/test_Phy
-        chmod +x ./${{ inputs.bin-dir }}/test_Snd
-        chmod +x ./${{ inputs.bin-dir }}/test_Eng
-        chmod +x ./${{ inputs.bin-dir }}/test_Ren
-        chmod +x ./${{ inputs.bin-dir }}/test_Gui
-        chmod +x ./${{ inputs.bin-dir }}/test_glslx
+        export ASAN_OPTIONS="windows_hook_legacy_allocators=false"
+        chmod +x ./${{ inputs.bin-dir }}/test_SW${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Sys${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Net${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Phy${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Snd${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Eng${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Ren${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Gui${{ inputs.bin-suffix }}
+        chmod +x ./${{ inputs.bin-dir }}/test_glslx${{ inputs.bin-suffix }}
         REPO_NAME=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
         WORK_DIR=`pwd`
         cd ../../builds/$REPO_NAME
-        $WORK_DIR/${{ inputs.bin-dir }}/test_SW
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Sys
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Net
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Phy
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Snd
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Ren
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Gui
-        $WORK_DIR/${{ inputs.bin-dir }}/test_glslx
+        $WORK_DIR/${{ inputs.bin-dir }}/test_SW${{ inputs.bin-suffix }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Sys${{ inputs.bin-suffix }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Net${{ inputs.bin-suffix }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Phy${{ inputs.bin-suffix }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Snd${{ inputs.bin-suffix }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Ren${{ inputs.bin-suffix }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Gui${{ inputs.bin-suffix }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_glslx${{ inputs.bin-suffix }}
         mkdir $WORK_DIR/${{ inputs.out-dir }}
         cd $WORK_DIR/../../builds/$REPO_NAME/tests/test_data/assets/shaders
         ln -s ../../../../renderer/shaders internal
@@ -41,6 +45,6 @@ runs:
         ln -s ../../../../textures internal
         cp $WORK_DIR/${{ inputs.bin-dir }}/*spirv_compiler* $WORK_DIR/../../builds/$REPO_NAME/tests/test_data/ || true
         cd $WORK_DIR/../../builds/$REPO_NAME/tests/test_data
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }} | tee $WORK_DIR/${{ inputs.out-dir }}/test_Eng_output.txt
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng${{ inputs.bin-suffix }} ${{ inputs.test-args }} | tee $WORK_DIR/${{ inputs.out-dir }}/test_Eng_output.txt
         cd ../../..
       shell: bash

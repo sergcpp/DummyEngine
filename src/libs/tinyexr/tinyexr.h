@@ -85,6 +85,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // guess stdint.h is available(C99)
 
+#pragma warning(push)
+#pragma warning(disable : 6387 6011 6001)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -9028,6 +9031,8 @@ int SaveEXR(const float *data, int width, int height, int components,
 
   return ret;
 }
+
+#pragma warning(pop)
 
 #ifdef __clang__
 // zero-as-null-pointer-constant

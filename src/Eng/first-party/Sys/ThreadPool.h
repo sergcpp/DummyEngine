@@ -200,7 +200,7 @@ inline ThreadPool::ThreadPool(const int threads_count, const eThreadPriority pri
                     task();
 
                     for (const int i : dependents) {
-                        if (cur_tasks[i].dependencies.fetch_sub(1) == 1) {
+                        if (cur_tasks && cur_tasks[i].dependencies.fetch_sub(1) == 1) {
                             ++active_tasks_;
                             condition_.notify_one();
                         }

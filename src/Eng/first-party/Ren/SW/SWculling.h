@@ -16,13 +16,12 @@ typedef enum SWsurf_type { SW_OCCLUDER = 0, SW_OCCLUDEE } SWsurf_type;
 
 typedef struct SWcull_surf {
     SWsurf_type type;
-    SWenum prim_type, index_type;
+    SWenum prim_type, index_type, visible;
     const void *attribs;
     const void *indices;
     SWuint stride, count;
     SWfloat bbox_min[3], bbox_max[3];
     const SWfloat *xform;
-    SWint visible;
 } SWcull_surf;
 
 /************************************************************************/

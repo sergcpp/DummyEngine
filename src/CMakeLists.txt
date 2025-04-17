@@ -21,8 +21,8 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1 /fp:except")
             if (NOT DEFINED CMAKE_CXX_FLAGS_ASAN OR CMAKE_CXX_FLAGS_ASAN STREQUAL "")
-                set(CMAKE_CXX_FLAGS_ASAN "/MP /MDd /Zi /Od /RTC1 /fsanitize=address")
-                set(CMAKE_C_FLAGS_ASAN "/MP /MDd /Zi /Od /RTC1 /fsanitize=address")
+                set(CMAKE_CXX_FLAGS_ASAN "/MP /MDd /Zi /Od /RTC1 /fsanitize=address /analyze /WX /wd6993")
+                set(CMAKE_C_FLAGS_ASAN "/MP /MDd /Zi /Od /RTC1 /fsanitize=address /analyze /WX /wd6993")
                 set(CMAKE_EXE_LINKER_FLAGS_ASAN "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
             endif()
             if (NOT DEFINED CMAKE_CXX_FLAGS_TSAN OR CMAKE_CXX_FLAGS_TSAN STREQUAL "")
@@ -61,7 +61,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # Ignore warnings about missing pdb
+    # Ignore warnings about missing PDB files
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
     set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4099")

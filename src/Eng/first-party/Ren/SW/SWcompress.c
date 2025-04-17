@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#pragma warning(push)
+#pragma warning(disable : 6386) // Buffer overrun
+
 typedef struct SWtex_block {
     SWubyte col[4][4];
     SWint counter;
@@ -75,6 +78,9 @@ void swTexCompress(const void *data, const SWenum mode, const SWint w, const SWi
     const SWubyte *pixels = (const SWubyte *)data;
     SWint max_num_blocks = sw_max(w / 2, 1) * sw_max(h / 2, 1);
     SWtex_block *blocks = (SWtex_block *)malloc(max_num_blocks * sizeof(SWtex_block));
+    if (!blocks) {
+        return;
+    }
     SWint num_blocks = 0;
     SWint step = (mode == SW_RGB) ? 3 : 4;
     SWint i, j, k;
@@ -109,6 +115,9 @@ void swTexCompress(const void *data, const SWenum mode, const SWint w, const SWi
 
     (*out_size) = 4 * 4 * 256 + (w / 2) * (h / 2);
     (*out_data) = malloc((size_t)(*out_size));
+    if (!(*out_data)) {
+        return;
+    }
     SWubyte *p = (SWubyte *)(*out_data);
 
     for (i = 0; i < sw_min(256, num_blocks); i++) {
@@ -160,6 +169,9 @@ SWenum swTexDecompress(const void *data, const SWint w, const SWint h, void **ou
 
     (*out_size) = w * h * (3 + has_alpha);
     (*out_data) = malloc((size_t)(*out_size));
+    if (!(*out_data)) {
+        return -1;
+    }
 
     SWubyte *p = (SWubyte *)(*out_data);
     const SWuint step = has_alpha ? 4 : 3;
@@ -178,3 +190,5 @@ SWenum swTexDecompress(const void *data, const SWint w, const SWint h, void **ou
 
     return has_alpha ? SW_RGBA : SW_RGB;
 }
+
+#pragma warning(pop)

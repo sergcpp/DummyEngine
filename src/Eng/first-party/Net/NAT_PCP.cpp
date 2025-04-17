@@ -11,6 +11,9 @@
 
 #endif
 
+#pragma warning(push)
+#pragma warning(disable : 6285)
+
 bool Net::GenPCPNonce(void *buf, int len) {
     if (len < 12)
         return false;
@@ -385,3 +388,5 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
 }
 
 float Net::PCPSession::RT(float rt) { return (1 + RAND()) * std::min<float>(2 * rt, float(MRT)); }
+
+#pragma warning(pop)

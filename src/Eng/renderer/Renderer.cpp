@@ -359,9 +359,9 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         pmj_samples_stage.FreeImmediate();
     }
 
-    const auto vtx_buf1 = ctx_.default_vertex_buf1();
-    const auto vtx_buf2 = ctx_.default_vertex_buf2();
-    const auto ndx_buf = ctx_.default_indices_buf();
+    auto vtx_buf1 = ctx_.default_vertex_buf1();
+    auto vtx_buf2 = ctx_.default_vertex_buf2();
+    auto ndx_buf = ctx_.default_indices_buf();
 
     const int buf1_stride = 16;
 
@@ -463,11 +463,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         linear_sampler_ = ctx_.LoadSampler(sampler_params, &status);
     }
 
-    {
-        Ren::BufRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
-                    ndx_buf = ctx_.default_indices_buf();
-
-        // Allocate buffer for skinned vertices
+    { // Allocate buffer for skinned vertices
         // TODO: fix this. do not allocate twice more memory in buf2
         skinned_buf1_vtx_ = vtx_buf1->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, 16, "skinned");
         skinned_buf2_vtx_ = vtx_buf2->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, 16, "skinned");
@@ -1843,7 +1839,7 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
     }
 }
 
-void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
+void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const int h, const int stride,
                                       const Ren::eTexFormat format, const float gamma, const float min_exposure,
                                       const float max_exposure, const Ren::TexRef &target, const bool compressed,
                                       const bool blit_to_backbuffer) {
@@ -1880,10 +1876,10 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
     uint8_t *stage_data = temp_upload_buf->Map();
     for (int y = 0; y < h; ++y) {
 #if defined(REN_GL_BACKEND)
-        memcpy(&stage_data[(h - y - 1) * 4 * w * sizeof(float)], &data[y * 4 * stride * sizeof(float)],
+        memcpy(&stage_data[(h - y - 1) * 4 * w * sizeof(float)], &px_data[y * 4 * stride * sizeof(float)],
                4 * w * sizeof(float));
 #else
-        memcpy(&stage_data[y * 4 * w * sizeof(float)], &data[y * 4 * stride * sizeof(float)], 4 * w * sizeof(float));
+        memcpy(&stage_data[y * 4 * w * sizeof(float)], &px_data[y * 4 * stride * sizeof(float)], 4 * w * sizeof(float));
 #endif
     }
     temp_upload_buf->Unmap();

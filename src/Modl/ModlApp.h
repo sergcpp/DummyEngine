@@ -88,7 +88,7 @@ class ModlApp {
     Ren::MeshRef view_mesh_;
     Ren::AnimSeqRef anim_seq_;
     float anim_time_ = 0.0f;
-    Ren::Mat4f matr_palette_[256];
+    std::vector<Ren::Mat4f> matr_palette_;
     Ren::Camera cam_;
     std::unique_ptr<Ren::Context> ctx_;
 

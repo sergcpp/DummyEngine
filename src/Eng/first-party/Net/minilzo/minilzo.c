@@ -31,6 +31,9 @@
  *   http://www.oberhumer.com/opensource/lzo/
  */
 
+#pragma warning(push)
+#pragma warning(disable : 6297)
+
 #define __LZO_IN_MINILZO 1
 
 #if defined(LZO_CFG_FREESTANDING)
@@ -6229,3 +6232,5 @@ lookbehind_overrun:
 #endif
 
 /***** End of minilzo.c *****/
+
+#pragma warning(pop)

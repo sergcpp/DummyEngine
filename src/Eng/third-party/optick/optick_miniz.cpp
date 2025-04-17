@@ -26,6 +26,9 @@
 
 #include  "optick_miniz.h"
 
+#pragma warning(push)
+#pragma warning(disable : 6297)
+
 #if OPTICK_ENABLE_COMPRESSION
 
 
@@ -2950,3 +2953,5 @@ void tinfl_decompressor_free(tinfl_decompressor *pDecomp)
 #endif
 
 #endif
+
+#pragma warning(pop)

@@ -435,8 +435,8 @@ Phy::real Phy::EPA_Expand(const Body &a, const Body &b, real bias,
             tri_t tri = {new_ndx, edge.b, edge.a};
 
             // Make sure it's in correct order
-            const real dist = SignedDistanceToTriangle(tri, center, points.data());
-            if (dist > real(0)) {
+            const real _dist = SignedDistanceToTriangle(tri, center, points.data());
+            if (_dist > real(0)) {
                 std::swap(tri.b, tri.c);
             }
 

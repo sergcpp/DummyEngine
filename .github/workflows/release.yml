@@ -120,29 +120,29 @@ jobs:
         with:
           cmake-args: "-DREN_BACKEND=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
           config: "RelWithDebInfo"
-  # build-windows-x86_64-vk-asan:
-  #   runs-on: [ windows, builder ]
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   steps:
-  #     - name: Checkout Workflows
-  #       uses: actions/checkout@v4
-  #       with:
-  #         sparse-checkout: .github
-  #     - name: Re-initialize repository
-  #       uses: ./.github/actions/checkout
-  #     - name: Compile the code
-  #       uses: ./.github/actions/build-windows
-  #       with:
-  #         cmake-args: "-DREN_BACKEND=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
-  #         config: "Asan"
-  #         bin-dir: "windows-x86_64-vk-asan"
-  #     - name: Upload artifacts
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: windows-x86_64-vk-asan
-  #         path: windows-x86_64-vk-asan/
+  build-windows-x86_64-vk-asan:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-DREN_BACKEND=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
+          config: "Asan"
+          bin-dir: "windows-x86_64-vk-asan"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-x86_64-vk-asan
+          path: windows-x86_64-vk-asan/
   build-linux-x86_64-gl-rel:
     runs-on: [ linux, builder ]
     defaults:
@@ -304,10 +304,10 @@ jobs:
 #        with:
 #          name: windows-x86_64-vk-nv-img-output
 #          path: windows-x86_64-vk-nv-img-output/
-  test-img-windows-x86_64-vk-amd:
+  test-img-windows-x86_64-vk-amd-asan:
     runs-on: [ windows, x86_64, amd ]
     needs:
-      - build-windows-x86_64-vk-rel
+      - build-windows-x86_64-vk-asan
     steps:
       - name: Checkout Workflows
         uses: actions/checkout@v4
@@ -318,16 +318,16 @@ jobs:
       - name: Run Tests
         uses: ./.github/actions/test-img
         with:
-          bin-name: "DummyAppVK"
-          bin-dir: "windows-x86_64-vk"
-          out-dir: "windows-x86_64-vk-amd-img-output"
+          bin-name: "DummyAppVK-asan"
+          bin-dir: "windows-x86_64-vk-asan"
+          out-dir: "windows-x86_64-vk-asan-amd-img-output"
           test-args: "-d AMD"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: windows-x86_64-vk-amd-img-output
-          path: windows-x86_64-vk-amd-img-output/
+          name: windows-x86_64-vk-asan-amd-img-output
+          path: windows-x86_64-vk-asan-amd-img-output/
   # test-img-windows-x86_64-vk-arc:
   #   runs-on: [ windows, x86_64, arc ]
   #   needs:

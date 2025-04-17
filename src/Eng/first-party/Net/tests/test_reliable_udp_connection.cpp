@@ -98,8 +98,8 @@ void test_reliable_udp_connection() {
         for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == i + 16);
         }
-        for (unsigned int i = 0; i < acks.size(); ++i) {
-            require(acks[i] == i + 16);
+        for (unsigned int j = 0; j < acks.size(); ++j) {
+            require(acks[j] == j + 16);
         }
     }
     { // Check process ack (3)
@@ -127,8 +127,8 @@ void test_reliable_udp_connection() {
         for (PacketQueue::iterator it = acked_queue.begin(); it != acked_queue.end(); ++it, ++i) {
             require(it->sequence == i + 16);
         }
-        for (unsigned int i = 0; i < acks.size(); ++i) {
-            require(acks[i] == i + 16);
+        for (unsigned int j = 0; j < acks.size(); ++j) {
+            require(acks[j] == j + 16);
         }
     }
     { // Check process ack wrap around (1)
@@ -457,21 +457,22 @@ void test_reliable_udp_connection() {
             if (all_packets_acked) {
                 break;
             }
-            unsigned char packet[32];
-            for (unsigned int i = 0; i < sizeof(packet); ++i)
-                packet[i] = (unsigned char)i;
-
+            unsigned char snd_packet[32];
+            for (unsigned int i = 0; i < sizeof(snd_packet); ++i) {
+                snd_packet[i] = (unsigned char)i;
+            }
             for (int i = 0; i < 10; ++i) {
-                client.SendPacket(packet, sizeof(packet));
+                client.SendPacket(snd_packet, sizeof(snd_packet));
 
                 while (true) {
-                    unsigned char packet[32];
-                    int bytes_read = client.ReceivePacket(packet, sizeof(packet));
-                    if (bytes_read == 0)
+                    unsigned char rcv_packet[32];
+                    int bytes_read = client.ReceivePacket(rcv_packet, sizeof(rcv_packet));
+                    if (bytes_read == 0) {
                         break;
-                    require(bytes_read == sizeof(packet));
-                    for (unsigned int i = 0; i < sizeof(packet); ++i) {
-                        require(packet[i] == (unsigned char)i);
+                    }
+                    require(bytes_read == sizeof(rcv_packet));
+                    for (unsigned int j = 0; j < sizeof(rcv_packet); ++j) {
+                        require(rcv_packet[j] == (unsigned char)j);
                     }
                 }
 
@@ -479,8 +480,8 @@ void test_reliable_udp_connection() {
                 unsigned int *acks = NULL;
                 client.reliability_system().GetAcks(&acks, ack_count);
                 require((ack_count == 0 || (ack_count != 0 && acks)));
-                for (int i = 0; i < ack_count; ++i) {
-                    unsigned int ack = acks[i];
+                for (int j = 0; j < ack_count; ++j) {
+                    const unsigned int ack = acks[j];
                     if (ack < packet_count) {
                         require(!clientAckedPackets[ack]);
                         clientAckedPackets[ack] = true;
@@ -490,7 +491,7 @@ void test_reliable_udp_connection() {
                 client.Update(dt_s * 0.1f);
             }
 
-            server.SendPacket(packet, sizeof(packet));
+            server.SendPacket(snd_packet, sizeof(snd_packet));
 
             while (true) {
                 unsigned char packet[32];
@@ -572,21 +573,21 @@ void test_reliable_udp_connection() {
             if (all_packets_acked) {
                 break;
             }
-            unsigned char packet[32];
-            for (unsigned int i = 0; i < sizeof(packet); ++i) {
-                packet[i] = (unsigned char)i;
+            unsigned char snd_packet[32];
+            for (unsigned int i = 0; i < sizeof(snd_packet); ++i) {
+                snd_packet[i] = (unsigned char)i;
             }
             for (int i = 0; i < 10; ++i) {
-                client.SendPacket(packet, sizeof(packet));
+                client.SendPacket(snd_packet, sizeof(snd_packet));
 
                 while (true) {
-                    unsigned char packet[32];
-                    int bytes_read = client.ReceivePacket(packet, sizeof(packet));
+                    unsigned char rcv_packet[32];
+                    int bytes_read = client.ReceivePacket(rcv_packet, sizeof(rcv_packet));
                     if (bytes_read == 0)
                         break;
-                    require(bytes_read == sizeof(packet));
-                    for (unsigned int i = 0; i < sizeof(packet); ++i) {
-                        require(packet[i] == (unsigned char)i);
+                    require(bytes_read == sizeof(rcv_packet));
+                    for (unsigned int j = 0; j < sizeof(rcv_packet); ++j) {
+                        require(rcv_packet[j] == (unsigned char)j);
                     }
                 }
 
@@ -594,8 +595,8 @@ void test_reliable_udp_connection() {
                 unsigned int *acks = NULL;
                 client.reliability_system().GetAcks(&acks, ack_count);
                 require((ack_count == 0 || (ack_count != 0 && acks)));
-                for (int i = 0; i < ack_count; ++i) {
-                    unsigned int ack = acks[i];
+                for (int j = 0; j < ack_count; ++j) {
+                    const unsigned int ack = acks[j];
                     if (ack < packet_count) {
                         require(!clientAckedPackets[ack]);
                         require((ack & 1) == 0);
@@ -606,16 +607,17 @@ void test_reliable_udp_connection() {
                 client.Update(dt_s * 0.1f);
             }
 
-            server.SendPacket(packet, sizeof(packet));
+            server.SendPacket(snd_packet, sizeof(snd_packet));
 
             while (true) {
-                unsigned char packet[32];
-                int bytes_read = server.ReceivePacket(packet, sizeof(packet));
-                if (bytes_read == 0)
+                unsigned char rcv_packet[32];
+                int bytes_read = server.ReceivePacket(rcv_packet, sizeof(rcv_packet));
+                if (bytes_read == 0) {
                     break;
-                require(bytes_read == sizeof(packet));
-                for (unsigned int i = 0; i < sizeof(packet); ++i) {
-                    require(packet[i] == (unsigned char)i);
+                }
+                require(bytes_read == sizeof(rcv_packet));
+                for (unsigned int i = 0; i < sizeof(rcv_packet); ++i) {
+                    require(rcv_packet[i] == (unsigned char)i);
                 }
             }
 
@@ -689,22 +691,22 @@ void test_reliable_udp_connection() {
             if (all_packets_acked)
                 break;
 
-            unsigned char packet[32];
-            for (unsigned int i = 0; i < sizeof(packet); ++i)
-                packet[i] = (unsigned char)i;
-
-            server.SendPacket(packet, sizeof(packet));
-            client.SendPacket(packet, sizeof(packet));
+            unsigned char snd_packet[32];
+            for (unsigned int i = 0; i < sizeof(snd_packet); ++i) {
+                snd_packet[i] = (unsigned char)i;
+            }
+            server.SendPacket(snd_packet, sizeof(snd_packet));
+            client.SendPacket(snd_packet, sizeof(snd_packet));
 
             while (true) {
-                unsigned char packet[32];
-                int bytes_read = client.ReceivePacket(packet, sizeof(packet));
+                unsigned char rcv_packet[32];
+                const int bytes_read = client.ReceivePacket(rcv_packet, sizeof(rcv_packet));
                 if (bytes_read == 0) {
                     break;
                 }
-                require(bytes_read == sizeof(packet));
-                for (unsigned int i = 0; i < sizeof(packet); ++i) {
-                    // require(packet[i] == (unsigned char)i);
+                require(bytes_read == sizeof(rcv_packet));
+                for (unsigned int i = 0; i < sizeof(rcv_packet); ++i) {
+                    require(rcv_packet[i] == (unsigned char)i);
                 }
             }
 

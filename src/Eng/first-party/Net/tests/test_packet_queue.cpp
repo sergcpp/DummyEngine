@@ -1,5 +1,9 @@
 #include "test_common.h"
 
+#include <algorithm>
+#include <numeric>
+#include <random>
+
 #include "../PacketQueue.h"
 
 class PacketQueueTestsFixture {
@@ -18,7 +22,7 @@ void test_packet_queue() {
     { // PacketQueue insert back
         PacketQueueTestsFixture f;
 
-        for (unsigned i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             PacketData data(0, 0, 0);
             data.sequence = i;
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
@@ -28,7 +32,7 @@ void test_packet_queue() {
     { // PacketQueue insert front
         PacketQueueTestsFixture f;
 
-        for (unsigned i = 100; i < 0; i++) {
+        for (int i = 100; i >= 0; --i) {
             PacketData data(0, 0, 0);
             data.sequence = i;
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
@@ -38,9 +42,15 @@ void test_packet_queue() {
     { // PacketQueue insert random
         PacketQueueTestsFixture f;
 
-        for (int i = 100; i < 0; i++) {
+        int sequence[100];
+        std::iota(std::begin(sequence), std::end(sequence), 0);
+
+        std::mt19937 rng({});
+        std::shuffle(std::begin(sequence), std::end(sequence), rng);
+
+        for (int i = 0; i < 100; i++) {
             PacketData data(0, 0, 0);
-            data.sequence = unsigned(rand() & 0xFF);
+            data.sequence = sequence[i];
             f.packet_queue.insert_sorted(data, f.maximum_sequence);
             require(f.packet_queue.verify_sorted(f.maximum_sequence));
         }

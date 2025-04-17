@@ -39,6 +39,9 @@
 #include <unordered_map>
 #include <vector>
 
+#pragma warning(push)
+#pragma warning(disable : 6385) // Reading invalid data
+
 namespace Optick
 {
 	class Memory
@@ -466,5 +469,7 @@ namespace Optick
 	};
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
+
+#pragma warning(pop)
 
 #endif //USE_OPTICK

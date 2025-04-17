@@ -53,11 +53,11 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
 
             uint32_t img_tex_type_bits = img_tex_mem_req.memoryTypeBits;
             const VkMemoryPropertyFlags img_tex_desired_mem_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            for (uint32_t i = 0; i < 32; i++) {
-                VkMemoryType mem_type = api_ctx_->mem_properties.memoryTypes[i];
+            for (uint32_t j = 0; j < 32; j++) {
+                VkMemoryType mem_type = api_ctx_->mem_properties.memoryTypes[j];
                 if (img_tex_type_bits & 1u) {
                     if ((mem_type.propertyFlags & img_tex_desired_mem_flags) == img_tex_desired_mem_flags) {
-                        img_alloc_info.memoryTypeIndex = i;
+                        img_alloc_info.memoryTypeIndex = j;
                         break;
                     }
                 }

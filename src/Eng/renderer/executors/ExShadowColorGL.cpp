@@ -48,25 +48,25 @@ void Eng::ExShadowColor::DrawShadowMaps(FgBuilder &builder) {
 
     using BDB = basic_draw_batch_t;
 
-    Ren::RastState rast_state;
-    rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
-    rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Dynamic);
+    Ren::RastState _rast_state;
+    _rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
+    _rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Dynamic);
 
-    rast_state.blend.enabled = true;
-    rast_state.blend.color_op = uint8_t(Ren::eBlendOp::Add);
-    rast_state.blend.src_color = uint16_t(Ren::eBlendFactor::Zero);
-    rast_state.blend.dst_color = uint16_t(Ren::eBlendFactor::SrcColor);
-    rast_state.blend.alpha_op = uint8_t(Ren::eBlendOp::Max);
-    rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
-    rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
+    _rast_state.blend.enabled = true;
+    _rast_state.blend.color_op = uint8_t(Ren::eBlendOp::Add);
+    _rast_state.blend.src_color = uint16_t(Ren::eBlendFactor::Zero);
+    _rast_state.blend.dst_color = uint16_t(Ren::eBlendFactor::SrcColor);
+    _rast_state.blend.alpha_op = uint8_t(Ren::eBlendOp::Max);
+    _rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
+    _rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
 
-    rast_state.depth.write_enabled = false;
-    rast_state.depth.test_enabled = true;
-    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
-    rast_state.scissor.enabled = true;
+    _rast_state.depth.write_enabled = false;
+    _rast_state.depth.test_enabled = true;
+    _rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
+    _rast_state.scissor.enabled = true;
 
-    rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = rast_state;
+    _rast_state.ApplyChanged(builder.rast_state());
+    builder.rast_state() = _rast_state;
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -200,12 +200,12 @@ void Eng::ExShadowColor::DrawShadowMaps(FgBuilder &builder) {
         }
     }
 
-    rast_state.depth.write_enabled = true;
-    rast_state.scissor.enabled = false;
-    rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Disabled);
-    rast_state.depth_bias = {};
-    rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = rast_state;
+    _rast_state.depth.write_enabled = true;
+    _rast_state.scissor.enabled = false;
+    _rast_state.poly.depth_bias_mode = uint8_t(Ren::eDepthBiasMode::Disabled);
+    _rast_state.depth_bias = {};
+    _rast_state.ApplyChanged(builder.rast_state());
+    builder.rast_state() = _rast_state;
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glBindVertexArray(0);

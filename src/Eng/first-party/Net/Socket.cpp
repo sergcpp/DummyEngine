@@ -39,7 +39,10 @@ public:
         //srand((unsigned int)time(nullptr));
 #ifdef _WIN32
         WSADATA WsaData;
-        WSAStartup(MAKEWORD(2, 2), &WsaData);
+        const int res = WSAStartup(MAKEWORD(2, 2), &WsaData);
+        if (res != 0) {
+            throw std::runtime_error("WSAStartup failed!");
+        }
 #endif
     }
 
@@ -386,7 +389,7 @@ bool Net::TCPSocket::Send(const void *data, int size) {
     assert(data);
     assert(size > 0);
 
-    int dst = connection_ ? connection_ : handle_;
+    uint64_t dst = connection_ ? connection_ : handle_;
     if (dst == 0) {
         return false;
     }
@@ -407,7 +410,7 @@ int Net::TCPSocket::Receive(void *data, int size) {
     assert(data);
     assert(size > 0);
 
-    int src = connection_ ? connection_ : handle_;
+    uint64_t src = connection_ ? connection_ : handle_;
     if (src == 0) {
         return 0;
     }
@@ -457,7 +460,7 @@ void Net::TCPSocket::WaitClientComplete(int t_ms) {
     }*/
 }
 
-bool Net::SetBlocking(int sock, bool is_blocking) {
+bool Net::SetBlocking(uint64_t sock, bool is_blocking) {
     bool ret = true;
 #ifdef _WIN32
     /// @note windows sockets are created in blocking mode by default

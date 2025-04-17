@@ -1574,20 +1574,19 @@ std::array<Ren::MaterialRef, 3> Eng::SceneManager::OnLoadMaterial(std::string_vi
                                            std::bind(&SceneManager::OnLoadSampler, this, _1));
         }
         if (status == Ren::eMatLoadStatus::CreatedFromData_NeedsMore) {
-            const size_t n = mat_src.find("---");
-            mat_src = mat_src.substr(n + 4);
+            const size_t n1 = mat_src.find("---");
+            mat_src = mat_src.substr(n1 + 4);
             if (mat_src[0] == '-' && mat_src[1] == '-' && mat_src[2] == '-') {
                 status = Ren::eMatLoadStatus::CreatedFromData_NeedsMore;
             } else {
-                const std::string backside_name = std::string(name) + "@back";
                 ret[1] = LoadMaterial(backside_name, mat_src, &status,
                                       std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
                                       std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
                                       std::bind(&SceneManager::OnLoadSampler, this, _1));
             }
             if (status == Ren::eMatLoadStatus::CreatedFromData_NeedsMore) {
-                const size_t n = mat_src.find("---");
-                mat_src = mat_src.substr(n + 4);
+                const size_t n2 = mat_src.find("---");
+                mat_src = mat_src.substr(n2 + 4);
                 ret[2] = LoadMaterial(volumetric_name, mat_src, &status,
                                       std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
                                       std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
@@ -1923,8 +1922,8 @@ void Eng::SceneManager::UpdateInstanceBufferRange(const uint32_t obj_beg, const 
         const Ren::Mat4f prev_world_from_object_trans = Transpose(tr.world_from_object_prev);
 
         instance_data_t &instance = instance_stage[i - obj_beg];
-        memcpy(&instance.model_matrix[0][0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
-        memcpy(&instance.prev_model_matrix[0][0], ValuePtr(prev_world_from_object_trans), 12 * sizeof(float));
+        memcpy(&instance._model_matrix[0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
+        memcpy(&instance._prev_model_matrix[0], ValuePtr(prev_world_from_object_trans), 12 * sizeof(float));
 
         if (obj.comp_mask & CompDrawableBit) {
             const Drawable &dr = drawables[obj.components[CompDrawable]];

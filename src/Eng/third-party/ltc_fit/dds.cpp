@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#pragma warning(push)
+#pragma warning(disable : 4996)
+
 #pragma pack( push, 1 )
 struct DDS_PIXELFORMAT
 {
@@ -88,3 +91,5 @@ bool SaveDDS( char const* path, unsigned format, unsigned texelSizeInBytes, unsi
     fclose( f );
     return true;
 }
+
+#pragma warning(pop)

@@ -77,6 +77,9 @@
 #include <ctime>
 #include <exception>
 
+#pragma warning(push)
+#pragma warning(disable : 6282 6262 6053 5216 5228 6326 28182 6001 6387 6258 6244 6031 6297 6246 6011 6340 28199)
+
 // Operating system configuration.
 //
 // Define 'cimg_OS' to : '0' for an unknown OS (will try to minize library dependancies).
@@ -4276,16 +4279,16 @@ namespace cimg_library {
       return m?(x?1:0):0;
     }
     inline int mod(const char x, const char m) {
-      return x>=0?x%m:(x%m?m+x%m:0);
+      return (x>=0)?(x%m):((x%m)?(m+x%m):0);
     }
     inline int mod(const short x, const short m) {
-      return x>=0?x%m:(x%m?m+x%m:0);
+      return (x>=0)?(x%m):((x%m)?(m+x%m):0);
     }
     inline int mod(const int x, const int m) {
-      return x>=0?x%m:(x%m?m+x%m:0);
+      return (x>=0)?(x%m):((x%m)?(m+x%m):0);
     }
     inline int mod(const long x, const long m) {
-      return x>=0?x%m:(x%m?m+x%m:0);
+      return (x>=0)?(x%m):((x%m)?(m+x%m):0);
     }
     inline int mod(const unsigned char x, const unsigned char m) {
       return x%m;
@@ -4389,7 +4392,13 @@ namespace cimg_library {
     **/
     inline double atof(const char *const str) {
       double x = 0, y = 1;
-      if (!str) return 0; else { std::sscanf(str,"%lf/%lf",&x,&y); return x/y; }
+        if (!str)
+            return 0;
+        else {
+            int ret = std::sscanf(str, "%lf/%lf", &x, &y);
+            (void)ret;
+            return x / y;
+        }
     }
 
     //! Compare the first \p n characters of two C-strings, ignoring the case.
@@ -4448,12 +4457,14 @@ namespace cimg_library {
             cimg_strescape('\'','\'');
             cimg_strescape('\"','\"');
           case 0 : *nd = 0; break;
-          case '0' : case '1' : case '2' : case '3' : case '4' : case '5' : case '6' : case '7' :
-            std::sscanf(ns,"%o",&val); while (*ns>='0' && *ns<='7') ++ns;
+          case '0' : case '1' : case '2' : case '3' : case '4' : case '5' : case '6' : case '7' : {
+            int ret = std::sscanf(ns,"%o",&val); (void)ret; while (*ns>='0' && *ns<='7') ++ns;
             *nd = val; break;
-          case 'x':
-            std::sscanf(++ns,"%x",&val); while ((*ns>='0' && *ns<='7') || (*ns>='a' && *ns<='f') || (*ns>='A' && *ns<='F')) ++ns;
+          }
+          case 'x': {
+            int ret = std::sscanf(++ns,"%x",&val); (void)ret; while ((*ns>='0' && *ns<='7') || (*ns>='a' && *ns<='f') || (*ns>='A' && *ns<='F')) ++ns;
             *nd = val; break;
+          }
           default : *nd = *(ns++);
           } else *nd = *(ns++);
     }
@@ -39850,6 +39861,8 @@ namespace cimg {
 
   // End of cimg_library:: namespace
 }
+
+#pragma warning(pop)
 
 #ifdef _cimg_redefine_None
 #define None 0

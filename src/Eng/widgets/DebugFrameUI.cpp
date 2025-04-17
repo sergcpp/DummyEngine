@@ -709,11 +709,12 @@ void Eng::DebugFrameUI::DrawConnectionCurves(Gui::Renderer *r, const int pass_in
     for (const int16_t j : next_indices) {
         const auto &next = back_info_smooth_.passes_info[j];
 
-        const Gui::Vec2f src_pos = pass.position + Gui::Vec2f{elem_size[0], -elem_border[1] - font_height};
-        const Gui::Vec2f dst_pos = next.position + Gui::Vec2f{0, -elem_border[1] - font_height};
+        const Gui::Vec2f _src_pos = pass.position + Gui::Vec2f{elem_size[0], -elem_border[1] - font_height};
+        const Gui::Vec2f _dst_pos = next.position + Gui::Vec2f{0, -elem_border[1] - font_height};
 
-        DrawCurve(r, src_pos, src_pos + Gui::Vec2f{0.15f * font_scale, 0}, dst_pos - Gui::Vec2f{0.15f * font_scale, 0},
-                  dst_pos, line_thin, (selected_pass_index_ != -1) ? ColorBlack2 : ColorBlack1);
+        DrawCurve(r, _src_pos, _src_pos + Gui::Vec2f{0.15f * font_scale, 0},
+                  _dst_pos - Gui::Vec2f{0.15f * font_scale, 0}, _dst_pos, line_thin,
+                  (selected_pass_index_ != -1) ? ColorBlack2 : ColorBlack1);
     }
 }
 

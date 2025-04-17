@@ -4,6 +4,9 @@
 
 #include <algorithm>
 
+#pragma warning(push)
+#pragma warning(disable : 6262) // function uses a lot of stack
+
 namespace Phy {
 const int BinningThreshold = 1024;
 const int BinsCount = 256;
@@ -189,3 +192,5 @@ Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const 
                 {res_right_bounds.min, res_right_bounds.max}};
     }
 }
+
+#pragma warning(pop)

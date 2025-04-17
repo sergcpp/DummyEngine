@@ -57,6 +57,9 @@ void swTexInit(SWtexture *t, SWenum mode, SWenum type, SWint w, SWint h,
         total_size += w * h / 4;
     }
     void *p = malloc(total_size);
+    if (!p) {
+        return;
+    }
     memcpy(p, pixels, total_size);
     swTexInitMove_malloced(t, mode, type, w, h, p);
 }

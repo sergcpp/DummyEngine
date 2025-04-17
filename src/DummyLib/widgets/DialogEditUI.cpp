@@ -5,6 +5,9 @@
 #include <Gui/BitmapFont.h>
 #include <Sys/Time_.h>
 
+#pragma warning(push)
+#pragma warning(disable : 6262) // Function uses a lot of stack
+
 namespace DialogEditUIInternal {
 const Gui::Vec2f ElementSizePx = Gui::Vec2f{96, 128};
 const Gui::Vec2f ElementSpacingPx = Gui::Vec2f{300, 160};
@@ -255,3 +258,5 @@ void DialogEditUI::PressRMB(const Gui::Vec2f &p, const bool push) {
 }
 
 void DialogEditUI::OnSwitchSequence(const int id) { selected_element_ = id; }
+
+#pragma warning(pop)

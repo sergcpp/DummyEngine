@@ -39,7 +39,7 @@ void PhyTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
     const auto &alloc = js_scene.elements.get_allocator();
 
     // Dynamic spheres
-    for (int x = 0; x < 0; x++) {
+    /*for (int x = 0; x < 0; x++) {
         for (int z = 0; z < 6; z++) {
             const double Radius = 0.5;
             const double xx = double(x - 1LL) * Radius * 1.5;
@@ -93,7 +93,7 @@ void PhyTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
 
             js_objects.Push(std::move(new_object));
         }
-    }
+    }*/
 
     // Static spheres
     for (int x = 0; x < 1; x++) {

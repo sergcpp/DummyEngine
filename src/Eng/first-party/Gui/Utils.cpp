@@ -378,7 +378,7 @@ Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const 
     assert(count);
 
     double min_sdist = std::numeric_limits<double>::max();
-    double res_pseudodist, res_orthogonality, res_t;
+    double res_pseudodist = 0.0, res_orthogonality = 0.0, res_t = 0.0;
 
     for (int i = 0; i < 2 + count; i++) {
         if (roots[i] < 0.0 || roots[i] > 1.0) {

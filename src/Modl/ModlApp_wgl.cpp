@@ -570,7 +570,10 @@ int ModlApp::Init(const int w, const int h) {
     }
 
     ctx_ = std::make_unique<Ren::Context>();
-    ctx_->Init(w, h, &log_, 2 /* validation_level */, false, false, nullptr);
+    if (!ctx_) {
+        return -1;
+    }
+    ctx_->Init(w, h, &log_, 2 /* validation_level */, false, false, {});
     InitInternal();
 
     Sys::InitWorker();
@@ -607,9 +610,9 @@ int ModlApp::Init(const int w, const int h) {
         p.w = p.h = checker_res;
         p.format = Ren::eTexFormat::RGB8;
 
-        Ren::eTexLoadStatus status;
-        checker_tex_ = ctx_->LoadTexture("__diag_checker", checker_data, p, ctx_->default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        Ren::eTexLoadStatus _status;
+        checker_tex_ = ctx_->LoadTexture("__diag_checker", checker_data, p, ctx_->default_mem_allocs(), &_status);
+        assert(_status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     return 0;
@@ -624,8 +627,8 @@ void ModlApp::Frame() {
     ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
 
     { // Update camera position
-        const Ren::Vec3f center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
-        cam_.SetupView(center - Ren::Vec3f{0.0f, 0.0f, 1.0f} * view_dist_, center, up);
+        const Ren::Vec3f _center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
+        cam_.SetupView(_center - Ren::Vec3f{0.0f, 0.0f, 1.0f} * view_dist_, _center, up);
     }
 
     if (view_mesh_->type() == Ren::eMeshType::Simple) {
@@ -1847,8 +1850,8 @@ std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
 
         int occ_count = 0;
         Vec3f unoccluded_dir;
-        for (int i = 0; i < SampleCount; i++) {
-            const Vec2f uv = Hammersley2D(i, SampleCount);
+        for (int j = 0; j < SampleCount; j++) {
+            const Vec2f uv = Hammersley2D(j, SampleCount);
 
             const float phi = 2 * Ren::Pi<float>() * uv[1];
             const float cos_phi = std::cos(phi);
@@ -1887,8 +1890,8 @@ Ren::TexRef ModlApp::OnTextureNeeded(std::string_view name) {
         Ren::TexParams p;
         p.sampling.filter = Ren::eTexFilter::Trilinear;
 
-        Ren::eTexLoadStatus status;
-        ctx_->LoadTexture(name, in_file_data, p, ctx_->default_mem_allocs(), &status);
+        Ren::eTexLoadStatus _status;
+        ctx_->LoadTexture(name, in_file_data, p, ctx_->default_mem_allocs(), &_status);
         printf("Texture %s loaded", name.data());
     }
 

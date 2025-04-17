@@ -32,31 +32,31 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
                                                 FgAllocTex &color_tex, FgAllocTex &ssao_tex) {
     using namespace ExSharedInternal;
 
-    Ren::RastState rast_state;
-    rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
+    Ren::RastState _rast_state;
+    _rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
 
     if ((*p_list_)->render_settings.debug_wireframe) {
-        rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
+        _rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
     } else {
-        rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
+        _rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
     }
 
-    rast_state.depth.test_enabled = true;
-    rast_state.depth.write_enabled = false;
-    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+    _rast_state.depth.test_enabled = true;
+    _rast_state.depth.write_enabled = false;
+    _rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
 
-    rast_state.blend.enabled = true;
-    rast_state.blend.src_color = rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::SrcAlpha);
-    rast_state.blend.dst_color = rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+    _rast_state.blend.enabled = true;
+    _rast_state.blend.src_color = _rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::SrcAlpha);
+    _rast_state.blend.dst_color = _rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
 
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, transparent_draw_fb_[0][fb_to_use_].id());
 
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
+    _rast_state.viewport[2] = view_state_->act_res[0];
+    _rast_state.viewport[3] = view_state_->act_res[1];
 
-    rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = rast_state;
+    _rast_state.ApplyChanged(builder.rast_state());
+    builder.rast_state() = _rast_state;
 
     glBindVertexArray(draw_pass_vi_->GetVAO());
 
@@ -121,7 +121,7 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     uint64_t cur_prog_id = 0xffffffffffffffff;
     uint64_t cur_mat_id = 0xffffffffffffffff;
 
-    backend_info_t backend_info;
+    static backend_info_t backend_info;
 
     for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
         const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];
@@ -134,9 +134,9 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         }
 
         if (batch.depth_write_bit) {
-            rast_state.depth.write_enabled = true;
-            rast_state.ApplyChanged(builder.rast_state());
-            builder.rast_state() = rast_state;
+            _rast_state.depth.write_enabled = true;
+            _rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = _rast_state;
         }
 
         if (cur_pipe_id != batch.pipe_id) {
@@ -166,10 +166,10 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
     }
 
-    rast_state.depth.write_enabled = false;
-    rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-    rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = rast_state;
+    _rast_state.depth.write_enabled = false;
+    _rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+    _rast_state.ApplyChanged(builder.rast_state());
+    builder.rast_state() = _rast_state;
 
     for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
         const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];
@@ -178,9 +178,9 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
         }
 
         if (batch.depth_write_bit) {
-            rast_state.depth.write_enabled = true;
-            rast_state.ApplyChanged(builder.rast_state());
-            builder.rast_state() = rast_state;
+            _rast_state.depth.write_enabled = true;
+            _rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = _rast_state;
         }
 
         if (cur_pipe_id != batch.pipe_id) {

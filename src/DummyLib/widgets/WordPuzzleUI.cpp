@@ -651,13 +651,13 @@ Gui::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, std::string_view text_
             while (text_data[next_pos] && next_pos < text_data.size()) {
                 const int next_start = next_pos;
 
-                uint32_t unicode;
-                next_pos += Gui::ConvChar_UTF8_to_Unicode(&text_data[next_pos], unicode);
+                uint32_t _unicode;
+                next_pos += Gui::ConvChar_UTF8_to_Unicode(&text_data[next_pos], _unicode);
 
                 // skip tag
-                if (unicode == Gui::g_unicode_less_than) {
-                    while (unicode != Gui::g_unicode_greater_than) {
-                        next_pos += Gui::ConvChar_UTF8_to_Unicode(&text_data[next_pos], unicode);
+                if (_unicode == Gui::g_unicode_less_than) {
+                    while (_unicode != Gui::g_unicode_greater_than) {
+                        next_pos += Gui::ConvChar_UTF8_to_Unicode(&text_data[next_pos], _unicode);
                     }
                     continue;
                 }
@@ -666,7 +666,7 @@ Gui::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, std::string_view text_
                     portion_buf[portion_buf_len++] = text_data[j];
                 }
 
-                if (unicode == Gui::g_unicode_spacebar) {
+                if (_unicode == Gui::g_unicode_spacebar) {
                     break;
                 }
             }

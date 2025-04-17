@@ -200,7 +200,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         log->Error("Framebuffer creation failed (error %i)", int(s));
 #ifdef VERBOSE_LOGGING
     } else {
-        log->Info("Framebuffer %i created", id_);
+        log->Info("Framebuffer %u created", id_);
 #endif
     }
     return (s == GL_FRAMEBUFFER_COMPLETE);

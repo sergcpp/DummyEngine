@@ -9,6 +9,9 @@ static inline void* sw_aligned_malloc(size_t size, size_t alignment) {
     size_t space = size + (alignment - 1);
 
     void *ptr = malloc(space + sizeof(void *));
+    if (!ptr) {
+        return NULL;
+    }
     void *original_ptr = ptr;
 
     char *ptr_bytes = (char *)ptr;

@@ -758,32 +758,32 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                 }
 
                 Sys::JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
-                for (const asset_output_t &out_file : outputs) {
+                for (const asset_output_t &_out_file : outputs) {
                     std::string out_t_str = "0", out_hash_str = "0";
-                    if (std::filesystem::exists(out_file.name)) {
-                        const uint32_t out_hash = HashFile(out_file.name, ctx.log);
+                    if (std::filesystem::exists(_out_file.name)) {
+                        const uint32_t out_hash = HashFile(_out_file.name, ctx.log);
                         out_hash_str = std::to_string(out_hash);
 
-                        const auto out_t = to_time_t(std::filesystem::last_write_time(out_file.name));
+                        const auto out_t = to_time_t(std::filesystem::last_write_time(_out_file.name));
                         out_t_str = std::to_string(out_t);
                     }
 
-                    if (!js_outputs.Has(out_file.name)) {
-                        js_outputs.Insert(out_file.name, Sys::JsObjectP{*ctx.mp_alloc});
+                    if (!js_outputs.Has(_out_file.name)) {
+                        js_outputs.Insert(_out_file.name, Sys::JsObjectP{*ctx.mp_alloc});
                     }
 
-                    Sys::JsObjectP &js_output = js_outputs[out_file.name].as_obj();
+                    Sys::JsObjectP &js_output = js_outputs[_out_file.name].as_obj();
 
                     // store new flags
                     if (!js_output.Has("flags")) {
                         js_output.Insert("flags",
-                                         Sys::JsStringP(std::to_string(uint32_t(out_file.flags)), *ctx.mp_alloc));
+                                         Sys::JsStringP(std::to_string(uint32_t(_out_file.flags)), *ctx.mp_alloc));
                     } else {
                         Sys::JsStringP &js_flags = js_output["flags"].as_str();
-                        js_flags.val = std::to_string(uint32_t(out_file.flags));
+                        js_flags.val = std::to_string(uint32_t(_out_file.flags));
                     }
 
-                    if (SkipAssetForCurrentBuild(out_file.flags)) {
+                    if (SkipAssetForCurrentBuild(_out_file.flags)) {
                         continue;
                     }
 
@@ -810,14 +810,14 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                     }
                 }
                 if (js_outputs.elements.size() > outputs.size()) {
-                    for (auto it = begin(js_outputs.elements); it != end(js_outputs.elements);) {
-                        auto it2 = std::find_if(outputs.begin(), outputs.end(), [it](const asset_output_t &el) {
-                            return el.name == it->first.c_str();
+                    for (auto it2 = begin(js_outputs.elements); it2 != end(js_outputs.elements);) {
+                        auto it3 = std::find_if(outputs.begin(), outputs.end(), [it2](const asset_output_t &el) {
+                            return el.name == it2->first.c_str();
                         });
-                        if (it2 == outputs.end()) {
-                            it = js_outputs.elements.erase(it);
+                        if (it3 == outputs.end()) {
+                            it2 = js_outputs.elements.erase(it2);
                         } else {
-                            ++it;
+                            ++it2;
                         }
                     }
                 }
@@ -845,12 +845,12 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                     js_deps[dependencies[i]] = std::move(js_dep);
                 }
                 if (js_deps.elements.size() > dependencies.size()) {
-                    for (auto it = begin(js_deps.elements); it != end(js_deps.elements);) {
-                        auto it2 = std::find(begin(dependencies), end(dependencies), it->first.c_str());
-                        if (it2 == end(dependencies)) {
-                            it = js_deps.elements.erase(it);
+                    for (auto it2 = begin(js_deps.elements); it2 != end(js_deps.elements);) {
+                        auto it3 = std::find(begin(dependencies), end(dependencies), it2->first.c_str());
+                        if (it3 == end(dependencies)) {
+                            it2 = js_deps.elements.erase(it2);
                         } else {
-                            ++it;
+                            ++it2;
                         }
                     }
                 }

@@ -15,16 +15,16 @@ Ren::ProbeStorage::ProbeStorage() = default;
 Ren::ProbeStorage::~ProbeStorage() { Destroy(); }
 
 bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, const eTexFormat format,
-                               const int res, const int capacity, ILog *log) {
-    const int mip_count = CalcMipCount(res, res, 16);
+                               const int resolution, const int capacity, ILog *log) {
+    const int mip_count = CalcMipCount(resolution, resolution, 16);
 
     Destroy();
 
     { // create new image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
-        img_info.extent.width = uint32_t(res);
-        img_info.extent.height = uint32_t(res);
+        img_info.extent.width = uint32_t(resolution);
+        img_info.extent.height = uint32_t(resolution);
         img_info.extent.depth = 1;
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = uint32_t(capacity) * 6;
@@ -177,7 +177,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
     for (int level = 0; level < mip_count; level++) {
         proto_region.imageSubresource.mipLevel = uint32_t(level);
 
-        const uint32_t _res = (unsigned(res) >> unsigned(level)), _init_res = std::min(BlankBlockRes, _res);
+        const uint32_t _res = (unsigned(resolution) >> unsigned(level)), _init_res = std::min(BlankBlockRes, _res);
         for (int layer = 0; layer < capacity; layer++) {
             for (uint32_t face = 0; face < 6; face++) {
                 proto_region.imageSubresource.baseArrayLayer = layer * 6 + face;
@@ -232,7 +232,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemAllocators *mem_allocs, c
 
     api_ctx_ = api_ctx;
     format_ = format;
-    res_ = res;
+    res_ = resolution;
     capacity_ = capacity;
     max_level_ = mip_count - 1;
 

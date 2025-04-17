@@ -29,6 +29,9 @@
 
 #include "optick_core.platform.h"
 
+#pragma warning(push)
+#pragma warning(disable : 6387)
+
 namespace Optick
 {
 	const char* Platform::GetName()
@@ -1732,6 +1735,9 @@ SymbolEngine* Platform::CreateSymbolEngine()
 }
 //////////////////////////////////////////////////////////////////////////
 }
+
+#pragma warning(pop)
+
 #endif //OPTICK_ENABLE_TRACING
 #endif //USE_OPTICK
 #endif //_MSC_VER

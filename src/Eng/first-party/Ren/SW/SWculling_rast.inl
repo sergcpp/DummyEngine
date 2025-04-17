@@ -8,6 +8,9 @@
 #define EVALUATOR(x, y) PASTER(x, y)
 #define NAME(fun) EVALUATOR(fun, POSTFIX)
 
+#pragma warning(push)
+#pragma warning(disable : 6001) // Using uninitialized memory
+
 //
 // Scanline processing
 //
@@ -952,3 +955,5 @@ void NAME(_swCullCtxClearBuf)(SWcull_ctx *ctx) {
 #endif
     }
 }
+
+#pragma warning(pop)

@@ -21,30 +21,30 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
 
     Ren::Context &ctx = builder.ctx();
 
-    Ren::RastState rast_state;
-    rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+    Ren::RastState _rast_state;
+    _rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
     if ((*p_list_)->render_settings.debug_wireframe) {
-        rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
+        _rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
     } else {
-        rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
+        _rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
     }
 
-    rast_state.depth.test_enabled = true;
+    _rast_state.depth.test_enabled = true;
     if (!(*p_list_)->render_settings.debug_wireframe) {
-        rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
+        _rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
     } else {
-        rast_state.depth.compare_op = unsigned(Ren::eCompareOp::LEqual);
+        _rast_state.depth.compare_op = unsigned(Ren::eCompareOp::LEqual);
     }
 
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, main_draw_fb_[0][fb_to_use_].id());
 
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
+    _rast_state.viewport[2] = view_state_->act_res[0];
+    _rast_state.viewport[3] = view_state_->act_res[1];
 
-    rast_state.ApplyChanged(builder.rast_state());
-    builder.rast_state() = rast_state;
+    _rast_state.ApplyChanged(builder.rast_state());
+    builder.rast_state() = _rast_state;
 
     //
     // Bind resources (shadow atlas, lightmap, cells item data)

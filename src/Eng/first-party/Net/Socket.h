@@ -9,7 +9,7 @@ namespace Net {
 
     class UDPSocket {
         std::shared_ptr<SocketContext> context_;
-        int handle_;
+        uint64_t handle_;
         Address local_addr_;
     public:
         UDPSocket();
@@ -36,7 +36,7 @@ namespace Net {
 
     class TCPSocket {
         std::shared_ptr<SocketContext> context_;
-        int handle_, connection_;
+        uint64_t handle_, connection_;
         Address remote_addr_;
     public:
         TCPSocket();
@@ -87,6 +87,6 @@ namespace Net {
         void WaitClientComplete(int t_ms);
     };
 
-    bool SetBlocking(int sock, bool is_blocking);
+    bool SetBlocking(uint64_t sock, bool is_blocking);
 }
 

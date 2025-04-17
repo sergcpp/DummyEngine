@@ -114,29 +114,29 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
             TransitionResourceStates(builder.ctx().api_ctx(), builder.ctx().current_cmd_buf(), Ren::AllStages,
                                      Ren::AllStages, transitions);
 
-            const Ren::Binding bindings[] = {{Ren::eBindTarget::TexSampled,
-                                              SkydomeDownsample::INPUT_TEX_SLOT,
-                                              {*color_tex.ref, (mip - 1) * 6 + face + 1}},
-                                             {Ren::eBindTarget::ImageRW,
-                                              SkydomeDownsample::OUTPUT_IMG_SLOT,
-                                              0,
-                                              1,
-                                              {*color_tex.ref, mip * 6 + face + 1}},
-                                             {Ren::eBindTarget::ImageRW,
-                                              SkydomeDownsample::OUTPUT_IMG_SLOT,
-                                              1,
-                                              1,
-                                              {*color_tex.ref, std::min(mip + 1, mip_count - 1) * 6 + face + 1}},
-                                             {Ren::eBindTarget::ImageRW,
-                                              SkydomeDownsample::OUTPUT_IMG_SLOT,
-                                              2,
-                                              1,
-                                              {*color_tex.ref, std::min(mip + 2, mip_count - 1) * 6 + face + 1}},
-                                             {Ren::eBindTarget::ImageRW,
-                                              SkydomeDownsample::OUTPUT_IMG_SLOT,
-                                              3,
-                                              1,
-                                              {*color_tex.ref, std::min(mip + 3, mip_count - 1) * 6 + face + 1}}};
+            const Ren::Binding _bindings[] = {{Ren::eBindTarget::TexSampled,
+                                               SkydomeDownsample::INPUT_TEX_SLOT,
+                                               {*color_tex.ref, (mip - 1) * 6 + face + 1}},
+                                              {Ren::eBindTarget::ImageRW,
+                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                               0,
+                                               1,
+                                               {*color_tex.ref, mip * 6 + face + 1}},
+                                              {Ren::eBindTarget::ImageRW,
+                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                               1,
+                                               1,
+                                               {*color_tex.ref, std::min(mip + 1, mip_count - 1) * 6 + face + 1}},
+                                              {Ren::eBindTarget::ImageRW,
+                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                               2,
+                                               1,
+                                               {*color_tex.ref, std::min(mip + 2, mip_count - 1) * 6 + face + 1}},
+                                              {Ren::eBindTarget::ImageRW,
+                                               SkydomeDownsample::OUTPUT_IMG_SLOT,
+                                               3,
+                                               1,
+                                               {*color_tex.ref, std::min(mip + 3, mip_count - 1) * 6 + face + 1}}};
 
             SkydomeDownsample::Params uniform_params = {};
             uniform_params.img_size[0] = (color_tex.ref->params.w >> mip);
@@ -150,7 +150,7 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
                                SkydomeDownsample::LOCAL_GROUP_SIZE_Y,
                            1u};
 
-            DispatchCompute(*pi_skydome_downsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+            DispatchCompute(*pi_skydome_downsample_, grp_count, _bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
         }
     }

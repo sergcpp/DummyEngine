@@ -17,7 +17,7 @@ void test_alloc() {
     printf("Test alloc              | ");
 
     { // Basic usage
-        char buf[256];
+        static char buf[256];
         for (int i = 0; i < 256; i++) {
             buf[i] = (char)i;
         }
@@ -39,8 +39,7 @@ void test_alloc() {
     }
 
     { // Usage with stl
-
-        char buf[512];
+        static char buf[512];
         MonoAlloc<char> my_alloc(buf, sizeof(buf));
 
         std::vector<int, MonoAlloc<int>> vec(my_alloc);
@@ -89,7 +88,7 @@ void test_alloc() {
     }
 
     { // Usage with binary tree
-        char buf[16 * 1024];
+        static char buf[16 * 1024];
         MonoAlloc<char> my_alloc(buf, sizeof(buf));
 
         BinaryTree<int, std::less<int>, MonoAlloc<int>> tree(std::less<int>(), my_alloc);
@@ -119,7 +118,7 @@ void test_alloc() {
     { // Pool alloc usage
         PoolAllocator allocator(4, 255);
 
-        int *pointers[512];
+        static int *pointers[512];
 
         for (int i = 0; i < 512; i++) {
             pointers[i] = (int *)allocator.Alloc();
@@ -146,7 +145,7 @@ void test_alloc() {
     { // Multi-pool alloc
         MultiPoolAllocator<uint8_t> allocator(32, 512);
 
-        uint8_t *pointers[16][256];
+        static uint8_t *pointers[16][256];
 
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 256; j++) {

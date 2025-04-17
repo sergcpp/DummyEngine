@@ -227,7 +227,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices};
     const auto &materials = *(*p_list_)->materials;
 
-    backend_info_t _dummy = {};
+    static backend_info_t _dummy = {};
 
     { // actual drawing
         using CDB = custom_draw_batch_t;
