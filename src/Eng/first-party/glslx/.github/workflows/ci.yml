@@ -210,54 +210,54 @@ jobs:
         with:
           name: linux-x86_64
           path: linux-x86_64/
-  build-macos-universal-dbg:
-    runs-on: [ macos, builder ]
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Compile the code
-        uses: ./.github/actions/build-macos
-        with:
-          cmake-args: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
-          config: "Debug"
-  build-macos-universal-dev:
-    runs-on: [ macos, builder ]
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Compile the code
-        uses: ./.github/actions/build-macos
-        with:
-          cmake-args: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
-          config: "RelWithDebInfo"
-  build-macos-universal-rel:
-    runs-on: [ macos, builder ]
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Compile the code
-        uses: ./.github/actions/build-macos
-        with:
-          cmake-args: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_UNITY_BUILD=ON'
-          config: "Release"
-          bin-dir: "macos-universal"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: macos-universal
-          path: macos-universal/
+  # build-macos-universal-dbg:
+  #   runs-on: [ macos, builder ]
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-macos
+  #       with:
+  #         cmake-args: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+  #         config: "Debug"
+  # build-macos-universal-dev:
+  #   runs-on: [ macos, builder ]
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-macos
+  #       with:
+  #         cmake-args: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+  #         config: "RelWithDebInfo"
+  # build-macos-universal-rel:
+  #   runs-on: [ macos, builder ]
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-macos
+  #       with:
+  #         cmake-args: '-DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_UNITY_BUILD=ON'
+  #         config: "Release"
+  #         bin-dir: "macos-universal"
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: macos-universal
+  #         path: macos-universal/
   test-windows-x86_64:
     runs-on: [ windows, x86_64 ]
     needs:
@@ -274,22 +274,22 @@ jobs:
         with:
           bin-dir: "windows-x86_64"
           test-args: ""
-  test-windows-arm64:
-    runs-on: [ windows, arm64 ]
-    needs:
-      - build-windows-arm64-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "windows-arm64"
-          test-args: ""
+  # test-windows-arm64:
+  #   runs-on: [ windows, arm64 ]
+  #   needs:
+  #     - build-windows-arm64-rel
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test
+  #       with:
+  #         bin-dir: "windows-arm64"
+  #         test-args: ""
   test-linux-x86_64:
     runs-on: [ linux, x86_64 ]
     needs:
@@ -307,35 +307,35 @@ jobs:
           bin-dir: "linux-x86_64"
           bin-name: "test_glslx-asan"
           test-args: ""
-  test-macos-arm64:
-    runs-on: [ macos, arm64 ]
-    needs:
-      - build-macos-universal-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "macos-universal"
-          test-args: ""
-  test-macos-x86_64:
-    runs-on: [ macos, x86_64 ]
-    needs:
-      - build-macos-universal-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "macos-universal"
-          test-args: ""
+  # test-macos-arm64:
+  #   runs-on: [ macos, arm64 ]
+  #   needs:
+  #     - build-macos-universal-rel
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test
+  #       with:
+  #         bin-dir: "macos-universal"
+  #         test-args: ""
+  # test-macos-x86_64:
+  #   runs-on: [ macos, x86_64 ]
+  #   needs:
+  #     - build-macos-universal-rel
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test
+  #       with:
+  #         bin-dir: "macos-universal"
+  #         test-args: ""

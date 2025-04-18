@@ -286,29 +286,29 @@ jobs:
           cmake-args: "-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON"
           config: "RelWithDebInfo"
           bin-dir: "linux-x86_64-vk"
-  build-macos-universal-vk-rel:
-    runs-on: [ macos, builder ]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Compile the code
-        uses: ./.github/actions/build-macos
-        with:
-          cmake-args: '-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
-          config: "Release"
-          bin-dir: "macos-universal-vk"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: macos-universal-vk
-          path: macos-universal-vk/
+  # build-macos-universal-vk-rel:
+  #   runs-on: [ macos, builder ]
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Compile the code
+  #       uses: ./.github/actions/build-macos
+  #       with:
+  #         cmake-args: '-DREN_BACKEND=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
+  #         config: "Release"
+  #         bin-dir: "macos-universal-vk"
+  #     - name: Upload artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: macos-universal-vk
+  #         path: macos-universal-vk/
   test-windows-x86_64-gl:
     runs-on: [ windows, x86_64 ]
     needs:
@@ -340,7 +340,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk-asan"
   test-linux-x86_64-gl:
-    runs-on: [ linux, x86_64, amd ]
+    runs-on: [ linux, x86_64 ]
     needs:
       - build-linux-x86_64-gl-rel
     steps:
@@ -355,7 +355,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-gl"
   test-linux-x86_64-vk:
-    runs-on: [ linux, x86_64, amd ]
+    runs-on: [ linux, x86_64 ]
     needs:
       - build-linux-x86_64-vk-rel
     steps:

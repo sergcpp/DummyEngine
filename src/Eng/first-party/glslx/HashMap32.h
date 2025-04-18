@@ -4,6 +4,7 @@
 #include <cstring>
 #include <functional> // for std::equal_to
 #include <string>
+#include <utility>
 
 namespace glslx {
 inline uint32_t _lua_hash(void const *v, const uint32_t l) {

@@ -11,10 +11,10 @@ runs:
         path: ${{ inputs.bin-dir }}/
     - run: |
         export ASAN_OPTIONS="windows_hook_legacy_allocators=false"
-        chmod +x ./${{ inputs.bin-dir }}/test_SW
+        chmod +x ./${{ inputs.bin-dir }}/test_SW-asan
         chmod +x ./${{ inputs.bin-dir }}/test_Ren-asan
         WORK_DIR=`pwd`
         cd ../../builds/Ren
-        $WORK_DIR/${{ inputs.bin-dir }}/test_SW
+        $WORK_DIR/${{ inputs.bin-dir }}/test_SW-asan
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ren-asan
       shell: bash
