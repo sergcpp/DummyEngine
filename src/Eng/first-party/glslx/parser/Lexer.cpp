@@ -698,14 +698,6 @@ std::string glslx::Lexer::CalcKeywordsLookupTable() {
         values[slot] = bucket[0];
     }
 
-    auto lookup_keyword = [&](const char *name) {
-        const int d = intermediate[_str_hash(0, name) % sz];
-        if (d < 0) {
-            return values[-d - 1];
-        }
-        return values[_str_hash(d, name) % sz];
-    };
-
     std::string out;
     for (int j = 0; j < sz; ++j) {
         out += "X(";

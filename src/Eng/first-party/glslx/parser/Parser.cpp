@@ -80,22 +80,25 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
     }
 
     // Resolve function prototypes
-    for (ast_function *func : ast_->functions) {
-        if (func->is_prototype) {
-            continue;
-        }
-        for (ast_function *proto : ast_->functions) {
-            if (!proto->is_prototype) {
+    for (auto it = ast_->functions_by_name.begin(); it != ast_->functions_by_name.end(); ++it) {
+        for (ast_function *func : it->val) {
+            if (func->is_prototype) {
                 continue;
             }
-            if (strcmp(func->name, proto->name) == 0 && func->parameters.size() == proto->parameters.size()) {
-                bool args_match = true;
-                for (int i = 0; i < int(func->parameters.size()) && args_match; ++i) {
-                    args_match &= is_same_type(proto->parameters[i]->base_type, func->parameters[i]->base_type);
+            for (ast_function *proto : it->val) {
+                if (!proto->is_prototype) {
+                    continue;
                 }
-                if (args_match) {
-                    func->prototype = proto;
-                    break;
+                assert(strcmp(func->name, proto->name) == 0);
+                if (func->parameters.size() == proto->parameters.size()) {
+                    bool args_match = true;
+                    for (int i = 0; i < int(func->parameters.size()) && args_match; ++i) {
+                        args_match &= is_same_type(proto->parameters[i]->base_type, func->parameters[i]->base_type);
+                    }
+                    if (args_match) {
+                        func->prototype = proto;
+                        break;
+                    }
                 }
             }
         }
@@ -103,28 +106,19 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
 
     // Resolve function calls
     for (ast_function_call *call : function_calls_) {
-        int overloads_count = 0;
-        for (ast_function *func : ast_->functions) {
-            if (func->is_prototype) {
-                continue;
-            }
-            if (strcmp(func->name, call->name) == 0) {
-                ++overloads_count;
-            }
+        auto *p_find = ast_->functions_by_name.Find(call->name);
+        if (!p_find) {
+            continue;
         }
-
-        // Try to find exact match
-        for (ast_function *func : ast_->functions) {
-            if (func->is_prototype && call->func) {
-                continue;
-            }
-            if (strcmp(func->name, call->name) == 0 && func->parameters.size() == call->parameters.size()) {
-                if (overloads_count == 1) {
-                    call->func = func;
-                    if (!func->is_prototype) {
-                        break;
-                    }
-                } else {
+        if ((*p_find).size() == 1) {
+            call->func = (*p_find)[0];
+        } else {
+            // Try to find exact match
+            for (ast_function *func : *p_find) {
+                if (func->is_prototype && call->func) {
+                    continue;
+                }
+                if (func->parameters.size() == call->parameters.size()) {
                     bool args_match = true;
                     for (int i = 0; i < int(func->parameters.size()); ++i) {
                         int array_dims = 0;
@@ -148,11 +142,11 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
 
         // Try to find compatible
         if (!call->func) {
-            for (ast_function *func : ast_->functions) {
+            for (ast_function *func : *p_find) {
                 if (func->is_prototype && call->func) {
                     continue;
                 }
-                if (strcmp(func->name, call->name) == 0 && func->parameters.size() == call->parameters.size()) {
+                if (func->parameters.size() == call->parameters.size()) {
                     bool args_match = true;
                     for (int i = 0; i < int(func->parameters.size()); ++i) {
                         int array_dims = 0;
@@ -316,10 +310,22 @@ bool glslx::Parser::ParseSource(std::string_view source) {
 
                     if (new_func) {
                         ast_->functions.push_back(new_func);
+                        auto *p_find = ast_->functions_by_name.Find(new_func->name);
+                        if (p_find) {
+                            p_find->push_back(new_func);
+                        } else {
+                            ast_->functions_by_name.Insert(new_func->name, {new_func});
+                        }
                     }
                 }
             } else {
                 ast_->functions.push_back(function);
+                auto *p_find = ast_->functions_by_name.Find(function->name);
+                if (p_find) {
+                    p_find->push_back(function);
+                } else {
+                    ast_->functions_by_name.Insert(function->name, {function});
+                }
             }
         }
     }
@@ -438,6 +444,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
                 return false;
             }
             ast_->structures.push_back(unique);
+            ast_->structures_by_name.Insert(unique->name, unique);
             if (is_type(eTokType::Semicolon)) {
                 return true;
             } else {
@@ -989,7 +996,11 @@ void CHECK_FORMAT_STRING(2, 3) glslx::Parser::fatal(_Printf_format_string_ const
     free(message);
 
     error_ = concat;
-    ast_->str.push_back(concat);
+    const bool inserted = ast_->str.Insert(concat);
+    if (!inserted) {
+        error_ = *ast_->str.Find(concat);
+        ast_->alloc.allocator.deallocate(concat, banner_len + message_len + 1);
+    }
 }
 
 glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expression) {
@@ -1396,7 +1407,7 @@ glslx::ast_interface_block *glslx::Parser::ParseInterfaceBlock(const eStorage st
         const int fields_count = int(unique->fields.size());
         for (int i = 0; i < fields_count; ++i) {
             // check if variable already exists
-            ast_variable *variable = unique->fields[i];
+            const ast_variable *variable = unique->fields[i];
             if (FindVariable(variable->name)) {
                 fatal("'%s' is already declared in this scope", variable->name);
                 return nullptr;
@@ -2747,10 +2758,9 @@ glslx::ast_binary_expression *glslx::Parser::CreateExpression() {
 }
 
 glslx::ast_type *glslx::Parser::FindType(const char *name) {
-    for (int i = 0; i < int(ast_->structures.size()); ++i) {
-        if (strcmp(ast_->structures[i]->name, name) == 0) {
-            return ast_->structures[i];
-        }
+    ast_struct **ret = ast_->structures_by_name.Find(name);
+    if (ret) {
+        return *ret;
     }
     return nullptr;
 }
@@ -2775,13 +2785,13 @@ glslx::ast_type *glslx::Parser::GetType(ast_expression *expression) {
         return GetType(((ast_field_or_swizzle *)expression)->field);
     case eExprType::ArraySubscript:
         return GetType(((ast_array_subscript *)expression)->operand);
-    case eExprType::FunctionCall:
-        for (int i = 0; i < int(ast_->functions.size()); ++i) {
-            if (strcmp(ast_->functions[i]->name, static_cast<ast_function_call *>(expression)->name) == 0) {
-                return ast_->functions[i]->return_type;
-            }
+    case eExprType::FunctionCall: {
+        auto *p_find = ast_->functions_by_name.Find(static_cast<ast_function_call *>(expression)->name);
+        if (p_find) {
+            return (*p_find)[0]->return_type;
         }
         break;
+    }
     case eExprType::ConstructorCall:
         return static_cast<ast_constructor_call *>(expression)->type;
     default:
@@ -3539,22 +3549,22 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
             }
         }
 
-        for (int i = 0; i < int(tu->functions.size()); ++i) {
-            if (strcmp(func_call->name, tu->functions[i]->name) == 0 &&
-                tu->functions[i]->parameters.size() == arg_types.size()) {
-
-                bool args_match = true;
-                for (int j = 0; j < int(arg_types.size()) && args_match; ++j) {
-                    const ast_type *arg_type = tu->functions[i]->parameters[j]->base_type;
-                    if (!arg_type) {
-                        args_match = false;
-                        break;
+        auto *p_find = tu->functions_by_name.Find(func_call->name);
+        if (p_find) {
+            for (ast_function *f : *p_find) {
+                if (f->parameters.size() == arg_types.size()) {
+                    bool args_match = true;
+                    for (int j = 0; j < int(arg_types.size()) && args_match; ++j) {
+                        const ast_type *arg_type = f->parameters[j]->base_type;
+                        if (!arg_type) {
+                            args_match = false;
+                            break;
+                        }
+                        args_match &= is_same_type(arg_type, arg_types[j]);
                     }
-                    args_match &= is_same_type(arg_type, arg_types[j]);
-                }
-
-                if (args_match) {
-                    return tu->functions[i]->return_type;
+                    if (args_match) {
+                        return f->return_type;
+                    }
                 }
             }
         }

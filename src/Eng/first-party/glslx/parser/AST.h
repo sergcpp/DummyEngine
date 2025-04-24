@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "../Bitmask.h"
+#include "../HashMap32.h"
 #include "Lexer.h"
 
 namespace glslx {
@@ -161,6 +162,7 @@ struct ast_variable;
 struct ast_default_precision;
 
 enum class eTrUnitType : uint8_t {
+    Unknown,
     Compute,
     Vertex,
     TessControl,
@@ -183,13 +185,17 @@ struct TrUnit {
     std::vector<ast_default_precision *> default_precision;
     std::vector<ast_interface_block *> interface_blocks;
     std::vector<ast_struct *> structures;
+    // NOTE: structure declarations must be in specific order
+    HashMap32<const char *, ast_struct *> structures_by_name;
     std::vector<ast_global_variable *> globals;
     std::vector<ast_function *> functions;
+    // NOTE: function declarations must be in specific order
+    HashMap32<const char *, SmallVector<ast_function *, 1>> functions_by_name;
 
     mutable ast_allocator alloc;
-    std::vector<char *> str;
+    HashSet32<char *> str;
 
-    explicit TrUnit(eTrUnitType _type) : type(_type) {}
+    explicit TrUnit(const eTrUnitType _type = eTrUnitType::Unknown) : type(_type) {}
     ~TrUnit();
 };
 
@@ -202,7 +208,7 @@ struct ast_type : ast_node<ast_type> {
 struct ast_builtin : ast_type {
     eKeyword type;
 
-    explicit ast_builtin(eKeyword _type) noexcept : ast_type(true), type(_type) {}
+    explicit ast_builtin(const eKeyword _type) noexcept : ast_type(true), type(_type) {}
 };
 
 struct ast_struct : ast_type {
@@ -256,7 +262,7 @@ struct ast_variable : ast_node<ast_variable> {
     ast_type *base_type = nullptr;
     vector<ast_constant_expression *> array_sizes;
 
-    ast_variable(eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept : type(_type), array_sizes(_alloc) {}
+    ast_variable(const eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept : type(_type), array_sizes(_alloc) {}
     OPERATOR_NEW(ast_variable)
 };
 
@@ -297,12 +303,12 @@ struct ast_layout_qualifier : ast_node<ast_layout_qualifier> {
 };
 
 struct ast_function : ast_node<ast_function> {
+    bool is_prototype = false;
+    Bitmask<eFunctionAttribute> attributes;
     ast_type *return_type = nullptr;
     const char *name = nullptr;
     vector<ast_function_parameter *> parameters;
     vector<ast_statement *> statements;
-    bool is_prototype = false;
-    Bitmask<eFunctionAttribute> attributes;
     ast_function *prototype = nullptr;
 
     explicit ast_function(MultiPoolAllocator<char> &_alloc) noexcept : parameters(_alloc), statements(_alloc) {}
@@ -331,11 +337,11 @@ enum class eStatement : uint8_t {
 struct ast_statement : ast_node<ast_statement> {
     eStatement type;
 
-    explicit ast_statement(eStatement _type) noexcept : type(_type) {}
+    explicit ast_statement(const eStatement _type) noexcept : type(_type) {}
 };
 
 struct ast_simple_statement : ast_statement {
-    explicit ast_simple_statement(eStatement _type) noexcept : ast_statement(_type) {}
+    explicit ast_simple_statement(const eStatement _type) noexcept : ast_statement(_type) {}
 };
 
 struct ast_compound_statement : ast_statement {
@@ -370,7 +376,7 @@ struct ast_if_statement : ast_simple_statement {
     ast_statement *then_statement = nullptr;
     ast_statement *else_statement = nullptr;
 
-    explicit ast_if_statement(Bitmask<eCtrlFlowAttribute> _attributes) noexcept
+    explicit ast_if_statement(const Bitmask<eCtrlFlowAttribute> _attributes) noexcept
         : ast_simple_statement(eStatement::If), attributes(_attributes) {}
 };
 
@@ -379,8 +385,8 @@ struct ast_switch_statement : ast_simple_statement {
     ast_expression *expression = nullptr;
     vector<ast_statement *> statements;
 
-    ast_switch_statement(MultiPoolAllocator<char> &_alloc, Bitmask<eCtrlFlowAttribute> _attributes) noexcept
-        : ast_simple_statement(eStatement::Switch), statements(_alloc), attributes(_attributes) {}
+    ast_switch_statement(MultiPoolAllocator<char> &_alloc, const Bitmask<eCtrlFlowAttribute> _attributes) noexcept
+        : ast_simple_statement(eStatement::Switch), attributes(_attributes), statements(_alloc) {}
     OPERATOR_NEW(ast_switch_statement)
 };
 
@@ -393,16 +399,16 @@ struct ast_case_label_statement : ast_simple_statement {
 
 struct ctrl_flow_params_t {
     Bitmask<eCtrlFlowAttribute> attributes;
-    int dependency_length = 0;
-    int min_iterations = 0, max_iterations = 0;
-    int iteration_multiple = 0;
-    int peel_count = 0, partial_count = 0;
+    short dependency_length = 0;
+    short min_iterations = 0, max_iterations = 0;
+    short iteration_multiple = 0;
+    short peel_count = 0, partial_count = 0;
 };
 
 struct ast_loop_statement : ast_simple_statement {
     ctrl_flow_params_t flow_params;
 
-    ast_loop_statement(eStatement _type, ctrl_flow_params_t _flow_params) noexcept
+    ast_loop_statement(const eStatement _type, const ctrl_flow_params_t _flow_params) noexcept
         : ast_simple_statement(_type), flow_params(_flow_params) {}
 };
 
@@ -410,15 +416,15 @@ struct ast_while_statement : ast_loop_statement {
     ast_simple_statement *condition = nullptr;
     ast_statement *body = nullptr;
 
-    explicit ast_while_statement(ctrl_flow_params_t _flow_params) noexcept
+    explicit ast_while_statement(const ctrl_flow_params_t _flow_params) noexcept
         : ast_loop_statement(eStatement::While, _flow_params) {}
 };
 
 struct ast_do_statement : ast_loop_statement {
-    ast_statement *body = nullptr;
     ast_expression *condition = nullptr;
+    ast_statement *body = nullptr;
 
-    explicit ast_do_statement(ctrl_flow_params_t _flow_params) noexcept
+    explicit ast_do_statement(const ctrl_flow_params_t _flow_params) noexcept
         : ast_loop_statement(eStatement::Do, _flow_params) {}
 };
 
@@ -428,12 +434,12 @@ struct ast_for_statement : ast_loop_statement {
     ast_expression *loop = nullptr;
     ast_statement *body = nullptr;
 
-    explicit ast_for_statement(ctrl_flow_params_t _flow_params) noexcept
+    explicit ast_for_statement(const ctrl_flow_params_t _flow_params) noexcept
         : ast_loop_statement(eStatement::For, _flow_params) {}
 };
 
 struct ast_jump_statement : ast_statement {
-    explicit ast_jump_statement(eStatement _type) noexcept : ast_statement(_type) {}
+    explicit ast_jump_statement(const eStatement _type) noexcept : ast_statement(_type) {}
 };
 
 struct ast_continue_statement : ast_jump_statement {
@@ -457,7 +463,7 @@ struct ast_discard_statement : ast_jump_statement {
 struct ast_ext_jump_statement : ast_jump_statement {
     eKeyword keyword;
 
-    explicit ast_ext_jump_statement(eKeyword _keyword) noexcept
+    explicit ast_ext_jump_statement(const eKeyword _keyword) noexcept
         : ast_jump_statement(eStatement::ExtJump), keyword(_keyword) {}
 };
 

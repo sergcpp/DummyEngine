@@ -16,25 +16,6 @@
 #include "Lexer.h"
 
 namespace glslx {
-struct top_level_t {
-    eStorage storage = eStorage::None;
-    eAuxStorage aux_storage = eAuxStorage::None;
-    Bitmask<eMemory> memory_flags;
-    ePrecision precision = ePrecision::None;
-    eInterpolation interpolation = eInterpolation::None;
-    ast_type *type = nullptr;
-    ast_constant_expression *initial_value = nullptr;
-    vector<ast_constant_expression *> array_sizes;
-    size_t array_on_type_offset = 0;
-    vector<ast_layout_qualifier *> layout_qualifiers;
-    bool is_invariant = false;
-    bool is_precise = false;
-    bool is_array = false;
-    const char *name = nullptr;
-
-    explicit top_level_t(MultiPoolAllocator<char> &alloc) : array_sizes(alloc), layout_qualifiers(alloc) {}
-};
-
 class Parser {
     using scope = std::vector<ast_variable *>;
 
@@ -54,13 +35,17 @@ class Parser {
         if (!str) {
             return nullptr;
         }
+        char **existing = ast_->str.Find(str);
+        if (existing) {
+            return *existing;
+        }
         const size_t size = strlen(str) + 1;
         char *copy = ast_->alloc.allocator.allocate(size);
         if (!copy) {
             return nullptr;
         }
         memcpy(copy, str, size);
-        ast_->str.push_back(copy);
+        ast_->str.Insert(copy);
         return copy;
     }
 
@@ -84,6 +69,25 @@ class Parser {
     [[nodiscard]] const char *error() const { return error_; }
 
   protected:
+    struct top_level_t {
+        eStorage storage = eStorage::None;
+        eAuxStorage aux_storage = eAuxStorage::None;
+        Bitmask<eMemory> memory_flags;
+        ePrecision precision = ePrecision::None;
+        eInterpolation interpolation = eInterpolation::None;
+        ast_type *type = nullptr;
+        ast_constant_expression *initial_value = nullptr;
+        vector<ast_constant_expression *> array_sizes;
+        size_t array_on_type_offset = 0;
+        vector<ast_layout_qualifier *> layout_qualifiers;
+        bool is_invariant = false;
+        bool is_precise = false;
+        bool is_array = false;
+        const char *name = nullptr;
+
+        explicit top_level_t(MultiPoolAllocator<char> &alloc) : array_sizes(alloc), layout_qualifiers(alloc) {}
+    };
+
     bool next();
     bool expect(eTokType type);
     bool expect(eOperator op);

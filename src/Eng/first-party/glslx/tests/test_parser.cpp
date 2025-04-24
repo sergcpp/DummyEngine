@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "../Clone.h"
 #include "../WriterGLSL.h"
 
 void test_parser() {
@@ -19,6 +20,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -33,6 +37,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -44,10 +51,10 @@ void test_parser() {
                                      "buffer buffer_block { float w; };\n"
                                      "\n"
                                      "// same thing with instance names\n"
-                                     "uniform uniform_block { float x; } uniform_data;\n"
-                                     "in input_block { float y; } input_data;\n"
-                                     "out output_block { float z; } output_data;\n"
-                                     "buffer buffer_block { float w; } buffer_data;\n";
+                                     "uniform uniform_block2 { float x; } uniform_data;\n"
+                                     "in input_block2 { float y; } input_data;\n"
+                                     "out output_block2 { float z; } output_data;\n"
+                                     "buffer buffer_block2 { float w; } buffer_data;\n";
         static const char *expected = "uniform uniform_block {\n"
                                       "    float x;\n"
                                       "};\n"
@@ -60,21 +67,24 @@ void test_parser() {
                                       "buffer buffer_block {\n"
                                       "    float w;\n"
                                       "};\n"
-                                      "uniform uniform_block {\n"
+                                      "uniform uniform_block2 {\n"
                                       "    float x;\n"
                                       "} uniform_data;\n"
-                                      "in input_block {\n"
+                                      "in input_block2 {\n"
                                       "    float y;\n"
                                       "} input_data;\n"
-                                      "out output_block {\n"
+                                      "out output_block2 {\n"
                                       "    float z;\n"
                                       "} output_data;\n"
-                                      "buffer buffer_block {\n"
+                                      "buffer buffer_block2 {\n"
                                       "    float w;\n"
                                       "} buffer_data;\n";
 
         Parser parser(source, "interface_blocks.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -101,6 +111,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -121,6 +134,9 @@ void test_parser() {
 
         Parser parser(source, "continuations.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -153,6 +169,9 @@ void test_parser() {
 
         Parser parser(source, "sequence.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -284,6 +303,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -302,6 +324,9 @@ void test_parser() {
 
         Parser parser(source, "comments.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -323,6 +348,9 @@ void test_parser() {
 
         Parser parser(source, "booleans.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -385,6 +413,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -421,10 +452,11 @@ void test_parser() {
                                        "    float16_t test_f16_hf_upper = 1.5hf;\n"
                                        "}\n";
 
-        float f = 1.3f;
-
         Parser parser(source, "float_literals.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -496,6 +528,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -552,6 +587,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -570,6 +608,9 @@ void test_parser() {
 
         Parser parser(source, "if_statement.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -593,6 +634,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -613,6 +657,9 @@ void test_parser() {
 
         Parser parser(source, "while_statement.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -643,6 +690,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -666,6 +716,9 @@ void test_parser() {
 
         Parser parser(source, "ternary.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -720,6 +773,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -755,6 +811,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -767,6 +826,9 @@ void test_parser() {
 
         Parser parser(source, "assign.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -793,6 +855,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -804,6 +869,9 @@ void test_parser() {
 
         Parser parser(source, "default_precision.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;
@@ -821,6 +889,9 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit != nullptr);
+
         std::stringstream ss;
         WriterGLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
@@ -835,6 +906,10 @@ void test_parser() {
         Parser parser(source, "line_directive.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require(tr_unit == nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
+        require_fatal(tr_unit == nullptr);
+
         require(strcmp(parser.error(), "line_directive.glsl:43:12: error: 1111") == 0);
     }
     { // first character invalid
@@ -861,6 +936,9 @@ void test_parser() {
 
         Parser parser(source, "arrayness.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Geometry);
+        require_fatal(tr_unit != nullptr);
+
+        tr_unit = Clone().CloneAST(tr_unit.get());
         require_fatal(tr_unit != nullptr);
 
         std::stringstream ss;

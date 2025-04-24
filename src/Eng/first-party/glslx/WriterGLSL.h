@@ -7,7 +7,7 @@
 namespace glslx {
 class WriterGLSL : public WriterBase {
     const TrUnit *tu_ = nullptr;
-    std::vector<const ast_global_variable *> written_globals_;
+    HashSet32<const ast_global_variable *> written_globals_;
 
     void Write_Builtin(const ast_builtin *builtin, std::ostream &out_stream);
     void Write_Type(const ast_type *type, std::ostream &out_stream);

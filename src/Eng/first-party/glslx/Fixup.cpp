@@ -85,8 +85,14 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
                     copy[size + temp_len] = '\0';
                 }
 
-                var->name = copy;
-                tu_->str.push_back(copy);
+                char **existing = tu_->str.Find(copy);
+                if (!existing) {
+                    var->name = copy;
+                    tu_->str.Insert(copy);
+                } else {
+                    var->name = *existing;
+                    tu_->alloc.allocator.deallocate(copy, size + temp_len + 1);
+                }
             }
         }
         Visit_Statement(for_statement->body);
@@ -142,11 +148,11 @@ void glslx::Fixup::Apply(TrUnit *tu) {
     }
     if (config_.flip_vertex_y && tu->type == eTrUnitType::Vertex) {
         ast_function *main_function = nullptr;
-        for (ast_function *func : tu->functions) {
-            if (strcmp(func->name, "main") == 0) {
-                main_function = func;
-            }
+        auto *p_main = tu->functions_by_name.Find("main");
+        if (p_main) {
+            main_function = (*p_main)[0];
         }
+
         ast_global_variable *gl_Position = nullptr;
         for (ast_global_variable *var : tu->globals) {
             if (strcmp(var->name, "gl_Position") == 0) {

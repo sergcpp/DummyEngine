@@ -250,18 +250,20 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
     }
 
     ast_function *main_function = nullptr;
-    for (ast_function *func : tu->functions) {
-        if (strcmp(func->name, "main") == 0) {
-            main_function = func;
-        }
+    auto *p_main = tu->functions_by_name.Find("main");
+    if (p_main) {
+        main_function = (*p_main)[0];
     }
 
     if (main_function) {
         Mark_Function(main_function);
-        for (auto it = begin(tu->functions); it != end(tu->functions);) {
+        for (auto it = std::begin(tu->functions); it != std::end(tu->functions);) {
             if ((*it)->gc) {
                 ++it;
             } else {
+                auto &functions = *tu->functions_by_name.Find((*it)->name);
+                auto it2 = std::remove(std::begin(functions), std::end(functions), *it);
+                functions.erase(it2, std::end(functions));
                 it = tu->functions.erase(it);
             }
         }
@@ -284,9 +286,11 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
         if ((*it)->gc) {
             ++it;
         } else {
+            tu->structures_by_name.Erase((*it)->name);
             it = tu->structures.erase(it);
         }
     }
+    assert(tu->structures.size() == tu->structures_by_name.size());
 
     // changes the order, but we don't care
     for (size_t i = 0; i < tu->alloc.allocations.size();) {

@@ -5,6 +5,7 @@ add_executable(test_glslx main.cpp
                           test_common.h
                           test_fixup.cpp
                           test_hashmap.cpp
+                          test_hashset.cpp
                           test_hlsl_writer.cpp
                           test_lexer.cpp
                           test_parser.cpp

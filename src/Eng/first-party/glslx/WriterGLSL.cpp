@@ -640,7 +640,7 @@ void glslx::WriterGLSL::Write_Precision(ePrecision precision, std::ostream &out_
 }
 
 void glslx::WriterGLSL::Write_GlobalVariable(const ast_global_variable *variable, std::ostream &out_stream) {
-    if (std::find(begin(written_globals_), end(written_globals_), variable) != end(written_globals_)) {
+    if (written_globals_.Find(variable)) {
         return;
     }
 
@@ -850,7 +850,7 @@ void glslx::WriterGLSL::Write_InterfaceBlock(const ast_interface_block *block, s
                 Write_ArraySize(tu_->globals[i]->array_sizes, out_stream);
             }
             first = false;
-            written_globals_.push_back(tu_->globals[i]);
+            written_globals_.Insert(tu_->globals[i]);
         }
     }
     out_stream << ";\n";

@@ -17,11 +17,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SOURCE_FILES AlignedAlloc.h
                  Bitmask.h
+                 Clone.h
+                 Clone.cpp
                  Fixup.h
                  Fixup.cpp
                  glslx.h
                  glslx.cpp
                  HashMap32.h
+                 HashSet32.h
                  KeywordsHLSL.inl
                  PreludeGLSL.h
                  PreludeGLSL.cpp

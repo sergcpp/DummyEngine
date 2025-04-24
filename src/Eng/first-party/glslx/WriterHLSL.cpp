@@ -1412,14 +1412,13 @@ void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, s
 
 void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
     tu_ = tu;
-    bool has_main = false;
-    for (int i = 0; i < int(tu->functions.size()); ++i) {
-        if (strcmp(tu->functions[i]->name, "main") == 0) {
-            has_main = true;
-            break;
-        }
+    ast_function *main_function = nullptr;
+    auto *p_find = tu->functions_by_name.Find("main");
+    if (p_find) {
+        assert(p_find->size() == 1);
+        main_function = (*p_find)[0];
     }
-    if (has_main) {
+    if (main_function) {
         // TODO: Remove unused
         out_stream
             << "uint4 texelFetch(Texture2D<uint4> t, int2 P, int lod) {\n"
@@ -1560,7 +1559,7 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
     for (int i = 0; i < int(tu->structures.size()); ++i) {
         Write_Structure(tu->structures[i], out_stream);
     }
-    if (has_main && tu->type == eTrUnitType::Compute) {
+    if (main_function && tu->type == eTrUnitType::Compute) {
         out_stream << "static uint3 gl_WorkGroupID;\n";
         out_stream << "static uint3 gl_LocalInvocationID;\n";
         out_stream << "static uint3 gl_GlobalInvocationID;\n";
@@ -1611,14 +1610,15 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
             Write_GlobalVariable(tu->globals[i], out_stream);
         }
     }
-    for (int i = 0; i < int(tu->functions.size()); ++i) {
-        if (tu->type == eTrUnitType::Compute && strcmp(tu->functions[i]->name, "main") == 0) {
+
+    for (const ast_function *f : tu->functions) {
+        if (tu->type == eTrUnitType::Compute && f == main_function) {
             out_stream << "[numthreads(";
             out_stream << compute_group_sizes_[0] << ", ";
             out_stream << compute_group_sizes_[1] << ", ";
             out_stream << compute_group_sizes_[2] << ")]\n";
         }
-        Write_Function(tu->functions[i], out_stream);
+        Write_Function(f, out_stream);
     }
 }
 

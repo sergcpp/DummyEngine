@@ -5,6 +5,7 @@
 #include "../glslx.h"
 
 void test_fixup();
+void test_hashset();
 void test_hashmap();
 void test_hlsl_writer();
 void test_scope_exit();
@@ -24,6 +25,7 @@ int main() {
 
     test_scope_exit();
     test_small_vector();
+    test_hashset();
     test_hashmap();
     test_span();
     test_pool_alloc();
