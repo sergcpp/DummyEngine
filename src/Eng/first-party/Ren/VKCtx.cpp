@@ -783,7 +783,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(physical_devices[i], &props_count, nullptr);
 
                 SmallVector<VkCooperativeMatrixPropertiesKHR, 16> coop_matrix_props(
-                    props_count, {VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR});
+                    props_count, VkCooperativeMatrixPropertiesKHR{VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR});
 
                 vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR(physical_devices[i], &props_count,
                                                                   coop_matrix_props.data());

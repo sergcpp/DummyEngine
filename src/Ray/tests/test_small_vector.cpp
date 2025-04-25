@@ -2,14 +2,14 @@
 
 #include <string>
 
-#include "../SmallVector.h"
+#include "../internal/SmallVector.h"
 
 void test_small_vector() {
-    using namespace Sys;
+    using namespace Ray;
 
     printf("Test small_vector       | ");
 
-    static_assert(sizeof(SmallVectorImpl<int>) <= 16);
+    static_assert(sizeof(SmallVectorImpl<int>) <= 16, "!");
 
     { // basic usage with trivial type
         SmallVector<int, 16> vec;
