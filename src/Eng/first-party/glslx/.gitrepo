@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = glslx
-	branch = master
-	commit = 7b2569f42e1b5ce0b8b7216c33034772cd0ca62d
-	parent = 4911e94e9e6c495bca871ca3a1eba5220d4027ad
+	branch = refactor_25_04
+	commit = 0bdc561a7c481a50f1ea5063fdff961bc9c64e28
+	parent = 4e9ab3f44006431c2e2a55f8d73ac6874c15e538
 	method = merge
 	cmdver = 0.4.6
