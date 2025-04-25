@@ -2319,7 +2319,7 @@ glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<e
                 }
                 ast_constant_expression *value = Evaluate(case_label->condition);
 
-                int64_t label_value;
+                long long label_value;
                 // TODO: Add other explicit types (uint64_t etc.)
                 if (value->type == eExprType::IntConstant) {
                     label_value = IVAL(value);

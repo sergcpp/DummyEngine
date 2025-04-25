@@ -311,6 +311,11 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                             return false;
                         }
 
+#if !defined(NDEBUG)
+                        // Test AST cloning
+                        ast = glslx::Clone().CloneAST(ast.get());
+#endif
+
                         for (const glslx::ast_extension_directive *ext : ast->extensions) {
                             use_spv14 |= strcmp(ext->name, "GL_EXT_ray_query") == 0;
                             use_spv14 |= strcmp(ext->name, "GL_EXT_ray_tracing") == 0;
