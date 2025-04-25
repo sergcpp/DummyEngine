@@ -213,7 +213,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
             continue;
         }
 
-        std::vector<top_level_t> items;
+        global_vector<top_level_t> items;
         if (!ParseTopLevel(items)) {
             return false;
         }
@@ -251,7 +251,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                 return false;
             }
 
-            vector<ast_builtin *> gen_types(ast_->alloc.allocator);
+            local_vector<ast_builtin *> gen_types(ast_->alloc.allocator);
             if (function->return_type->builtin) {
                 auto *return_type = static_cast<ast_builtin *>(function->return_type);
                 if (is_generic_type(return_type->type)) {
@@ -359,7 +359,7 @@ bool glslx::Parser::expect(const eOperator op) {
     return next();
 }
 
-bool glslx::Parser::ParseTopLevel(std::vector<top_level_t> &items) {
+bool glslx::Parser::ParseTopLevel(global_vector<top_level_t> &items) {
     top_level_t item(ast_->alloc.allocator);
     if (!ParseTopLevelItem(item)) {
         return false;
@@ -384,7 +384,7 @@ bool glslx::Parser::ParseTopLevel(std::vector<top_level_t> &items) {
 }
 
 bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuation) {
-    std::vector<top_level_t> items;
+    global_vector<top_level_t> items;
     while (!is_builtin() && !is_type(eTokType::Identifier)) {
         { // check EOF
             const token_t &tok = lexer_.Peek();
@@ -835,7 +835,7 @@ bool glslx::Parser::ParseMemoryFlags(top_level_t &current) {
 }
 
 bool glslx::Parser::ParseLayout(top_level_t &current) {
-    vector<ast_layout_qualifier *> &qualifiers = current.layout_qualifiers;
+    local_vector<ast_layout_qualifier *> &qualifiers = current.layout_qualifiers;
     if (is_keyword(eKeyword::K_layout)) {
         if (!next()) { // skip 'layout'
             return false;
@@ -1346,7 +1346,7 @@ template <typename T> T *glslx::Parser::ParseBlock(const char *type) {
         return nullptr;
     }
 
-    std::vector<top_level_t> items;
+    global_vector<top_level_t> items;
     while (!is_type(eTokType::Scope_End)) {
         if (!ParseTopLevel(items)) {
             return nullptr;
@@ -2419,7 +2419,7 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
     }
 
     bool is_array = false;
-    vector<ast_constant_expression *> array_sizes(ast_->alloc.allocator);
+    local_vector<ast_constant_expression *> array_sizes(ast_->alloc.allocator);
     while (is_operator(eOperator::bracket_begin)) {
         is_array = true;
         array_sizes.insert(begin(array_sizes), ParseArraySize());
@@ -3534,7 +3534,7 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
     case eExprType::FunctionCall: {
         const auto *func_call = static_cast<const ast_function_call *>(expression);
 
-        std::vector<const ast_type *> arg_types;
+        global_vector<const ast_type *> arg_types;
         for (int i = 0; i < int(func_call->parameters.size()); ++i) {
             int param_array_dims = 0;
             arg_types.push_back(Evaluate_ExpressionResultType(tu, func_call->parameters[i], param_array_dims));

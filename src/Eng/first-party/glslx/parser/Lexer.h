@@ -8,7 +8,8 @@
 #include "PoolAlloc.h"
 
 namespace glslx {
-template <typename T> using vector = SmallVector<T, 1, alignof(T), MultiPoolAllocator<T>>;
+template <typename T> using local_vector = SmallVector<T, 1, alignof(T), MultiPoolAllocator<T>>;
+template <typename T> using global_vector = SmallVector<T, 1>;
 
 enum class eTokType {
     Eof,
@@ -81,7 +82,7 @@ struct token_t {
         eOperator as_operator;
         directive_t as_directive;
     };
-    vector<char> string_mem;
+    local_vector<char> string_mem;
 
     explicit token_t(MultiPoolAllocator<char> &_alloc) : string_mem(_alloc) {}
     [[nodiscard]] int precedence() const;

@@ -17,7 +17,9 @@
 //
 
 namespace glslx {
-using string = std::basic_string<char, std::char_traits<char>, MultiPoolAllocator<char>>;
+template <typename T> using local_vector = SmallVector<T, 1, alignof(T), MultiPoolAllocator<T>>;
+template <typename T> using global_vector = SmallVector<T, 1>;
+using local_string = std::basic_string<char, std::char_traits<char>, MultiPoolAllocator<char>>;
 
 std::unique_ptr<std::istream> default_include_callback(const char *path, bool is_system_path);
 
@@ -95,7 +97,7 @@ class Preprocessor {
     struct token_t {
         eTokenType type = eTokenType::Unknown;
 
-        string raw_view;
+        local_string raw_view;
 
         size_t line = 0, pos = 0;
 
@@ -104,9 +106,9 @@ class Preprocessor {
         token_t(const eTokenType _type, std::string_view _raw_view, MultiPoolAllocator<char> &alloc,
                 const size_t _line = 0, const size_t _pos = 0)
             : type(_type), raw_view(_raw_view, alloc), line(_line), pos(_pos) {}
-        token_t(const eTokenType _type, const string &_raw_view, const size_t _line = 0, const size_t _pos = 0)
+        token_t(const eTokenType _type, const local_string &_raw_view, const size_t _line = 0, const size_t _pos = 0)
             : type(_type), raw_view(_raw_view), line(_line), pos(_pos) {}
-        token_t(const eTokenType _type, string &&_raw_view, const size_t _line = 0, const size_t _pos = 0)
+        token_t(const eTokenType _type, local_string &&_raw_view, const size_t _line = 0, const size_t _pos = 0)
             : type(_type), raw_view(std::move(_raw_view)), line(_line), pos(_pos) {}
 
         void set(const eTokenType _type, std::string_view _raw_view = {}, const size_t _line = 0,
@@ -121,11 +123,11 @@ class Preprocessor {
     };
 
     struct macro_desc_t {
-        string name;
+        local_string name;
 
-        std::vector<string> arg_names;
+        global_vector<local_string> arg_names;
 
-        std::vector<token_t> value;
+        global_vector<token_t> value;
 
         macro_desc_t(std::string_view _name, MultiPoolAllocator<char> &alloc) : name(_name, alloc) {}
 
@@ -140,14 +142,14 @@ class Preprocessor {
         bool has_if_been_entered = false;
     };
 
-    std::vector<std::pair<string, eTokenType>> directives_table_;
+    std::vector<std::pair<local_string, eTokenType>> directives_table_;
     std::vector<macro_desc_t> macros_;
-    std::vector<string> context_stack_;
+    std::vector<local_string> context_stack_;
     std::vector<if_block_t> if_blocks_;
 
-    string current_line_;
+    local_string current_line_;
     std::deque<token_t> tokens_queue_;
-    string temp_str_;
+    local_string temp_str_;
 
     bool expect(const eTokenType expected_type, const eTokenType actual_type) {
         if (expected_type != actual_type) {
@@ -157,14 +159,14 @@ class Preprocessor {
         return true;
     }
 
-    void ReadLine(string &out_line);
-    void RequestSourceLine(string &out_line);
-    void ScanTokens(token_t &out_tok, string &inout_line);
-    void ScanSeparator(token_t &out_tok, char ch, string &inout_line);
+    void ReadLine(local_string &out_line);
+    void RequestSourceLine(local_string &out_line);
+    void ScanTokens(token_t &out_tok, local_string &inout_line);
+    void ScanSeparator(token_t &out_tok, char ch, local_string &inout_line);
     void GetNextToken(token_t &out_tok);
 
-    string ExtractSingleLineComment(const string &line);
-    string ExtractMultiLineComment(string &line);
+    local_string ExtractSingleLineComment(const local_string &line);
+    local_string ExtractMultiLineComment(local_string &line);
 
     bool CreateMacroDefinition();
     bool RemoveMacroDefinition(std::string_view macro_name);
@@ -187,8 +189,8 @@ class Preprocessor {
         return false;
     }
 
-    std::vector<token_t> ExpandMacroDefinition(const macro_desc_t &macro, const token_t &token,
-                                               const std::function<void(token_t &)> &get_next_token);
+    global_vector<token_t> ExpandMacroDefinition(const macro_desc_t &macro, const token_t &token,
+                                                 const std::function<void(token_t &)> &get_next_token);
     int EvaluateExpression(Span<const token_t> tokens);
 
   public:

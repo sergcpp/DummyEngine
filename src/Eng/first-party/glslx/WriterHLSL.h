@@ -14,13 +14,13 @@ class WriterHLSL : public WriterBase {
         const char *name;
         int size;
     };
-    std::vector<byteaddress_buf_t> byteaddress_bufs_;
+    global_vector<byteaddress_buf_t> byteaddress_bufs_;
     struct atomic_operation_t {
         const ast_expression *expr = nullptr;
         std::string var_name;
     };
     std::string var_to_init_;
-    std::vector<atomic_operation_t> atomic_operations_;
+    global_vector<atomic_operation_t> atomic_operations_;
 
     void Write_Builtin(const ast_builtin *builtin, std::ostream &out_stream);
     void Write_Type(const ast_type *type, std::ostream &out_stream);
@@ -101,8 +101,8 @@ class WriterHLSL : public WriterBase {
         int multiplier = 0;
     };
     std::pair<int, int> Find_BufferAccessExpression(const ast_expression *expression, int offset,
-                                                    std::vector<access_index_t> &out_indices);
-    void Find_AtomicOperations(const ast_expression *expression, std::vector<atomic_operation_t> &out_operations);
+                                                    global_vector<access_index_t> &out_indices);
+    void Find_AtomicOperations(const ast_expression *expression, global_vector<atomic_operation_t> &out_operations);
     void Process_AtomicOperations(const ast_expression *expression, std::ostream &out_stream);
     int Calc_FieldOffset(const ast_type *type, const char *field_name);
     int Calc_TypeSize(const ast_type *type);

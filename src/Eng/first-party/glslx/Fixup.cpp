@@ -129,7 +129,7 @@ void glslx::Fixup::Apply(TrUnit *tu) {
         tu->version->number = config_.force_version;
         tu->version->type = config_.force_version_type;
     }
-    for (auto it = begin(tu->extensions); it != end(tu->extensions);) {
+    for (auto it = tu->extensions.begin(); it != tu->extensions.end();) {
         if (config_.remove_ctrl_flow_attributes && strcmp((*it)->name, "GL_EXT_control_flow_attributes") == 0) {
             it = tu->extensions.erase(it);
         } else {

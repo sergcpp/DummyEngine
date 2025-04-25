@@ -1062,10 +1062,10 @@ void glslx::WriterHLSL::Write_FieldOrSwizzle(const ast_field_or_swizzle *express
 void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expression, std::ostream &out_stream) {
     if (expression->operand->type == eExprType::VariableIdentifier) {
         const auto *var = static_cast<const ast_variable_identifier *>(expression->operand);
-        auto it = std::find_if(begin(byteaddress_bufs_), end(byteaddress_bufs_), [var](const byteaddress_buf_t &buf) {
+        auto it = std::find_if(byteaddress_bufs_.begin(), byteaddress_bufs_.end(), [var](const byteaddress_buf_t &buf) {
             return strcmp(buf.name, var->variable->name) == 0;
         });
-        if (it != end(byteaddress_bufs_)) {
+        if (it != byteaddress_bufs_.end()) {
             out_stream << "__load_" << it->name;
             out_stream << "(";
             Write_Expression(expression->index, false, out_stream);
@@ -1088,7 +1088,7 @@ void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, 
             is_atomic = true;
             if (!atomic_operations_.empty()) {
                 out_stream << atomic_operations_.front().var_name;
-                atomic_operations_.erase(begin(atomic_operations_));
+                atomic_operations_.erase(atomic_operations_.begin());
                 return;
             }
         }
@@ -1223,7 +1223,7 @@ void glslx::WriterHLSL::Write_PrefixDecrement(const ast_prefix_decrement_express
 }
 
 void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expression, std::ostream &out_stream) {
-    std::vector<access_index_t> indices;
+    global_vector<access_index_t> indices;
     const auto [buf_index, buf_offset] = Find_BufferAccessExpression(expression->operand1, 0, indices);
     if (buf_index != -1) {
         int array_dims = 0;
@@ -1623,16 +1623,16 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
 }
 
 std::pair<int, int> glslx::WriterHLSL::Find_BufferAccessExpression(const ast_expression *expression, const int offset,
-                                                                   std::vector<access_index_t> &out_indices) {
+                                                                   global_vector<access_index_t> &out_indices) {
     if (expression->type == eExprType::VariableIdentifier) {
         const auto *var = static_cast<const ast_variable_identifier *>(expression);
-        auto it = std::find_if(begin(byteaddress_bufs_), end(byteaddress_bufs_), [var](const byteaddress_buf_t &buf) {
+        auto it = std::find_if(byteaddress_bufs_.begin(), byteaddress_bufs_.end(), [var](const byteaddress_buf_t &buf) {
             return strcmp(var->variable->name, buf.name) == 0;
         });
-        if (it == end(byteaddress_bufs_)) {
+        if (it == byteaddress_bufs_.end()) {
             return {-1, -1};
         }
-        return {int(std::distance(begin(byteaddress_bufs_), it)), offset};
+        return {int(std::distance(byteaddress_bufs_.begin(), it)), offset};
     } else if (expression->type == eExprType::ArraySubscript) {
         const auto *subscript = static_cast<const ast_array_subscript *>(expression);
         int array_dims = 0;
@@ -1651,7 +1651,7 @@ std::pair<int, int> glslx::WriterHLSL::Find_BufferAccessExpression(const ast_exp
 }
 
 void glslx::WriterHLSL::Find_AtomicOperations(const ast_expression *expression,
-                                              std::vector<atomic_operation_t> &out_operations) {
+                                              global_vector<atomic_operation_t> &out_operations) {
     switch (expression->type) {
     case eExprType::FunctionCall: {
         const auto *call = static_cast<const ast_function_call *>(expression);
@@ -1695,7 +1695,7 @@ void glslx::WriterHLSL::Find_AtomicOperations(const ast_expression *expression,
 }
 
 void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expression, std::ostream &out_stream) {
-    std::vector<atomic_operation_t> atomic_operations;
+    global_vector<atomic_operation_t> atomic_operations;
     Find_AtomicOperations(expression, atomic_operations);
 
     for (int i = 0; i < int(atomic_operations.size()); ++i) {
@@ -1712,10 +1712,10 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
             assert(subscript->operand->type == eExprType::VariableIdentifier);
             const auto *var = static_cast<const ast_variable_identifier *>(subscript->operand);
             auto buf_it =
-                std::find_if(begin(byteaddress_bufs_), end(byteaddress_bufs_), [var](const byteaddress_buf_t &buf) {
+                std::find_if(byteaddress_bufs_.begin(), byteaddress_bufs_.end(), [var](const byteaddress_buf_t &buf) {
                     return strcmp(buf.name, var->variable->name) == 0;
                 });
-            if (buf_it != end(byteaddress_bufs_)) {
+            if (buf_it != byteaddress_bufs_.end()) {
                 const char *func_name = call->name;
                 auto it = g_hlsl_function_mapping.find(call->name);
                 if (it != end(g_hlsl_function_mapping)) {
@@ -1747,7 +1747,7 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
         Write_Tabs(out_stream);
     }
 
-    atomic_operations_.insert(end(atomic_operations_), begin(atomic_operations), end(atomic_operations));
+    atomic_operations_.insert(atomic_operations_.end(), atomic_operations.begin(), atomic_operations.end());
 }
 
 int glslx::WriterHLSL::Calc_FieldOffset(const ast_type *type, const char *field_name) {

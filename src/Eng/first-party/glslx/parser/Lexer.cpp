@@ -642,20 +642,20 @@ void glslx::Lexer::ReadNumeric(const bool octal, const bool hex, std::string &ou
 std::string glslx::Lexer::CalcKeywordsLookupTable() {
     const int sz = int(std::size(g_keywords));
 
-    std::vector<std::vector<int>> buckets(sz);
+    global_vector<global_vector<int>> buckets(sz);
     for (int i = 0; i < std::size(g_keywords); ++i) {
         const int j = int(_str_hash(0, g_keywords[i].name) % sz);
         buckets[j].push_back(i);
     }
 
-    std::sort(begin(buckets), end(buckets),
-              [](const std::vector<int> &lhs, const std::vector<int> &rhs) { return lhs.size() > rhs.size(); });
+    std::sort(buckets.begin(), buckets.end(),
+              [](const global_vector<int> &lhs, const global_vector<int> &rhs) { return lhs.size() > rhs.size(); });
 
-    std::vector<int> intermediate(sz, 0), values(sz, -1);
+    global_vector<int> intermediate(uint32_t(sz), 0), values(uint32_t(sz), -1);
 
     int i = 0;
-    for (; i < buckets.size(); ++i) {
-        const std::vector<int> &bucket = buckets[i];
+    for (; i < int(buckets.size()); ++i) {
+        const global_vector<int> &bucket = buckets[i];
         if (bucket.size() <= 1) {
             break;
         }
@@ -663,10 +663,10 @@ std::string glslx::Lexer::CalcKeywordsLookupTable() {
         int d = 1;
         int item = 0;
 
-        std::vector<int> slots;
-        while (item < bucket.size()) {
+        global_vector<int> slots;
+        while (item < int(bucket.size())) {
             const int slot = int(_str_hash(d, g_keywords[bucket[item]].name) % sz);
-            if (values[slot] != -1 || std::find(begin(slots), end(slots), slot) != end(slots)) {
+            if (values[slot] != -1 || std::find(slots.begin(), slots.end(), slot) != slots.end()) {
                 ++d;
                 item = 0;
                 slots.clear();
@@ -678,22 +678,22 @@ std::string glslx::Lexer::CalcKeywordsLookupTable() {
 
         intermediate[_str_hash(0, g_keywords[bucket[0]].name) % sz] = d;
 
-        for (int j = 0; j < bucket.size(); ++j) {
+        for (int j = 0; j < int(bucket.size()); ++j) {
             values[slots[j]] = bucket[j];
         }
     }
 
-    for (; i < buckets.size(); ++i) {
-        const std::vector<int> &bucket = buckets[i];
+    for (; i < int(buckets.size()); ++i) {
+        const global_vector<int> &bucket = buckets[i];
         if (bucket.empty()) {
             break;
         }
         assert(bucket.size() == 1);
 
-        auto it = std::find(begin(values), end(values), -1);
-        assert(it != end(values));
+        auto it = std::find(values.begin(), values.end(), -1);
+        assert(it != values.end());
 
-        const int slot = int(std::distance(begin(values), it));
+        const int slot = int(std::distance(values.begin(), it));
         intermediate[_str_hash(0, g_keywords[bucket[0]].name) % sz] = -slot - 1;
         values[slot] = bucket[0];
     }

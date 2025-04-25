@@ -151,12 +151,12 @@ std::string glslx::Preprocessor::Process() {
             }
 
             if (macro != nullptr /*&& ctx_it == cend(context_stack_)*/) {
-                const std::vector<token_t> expanded = ExpandMacroDefinition(
+                const global_vector<token_t> expanded = ExpandMacroDefinition(
                     *macro, curr_token, std::bind(&Preprocessor::GetNextToken, this, std::placeholders::_1));
                 if (expanded.empty() && !error_.empty()) {
                     return {};
                 }
-                tokens_queue_.insert(begin(tokens_queue_), begin(expanded), end(expanded));
+                tokens_queue_.insert(tokens_queue_.begin(), expanded.begin(), expanded.end());
             } else {
                 if (!ShouldTokenBeSkipped()) {
                     output.append(curr_token.raw_view);
@@ -166,7 +166,7 @@ std::string glslx::Preprocessor::Process() {
         case eTokenType::Reject_Macro:
             context_stack_.erase(
                 std::remove_if(begin(context_stack_), end(context_stack_),
-                               [&curr_token](const string &name) { return name == curr_token.raw_view; }),
+                               [&curr_token](const local_string &name) { return name == curr_token.raw_view; }),
                 end(context_stack_));
             break;
         case eTokenType::Concat_Op:
@@ -219,7 +219,7 @@ std::string glslx::Preprocessor::Process() {
     return output;
 }
 
-void glslx::Preprocessor::ReadLine(string &out_line) {
+void glslx::Preprocessor::ReadLine(local_string &out_line) {
     if (streams_.empty() || streams_.back()->eof() || !streams_.back()->good()) {
         out_line.clear();
         return;
@@ -232,12 +232,12 @@ void glslx::Preprocessor::ReadLine(string &out_line) {
     ++source_line_;
 }
 
-void glslx::Preprocessor::RequestSourceLine(string &out_line) {
+void glslx::Preprocessor::RequestSourceLine(local_string &out_line) {
     ReadLine(out_line);
     size_t pos = 0;
     while ((pos = out_line.find_first_of('\\')) != std::string::npos &&
            (pos >= out_line.length() || std::isspace(out_line[pos + 1])) && !is_escape_sequence(out_line, pos)) {
-        string next_line(alloc_);
+        local_string next_line(alloc_);
         ReadLine(next_line);
         if (!next_line.empty()) {
             out_line.replace(pos ? (pos - 1) : 0, std::string::npos, next_line);
@@ -265,7 +265,7 @@ void glslx::Preprocessor::GetNextToken(token_t &out_tok) {
     ScanTokens(out_tok, current_line_);
 }
 
-void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
+void glslx::Preprocessor::ScanTokens(token_t &out_tok, local_string &inout_line) {
     out_tok.raw_view.clear();
     temp_str_.clear();
 
@@ -273,7 +273,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
     while (!inout_line.empty()) {
         ch = inout_line.front();
         if (ch == '/') {
-            string &comment_str = out_tok.raw_view;
+            local_string &comment_str = out_tok.raw_view;
             if (inout_line.length() > 1 && inout_line[1] == '/') { // single line comment
                 comment_str = ExtractSingleLineComment(inout_line);
             } else if (inout_line.length() > 1 && inout_line[1] == '*') { // multi-line comment
@@ -374,7 +374,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
                 return;
             }
 
-            string number(alloc_);
+            local_string number(alloc_);
 
             if (ch == '0' && !inout_line.empty()) {
                 inout_line.erase(0, 1);
@@ -458,7 +458,7 @@ void glslx::Preprocessor::ScanTokens(token_t &out_tok, string &inout_line) {
     out_tok.set(eTokenType::End);
 }
 
-void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, string &inout_line) {
+void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, local_string &inout_line) {
     out_tok.raw_view.clear();
 
     switch (ch) {
@@ -566,18 +566,18 @@ void glslx::Preprocessor::ScanSeparator(token_t &out_tok, const char ch, string 
     out_tok.set(eTokenType::End);
 }
 
-glslx::string glslx::Preprocessor::ExtractSingleLineComment(const string &line) {
-    string ret = line;
+glslx::local_string glslx::Preprocessor::ExtractSingleLineComment(const local_string &line) {
+    local_string ret = line;
     while (ret.back() == '\n') {
         ret.pop_back();
     }
     return ret;
 }
 
-glslx::string glslx::Preprocessor::ExtractMultiLineComment(string &line) {
-    string ret(alloc_);
+glslx::local_string glslx::Preprocessor::ExtractMultiLineComment(local_string &line) {
+    local_string ret(alloc_);
 
-    string input = line;
+    local_string input = line;
     size_t pos;
     while ((pos = input.find("*/")) == std::string::npos && !input.empty()) {
         ret += input;
@@ -603,7 +603,7 @@ bool glslx::Preprocessor::CreateMacroDefinition() {
 
     macro_desc_t macro_desc(curr_token.raw_view, alloc_);
 
-    auto extract_value = [this](std::vector<token_t> &value) {
+    auto extract_value = [this](global_vector<token_t> &value) {
         token_t curr_token(alloc_);
         GetNextToken(curr_token);
         while (curr_token.type == eTokenType::Space) {
@@ -785,7 +785,7 @@ bool glslx::Preprocessor::ProcessExtension(std::string &output) {
     if (!expect(eTokenType::Identifier, curr_token.type)) {
         return false;
     }
-    const string extension_name = curr_token.raw_view;
+    const local_string extension_name = curr_token.raw_view;
     GetNextToken(curr_token);
     while (curr_token.type == eTokenType::Space) {
         output.append(curr_token.raw_view);
@@ -820,7 +820,7 @@ bool glslx::Preprocessor::ProcessIf() {
         GetNextToken(curr_token);
     }
 
-    std::vector<token_t> expression_tokens;
+    global_vector<token_t> expression_tokens;
     while (curr_token.type != eTokenType::Newline) {
         if (curr_token.type != eTokenType::Space) {
             expression_tokens.push_back(std::move(curr_token));
@@ -854,7 +854,7 @@ bool glslx::Preprocessor::ProcessIfdef() {
         return false;
     }
 
-    const string macro_identifier = curr_token.raw_view;
+    const local_string macro_identifier = curr_token.raw_view;
 
     GetNextToken(curr_token);
     if (curr_token.type != eTokenType::Space && curr_token.type != eTokenType::Newline) {
@@ -886,7 +886,7 @@ bool glslx::Preprocessor::ProcessIfndef() {
         return false;
     }
 
-    const string macro_identifier = curr_token.raw_view;
+    const local_string macro_identifier = curr_token.raw_view;
 
     GetNextToken(curr_token);
     if (curr_token.type != eTokenType::Space && curr_token.type != eTokenType::Newline) {
@@ -931,7 +931,7 @@ bool glslx::Preprocessor::ProcessElif() {
         GetNextToken(curr_token);
     }
 
-    std::vector<token_t> expression_tokens;
+    global_vector<token_t> expression_tokens;
     while (curr_token.type != eTokenType::Newline) {
         if (curr_token.type != eTokenType::Space) {
             expression_tokens.push_back(std::move(curr_token));
@@ -952,7 +952,7 @@ bool glslx::Preprocessor::ProcessElif() {
     return true;
 }
 
-std::vector<glslx::Preprocessor::token_t>
+glslx::global_vector<glslx::Preprocessor::token_t>
 glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const token_t &token,
                                            const std::function<void(token_t &)> &get_next_token) {
     if (macro.arg_names.empty()) {
@@ -973,11 +973,11 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
         return {};
     }
 
-    std::vector<std::vector<token_t>> processing_tokens;
+    global_vector<global_vector<token_t>> processing_tokens;
 
     int curr_nesting = 0;
     while (true) {
-        std::vector<token_t> curr_arg_tokens;
+        global_vector<token_t> curr_arg_tokens;
 
         get_next_token(curr_token);
         while (curr_token.type == eTokenType::Space) {
@@ -1018,16 +1018,16 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
         return {};
     }
 
-    std::vector<token_t> replacement_list = macro.value;
+    global_vector<token_t> replacement_list = macro.value;
 
     for (int arg_index = 0; arg_index < int(processing_tokens.size()); ++arg_index) {
-        const string &arg_name = macro.arg_names[arg_index];
+        const local_string &arg_name = macro.arg_names[arg_index];
 
-        for (auto it = begin(replacement_list); it != end(replacement_list);) {
+        for (auto it = replacement_list.begin(); it != replacement_list.end();) {
             if (it->type == eTokenType::Identifier && it->raw_view == arg_name) {
                 it = replacement_list.erase(it);
-                it =
-                    replacement_list.insert(it, begin(processing_tokens[arg_index]), end(processing_tokens[arg_index]));
+                it = replacement_list.insert(it, processing_tokens[arg_index].begin(),
+                                             processing_tokens[arg_index].end());
                 it += processing_tokens[arg_index].size();
             } else {
                 ++it;
@@ -1040,12 +1040,12 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
 }
 
 int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
-    std::vector<token_t> tokens(_tokens.begin(), _tokens.end());
+    global_vector<token_t> tokens(_tokens.begin(), _tokens.end());
     tokens.push_back({eTokenType::End, alloc_});
 
     auto eval_prim = [this, &tokens]() {
         while (tokens.front().type == eTokenType::Space) {
-            tokens.erase(tokens.cbegin());
+            tokens.erase(tokens.begin());
         }
 
         token_t curr_token = tokens.front();
@@ -1055,7 +1055,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
             token_t identifier_token(alloc_);
             if (curr_token.raw_view == "defined") {
                 do {
-                    tokens.erase(tokens.cbegin());
+                    tokens.erase(tokens.begin());
                 } while (tokens.front().type == eTokenType::Space);
 
                 if (!expect(eTokenType::Bracket_Begin, tokens.front().type)) {
@@ -1063,7 +1063,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
                 }
 
                 do {
-                    tokens.erase(tokens.cbegin());
+                    tokens.erase(tokens.begin());
                 } while (tokens.front().type == eTokenType::Space);
 
                 if (!expect(eTokenType::Identifier, tokens.front().type)) {
@@ -1073,7 +1073,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
                 identifier_token = tokens.front();
 
                 do {
-                    tokens.erase(tokens.cbegin());
+                    tokens.erase(tokens.begin());
                 } while (tokens.front().type == eTokenType::Space);
 
                 if (!expect(eTokenType::Bracket_End, tokens.front().type)) {
@@ -1081,14 +1081,14 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
                 }
 
                 do {
-                    tokens.erase(tokens.cbegin());
+                    tokens.erase(tokens.begin());
                 } while (tokens.front().type == eTokenType::Space);
 
                 return int(std::find_if(cbegin(macros_), cend(macros_), [&identifier_token](auto &&item) {
                                return item.name == identifier_token.raw_view;
                            }) != cend(macros_));
             } else {
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 identifier_token = curr_token;
             }
 
@@ -1111,11 +1111,11 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         }
 
         case eTokenType::Number:
-            tokens.erase(tokens.cbegin());
+            tokens.erase(tokens.begin());
             return std::stoi(curr_token.raw_view.c_str());
 
         case eTokenType::Bracket_Begin:
-            tokens.erase(tokens.cbegin());
+            tokens.erase(tokens.begin());
             return EvaluateExpression(tokens);
 
         default:
@@ -1127,7 +1127,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
 
     auto eval_unary = [this, &tokens, &eval_prim]() {
         while (tokens.front().type == eTokenType::Space) {
-            tokens.erase(tokens.cbegin());
+            tokens.erase(tokens.begin());
         }
 
         bool result_apply = false;
@@ -1138,7 +1138,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
                 // TODO fix this
                 break;
             case eTokenType::Not:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result_apply = !result_apply;
                 break;
             default:
@@ -1159,11 +1159,11 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         while ((curr_token = tokens.front()).type == eTokenType::Star || curr_token.type == eTokenType::Slash) {
             switch (curr_token.type) {
             case eTokenType::Star:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result * eval_unary();
                 break;
             case eTokenType::Slash:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
 
                 second_operand = eval_unary();
                 result = second_operand ? (result / second_operand) : 0;
@@ -1183,11 +1183,11 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         while ((curr_token = tokens.front()).type == eTokenType::Plus || curr_token.type == eTokenType::Minus) {
             switch (curr_token.type) {
             case eTokenType::Plus:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result + eval_muldiv();
                 break;
             case eTokenType::Minus:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result - eval_muldiv();
                 break;
             default:
@@ -1206,19 +1206,19 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
                curr_token.type == eTokenType::LessEqual || curr_token.type == eTokenType::GreaterEqual) {
             switch (curr_token.type) {
             case eTokenType::Less:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result < eval_addsub();
                 break;
             case eTokenType::Greater:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result > eval_addsub();
                 break;
             case eTokenType::LessEqual:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result <= eval_addsub();
                 break;
             case eTokenType::GreaterEqual:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result >= eval_addsub();
                 break;
             default:
@@ -1236,11 +1236,11 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         while ((curr_token = tokens.front()).type == eTokenType::Equal || curr_token.type == eTokenType::NotEqual) {
             switch (curr_token.type) {
             case eTokenType::Equal:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result == eval_cmp();
                 break;
             case eTokenType::NotEqual:
-                tokens.erase(tokens.cbegin());
+                tokens.erase(tokens.begin());
                 result = result != eval_cmp();
                 break;
             default:
@@ -1255,11 +1255,11 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         int result = eval_eq();
 
         while (tokens.front().type == eTokenType::Space) {
-            tokens.erase(tokens.cbegin());
+            tokens.erase(tokens.begin());
         }
 
         while (tokens.front().type == eTokenType::And) {
-            tokens.erase(tokens.cbegin());
+            tokens.erase(tokens.begin());
             result &= eval_eq();
         }
 
@@ -1270,7 +1270,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         int result = eval_and();
 
         while (tokens.front().type == eTokenType::Or) {
-            tokens.erase(tokens.cbegin());
+            tokens.erase(tokens.begin());
             result |= eval_and();
         }
 

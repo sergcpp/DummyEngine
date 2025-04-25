@@ -274,7 +274,7 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
         }
     }
 
-    for (auto it = begin(tu->globals); it != end(tu->globals);) {
+    for (auto it = tu->globals.begin(); it != tu->globals.end();) {
         if ((*it)->gc) {
             ++it;
         } else {
@@ -282,7 +282,7 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
         }
     }
 
-    for (auto it = begin(tu->structures); it != end(tu->structures);) {
+    for (auto it = tu->structures.begin(); it != tu->structures.end();) {
         if ((*it)->gc) {
             ++it;
         } else {

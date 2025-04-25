@@ -41,7 +41,7 @@ glslx::ast_default_precision *glslx::Clone::Clone_DefaultPrecision(const ast_def
 }
 
 glslx::ast_variable_identifier *glslx::Clone::Clone_VariableIdentifier(const ast_variable_identifier *in) {
-    return astnew<ast_variable_identifier>(Clone_Variable(in->variable));
+    return astnew<ast_variable_identifier>(*variables_.Find(in->variable));
 }
 
 glslx::ast_field_or_swizzle *glslx::Clone::Clone_FieldOrSwizzle(const ast_field_or_swizzle *in) {
@@ -65,7 +65,7 @@ glslx::ast_function_call *glslx::Clone::Clone_FunctionCall(const ast_function_ca
     ast_function_call *ret = astnew<ast_function_call>(dst_->alloc.allocator);
     ret->name = *dst_->str.Find(in->name);
     if (in->func) {
-        ret->func = Clone_Function(in->func);
+        ret->func = *functions_.Find(in->func);
     }
     for (const ast_expression *expr : in->parameters) {
         ret->parameters.push_back(Clone_Expression(expr));
@@ -208,6 +208,7 @@ glslx::ast_struct *glslx::Clone::Clone_Structure(const ast_struct *in) {
     }
     for (const ast_variable *f : in->fields) {
         ret->fields.push_back(Clone_Variable(f));
+        variables_.Insert(f, ret->fields.back());
     }
     return ret;
 }
@@ -290,9 +291,12 @@ glslx::ast_layout_qualifier *glslx::Clone::Clone_LayoutQualifier(const ast_layou
 
 glslx::ast_interface_block *glslx::Clone::Clone_InterfaceBlock(const ast_interface_block *in) {
     ast_interface_block *ret = astnew<ast_interface_block>(dst_->alloc.allocator);
-    ret->name = *dst_->str.Find(in->name);
+    if (in->name) {
+        ret->name = *dst_->str.Find(in->name);
+    }
     for (const ast_variable *f : in->fields) {
         ret->fields.push_back(Clone_Variable(f));
+        variables_.Insert(f, ret->fields.back());
     }
     ret->storage = in->storage;
     ret->memory_flags = in->memory_flags;
@@ -314,6 +318,7 @@ glslx::ast_declaration_statement *glslx::Clone::Clone_DeclarationStatement(const
     ast_declaration_statement *ret = astnew<ast_declaration_statement>(dst_->alloc.allocator);
     for (const ast_function_variable *var : in->variables) {
         ret->variables.push_back(Clone_FunctionVariable(var));
+        variables_.Insert(var, ret->variables.back());
     }
     return ret;
 }
@@ -510,6 +515,7 @@ glslx::ast_function *glslx::Clone::Clone_Function(const ast_function *in) {
     ret->name = *dst_->str.Find(in->name);
     for (const ast_function_parameter *p : in->parameters) {
         ret->parameters.push_back(Clone_FunctionParameter(p));
+        variables_.Insert(p, ret->parameters.back());
     }
     for (const ast_statement *s : in->statements) {
         ret->statements.push_back(Clone_Statement(s));
@@ -557,9 +563,11 @@ std::unique_ptr<glslx::TrUnit> glslx::Clone::CloneAST(const TrUnit *tu) {
     }
     for (const ast_global_variable *var : tu->globals) {
         dst_->globals.push_back(Clone_GlobalVariable(var));
+        variables_.Insert(var, dst_->globals.back());
     }
     for (const ast_function *f : tu->functions) {
         dst_->functions.push_back(Clone_Function(f));
+        functions_.Insert(f, dst_->functions.back());
         auto *p_find = dst_->functions_by_name.Find(f->name);
         if (p_find) {
             p_find->push_back(dst_->functions.back());

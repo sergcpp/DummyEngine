@@ -17,19 +17,19 @@
 
 namespace glslx {
 class Parser {
-    using scope = std::vector<ast_variable *>;
+    using scope = global_vector<ast_variable *>;
 
     std::unique_ptr<TrUnit> ast_;
     MultiPoolAllocator<char> allocator_ = MultiPoolAllocator<char>(8, 128);
     Lexer lexer_;
     std::string_view source_;
     token_t tok_;
-    std::vector<scope> scopes_;
-    std::vector<ast_builtin *> builtins_;
+    global_vector<scope> scopes_;
+    global_vector<ast_builtin *> builtins_;
     const char *error_ = nullptr;
     const char *file_name_ = nullptr;
 
-    std::vector<ast_function_call *> function_calls_;
+    global_vector<ast_function_call *> function_calls_;
 
     char *strnew(const char *str) {
         if (!str) {
@@ -77,9 +77,9 @@ class Parser {
         eInterpolation interpolation = eInterpolation::None;
         ast_type *type = nullptr;
         ast_constant_expression *initial_value = nullptr;
-        vector<ast_constant_expression *> array_sizes;
+        local_vector<ast_constant_expression *> array_sizes;
         size_t array_on_type_offset = 0;
-        vector<ast_layout_qualifier *> layout_qualifiers;
+        local_vector<ast_layout_qualifier *> layout_qualifiers;
         bool is_invariant = false;
         bool is_precise = false;
         bool is_array = false;
@@ -96,7 +96,7 @@ class Parser {
                                          eStorage storage = eStorage::In, ePrecision precision = ePrecision::None);
     bool InitSpecialGlobals(eTrUnitType type);
 
-    bool ParseTopLevel(std::vector<top_level_t> &items);
+    bool ParseTopLevel(global_vector<top_level_t> &items);
     bool ParseTopLevelItem(top_level_t &level, top_level_t *continuation = nullptr);
 
     bool ParseStorage(top_level_t &current);

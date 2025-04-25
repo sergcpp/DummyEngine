@@ -9,7 +9,7 @@
 #include "Lexer.h"
 
 namespace glslx {
-template <typename T> static inline void ast_destroy(MultiPoolAllocator<char> &alloc, void *self, size_t size) {
+template <typename T> static void ast_destroy(MultiPoolAllocator<char> &alloc, void *self, size_t size) {
     ((T *)self)->~T();
     alloc.deallocate((char *)self, size);
 }
@@ -30,7 +30,7 @@ struct ast_memory {
 
 struct ast_allocator {
     MultiPoolAllocator<char> allocator;
-    std::vector<ast_memory> allocations;
+    global_vector<ast_memory> allocations;
 
     ast_allocator() : allocator(8, 128) {}
 };
@@ -181,14 +181,14 @@ struct TrUnit {
     eTrUnitType type;
 
     ast_version_directive *version = nullptr;
-    std::vector<ast_extension_directive *> extensions;
-    std::vector<ast_default_precision *> default_precision;
-    std::vector<ast_interface_block *> interface_blocks;
-    std::vector<ast_struct *> structures;
+    global_vector<ast_extension_directive *> extensions;
+    global_vector<ast_default_precision *> default_precision;
+    global_vector<ast_interface_block *> interface_blocks;
+    global_vector<ast_struct *> structures;
     // NOTE: structure declarations must be in specific order
     HashMap32<const char *, ast_struct *> structures_by_name;
-    std::vector<ast_global_variable *> globals;
-    std::vector<ast_function *> functions;
+    global_vector<ast_global_variable *> globals;
+    global_vector<ast_function *> functions;
     // NOTE: function declarations must be in specific order
     HashMap32<const char *, SmallVector<ast_function *, 1>> functions_by_name;
 
@@ -213,7 +213,7 @@ struct ast_builtin : ast_type {
 
 struct ast_struct : ast_type {
     const char *name = nullptr;
-    vector<ast_variable *> fields;
+    local_vector<ast_variable *> fields;
 
     explicit ast_struct(MultiPoolAllocator<char> &_alloc) noexcept : ast_type(false), fields(_alloc) {}
     OPERATOR_NEW(ast_struct)
@@ -222,7 +222,7 @@ struct ast_struct : ast_type {
 struct ast_interface_block : ast_struct {
     eStorage storage = eStorage::None;
     Bitmask<eMemory> memory_flags;
-    vector<ast_layout_qualifier *> layout_qualifiers;
+    local_vector<ast_layout_qualifier *> layout_qualifiers;
 
     explicit ast_interface_block(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_struct(_alloc), layout_qualifiers(_alloc) {}
@@ -260,7 +260,7 @@ struct ast_variable : ast_node<ast_variable> {
 
     const char *name = nullptr;
     ast_type *base_type = nullptr;
-    vector<ast_constant_expression *> array_sizes;
+    local_vector<ast_constant_expression *> array_sizes;
 
     ast_variable(const eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept : type(_type), array_sizes(_alloc) {}
     OPERATOR_NEW(ast_variable)
@@ -290,7 +290,7 @@ struct ast_global_variable : ast_variable {
     bool is_constant = false;
     bool is_hidden = false;
     ast_constant_expression *initial_value = nullptr;
-    vector<ast_layout_qualifier *> layout_qualifiers;
+    local_vector<ast_layout_qualifier *> layout_qualifiers;
 
     explicit ast_global_variable(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_variable(eVariableType::Global, _alloc), layout_qualifiers(_alloc) {}
@@ -307,8 +307,8 @@ struct ast_function : ast_node<ast_function> {
     Bitmask<eFunctionAttribute> attributes;
     ast_type *return_type = nullptr;
     const char *name = nullptr;
-    vector<ast_function_parameter *> parameters;
-    vector<ast_statement *> statements;
+    local_vector<ast_function_parameter *> parameters;
+    local_vector<ast_statement *> statements;
     ast_function *prototype = nullptr;
 
     explicit ast_function(MultiPoolAllocator<char> &_alloc) noexcept : parameters(_alloc), statements(_alloc) {}
@@ -345,7 +345,7 @@ struct ast_simple_statement : ast_statement {
 };
 
 struct ast_compound_statement : ast_statement {
-    vector<ast_statement *> statements;
+    local_vector<ast_statement *> statements;
     explicit ast_compound_statement(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_statement(eStatement::Compound), statements(_alloc) {}
     OPERATOR_NEW(ast_compound_statement)
@@ -356,7 +356,7 @@ struct ast_empty_statement : ast_simple_statement {
 };
 
 struct ast_declaration_statement : ast_simple_statement {
-    vector<ast_function_variable *> variables;
+    local_vector<ast_function_variable *> variables;
 
     explicit ast_declaration_statement(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_simple_statement(eStatement::Declaration), variables(_alloc) {}
@@ -383,7 +383,7 @@ struct ast_if_statement : ast_simple_statement {
 struct ast_switch_statement : ast_simple_statement {
     Bitmask<eCtrlFlowAttribute> attributes;
     ast_expression *expression = nullptr;
-    vector<ast_statement *> statements;
+    local_vector<ast_statement *> statements;
 
     ast_switch_statement(MultiPoolAllocator<char> &_alloc, const Bitmask<eCtrlFlowAttribute> _attributes) noexcept
         : ast_simple_statement(eStatement::Switch), attributes(_attributes), statements(_alloc) {}
@@ -565,7 +565,7 @@ struct ast_bool_constant : ast_expression {
 };
 
 struct ast_array_specifier : ast_expression {
-    vector<ast_expression *> expressions;
+    local_vector<ast_expression *> expressions;
 
     explicit ast_array_specifier(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::ArraySpecifier), expressions(_alloc) {}
@@ -596,7 +596,7 @@ struct ast_array_subscript : ast_expression {
 struct ast_function_call : ast_expression {
     const char *name = nullptr;
     ast_function *func = nullptr;
-    vector<ast_expression *> parameters;
+    local_vector<ast_expression *> parameters;
 
     explicit ast_function_call(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::FunctionCall), parameters(_alloc) {}
@@ -605,7 +605,7 @@ struct ast_function_call : ast_expression {
 
 struct ast_constructor_call : ast_expression {
     ast_type *type = nullptr;
-    vector<ast_expression *> parameters;
+    local_vector<ast_expression *> parameters;
 
     explicit ast_constructor_call(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_expression(eExprType::ConstructorCall), parameters(_alloc) {}

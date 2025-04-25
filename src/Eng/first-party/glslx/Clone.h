@@ -57,8 +57,10 @@ class Clone {
     const TrUnit *src_ = nullptr;
     std::unique_ptr<TrUnit> dst_;
 
-    std::vector<ast_builtin *> builtins_;
+    global_vector<ast_builtin *> builtins_;
     HashMap32<const ast_interface_block *, ast_interface_block *> interface_blocks_;
+    HashMap32<const ast_variable *, ast_variable *> variables_;
+    HashMap32<const ast_function *, ast_function *> functions_;
 
   public:
     std::unique_ptr<TrUnit> CloneAST(const TrUnit *tu);

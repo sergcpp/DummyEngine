@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Clone.h"
 #include "Fixup.h"
 #include "PreludeGLSL.h"
 #include "Preprocessor.h"
