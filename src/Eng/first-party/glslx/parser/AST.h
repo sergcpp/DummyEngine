@@ -140,7 +140,7 @@ enum class eCtrlFlowAttribute : uint16_t {
     Branch = DontFlatten
 };
 
-enum class eFunctionAttribute : uint8_t { Builtin };
+enum class eFunctionAttribute : uint8_t { Builtin, Prototype };
 
 const Bitmask<eCtrlFlowAttribute> LoopAttributesMask =
     Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll | eCtrlFlowAttribute::DependencyInfinite |
@@ -156,6 +156,7 @@ struct ast_expression;
 using ast_constant_expression = ast_expression;
 struct ast_layout_qualifier;
 struct ast_statement;
+struct ast_builtin;
 struct ast_struct;
 struct ast_interface_block;
 struct ast_variable;
@@ -184,6 +185,7 @@ struct TrUnit {
     global_vector<ast_extension_directive *> extensions;
     global_vector<ast_default_precision *> default_precision;
     global_vector<ast_interface_block *> interface_blocks;
+    global_vector<ast_builtin *> builtins; // always sorted by keyword
     global_vector<ast_struct *> structures;
     // NOTE: structure declarations must be in specific order
     HashMap32<const char *, ast_struct *> structures_by_name;
@@ -197,6 +199,13 @@ struct TrUnit {
 
     explicit TrUnit(const eTrUnitType _type = eTrUnitType::Unknown) : type(_type) {}
     ~TrUnit();
+
+    template <class T, class... Args> T *make(Args &&...args) { return new (&alloc) T(std::forward<Args>(args)...); }
+    char *makestr(const char *s);
+
+    const ast_builtin *FindBuiltin(const eKeyword type) const;
+    int FindBuiltinIndex(const eKeyword type) const;
+    ast_builtin *FindOrAddBuiltin(const eKeyword type);
 };
 
 struct ast_type : ast_node<ast_type> {
@@ -212,7 +221,7 @@ struct ast_builtin : ast_type {
 };
 
 struct ast_struct : ast_type {
-    const char *name = nullptr;
+    char *name = nullptr;
     local_vector<ast_variable *> fields;
 
     explicit ast_struct(MultiPoolAllocator<char> &_alloc) noexcept : ast_type(false), fields(_alloc) {}
@@ -231,7 +240,7 @@ struct ast_interface_block : ast_struct {
 
 struct ast_version_directive : ast_type {
     eVerType type = eVerType::Core;
-    int number = -1;
+    int32_t number = -1;
 
     ast_version_directive() noexcept : ast_type(false) {}
 };
@@ -251,23 +260,23 @@ struct ast_default_precision : ast_type {
 };
 
 enum class eVariableType : uint8_t { Function, Parameter, Global, Field };
+enum class eVariableFlags : uint8_t { Array, Precise, Const, Invariant, Hidden };
 
 struct ast_variable : ast_node<ast_variable> {
-    bool is_array = false;
-    bool is_precise = false;
     eVariableType type;
+    Bitmask<eVariableFlags> flags;
     ePrecision precision = ePrecision::None;
 
-    const char *name = nullptr;
+    char *name = nullptr;
     ast_type *base_type = nullptr;
     local_vector<ast_constant_expression *> array_sizes;
 
-    ast_variable(const eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept : type(_type), array_sizes(_alloc) {}
+    ast_variable(const eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept
+        : type(_type), array_sizes(_alloc) {}
     OPERATOR_NEW(ast_variable)
 };
 
 struct ast_function_variable : ast_variable {
-    bool is_const = false;
     ast_expression *initial_value = nullptr;
 
     explicit ast_function_variable(MultiPoolAllocator<char> &_alloc) noexcept
@@ -286,9 +295,6 @@ struct ast_global_variable : ast_variable {
     eAuxStorage aux_storage = eAuxStorage::None;
     Bitmask<eMemory> memory_flags;
     eInterpolation interpolation = eInterpolation::None;
-    bool is_invariant = false;
-    bool is_constant = false;
-    bool is_hidden = false;
     ast_constant_expression *initial_value = nullptr;
     local_vector<ast_layout_qualifier *> layout_qualifiers;
 
@@ -298,15 +304,14 @@ struct ast_global_variable : ast_variable {
 };
 
 struct ast_layout_qualifier : ast_node<ast_layout_qualifier> {
-    const char *name = nullptr;
+    char *name = nullptr;
     ast_constant_expression *initial_value = nullptr;
 };
 
 struct ast_function : ast_node<ast_function> {
-    bool is_prototype = false;
     Bitmask<eFunctionAttribute> attributes;
     ast_type *return_type = nullptr;
-    const char *name = nullptr;
+    char *name = nullptr;
     local_vector<ast_function_parameter *> parameters;
     local_vector<ast_statement *> statements;
     ast_function *prototype = nullptr;
@@ -316,6 +321,7 @@ struct ast_function : ast_node<ast_function> {
 };
 
 enum class eStatement : uint8_t {
+    Invalid, // used only during serialization
     Compound,
     Empty,
     Declaration,
@@ -390,8 +396,10 @@ struct ast_switch_statement : ast_simple_statement {
     OPERATOR_NEW(ast_switch_statement)
 };
 
+enum class eCaseLabelFlags : uint8_t { Default };
+
 struct ast_case_label_statement : ast_simple_statement {
-    bool is_default = false;
+    Bitmask<eCaseLabelFlags> flags;
     ast_constant_expression *condition = nullptr;
 
     ast_case_label_statement() noexcept : ast_simple_statement(eStatement::CaseLabel) {}
@@ -468,6 +476,7 @@ struct ast_ext_jump_statement : ast_jump_statement {
 };
 
 enum class eExprType : uint8_t {
+    Undefined, // only used during serialization
     ShortConstant,
     UShortConstant,
     IntConstant,
@@ -582,7 +591,7 @@ struct ast_variable_identifier : ast_expression {
 struct ast_field_or_swizzle : ast_expression {
     ast_expression *operand = nullptr;
     ast_variable_identifier *field = nullptr;
-    const char *name = nullptr;
+    char *name = nullptr;
 
     ast_field_or_swizzle() noexcept : ast_expression(eExprType::FieldOrSwizzle) {}
 };
@@ -594,7 +603,7 @@ struct ast_array_subscript : ast_expression {
 };
 
 struct ast_function_call : ast_expression {
-    const char *name = nullptr;
+    char *name = nullptr;
     ast_function *func = nullptr;
     local_vector<ast_expression *> parameters;
 

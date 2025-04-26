@@ -86,7 +86,7 @@ void glslx::WriterGLSL::Write_FunctionParameter(const ast_function_parameter *pa
     if (parameter->name) {
         out_stream << " " << parameter->name;
     }
-    if (parameter->is_array) {
+    if (parameter->flags & eVariableFlags::Array) {
         Write_ArraySize(parameter->array_sizes, out_stream);
     }
 }
@@ -105,7 +105,7 @@ void glslx::WriterGLSL::Write_Function(const ast_function *function, std::ostrea
         }
     }
     out_stream << ")";
-    if (function->is_prototype) {
+    if (function->attributes & eFunctionAttribute::Prototype) {
         out_stream << ";\n";
         return;
     }
@@ -204,7 +204,7 @@ void glslx::WriterGLSL::Write_LoopAttributes(ctrl_flow_params_t ctrl_flow, std::
 
 void glslx::WriterGLSL::Write_FunctionVariable(const ast_function_variable *variable, std::ostream &out_stream,
                                                const Bitmask<eOutputFlags> output_flags) {
-    if (variable->is_const) {
+    if (variable->flags & eVariableFlags::Const) {
         out_stream << "const ";
     }
     Write_Variable(variable, out_stream);
@@ -301,7 +301,7 @@ void glslx::WriterGLSL::Write_SwitchStatement(const ast_switch_statement *statem
 
 void glslx::WriterGLSL::Write_CaseLabelStatement(const ast_case_label_statement *statement, std::ostream &out_stream,
                                                  Bitmask<eOutputFlags> output_flags) {
-    if (statement->is_default) {
+    if (statement->flags & eCaseLabelFlags::Default) {
         out_stream << "default";
     } else {
         out_stream << "case ";
@@ -495,7 +495,7 @@ void glslx::WriterGLSL::Write_Variable(const ast_variable *variable, std::ostrea
         return;
     }
 
-    if (variable->is_precise) {
+    if (variable->flags & eVariableFlags::Precise) {
         out_stream << "precise ";
     }
 
@@ -504,7 +504,7 @@ void glslx::WriterGLSL::Write_Variable(const ast_variable *variable, std::ostrea
     Write_Type(variable->base_type, out_stream);
     out_stream << " " << variable->name;
 
-    if (variable->is_array) {
+    if (variable->flags & eVariableFlags::Array) {
         Write_ArraySize(variable->array_sizes, out_stream);
     }
 }
@@ -644,12 +644,13 @@ void glslx::WriterGLSL::Write_GlobalVariable(const ast_global_variable *variable
         return;
     }
 
-    if (variable->is_invariant && variable->is_hidden) {
+    auto invariant_hidden = Bitmask{eVariableFlags::Invariant} | eVariableFlags::Hidden;
+    if ((variable->flags & invariant_hidden) == invariant_hidden) {
         out_stream << "invariant " << variable->name << ";\n";
         return;
     }
 
-    if (variable->is_constant) {
+    if (variable->flags & eVariableFlags::Const) {
         out_stream << "const ";
     }
 
@@ -658,7 +659,7 @@ void glslx::WriterGLSL::Write_GlobalVariable(const ast_global_variable *variable
     Write_AuxStorage(variable->aux_storage, out_stream);
     Write_Memory(variable->memory_flags, out_stream);
 
-    if (variable->is_invariant) {
+    if (variable->flags & eVariableFlags::Invariant) {
         out_stream << "invariant ";
     }
 
@@ -846,7 +847,7 @@ void glslx::WriterGLSL::Write_InterfaceBlock(const ast_interface_block *block, s
             } else {
                 out_stream << ", " << tu_->globals[i]->name;
             }
-            if (tu_->globals[i]->is_array) {
+            if (tu_->globals[i]->flags & eVariableFlags::Array) {
                 Write_ArraySize(tu_->globals[i]->array_sizes, out_stream);
             }
             first = false;
@@ -914,7 +915,8 @@ void glslx::WriterGLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
         if (!tu->globals[i]->base_type->builtin) {
             continue;
         }
-        if (!tu->globals[i]->is_hidden || tu->globals[i]->is_invariant || config_.write_hidden) {
+        if (!(tu->globals[i]->flags & eVariableFlags ::Hidden) || (tu->globals[i]->flags & eVariableFlags::Invariant) ||
+            config_.write_hidden) {
             Write_GlobalVariable(tu->globals[i], out_stream);
         }
     }
@@ -928,7 +930,7 @@ void glslx::WriterGLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
         if (tu->globals[i]->base_type->builtin) {
             continue;
         }
-        if (!tu->globals[i]->is_hidden || config_.write_hidden) {
+        if (!(tu->globals[i]->flags & eVariableFlags::Hidden) || config_.write_hidden) {
             Write_GlobalVariable(tu->globals[i], out_stream);
         }
     }

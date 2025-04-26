@@ -113,7 +113,7 @@ moments_t EstimateLocalNeighbourhoodInGroup(const ivec2 group_thread_id) {
     return ret;
 }
 
-f16vec3 ClipAABB(const f16vec3 aabb_min, const f16vec3 aabb_max, const f16vec3 prev_sample) {
+f16vec3 _ClipAABB(const f16vec3 aabb_min, const f16vec3 aabb_max, const f16vec3 prev_sample) {
     // Main idea behind clipping - it prevents clustering when neighbor color space
     // is distant from history sample
 
@@ -164,7 +164,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         local_neighborhood.mean.xyz = mix(local_neighborhood.mean.xyz, avg_radiance, 0.2);
         f16vec3 radiance_min = local_neighborhood.mean.xyz - color_std * 1.5;
         f16vec3 radiance_max = local_neighborhood.mean.xyz + color_std * 1.5;
-        f16vec3 clipped_old_signal = ClipAABB(radiance_min, radiance_max, old_signal.xyz);
+        f16vec3 clipped_old_signal = _ClipAABB(radiance_min, radiance_max, old_signal.xyz);
         float16_t accumulation_speed = 1.0 / max(sample_count, 1.0);
         float16_t weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
@@ -177,7 +177,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
             const f16vec3 radiance_min = avg_radiance - color_std * 0.45;
             const f16vec3 radiance_max = avg_radiance + color_std * 0.45;
 #endif
-            new_signal.xyz = ClipAABB(radiance_min, radiance_max, new_signal.xyz);
+            new_signal.xyz = _ClipAABB(radiance_min, radiance_max, new_signal.xyz);
         }
         // Blend with history
         new_signal.xyz = mix(new_signal.xyz, clipped_old_signal.xyz, weight);

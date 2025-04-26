@@ -9,39 +9,7 @@
     (slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(res.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(res.x))
 #endif
 
-float pow3(float x) {
-    return (x * x) * x;
-}
-
-float pow5(float x) {
-    return (x * x) * (x * x) * x;
-}
-
-float pow6(float x) {
-    return (x * x) * (x * x) * (x * x);
-}
-
-vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
-}
-
-vec3 LinearToSRGB(vec3 linearRGB) {
-    bvec3 cutoff = lessThan(linearRGB, vec3(0.0031308));
-    vec3 higher = 1.055 * pow(linearRGB, vec3(1.0/2.4)) - vec3(0.055);
-    vec3 lower = linearRGB * vec3(12.92);
-
-    return mix(higher, lower, cutoff);
-}
-
-vec3 SRGBToLinear(vec3 sRGB) {
-    bvec3 cutoff = lessThan(sRGB, vec3(0.04045));
-    vec3 higher = pow((sRGB + vec3(0.055))/vec3(1.055), vec3(2.4));
-    vec3 lower = sRGB/vec3(12.92);
-
-    return mix(higher, lower, cutoff);
-}
-
-vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
+/*vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
                       vec3 sh_l_12) {
     return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z +
                        sh_l_12 * normal.x)) * sh_l_00 * 2.0, vec3(0.0));
@@ -72,6 +40,16 @@ vec3 EvalSHIrradiance_NonLinear(vec3 dir, vec4 sh_r, vec4 sh_g, vec4 sh_b) {
 
     return R0 * (a + (vec3(1.0) - a) * (p + vec3(1.0)) * pow(q, p));
 }
+
+vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {
+    const float SH_A0 = 0.886226952; // PI / sqrt(4.0 * Pi)
+    const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0)
+
+    vec4 vv = vec4(SH_A0, SH_A1 * normal.yzx);
+
+    return vec3(dot(sh_coeffs[0], vv), dot(sh_coeffs[1], vv), dot(sh_coeffs[2], vv));
+}
+*/
 
  const vec2 g_poisson_disk_8[8] = vec2[8](
     vec2(-0.4425296, -0.1756687),
@@ -569,15 +547,6 @@ vec3 GetSunVisColor(const float frag_depth, sampler2D shadow_color_tex, const ma
         return GetCascadeVisColor(shadow_color_tex, sh_uvs[2], rotator, softness_factor[2]);
     }
     return GetCascadeVisColor(shadow_color_tex, sh_uvs[3], rotator, softness_factor[3]);
-}
-
-vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {
-    const float SH_A0 = 0.886226952; // PI / sqrt(4.0 * Pi)
-    const float SH_A1 = 1.02332675;  // sqrt(PI / 3.0)
-
-    vec4 vv = vec4(SH_A0, SH_A1 * normal.yzx);
-
-    return vec3(dot(sh_coeffs[0], vv), dot(sh_coeffs[1], vv), dot(sh_coeffs[2], vv));
 }
 
 #if 0

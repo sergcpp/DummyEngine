@@ -5,6 +5,7 @@
 #include "PreludeGLSL.h"
 #include "Preprocessor.h"
 #include "Prune.h"
+#include "Serialize.h"
 #include "WriterGLSL.h"
 #include "WriterHLSL.h"
 

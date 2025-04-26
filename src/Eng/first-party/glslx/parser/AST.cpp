@@ -2,6 +2,7 @@
 
 namespace glslx {
 const char *g_statement_names[] = {
+    "invalid",     // Invalid
     "compound",    // Compound
     "empty",       // Empty
     "declaration", // Declaration
@@ -30,6 +31,50 @@ glslx::TrUnit::~TrUnit() {
     }
 }
 
+char *glslx::TrUnit::makestr(const char *s) {
+    if (!s) {
+        return nullptr;
+    }
+    char **existing = str.Find(s);
+    if (existing) {
+        return *existing;
+    }
+    const size_t size = strlen(s) + 1;
+    char *copy = alloc.allocator.allocate(size);
+    if (!copy) {
+        return nullptr;
+    }
+    memcpy(copy, s, size);
+    str.Insert(copy);
+    return copy;
+}
+
+const glslx::ast_builtin *glslx::TrUnit::FindBuiltin(const eKeyword type) const {
+    const int index = FindBuiltinIndex(type);
+    if (index != -1) {
+        return builtins[index];
+    }
+    return nullptr;
+}
+
+int glslx::TrUnit::FindBuiltinIndex(const eKeyword type) const {
+    const auto it = std::lower_bound(std::begin(builtins), std::end(builtins), type,
+                                     [](const ast_builtin *lhs, const eKeyword rhs) { return lhs->type < rhs; });
+    if (it != std::end(builtins) && type == (*it)->type) {
+        return int(std::distance(std::begin(builtins), it));
+    }
+    return -1;
+}
+
+glslx::ast_builtin *glslx::TrUnit::FindOrAddBuiltin(const eKeyword type) {
+    const auto it = std::lower_bound(std::begin(builtins), std::end(builtins), type,
+                                     [](const ast_builtin *lhs, const eKeyword rhs) { return lhs->type < rhs; });
+    if (it != std::end(builtins) && type == (*it)->type) {
+        return *it;
+    }
+    return *builtins.insert(it, make<ast_builtin>(type));
+}
+
 bool glslx::IsConstantValue(const ast_expression *expression) {
     return expression->type == eExprType::ShortConstant || expression->type == eExprType::UShortConstant ||
            expression->type == eExprType::IntConstant || expression->type == eExprType::UIntConstant ||
@@ -47,7 +92,7 @@ bool glslx::IsConstant(const ast_expression *expression) {
         if (reference->type == eVariableType::Global) {
             initial_value = static_cast<const ast_global_variable *>(reference)->initial_value;
         } else if (reference->type == eVariableType::Function) {
-            if (static_cast<const ast_function_variable *>(reference)->is_const) {
+            if (reference->flags & eVariableFlags::Const) {
                 initial_value = static_cast<const ast_function_variable *>(reference)->initial_value;
             }
         }

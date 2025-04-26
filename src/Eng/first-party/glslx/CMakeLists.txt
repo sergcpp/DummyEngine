@@ -33,6 +33,8 @@ set(SOURCE_FILES AlignedAlloc.h
                  Prune.h
                  Prune.cpp
                  ScopeExit.h
+                 Serialize.h
+                 Serialize.cpp
                  SmallVector.h
                  Span.h
                  WriterBase.h

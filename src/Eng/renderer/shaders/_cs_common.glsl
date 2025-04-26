@@ -17,39 +17,7 @@ uvec2 RoundUp8(uvec2 value) {
     return (round_down == value) ? value : value + 8;
 }
 
-float pow3(float x) {
-    return (x * x) * x;
-}
-
-float pow5(float x) {
-    return (x * x) * (x * x) * x;
-}
-
-float pow6(float x) {
-    return (x * x) * (x * x) * (x * x);
-}
-
-vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
-}
-
-vec3 LinearToSRGB(vec3 linearRGB) {
-    bvec3 cutoff = lessThan(linearRGB, vec3(0.0031308));
-    vec3 higher = 1.055 * pow(linearRGB, vec3(1.0/2.4)) - vec3(0.055);
-    vec3 lower = linearRGB * vec3(12.92);
-
-    return mix(higher, lower, cutoff);
-}
-
-vec3 SRGBToLinear(vec3 sRGB) {
-    bvec3 cutoff = lessThan(sRGB, vec3(0.04045));
-    vec3 higher = pow((sRGB + vec3(0.055))/vec3(1.055), vec3(2.4));
-    vec3 lower = sRGB/vec3(12.92);
-
-    return mix(higher, lower, cutoff);
-}
-
-vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
+/*vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
                       vec3 sh_l_12) {
     return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z +
                        sh_l_12 * normal.x)) * sh_l_00 * 2.0, vec3(0.0));
@@ -89,6 +57,7 @@ vec3 EvaluateSH(const vec3 normal, const  vec4 sh_coeffs[3]) {
 
     return vec3(dot(sh_coeffs[0], vv), dot(sh_coeffs[1], vv), dot(sh_coeffs[2], vv));
 }
+*/
 
 //  LANE TO 8x8 MAPPING
 //  ===================

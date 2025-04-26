@@ -82,11 +82,11 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
     // Resolve function prototypes
     for (auto it = ast_->functions_by_name.begin(); it != ast_->functions_by_name.end(); ++it) {
         for (ast_function *func : it->val) {
-            if (func->is_prototype) {
+            if (func->attributes & eFunctionAttribute::Prototype) {
                 continue;
             }
             for (ast_function *proto : it->val) {
-                if (!proto->is_prototype) {
+                if (!(proto->attributes & eFunctionAttribute::Prototype)) {
                     continue;
                 }
                 assert(strcmp(func->name, proto->name) == 0);
@@ -115,7 +115,7 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
         } else {
             // Try to find exact match
             for (ast_function *func : *p_find) {
-                if (func->is_prototype && call->func) {
+                if ((func->attributes & eFunctionAttribute::Prototype) && call->func) {
                     continue;
                 }
                 if (func->parameters.size() == call->parameters.size()) {
@@ -132,7 +132,7 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
                     }
                     if (args_match) {
                         call->func = func;
-                        if (!func->is_prototype) {
+                        if (!(func->attributes & eFunctionAttribute::Prototype)) {
                             break;
                         }
                     }
@@ -143,7 +143,7 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
         // Try to find compatible
         if (!call->func) {
             for (ast_function *func : *p_find) {
-                if (func->is_prototype && call->func) {
+                if ((func->attributes & eFunctionAttribute::Prototype) && call->func) {
                     continue;
                 }
                 if (func->parameters.size() == call->parameters.size()) {
@@ -160,7 +160,7 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
                     }
                     if (args_match) {
                         call->func = func;
-                        if (!func->is_prototype) {
+                        if (!(func->attributes & eFunctionAttribute::Prototype)) {
                             break;
                         }
                     }
@@ -192,7 +192,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                     fatal("multiple version directives are not allowed");
                     return false;
                 }
-                auto *directive = astnew<ast_version_directive>();
+                auto *directive = ast_->make<ast_version_directive>();
                 if (!directive) {
                     fatal("internal error");
                     return false;
@@ -201,12 +201,12 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                 directive->type = tok_.as_directive.as_version.type;
                 ast_->version = directive;
             } else if (tok_.as_directive.type == eDirType::Extension) {
-                auto *extension = astnew<ast_extension_directive>();
+                auto *extension = ast_->make<ast_extension_directive>();
                 if (!extension) {
                     fatal("internal error");
                     return false;
                 }
-                extension->name = strnew(tok_.as_directive.as_extension.name);
+                extension->name = ast_->makestr(tok_.as_directive.as_extension.name);
                 extension->behavior = tok_.as_directive.as_extension.behavior;
                 ast_->extensions.push_back(extension);
             }
@@ -221,7 +221,7 @@ bool glslx::Parser::ParseSource(std::string_view source) {
         if (is_type(eTokType::Semicolon)) {
             for (int i = 0; i < int(items.size()); ++i) {
                 top_level_t &parse = items[i];
-                auto *global = astnew<ast_global_variable>(ast_->alloc.allocator);
+                auto *global = ast_->make<ast_global_variable>(ast_->alloc.allocator);
                 if (!global) {
                     return false;
                 }
@@ -231,16 +231,22 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                 global->precision = parse.precision;
                 global->interpolation = parse.interpolation;
                 global->base_type = parse.type;
-                global->name = strnew(parse.name);
-                global->is_invariant = parse.is_invariant;
-                global->is_precise = parse.is_precise;
+                global->name = ast_->makestr(parse.name);
+                if (parse.is_invariant) {
+                    global->flags |= eVariableFlags::Invariant;
+                }
+                if (parse.is_precise) {
+                    global->flags |= eVariableFlags::Precise;
+                }
+                if (parse.is_array) {
+                    global->flags |= eVariableFlags::Array;
+                }
                 global->layout_qualifiers = parse.layout_qualifiers;
                 if (parse.initial_value) {
                     if (!(global->initial_value = Evaluate(parse.initial_value))) {
                         return false;
                     }
                 }
-                global->is_array = parse.is_array;
                 global->array_sizes = parse.array_sizes;
                 ast_->globals.push_back(global);
                 scopes_.back().push_back(global);
@@ -269,7 +275,8 @@ bool glslx::Parser::ParseSource(std::string_view source) {
             }
 
             if (!gen_types.empty()) {
-                if (!function->is_prototype || !(function->attributes & eFunctionAttribute::Builtin)) {
+                if (!(function->attributes & eFunctionAttribute::Prototype) ||
+                    !(function->attributes & eFunctionAttribute::Builtin)) {
                     fatal("generics are only allowed for builtin prototypes");
                     return false;
                 }
@@ -281,12 +288,12 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                         if (is_generic_type(return_type->type) &&
                             g_GenTypesTable[int(return_type->type) - int(eKeyword::K_genFType)][s] != eKeyword(0)) {
                             if (!new_func) {
-                                new_func = astnew<ast_function>(*function);
+                                new_func = ast_->make<ast_function>(*function);
                                 if (!new_func) {
                                     return false;
                                 }
                             }
-                            new_func->return_type = FindOrAddBuiltin(
+                            new_func->return_type = ast_->FindOrAddBuiltin(
                                 g_GenTypesTable[int(return_type->type) - int(eKeyword::K_genFType)][s]);
                         }
                     }
@@ -296,13 +303,13 @@ bool glslx::Parser::ParseSource(std::string_view source) {
                             if (is_generic_type(param_type->type) &&
                                 g_GenTypesTable[int(param_type->type) - int(eKeyword::K_genFType)][s] != eKeyword(0)) {
                                 if (!new_func) {
-                                    new_func = astnew<ast_function>(*function);
+                                    new_func = ast_->make<ast_function>(*function);
                                     if (!new_func) {
                                         return false;
                                     }
                                 }
-                                new_func->parameters[i] = astnew<ast_function_parameter>(*new_func->parameters[i]);
-                                new_func->parameters[i]->base_type = FindOrAddBuiltin(
+                                new_func->parameters[i] = ast_->make<ast_function_parameter>(*new_func->parameters[i]);
+                                new_func->parameters[i]->base_type = ast_->FindOrAddBuiltin(
                                     g_GenTypesTable[int(param_type->type) - int(eKeyword::K_genFType)][s]);
                             }
                         }
@@ -454,7 +461,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
             if (!next()) { // skip precision
                 return false;
             }
-            auto *pre = astnew<ast_default_precision>();
+            auto *pre = ast_->make<ast_default_precision>();
             if (!ParsePrecision(pre->precision)) {
                 return false;
             }
@@ -553,7 +560,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
                     return false;
                 }
                 auto *gvar = static_cast<ast_global_variable *>(var);
-                gvar->is_invariant = true;
+                gvar->flags |= eVariableFlags::Invariant;
 
                 if (!next()) { // skip identifier
                     return false;
@@ -595,7 +602,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
     }
 
     if (is_type(eTokType::Identifier)) {
-        level.name = strnew(tok_.as_identifier);
+        level.name = ast_->makestr(tok_.as_identifier);
         if (!next()) { // skip identifier
             return false;
         }
@@ -848,7 +855,7 @@ bool glslx::Parser::ParseLayout(top_level_t &current) {
             return false;
         }
         while (!is_operator(eOperator::parenthesis_end)) {
-            auto *qualifier = astnew<ast_layout_qualifier>();
+            auto *qualifier = ast_->make<ast_layout_qualifier>();
             if (!qualifier) {
                 return false;
             }
@@ -857,7 +864,7 @@ bool glslx::Parser::ParseLayout(top_level_t &current) {
             }
 
             int found = -1;
-            qualifier->name = strnew(is_type(eTokType::Identifier) ? tok_.as_identifier : "shared");
+            qualifier->name = ast_->makestr(is_type(eTokType::Identifier) ? tok_.as_identifier : "shared");
             for (int i = 0; i < std::size(g_layout_qualifiers); ++i) {
                 if (strcmp(qualifier->name, g_layout_qualifiers[i].qualifier) == 0) {
                     found = i;
@@ -1023,13 +1030,13 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         }
         switch (operand->type) {
         case eExprType::IntConstant:
-            return astnew<ast_int_constant>(-IVAL(operand));
+            return ast_->make<ast_int_constant>(-IVAL(operand));
         case eExprType::HalfConstant:
-            return astnew<ast_half_constant>(-HVAL(operand));
+            return ast_->make<ast_half_constant>(-HVAL(operand));
         case eExprType::FloatConstant:
-            return astnew<ast_float_constant>(-FVAL(operand));
+            return ast_->make<ast_float_constant>(-FVAL(operand));
         case eExprType::DoubleConstant:
-            return astnew<ast_double_constant>(-DVAL(operand));
+            return ast_->make<ast_double_constant>(-DVAL(operand));
         default:
             fatal("invalid operation in constant expression");
             return nullptr;
@@ -1054,9 +1061,9 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         ast_expression *operand = Evaluate(static_cast<ast_unary_expression *>(expression)->operand);
         switch (operand->type) {
         case eExprType::IntConstant:
-            return astnew<ast_int_constant>(~IVAL(operand));
+            return ast_->make<ast_int_constant>(~IVAL(operand));
         case eExprType::UIntConstant:
-            return astnew<ast_uint_constant>(~UVAL(operand));
+            return ast_->make<ast_uint_constant>(~UVAL(operand));
         default:
             fatal("invalid operation in constant expression");
             return nullptr;
@@ -1072,43 +1079,43 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         case eExprType::IntConstant:
             switch (oper) {
             case eOperator::multiply:
-                return astnew<ast_int_constant>(IVAL(lhs) * IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) * IVAL(rhs));
             case eOperator::divide:
-                return astnew<ast_int_constant>(IVAL(lhs) / IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) / IVAL(rhs));
             case eOperator::modulus:
-                return astnew<ast_int_constant>(IVAL(lhs) % IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) % IVAL(rhs));
             case eOperator::plus:
-                return astnew<ast_int_constant>(IVAL(lhs) + IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) + IVAL(rhs));
             case eOperator::minus:
-                return astnew<ast_int_constant>(IVAL(lhs) - IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) - IVAL(rhs));
             case eOperator::shift_left:
-                return astnew<ast_int_constant>(IVAL(lhs) << IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) << IVAL(rhs));
             case eOperator::shift_right:
-                return astnew<ast_int_constant>(IVAL(lhs) >> IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) >> IVAL(rhs));
             case eOperator::less:
-                return astnew<ast_bool_constant>(IVAL(lhs) < IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) < IVAL(rhs));
             case eOperator::greater:
-                return astnew<ast_bool_constant>(IVAL(lhs) > IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) > IVAL(rhs));
             case eOperator::less_equal:
-                return astnew<ast_bool_constant>(IVAL(lhs) <= IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) <= IVAL(rhs));
             case eOperator::greater_equal:
-                return astnew<ast_bool_constant>(IVAL(lhs) >= IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) >= IVAL(rhs));
             case eOperator::equal:
-                return astnew<ast_bool_constant>(IVAL(lhs) == IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) == IVAL(rhs));
             case eOperator::not_equal:
-                return astnew<ast_bool_constant>(IVAL(lhs) != IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) != IVAL(rhs));
             case eOperator::bit_and:
-                return astnew<ast_int_constant>(IVAL(lhs) & IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) & IVAL(rhs));
             case eOperator::bit_xor:
-                return astnew<ast_int_constant>(IVAL(lhs) ^ IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) ^ IVAL(rhs));
             case eOperator::logical_and:
-                return astnew<ast_bool_constant>(IVAL(lhs) && IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) && IVAL(rhs));
             case eOperator::logical_xor:
-                return astnew<ast_bool_constant>(!IVAL(lhs) != !IVAL(rhs));
+                return ast_->make<ast_bool_constant>(!IVAL(lhs) != !IVAL(rhs));
             case eOperator::logical_or:
-                return astnew<ast_bool_constant>(IVAL(lhs) || IVAL(rhs));
+                return ast_->make<ast_bool_constant>(IVAL(lhs) || IVAL(rhs));
             case eOperator::bit_or:
-                return astnew<ast_int_constant>(IVAL(lhs) | IVAL(rhs));
+                return ast_->make<ast_int_constant>(IVAL(lhs) | IVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1117,43 +1124,43 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         case eExprType::UIntConstant:
             switch (oper) {
             case eOperator::multiply:
-                return astnew<ast_uint_constant>(UVAL(lhs) * UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) * UVAL(rhs));
             case eOperator::divide:
-                return astnew<ast_uint_constant>(UVAL(lhs) / UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) / UVAL(rhs));
             case eOperator::modulus:
-                return astnew<ast_uint_constant>(UVAL(lhs) % UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) % UVAL(rhs));
             case eOperator::plus:
-                return astnew<ast_uint_constant>(UVAL(lhs) + UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) + UVAL(rhs));
             case eOperator::minus:
-                return astnew<ast_uint_constant>(UVAL(lhs) - UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) - UVAL(rhs));
             case eOperator::shift_left:
-                return astnew<ast_uint_constant>(UVAL(lhs) << UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) << UVAL(rhs));
             case eOperator::shift_right:
-                return astnew<ast_uint_constant>(UVAL(lhs) >> UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) >> UVAL(rhs));
             case eOperator::less:
-                return astnew<ast_bool_constant>(UVAL(lhs) < UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) < UVAL(rhs));
             case eOperator::greater:
-                return astnew<ast_bool_constant>(UVAL(lhs) > UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) > UVAL(rhs));
             case eOperator::less_equal:
-                return astnew<ast_bool_constant>(UVAL(lhs) <= UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) <= UVAL(rhs));
             case eOperator::greater_equal:
-                return astnew<ast_bool_constant>(UVAL(lhs) >= UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) >= UVAL(rhs));
             case eOperator::equal:
-                return astnew<ast_bool_constant>(UVAL(lhs) == UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) == UVAL(rhs));
             case eOperator::not_equal:
-                return astnew<ast_bool_constant>(UVAL(lhs) != UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) != UVAL(rhs));
             case eOperator::bit_and:
-                return astnew<ast_uint_constant>(UVAL(lhs) & UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) & UVAL(rhs));
             case eOperator::bit_xor:
-                return astnew<ast_uint_constant>(UVAL(lhs) ^ UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) ^ UVAL(rhs));
             case eOperator::logical_and:
-                return astnew<ast_bool_constant>(UVAL(lhs) && UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) && UVAL(rhs));
             case eOperator::logical_xor:
-                return astnew<ast_bool_constant>(!UVAL(lhs) != !UVAL(rhs));
+                return ast_->make<ast_bool_constant>(!UVAL(lhs) != !UVAL(rhs));
             case eOperator::logical_or:
-                return astnew<ast_bool_constant>(UVAL(lhs) || UVAL(rhs));
+                return ast_->make<ast_bool_constant>(UVAL(lhs) || UVAL(rhs));
             case eOperator::bit_or:
-                return astnew<ast_uint_constant>(UVAL(lhs) | UVAL(rhs));
+                return ast_->make<ast_uint_constant>(UVAL(lhs) | UVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1162,31 +1169,31 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         case eExprType::HalfConstant:
             switch (oper) {
             case eOperator::multiply:
-                return astnew<ast_half_constant>(HVAL(lhs) * HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) * HVAL(rhs));
             case eOperator::divide:
-                return astnew<ast_half_constant>(HVAL(lhs) / HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) / HVAL(rhs));
             case eOperator::plus:
-                return astnew<ast_half_constant>(HVAL(lhs) + HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) + HVAL(rhs));
             case eOperator::minus:
-                return astnew<ast_half_constant>(HVAL(lhs) - HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) - HVAL(rhs));
             case eOperator::less:
-                return astnew<ast_half_constant>(HVAL(lhs) < HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) < HVAL(rhs));
             case eOperator::greater:
-                return astnew<ast_half_constant>(HVAL(lhs) > HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) > HVAL(rhs));
             case eOperator::less_equal:
-                return astnew<ast_half_constant>(HVAL(lhs) <= HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) <= HVAL(rhs));
             case eOperator::greater_equal:
-                return astnew<ast_half_constant>(HVAL(lhs) >= HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) >= HVAL(rhs));
             case eOperator::equal:
-                return astnew<ast_half_constant>(HVAL(lhs) == HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) == HVAL(rhs));
             case eOperator::not_equal:
-                return astnew<ast_half_constant>(HVAL(lhs) != HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) != HVAL(rhs));
             case eOperator::logical_and:
-                return astnew<ast_half_constant>(HVAL(lhs) && HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) && HVAL(rhs));
             case eOperator::logical_xor:
-                return astnew<ast_half_constant>(!HVAL(lhs) != !HVAL(rhs));
+                return ast_->make<ast_half_constant>(!HVAL(lhs) != !HVAL(rhs));
             case eOperator::logical_or:
-                return astnew<ast_half_constant>(HVAL(lhs) || HVAL(rhs));
+                return ast_->make<ast_half_constant>(HVAL(lhs) || HVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1195,31 +1202,31 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         case eExprType::FloatConstant:
             switch (oper) {
             case eOperator::multiply:
-                return astnew<ast_float_constant>(FVAL(lhs) * FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) * FVAL(rhs));
             case eOperator::divide:
-                return astnew<ast_float_constant>(FVAL(lhs) / FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) / FVAL(rhs));
             case eOperator::plus:
-                return astnew<ast_float_constant>(FVAL(lhs) + FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) + FVAL(rhs));
             case eOperator::minus:
-                return astnew<ast_float_constant>(FVAL(lhs) - FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) - FVAL(rhs));
             case eOperator::less:
-                return astnew<ast_float_constant>(FVAL(lhs) < FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) < FVAL(rhs));
             case eOperator::greater:
-                return astnew<ast_float_constant>(FVAL(lhs) > FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) > FVAL(rhs));
             case eOperator::less_equal:
-                return astnew<ast_float_constant>(FVAL(lhs) <= FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) <= FVAL(rhs));
             case eOperator::greater_equal:
-                return astnew<ast_float_constant>(FVAL(lhs) >= FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) >= FVAL(rhs));
             case eOperator::equal:
-                return astnew<ast_float_constant>(FVAL(lhs) == FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) == FVAL(rhs));
             case eOperator::not_equal:
-                return astnew<ast_float_constant>(FVAL(lhs) != FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) != FVAL(rhs));
             case eOperator::logical_and:
-                return astnew<ast_float_constant>(FVAL(lhs) && FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) && FVAL(rhs));
             case eOperator::logical_xor:
-                return astnew<ast_float_constant>(!FVAL(lhs) != !FVAL(rhs));
+                return ast_->make<ast_float_constant>(!FVAL(lhs) != !FVAL(rhs));
             case eOperator::logical_or:
-                return astnew<ast_float_constant>(FVAL(lhs) || FVAL(rhs));
+                return ast_->make<ast_float_constant>(FVAL(lhs) || FVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1228,31 +1235,31 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         case eExprType::DoubleConstant:
             switch (oper) {
             case eOperator::multiply:
-                return astnew<ast_double_constant>(DVAL(lhs) * DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) * DVAL(rhs));
             case eOperator::divide:
-                return astnew<ast_double_constant>(DVAL(lhs) / DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) / DVAL(rhs));
             case eOperator::plus:
-                return astnew<ast_double_constant>(DVAL(lhs) + DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) + DVAL(rhs));
             case eOperator::minus:
-                return astnew<ast_double_constant>(DVAL(lhs) - DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) - DVAL(rhs));
             case eOperator::less:
-                return astnew<ast_double_constant>(DVAL(lhs) < DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) < DVAL(rhs));
             case eOperator::greater:
-                return astnew<ast_double_constant>(DVAL(lhs) > DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) > DVAL(rhs));
             case eOperator::less_equal:
-                return astnew<ast_double_constant>(DVAL(lhs) <= DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) <= DVAL(rhs));
             case eOperator::greater_equal:
-                return astnew<ast_double_constant>(DVAL(lhs) >= DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) >= DVAL(rhs));
             case eOperator::equal:
-                return astnew<ast_double_constant>(DVAL(lhs) == DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) == DVAL(rhs));
             case eOperator::not_equal:
-                return astnew<ast_double_constant>(DVAL(lhs) != DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) != DVAL(rhs));
             case eOperator::logical_and:
-                return astnew<ast_double_constant>(DVAL(lhs) && DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) && DVAL(rhs));
             case eOperator::logical_xor:
-                return astnew<ast_double_constant>(!DVAL(lhs) != !DVAL(rhs));
+                return ast_->make<ast_double_constant>(!DVAL(lhs) != !DVAL(rhs));
             case eOperator::logical_or:
-                return astnew<ast_double_constant>(DVAL(lhs) || DVAL(rhs));
+                return ast_->make<ast_double_constant>(DVAL(lhs) || DVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1261,15 +1268,15 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         case eExprType::BoolConstant:
             switch (oper) {
             case eOperator::equal:
-                return astnew<ast_bool_constant>(BVAL(lhs) == BVAL(rhs));
+                return ast_->make<ast_bool_constant>(BVAL(lhs) == BVAL(rhs));
             case eOperator::not_equal:
-                return astnew<ast_bool_constant>(BVAL(lhs) != BVAL(rhs));
+                return ast_->make<ast_bool_constant>(BVAL(lhs) != BVAL(rhs));
             case eOperator::logical_and:
-                return astnew<ast_bool_constant>(BVAL(lhs) && BVAL(rhs));
+                return ast_->make<ast_bool_constant>(BVAL(lhs) && BVAL(rhs));
             case eOperator::logical_or:
-                return astnew<ast_bool_constant>(BVAL(lhs) || BVAL(rhs));
+                return ast_->make<ast_bool_constant>(BVAL(lhs) || BVAL(rhs));
             case eOperator::logical_xor:
-                return astnew<ast_bool_constant>(!BVAL(lhs) != !BVAL(rhs));
+                return ast_->make<ast_bool_constant>(!BVAL(lhs) != !BVAL(rhs));
             default:
                 fatal("invalid operation in constant expression");
                 return nullptr;
@@ -1306,22 +1313,11 @@ glslx::ast_builtin *glslx::Parser::ParseBuiltin() {
         return nullptr;
     }
 
-    return FindOrAddBuiltin(tok_.as_keyword);
-}
-
-glslx::ast_builtin *glslx::Parser::FindOrAddBuiltin(eKeyword type) {
-    for (int i = 0; i < int(builtins_.size()); ++i) {
-        if (builtins_[i]->type == type) {
-            return builtins_[i];
-        }
-    }
-
-    builtins_.push_back(astnew<ast_builtin>(type));
-    return builtins_.back();
+    return ast_->FindOrAddBuiltin(tok_.as_keyword);
 }
 
 template <typename T> T *glslx::Parser::ParseBlock(const char *type) {
-    T *unique = astnew<T>(ast_->alloc.allocator);
+    T *unique = ast_->make<T>(ast_->alloc.allocator);
     if (!unique) {
         return nullptr;
     }
@@ -1331,7 +1327,7 @@ template <typename T> T *glslx::Parser::ParseBlock(const char *type) {
     }
 
     if (is_type(eTokType::Identifier)) {
-        unique->name = strnew(tok_.as_identifier);
+        unique->name = ast_->makestr(tok_.as_identifier);
         if (!next()) { // skip identifier
             return nullptr;
         }
@@ -1358,14 +1354,18 @@ template <typename T> T *glslx::Parser::ParseBlock(const char *type) {
 
     for (int i = 0; i < int(items.size()); ++i) {
         top_level_t &parse = items[i];
-        auto *field = astnew<ast_variable>(eVariableType::Field, ast_->alloc.allocator);
+        auto *field = ast_->make<ast_variable>(eVariableType::Field, ast_->alloc.allocator);
         if (!field) {
             return nullptr;
         }
         field->base_type = parse.type;
-        field->name = strnew(parse.name);
-        field->is_precise = parse.is_precise;
-        field->is_array = parse.is_array;
+        field->name = ast_->makestr(parse.name);
+        if (parse.is_precise) {
+            field->flags |= eVariableFlags::Precise;
+        }
+        if (parse.is_array) {
+            field->flags |= eVariableFlags::Array;
+        }
         field->array_sizes = std::move(parse.array_sizes);
         unique->fields.push_back(field);
     }
@@ -1421,19 +1421,19 @@ glslx::ast_interface_block *glslx::Parser::ParseInterfaceBlock(const eStorage st
 }
 
 glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
-    auto *function = astnew<ast_function>(ast_->alloc.allocator);
+    auto *function = ast_->make<ast_function>(ast_->alloc.allocator);
     if (!function) {
         return nullptr;
     }
     function->return_type = parse.type;
-    function->name = strnew(parse.name);
+    function->name = ast_->makestr(parse.name);
 
     if (!expect(eOperator::parenthesis_begin)) {
         return nullptr;
     }
 
     while (!is_operator(eOperator::parenthesis_end)) {
-        auto *parameter = astnew<ast_function_parameter>(ast_->alloc.allocator);
+        auto *parameter = ast_->make<ast_function_parameter>(ast_->alloc.allocator);
         if (!parameter) {
             return nullptr;
         }
@@ -1453,7 +1453,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
             } else if (is_keyword(eKeyword::K_lowp)) {
                 parameter->precision = ePrecision::Lowp;
             } else if (is_operator(eOperator::bracket_begin)) {
-                parameter->is_array = true;
+                parameter->flags |= eVariableFlags::Array;
                 while (is_operator(eOperator::bracket_begin)) {
                     ast_constant_expression *array_size = ParseArraySize();
                     if (!array_size) {
@@ -1477,7 +1477,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
 
                 const token_t &peek = lexer_.Peek();
                 if (peek.type == eTokType::Identifier) {
-                    parameter->name = strnew(peek.as_identifier);
+                    parameter->name = ast_->makestr(peek.as_identifier);
                     if (!next()) {
                         return nullptr;
                     }
@@ -1544,7 +1544,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
     }
 
     if (is_type(eTokType::Scope_Begin)) {
-        function->is_prototype = false;
+        function->attributes &= ~Bitmask{eFunctionAttribute::Prototype};
         if (!next()) { // skip '{'
             return nullptr;
         }
@@ -1566,7 +1566,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
 
         scopes_.pop_back();
     } else if (is_type(eTokType::Semicolon)) {
-        function->is_prototype = true;
+        function->attributes |= eFunctionAttribute::Prototype;
     } else {
         fatal("expected '{' or ';'");
         return nullptr;
@@ -1575,7 +1575,7 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
 }
 
 glslx::ast_constructor_call *glslx::Parser::ParseConstructorCall() {
-    auto *expression = astnew<ast_constructor_call>(ast_->alloc.allocator);
+    auto *expression = ast_->make<ast_constructor_call>(ast_->alloc.allocator);
     if (!expression) {
         return nullptr;
     }
@@ -1615,12 +1615,12 @@ glslx::ast_constructor_call *glslx::Parser::ParseConstructorCall() {
 }
 
 glslx::ast_function_call *glslx::Parser::ParseFunctionCall() {
-    auto *expression = astnew<ast_function_call>(ast_->alloc.allocator);
+    auto *expression = ast_->make<ast_function_call>(ast_->alloc.allocator);
     function_calls_.push_back(expression);
     if (!expression) {
         return nullptr;
     }
-    expression->name = strnew(tok_.as_identifier);
+    expression->name = ast_->makestr(tok_.as_identifier);
     if (!next()) { // skip identifier
         return nullptr;
     }
@@ -1675,7 +1675,7 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
                 fatal("expected field identifier or swizzle after '.'");
                 return nullptr;
             }
-            auto *expression = astnew<ast_field_or_swizzle>();
+            auto *expression = ast_->make<ast_field_or_swizzle>();
             if (!expression) {
                 return nullptr;
             }
@@ -1695,22 +1695,22 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
                     return nullptr;
                 }
 
-                expression->field = astnew<ast_variable_identifier>(field);
+                expression->field = ast_->make<ast_variable_identifier>(field);
             }
 
             expression->operand = operand;
-            expression->name = strnew(tok_.as_identifier);
+            expression->name = ast_->makestr(tok_.as_identifier);
             operand = expression;
         } else if (peek.type == eTokType::Operator && peek.as_operator == eOperator::increment) {
             if (!next()) { // skip last
                 return nullptr;
             }
-            return astnew<ast_post_increment_expression>(operand);
+            return ast_->make<ast_post_increment_expression>(operand);
         } else if (peek.type == eTokType::Operator && peek.as_operator == eOperator::decrement) {
             if (!next()) { // skip last
                 return nullptr;
             }
-            return astnew<ast_post_decrement_expression>(operand);
+            return ast_->make<ast_post_decrement_expression>(operand);
         } else if (peek.type == eTokType::Operator && peek.as_operator == eOperator::bracket_begin) {
             if (!next()) { // skip last
                 return nullptr;
@@ -1718,7 +1718,7 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
             if (!next()) { // skip '['
                 return nullptr;
             }
-            auto *expression = astnew<ast_array_subscript>();
+            auto *expression = ast_->make<ast_array_subscript>();
             if (!expression) {
                 return nullptr;
             }
@@ -1792,7 +1792,7 @@ glslx::ast_expression *glslx::Parser::ParseBinary(const int lhs_precedence, ast_
             if (!next()) { // skip '?'
                 return nullptr;
             }
-            auto *expression = astnew<ast_ternary_expression>();
+            auto *expression = ast_->make<ast_ternary_expression>();
             if (!expression) {
                 return nullptr;
             }
@@ -1878,32 +1878,32 @@ glslx::ast_expression *glslx::Parser::ParseUnaryPrefix(const Bitmask<eEndConditi
         if (!next()) { // skip '!'
             return nullptr;
         }
-        return astnew<ast_unary_logical_not_expression>(ParseUnary(condition));
+        return ast_->make<ast_unary_logical_not_expression>(ParseUnary(condition));
     } else if (is_operator(eOperator::bit_not)) {
         if (!next()) { // skip '~'
             return nullptr;
         }
-        return astnew<ast_unary_bit_not_expression>(ParseUnary(condition));
+        return ast_->make<ast_unary_bit_not_expression>(ParseUnary(condition));
     } else if (is_operator(eOperator::plus)) {
         if (!next()) { // skip '+'
             return nullptr;
         }
-        return astnew<ast_unary_plus_expression>(ParseUnary(condition));
+        return ast_->make<ast_unary_plus_expression>(ParseUnary(condition));
     } else if (is_operator(eOperator::minus)) {
         if (!next()) { // skip '+'
             return nullptr;
         }
-        return astnew<ast_unary_minus_expression>(ParseUnary(condition));
+        return ast_->make<ast_unary_minus_expression>(ParseUnary(condition));
     } else if (is_operator(eOperator::increment)) {
         if (!next()) { // skip '++'
             return nullptr;
         }
-        return astnew<ast_prefix_increment_expression>(ParseUnary(condition));
+        return ast_->make<ast_prefix_increment_expression>(ParseUnary(condition));
     } else if (is_operator(eOperator::decrement)) {
         if (!next()) { // skip '--'
             return nullptr;
         }
-        return astnew<ast_prefix_decrement_expression>(ParseUnary(condition));
+        return ast_->make<ast_prefix_decrement_expression>(ParseUnary(condition));
     } else if (is_builtin()) {
         return ParseConstructorCall();
     } else if (is_type(eTokType::Identifier)) {
@@ -1921,30 +1921,30 @@ glslx::ast_expression *glslx::Parser::ParseUnaryPrefix(const Bitmask<eEndConditi
                 fatal("'%s' was not declared in this scope", tok_.as_identifier);
                 return nullptr;
             }
-            return astnew<ast_variable_identifier>(find);
+            return ast_->make<ast_variable_identifier>(find);
         }
     } else if (is_keyword(eKeyword::K_true)) {
-        return astnew<ast_bool_constant>(true);
+        return ast_->make<ast_bool_constant>(true);
     } else if (is_keyword(eKeyword::K_false)) {
-        return astnew<ast_bool_constant>(false);
+        return ast_->make<ast_bool_constant>(false);
     } else if (is_type(eTokType::Const_short)) {
-        return astnew<ast_short_constant>(tok_.as_short);
+        return ast_->make<ast_short_constant>(tok_.as_short);
     } else if (is_type(eTokType::Const_ushort)) {
-        return astnew<ast_ushort_constant>(tok_.as_ushort);
+        return ast_->make<ast_ushort_constant>(tok_.as_ushort);
     } else if (is_type(eTokType::Const_int)) {
-        return astnew<ast_int_constant>(tok_.as_int);
+        return ast_->make<ast_int_constant>(tok_.as_int);
     } else if (is_type(eTokType::Const_uint)) {
-        return astnew<ast_uint_constant>(tok_.as_uint);
+        return ast_->make<ast_uint_constant>(tok_.as_uint);
     } else if (is_type(eTokType::Const_long)) {
-        return astnew<ast_long_constant>(tok_.as_long);
+        return ast_->make<ast_long_constant>(tok_.as_long);
     } else if (is_type(eTokType::Const_ulong)) {
-        return astnew<ast_ulong_constant>(tok_.as_ulong);
+        return ast_->make<ast_ulong_constant>(tok_.as_ulong);
     } else if (is_type(eTokType::Const_half)) {
-        return astnew<ast_half_constant>(tok_.as_half);
+        return ast_->make<ast_half_constant>(tok_.as_half);
     } else if (is_type(eTokType::Const_float)) {
-        return astnew<ast_float_constant>(tok_.as_float);
+        return ast_->make<ast_float_constant>(tok_.as_float);
     } else if (is_type(eTokType::Const_double)) {
-        return astnew<ast_double_constant>(tok_.as_double);
+        return ast_->make<ast_double_constant>(tok_.as_double);
     } else if (condition == eEndCondition::Bracket) {
         return nullptr;
     }
@@ -1986,7 +1986,7 @@ glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition>
         if (!next()) {
             return nullptr;
         }
-        auto *arr_specifier = astnew<ast_array_specifier>(ast_->alloc.allocator);
+        auto *arr_specifier = ast_->make<ast_array_specifier>(ast_->alloc.allocator);
         if (!arr_specifier) {
             return nullptr;
         }
@@ -2210,14 +2210,14 @@ glslx::ast_statement *glslx::Parser::ParseStatement() {
     } else if (is_keyword(eKeyword::K_ignoreIntersectionEXT) || is_keyword(eKeyword::K_terminateRayEXT)) {
         return ParseExtJumpStatement();
     } else if (is_type(eTokType::Semicolon)) {
-        return astnew<ast_empty_statement>();
+        return ast_->make<ast_empty_statement>();
     } else {
         return ParseDeclarationOrExpressionStatement(eEndCondition::Semicolon);
     }
 }
 
 glslx::ast_compound_statement *glslx::Parser::ParseCompoundStatement() {
-    auto *statement = astnew<ast_compound_statement>(ast_->alloc.allocator);
+    auto *statement = ast_->make<ast_compound_statement>(ast_->alloc.allocator);
     if (!statement) {
         return nullptr;
     }
@@ -2238,7 +2238,7 @@ glslx::ast_compound_statement *glslx::Parser::ParseCompoundStatement() {
 }
 
 glslx::ast_if_statement *glslx::Parser::ParseIfStatement(const Bitmask<eCtrlFlowAttribute> attributes) {
-    auto *statement = astnew<ast_if_statement>(attributes);
+    auto *statement = ast_->make<ast_if_statement>(attributes);
     if (!statement) {
         return nullptr;
     }
@@ -2275,7 +2275,7 @@ glslx::ast_if_statement *glslx::Parser::ParseIfStatement(const Bitmask<eCtrlFlow
 }
 
 glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<eCtrlFlowAttribute> attributes) {
-    auto *statement = astnew<ast_switch_statement>(ast_->alloc.allocator, attributes);
+    auto *statement = ast_->make<ast_switch_statement>(ast_->alloc.allocator, attributes);
     if (!statement) {
         return nullptr;
     }
@@ -2312,7 +2312,7 @@ glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<e
         }
         if (next_statement->type == eStatement::CaseLabel) {
             auto *case_label = static_cast<ast_case_label_statement *>(next_statement);
-            if (!case_label->is_default) {
+            if (!(case_label->flags & eCaseLabelFlags::Default)) {
                 if (!IsConstant(case_label->condition)) {
                     fatal("case label is not a valid constant expression");
                     return nullptr;
@@ -2354,12 +2354,12 @@ glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<e
 }
 
 glslx::ast_case_label_statement *glslx::Parser::ParseCaseLabelStatement() {
-    auto *statement = astnew<ast_case_label_statement>();
+    auto *statement = ast_->make<ast_case_label_statement>();
     if (!statement) {
         return nullptr;
     }
     if (is_keyword(eKeyword::K_default)) {
-        statement->is_default = true;
+        statement->flags |= eCaseLabelFlags::Default;
         if (!next()) { // skip 'default'
             return nullptr;
         }
@@ -2428,7 +2428,7 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
         }
     }
 
-    auto *statement = astnew<ast_declaration_statement>(ast_->alloc.allocator);
+    auto *statement = ast_->make<ast_declaration_statement>(ast_->alloc.allocator);
     if (!statement) {
         return nullptr;
     }
@@ -2445,7 +2445,7 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
             return nullptr;
         }
 
-        const char *name = strnew(tok_.as_identifier);
+        const char *name = ast_->makestr(tok_.as_identifier);
         if (!next()) { // skip identifier
             return nullptr;
         }
@@ -2460,16 +2460,18 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
             }
         }
 
-        auto *variable = astnew<ast_function_variable>(ast_->alloc.allocator);
+        auto *variable = ast_->make<ast_function_variable>(ast_->alloc.allocator);
         if (!variable) {
             return nullptr;
         }
-        variable->is_array = is_array;
+        if (is_array) {
+            variable->flags |= eVariableFlags::Array;
+        }
         variable->array_sizes = array_sizes;
 
         if (is_operator(eOperator::bracket_begin)) {
             while (is_operator(eOperator::bracket_begin)) {
-                variable->is_array = true;
+                variable->flags |= eVariableFlags::Array;
                 ast_constant_expression *array_size = ParseArraySize();
                 // if (!array_size) {
                 //     return nullptr;
@@ -2491,7 +2493,7 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
             if (!next()) { // skip '='
                 return nullptr;
             }
-            if (variable->is_array || is_vector_type(type)) {
+            if ((variable->flags & eVariableFlags::Array) || is_vector_type(type)) {
                 if (!(variable->initial_value = ParseArraySpecifier(condition | eEndCondition::Comma))) {
                     return nullptr;
                 }
@@ -2501,11 +2503,12 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
                 }
             }
         }
-
-        variable->is_const = is_const;
+        if (is_const) {
+            variable->flags |= eVariableFlags::Const;
+        }
         variable->precision = precision;
         variable->base_type = type;
-        variable->name = strnew(name);
+        variable->name = ast_->makestr(name);
         statement->variables.push_back(variable);
         scopes_.back().push_back(variable);
 
@@ -2529,11 +2532,11 @@ glslx::ast_expression_statement *glslx::Parser::ParseExpressionStatement(const B
     if (!expression) {
         return nullptr;
     }
-    return astnew<ast_expression_statement>(expression);
+    return ast_->make<ast_expression_statement>(expression);
 }
 
 glslx::ast_continue_statement *glslx::Parser::ParseContinueStatement() {
-    auto *statement = astnew<ast_continue_statement>();
+    auto *statement = ast_->make<ast_continue_statement>();
     if (!next()) { // skip 'continue'
         return nullptr;
     }
@@ -2541,7 +2544,7 @@ glslx::ast_continue_statement *glslx::Parser::ParseContinueStatement() {
 }
 
 glslx::ast_break_statement *glslx::Parser::ParseBreakStatement() {
-    auto *statement = astnew<ast_break_statement>();
+    auto *statement = ast_->make<ast_break_statement>();
     if (!statement) {
         return nullptr;
     }
@@ -2556,7 +2559,7 @@ glslx::ast_break_statement *glslx::Parser::ParseBreakStatement() {
 }
 
 glslx::ast_discard_statement *glslx::Parser::ParseDiscardStatement() {
-    auto *statement = astnew<ast_discard_statement>();
+    auto *statement = ast_->make<ast_discard_statement>();
     if (!statement) {
         return nullptr;
     }
@@ -2571,7 +2574,7 @@ glslx::ast_discard_statement *glslx::Parser::ParseDiscardStatement() {
 }
 
 glslx::ast_return_statement *glslx::Parser::ParseReturnStatement() {
-    auto *statement = astnew<ast_return_statement>();
+    auto *statement = ast_->make<ast_return_statement>();
     if (!statement) {
         return nullptr;
     }
@@ -2591,7 +2594,7 @@ glslx::ast_return_statement *glslx::Parser::ParseReturnStatement() {
 }
 
 glslx::ast_ext_jump_statement *glslx::Parser::ParseExtJumpStatement() {
-    auto *statement = astnew<ast_ext_jump_statement>(tok_.as_keyword);
+    auto *statement = ast_->make<ast_ext_jump_statement>(tok_.as_keyword);
     if (!statement) {
         return nullptr;
     }
@@ -2606,7 +2609,7 @@ glslx::ast_ext_jump_statement *glslx::Parser::ParseExtJumpStatement() {
 }
 
 glslx::ast_for_statement *glslx::Parser::ParseForStatement(const ctrl_flow_params_t &ctrl_flow) {
-    auto *statement = astnew<ast_for_statement>(ctrl_flow);
+    auto *statement = ast_->make<ast_for_statement>(ctrl_flow);
     if (!statement) {
         return nullptr;
     }
@@ -2649,7 +2652,7 @@ glslx::ast_for_statement *glslx::Parser::ParseForStatement(const ctrl_flow_param
 }
 
 glslx::ast_do_statement *glslx::Parser::ParseDoStatement(const ctrl_flow_params_t &ctrl_flow) {
-    auto *statement = astnew<ast_do_statement>(ctrl_flow);
+    auto *statement = ast_->make<ast_do_statement>(ctrl_flow);
     if (!statement) {
         return nullptr;
     }
@@ -2686,7 +2689,7 @@ glslx::ast_do_statement *glslx::Parser::ParseDoStatement(const ctrl_flow_params_
 }
 
 glslx::ast_while_statement *glslx::Parser::ParseWhileStatement(const ctrl_flow_params_t &ctrl_flow) {
-    auto *statement = astnew<ast_while_statement>(ctrl_flow);
+    auto *statement = ast_->make<ast_while_statement>(ctrl_flow);
     if (!statement) {
         return nullptr;
     }
@@ -2737,7 +2740,7 @@ glslx::ast_binary_expression *glslx::Parser::CreateExpression() {
     case eOperator::logical_and:
     case eOperator::logical_xor:
     case eOperator::logical_or:
-        return astnew<ast_operation_expression>(tok_.as_operator);
+        return ast_->make<ast_operation_expression>(tok_.as_operator);
     case eOperator::assign:
     case eOperator::add_assign:
     case eOperator::sub_assign:
@@ -2749,9 +2752,9 @@ glslx::ast_binary_expression *glslx::Parser::CreateExpression() {
     case eOperator::bit_and_assign:
     case eOperator::bit_xor_assign:
     case eOperator::bit_or_assign:
-        return astnew<ast_assignment_expression>(tok_.as_operator);
+        return ast_->make<ast_assignment_expression>(tok_.as_operator);
     case eOperator::comma:
-        return astnew<ast_sequence_expression>();
+        return ast_->make<ast_sequence_expression>();
     default:
         return nullptr;
     }
@@ -2800,291 +2803,223 @@ glslx::ast_type *glslx::Parser::GetType(ast_expression *expression) {
     return nullptr;
 }
 
-glslx::ast_global_variable *glslx::Parser::AddHiddenGlobal(ast_builtin *type, const char *name, const bool is_array,
-                                                           const eStorage storage, const ePrecision precision) {
-    auto *var = astnew<ast_global_variable>(ast_->alloc.allocator);
+glslx::ast_global_variable *glslx::Parser::AddHiddenGlobal(const eKeyword type, const char *name,
+                                                           const Bitmask<eVariableFlags> flags, const eStorage storage,
+                                                           const ePrecision precision) {
+    auto *var = ast_->make<ast_global_variable>(ast_->alloc.allocator);
     if (!var) {
         return nullptr;
     }
     var->storage = storage;
-    var->is_array = is_array;
-    var->is_hidden = true;
-    var->base_type = type;
+    var->flags = flags | eVariableFlags::Hidden;
+    var->base_type = ast_->FindOrAddBuiltin(type);
     var->precision = precision;
-    var->name = strnew(name);
+    var->name = ast_->makestr(name);
     ast_->globals.push_back(var);
     scopes_.back().push_back(var);
     return var;
 }
 
 bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
-    auto *bool_type = astnew<ast_builtin>(eKeyword::K_bool);
-    auto *float_type = astnew<ast_builtin>(eKeyword::K_float);
-    auto *vec2 = astnew<ast_builtin>(eKeyword::K_vec2);
-    auto *vec3 = astnew<ast_builtin>(eKeyword::K_vec3);
-    auto *vec4 = astnew<ast_builtin>(eKeyword::K_vec4);
-    auto *int_type = astnew<ast_builtin>(eKeyword::K_int);
-    auto *uint = astnew<ast_builtin>(eKeyword::K_uint);
-    auto *uvec3 = astnew<ast_builtin>(eKeyword::K_uvec3);
-    auto *uvec4 = astnew<ast_builtin>(eKeyword::K_uvec4);
-    auto *mat3x4 = astnew<ast_builtin>(eKeyword::K_mat3x4);
-    auto *mat4x3 = astnew<ast_builtin>(eKeyword::K_mat4x3);
-    auto *mat4x4 = astnew<ast_builtin>(eKeyword::K_mat4x4);
-    if (!bool_type || !float_type || !vec2 || !vec3 || !vec4 || !int_type || !uint || !uvec3 || !uvec4 || !mat3x4 ||
-        !mat4x3 || !mat4x4) {
-        return false;
-    }
-    builtins_.push_back(bool_type);
-    builtins_.push_back(float_type);
-    builtins_.push_back(vec3);
-    builtins_.push_back(vec4);
-    builtins_.push_back(int_type);
-    builtins_.push_back(uint);
-    builtins_.push_back(uvec3);
-    builtins_.push_back(uvec4);
-    builtins_.push_back(mat3x4);
-    builtins_.push_back(mat4x3);
-    builtins_.push_back(mat4x4);
-
     bool res = true;
 
     if (type == eTrUnitType::Compute) {
-        res &= AddHiddenGlobal(uvec3, "gl_NumWorkGroups") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_WorkGroupSize") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_WorkGroupID") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_LocalInvocationID") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_GlobalInvocationID") != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_LocalInvocationIndex") != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_NumSubgroups") != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_SubgroupID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_NumWorkGroups") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_WorkGroupSize") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_WorkGroupID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LocalInvocationID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_GlobalInvocationID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_LocalInvocationIndex") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_NumSubgroups") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_SubgroupID") != nullptr;
     } else if (type == eTrUnitType::Vertex) {
-        res &= AddHiddenGlobal(int_type, "gl_VertexID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InstanceID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_VertexIndex") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InstanceIndex") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_DrawID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_BaseVertex") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_BaseInstance") != nullptr;
-        res &= AddHiddenGlobal(vec4, "gl_Position", false, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_PointSize", false, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_VertexID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InstanceID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_VertexIndex") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InstanceIndex") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_DrawID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_BaseVertex") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_BaseInstance") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec4, "gl_Position", {}, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_PointSize", {}, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_ClipDistance", eVariableFlags::Array, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_CullDistance", eVariableFlags::Array, eStorage::Out) != nullptr;
     } else if (type == eTrUnitType::TessControl) {
-        res &= AddHiddenGlobal(int_type, "gl_PatchVerticesIn") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InvocationID") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_TessLevelOuter", true, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_TessLevelInner", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PatchVerticesIn") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PrimitiveID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InvocationID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_TessLevelOuter", eVariableFlags::Array, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_TessLevelInner", eVariableFlags::Array, eStorage::Out) != nullptr;
         // TODO: add the rest
     } else if (type == eTrUnitType::TessEvaluation) {
-        res &= AddHiddenGlobal(int_type, "gl_PatchVerticesIn") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_TessCoord") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_TessLevelOuter", true) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_TessLevelInner", true) != nullptr;
-        res &= AddHiddenGlobal(vec4, "gl_Position", false, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_PointSize", false, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PatchVerticesIn") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PrimitiveID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_TessCoord") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_TessLevelOuter", eVariableFlags::Array) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_TessLevelInner", eVariableFlags::Array) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec4, "gl_Position", {}, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_PointSize", {}, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_ClipDistance", eVariableFlags::Array, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_CullDistance", eVariableFlags::Array, eStorage::Out) != nullptr;
         // TODO: add the rest
     } else if (type == eTrUnitType::Geometry) {
-        res &= AddHiddenGlobal(int_type, "gl_PrimitiveIDIn") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InvocationID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_Layer") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_ViewportIndex") != nullptr;
-        res &= AddHiddenGlobal(vec4, "gl_Position", false, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_PointSize", false, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true, eStorage::Out) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PrimitiveIDIn") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InvocationID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PrimitiveID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_Layer") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_ViewportIndex") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec4, "gl_Position", {}, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_PointSize", {}, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_ClipDistance", eVariableFlags::Array, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_CullDistance", eVariableFlags::Array, eStorage::Out) != nullptr;
         // TODO: add the rest
     } else if (type == eTrUnitType::Fragment) {
-        res &= AddHiddenGlobal(vec4, "gl_FragCoord") != nullptr;
-        res &= AddHiddenGlobal(bool_type, "gl_FrontFacing") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true) != nullptr;
-        res &= AddHiddenGlobal(vec2, "gl_PointCoord") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_SampleID") != nullptr;
-        res &= AddHiddenGlobal(vec2, "gl_SamplePosition") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_SampleMaskIn", true) != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_Layer") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_ViewportIndex") != nullptr;
-        res &= AddHiddenGlobal(bool_type, "gl_HelperInvocation") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_FragDepth", false, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec4, "gl_FragCoord") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_bool, "gl_FrontFacing") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_ClipDistance", eVariableFlags::Array) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_CullDistance", eVariableFlags::Array) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec2, "gl_PointCoord") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PrimitiveID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_SampleID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec2, "gl_SamplePosition") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_SampleMaskIn", eVariableFlags::Array) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_Layer") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_ViewportIndex") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_bool, "gl_HelperInvocation") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_FragDepth", {}, eStorage::Out) != nullptr;
     }
 
     // https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_shader_subgroup.txt
     if (type == eTrUnitType::Compute || type == eTrUnitType::Vertex || type == eTrUnitType::Geometry ||
         type == eTrUnitType::TessControl || type == eTrUnitType::TessEvaluation || type == eTrUnitType::Fragment) {
-        res &= AddHiddenGlobal(uint, "gl_SubgroupSize", false, eStorage::In, ePrecision::Mediump) != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_SubgroupInvocationID", false, eStorage::In, ePrecision::Mediump) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupEqMask", false, eStorage::In, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupGeMask", false, eStorage::In, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupGtMask", false, eStorage::In, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupLeMask", false, eStorage::In, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupLtMask", false, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_SubgroupSize", {}, eStorage::In, ePrecision::Mediump) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_SubgroupInvocationID", {}, eStorage::In, ePrecision::Mediump) !=
+               nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec4, "gl_SubgroupEqMask", {}, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec4, "gl_SubgroupGeMask", {}, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec4, "gl_SubgroupGtMask", {}, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec4, "gl_SubgroupLeMask", {}, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec4, "gl_SubgroupLtMask", {}, eStorage::In, ePrecision::Highp) != nullptr;
     }
 
     // https://github.com/KhronosGroup/GLSL/blob/master/extensions/ext/GLSL_EXT_ray_query.txt
-    ast_global_variable *gl_RayFlagsNoneEXT = AddHiddenGlobal(uint, "gl_RayFlagsNoneEXT");
-    gl_RayFlagsNoneEXT->initial_value = astnew<ast_uint_constant>(0);
-    ast_global_variable *gl_RayFlagsOpaqueEXT = AddHiddenGlobal(uint, "gl_RayFlagsOpaqueEXT");
-    gl_RayFlagsOpaqueEXT->initial_value = astnew<ast_uint_constant>(1);
-    ast_global_variable *gl_RayFlagsNoOpaqueEXT = AddHiddenGlobal(uint, "gl_RayFlagsNoOpaqueEXT");
-    gl_RayFlagsNoOpaqueEXT->initial_value = astnew<ast_uint_constant>(2);
-    ast_global_variable *gl_RayFlagsTerminateOnFirstHitEXT = AddHiddenGlobal(uint, "gl_RayFlagsTerminateOnFirstHitEXT");
-    gl_RayFlagsTerminateOnFirstHitEXT->initial_value = astnew<ast_uint_constant>(4);
+    ast_global_variable *gl_RayFlagsNoneEXT = AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsNoneEXT");
+    gl_RayFlagsNoneEXT->initial_value = ast_->make<ast_uint_constant>(0);
+    ast_global_variable *gl_RayFlagsOpaqueEXT = AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsOpaqueEXT");
+    gl_RayFlagsOpaqueEXT->initial_value = ast_->make<ast_uint_constant>(1);
+    ast_global_variable *gl_RayFlagsNoOpaqueEXT = AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsNoOpaqueEXT");
+    gl_RayFlagsNoOpaqueEXT->initial_value = ast_->make<ast_uint_constant>(2);
+    ast_global_variable *gl_RayFlagsTerminateOnFirstHitEXT =
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsTerminateOnFirstHitEXT");
+    gl_RayFlagsTerminateOnFirstHitEXT->initial_value = ast_->make<ast_uint_constant>(4);
     ast_global_variable *gl_RayFlagsSkipClosestHitShaderEXT =
-        AddHiddenGlobal(uint, "gl_RayFlagsSkipClosestHitShaderEXT");
-    gl_RayFlagsSkipClosestHitShaderEXT->initial_value = astnew<ast_uint_constant>(8);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsSkipClosestHitShaderEXT");
+    gl_RayFlagsSkipClosestHitShaderEXT->initial_value = ast_->make<ast_uint_constant>(8);
     ast_global_variable *gl_RayFlagsCullBackFacingTrianglesEXT =
-        AddHiddenGlobal(uint, "gl_RayFlagsCullBackFacingTrianglesEXT");
-    gl_RayFlagsCullBackFacingTrianglesEXT->initial_value = astnew<ast_uint_constant>(16);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsCullBackFacingTrianglesEXT");
+    gl_RayFlagsCullBackFacingTrianglesEXT->initial_value = ast_->make<ast_uint_constant>(16);
     ast_global_variable *gl_RayFlagsCullFrontFacingTrianglesEXT =
-        AddHiddenGlobal(uint, "gl_RayFlagsCullFrontFacingTrianglesEXT");
-    gl_RayFlagsCullFrontFacingTrianglesEXT->initial_value = astnew<ast_uint_constant>(32);
-    ast_global_variable *gl_RayFlagsCullOpaqueEXT = AddHiddenGlobal(uint, "gl_RayFlagsCullOpaqueEXT");
-    gl_RayFlagsCullOpaqueEXT->initial_value = astnew<ast_uint_constant>(64);
-    ast_global_variable *gl_RayFlagsCullNoOpaqueEXT = AddHiddenGlobal(uint, "gl_RayFlagsCullNoOpaqueEXT");
-    gl_RayFlagsCullNoOpaqueEXT->initial_value = astnew<ast_uint_constant>(128);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsCullFrontFacingTrianglesEXT");
+    gl_RayFlagsCullFrontFacingTrianglesEXT->initial_value = ast_->make<ast_uint_constant>(32);
+    ast_global_variable *gl_RayFlagsCullOpaqueEXT = AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsCullOpaqueEXT");
+    gl_RayFlagsCullOpaqueEXT->initial_value = ast_->make<ast_uint_constant>(64);
+    ast_global_variable *gl_RayFlagsCullNoOpaqueEXT = AddHiddenGlobal(eKeyword::K_uint, "gl_RayFlagsCullNoOpaqueEXT");
+    gl_RayFlagsCullNoOpaqueEXT->initial_value = ast_->make<ast_uint_constant>(128);
 
-    ast_global_variable *gl_HitKindFrontFacingTriangleEXT = AddHiddenGlobal(uint, "gl_HitKindFrontFacingTriangleEXT");
-    gl_HitKindFrontFacingTriangleEXT->initial_value = astnew<ast_uint_constant>(0xFEU);
-    ast_global_variable *gl_HitKindBackFacingTriangleEXT = AddHiddenGlobal(uint, "gl_HitKindBackFacingTriangleEXT");
-    gl_HitKindBackFacingTriangleEXT->initial_value = astnew<ast_uint_constant>(0xFFU);
+    ast_global_variable *gl_HitKindFrontFacingTriangleEXT =
+        AddHiddenGlobal(eKeyword::K_uint, "gl_HitKindFrontFacingTriangleEXT");
+    gl_HitKindFrontFacingTriangleEXT->initial_value = ast_->make<ast_uint_constant>(0xFEU);
+    ast_global_variable *gl_HitKindBackFacingTriangleEXT =
+        AddHiddenGlobal(eKeyword::K_uint, "gl_HitKindBackFacingTriangleEXT");
+    gl_HitKindBackFacingTriangleEXT->initial_value = ast_->make<ast_uint_constant>(0xFFU);
 
     ast_global_variable *gl_RayQueryCommittedIntersectionNoneEXT =
-        AddHiddenGlobal(uint, "gl_RayQueryCommittedIntersectionNoneEXT");
-    gl_RayQueryCommittedIntersectionNoneEXT->initial_value = astnew<ast_uint_constant>(0);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayQueryCommittedIntersectionNoneEXT");
+    gl_RayQueryCommittedIntersectionNoneEXT->initial_value = ast_->make<ast_uint_constant>(0);
     ast_global_variable *gl_RayQueryCommittedIntersectionTriangleEXT =
-        AddHiddenGlobal(uint, "gl_RayQueryCommittedIntersectionTriangleEXT");
-    gl_RayQueryCommittedIntersectionTriangleEXT->initial_value = astnew<ast_uint_constant>(1);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayQueryCommittedIntersectionTriangleEXT");
+    gl_RayQueryCommittedIntersectionTriangleEXT->initial_value = ast_->make<ast_uint_constant>(1);
     ast_global_variable *gl_RayQueryCommittedIntersectionGeneratedEXT =
-        AddHiddenGlobal(uint, "gl_RayQueryCommittedIntersectionGeneratedEXT");
-    gl_RayQueryCommittedIntersectionGeneratedEXT->initial_value = astnew<ast_uint_constant>(2);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayQueryCommittedIntersectionGeneratedEXT");
+    gl_RayQueryCommittedIntersectionGeneratedEXT->initial_value = ast_->make<ast_uint_constant>(2);
 
     ast_global_variable *gl_RayQueryCandidateIntersectionTriangleEXT =
-        AddHiddenGlobal(uint, "gl_RayQueryCandidateIntersectionTriangleEXT");
-    gl_RayQueryCandidateIntersectionTriangleEXT->initial_value = astnew<ast_uint_constant>(0);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayQueryCandidateIntersectionTriangleEXT");
+    gl_RayQueryCandidateIntersectionTriangleEXT->initial_value = ast_->make<ast_uint_constant>(0);
     ast_global_variable *gl_RayQueryCandidateIntersectionAABBEXT =
-        AddHiddenGlobal(uint, "gl_RayQueryCandidateIntersectionAABBEXT");
-    gl_RayQueryCandidateIntersectionAABBEXT->initial_value = astnew<ast_uint_constant>(1);
+        AddHiddenGlobal(eKeyword::K_uint, "gl_RayQueryCandidateIntersectionAABBEXT");
+    gl_RayQueryCandidateIntersectionAABBEXT->initial_value = ast_->make<ast_uint_constant>(1);
 
     // https://github.com/KhronosGroup/GLSL/blob/master/extensions/ext/GLSL_EXT_ray_tracing.txt
     if (type == eTrUnitType::RayGen) {
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchIDEXT") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchSizeEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchIDEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchSizeEXT") != nullptr;
     } else if (type == eTrUnitType::AnyHit || type == eTrUnitType::ClosestHit) {
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchIDEXT") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchSizeEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchIDEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchSizeEXT") != nullptr;
 
-        res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InstanceID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InstanceCustomIndexEXT") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_GeometryIndexEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PrimitiveID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InstanceID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InstanceCustomIndexEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_GeometryIndexEXT") != nullptr;
 
-        res &= AddHiddenGlobal(vec3, "gl_WorldRayOriginEXT") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_WorldRayDirectionEXT") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_ObjectRayOriginEXT") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_ObjectRayDirectionEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_WorldRayOriginEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_WorldRayDirectionEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_ObjectRayOriginEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_ObjectRayDirectionEXT") != nullptr;
 
-        res &= AddHiddenGlobal(float_type, "gl_RayTminEXT") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_RayTmaxEXT") != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_IncomingRayFlagsEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_RayTminEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_RayTmaxEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_IncomingRayFlagsEXT") != nullptr;
 
-        res &= AddHiddenGlobal(float_type, "gl_HitTEXT") != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_HitKindEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_HitTEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_HitKindEXT") != nullptr;
 
-        res &= AddHiddenGlobal(mat4x3, "gl_ObjectToWorldEXT") != nullptr;
-        res &= AddHiddenGlobal(mat3x4, "gl_ObjectToWorld3x4EXT") != nullptr;
-        res &= AddHiddenGlobal(mat4x3, "gl_WorldToObjectEXT") != nullptr;
-        res &= AddHiddenGlobal(mat3x4, "gl_WorldToObject3x4EXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat4x3, "gl_ObjectToWorldEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat3x4, "gl_ObjectToWorld3x4EXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat4x3, "gl_WorldToObjectEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat3x4, "gl_WorldToObject3x4EXT") != nullptr;
     } else if (type == eTrUnitType::Intersect) {
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchIDEXT") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchSizeEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchIDEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchSizeEXT") != nullptr;
 
-        res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InstanceID") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_InstanceCustomIndexEXT") != nullptr;
-        res &= AddHiddenGlobal(int_type, "gl_GeometryIndexEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_PrimitiveID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InstanceID") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_InstanceCustomIndexEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_int, "gl_GeometryIndexEXT") != nullptr;
 
-        res &= AddHiddenGlobal(vec3, "gl_WorldRayOriginEXT") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_WorldRayDirectionEXT") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_ObjectRayOriginEXT") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_ObjectRayDirectionEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_WorldRayOriginEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_WorldRayDirectionEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_ObjectRayOriginEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_ObjectRayDirectionEXT") != nullptr;
 
-        res &= AddHiddenGlobal(float_type, "gl_RayTminEXT") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_RayTmaxEXT") != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_IncomingRayFlagsEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_RayTminEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_RayTmaxEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_IncomingRayFlagsEXT") != nullptr;
 
-        res &= AddHiddenGlobal(mat4x3, "gl_ObjectToWorldEXT") != nullptr;
-        res &= AddHiddenGlobal(mat3x4, "gl_ObjectToWorld3x4EXT") != nullptr;
-        res &= AddHiddenGlobal(mat4x3, "gl_WorldToObjectEXT") != nullptr;
-        res &= AddHiddenGlobal(mat3x4, "gl_WorldToObject3x4EXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat4x3, "gl_ObjectToWorldEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat3x4, "gl_ObjectToWorld3x4EXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat4x3, "gl_WorldToObjectEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_mat3x4, "gl_WorldToObject3x4EXT") != nullptr;
     } else if (type == eTrUnitType::Miss) {
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchIDEXT") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchSizeEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchIDEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchSizeEXT") != nullptr;
 
-        res &= AddHiddenGlobal(vec3, "gl_WorldRayOriginEXT") != nullptr;
-        res &= AddHiddenGlobal(vec3, "gl_WorldRayDirectionEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_WorldRayOriginEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_vec3, "gl_WorldRayDirectionEXT") != nullptr;
 
-        res &= AddHiddenGlobal(float_type, "gl_RayTminEXT") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_RayTmaxEXT") != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_IncomingRayFlagsEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_RayTminEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_float, "gl_RayTmaxEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uint, "gl_IncomingRayFlagsEXT") != nullptr;
     } else if (type == eTrUnitType::Callable) {
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchIDEXT") != nullptr;
-        res &= AddHiddenGlobal(uvec3, "gl_LaunchSizeEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchIDEXT") != nullptr;
+        res &= AddHiddenGlobal(eKeyword::K_uvec3, "gl_LaunchSizeEXT") != nullptr;
     }
 
     return res;
 }
 
 namespace glslx {
-const ast_builtin g_short_type(eKeyword::K_int16_t);
-const ast_builtin g_ushort_type(eKeyword::K_uint16_t);
-const ast_builtin g_int_type(eKeyword::K_int);
-const ast_builtin g_uint_type(eKeyword::K_uint);
-const ast_builtin g_long_type(eKeyword::K_int64_t);
-const ast_builtin g_ulong_type(eKeyword::K_uint64_t);
-const ast_builtin g_half_type(eKeyword::K_float16_t);
-const ast_builtin g_float_type(eKeyword::K_float);
-const ast_builtin g_double_type(eKeyword::K_double);
-const ast_builtin g_bool_type(eKeyword::K_bool);
-
-const ast_builtin g_i16vec2_type(eKeyword::K_i16vec2);
-const ast_builtin g_u16vec2_type(eKeyword::K_u16vec2);
-const ast_builtin g_ivec2_type(eKeyword::K_ivec2);
-const ast_builtin g_uvec2_type(eKeyword::K_uvec2);
-const ast_builtin g_i64vec2_type(eKeyword::K_i64vec2);
-const ast_builtin g_u64vec2_type(eKeyword::K_u64vec2);
-const ast_builtin g_f16vec2_type(eKeyword::K_f16vec2);
-const ast_builtin g_vec2_type(eKeyword::K_vec2);
-const ast_builtin g_dvec2_type(eKeyword::K_dvec2);
-const ast_builtin g_bvec2_type(eKeyword::K_bvec2);
-
-const ast_builtin g_i16vec3_type(eKeyword::K_i16vec3);
-const ast_builtin g_u16vec3_type(eKeyword::K_u16vec3);
-const ast_builtin g_ivec3_type(eKeyword::K_ivec3);
-const ast_builtin g_uvec3_type(eKeyword::K_uvec3);
-const ast_builtin g_i64vec3_type(eKeyword::K_i64vec3);
-const ast_builtin g_u64vec3_type(eKeyword::K_u64vec3);
-const ast_builtin g_f16vec3_type(eKeyword::K_f16vec3);
-const ast_builtin g_vec3_type(eKeyword::K_vec3);
-const ast_builtin g_dvec3_type(eKeyword::K_dvec3);
-const ast_builtin g_bvec3_type(eKeyword::K_bvec3);
-
-const ast_builtin g_i16vec4_type(eKeyword::K_i16vec4);
-const ast_builtin g_u16vec4_type(eKeyword::K_u16vec4);
-const ast_builtin g_ivec4_type(eKeyword::K_ivec4);
-const ast_builtin g_uvec4_type(eKeyword::K_uvec4);
-const ast_builtin g_i64vec4_type(eKeyword::K_i64vec4);
-const ast_builtin g_u64vec4_type(eKeyword::K_u64vec4);
-const ast_builtin g_f16vec4_type(eKeyword::K_f16vec4);
-const ast_builtin g_vec4_type(eKeyword::K_vec4);
-const ast_builtin g_dvec4_type(eKeyword::K_dvec4);
-const ast_builtin g_bvec4_type(eKeyword::K_bvec4);
-
 const eKeyword g_convertible_types[][3] = {{eKeyword::K_int16_t, eKeyword::K_int, eKeyword::K_int64_t},
                                            {eKeyword::K_i16vec2, eKeyword::K_ivec2, eKeyword::K_i64vec2},
                                            {eKeyword::K_i16vec3, eKeyword::K_ivec3, eKeyword::K_i64vec3},
@@ -3165,7 +3100,7 @@ int get_vector_size(const ast_type *_type) {
     return get_vector_size(static_cast<const ast_builtin *>(_type)->type);
 }
 
-const ast_type *to_scalar_type(const ast_type *_type) {
+const ast_type *to_scalar_type(const TrUnit *tu, const ast_type *_type) {
     if (!_type->builtin) {
         return _type;
     }
@@ -3174,152 +3109,152 @@ const ast_type *to_scalar_type(const ast_type *_type) {
     case eKeyword::K_i16vec4:
     case eKeyword::K_i16vec3:
     case eKeyword::K_i16vec2:
-        return &g_short_type;
+        return tu->FindBuiltin(eKeyword::K_int16_t);
     case eKeyword::K_u16vec4:
     case eKeyword::K_u16vec3:
     case eKeyword::K_u16vec2:
-        return &g_ushort_type;
+        return tu->FindBuiltin(eKeyword::K_uint16_t);
     case eKeyword::K_ivec4:
     case eKeyword::K_ivec3:
     case eKeyword::K_ivec2:
-        return &g_int_type;
+        return tu->FindBuiltin(eKeyword::K_int);
     case eKeyword::K_uvec4:
     case eKeyword::K_uvec3:
     case eKeyword::K_uvec2:
-        return &g_uint_type;
+        return tu->FindBuiltin(eKeyword::K_uint);
     case eKeyword::K_i64vec4:
     case eKeyword::K_i64vec3:
     case eKeyword::K_i64vec2:
-        return &g_long_type;
+        return tu->FindBuiltin(eKeyword::K_int64_t);
     case eKeyword::K_u64vec4:
     case eKeyword::K_u64vec3:
     case eKeyword::K_u64vec2:
-        return &g_ulong_type;
+        return tu->FindBuiltin(eKeyword::K_uint64_t);
     case eKeyword::K_f16vec4:
     case eKeyword::K_f16vec3:
     case eKeyword::K_f16vec2:
-        return &g_half_type;
+        return tu->FindBuiltin(eKeyword::K_float16_t);
     case eKeyword::K_vec4:
     case eKeyword::K_vec3:
     case eKeyword::K_vec2:
-        return &g_float_type;
+        return tu->FindBuiltin(eKeyword::K_float);
     case eKeyword::K_dvec4:
     case eKeyword::K_dvec3:
     case eKeyword::K_dvec2:
-        return &g_double_type;
+        return tu->FindBuiltin(eKeyword::K_double);
     case eKeyword::K_bvec4:
     case eKeyword::K_bvec3:
     case eKeyword::K_bvec2:
-        return &g_bool_type;
+        return tu->FindBuiltin(eKeyword::K_bool);
     default:
         return type;
     }
 }
 
-const ast_type *to_vector_type(const ast_type *_scalar_type, int channels) {
+const ast_type *to_vector_type(const TrUnit *tu, const ast_type *_scalar_type, int channels) {
     if (!_scalar_type->builtin) {
         return _scalar_type;
     }
     const auto *scalar_type = static_cast<const ast_builtin *>(_scalar_type);
     if (scalar_type->type == eKeyword::K_int16_t) {
         if (channels == 1) {
-            return &g_short_type;
+            return tu->FindBuiltin(eKeyword::K_int16_t);
         } else if (channels == 2) {
-            return &g_i16vec2_type;
+            return tu->FindBuiltin(eKeyword::K_i16vec2);
         } else if (channels == 3) {
-            return &g_i16vec3_type;
+            return tu->FindBuiltin(eKeyword::K_i16vec3);
         } else if (channels == 4) {
-            return &g_i16vec4_type;
+            return tu->FindBuiltin(eKeyword::K_i16vec4);
         }
     } else if (scalar_type->type == eKeyword::K_uint16_t) {
         if (channels == 1) {
-            return &g_ushort_type;
+            return tu->FindBuiltin(eKeyword::K_uint16_t);
         } else if (channels == 2) {
-            return &g_u16vec2_type;
+            return tu->FindBuiltin(eKeyword::K_u16vec2);
         } else if (channels == 3) {
-            return &g_u16vec3_type;
+            return tu->FindBuiltin(eKeyword::K_u16vec3);
         } else if (channels == 4) {
-            return &g_u16vec4_type;
+            return tu->FindBuiltin(eKeyword::K_u16vec4);
         }
     } else if (scalar_type->type == eKeyword::K_int) {
         if (channels == 1) {
-            return &g_int_type;
+            return tu->FindBuiltin(eKeyword::K_int);
         } else if (channels == 2) {
-            return &g_ivec2_type;
+            return tu->FindBuiltin(eKeyword::K_ivec2);
         } else if (channels == 3) {
-            return &g_ivec3_type;
+            return tu->FindBuiltin(eKeyword::K_ivec3);
         } else if (channels == 4) {
-            return &g_ivec4_type;
+            return tu->FindBuiltin(eKeyword::K_ivec4);
         }
     } else if (scalar_type->type == eKeyword::K_uint) {
         if (channels == 1) {
-            return &g_uint_type;
+            return tu->FindBuiltin(eKeyword::K_uint);
         } else if (channels == 2) {
-            return &g_uvec2_type;
+            return tu->FindBuiltin(eKeyword::K_uvec2);
         } else if (channels == 3) {
-            return &g_uvec3_type;
+            return tu->FindBuiltin(eKeyword::K_uvec3);
         } else if (channels == 4) {
-            return &g_uvec4_type;
+            return tu->FindBuiltin(eKeyword::K_uvec4);
         }
     } else if (scalar_type->type == eKeyword::K_long) {
         if (channels == 1) {
-            return &g_long_type;
+            return tu->FindBuiltin(eKeyword::K_int64_t);
         } else if (channels == 2) {
-            return &g_i64vec2_type;
+            return tu->FindBuiltin(eKeyword::K_i64vec2);
         } else if (channels == 3) {
-            return &g_i64vec3_type;
+            return tu->FindBuiltin(eKeyword::K_i64vec3);
         } else if (channels == 4) {
-            return &g_i64vec4_type;
+            return tu->FindBuiltin(eKeyword::K_i64vec4);
         }
     } else if (scalar_type->type == eKeyword::K_uint64_t) {
         if (channels == 1) {
-            return &g_ulong_type;
+            return tu->FindBuiltin(eKeyword::K_uint64_t);
         } else if (channels == 2) {
-            return &g_u64vec2_type;
+            return tu->FindBuiltin(eKeyword::K_u64vec2);
         } else if (channels == 3) {
-            return &g_u64vec3_type;
+            return tu->FindBuiltin(eKeyword::K_u64vec3);
         } else if (channels == 4) {
-            return &g_u64vec4_type;
+            return tu->FindBuiltin(eKeyword::K_u64vec4);
         }
     } else if (scalar_type->type == eKeyword::K_float16_t) {
         if (channels == 1) {
-            return &g_half_type;
+            return tu->FindBuiltin(eKeyword::K_float16_t);
         } else if (channels == 2) {
-            return &g_f16vec2_type;
+            return tu->FindBuiltin(eKeyword::K_f16vec2);
         } else if (channels == 3) {
-            return &g_f16vec3_type;
+            return tu->FindBuiltin(eKeyword::K_f16vec3);
         } else if (channels == 4) {
-            return &g_f16vec4_type;
+            return tu->FindBuiltin(eKeyword::K_f16vec4);
         }
     } else if (scalar_type->type == eKeyword::K_float) {
         if (channels == 1) {
-            return &g_float_type;
+            return tu->FindBuiltin(eKeyword::K_float);
         } else if (channels == 2) {
-            return &g_vec2_type;
+            return tu->FindBuiltin(eKeyword::K_vec2);
         } else if (channels == 3) {
-            return &g_vec3_type;
+            return tu->FindBuiltin(eKeyword::K_vec3);
         } else if (channels == 4) {
-            return &g_vec4_type;
+            return tu->FindBuiltin(eKeyword::K_vec4);
         }
     } else if (scalar_type->type == eKeyword::K_double) {
         if (channels == 1) {
-            return &g_double_type;
+            return tu->FindBuiltin(eKeyword::K_double);
         } else if (channels == 2) {
-            return &g_dvec2_type;
+            return tu->FindBuiltin(eKeyword::K_dvec2);
         } else if (channels == 3) {
-            return &g_dvec3_type;
+            return tu->FindBuiltin(eKeyword::K_dvec3);
         } else if (channels == 4) {
-            return &g_dvec4_type;
+            return tu->FindBuiltin(eKeyword::K_dvec4);
         }
     } else if (scalar_type->type == eKeyword::K_bool) {
         if (channels == 1) {
-            return &g_bool_type;
+            return tu->FindBuiltin(eKeyword::K_bool);
         } else if (channels == 2) {
-            return &g_bvec2_type;
+            return tu->FindBuiltin(eKeyword::K_bvec2);
         } else if (channels == 3) {
-            return &g_bvec3_type;
+            return tu->FindBuiltin(eKeyword::K_bvec3);
         } else if (channels == 4) {
-            return &g_bvec4_type;
+            return tu->FindBuiltin(eKeyword::K_bvec4);
         }
     }
     return scalar_type;
@@ -3403,7 +3338,7 @@ int is_matrix_type(const ast_type *_type) {
     return is_matrix_type(static_cast<const ast_builtin *>(_type)->type);
 }
 
-const ast_type *to_matrix_subscript_type(const ast_type *_type) {
+const ast_type *to_matrix_subscript_type(const TrUnit *tu, const ast_type *_type) {
     if (!_type->builtin) {
         return nullptr;
     }
@@ -3412,27 +3347,27 @@ const ast_type *to_matrix_subscript_type(const ast_type *_type) {
     case eKeyword::K_mat2:
     case eKeyword::K_mat3x2:
     case eKeyword::K_mat4x2:
-        return &g_vec2_type;
+        return tu->FindBuiltin(eKeyword::K_vec2);
     case eKeyword::K_mat2x3:
     case eKeyword::K_mat3:
     case eKeyword::K_mat4x3:
-        return &g_vec3_type;
+        return tu->FindBuiltin(eKeyword::K_vec3);
     case eKeyword::K_mat2x4:
     case eKeyword::K_mat4:
     case eKeyword::K_mat3x4:
-        return &g_vec4_type;
+        return tu->FindBuiltin(eKeyword::K_vec4);
     case eKeyword::K_dmat2:
     case eKeyword::K_dmat3x2:
     case eKeyword::K_dmat4x2:
-        return &g_dvec2_type;
+        return tu->FindBuiltin(eKeyword::K_dvec2);
     case eKeyword::K_dmat2x3:
     case eKeyword::K_dmat3:
     case eKeyword::K_dmat4x3:
-        return &g_dvec3_type;
+        return tu->FindBuiltin(eKeyword::K_dvec3);
     case eKeyword::K_dmat2x4:
     case eKeyword::K_dmat3x4:
     case eKeyword::K_dmat4:
-        return &g_dvec4_type;
+        return tu->FindBuiltin(eKeyword::K_dvec4);
     default:
         return nullptr;
     }
@@ -3481,25 +3416,25 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
     array_dims = 0;
     switch (expression->type) {
     case eExprType::ShortConstant:
-        return &g_short_type;
+        return tu->FindBuiltin(eKeyword::K_int16_t);
     case eExprType::UShortConstant:
-        return &g_ushort_type;
+        return tu->FindBuiltin(eKeyword::K_uint16_t);
     case eExprType::IntConstant:
-        return &g_int_type;
+        return tu->FindBuiltin(eKeyword::K_int);
     case eExprType::UIntConstant:
-        return &g_uint_type;
+        return tu->FindBuiltin(eKeyword::K_uint);
     case eExprType::LongConstant:
-        return &g_long_type;
+        return tu->FindBuiltin(eKeyword::K_int64_t);
     case eExprType::ULongConstant:
-        return &g_ulong_type;
+        return tu->FindBuiltin(eKeyword::K_uint64_t);
     case eExprType::HalfConstant:
-        return &g_half_type;
+        return tu->FindBuiltin(eKeyword::K_float16_t);
     case eExprType::FloatConstant:
-        return &g_float_type;
+        return tu->FindBuiltin(eKeyword::K_float);
     case eExprType::DoubleConstant:
-        return &g_double_type;
+        return tu->FindBuiltin(eKeyword::K_double);
     case eExprType::BoolConstant:
-        return &g_bool_type;
+        return tu->FindBuiltin(eKeyword::K_bool);
     case eExprType::VariableIdentifier: {
         const ast_variable *var = static_cast<const ast_variable_identifier *>(expression)->variable;
         array_dims = int(var->array_sizes.size());
@@ -3512,7 +3447,7 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
         } else {
             const ast_type *operand_type = Evaluate_ExpressionResultType(tu, expr->operand, array_dims);
             if (operand_type) {
-                return to_vector_type(to_scalar_type(operand_type), int(strlen(expr->name)));
+                return to_vector_type(tu, to_scalar_type(tu, operand_type), int(strlen(expr->name)));
             }
         }
     } break;
@@ -3524,10 +3459,10 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
             return operand_type;
         }
         if (operand_type && get_vector_size(operand_type) > 1) {
-            return to_scalar_type(operand_type);
+            return to_scalar_type(tu, operand_type);
         }
         if (operand_type && is_matrix_type(operand_type)) {
-            return to_matrix_subscript_type(operand_type);
+            return to_matrix_subscript_type(tu, operand_type);
         }
         return operand_type;
     }
@@ -3609,21 +3544,21 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
             return op1_type;
         }
 
-        if (is_integer_type(to_scalar_type(op1_type)) && is_integer_type(to_scalar_type(op2_type))) {
+        if (is_integer_type(to_scalar_type(tu, op1_type)) && is_integer_type(to_scalar_type(tu, op2_type))) {
             if (get_vector_size(op1_type) > get_vector_size(op2_type)) {
                 return op1_type;
             } else if (get_vector_size(op2_type) > get_vector_size(op1_type)) {
                 return op2_type;
             } else {
-                if (is_unsigned_type(to_scalar_type(op1_type)) && !is_unsigned_type(to_scalar_type(op2_type))) {
+                if (is_unsigned_type(to_scalar_type(tu, op1_type)) && !is_unsigned_type(to_scalar_type(tu, op2_type))) {
                     return op1_type;
                 } else {
                     return op2_type;
                 }
             }
-        } else if (is_integer_type(to_scalar_type(op1_type)) && is_float_type(to_scalar_type(op2_type))) {
+        } else if (is_integer_type(to_scalar_type(tu, op1_type)) && is_float_type(to_scalar_type(tu, op2_type))) {
             return op2_type;
-        } else if (is_float_type(to_scalar_type(op1_type)) && is_integer_type(to_scalar_type(op2_type))) {
+        } else if (is_float_type(to_scalar_type(tu, op1_type)) && is_integer_type(to_scalar_type(tu, op2_type))) {
             return op1_type;
         }
 

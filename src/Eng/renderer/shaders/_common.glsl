@@ -30,6 +30,47 @@
 
 #define length2(x) dot(x, x)
 
+// SmoothStep
+// REQUIREMENT: a < b
+#define _SmoothStep01( x ) ( x * x * ( 3.0 - 2.0 * x ) )
+
+float SmoothStep01(float x) { return _SmoothStep01(saturate(x)); }
+vec2 SmoothStep01(vec2 x) { return _SmoothStep01(saturate(x)); }
+vec3 SmoothStep01(vec3 x) { return _SmoothStep01(saturate(x)); }
+vec4 SmoothStep01(vec4 x) { return _SmoothStep01(saturate(x)); }
+
+float pow3(float x) {
+    return (x * x) * x;
+}
+
+float pow5(float x) {
+    return (x * x) * (x * x) * x;
+}
+
+float pow6(float x) {
+    return (x * x) * (x * x) * (x * x);
+}
+
+vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
+}
+
+vec3 LinearToSRGB(vec3 linearRGB) {
+    bvec3 cutoff = lessThan(linearRGB, vec3(0.0031308));
+    vec3 higher = 1.055 * pow(linearRGB, vec3(1.0/2.4)) - vec3(0.055);
+    vec3 lower = linearRGB * vec3(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+
+vec3 SRGBToLinear(vec3 sRGB) {
+    bvec3 cutoff = lessThan(sRGB, vec3(0.04045));
+    vec3 higher = pow((sRGB + vec3(0.055))/vec3(1.055), vec3(2.4));
+    vec3 lower = sRGB/vec3(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+
 float LinearizeDepth(const float z, const vec4 clip_info) {
     return clip_info[0] / ((1.0 - z) * (clip_info[1] - clip_info[2]) + clip_info[2]);
 }

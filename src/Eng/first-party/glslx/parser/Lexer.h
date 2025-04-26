@@ -39,6 +39,10 @@ enum class eKeyword : uint16_t {
 };
 #undef X
 
+inline bool operator<(const eKeyword lhs, const eKeyword rhs) {
+    return std::underlying_type<eKeyword>::type(lhs) < std::underlying_type<eKeyword>::type(rhs);
+}
+
 #define X(_0, _1, _2) _0,
 enum class eOperator : uint8_t {
 #include "Operators.inl"
@@ -128,6 +132,7 @@ class Lexer {
     void ReadNumeric(bool octal, bool hex, std::string &out_digits);
 
     static std::string CalcKeywordsLookupTable();
+
   public:
     explicit Lexer(MultiPoolAllocator<char> &alloc) : temp_tok_(alloc) {}
     Lexer(MultiPoolAllocator<char> &alloc, std::string_view source);

@@ -6,7 +6,8 @@
 
 namespace glslx {
 class WriterHLSL : public WriterBase {
-    const TrUnit *tu_ = nullptr;
+    // TODO: make this const
+    TrUnit *tu_ = nullptr;
     int compute_group_sizes_[3] = {1, 1, 1};
     int temp_var_index_ = 0;
 
@@ -117,6 +118,6 @@ class WriterHLSL : public WriterBase {
   public:
     explicit WriterHLSL(writer_config_t config = {}) : WriterBase(std::move(config)) {}
 
-    void Write(const TrUnit *tu, std::ostream &out_stream);
+    void Write(TrUnit *tu, std::ostream &out_stream);
 };
 } // namespace glslx

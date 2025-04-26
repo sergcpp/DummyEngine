@@ -22,7 +22,6 @@
 
 #include "_cs_common.glsl"
 #include "rt_common.glsl"
-#include "gi_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_filter_interface.h"
 

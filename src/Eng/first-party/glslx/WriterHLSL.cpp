@@ -131,7 +131,7 @@ bool is_scalar_type(const ast_type *_type) {
 }
 
 int get_variable_size(const ast_variable *v, const int array_dim) {
-    if (v->is_array && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
+    if ((v->flags & eVariableFlags::Array) && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
         int count = 0;
         if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
             count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;
@@ -310,7 +310,7 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool 
         if (op1_type && op2_type) {
             if (operation->oper == eOperator::multiply && is_matrix_type(op1_type) && get_vector_size(op2_type) > 1) {
                 ast_function_call func_call(tu_->alloc.allocator);
-                func_call.name = "mul";
+                func_call.name = tu_->makestr("mul");
                 func_call.parameters.push_back(operation->operand2);
                 func_call.parameters.push_back(operation->operand1);
                 return Write_FunctionCall(&func_call, out_stream);
@@ -342,7 +342,7 @@ void glslx::WriterHLSL::Write_FunctionParameter(const ast_function_parameter *pa
     if (parameter->name) {
         out_stream << " " << parameter->name;
     }
-    if (parameter->is_array) {
+    if (parameter->flags & eVariableFlags::Array) {
         Write_ArraySize(parameter->array_sizes, out_stream);
     }
 }
@@ -372,7 +372,7 @@ void glslx::WriterHLSL::Write_Function(const ast_function *function, std::ostrea
         }
     }
     out_stream << ")";
-    if (function->is_prototype) {
+    if (function->attributes & eFunctionAttribute::Prototype) {
         out_stream << ";\n";
         return;
     }
@@ -436,7 +436,7 @@ void glslx::WriterHLSL::Write_FunctionVariable(const ast_function_variable *vari
         Process_AtomicOperations(variable->initial_value, out_stream);
     }
 
-    if (variable->is_const) {
+    if (variable->flags & eVariableFlags::Const) {
         out_stream << "const ";
     }
     Write_Variable(variable, {}, out_stream);
@@ -534,7 +534,7 @@ void glslx::WriterHLSL::Write_SwitchStatement(const ast_switch_statement *statem
 
 void glslx::WriterHLSL::Write_CaseLabelStatement(const ast_case_label_statement *statement, std::ostream &out_stream,
                                                  Bitmask<eOutputFlags> output_flags) {
-    if (statement->is_default) {
+    if (statement->flags & eCaseLabelFlags::Default) {
         out_stream << "default";
     } else {
         out_stream << "case ";
@@ -807,7 +807,7 @@ void glslx::WriterHLSL::Write_Variable(const ast_variable *variable, Span<const 
     }
     out_stream << " " << variable->name;
 
-    if (variable->is_array) {
+    if (variable->flags & eVariableFlags::Array) {
         Write_ArraySize(variable->array_sizes, out_stream);
     }
 }
@@ -991,7 +991,7 @@ void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable
     // Write_Memory(variable->memory_flags, out_stream);
     Write_Precision(variable->precision, out_stream);
 
-    if (variable->is_invariant) {
+    if (variable->flags & eVariableFlags::Invariant) {
         out_stream << "invariant ";
     }
 
@@ -1028,7 +1028,7 @@ void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable
         }
         out_stream << variable->name;
         out_stream << "_sampler";
-        if (variable->is_array) {
+        if (variable->flags & eVariableFlags::Array) {
             for (int i = 0; i < int(variable->array_sizes.size()); ++i) {
                 out_stream << "[";
                 if (variable->array_sizes[i]) {
@@ -1410,7 +1410,7 @@ void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, s
     out_stream << "};\n";
 }
 
-void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write(TrUnit *tu, std::ostream &out_stream) {
     tu_ = tu;
     ast_function *main_function = nullptr;
     auto *p_find = tu->functions_by_name.Find("main");
@@ -1552,7 +1552,7 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
         if (!tu->globals[i]->base_type->builtin) {
             continue;
         }
-        if (!tu->globals[i]->is_hidden || config_.write_hidden) {
+        if (!(tu->globals[i]->flags & eVariableFlags::Hidden) || config_.write_hidden) {
             Write_GlobalVariable(tu->globals[i], out_stream);
         }
     }
@@ -1606,7 +1606,7 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
         if (tu->globals[i]->base_type->builtin) {
             continue;
         }
-        if (!tu->globals[i]->is_hidden || config_.write_hidden) {
+        if (!(tu->globals[i]->flags & eVariableFlags::Hidden) || config_.write_hidden) {
             Write_GlobalVariable(tu->globals[i], out_stream);
         }
     }
@@ -1822,7 +1822,7 @@ int glslx::WriterHLSL::Calc_TypeSize(const ast_type *type) {
 
 int glslx::WriterHLSL::Calc_VariableSize(const ast_variable *v) {
     int total_size = Calc_TypeSize(v->base_type);
-    if (v->is_array) {
+    if (v->flags & eVariableFlags::Array) {
         for (int i = 0; i < int(v->array_sizes.size()) && v->array_sizes[i]; ++i) {
             const ast_constant_expression *sz = v->array_sizes[i];
             if (sz->type == eExprType::IntConstant) {
@@ -1838,7 +1838,7 @@ int glslx::WriterHLSL::Calc_VariableSize(const ast_variable *v) {
 int glslx::WriterHLSL::Write_ByteaddressBufLoads(const byteaddress_buf_t &buf, const int offset,
                                                  const std::string &prefix, int array_dim, const ast_variable *v,
                                                  std::ostream &out_stream) {
-    if (v->is_array && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
+    if ((v->flags & eVariableFlags::Array) && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
         int count = 0;
         if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
             count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;
@@ -2013,7 +2013,7 @@ int glslx::WriterHLSL::Write_ByteaddressBufStores(const byteaddress_buf_t &buf, 
 int glslx::WriterHLSL::Write_ByteaddressBufStores(const byteaddress_buf_t &buf, const int offset,
                                                   const std::string &prefix, int array_dim, const ast_variable *v,
                                                   std::ostream &out_stream) {
-    if (v->is_array && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
+    if ((v->flags & eVariableFlags::Array) && int(v->array_sizes.size()) > array_dim && v->array_sizes[array_dim]) {
         int count = 0;
         if (v->array_sizes[array_dim]->type == eExprType::IntConstant) {
             count = static_cast<ast_int_constant *>(v->array_sizes[array_dim])->value;

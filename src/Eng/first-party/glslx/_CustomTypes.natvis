@@ -33,4 +33,16 @@
       </IndexListItems>
     </Expand>
   </Type>
+  <Type Name="glslx::HashMap32&lt;*&gt;">
+    <DisplayString>{{ size={size_}, capacity={capacity_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <IndexListItems>
+        <Size>capacity_</Size>
+        <ValueNode Condition="ctrl_[$i] &amp; OccupiedBit">nodes_[$i]</ValueNode>
+        <ValueNode Condition="(ctrl_[$i] &amp; OccupiedBit) == 0">"empty"</ValueNode>
+      </IndexListItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>

@@ -27,8 +27,38 @@ bool IsSpecularSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
     return false;
 }
 
-float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
+/*float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
+}*/
+
+vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float nonLinearAccumSpeed) {
+    float relaxation = mix( 1.0, 0.25, nonLinearAccumSpeed );
+    float a = relaxation / planeDistSensitivity;
+    float b = -dot( Nv, Xv ) * a;
+
+    return vec2( a, b );
+}
+
+/* fp16 */ float GetEdgeStoppingPlanarDistanceWeight(vec2 geometry_weight_params, vec3 center_normal_vs, vec3 neighbor_point_vs) {
+    float d = dot(center_normal_vs, neighbor_point_vs);
+    return SmoothStep01(1.0 - abs(d * geometry_weight_params.x + geometry_weight_params.y));
+}
+
+vec4 GetBlurKernelRotation(uvec2 pixel_pos, vec4 base_rotator, uint frame) {
+    vec4 rotator = vec4(1, 0, 0, 1);
+
+#ifdef PER_PIXEL_KERNEL_ROTATION
+    float angle = Bayer4x4(pixel_pos, frame) * 2.0 * M_PI;
+
+    float ca = cos(angle);
+    float sa = sin(angle);
+
+    rotator = vec4(ca, sa, -sa, ca);
+#endif
+
+    rotator = CombineRotators(base_rotator, rotator);
+
+    return rotator;
 }
 
 float GetEdgeStoppingRoughnessWeight(float roughness_p, float roughness_q, float sigma_min, float sigma_max) {
@@ -126,12 +156,6 @@ vec3 Sample_GGX_VNDF_Ellipsoid(const vec3 Ve, const float alpha_x, const float a
 vec3 Sample_GGX_VNDF_Hemisphere(const vec3 Ve, float alpha, const float U1, const float U2) {
     alpha = max(alpha, 0.00001);
     return Sample_GGX_VNDF_Ellipsoid(Ve, alpha, alpha, U1, U2);
-}
-
-float D_GTR2(const float N_dot_H, const float a) {
-    const float a2 = (a * a);
-    const float t = 1.0 + (a2 - 1.0) * N_dot_H * N_dot_H;
-    return a2 / (M_PI * t * t);
 }
 
 float D_GGX(const vec3 H, const vec2 alpha) {

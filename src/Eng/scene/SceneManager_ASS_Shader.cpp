@@ -312,8 +312,18 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                         }
 
 #if !defined(NDEBUG)
-                        // Test AST cloning
-                        ast = glslx::Clone().CloneAST(ast.get());
+                        { // Test AST cloning
+                            ast = glslx::Clone().CloneAST(ast.get());
+                        }
+                        /*{ // Test AST serialization
+                            std::stringstream temp;
+                            glslx::Serialize s;
+                            s.SerializeAST(ast.get(), temp);
+                            assert(temp.good());
+                            ast = std::make_unique<glslx::TrUnit>();
+                            assert(s.DeserializeAST(ast.get(), temp));
+                            assert(ast);
+                        }*/
 #endif
 
                         for (const glslx::ast_extension_directive *ext : ast->extensions) {

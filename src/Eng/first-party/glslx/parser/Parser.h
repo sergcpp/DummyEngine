@@ -25,33 +25,10 @@ class Parser {
     std::string_view source_;
     token_t tok_;
     global_vector<scope> scopes_;
-    global_vector<ast_builtin *> builtins_;
     const char *error_ = nullptr;
     const char *file_name_ = nullptr;
 
     global_vector<ast_function_call *> function_calls_;
-
-    char *strnew(const char *str) {
-        if (!str) {
-            return nullptr;
-        }
-        char **existing = ast_->str.Find(str);
-        if (existing) {
-            return *existing;
-        }
-        const size_t size = strlen(str) + 1;
-        char *copy = ast_->alloc.allocator.allocate(size);
-        if (!copy) {
-            return nullptr;
-        }
-        memcpy(copy, str, size);
-        ast_->str.Insert(copy);
-        return copy;
-    }
-
-    template <class T, class... Args> T *astnew(Args &&...args) {
-        return new (&ast_->alloc) T(std::forward<Args>(args)...);
-    }
 
     static bool strnil(const char *str) { return !str || !*str; }
 
@@ -92,7 +69,7 @@ class Parser {
     bool expect(eTokType type);
     bool expect(eOperator op);
 
-    ast_global_variable *AddHiddenGlobal(ast_builtin *type, const char *name, bool is_array = false,
+    ast_global_variable *AddHiddenGlobal(eKeyword type, const char *name, Bitmask<eVariableFlags> flags = {},
                                          eStorage storage = eStorage::In, ePrecision precision = ePrecision::None);
     bool InitSpecialGlobals(eTrUnitType type);
 
@@ -129,7 +106,6 @@ class Parser {
 
     // Type parsers
     ast_builtin *ParseBuiltin();
-    ast_builtin *FindOrAddBuiltin(eKeyword type);
     ast_struct *ParseStruct();
     ast_interface_block *ParseInterfaceBlock(eStorage storage);
 

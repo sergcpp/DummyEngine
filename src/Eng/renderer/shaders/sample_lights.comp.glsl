@@ -66,13 +66,6 @@ layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 layout(binding = OUT_DIFFUSE_IMG_SLOT, rgba16f) uniform restrict image2D g_out_diffuse_img;
 layout(binding = OUT_SPECULAR_IMG_SLOT, rgba16f) uniform restrict image2D g_out_specular_img;
 
-float pow5(float v) { return (v * v) * (v * v) * v; }
-
-float schlick_weight(float u) {
-    const float m = saturate(1.0 - u);
-    return pow5(m);
-}
-
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {

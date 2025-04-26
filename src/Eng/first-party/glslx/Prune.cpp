@@ -165,7 +165,7 @@ void glslx::Mark_Statement(ast_statement *statement) {
     } break;
     case eStatement::CaseLabel: {
         ast_case_label_statement *_case = static_cast<ast_case_label_statement *>(statement);
-        if (!_case->is_default) {
+        if (!(_case->flags & eCaseLabelFlags::Default)) {
             Mark_Expression(_case->condition);
         }
     } break;

@@ -22,9 +22,9 @@ bool IsDiffuseSurface(float depth_fetch, usampler2D specular_tex, vec2 uv) {
     return false;
 }
 
-float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
+/*float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
     return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
-}
+}*/
 
 vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float nonLinearAccumSpeed) {
     float relaxation = mix( 1.0, 0.25, nonLinearAccumSpeed );
@@ -33,15 +33,6 @@ vec2 GetGeometryWeightParams(float planeDistSensitivity, vec3 Xv, vec3 Nv, float
 
     return vec2( a, b );
 }
-
-// SmoothStep
-// REQUIREMENT: a < b
-#define _SmoothStep01( x ) ( x * x * ( 3.0 - 2.0 * x ) )
-
-float SmoothStep01(float x) { return _SmoothStep01(saturate(x)); }
-vec2 SmoothStep01(vec2 x) { return _SmoothStep01(saturate(x)); }
-vec3 SmoothStep01(vec3 x) { return _SmoothStep01(saturate(x)); }
-vec4 SmoothStep01(vec4 x) { return _SmoothStep01(saturate(x)); }
 
 /* fp16 */ float GetEdgeStoppingPlanarDistanceWeight(vec2 geometry_weight_params, vec3 center_normal_vs, vec3 neighbor_point_vs) {
     float d = dot(center_normal_vs, neighbor_point_vs);
