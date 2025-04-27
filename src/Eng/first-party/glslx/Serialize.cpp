@@ -884,6 +884,7 @@ void glslx::Serialize::SerializeAST(const TrUnit *tu, std::ostream &out) {
         }
         const std::streampos extensions_end = out.tellp();
         assert(int32_t(extensions_end - extensions_beg) == block_size);
+        (void)extensions_beg, (void)extensions_end;
     }
     if (!tu->builtins.empty()) {
         out.write((char *)&Block_Builtins, sizeof(int32_t));
@@ -896,6 +897,7 @@ void glslx::Serialize::SerializeAST(const TrUnit *tu, std::ostream &out) {
         }
         const std::streampos builtins_end = out.tellp();
         assert(int32_t(builtins_end - builtins_beg) == block_size);
+        (void)builtins_beg, (void)builtins_end;
     }
     if (!tu->default_precision.empty()) {
         out.write((char *)&Block_DefaultPrecision, sizeof(int32_t));
@@ -907,6 +909,7 @@ void glslx::Serialize::SerializeAST(const TrUnit *tu, std::ostream &out) {
         }
         const std::streampos precision_end = out.tellp();
         assert(int32_t(precision_end - precision_beg) == block_size);
+        (void)precision_beg, (void)precision_end;
     }
     if (!tu->structures.empty()) {
         out.write((char *)&Block_Structures, sizeof(int32_t));
@@ -1023,9 +1026,10 @@ bool glslx::Serialize::DeserializeAST(TrUnit *tu, std::istream &in) {
         } else if (block_id == Block_Structures) {
             const std::streampos block_end = in.tellg() + std::streampos(block_size);
             while (in.tellg() < block_end) {
-                tu->structures.push_back(Deserialize_Structure(in));
-                tu->structures_by_name.Insert(tu->structures.back()->name, tu->structures.back());
-                types_.push_back(tu->structures.back());
+                ast_struct *s = Deserialize_Structure(in);
+                tu->structures.push_back(s);
+                tu->structures_by_name.Insert(s->name, s);
+                types_.push_back(s);
             }
         } else if (block_id == Block_InterfaceBlocks) {
             const std::streampos block_end = in.tellg() + std::streampos(block_size);
@@ -1044,8 +1048,15 @@ bool glslx::Serialize::DeserializeAST(TrUnit *tu, std::istream &in) {
         } else if (block_id == Block_Functions) {
             const std::streampos block_end = in.tellg() + std::streampos(block_size);
             while (in.tellg() < block_end) {
-                tu->functions.push_back(Deserialize_Function(in));
-                functions_.push_back(tu->functions.back());
+                ast_function *f = Deserialize_Function(in);
+                tu->functions.push_back(f);
+                auto *p_find = tu->functions_by_name.Find(f->name);
+                if (p_find) {
+                    p_find->push_back(f);
+                } else {
+                    dst_->functions_by_name.Insert(f->name, {f});
+                }
+                functions_.push_back(f);
             }
             in.seekg(block_end, std::ios::beg);
         } else {

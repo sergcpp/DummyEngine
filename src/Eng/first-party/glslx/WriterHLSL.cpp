@@ -244,6 +244,9 @@ const std::map<std::string, std::string> g_hlsl_function_mapping = {{"intBitsToF
 
 void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool nested, std::ostream &out_stream) {
     switch (expression->type) {
+    case eExprType::Undefined:
+        assert(false);
+        return;
     case eExprType::ShortConstant:
         return Write_Constant(static_cast<const ast_short_constant *>(expression), out_stream);
     case eExprType::UShortConstant:

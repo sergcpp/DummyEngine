@@ -17,12 +17,12 @@ glslx::ast_extension_directive *glslx::Clone::Clone_ExtensionDirective(const ast
 glslx::ast_default_precision *glslx::Clone::Clone_DefaultPrecision(const ast_default_precision *in) {
     ast_default_precision *ret = dst_->make<ast_default_precision>();
     ret->precision = in->precision;
-    ret->type = dst_->FindOrAddBuiltin(in->type->type);
+    ret->type = dst_->FindBuiltin(in->type->type);
     return ret;
 }
 
 glslx::ast_variable_identifier *glslx::Clone::Clone_VariableIdentifier(const ast_variable_identifier *in) {
-    return dst_->make<ast_variable_identifier>(*variables_.Find(in->variable));
+    return dst_->make<ast_variable_identifier>(variables_[in->variable]);
 }
 
 glslx::ast_field_or_swizzle *glslx::Clone::Clone_FieldOrSwizzle(const ast_field_or_swizzle *in) {
@@ -46,7 +46,7 @@ glslx::ast_function_call *glslx::Clone::Clone_FunctionCall(const ast_function_ca
     ast_function_call *ret = dst_->make<ast_function_call>(dst_->alloc.allocator);
     ret->name = *dst_->str.Find(in->name);
     if (in->func) {
-        ret->func = *functions_.Find(in->func);
+        ret->func = functions_[in->func];
     }
     for (const ast_expression *expr : in->parameters) {
         ret->parameters.push_back(Clone_Expression(expr));
@@ -57,9 +57,9 @@ glslx::ast_function_call *glslx::Clone::Clone_FunctionCall(const ast_function_ca
 glslx::ast_constructor_call *glslx::Clone::Clone_ConstructorCall(const ast_constructor_call *in) {
     ast_constructor_call *ret = dst_->make<ast_constructor_call>(dst_->alloc.allocator);
     if (in->type->builtin) {
-        ret->type = FindOrAddBuiltin(static_cast<const ast_builtin *>(in->type)->type);
+        ret->type = dst_->FindBuiltin(static_cast<const ast_builtin *>(in->type)->type);
     } else {
-        ret->type = *dst_->structures_by_name.Find(static_cast<const ast_struct *>(in->type)->name);
+        ret->type = dst_->structures_by_name[static_cast<const ast_struct *>(in->type)->name];
     }
     for (const ast_expression *expr : in->parameters) {
         ret->parameters.push_back(Clone_Expression(expr));
@@ -106,6 +106,9 @@ glslx::ast_array_specifier *glslx::Clone::Clone_ArraySpecifier(const ast_array_s
 
 glslx::ast_expression *glslx::Clone::Clone_Expression(const ast_expression *in) {
     switch (in->type) {
+    case eExprType::Undefined:
+        assert(false);
+        return nullptr;
     case eExprType::ShortConstant:
         return Clone_Constant(static_cast<const ast_short_constant *>(in));
     case eExprType::UShortConstant:
@@ -208,7 +211,7 @@ glslx::ast_variable *glslx::Clone::Clone_Variable(const ast_variable *in) {
     ret->precision = in->precision;
     ret->name = *dst_->str.Find(in->name);
     if (in->base_type->builtin) {
-        ret->base_type = FindOrAddBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
+        ret->base_type = dst_->FindBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
     } else {
         ast_struct **type = dst_->structures_by_name.Find(static_cast<const ast_struct *>(in->base_type)->name);
         if (type) {
@@ -236,9 +239,9 @@ glslx::ast_function_parameter *glslx::Clone::Clone_FunctionParameter(const ast_f
         ret->name = *dst_->str.Find(in->name);
     }
     if (in->base_type->builtin) {
-        ret->base_type = FindOrAddBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
+        ret->base_type = dst_->FindBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
     } else {
-        ret->base_type = *dst_->structures_by_name.Find(static_cast<const ast_struct *>(in->base_type)->name);
+        ret->base_type = dst_->structures_by_name[static_cast<const ast_struct *>(in->base_type)->name];
     }
     for (const ast_constant_expression *expr : in->array_sizes) {
         ast_constant_expression *new_expr = nullptr;
@@ -258,9 +261,9 @@ glslx::ast_function_variable *glslx::Clone::Clone_FunctionVariable(const ast_fun
     ret->precision = in->precision;
     ret->name = *dst_->str.Find(in->name);
     if (in->base_type->builtin) {
-        ret->base_type = FindOrAddBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
+        ret->base_type = dst_->FindBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
     } else {
-        ret->base_type = *dst_->structures_by_name.Find(static_cast<const ast_struct *>(in->base_type)->name);
+        ret->base_type = dst_->structures_by_name[static_cast<const ast_struct *>(in->base_type)->name];
     }
     for (const ast_constant_expression *expr : in->array_sizes) {
         ast_constant_expression *new_expr = nullptr;
@@ -282,13 +285,13 @@ glslx::ast_global_variable *glslx::Clone::Clone_GlobalVariable(const ast_global_
     ret->precision = in->precision;
     ret->name = *dst_->str.Find(in->name);
     if (in->base_type->builtin) {
-        ret->base_type = FindOrAddBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
+        ret->base_type = dst_->FindBuiltin(static_cast<const ast_builtin *>(in->base_type)->type);
     } else {
         ast_struct **type = dst_->structures_by_name.Find(static_cast<const ast_struct *>(in->base_type)->name);
         if (type) {
             ret->base_type = *type;
         } else {
-            ret->base_type = *interface_blocks_.Find(static_cast<const ast_interface_block *>(in->base_type));
+            ret->base_type = interface_blocks_[static_cast<const ast_interface_block *>(in->base_type)];
         }
     }
     for (const ast_constant_expression *expr : in->array_sizes) {
@@ -487,9 +490,9 @@ glslx::ast_function *glslx::Clone::Clone_Function(const ast_function *in) {
     ast_function *ret = dst_->make<ast_function>(dst_->alloc.allocator);
     ret->attributes = in->attributes;
     if (in->return_type->builtin) {
-        ret->return_type = FindOrAddBuiltin(static_cast<const ast_builtin *>(in->return_type)->type);
+        ret->return_type = dst_->FindBuiltin(static_cast<const ast_builtin *>(in->return_type)->type);
     } else {
-        ret->return_type = *dst_->structures_by_name.Find(static_cast<const ast_struct *>(in->return_type)->name);
+        ret->return_type = dst_->structures_by_name[static_cast<const ast_struct *>(in->return_type)->name];
     }
     ret->name = *dst_->str.Find(in->name);
     for (const ast_function_parameter *p : in->parameters) {
@@ -500,18 +503,9 @@ glslx::ast_function *glslx::Clone::Clone_Function(const ast_function *in) {
         ret->statements.push_back(Clone_Statement(s));
     }
     if (in->prototype) {
-        ret->prototype = *functions_.Find(in->prototype);
+        ret->prototype = functions_[in->prototype];
     }
     return ret;
-}
-
-glslx::ast_builtin *glslx::Clone::FindOrAddBuiltin(const eKeyword type) {
-    const auto it = std::lower_bound(std::begin(dst_->builtins), std::end(dst_->builtins), type,
-                                     [](const ast_builtin *lhs, const eKeyword rhs) { return lhs->type < rhs; });
-    if (it != std::end(dst_->builtins) && type == (*it)->type) {
-        return *it;
-    }
-    return *dst_->builtins.insert(it, dst_->make<ast_builtin>(type));
 }
 
 std::unique_ptr<glslx::TrUnit> glslx::Clone::CloneAST(const TrUnit *tu) {
@@ -529,6 +523,9 @@ std::unique_ptr<glslx::TrUnit> glslx::Clone::CloneAST(const TrUnit *tu) {
     }
     for (const ast_extension_directive *extension : tu->extensions) {
         dst_->extensions.push_back(Clone_ExtensionDirective(extension));
+    }
+    for (const ast_builtin *builtin : tu->builtins) {
+        dst_->FindOrAddBuiltin(builtin->type);
     }
     for (const ast_default_precision *precision : tu->default_precision) {
         dst_->default_precision.push_back(Clone_DefaultPrecision(precision));

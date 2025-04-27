@@ -6,6 +6,7 @@
 
 #include "../Bitmask.h"
 #include "../HashMap32.h"
+#include "../Span.h"
 #include "Lexer.h"
 
 namespace glslx {
@@ -203,21 +204,44 @@ struct TrUnit {
     template <class T, class... Args> T *make(Args &&...args) { return new (&alloc) T(std::forward<Args>(args)...); }
     char *makestr(const char *s);
 
-    const ast_builtin *FindBuiltin(const eKeyword type) const;
-    int FindBuiltinIndex(const eKeyword type) const;
-    ast_builtin *FindOrAddBuiltin(const eKeyword type);
+    ast_builtin *FindBuiltin(eKeyword type) const;
+    int FindBuiltinIndex(eKeyword type) const;
+    ast_builtin *FindOrAddBuiltin(eKeyword type);
+
+    friend int Compare(const TrUnit *lhs, const TrUnit *rhs);
 };
+
+template <typename T> [[nodiscard]] int Compare_PointerSpans(Span<const T> lhs, Span<const T> rhs) {
+    const ptrdiff_t min_size = std::min(lhs.size(), rhs.size());
+    for (ptrdiff_t i = 0; i < min_size; ++i) {
+        const int res = Compare(lhs[i], rhs[i]);
+        if (res != 0) {
+            return res;
+        }
+    }
+    if (lhs.size() < rhs.size()) {
+        return -1;
+    }
+    if (rhs.size() < lhs.size()) {
+        return +1;
+    }
+    return 0;
+}
 
 struct ast_type : ast_node<ast_type> {
     bool builtin;
 
     explicit ast_type(const bool _builtin) noexcept : builtin(_builtin) {}
+
+    friend int Compare(const ast_type *lhs, const ast_type *rhs);
 };
 
 struct ast_builtin : ast_type {
     eKeyword type;
 
     explicit ast_builtin(const eKeyword _type) noexcept : ast_type(true), type(_type) {}
+
+    friend int Compare(const ast_builtin *lhs, const ast_builtin *rhs);
 };
 
 struct ast_struct : ast_type {
@@ -226,6 +250,8 @@ struct ast_struct : ast_type {
 
     explicit ast_struct(MultiPoolAllocator<char> &_alloc) noexcept : ast_type(false), fields(_alloc) {}
     OPERATOR_NEW(ast_struct)
+
+    friend int Compare(const ast_struct *lhs, const ast_struct *rhs);
 };
 
 struct ast_interface_block : ast_struct {
@@ -236,6 +262,8 @@ struct ast_interface_block : ast_struct {
     explicit ast_interface_block(MultiPoolAllocator<char> &_alloc) noexcept
         : ast_struct(_alloc), layout_qualifiers(_alloc) {}
     OPERATOR_NEW(ast_interface_block)
+
+    friend int Compare(const ast_interface_block *lhs, const ast_interface_block *rhs);
 };
 
 struct ast_version_directive : ast_type {
@@ -243,6 +271,8 @@ struct ast_version_directive : ast_type {
     int32_t number = -1;
 
     ast_version_directive() noexcept : ast_type(false) {}
+
+    friend int Compare(const ast_version_directive *lhs, const ast_version_directive *rhs);
 };
 
 struct ast_extension_directive : ast_type {
@@ -250,6 +280,8 @@ struct ast_extension_directive : ast_type {
     char *name = nullptr;
 
     ast_extension_directive() noexcept : ast_type(false) {}
+
+    friend int Compare(const ast_extension_directive *lhs, const ast_extension_directive *rhs);
 };
 
 struct ast_default_precision : ast_type {
@@ -257,6 +289,8 @@ struct ast_default_precision : ast_type {
     ast_builtin *type = nullptr;
 
     ast_default_precision() noexcept : ast_type(false) {}
+
+    friend int Compare(const ast_default_precision *lhs, const ast_default_precision *rhs);
 };
 
 enum class eVariableType : uint8_t { Function, Parameter, Global, Field };
@@ -274,6 +308,8 @@ struct ast_variable : ast_node<ast_variable> {
     ast_variable(const eVariableType _type, MultiPoolAllocator<char> &_alloc) noexcept
         : type(_type), array_sizes(_alloc) {}
     OPERATOR_NEW(ast_variable)
+
+    friend int Compare(const ast_variable *lhs, const ast_variable *rhs);
 };
 
 struct ast_function_variable : ast_variable {
@@ -306,6 +342,8 @@ struct ast_global_variable : ast_variable {
 struct ast_layout_qualifier : ast_node<ast_layout_qualifier> {
     char *name = nullptr;
     ast_constant_expression *initial_value = nullptr;
+
+    friend int Compare(const ast_layout_qualifier *lhs, const ast_layout_qualifier *rhs);
 };
 
 struct ast_function : ast_node<ast_function> {
@@ -318,6 +356,8 @@ struct ast_function : ast_node<ast_function> {
 
     explicit ast_function(MultiPoolAllocator<char> &_alloc) noexcept : parameters(_alloc), statements(_alloc) {}
     OPERATOR_NEW(ast_function)
+
+    friend int Compare(const ast_function *lhs, const ast_function *rhs);
 };
 
 enum class eStatement : uint8_t {
@@ -344,6 +384,8 @@ struct ast_statement : ast_node<ast_statement> {
     eStatement type;
 
     explicit ast_statement(const eStatement _type) noexcept : type(_type) {}
+
+    friend int Compare(const ast_statement *lhs, const ast_statement *rhs);
 };
 
 struct ast_simple_statement : ast_statement {
@@ -411,6 +453,22 @@ struct ctrl_flow_params_t {
     short min_iterations = 0, max_iterations = 0;
     short iteration_multiple = 0;
     short peel_count = 0, partial_count = 0;
+
+    friend bool operator==(const ctrl_flow_params_t &lhs, const ctrl_flow_params_t &rhs) {
+        return std::tie(lhs.attributes, lhs.dependency_length, lhs.min_iterations, lhs.max_iterations,
+                        lhs.iteration_multiple, lhs.peel_count, lhs.partial_count) ==
+               std::tie(rhs.attributes, rhs.dependency_length, rhs.min_iterations, rhs.max_iterations,
+                        rhs.iteration_multiple, rhs.peel_count, rhs.partial_count);
+    }
+    friend bool operator!=(const ctrl_flow_params_t &lhs, const ctrl_flow_params_t &rhs) {
+        return !operator==(lhs, rhs);
+    }
+    friend bool operator<(const ctrl_flow_params_t &lhs, const ctrl_flow_params_t &rhs) {
+        return std::tie(lhs.attributes, lhs.dependency_length, lhs.min_iterations, lhs.max_iterations,
+                        lhs.iteration_multiple, lhs.peel_count, lhs.partial_count) <
+               std::tie(rhs.attributes, rhs.dependency_length, rhs.min_iterations, rhs.max_iterations,
+                        rhs.iteration_multiple, rhs.peel_count, rhs.partial_count);
+    }
 };
 
 struct ast_loop_statement : ast_simple_statement {
@@ -418,6 +476,8 @@ struct ast_loop_statement : ast_simple_statement {
 
     ast_loop_statement(const eStatement _type, const ctrl_flow_params_t _flow_params) noexcept
         : ast_simple_statement(_type), flow_params(_flow_params) {}
+
+    friend int Compare(const ast_loop_statement *lhs, const ast_loop_statement *rhs);
 };
 
 struct ast_while_statement : ast_loop_statement {
@@ -511,6 +571,8 @@ struct ast_expression : ast_node<ast_expression> {
     eExprType type;
 
     explicit ast_expression(eExprType _type) noexcept : type(_type) {}
+
+    friend int Compare(const ast_expression *lhs, const ast_expression *rhs);
 };
 
 struct ast_short_constant : ast_expression {

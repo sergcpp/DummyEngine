@@ -941,7 +941,8 @@ bool glslx::Parser::is_generic_type(const eKeyword keyword) {
            keyword == eKeyword::K_gimageCube || keyword == eKeyword::K_gimageCubeArray ||
            keyword == eKeyword::K_gimage2DArray || keyword == eKeyword::K_gimage2DRect ||
            keyword == eKeyword::K_gimage1DArray || keyword == eKeyword::K_gimage2DMS ||
-           keyword == eKeyword::K_gimage2DMSArray || keyword == eKeyword::K_gimageBuffer;
+           keyword == eKeyword::K_gimage2DMSArray || keyword == eKeyword::K_gimageBuffer ||
+           keyword == eKeyword::K_gsubpassInput || keyword == eKeyword::K_gsubpassInputMS;
 }
 
 bool glslx::Parser::is_end_condition(Bitmask<eEndCondition> condition) const {
@@ -3415,6 +3416,9 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
                                                             int &array_dims) {
     array_dims = 0;
     switch (expression->type) {
+    case eExprType::Undefined:
+        assert(false);
+        return nullptr;
     case eExprType::ShortConstant:
         return tu->FindBuiltin(eKeyword::K_int16_t);
     case eExprType::UShortConstant:

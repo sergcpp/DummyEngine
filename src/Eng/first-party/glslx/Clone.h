@@ -47,8 +47,6 @@ class Clone {
 
     ast_function *Clone_Function(const ast_function *in);
 
-    ast_builtin *FindOrAddBuiltin(eKeyword type);
-
     const TrUnit *src_ = nullptr;
     std::unique_ptr<TrUnit> dst_;
 

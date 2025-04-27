@@ -4,13 +4,20 @@
 #include <sstream>
 
 #include "../Clone.h"
-#include "../WriterGLSL.h"
 #include "../Serialize.h"
+#include "../WriterGLSL.h"
 
 void test_parser() {
     using namespace glslx;
 
     printf("Test parser             | ");
+
+    auto check_cloning = [](std::unique_ptr<TrUnit> &tu) {
+        std::unique_ptr<TrUnit> ret = Clone().CloneAST(tu.get());
+        require(Compare(tu.get(), ret.get()) == 0);
+        require_fatal((tu == nullptr) == (ret == nullptr));
+        tu = std::move(ret);
+    };
 
     auto check_serialization = [](std::unique_ptr<TrUnit> &tu) {
         if (!tu) {
@@ -20,9 +27,11 @@ void test_parser() {
         Serialize s;
         s.SerializeAST(tu.get(), temp);
         require(temp.good());
-        tu = std::make_unique<TrUnit>();
-        require(s.DeserializeAST(tu.get(), temp));
-        require_fatal(tu != nullptr);
+        std::unique_ptr<TrUnit> ret = std::make_unique<TrUnit>();
+        require(s.DeserializeAST(ret.get(), temp));
+        require_fatal(ret != nullptr);
+        require(Compare(tu.get(), ret.get()) == 0);
+        tu = std::move(ret);
     };
 
     { // directives
@@ -34,8 +43,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -52,8 +60,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -100,8 +107,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -128,8 +134,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -154,8 +159,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -190,8 +194,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -323,8 +326,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -347,8 +349,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -372,8 +373,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -436,8 +436,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -480,8 +479,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -553,8 +551,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -613,8 +610,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -637,8 +633,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -662,8 +657,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -688,8 +682,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -720,8 +713,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -749,8 +741,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -805,8 +796,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -844,8 +834,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -862,8 +851,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -890,8 +878,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -907,8 +894,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -926,8 +912,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Vertex);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
@@ -945,7 +930,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Compute);
         require(tr_unit == nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
+        check_cloning(tr_unit);
         require_fatal(tr_unit == nullptr);
         check_serialization(tr_unit);
         require_fatal(tr_unit == nullptr);
@@ -980,8 +965,7 @@ void test_parser() {
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Geometry);
         require_fatal(tr_unit != nullptr);
 
-        tr_unit = Clone().CloneAST(tr_unit.get());
-        require_fatal(tr_unit != nullptr);
+        check_cloning(tr_unit);
         check_serialization(tr_unit);
 
         std::stringstream ss;
