@@ -18,7 +18,7 @@
 #include <Gui/Utils.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 63;
+const uint32_t AssetsBuildVersion = 65;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -1266,10 +1266,7 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
     std::string line;
     while (std::getline(src_stream, line)) {
         if (!line.empty()) {
-            if (line.back() == '\n') {
-                line.pop_back();
-            }
-            if (line.back() == '\r') {
+            if (line.back() == '\n' || line.back() == '\r') {
                 line.pop_back();
             }
 
@@ -1280,15 +1277,12 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
                         break;
                     }
 
-                    if (line.back() == '\n') {
-                        line.pop_back();
-                    }
-                    if (line.back() == '\r') {
+                    if (line.back() == '\n' || line.back() == '\r') {
                         line.pop_back();
                     }
 
-                    const size_t n2 = line.find(' ', 6);
-                    const std::string tex_name = "assets/textures/" + line.substr(6, n2 - 6);
+                    const size_t n = line.find(' ', 6);
+                    const std::string tex_name = "assets/textures/" + line.substr(6, n - 6);
 
                     auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), tex_name);
                     if (it == std::end(out_dependencies)) {
@@ -1323,7 +1317,30 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
                 }
             }
         }
-        dst_stream << line << "\n";
+        if (line.rfind("params:", 0) == 0) {
+            dst_stream << line << "\n";
+            while (std::getline(src_stream, line)) {
+                if (line.rfind("    - ", 0) != 0) {
+                    break;
+                }
+
+                if (line.back() == '\n' || line.back() == '\r') {
+                    line.pop_back();
+                }
+
+                const size_t n = line.find('#');
+                line = line.substr(0, n);
+
+                while (line.back() == ' ') {
+                    line.pop_back();
+                }
+
+                dst_stream << line << "\n";
+            }
+        }
+        if (src_stream) {
+            dst_stream << line << "\n";
+        }
     }
 
     return true;
