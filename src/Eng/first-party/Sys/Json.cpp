@@ -209,28 +209,30 @@ template struct Sys::JsArrayT<Sys::MultiPoolAllocator<char>>;
 /////////////////////////////////////////////////////////////////
 
 template <typename Alloc> Sys::JsElementT<Alloc> &Sys::JsObjectT<Alloc>::operator[](std::string_view s) {
-    auto it = std::lower_bound(begin(elements), end(elements), s,
-                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
-    if (it == end(elements) || it->first != s) {
-        it = elements.emplace(it, StdString<Alloc>{s, elements.get_allocator()}, JsLiteral{JsLiteralType::Null});
+    auto it = std::lower_bound(begin(indices), end(indices), s,
+                               [this](const int lhs, std::string_view rhs) { return elements[lhs].first < rhs; });
+    if (it == end(indices) || elements[*it].first != s) {
+        it = indices.insert(it, int(elements.size()));
+        return elements.emplace_back(StdString<Alloc>{s, elements.get_allocator()}, JsLiteral{JsLiteralType::Null})
+            .second;
     }
-    return it->second;
+    return elements[*it].second;
 }
 
 template <typename Alloc> const Sys::JsElementT<Alloc> &Sys::JsObjectT<Alloc>::at(std::string_view s) const {
-    auto it = std::lower_bound(begin(elements), end(elements), s,
-                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
-    if (it != end(elements) && it->first == s) {
-        return it->second;
+    auto it = std::lower_bound(begin(indices), end(indices), s,
+                               [this](const int lhs, std::string_view rhs) { return elements[lhs].first < rhs; });
+    if (it != end(indices) && elements[*it].first == s) {
+        return elements[*it].second;
     }
     throw std::out_of_range(std::string("No such element! \"").append(s) + "\"");
 }
 
 template <typename Alloc> Sys::JsElementT<Alloc> &Sys::JsObjectT<Alloc>::at(std::string_view s) {
-    auto it = std::lower_bound(begin(elements), end(elements), s,
-                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
-    if (it != end(elements) && it->first == s) {
-        return it->second;
+    auto it = std::lower_bound(begin(indices), end(indices), s,
+                               [this](const int lhs, std::string_view rhs) { return elements[lhs].first < rhs; });
+    if (it != end(indices) && elements[*it].first == s) {
+        return elements[*it].second;
     }
     throw std::out_of_range(std::string("No such element! \"").append(s) + "\"");
 }
@@ -246,37 +248,44 @@ template <typename Alloc> bool Sys::JsObjectT<Alloc>::Equals(const JsObjectT &rh
     if (elements.size() != rhs.elements.size()) {
         return false;
     }
+    assert(elements.size() == indices.size());
+    assert(rhs.elements.size() == rhs.indices.size());
     bool ret = true;
-    for (size_t i = 0; i < elements.size() && ret; ++i) {
-        ret &= elements[i].first == rhs.elements[i].first;
-        ret &= elements[i].second.Equals(rhs.elements[i].second, eps);
+    for (size_t i = 0; i < indices.size() && ret; ++i) {
+        ret &= elements[indices[i]].first == rhs.elements[rhs.indices[i]].first;
+        ret &= elements[indices[i]].second.Equals(rhs.elements[rhs.indices[i]].second, eps);
     }
     return ret;
 }
 
 template <typename Alloc> size_t Sys::JsObjectT<Alloc>::IndexOf(std::string_view s) const {
-    auto it = std::lower_bound(begin(elements), end(elements), s,
-                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
-    if (it != end(elements) && it->first == s) {
-        return std::distance(begin(elements), it);
+    assert(elements.size() == indices.size());
+    auto it = std::lower_bound(begin(indices), end(indices), s,
+                               [this](const int lhs, std::string_view rhs) { return elements[lhs].first < rhs; });
+    if (it != end(indices) && elements[*it].first == s) {
+        return *it;
     }
     return elements.size();
 }
 
 template <typename Alloc> size_t Sys::JsObjectT<Alloc>::Insert(std::string_view s, const JsElementT<Alloc> &el) {
-    auto it = std::lower_bound(begin(elements), end(elements), s,
-                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
-    assert(it == end(elements) || it->first != s);
-    it = elements.emplace(it, StdString<Alloc>{s, elements.get_allocator()}, el);
-    return std::distance(begin(elements), it);
+    assert(elements.size() == indices.size());
+    auto it = std::lower_bound(begin(indices), end(indices), s,
+                               [this](const int lhs, std::string_view rhs) { return elements[lhs].first < rhs; });
+    assert(it == end(indices) || elements[*it].first != s);
+    it = indices.insert(it, int(elements.size()));
+    elements.emplace_back(StdString<Alloc>{s, elements.get_allocator()}, el);
+    return *it;
 }
 
 template <typename Alloc> size_t Sys::JsObjectT<Alloc>::Insert(std::string_view s, JsElementT<Alloc> &&el) {
-    auto it = std::lower_bound(begin(elements), end(elements), s,
-                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
-    assert(it == end(elements) || it->first != s);
-    it = elements.emplace(it, StdString<Alloc>{s, elements.get_allocator()}, std::move(el));
-    return std::distance(begin(elements), it);
+    assert(elements.size() == indices.size());
+    auto it = std::lower_bound(begin(indices), end(indices), s,
+                               [this](const int lhs, std::string_view rhs) { return elements[lhs].first < rhs; });
+    assert(it == end(indices) || elements[*it].first != s);
+    it = indices.insert(it, int(elements.size()));
+    elements.emplace_back(StdString<Alloc>{s, elements.get_allocator()}, std::move(el));
+    return *it;
 }
 
 template <typename Alloc> bool Sys::JsObjectT<Alloc>::Read(std::istream &in) {

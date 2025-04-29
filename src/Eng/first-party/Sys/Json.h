@@ -135,9 +135,11 @@ extern template struct JsArrayT<Sys::MultiPoolAllocator<char>>;
 template <typename Alloc> struct JsObjectT {
     using ValueType = std::pair<StdString<Alloc>, JsElementT<Alloc>>;
     using AllocV = typename std::allocator_traits<Alloc>::template rebind_alloc<ValueType>;
+    using AllocI = typename std::allocator_traits<Alloc>::template rebind_alloc<int>;
     std::vector<ValueType, AllocV> elements;
+    std::vector<int, AllocI> indices; // sorted list
 
-    explicit JsObjectT(const Alloc &alloc = Alloc()) : elements(alloc) {}
+    explicit JsObjectT(const Alloc &alloc = Alloc()) : elements(alloc), indices(alloc) {}
 
     const std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i) const { return elements[i]; }
     std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i) { return elements[i]; }
@@ -156,6 +158,11 @@ template <typename Alloc> struct JsObjectT {
     [[nodiscard]] size_t IndexOf(std::string_view s) const;
 
     [[nodiscard]] size_t Size() const { return elements.size(); }
+
+    void Clear() {
+        elements.clear();
+        indices.clear();
+    }
 
     size_t Insert(std::string_view s, const JsElementT<Alloc> &el);
     size_t Insert(std::string_view s, JsElementT<Alloc> &&el);

@@ -18,7 +18,7 @@
 #include <Gui/Utils.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 61;
+const uint32_t AssetsBuildVersion = 63;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -438,21 +438,21 @@ void LoadDB(const char *out_folder, Sys::JsObjectP &out_js_assets_db) {
             try {
                 if (out_js_assets_db.Read(in_file)) {
                     if (!out_js_assets_db.Has("version")) {
-                        out_js_assets_db.elements.clear();
+                        out_js_assets_db.Clear();
                     } else {
                         const Sys::JsStringP &js_assets_version = out_js_assets_db.at("version").as_str();
                         if (js_assets_version.val != std::to_string(AssetsBuildVersion)) {
-                            out_js_assets_db.elements.clear();
+                            out_js_assets_db.Clear();
                         }
                     }
                     break;
                 } else {
                     // unsuccessful read can leave junk
-                    out_js_assets_db.elements.clear();
+                    out_js_assets_db.Clear();
                 }
             } catch (...) {
                 // unsuccessful read can leave junk
-                out_js_assets_db.elements.clear();
+                out_js_assets_db.Clear();
             }
         }
     }
@@ -495,13 +495,13 @@ bool WriteDB(const Sys::JsObjectP &js_db, const char *out_folder, Ren::ILog *log
     if (write_successful) {
         remove(name3.c_str());
         if (rename(name2.c_str(), name3.c_str()) != 0) {
-            //log->Error("Failed to rename %s -> %s", name2.c_str(), name3.c_str());
+            // log->Error("Failed to rename %s -> %s", name2.c_str(), name3.c_str());
         }
         if (rename(name1.c_str(), name2.c_str()) != 0) {
-            //log->Error("Failed to rename %s -> %s", name1.c_str(), name2.c_str());
+            // log->Error("Failed to rename %s -> %s", name1.c_str(), name2.c_str());
         }
         if (rename(temp.c_str(), name1.c_str()) != 0) {
-            //log->Error("Failed to rename %s -> %s", temp.c_str(), name1.c_str());
+            // log->Error("Failed to rename %s -> %s", temp.c_str(), name1.c_str());
         }
     }
 
