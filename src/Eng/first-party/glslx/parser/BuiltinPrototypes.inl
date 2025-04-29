@@ -682,5 +682,3 @@ bool anyInvocation(bool value) [[builtin]];
 bool allInvocations(bool value) [[builtin]];
 bool allInvocationsEqual(bool value) [[builtin]];
 )"
-
-

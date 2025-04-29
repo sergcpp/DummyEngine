@@ -1,6 +1,5 @@
 #include "WriterHLSL.h"
 
-#include <map>
 #include <ostream>
 
 namespace glslx {
@@ -211,35 +210,35 @@ std::pair<int, int> get_binding_and_set(Span<const ast_layout_qualifier *const> 
     return std::make_pair(binding, set);
 }
 
-const char *g_atomic_functions[] = {"atomicAdd", "atomicAnd", "atomicOr",       "atomicXor",
-                                    "atomicMin", "atomicMax", "atomicCompSwap", "atomicExchange"};
-extern const int g_atomic_functions_count = int(std::size(g_atomic_functions));
+extern const HashSet32<const char *> g_atomic_functions{
+    {"atomicAdd", "atomicAnd", "atomicOr", "atomicXor", "atomicMin", "atomicMax", "atomicCompSwap", "atomicExchange"}};
 
-const std::map<std::string, std::string> g_hlsl_function_mapping = {{"intBitsToFloat", "asfloat"},
-                                                                    {"uintBitsToFloat", "asfloat"},
-                                                                    {"floatBitsToInt", "asint"},
-                                                                    {"floatBitsToUint", "asuint"},
-                                                                    {"fract", "frac"},
-                                                                    {"fma", "mad"},
-                                                                    {"inversesqrt", "rsqrt"},
-                                                                    {"mix", "lerp"},
-                                                                    {"barrier", "GroupMemoryBarrierWithGroupSync"},
-                                                                    {"groupMemoryBarrier", "AllMemoryBarrier"},
-                                                                    {"atomicAdd", "InterlockedAdd"},
-                                                                    {"atomicAnd", "InterlockedAnd"},
-                                                                    {"atomicOr", "InterlockedOr"},
-                                                                    {"atomicXor", "InterlockedXor"},
-                                                                    {"atomicMin", "InterlockedMin"},
-                                                                    {"atomicMax", "InterlockedMax"},
-                                                                    {"atomicExchange", "InterlockedExchange"},
-                                                                    {"atomicCompSwap", "InterlockedCompareExchange"},
-                                                                    {"subgroupAll", "WaveActiveAllTrue"},
-                                                                    {"subgroupAny", "WaveActiveAnyTrue"},
-                                                                    {"subgroupAdd", "WaveActiveSum"},
-                                                                    {"subgroupElect", "WaveIsFirstLane"},
-                                                                    {"subgroupExclusiveAdd", "WavePrefixSum"},
-                                                                    {"bitCount", "countbits"},
-                                                                    {"nonuniformEXT", "NonUniformResourceIndex"}};
+const HashMap32<std::string, std::string> g_hlsl_function_mapping{
+    {"intBitsToFloat", "asfloat"},
+    {"uintBitsToFloat", "asfloat"},
+    {"floatBitsToInt", "asint"},
+    {"floatBitsToUint", "asuint"},
+    {"fract", "frac"},
+    {"fma", "mad"},
+    {"inversesqrt", "rsqrt"},
+    {"mix", "lerp"},
+    {"barrier", "GroupMemoryBarrierWithGroupSync"},
+    {"groupMemoryBarrier", "AllMemoryBarrier"},
+    {"atomicAdd", "InterlockedAdd"},
+    {"atomicAnd", "InterlockedAnd"},
+    {"atomicOr", "InterlockedOr"},
+    {"atomicXor", "InterlockedXor"},
+    {"atomicMin", "InterlockedMin"},
+    {"atomicMax", "InterlockedMax"},
+    {"atomicExchange", "InterlockedExchange"},
+    {"atomicCompSwap", "InterlockedCompareExchange"},
+    {"subgroupAll", "WaveActiveAllTrue"},
+    {"subgroupAny", "WaveActiveAnyTrue"},
+    {"subgroupAdd", "WaveActiveSum"},
+    {"subgroupElect", "WaveIsFirstLane"},
+    {"subgroupExclusiveAdd", "WavePrefixSum"},
+    {"bitCount", "countbits"},
+    {"nonuniformEXT", "NonUniformResourceIndex"}};
 } // namespace glslx
 
 void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool nested, std::ostream &out_stream) {
@@ -1084,10 +1083,11 @@ void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expressi
 
 void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, std::ostream &out_stream) {
     bool skip_call = false;
-
     bool is_atomic = false;
-    for (int i = 0; i < std::size(g_atomic_functions); ++i) {
-        if (strcmp(expression->name, g_atomic_functions[i]) == 0) {
+
+    { // Capture atomic operation
+        const auto *p_find = g_atomic_functions.Find(expression->name);
+        if (p_find) {
             is_atomic = true;
             if (!atomic_operations_.empty()) {
                 out_stream << atomic_operations_.front().var_name;
@@ -1098,9 +1098,9 @@ void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, 
     }
 
     if (!skip_call) {
-        auto it = g_hlsl_function_mapping.find(expression->name);
-        if (it != end(g_hlsl_function_mapping)) {
-            out_stream << it->second;
+        auto *p_find = g_hlsl_function_mapping.Find(expression->name);
+        if (p_find) {
+            out_stream << *p_find;
         } else {
             out_stream << expression->name;
         }
@@ -1658,11 +1658,9 @@ void glslx::WriterHLSL::Find_AtomicOperations(const ast_expression *expression,
     switch (expression->type) {
     case eExprType::FunctionCall: {
         const auto *call = static_cast<const ast_function_call *>(expression);
-        for (int i = 0; i < std::size(g_atomic_functions); ++i) {
-            if (strcmp(call->name, g_atomic_functions[i]) == 0) {
-                out_operations.push_back({expression});
-                break;
-            }
+        const auto *p_find = g_atomic_functions.Find(call->name);
+        if (p_find) {
+            out_operations.push_back({expression});
         }
     } break;
     case eExprType::Assign:
@@ -1720,9 +1718,9 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
                 });
             if (buf_it != byteaddress_bufs_.end()) {
                 const char *func_name = call->name;
-                auto it = g_hlsl_function_mapping.find(call->name);
-                if (it != end(g_hlsl_function_mapping)) {
-                    func_name = it->second.c_str();
+                auto *p_find = g_hlsl_function_mapping.Find(call->name);
+                if (p_find) {
+                    func_name = p_find->c_str();
                 }
                 if (strcmp(func_name, "InterlockedCompareExchange") == 0 && temp_type->builtin &&
                     static_cast<const ast_builtin *>(temp_type)->type == eKeyword::K_uint64_t) {

@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+#include "AlignedAlloc.h"
+
 namespace glslx {
 inline uint32_t _lua_hash(void const *v, const uint32_t l) {
     uint32_t i, step = (l >> 5u) + 1;
@@ -77,11 +79,9 @@ template <> class Hash<std::string> {
     uint32_t operator()(const char *s) const { return _str_hash(s); }
 };
 
-template <typename K> class Equal {
-    std::equal_to<K> eq_;
-
+template <typename K> class Equal : std::equal_to<K> {
   public:
-    bool operator()(const K &k1, const K &k2) const { return eq_(k1, k2); }
+    bool operator()(const K &k1, const K &k2) const { return std::equal_to<K>::operator()(k1, k2); }
 };
 
 template <> class Equal<char *> {
@@ -102,7 +102,9 @@ template <> class Equal<std::string> {
     bool operator()(const std::string &k1, const char *k2) const { return k1 == k2; }
 };
 
-template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>> class HashSet32 {
+template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>,
+          typename Allocator = aligned_allocator<uint8_t, alignof(K)>>
+class HashSet32 : HashFunc, KeyEqual, Allocator {
     static const uint8_t OccupiedBit = 0b10000000;
     static const uint8_t HashMask = 0b01111111;
 
@@ -116,35 +118,33 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
     uint8_t *ctrl_;
     Node *nodes_;
     uint32_t capacity_, size_;
-    HashFunc hash_func_;
-    KeyEqual key_equal_;
+
+    static uint32_t ctrl_size(const uint32_t cap) {
+        return alignof(Node) * ((cap + alignof(Node) - 1) / alignof(Node));
+    }
+    static uint32_t mem_size(const uint32_t cap) { return ctrl_size(cap) + sizeof(Node) * cap; }
 
   public:
-    explicit HashSet32(const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual()) noexcept
-        : ctrl_(nullptr), nodes_(nullptr), capacity_(0), size_(0), hash_func_(hash_func), key_equal_(key_equal) {}
+    explicit HashSet32(const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual(),
+                       const Allocator &alloc = Allocator()) noexcept
+        : HashFunc(hash_func), KeyEqual(key_equal), Allocator(alloc), ctrl_(nullptr), nodes_(nullptr), capacity_(0),
+          size_(0) {}
 
     explicit HashSet32(const uint32_t capacity, const HashFunc &hash_func = HashFunc(),
-                       const KeyEqual &key_equal = KeyEqual())
-        : hash_func_(hash_func), key_equal_(key_equal) {
-        // Check if power of 2
-        assert((capacity & (capacity - 1)) == 0);
+                       const KeyEqual &key_equal = KeyEqual(), const Allocator &alloc = Allocator())
+        : HashFunc(hash_func), KeyEqual(key_equal), Allocator(alloc), ctrl_(nullptr), nodes_(nullptr), capacity_(0),
+          size_(0) {
+        ReserveRealloc(capacity);
+    }
 
-        uint32_t mem_size = capacity;
-        if (mem_size % alignof(Node)) {
-            mem_size += alignof(Node) - (mem_size % alignof(Node));
+    explicit HashSet32(std::initializer_list<K> l, const HashFunc &hash_func = HashFunc(),
+                       const KeyEqual &key_equal = KeyEqual(), const Allocator &alloc = Allocator()) noexcept
+        : HashFunc(hash_func), KeyEqual(key_equal), Allocator(alloc), ctrl_(nullptr), nodes_(nullptr), capacity_(0),
+          size_(0) {
+        ReserveRealloc(uint32_t(l.size()));
+        for (auto it = l.begin(); it != l.end(); ++it) {
+            Insert(*it);
         }
-
-        const uint32_t node_begin = mem_size;
-        mem_size += sizeof(Node) * capacity;
-
-        ctrl_ = new uint8_t[mem_size];
-        nodes_ = (Node *)&ctrl_[node_begin];
-        assert(uintptr_t(nodes_) % alignof(Node) == 0);
-
-        memset(ctrl_, 0, capacity);
-
-        capacity_ = capacity;
-        size_ = 0;
     }
 
     HashSet32(const HashSet32 &rhs) = delete;
@@ -152,19 +152,22 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
 
     HashSet32(HashSet32 &&rhs) noexcept { (*this) = std::move(rhs); }
     HashSet32 &operator=(HashSet32 &&rhs) noexcept {
+        if (this == &rhs) {
+            return (*this);
+        }
+        Allocator::operator=(static_cast<Allocator &&>(rhs));
+        HashFunc::operator=(static_cast<HashFunc &&>(rhs));
+        KeyEqual::operator=(static_cast<KeyEqual &&>(rhs));
         ctrl_ = std::exchange(rhs.ctrl_, nullptr);
         nodes_ = std::exchange(rhs.nodes_, nullptr);
         capacity_ = std::exchange(rhs.capacity_, 0);
         size_ = std::exchange(rhs.size_, 0);
-        hash_func_ = std::move(rhs.hash_func_);
-        key_equal_ = std::move(rhs.key_equal_);
-
         return (*this);
     }
 
     ~HashSet32() {
         clear();
-        delete[] ctrl_;
+        this->deallocate(ctrl_, mem_size(capacity_));
     }
 
     uint32_t size() const { return size_; }
@@ -180,6 +183,7 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
             }
         }
         memset(ctrl_, 0, capacity_);
+        assert(size_ == 0);
     }
 
     void reserve(const uint32_t capacity) { ReserveRealloc(capacity); }
@@ -194,7 +198,7 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
     }
 
     bool Insert(K &&key) {
-        const uint32_t hash = hash_func_(key);
+        const uint32_t hash = HashFunc::operator()(key);
 
         const K *k = Find(hash, key);
         if (k) {
@@ -205,18 +209,18 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
     }
 
     Node *InsertNoCheck(const K &key) {
-        const uint32_t hash = hash_func_(key);
+        const uint32_t hash = HashFunc::operator()(key);
         return InsertInternal(hash, key);
     }
 
     bool Erase(const K &key) {
-        const uint32_t hash = hash_func_(key);
+        const uint32_t hash = HashFunc::operator()(key);
         const uint8_t ctrl_to_find = OccupiedBit | (hash & HashMask);
 
         uint32_t i = hash & (capacity_ - 1);
         const uint32_t end = i;
         while (ctrl_[i]) {
-            if (ctrl_[i] == ctrl_to_find && nodes_[i].hash == hash && key_equal_(nodes_[i].key, key)) {
+            if (ctrl_[i] == ctrl_to_find && nodes_[i].hash == hash && KeyEqual::operator()(nodes_[i].key, key)) {
                 --size_;
                 ctrl_[i] = HashMask;
                 nodes_[i].key.~K();
@@ -232,12 +236,10 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
         return false;
     }
 
-    template <typename K2> K *Find(const K2 &key) {
-        const uint32_t hash = hash_func_(key);
-        return Find(hash, key);
-    }
+    template <typename K2> const K *Find(const K2 &key) const { return Find(HashFunc::operator()(key), key); }
+    template <typename K2> K *Find(const K2 &key) { return Find(HashFunc::operator()(key), key); }
 
-    template <typename K2> K *Find(const uint32_t hash, const K2 &key) {
+    template <typename K2> const K *Find(const uint32_t hash, const K2 &key) const {
         if (!capacity_) {
             return nullptr;
         }
@@ -247,7 +249,7 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
         uint32_t i = hash & (capacity_ - 1);
         const uint32_t end = i;
         while (ctrl_[i]) {
-            if (ctrl_[i] == ctrl_to_find && nodes_[i].hash == hash && key_equal_(nodes_[i].key, key)) {
+            if (ctrl_[i] == ctrl_to_find && nodes_[i].hash == hash && KeyEqual::operator()(nodes_[i].key, key)) {
                 return &nodes_[i].key;
             }
             i = (i + 1) & (capacity_ - 1);
@@ -257,6 +259,10 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
         }
 
         return nullptr;
+    }
+
+    template <typename K2> K *Find(const uint32_t hash, const K2 &key) {
+        return const_cast<K *>(std::as_const(*this).Find(hash, key));
     }
 
     Node *GetOrNull(const uint32_t index) {
@@ -403,43 +409,12 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
   private:
     void CheckRealloc() {
         if ((size_ + 1) > uint32_t(0.8f * capacity_)) {
-            uint8_t *old_ctrl = ctrl_;
-            Node *old_nodes = nodes_;
-            uint32_t old_capacity = capacity_;
-
-            if (capacity_) {
-                capacity_ *= 2;
-            } else {
-                capacity_ = 8;
-            }
-            size_ = 0;
-
-            uint32_t mem_size = capacity_;
-            mem_size += (mem_size % alignof(Node));
-
-            const uint32_t node_begin = mem_size;
-            mem_size += sizeof(Node) * capacity_;
-
-            ctrl_ = new uint8_t[mem_size];
-            if (!ctrl_ || mem_size < capacity_) {
-                return;
-            }
-            nodes_ = (Node *)&ctrl_[node_begin];
-
-            memset(ctrl_, 0, capacity_);
-
-            for (uint32_t i = 0; i < old_capacity; i++) {
-                if (old_ctrl[i] & OccupiedBit) {
-                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key));
-                }
-            }
-
-            delete[] old_ctrl;
+            ReserveRealloc(capacity_ * 2);
         }
     }
 
     void ReserveRealloc(const uint32_t desired_capacity) {
-        if (capacity_ < desired_capacity) {
+        if (!capacity_ || capacity_ < desired_capacity) {
             uint8_t *old_ctrl = ctrl_;
             Node *old_nodes = nodes_;
             uint32_t old_capacity = capacity_;
@@ -450,27 +425,22 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
             while (capacity_ < desired_capacity) {
                 capacity_ *= 2;
             }
-
             size_ = 0;
 
-            uint32_t mem_size = capacity_;
-            mem_size += (mem_size % alignof(Node));
-
-            const uint32_t node_begin = mem_size;
-            mem_size += sizeof(Node) * capacity_;
-
-            ctrl_ = new uint8_t[mem_size];
-            nodes_ = (Node *)&ctrl_[node_begin];
-
+            ctrl_ = this->allocate(mem_size(capacity_));
+            if (!ctrl_) {
+                return;
+            }
+            nodes_ = reinterpret_cast<Node *>(&ctrl_[ctrl_size(capacity_)]);
             memset(ctrl_, 0, capacity_);
 
-            for (uint32_t i = 0; i < old_capacity; i++) {
+            for (uint32_t i = 0; i < old_capacity; ++i) {
                 if (old_ctrl[i] & OccupiedBit) {
-                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key), std::move(old_nodes[i].val));
+                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key));
                 }
             }
 
-            delete[] old_ctrl;
+            this->deallocate(old_ctrl, mem_size(old_capacity));
         }
     }
 
@@ -484,10 +454,12 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
 
         ++size_;
         ctrl_[i] = OccupiedBit | (hash & HashMask);
-        nodes_[i].hash = hash;
-        new (&nodes_[i].key) K(key);
 
-        return &nodes_[i];
+        Node *ret = &nodes_[i];
+        ret->hash = hash;
+        new (&ret->key) K(key);
+
+        return ret;
     }
 
     void InsertInternal(const uint32_t hash, K &&key) {
@@ -500,13 +472,15 @@ template <typename K, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>>
 
         ++size_;
         ctrl_[i] = OccupiedBit | (hash & HashMask);
-        nodes_[i].hash = hash;
-        new (&nodes_[i].key) K(std::forward<K>(key));
+
+        Node &ret = nodes_[i];
+        ret.hash = hash;
+        new (&ret.key) K(std::forward<K>(key));
     }
 
     uint32_t NextOccupied(uint32_t index) const {
         assert((ctrl_[index] & OccupiedBit) && "Invalid index!");
-        for (uint32_t i = index + 1; i < capacity_; i++) {
+        for (uint32_t i = index + 1; i < capacity_; ++i) {
             if (ctrl_[i] & OccupiedBit) {
                 return i;
             }

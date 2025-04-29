@@ -26,8 +26,7 @@ set(SOURCE_FILES AlignedAlloc.h
                  HashMap32.h
                  HashSet32.h
                  KeywordsHLSL.inl
-                 PreludeGLSL.h
-                 PreludeGLSL.cpp
+                 MemBuf.h
                  Preprocessor.h
                  Preprocessor.cpp
                  Prune.h
@@ -46,6 +45,8 @@ set(SOURCE_FILES AlignedAlloc.h
 
 set(PARSER_SOURCE_FILES parser/AST.h
                         parser/AST.cpp
+                        parser/BuiltinBlob.inl
+                        parser/BuiltinImpl.inl
                         parser/BuiltinPrototypes.inl
                         parser/Keywords.inl
                         parser/LayoutQualifiers.inl

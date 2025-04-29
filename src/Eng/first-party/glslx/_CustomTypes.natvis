@@ -29,6 +29,7 @@
       <IndexListItems>
         <Size>capacity_</Size>
         <ValueNode Condition="ctrl_[$i] &amp; OccupiedBit">nodes_[$i]</ValueNode>
+        <ValueNode Condition="ctrl_[$i] == HashMask">"erased"</ValueNode>
         <ValueNode Condition="(ctrl_[$i] &amp; OccupiedBit) == 0">"empty"</ValueNode>
       </IndexListItems>
     </Expand>
@@ -41,6 +42,7 @@
       <IndexListItems>
         <Size>capacity_</Size>
         <ValueNode Condition="ctrl_[$i] &amp; OccupiedBit">nodes_[$i]</ValueNode>
+        <ValueNode Condition="ctrl_[$i] == HashMask">"erased"</ValueNode>
         <ValueNode Condition="(ctrl_[$i] &amp; OccupiedBit) == 0">"empty"</ValueNode>
       </IndexListItems>
     </Expand>

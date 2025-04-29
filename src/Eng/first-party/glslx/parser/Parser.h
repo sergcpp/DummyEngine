@@ -38,6 +38,8 @@ class Parser {
 
     bool ParseSource(std::string_view source);
 
+    std::string DumpASTBlob();
+
   public:
     Parser(std::string_view source, const char *file_name);
 
@@ -147,6 +149,8 @@ class Parser {
     ast_variable *FindVariable(const char *name);
     ast_type *GetType(ast_expression *expression);
 };
+
+extern const char g_builtin_impl[];
 
 int get_vector_size(eKeyword type);
 int get_vector_size(const ast_type *type);

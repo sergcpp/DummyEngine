@@ -1,5 +1,7 @@
 #pragma once
 
+#include <istream>
+
 #include "HashMap32.h"
 #include "Span.h"
 #include "parser/AST.h"

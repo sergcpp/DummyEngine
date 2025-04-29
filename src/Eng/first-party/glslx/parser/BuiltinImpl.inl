@@ -1,7 +1,4 @@
-#include "PreludeGLSL.h"
-
-namespace glslx {
-const char g_glsl_prelude[] = R"(
+R"(
 uint uaddCarry(uint x, uint y, uint carryIn, out uint carryOut) {
     carryOut = (x > ~y) || (x + ~y < ~carryIn);
     return x + y + carryIn;
@@ -90,4 +87,3 @@ vec4 unpackUnorm4x8(uint value) {
 
 float atan(float x, float y) { return atan2(x, y); }
 )";
-} // namespace glslx

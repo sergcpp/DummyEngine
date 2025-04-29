@@ -1,5 +1,7 @@
 #include "Parser.h"
 
+#include "../MemBuf.h"
+#include "../Serialize.h"
 #include "Utils.h"
 
 namespace glslx {
@@ -53,6 +55,12 @@ static_assert(int(eKeyword::K_gsubpassInputMS) == 365);
 extern const char g_builtin_prototypes[] =
 #include "BuiltinPrototypes.inl"
     ;
+extern const char g_builtin_impl[] =
+#include "BuiltinImpl.inl"
+    ;
+extern const uint8_t g_builtin_blob[] = {
+#include "BuiltinBlob.inl"
+};
 } // namespace glslx
 
 #define IVAL(x) static_cast<ast_int_constant *>(x)->value
@@ -67,14 +75,37 @@ glslx::Parser::Parser(std::string_view source, const char *file_name)
 
 std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
     ast_ = std::make_unique<TrUnit>(type);
-    scopes_.emplace_back();
+
     if (!InitSpecialGlobals(type)) {
         fatal("failed to initialize special globals");
         return nullptr;
     }
+#if 1
+    { // Deserialize builtins
+        MemBuf sbuf(g_builtin_blob, sizeof(g_builtin_blob));
+        std::istream in(&sbuf);
+        const bool res = Serialize().DeserializeAST(ast_.get(), in);
+        assert(res);
+        if (!res) {
+            fatal("failed to deserialize builtins");
+            return {};
+        }
+    }
+    // Patch unit type
+    ast_->type = type;
+#else
     if (!ParseSource(g_builtin_prototypes)) {
         return nullptr;
     }
+    const std::string temp = DumpASTBlob();
+#endif
+
+    // Add globals to global scope
+    scopes_.emplace_back();
+    for (ast_global_variable *var : ast_->globals) {
+        scopes_.back().push_back(var);
+    }
+
     if (!ParseSource(source_)) {
         return nullptr;
     }
@@ -2817,7 +2848,6 @@ glslx::ast_global_variable *glslx::Parser::AddHiddenGlobal(const eKeyword type, 
     var->precision = precision;
     var->name = ast_->makestr(name);
     ast_->globals.push_back(var);
-    scopes_.back().push_back(var);
     return var;
 }
 
@@ -3051,8 +3081,7 @@ const eKeyword g_convertible_types[][3] = {{eKeyword::K_int16_t, eKeyword::K_int
                                            {eKeyword::K_vec3, eKeyword::K_dvec3},
                                            {eKeyword::K_vec4, eKeyword::K_dvec4}};
 
-extern const char *g_atomic_functions[];
-extern const int g_atomic_functions_count;
+extern const HashSet32<const char *> g_atomic_functions;
 
 int get_vector_size(const eKeyword type) {
     switch (type) {
@@ -3482,10 +3511,8 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
             }
         }
 
-        for (int i = 0; i < g_atomic_functions_count; ++i) {
-            if (strcmp(func_call->name, g_atomic_functions[i]) == 0) {
-                return arg_types[0];
-            }
+        if (g_atomic_functions.Find(func_call->name)) {
+            return arg_types[0];
         }
 
         auto *p_find = tu->functions_by_name.Find(func_call->name);
@@ -3589,3 +3616,18 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
     }
     return nullptr;
 }
+
+/*#include <sstream>
+
+std::string glslx::Parser::DumpASTBlob() {
+    std::stringstream temp;
+    Serialize s;
+    s.SerializeAST(ast_.get(), temp);
+
+    std::string ret;
+    for (uint8_t c : temp.str()) {
+        ret += std::to_string(c);
+        ret += ", ";
+    }
+    return ret;
+}*/

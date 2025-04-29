@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
     if (output_name) {
         std::string final_source;
         if (strcmp(target, "GLSL") != 0) {
-            final_source += glslx::g_glsl_prelude;
+            final_source += glslx::g_builtin_impl;
         }
         final_source += preprocessed_source;
 

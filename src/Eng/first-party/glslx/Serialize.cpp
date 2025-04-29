@@ -4,17 +4,17 @@
 #include <ostream>
 
 namespace glslx {
-const int32_t FormatVersion = 1;
+static const int32_t FormatVersion = 1;
 
-const int32_t Block_Version = 0;
-const int32_t Block_Strings = 1;
-const int32_t Block_Extensions = 2;
-const int32_t Block_Builtins = 3;
-const int32_t Block_DefaultPrecision = 4;
-const int32_t Block_Structures = 5;
-const int32_t Block_InterfaceBlocks = 6;
-const int32_t Block_Globals = 7;
-const int32_t Block_Functions = 8;
+static const int32_t Block_Version = 0;
+static const int32_t Block_Strings = 1;
+static const int32_t Block_Extensions = 2;
+static const int32_t Block_Builtins = 3;
+static const int32_t Block_DefaultPrecision = 4;
+static const int32_t Block_Structures = 5;
+static const int32_t Block_InterfaceBlocks = 6;
+static const int32_t Block_Globals = 7;
+static const int32_t Block_Functions = 8;
 } // namespace glslx
 
 void glslx::Serialize::Serialize_VersionDirective(const ast_version_directive *version, std::ostream &out) {
@@ -1009,15 +1009,11 @@ bool glslx::Serialize::DeserializeAST(TrUnit *tu, std::istream &in) {
         } else if (block_id == Block_Builtins) {
             const std::streampos block_end = in.tellg() + std::streampos(block_size);
             while (in.tellg() < block_end) {
-                tu->builtins.push_back(Deserialize_Builtin(in));
-                types_.push_back(tu->builtins.back());
+                eKeyword type = eKeyword::K__invalid;
+                in.read((char *)&type, sizeof(eKeyword));
+                ast_builtin *builtin = tu->FindOrAddBuiltin(type);
+                types_.push_back(builtin);
             }
-#ifndef NDEBUG
-            // Ensure it's sorted
-            for (int i = 0; i < int(tu->builtins.size()) - 1; ++i) {
-                assert(tu->builtins[i]->type < tu->builtins[i + 1]->type);
-            }
-#endif
         } else if (block_id == Block_DefaultPrecision) {
             const std::streampos block_end = in.tellg() + std::streampos(block_size);
             while (in.tellg() < block_end) {

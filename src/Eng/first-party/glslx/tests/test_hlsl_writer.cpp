@@ -3,7 +3,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "../PreludeGLSL.h"
 #include "../WriterHLSL.h"
 
 void test_hlsl_writer() {

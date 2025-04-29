@@ -39,10 +39,6 @@ enum class eKeyword : uint16_t {
 };
 #undef X
 
-inline bool operator<(const eKeyword lhs, const eKeyword rhs) {
-    return std::underlying_type<eKeyword>::type(lhs) < std::underlying_type<eKeyword>::type(rhs);
-}
-
 #define X(_0, _1, _2) _0,
 enum class eOperator : uint8_t {
 #include "Operators.inl"
