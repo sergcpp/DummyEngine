@@ -174,7 +174,7 @@ void main() {
     vec3 sh_l_11 = 2.0 * texture(g_lm_indirect_sh_texture[2], g_vtx_uvs.zw).xyz - vec3(1.0);
     vec3 sh_l_12 = 2.0 * texture(g_lm_indirect_sh_texture[3], g_vtx_uvs.zw).xyz - vec3(1.0);
 
-    vec3 indirect_col = EvalSHIrradiance(normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
+    vec3 indirect_col = vec3(0.0);//EvalSHIrradiance(normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
 
     float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
     float visibility = 0.0;

@@ -232,7 +232,7 @@ void main() {
     // squared to compensate gamma
     cone_occlusion *= cone_occlusion;
 
-    vec3 indirect_col = sph_occlusion * EvalSHIrradiance(cone_occlusion * normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
+    vec3 indirect_col = vec3(0.0);//sph_occlusion * EvalSHIrradiance(cone_occlusion * normal, sh_l_00, sh_l_10, sh_l_11, sh_l_12);
 
     float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
     float visibility = 0.0;

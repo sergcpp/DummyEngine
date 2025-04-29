@@ -170,7 +170,7 @@ void main() {
                                                           g_shrd_data.probes[pi].sh_coeffs[1],
                                                           g_shrd_data.probes[pi].sh_coeffs[2]);
 #else
-        indirect_col.x += fade * EvalSHIrradiance_NonLinear(normal_r,
+        /*indirect_col.x += fade * EvalSHIrradiance_NonLinear(normal_r,
                                                             g_shrd_data.probes[pi].sh_coeffs[0],
                                                             g_shrd_data.probes[pi].sh_coeffs[1],
                                                             g_shrd_data.probes[pi].sh_coeffs[2]).x;
@@ -181,7 +181,7 @@ void main() {
         indirect_col.z += fade * EvalSHIrradiance_NonLinear(normal_b,
                                                             g_shrd_data.probes[pi].sh_coeffs[0],
                                                             g_shrd_data.probes[pi].sh_coeffs[1],
-                                                            g_shrd_data.probes[pi].sh_coeffs[2]).z;
+                                                            g_shrd_data.probes[pi].sh_coeffs[2]).z;*/
 #endif
 
         total_fade += fade;

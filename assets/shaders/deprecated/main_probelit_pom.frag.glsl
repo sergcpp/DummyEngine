@@ -555,7 +555,7 @@ void main() {
     vec3 indirect_col = vec3(0.0);
     float total_fade = 0.0;
 
-    for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
+    /*for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
         uint item_data = texelFetch(g_items_buf, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
 
@@ -567,7 +567,7 @@ void main() {
                                                           g_shrd_data.probes[pi].sh_coeffs[1],
                                                           g_shrd_data.probes[pi].sh_coeffs[2]);
         total_fade += fade;
-    }
+    }*/
 
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(indirect_col, vec3(0.0));
