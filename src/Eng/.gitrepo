@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_hash
-	commit = f89a4cf584f622f3eb66249d5cbf89e8697b59a8
+	branch = strip_materials
+	commit = 91c5809ce8af1b53d9e5f4d5fcfcae80436a2796
 	method = merge
 	cmdver = 0.4.6
-	parent = 7c06dde9de9fce7cf59444f8dfd1bd3939afe577
+	parent = 4ae262f74ec25da82debbc75ce8e9cbceb6a1dba
