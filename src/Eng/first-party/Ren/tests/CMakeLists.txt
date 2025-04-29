@@ -31,6 +31,7 @@ set(SOURCE_FILES main.cpp
                  test_common.h
                  test_freelist_alloc.cpp
                  test_hashmap.cpp
+                 test_hashset.cpp
                  test_material.cpp
                  test_mesh.cpp
                  test_math.cpp

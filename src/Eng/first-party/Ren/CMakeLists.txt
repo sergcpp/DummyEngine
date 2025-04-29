@@ -74,6 +74,7 @@ set(SOURCE_FILES AccStructure.h
                  Framebuffer.h
                  Fwd.h
                  HashMap32.h
+                 HashSet32.h
                  Log.h
                  Material.h
                  Material.cpp
