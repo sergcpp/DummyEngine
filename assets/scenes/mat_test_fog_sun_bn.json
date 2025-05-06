@@ -1,0 +1,114 @@
+{
+    "name" : "mat_test",
+    "environment" : {
+        "sun_dir" : [
+            0.541675210,
+            -0.541675210,
+            -0.642787635
+        ],
+        "sun_col" : [ 144809.859, 144809.859, 144809.859 ],
+        "env_col" : [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "env_map" : "physical_sky",
+        "sun_angle" : 10.0,
+        "sun_shadow_bias" : [ 0.0, 0.0 ],
+        "fog" : {
+            "scatter_color" : [ 0.8, 0.8, 0.8 ],
+            "density" : 4.0,
+            "anisotropy" : 0.0,
+            "bbox_min" : [ -100.0, -10.0, -100.0 ],
+            "bbox_max" : [ 100.0, 0.1, 100.0 ],
+            "bbox_min0" : [ -0.04, 0.001, -0.04 ],
+            "bbox_max0" : [ 0.04, 0.101, 0.04 ]
+        }
+    },
+    "objects" : [
+        {
+            "transform" : {
+                "pos" : [
+                    10,
+                    0,
+                    0
+                ],
+                "rot" : [
+                    0,
+                    0,
+                    0
+                ],
+                "scale" : [
+                    10,
+                    10,
+                    10
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/floor.mesh",
+                "material_override" : [ "mat_test/black.mat", "mat_test/black.mat", "mat_test/black.mat" ]
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/floor.mesh",
+                "material_override" : [ "mat_test/black.mat", "mat_test/black.mat", "mat_test/black.mat" ]
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0,
+                    1,
+                    0
+                ],
+                "rot" : [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "probe" : {
+                "offset" : [
+                    0,
+                    0,
+                    0
+                ],
+                "radius" : 0.1,
+                "sh_coeffs" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            }
+        }
+    ],
+    "camera" : {
+        "view_origin" : [
+            0.0, 2.0, 0.0
+        ],
+        "view_dir" : [
+            0.0, -0.999, -0.001
+        ],
+        "fwd_speed" : 0.05,
+        "fov" : 45.0,
+        "view_transform": "agx",
+        "min_exposure" : -14.0,
+        "max_exposure" : 8.0
+    }
+}

@@ -85,6 +85,10 @@ extern const int TaaSampleCountStatic = 64;
 #include "precomputed/__noise.inl"
 #include "precomputed/__pmj02_samples.inl"
 
+namespace bn_1D_16spp {
+#include "precomputed/__bn_sampler_1D_16spp.inl"
+}
+
 __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawList");
 } // namespace RendererInternal
 
@@ -336,6 +340,29 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         sobol_seq_buf_stage.FreeImmediate();
         scrambling_tile_buf_stage.FreeImmediate();
         ranking_tile_buf_stage.FreeImmediate();
+    }
+
+    { // PMJ 1D blue-noise sampler
+        Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
+
+        bn_pmj_1D_16spp_seq_buf_ =
+            ctx_.LoadBuffer("BN_PMJ_1D_16SPP", Ren::eBufType::Texture, sizeof(bn_1D_16spp::bn_pmj_data));
+        bn_pmj_1D_16spp_seq_buf_->AddBufferView(Ren::eTexFormat::R32UI);
+        Ren::Buffer bn_pmj_1D_16spp_seq_buf_stage("BN_PMJ_1D_16SPP_Stage", ctx_.api_ctx(), Ren::eBufType::Upload,
+                                                  bn_pmj_1D_16spp_seq_buf_->size());
+
+        { // init stage buf
+            uint8_t *mapped_ptr = bn_pmj_1D_16spp_seq_buf_stage.Map();
+            memcpy(mapped_ptr, bn_1D_16spp::bn_pmj_data, sizeof(bn_1D_16spp::bn_pmj_data));
+            bn_pmj_1D_16spp_seq_buf_stage.Unmap();
+        }
+
+        CopyBufferToBuffer(bn_pmj_1D_16spp_seq_buf_stage, 0, *bn_pmj_1D_16spp_seq_buf_, 0,
+                           sizeof(bn_1D_16spp::bn_pmj_data), cmd_buf);
+
+        ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+        bn_pmj_1D_16spp_seq_buf_stage.FreeImmediate();
     }
 
     { // PMJ samples

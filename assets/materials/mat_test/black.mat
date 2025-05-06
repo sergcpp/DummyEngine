@@ -1,0 +1,9 @@
+pipelines:
+flags:
+    - two_sided
+textures:
+    - default_basecolor.tex
+    - default_normalmap.dds
+    - default_roughness.tex
+params:
+    - 0.0 0.0 0.0 0.0

@@ -9,6 +9,7 @@
 #include "swrt_common.glsl"
 #include "pmj_common.glsl"
 #include "vol_common.glsl"
+#include "bn_pmj_1D_16spp.glsl"
 
 #include "vol_interface.h"
 
@@ -18,7 +19,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
+layout(binding = BN_PMJ_SEQ_BUF_SLOT) uniform usamplerBuffer g_bn_pmj_seq;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     rt_geo_instance_t g_geometries[];
@@ -63,7 +64,7 @@ void main() {
     const float k = dot(dir_ws, g_shrd_data.frustum_planes[4].xyz);
 
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = get_scrambled_2d_rand(g_random_seq, RAND_DIM_VOL_OFFSET, px_hash, int(g_params.frame_index)).x;
+    const float offset_rand = Sample1D_BN_PMJ_16SPP(g_bn_pmj_seq, uvec2(icoord.xy), g_params.frame_index);
 
     const int MAX_VOL_STACK_SIZE = 6;
 

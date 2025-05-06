@@ -1,5 +1,7 @@
 #include "test_scene.h"
 
+#include <chrono>
+
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 #if defined(REN_VK_BACKEND)
