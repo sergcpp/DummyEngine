@@ -6,7 +6,8 @@
 #include <Ray/internal/PMJ.h>
 #include <Ren/Span.h>
 
-const int SampleCount = 256; // Must be power of 2
+const int SampleCountPow = 8;
+const int SampleCount = (1 << SampleCountPow);
 const int TileRes = 128;
 const int TestIntegralsCount = 1000;
 
@@ -97,9 +98,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    static float samples[TileRes][TileRes][SampleCount];
+    { // try to load previous state
+        std::ifstream in_file("scrambling_keys.bin", std::ios::binary | std::ios::ate);
+        const size_t in_file_size = size_t(in_file.tellg());
+        if (in_file_size == sizeof(scrambling_keys)) {
+            in_file.seekg(0, std::ios::beg);
+            in_file.read((char *)scrambling_keys, sizeof(scrambling_keys));
+        }
+    }
+
+    std::vector<float> samples[TileRes][TileRes];
     for (int y = 0; y < TileRes; ++y) {
         for (int x = 0; x < TileRes; ++x) {
+            samples[y][x].resize(SampleCount);
             for (int i = 0; i < SampleCount; ++i) {
                 const uint32_t scrambled_val = initial_samples[i] ^ scrambling_keys[y][x];
                 samples[y][x][i] = float(scrambled_val >> 8) / 16777216.0f;
@@ -107,23 +118,24 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    float min_error = FLT_MAX, max_error = 0.0f;
-
-    float errors[TileRes][TileRes];
-    for (int y = 0; y < TileRes; ++y) {
-        for (int x = 0; x < TileRes; ++x) {
-            errors[y][x] = evaluate_integrals(samples[y][x], 256);
-            min_error = std::min(min_error, errors[y][x]);
-            max_error = std::max(max_error, errors[y][x]);
+    static float errors[SampleCountPow + 1][TileRes][TileRes];
+    for (int i = 0; i <= SampleCountPow; ++i) {
+        float min_error = FLT_MAX, max_error = 0.0f;
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                errors[i][y][x] = evaluate_integrals(samples[y][x].data(), 1 << i);
+                min_error = std::min(min_error, errors[i][y][x]);
+                max_error = std::max(max_error, errors[i][y][x]);
+            }
+        }
+        // normalize (for easier debugging)
+        for (int j = 0; j < TileRes * TileRes; ++j) {
+            float &e = errors[i][j / TileRes][j % TileRes];
+            e = (e - min_error) / (max_error - min_error);
         }
     }
-    // normalize (for easier debugging)
-    for (int i = 0; i < TileRes * TileRes; ++i) {
-        float &e = errors[i / TileRes][i % TileRes];
-        e = (e - min_error) / (max_error - min_error);
-    }
 
-    const int AnnealingIterations = 100000;
+    const int AnnealingIterations = 10000000;
 
     float best_proximity = 0.0f, last_proximity = 0.0f;
 
@@ -131,9 +143,11 @@ int main(int argc, char *argv[]) {
     std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1);
     std::uniform_real_distribution<float> uniform_unorm_float(0.0f, 1.0f);
 
-    float T = 1.0f, T_min = 0.0001f;
+    float T = 1.0f, T_min = 0.00001f;
     for (int iter = 0; iter < AnnealingIterations; ++iter) {
-        printf("Annealing Iteration %i\n", iter);
+        if ((iter % 1000) == 0) {
+            printf("Annealing Iteration %i\n", iter);
+        }
 
         // Randomly swap two scrambling keys
         int index1 = uniform_index(gen), index2;
@@ -143,34 +157,23 @@ int main(int argc, char *argv[]) {
 
         std::swap(scrambling_keys[index1 / TileRes][index1 % TileRes],
                   scrambling_keys[index2 / TileRes][index2 % TileRes]);
-        for (int i = 0; i < SampleCount; ++i) {
-            std::swap(samples[index1 / TileRes][index1 % TileRes][i], samples[index2 / TileRes][index2 % TileRes][i]);
+        std::swap(samples[index1 / TileRes][index1 % TileRes], samples[index2 / TileRes][index2 % TileRes]);
+        for (int i = 0; i <= SampleCountPow; ++i) {
+            std::swap(errors[i][index1 / TileRes][index1 % TileRes], errors[i][index2 / TileRes][index2 % TileRes]);
         }
-        std::swap(errors[index1 / TileRes][index1 % TileRes], errors[index2 / TileRes][index2 % TileRes]);
-
-        char temp_buf[128];
-        // snprintf(temp_buf, sizeof(temp_buf), "samples_%i.tga", iter);
-        // WriteTGA(&samples[0][0], TileRes, TileRes, TileRes, 3, temp_buf);
 
         float proximity[TileRes][TileRes];
         float total_proximity = 0.0f;
         for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
-                const float prox = calc_pixel_proximity(x, y, errors);
+                const float prox = calc_pixel_proximity(x, y, errors[SampleCountPow]);
                 proximity[y][x] = prox;
                 total_proximity += prox;
             }
         }
 
-        // snprintf(temp_buf, sizeof(temp_buf), "proximity_%i.tga", iter);
-        // WriteTGA(&proximity[0][0], TileRes, TileRes, TileRes, 3, temp_buf);
-
         // We still accept worse permutation sometimes to avoid being stuck in local minimum
         const float acceptance_prob = std::exp((total_proximity - last_proximity) / T);
-        // if (total_proximity < last_proximity) {
-        // printf("acceptance %f\n", acceptance_prob);
-        //}
-
         if (total_proximity > last_proximity || uniform_unorm_float(gen) < acceptance_prob) {
             // Accept this iteration
             last_proximity = total_proximity;
@@ -179,25 +182,31 @@ int main(int argc, char *argv[]) {
                 printf("Best proximity = %f\n", best_proximity);
 
                 // snprintf(temp_buf, sizeof(temp_buf), "best_samples_%i.tga", iter);
-                WriteTGA(&samples[0][0][0], TileRes, TileRes, TileRes, SampleCount, 3, "best_samples.tga");
+                // WriteTGA(&samples[0][0][0], TileRes, TileRes, TileRes, SampleCount, 3, "best_samples.tga");
 
-                WriteTGA(&errors[0][0], TileRes, TileRes, TileRes, 1, 3, "best_errors.tga");
+                { // save current state
+                    std::ofstream out_file("scrambling_keys.bin", std::ios::binary);
+                    out_file.write((const char *)scrambling_keys, sizeof(scrambling_keys));
+                }
 
-                // snprintf(temp_buf, sizeof(temp_buf), "best_proximity_%i.tga", iter);
+                for (int i = 0; i <= SampleCountPow; ++i) {
+                    char name_buf[128];
+                    snprintf(name_buf, sizeof(name_buf), "best_errors_%i.tga", 1 << i);
+                    WriteTGA(&errors[i][0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
+                }
                 WriteTGA(&proximity[0][0], TileRes, TileRes, TileRes, 1, 3, "best_proximity.tga");
             }
         } else {
             // Discard this iteration (swap values back)
             std::swap(scrambling_keys[index1 / TileRes][index1 % TileRes],
                       scrambling_keys[index2 / TileRes][index2 % TileRes]);
-            for (int i = 0; i < SampleCount; ++i) {
-                std::swap(samples[index1 / TileRes][index1 % TileRes][i],
-                          samples[index2 / TileRes][index2 % TileRes][i]);
+            std::swap(samples[index1 / TileRes][index1 % TileRes], samples[index2 / TileRes][index2 % TileRes]);
+            for (int i = 0; i <= SampleCountPow; ++i) {
+                std::swap(errors[i][index1 / TileRes][index1 % TileRes], errors[i][index2 / TileRes][index2 % TileRes]);
             }
-            std::swap(errors[index1 / TileRes][index1 % TileRes], errors[index2 / TileRes][index2 % TileRes]);
         }
 
-        T = std::max(T * 0.9999f, T_min);
+        T = std::max(T * 0.99f, T_min);
     }
 
     // At this point we have our scrambling keys optimized for SampleCount samples taken,
