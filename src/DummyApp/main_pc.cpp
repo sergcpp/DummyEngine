@@ -6,10 +6,12 @@
 #include <Ray/internal/PMJ.h>
 #include <Ren/Span.h>
 
-const int SampleCountPow = 8;
+const int SampleCountPow = 2;
 const int SampleCount = (1 << SampleCountPow);
 const int TileRes = 128;
 const int TestIntegralsCount = 1000;
+// Ideally this should be equal to tile res, but it's too slow due to quadratic complexity
+const int ProximityRadius = 4;
 
 float test_function(float x, float min, float max) {
     if (x > min && x < max) {
@@ -20,14 +22,15 @@ float test_function(float x, float min, float max) {
 
 float integral_val(float min, float max) { return max - min; }
 
-float evaluate_integrals(const float samples[], const int sample_count) {
+float evaluate_integrals(const float samples[], const uint32_t sample_start, const uint32_t sample_count,
+                         const uint32_t ranking_key) {
     double total_error = 0.0;
     for (int j = 0; j < TestIntegralsCount; ++j) {
         const float point = float(j) / float(TestIntegralsCount - 1);
 
         float results[2] = {};
-        for (int k = 0; k < sample_count; ++k) {
-            const float f = test_function(samples[k], 0.0f - 0.1f, point);
+        for (uint32_t k = sample_start; k < sample_start + sample_count; ++k) {
+            const float f = test_function(samples[k ^ ranking_key], 0.0f - 0.1f, point);
             // white region first, black region second
             results[0] += f;
             // black region first, white region second
@@ -45,13 +48,10 @@ float evaluate_integrals(const float samples[], const int sample_count) {
 float calc_pixel_proximity(const int ox, const int oy, const float values[TileRes][TileRes]) {
     const float v = values[oy][ox];
 
-    // TODO: Is this really OK to limit the radius?
-    const int Radius = 4;
-
     float total_proximity = 0.0f;
-    for (int y = oy - Radius; y <= oy + Radius; ++y) {
+    for (int y = oy - ProximityRadius; y <= oy + ProximityRadius; ++y) {
         const int wrapped_y = (y + TileRes) % TileRes;
-        for (int x = ox - Radius; x <= ox + Radius; ++x) {
+        for (int x = ox - ProximityRadius; x <= ox + ProximityRadius; ++x) {
             const int wrapped_x = (x + TileRes) % TileRes;
             if (wrapped_x == ox && wrapped_y == oy) {
                 continue;
@@ -65,6 +65,31 @@ float calc_pixel_proximity(const int ox, const int oy, const float values[TileRe
     }
 
     return total_proximity;
+}
+
+float calc_pixel_proximity(const int ox, const int oy, const float values_first[TileRes][TileRes],
+                           const float values_last[TileRes][TileRes]) {
+    const float v_first = values_first[oy][ox], v_last = values_last[oy][ox];
+
+    float total_proximity = 0.0f;
+    for (int y = oy - ProximityRadius; y <= oy + ProximityRadius; ++y) {
+        const int wrapped_y = (y + TileRes) % TileRes;
+        for (int x = ox - ProximityRadius; x <= ox + ProximityRadius; ++x) {
+            const int wrapped_x = (x + TileRes) % TileRes;
+            if (wrapped_x == ox && wrapped_y == oy) {
+                continue;
+            }
+
+            const float GaussOmega = 2.1f;
+
+            total_proximity +=
+                std::exp(-((x - ox) * (x - ox) + (y - oy) * (y - oy)) / GaussOmega) *
+                ((values_first[wrapped_y][wrapped_x] - v_first) * (values_first[wrapped_y][wrapped_x] - v_first) +
+                 (values_last[wrapped_y][wrapped_x] - v_last) * (values_last[wrapped_y][wrapped_x] - v_last));
+        }
+    }
+
+    return 0.5f * total_proximity;
 }
 
 uint32_t hash(uint32_t x) {
@@ -84,7 +109,7 @@ void WriteTGA(const float *data, int pitch, int w, int h, int px_stride, int bpp
 #undef main
 int main(int argc, char *argv[]) {
 #if 1
-    Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(123456, SampleCount, 1);
+    Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(123456, /*SampleCount*/ 256, 1);
 
     uint32_t initial_samples[SampleCount];
     for (int i = 0; i < SampleCount; ++i) {
@@ -97,13 +122,27 @@ int main(int argc, char *argv[]) {
             scrambling_keys[y][x] = hash(y * TileRes + x) & 0xffffff00;
         }
     }
+    uint32_t ranking_keys[TileRes][TileRes] = {};
 
-    { // try to load previous state
-        std::ifstream in_file("scrambling_keys.bin", std::ios::binary | std::ios::ate);
-        const size_t in_file_size = size_t(in_file.tellg());
-        if (in_file_size == sizeof(scrambling_keys)) {
-            in_file.seekg(0, std::ios::beg);
-            in_file.read((char *)scrambling_keys, sizeof(scrambling_keys));
+    char name_buf[128];
+    {     // try to load previous state
+        { // scrambling keys
+            snprintf(name_buf, sizeof(name_buf), "scrambling_keys_%i.bin", SampleCount);
+            std::ifstream in_file(name_buf, std::ios::binary | std::ios::ate);
+            const size_t in_file_size = size_t(in_file.tellg());
+            if (in_file_size == sizeof(scrambling_keys)) {
+                in_file.seekg(0, std::ios::beg);
+                in_file.read((char *)scrambling_keys, sizeof(scrambling_keys));
+            }
+        }
+        { // ranking keys
+            snprintf(name_buf, sizeof(name_buf), "ranking_keys_%i.bin", SampleCount);
+            std::ifstream in_file(name_buf, std::ios::binary | std::ios::ate);
+            const size_t in_file_size = size_t(in_file.tellg());
+            if (in_file_size == sizeof(ranking_keys)) {
+                in_file.seekg(0, std::ios::beg);
+                in_file.read((char *)ranking_keys, sizeof(ranking_keys));
+            }
         }
     }
 
@@ -118,29 +157,36 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    static float errors[SampleCountPow + 1][TileRes][TileRes];
-    for (int i = 0; i <= SampleCountPow; ++i) {
-        float min_error = FLT_MAX, max_error = 0.0f;
-        for (int y = 0; y < TileRes; ++y) {
-            for (int x = 0; x < TileRes; ++x) {
-                errors[i][y][x] = evaluate_integrals(samples[y][x].data(), 1 << i);
-                min_error = std::min(min_error, errors[i][y][x]);
-                max_error = std::max(max_error, errors[i][y][x]);
-            }
-        }
-        // normalize (for easier debugging)
-        for (int j = 0; j < TileRes * TileRes; ++j) {
-            float &e = errors[i][j / TileRes][j % TileRes];
-            e = (e - min_error) / (max_error - min_error);
+    float errors[TileRes][TileRes];
+    float min_error = FLT_MAX, max_error = 0.0f;
+    for (int y = 0; y < TileRes; ++y) {
+        for (int x = 0; x < TileRes; ++x) {
+            errors[y][x] = evaluate_integrals(samples[y][x].data(), 0, SampleCount, ranking_keys[y][x]);
+            min_error = std::min(min_error, errors[y][x]);
+            max_error = std::max(max_error, errors[y][x]);
         }
     }
+    // normalize (for easier debugging)
+    for (int j = 0; j < TileRes * TileRes; ++j) {
+        float &e = errors[j / TileRes][j % TileRes];
+        e = (e - min_error) / (max_error - min_error);
+    }
+    snprintf(name_buf, sizeof(name_buf), "best_errors_%i_%i.tga", SampleCount, SampleCount);
+    WriteTGA(&errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
 
     const int AnnealingIterations = 10000000;
 
     float best_proximity = 0.0f, last_proximity = 0.0f;
+    for (int y = 0; y < TileRes; ++y) {
+        for (int x = 0; x < TileRes; ++x) {
+            best_proximity += calc_pixel_proximity(x, y, errors);
+        }
+    }
+    last_proximity = best_proximity;
 
-    std::mt19937 gen(123456);
-    std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1), uniform_px(0, TileRes - 1);
     std::uniform_real_distribution<float> uniform_unorm_float(0.0f, 1.0f);
 
     float T = 1.0f, T_min = 0.00001f;
@@ -158,15 +204,13 @@ int main(int argc, char *argv[]) {
         std::swap(scrambling_keys[index1 / TileRes][index1 % TileRes],
                   scrambling_keys[index2 / TileRes][index2 % TileRes]);
         std::swap(samples[index1 / TileRes][index1 % TileRes], samples[index2 / TileRes][index2 % TileRes]);
-        for (int i = 0; i <= SampleCountPow; ++i) {
-            std::swap(errors[i][index1 / TileRes][index1 % TileRes], errors[i][index2 / TileRes][index2 % TileRes]);
-        }
+        std::swap(errors[index1 / TileRes][index1 % TileRes], errors[index2 / TileRes][index2 % TileRes]);
 
         float proximity[TileRes][TileRes];
         float total_proximity = 0.0f;
         for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
-                const float prox = calc_pixel_proximity(x, y, errors[SampleCountPow]);
+                const float prox = calc_pixel_proximity(x, y, errors);
                 proximity[y][x] = prox;
                 total_proximity += prox;
             }
@@ -175,7 +219,7 @@ int main(int argc, char *argv[]) {
         // We still accept worse permutation sometimes to avoid being stuck in local minimum
         const float acceptance_prob = std::exp((total_proximity - last_proximity) / T);
         if (total_proximity > last_proximity || uniform_unorm_float(gen) < acceptance_prob) {
-            // Accept this iteration
+            // Accept this iteration (don't swap back)
             last_proximity = total_proximity;
             if (total_proximity > best_proximity) {
                 best_proximity = total_proximity;
@@ -185,15 +229,13 @@ int main(int argc, char *argv[]) {
                 // WriteTGA(&samples[0][0][0], TileRes, TileRes, TileRes, SampleCount, 3, "best_samples.tga");
 
                 { // save current state
-                    std::ofstream out_file("scrambling_keys.bin", std::ios::binary);
+                    snprintf(name_buf, sizeof(name_buf), "scrambling_keys_%i.bin", SampleCount);
+                    std::ofstream out_file(name_buf, std::ios::binary);
                     out_file.write((const char *)scrambling_keys, sizeof(scrambling_keys));
                 }
 
-                for (int i = 0; i <= SampleCountPow; ++i) {
-                    char name_buf[128];
-                    snprintf(name_buf, sizeof(name_buf), "best_errors_%i.tga", 1 << i);
-                    WriteTGA(&errors[i][0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
-                }
+                snprintf(name_buf, sizeof(name_buf), "best_errors_%i_%i.tga", SampleCount, SampleCount);
+                WriteTGA(&errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                 WriteTGA(&proximity[0][0], TileRes, TileRes, TileRes, 1, 3, "best_proximity.tga");
             }
         } else {
@@ -201,9 +243,7 @@ int main(int argc, char *argv[]) {
             std::swap(scrambling_keys[index1 / TileRes][index1 % TileRes],
                       scrambling_keys[index2 / TileRes][index2 % TileRes]);
             std::swap(samples[index1 / TileRes][index1 % TileRes], samples[index2 / TileRes][index2 % TileRes]);
-            for (int i = 0; i <= SampleCountPow; ++i) {
-                std::swap(errors[i][index1 / TileRes][index1 % TileRes], errors[i][index2 / TileRes][index2 % TileRes]);
-            }
+            std::swap(errors[index1 / TileRes][index1 % TileRes], errors[index2 / TileRes][index2 % TileRes]);
         }
 
         T = std::max(T * 0.99f, T_min);
@@ -211,15 +251,97 @@ int main(int argc, char *argv[]) {
 
     // At this point we have our scrambling keys optimized for SampleCount samples taken,
     // now we need to find ranking keys which make it work for any power of 2 samples subset
-    uint32_t ranking_keys[TileRes][TileRes] = {};
 
-    int samples_subset = SampleCount / 2;
-    while (samples_subset) {
+    int subset_count_pow = SampleCountPow - 1;
+    while (subset_count_pow) {
+        const uint32_t subset_sample_count = (1u << subset_count_pow);
+
+        float min_error = FLT_MAX, max_error = 0.0f;
+        float errors[2][TileRes][TileRes], errors_flipped[2][TileRes][TileRes];
         for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
+                // use first half (no flip)
+                errors[0][y][x] = evaluate_integrals(samples[y][x].data(), 0, subset_sample_count, ranking_keys[y][x]);
+                // use second half (no flip)
+                errors[1][y][x] = evaluate_integrals(samples[y][x].data(), subset_sample_count, subset_sample_count,
+                                                     ranking_keys[y][x]);
+                min_error = std::min(min_error, errors[0][y][x]);
+                max_error = std::max(max_error, errors[1][y][x]);
+                // use first half (+ flip)
+                errors_flipped[0][y][x] = evaluate_integrals(samples[y][x].data(), 0, subset_sample_count,
+                                                             ranking_keys[y][x] | subset_sample_count);
+                // use second half (+ flip)
+                errors_flipped[1][y][x] =
+                    evaluate_integrals(samples[y][x].data(), subset_sample_count, subset_sample_count,
+                                       ranking_keys[y][x] | subset_sample_count);
+                min_error = std::min(min_error, errors_flipped[0][y][x]);
+                max_error = std::max(max_error, errors_flipped[1][y][x]);
             }
         }
-        samples_subset /= 2;
+        // normalize (for easier debugging)
+        for (int j = 0; j < TileRes * TileRes; ++j) {
+            float &e0 = errors[0][j / TileRes][j % TileRes];
+            e0 = (e0 - min_error) / (max_error - min_error);
+            float &e1 = errors[1][j / TileRes][j % TileRes];
+            e1 = (e1 - min_error) / (max_error - min_error);
+            float &ef0 = errors_flipped[0][j / TileRes][j % TileRes];
+            ef0 = (ef0 - min_error) / (max_error - min_error);
+            float &ef1 = errors_flipped[1][j / TileRes][j % TileRes];
+            ef1 = (ef1 - min_error) / (max_error - min_error);
+        }
+
+        float best_proximity = 0.0f, last_proximity = 0.0f;
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                best_proximity += calc_pixel_proximity(x, y, errors[0], errors[1]);
+            }
+        }
+        last_proximity = best_proximity;
+
+        float T = 1.0f, T_min = 0.0001f;
+        for (int iter = 0; iter < 100000; ++iter) {
+            // Randomly flip one pixel
+            const int px = uniform_px(gen), py = uniform_px(gen);
+
+            ranking_keys[py][px] ^= subset_sample_count;
+            std::swap(errors[0][py][px], errors_flipped[0][py][px]);
+            std::swap(errors[1][py][px], errors_flipped[1][py][px]);
+
+            float total_proximity = 0.0f;
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    total_proximity += calc_pixel_proximity(x, y, errors[0], errors[1]);
+                }
+            }
+
+            const float acceptance_prob = std::exp((total_proximity - last_proximity) / T);
+            if (total_proximity > last_proximity || uniform_unorm_float(gen) < acceptance_prob) {
+                // Accept this iteration (don't swap back)
+                last_proximity = total_proximity;
+                if (total_proximity > best_proximity) {
+                    best_proximity = total_proximity;
+                    printf("Best proximity (%i) = %f\n", subset_sample_count, best_proximity);
+
+                    { // save current state
+                        snprintf(name_buf, sizeof(name_buf), "ranking_keys_%i.bin", SampleCount);
+                        std::ofstream out_file(name_buf, std::ios::binary);
+                        out_file.write((const char *)ranking_keys, sizeof(ranking_keys));
+                    }
+
+                    snprintf(name_buf, sizeof(name_buf), "best_errors_%i_%i.tga", SampleCount, subset_sample_count);
+                    WriteTGA(&errors[0][0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
+                }
+            } else {
+                // Discard this iteration (swap values back)
+                ranking_keys[py][px] ^= subset_sample_count;
+                std::swap(errors[0][py][px], errors_flipped[0][py][px]);
+                std::swap(errors[1][py][px], errors_flipped[1][py][px]);
+            }
+
+            T = std::max(T * 0.99f, T_min);
+        }
+
+        --subset_count_pow;
     }
 
     return 0;
