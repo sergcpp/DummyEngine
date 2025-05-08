@@ -10,8 +10,54 @@ const int SampleCountPow = 2;
 const int SampleCount = (1 << SampleCountPow);
 const int TileRes = 128;
 const int TestIntegralsCount = 1000;
-// Ideally this should be equal to tile res, but it's too slow due to quadratic complexity
+// Ideally this should be equal to tile res, but this would be too slow due to quadratic complexity
 const int ProximityRadius = 4;
+
+static const float GaussOmega = 2.1f;
+static const float GaussTable[] = {std::exp(-0 / GaussOmega),  //
+                                   std::exp(-1 / GaussOmega),  //
+                                   std::exp(-2 / GaussOmega),  //
+                                   std::exp(-3 / GaussOmega),  //
+                                   std::exp(-4 / GaussOmega),  //
+                                   std::exp(-5 / GaussOmega),  //
+                                   std::exp(-6 / GaussOmega),  //
+                                   std::exp(-7 / GaussOmega),  //
+                                   std::exp(-8 / GaussOmega),  //
+                                   std::exp(-9 / GaussOmega),  //
+                                   std::exp(-10 / GaussOmega), //
+                                   std::exp(-11 / GaussOmega), //
+                                   std::exp(-12 / GaussOmega), //
+                                   std::exp(-13 / GaussOmega), //
+                                   std::exp(-14 / GaussOmega), //
+                                   std::exp(-15 / GaussOmega), //
+                                   std::exp(-16 / GaussOmega), //
+                                   std::exp(-17 / GaussOmega), //
+                                   std::exp(-18 / GaussOmega), //
+                                   std::exp(-19 / GaussOmega), //
+                                   std::exp(-20 / GaussOmega), //
+                                   std::exp(-21 / GaussOmega), //
+                                   std::exp(-22 / GaussOmega), //
+                                   std::exp(-23 / GaussOmega), //
+                                   std::exp(-24 / GaussOmega), //
+                                   std::exp(-25 / GaussOmega), //
+                                   std::exp(-26 / GaussOmega), //
+                                   std::exp(-27 / GaussOmega), //
+                                   std::exp(-28 / GaussOmega), //
+                                   std::exp(-29 / GaussOmega), //
+                                   std::exp(-30 / GaussOmega), //
+                                   std::exp(-31 / GaussOmega), //
+                                   std::exp(-32 / GaussOmega), //
+                                   std::exp(-33 / GaussOmega), //
+                                   std::exp(-34 / GaussOmega), //
+                                   std::exp(-35 / GaussOmega), //
+                                   std::exp(-36 / GaussOmega), //
+                                   std::exp(-37 / GaussOmega), //
+                                   std::exp(-38 / GaussOmega), //
+                                   std::exp(-39 / GaussOmega), //
+                                   std::exp(-40 / GaussOmega), //
+                                   std::exp(-41 / GaussOmega), //
+                                   std::exp(-42 / GaussOmega), //
+                                   std::exp(-43 / GaussOmega)};
 
 float test_function(float x, float min, float max) {
     if (x > min && x < max) {
@@ -57,10 +103,10 @@ float calc_pixel_proximity(const int ox, const int oy, const float values[TileRe
                 continue;
             }
 
-            const float GaussOmega = 2.1f;
-
-            total_proximity += std::exp(-((x - ox) * (x - ox) + (y - oy) * (y - oy)) / GaussOmega) *
-                               (values[wrapped_y][wrapped_x] - v) * (values[wrapped_y][wrapped_x] - v);
+            const int i = (x - ox) * (x - ox) + (y - oy) * (y - oy);
+            // total_proximity += std::exp(-((x - ox) * (x - ox) + (y - oy) * (y - oy)) / GaussOmega) *
+            //                    (values[wrapped_y][wrapped_x] - v) * (values[wrapped_y][wrapped_x] - v);
+            total_proximity += GaussTable[i] * (values[wrapped_y][wrapped_x] - v) * (values[wrapped_y][wrapped_x] - v);
         }
     }
 
@@ -80,10 +126,9 @@ float calc_pixel_proximity(const int ox, const int oy, const float values_first[
                 continue;
             }
 
-            const float GaussOmega = 2.1f;
-
+            const int i = (x - ox) * (x - ox) + (y - oy) * (y - oy);
             total_proximity +=
-                std::exp(-((x - ox) * (x - ox) + (y - oy) * (y - oy)) / GaussOmega) *
+                GaussTable[i] *
                 ((values_first[wrapped_y][wrapped_x] - v_first) * (values_first[wrapped_y][wrapped_x] - v_first) +
                  (values_last[wrapped_y][wrapped_x] - v_last) * (values_last[wrapped_y][wrapped_x] - v_last));
         }
@@ -112,11 +157,20 @@ int main(int argc, char *argv[]) {
     Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(123456, /*SampleCount*/ 256, 1);
 
     uint32_t initial_samples[SampleCount];
+
+    int a_counter = 0, b_counter = 0;
     for (int i = 0; i < SampleCount; ++i) {
         initial_samples[i] = uint32_t(pmj_samples[i].get<0>() * 16777216.0) << 8;
+        /*const bool is_class_a = Ray::popcount(uint32_t(i) & 0xaaaaaaaa) & 1;
+        if (is_class_a) {
+            initial_samples[a_counter++] = uint32_t(pmj_samples[i].get<0>() * 16777216.0) << 8;
+        } else {
+            initial_samples[(SampleCount / 2) + b_counter++] = uint32_t(pmj_samples[i].get<0>() * 16777216.0) << 8;
+        }*/
     }
+    // assert(a_counter + b_counter == SampleCount);
 
-    uint32_t scrambling_keys[TileRes][TileRes];
+    static uint32_t scrambling_keys[TileRes][TileRes];
     for (int y = 0; y < TileRes; ++y) {
         for (int x = 0; x < TileRes; ++x) {
             scrambling_keys[y][x] = hash(y * TileRes + x) & 0xffffff00;
@@ -174,7 +228,7 @@ int main(int argc, char *argv[]) {
     snprintf(name_buf, sizeof(name_buf), "best_errors_%i_%i.tga", SampleCount, SampleCount);
     WriteTGA(&errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
 
-    const int AnnealingIterations = 10000000;
+    const int AnnealingIterations = 1000000; // 32000;
 
     float best_proximity = 0.0f, last_proximity = 0.0f;
     for (int y = 0; y < TileRes; ++y) {
@@ -186,7 +240,7 @@ int main(int argc, char *argv[]) {
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1), uniform_px(0, TileRes - 1);
+    std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1);
     std::uniform_real_distribution<float> uniform_unorm_float(0.0f, 1.0f);
 
     float T = 1.0f, T_min = 0.00001f;
@@ -236,7 +290,7 @@ int main(int argc, char *argv[]) {
 
                 snprintf(name_buf, sizeof(name_buf), "best_errors_%i_%i.tga", SampleCount, SampleCount);
                 WriteTGA(&errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
-                WriteTGA(&proximity[0][0], TileRes, TileRes, TileRes, 1, 3, "best_proximity.tga");
+                // WriteTGA(&proximity[0][0], TileRes, TileRes, TileRes, 1, 3, "best_proximity.tga");
             }
         } else {
             // Discard this iteration (swap values back)
@@ -253,64 +307,56 @@ int main(int argc, char *argv[]) {
     // now we need to find ranking keys which make it work for any power of 2 samples subset
 
     int subset_count_pow = SampleCountPow - 1;
-    while (subset_count_pow) {
+    while (subset_count_pow >= 0) {
         const uint32_t subset_sample_count = (1u << subset_count_pow);
 
         float min_error = FLT_MAX, max_error = 0.0f;
-        float errors[2][TileRes][TileRes], errors_flipped[2][TileRes][TileRes];
+        float errors[TileRes][TileRes], errors_flipped[TileRes][TileRes];
         for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
-                // use first half (no flip)
-                errors[0][y][x] = evaluate_integrals(samples[y][x].data(), 0, subset_sample_count, ranking_keys[y][x]);
-                // use second half (no flip)
-                errors[1][y][x] = evaluate_integrals(samples[y][x].data(), subset_sample_count, subset_sample_count,
-                                                     ranking_keys[y][x]);
-                min_error = std::min(min_error, errors[0][y][x]);
-                max_error = std::max(max_error, errors[1][y][x]);
-                // use first half (+ flip)
-                errors_flipped[0][y][x] = evaluate_integrals(samples[y][x].data(), 0, subset_sample_count,
-                                                             ranking_keys[y][x] | subset_sample_count);
-                // use second half (+ flip)
-                errors_flipped[1][y][x] =
-                    evaluate_integrals(samples[y][x].data(), subset_sample_count, subset_sample_count,
-                                       ranking_keys[y][x] | subset_sample_count);
-                min_error = std::min(min_error, errors_flipped[0][y][x]);
-                max_error = std::max(max_error, errors_flipped[1][y][x]);
+                errors[y][x] = evaluate_integrals(samples[y][x].data(), 0, subset_sample_count, ranking_keys[y][x]);
+                errors_flipped[y][x] = evaluate_integrals(samples[y][x].data(), 0, subset_sample_count,
+                                                          ranking_keys[y][x] ^ subset_sample_count);
+                min_error = std::min(min_error, errors[y][x]);
+                max_error = std::max(max_error, errors[y][x]);
+                min_error = std::min(min_error, errors_flipped[y][x]);
+                max_error = std::max(max_error, errors_flipped[y][x]);
             }
         }
         // normalize (for easier debugging)
         for (int j = 0; j < TileRes * TileRes; ++j) {
-            float &e0 = errors[0][j / TileRes][j % TileRes];
-            e0 = (e0 - min_error) / (max_error - min_error);
-            float &e1 = errors[1][j / TileRes][j % TileRes];
-            e1 = (e1 - min_error) / (max_error - min_error);
-            float &ef0 = errors_flipped[0][j / TileRes][j % TileRes];
-            ef0 = (ef0 - min_error) / (max_error - min_error);
-            float &ef1 = errors_flipped[1][j / TileRes][j % TileRes];
-            ef1 = (ef1 - min_error) / (max_error - min_error);
+            float &e = errors[j / TileRes][j % TileRes];
+            e = (e - min_error) / (max_error - min_error);
+            float &ef = errors_flipped[j / TileRes][j % TileRes];
+            ef = (ef - min_error) / (max_error - min_error);
         }
 
         float best_proximity = 0.0f, last_proximity = 0.0f;
         for (int y = 0; y < TileRes; ++y) {
             for (int x = 0; x < TileRes; ++x) {
-                best_proximity += calc_pixel_proximity(x, y, errors[0], errors[1]);
+                best_proximity += calc_pixel_proximity(x, y, errors, errors_flipped);
             }
         }
         last_proximity = best_proximity;
 
+        const int IterationsCount = 1000000;
+
         float T = 1.0f, T_min = 0.0001f;
-        for (int iter = 0; iter < 100000; ++iter) {
+        for (int iter = 0; iter < IterationsCount; ++iter) {
+            if ((iter % 1000) == 0) {
+                printf("Iteration %i\n", iter);
+            }
             // Randomly flip one pixel
-            const int px = uniform_px(gen), py = uniform_px(gen);
+            const int index = uniform_index(gen);
+            const int py = index / TileRes, px = index % TileRes;
 
             ranking_keys[py][px] ^= subset_sample_count;
-            std::swap(errors[0][py][px], errors_flipped[0][py][px]);
-            std::swap(errors[1][py][px], errors_flipped[1][py][px]);
+            std::swap(errors[py][px], errors_flipped[py][px]);
 
             float total_proximity = 0.0f;
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    total_proximity += calc_pixel_proximity(x, y, errors[0], errors[1]);
+                    total_proximity += calc_pixel_proximity(x, y, errors, errors_flipped);
                 }
             }
 
@@ -329,13 +375,12 @@ int main(int argc, char *argv[]) {
                     }
 
                     snprintf(name_buf, sizeof(name_buf), "best_errors_%i_%i.tga", SampleCount, subset_sample_count);
-                    WriteTGA(&errors[0][0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
+                    WriteTGA(&errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                 }
             } else {
                 // Discard this iteration (swap values back)
                 ranking_keys[py][px] ^= subset_sample_count;
-                std::swap(errors[0][py][px], errors_flipped[0][py][px]);
-                std::swap(errors[1][py][px], errors_flipped[1][py][px]);
+                std::swap(errors[py][px], errors_flipped[py][px]);
             }
 
             T = std::max(T * 0.99f, T_min);
