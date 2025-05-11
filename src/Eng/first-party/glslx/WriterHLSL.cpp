@@ -1474,10 +1474,7 @@ void glslx::WriterHLSL::Write(TrUnit *tu, std::ostream &out_stream) {
                "void imageStore(RWTexture2D<int4> image, int2 P, int4 data) { image[P] = data; }\n"
                "void imageStore(RWTexture2D<uint> image, int2 P, uint4 data) { image[P] = data.x; }\n"
                "void imageStore(RWTexture2D<uint2> image, int2 P, uint4 data) { image[P] = data.xy; }\n"
-               "void imageStore(RWTexture2D<uint4> image, int2 P, uint4 data) { image[P] = data; }\n"
-               "bool2 greaterThanEqual(float2 x, float2 y) { return x >= y; }\n"
-               "bool3 greaterThanEqual(float3 x, float3 y) { return x >= y; }\n"
-               "bool4 greaterThanEqual(float4 x, float4 y) { return x >= y; }\n";
+               "void imageStore(RWTexture2D<uint4> image, int2 P, uint4 data) { image[P] = data; }\n";
         if (tu->type == eTrUnitType::Compute) {
             out_stream
                 << "static const uint gl_RayQueryCandidateIntersectionTriangleEXT = CANDIDATE_NON_OPAQUE_TRIANGLE;\n"
