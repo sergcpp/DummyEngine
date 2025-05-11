@@ -426,6 +426,10 @@ void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
 void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                         const AccelerationStructureData &acc_struct_data, FgResRef rt_geo_instances_res,
                                         FgResRef rt_obj_instances_res, FrameTextures &frame_textures) {
+    if (!ctx_.capabilities.hwrt && !ctx_.capabilities.swrt) {
+        return;
+    }
+
     using Stg = Ren::eStage;
     using Trg = Ren::eBindTarget;
 

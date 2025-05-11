@@ -862,6 +862,9 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 if (!raytracing_supported) {
                     _supported_stages_mask &= ~VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
                 }
+                if (!acc_struct_supported) {
+                    _supported_stages_mask &= ~VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+                }
 
                 this->device_properties = device_properties;
                 this->present_family_index = present_family_index;
