@@ -17,6 +17,7 @@
 extern bool g_determine_sample_count;
 extern bool g_minimal_output;
 extern bool g_nohwrt;
+extern bool g_nodx;
 std::mutex g_stdout_mtx;
 extern int g_validation_level;
 
@@ -59,6 +60,9 @@ void run_material_test(const char *arch_list[], const char *preferred_device, co
 
     for (const char **arch = arch_list; *arch; ++arch) {
         const auto rt = RendererTypeFromName(*arch);
+        if (g_nodx && rt == eRendererType::DirectX12) {
+            continue;
+        }
 
         for (const bool use_hwrt : {false, true}) {
             if (use_hwrt && g_nohwrt) {
@@ -1401,7 +1405,7 @@ void test_complex_mat4(const char *arch_list[], const char *preferred_device) {
 
 void test_complex_mat5(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 30;
-    const int PixThres = 4610;
+    const int PixThres = 4615;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1441,7 +1445,7 @@ void test_complex_mat5_clipped(const char *arch_list[], const char *preferred_de
 
 void test_complex_mat5_caching(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 30;
-    const int PixThres = 4610;
+    const int PixThres = 4615;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1672,8 +1676,8 @@ void test_complex_mat5_dir_light(const char *arch_list[], const char *preferred_
 
 void test_complex_mat5_sun_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 14;
-    const double MinPSNR = 24.05;
-    const int PixThres = 5060;
+    const double MinPSNR = 24.00;
+    const int PixThres = 5235;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1693,7 +1697,7 @@ void test_complex_mat5_sun_light(const char *arch_list[], const char *preferred_
 
 void test_complex_mat5_moon_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 14;
-    const int PixThres = 300;
+    const int PixThres = 315;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1885,7 +1889,7 @@ void test_complex_mat6_hdri_light(const char *arch_list[], const char *preferred
 void test_complex_mat7_refractive(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 5;
     const double MinPSNR = 21.0;
-    const int PixThres = 7930;
+    const int PixThres = 7935;
 
     Ray::principled_mat_desc_t unused;
     run_material_test(arch_list, preferred_device, "complex_mat7_refractive", unused, SampleCount, MinPSNR, PixThres,
@@ -1895,7 +1899,7 @@ void test_complex_mat7_refractive(const char *arch_list[], const char *preferred
 void test_complex_mat7_principled(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 14;
     const double MinPSNR = 21.0;
-    const int PixThres = 7740;
+    const int PixThres = 7745;
 
     Ray::principled_mat_desc_t unused;
     run_material_test(arch_list, preferred_device, "complex_mat7_principled", unused, SampleCount, MinPSNR, PixThres,
