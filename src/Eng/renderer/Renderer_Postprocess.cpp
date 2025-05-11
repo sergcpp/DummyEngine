@@ -128,7 +128,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 bloom_downsample.AddStorageImageOutput(output_name, params, Ren::eStage::ComputeShader);
         }
 
-        bloom_downsample.set_execute_cb([this, data, mip](FgBuilder &builder) {
+        bloom_downsample.set_execute_cb([this, data, mip, compressed](FgBuilder &builder) {
             FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
             FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
@@ -147,7 +147,7 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
                 (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
 
-            DispatchCompute(*pi_bloom_downsample_[mip == 0], grp_count, bindings, &uniform_params,
+            DispatchCompute(*pi_bloom_downsample_[compressed][mip == 0], grp_count, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }

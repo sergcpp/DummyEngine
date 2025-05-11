@@ -202,7 +202,7 @@ class Renderer {
         pi_shadow_filter_[3], pi_shadow_debug_;
     Ren::PipelineRef pi_sun_brightness_;
     // Bloom
-    Ren::PipelineRef pi_bloom_downsample_[2], pi_bloom_upsample_;
+    Ren::PipelineRef pi_bloom_downsample_[2][2], pi_bloom_upsample_;
     // Autoexposure
     Ren::PipelineRef pi_histogram_sample_, pi_histogram_exposure_;
     // Volumetrics

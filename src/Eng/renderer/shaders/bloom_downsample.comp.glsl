@@ -3,6 +3,7 @@
 #include "_cs_common.glsl"
 #include "bloom_interface.h"
 
+#pragma multi_compile _ COMPRESSED
 #pragma multi_compile _ TONEMAP
 
 LAYOUT_PARAMS uniform UniformParams {
