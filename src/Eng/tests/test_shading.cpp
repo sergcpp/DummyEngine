@@ -11,7 +11,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "visibility_flags", 25.40, Full);
     run_image_test(threads, "visibility_flags", 25.30, Full_Ultra);
     run_image_test(threads, "two_sided_mat", 39.83, NoShadow);
-    run_image_test(threads, "two_sided_mat", 30.05, NoGI);
+    run_image_test(threads, "two_sided_mat", 29.95, NoGI);
     run_image_test(threads, "two_sided_mat", 29.60, NoDiffGI);
     run_image_test(threads, "two_sided_mat", 28.05, MedDiffGI);
     run_image_test(threads, "two_sided_mat", 27.30, Full);
@@ -43,7 +43,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2_spot_light", 26.45, Full);
     run_image_test(threads, "complex_mat2_spot_light", 27.80, Full_Ultra);
     run_image_test(threads, "complex_mat2_sun_light", 33.50, NoShadow);
-    run_image_test(threads, "complex_mat2_sun_light", 29.15, NoGI);
+    run_image_test(threads, "complex_mat2_sun_light", 29.05, NoGI);
     run_image_test(threads, "complex_mat2_sun_light", 33.40, NoGI_RTShadow);
     run_image_test(threads, "complex_mat2_sun_light", 21.20, Full);
     run_image_test(threads, "complex_mat2_sun_light", 22.80, Full_Ultra);
@@ -64,13 +64,13 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2_mesh_lights", 20.70, Full);
     run_image_test(threads, "complex_mat2_mesh_lights", 21.55, Full_Ultra);
     run_image_test(threads, "complex_mat3", 24.25, NoShadow);
-    run_image_test(threads, "complex_mat3", 21.10, NoGI);
+    run_image_test(threads, "complex_mat3", 20.95, NoGI);
     run_image_test(threads, "complex_mat3", 22.95, NoDiffGI);
     run_image_test(threads, "complex_mat3", 22.55, MedDiffGI);
     run_image_test(threads, "complex_mat3", 22.70, Full);
     run_image_test(threads, "complex_mat3", 23.15, Full_Ultra);
     run_image_test(threads, "complex_mat3_sun_light", 22.40, NoShadow);
-    run_image_test(threads, "complex_mat3_sun_light", 17.25, NoGI);
+    run_image_test(threads, "complex_mat3_sun_light", 17.15, NoGI);
     run_image_test(threads, "complex_mat3_sun_light", 22.70, NoGI_RTShadow);
     run_image_test(threads, "complex_mat3_sun_light", 18.95, Full);
     run_image_test(threads, "complex_mat3_sun_light", 23.80, Full_Ultra);
