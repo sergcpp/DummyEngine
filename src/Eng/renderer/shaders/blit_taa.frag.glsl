@@ -10,9 +10,16 @@
 #pragma multi_compile _ TONEMAP
 #pragma multi_compile _ YCoCg
 #pragma multi_compile _ MOTION_BLUR
+#pragma multi_compile _ LOCKING
 #pragma multi_compile _ STATIC_ACCUMULATION
 
-#if defined(STATIC_ACCUMULATION) && (defined(CATMULL_ROM) || defined(ROUNDED_NEIBOURHOOD) || defined(TONEMAP) || defined(YCoCg) || defined(MOTION_BLUR))
+#if defined(STATIC_ACCUMULATION) && (defined(CATMULL_ROM) || defined(ROUNDED_NEIBOURHOOD) || defined(TONEMAP) || defined(YCoCg) || defined(MOTION_BLUR) || defined(LOCKING))
+    #pragma dont_compile
+#endif
+#if defined(ROUNDED_NEIBOURHOOD) && !defined(YCoCg)
+    #pragma dont_compile
+#endif
+#if defined(LOCKING) && !defined(YCoCg)
     #pragma dont_compile
 #endif
 
@@ -139,6 +146,8 @@ void main() {
         ivec2(-1, -1),  ivec2(1, -1),   ivec2(1, -1)
     );
 
+    bool set_lock = false;
+
 #if !defined(YCoCg) && !defined(ROUNDED_NEIBOURHOOD)
     vec3 col_avg = col_curr.xyz, col_var = col_curr.xyz * col_curr.xyz;
     ivec2 closest_frag = ivec2(0, 0);
@@ -193,8 +202,8 @@ void main() {
     #endif
 
     #if defined(YCoCg)
-        vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.x - col_min.x));
-        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.yz;
+        const vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.x - col_min.x));
+        const vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.yz;
         col_min.yz = chroma_center - chroma_extent;
         col_max.yz = chroma_center + chroma_extent;
         col_avg.yz = chroma_center;
@@ -202,36 +211,106 @@ void main() {
 
     vec3 closest_frag = FindClosestFragment_3x3(g_depth_curr, norm_uvs, texel_size);
     vec3 closest_vel = textureLod(g_velocity, closest_frag.xy, 0.0).xyz;
+
+#if defined(LOCKING)
+    if (g_params.significant_change < 0.5) {
+        const float diff_tl = max(col_tl.x, col_mc.x) / min(col_tl.x, col_mc.x);
+        const float diff_tc = max(col_tc.x, col_mc.x) / min(col_tc.x, col_mc.x);
+        const float diff_tr = max(col_tr.x, col_mc.x) / min(col_tr.x, col_mc.x);
+        const float diff_ml = max(col_ml.x, col_mc.x) / min(col_ml.x, col_mc.x);
+        const float diff_mr = max(col_mr.x, col_mc.x) / min(col_mr.x, col_mc.x);
+        const float diff_bl = max(col_bl.x, col_mc.x) / min(col_bl.x, col_mc.x);
+        const float diff_bc = max(col_bc.x, col_mc.x) / min(col_bc.x, col_mc.x);
+        const float diff_br = max(col_br.x, col_mc.x) / min(col_br.x, col_mc.x);
+
+        const float DissimilarThreshold = 1.05;
+
+        float dissimilar_min = HALF_MAX, dissimilar_max = 0.0;
+        uint mask = (1 << 4); // mark center as similar
+        if (diff_tl > 0.0 && diff_tl < DissimilarThreshold) { mask |= (1 << 0); } else { dissimilar_min = min(dissimilar_min, col_tl.x); dissimilar_max = max(dissimilar_max, col_tl.x); }
+        if (diff_tc > 0.0 && diff_tc < DissimilarThreshold) { mask |= (1 << 1); } else { dissimilar_min = min(dissimilar_min, col_tc.x); dissimilar_max = max(dissimilar_max, col_tc.x); }
+        if (diff_tr > 0.0 && diff_tr < DissimilarThreshold) { mask |= (1 << 2); } else { dissimilar_min = min(dissimilar_min, col_tr.x); dissimilar_max = max(dissimilar_max, col_tr.x); }
+        if (diff_ml > 0.0 && diff_ml < DissimilarThreshold) { mask |= (1 << 3); } else { dissimilar_min = min(dissimilar_min, col_ml.x); dissimilar_max = max(dissimilar_max, col_ml.x); }
+        if (diff_mr > 0.0 && diff_mr < DissimilarThreshold) { mask |= (1 << 5); } else { dissimilar_min = min(dissimilar_min, col_mr.x); dissimilar_max = max(dissimilar_max, col_mr.x); }
+        if (diff_bl > 0.0 && diff_bl < DissimilarThreshold) { mask |= (1 << 6); } else { dissimilar_min = min(dissimilar_min, col_bl.x); dissimilar_max = max(dissimilar_max, col_bl.x); }
+        if (diff_bc > 0.0 && diff_bc < DissimilarThreshold) { mask |= (1 << 7); } else { dissimilar_min = min(dissimilar_min, col_bc.x); dissimilar_max = max(dissimilar_max, col_bc.x); }
+        if (diff_br > 0.0 && diff_br < DissimilarThreshold) { mask |= (1 << 8); } else { dissimilar_min = min(dissimilar_min, col_br.x); dissimilar_max = max(dissimilar_max, col_br.x); }
+
+        set_lock = col_mc.x > dissimilar_max || col_mc.x < dissimilar_min;
+
+        //
+        // Reject locking if any full quad is similar (it's not a tiny feature then)
+        //
+        // Upper left quad: + + -
+        //                  + + -
+        //                  - - -
+        //
+        set_lock = set_lock && ((mask & 0x01B) != 0x01B);
+        //
+        // Upper right quad: - + +
+        //                   - + +
+        //                   - - -
+        //
+        set_lock = set_lock && ((mask & 0x036) != 0x036);
+        //
+        // Bottom left quad: - - -
+        //                   + + -
+        //                   + + -
+        //
+        set_lock = set_lock && ((mask & 0x0D8) != 0x0D8);
+        //
+        // Bottom right quad: - - -
+        //                    - + +
+        //                    - + +
+        //
+        set_lock = set_lock && ((mask & 0x1B0) != 0x1B0);
+    }
+#endif // LOCKING
+
 #endif
 
     vec2 hist_uvs = norm_uvs - (closest_vel.xy / g_params.tex_size);
-    vec4 col_hist = col_curr;
+    vec4 col_hist = vec4(col_curr.xyz, 0.0);
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
         col_hist = SampleColor(g_color_hist, hist_uvs);
     }
 
-    // Relax neighbourhood clamping/clipping if variance is high
-    if (depth > 0.0 && g_params.significant_change < 0.5) {
-        const float blend = saturate(1.0 - length(closest_vel.xy) / 4.0);
-        col_min.x = col_min.x - blend * sqrt(col_hist.w);
-        col_max.x = col_max.x + blend * sqrt(col_hist.w);
-    #if defined(YCoCg)
-        vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.x - col_min.x));
-        vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.yz;
-        col_min.yz = chroma_center - chroma_extent;
-        col_max.yz = chroma_center + chroma_extent;
-        col_avg.yz = chroma_center;
-    #endif
+    const float lum_curr = Luma(col_curr.xyz);
+    const float lum_hist = Luma(col_hist.xyz);
+
+    float lock_status = col_hist.w;
+#if defined(LOCKING)
+    if (set_lock) {
+        lock_status = (lock_status != 0.0 ? 2.0 : 1.0);
+    } else {
+        // decay lock with time
+        lock_status = saturate(lock_status - (1.0 / 12.0));
     }
 
-    col_hist.xyz = ClipAABB(col_min, col_max, col_hist.xyz);
-    //col_hist.xyz = clamp(col_hist.xyz, col_min, col_max);
+    const vec2 next_uvs = norm_uvs + (closest_vel.xy / g_params.tex_size);
+    if (any(lessThan(hist_uvs, vec2(0.0))) && any(greaterThan(hist_uvs, vec2(1.0)))) {
+        lock_status = 0.0;
+    }
+
+    const float lum_diff = 1.0 - max(lum_curr, lum_hist) / min(lum_curr, lum_hist);
+    if (lum_diff > 0.1) {
+        lock_status = 0.0;
+    }
+
+    const float reactive_factor = saturate((lum_diff - 0.1) * 1.0);
+    lock_status *= (1.0 - reactive_factor);
+
+    const float k = saturate(4.0 - length(closest_vel.xy));
+    lock_status *= k;
+#endif // LOCKING
+
+    const vec3 clamped_hist = ClipAABB(col_min, col_max, col_hist.xyz);
+
+    const float history_contribution = saturate(4.0 * lock_status);
+    col_hist.xyz = mix(clamped_hist, col_hist.xyz, history_contribution);
 
     const float HistoryWeightMin = 0.88;
-    const float HistoryWeightMax = 0.97;
-
-    float lum_curr = Luma(col_curr.xyz);
-    float lum_hist = Luma(col_hist.xyz);
+    const float HistoryWeightMax = 0.93;
 
     float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.2);
     float unbiased_weight = 1.0 - unbiased_diff;
@@ -260,10 +339,7 @@ void main() {
     }
 #endif // MOTION_BLUR
 
-    const float variance = mix(unbiased_diff * unbiased_diff, col_hist.w, history_weight);
-    const float k = saturate(2.0 - length(closest_vel.xy));
-
-    g_out_color = vec4(TonemapInvert(col_screen), variance * k);
-    g_out_history = vec4(TonemapInvert(col_temporal), variance * k);
+    g_out_color = vec4(TonemapInvert(col_screen), lock_status);
+    g_out_history = vec4(TonemapInvert(col_temporal), lock_status);
 #endif // STATIC_ACCUMULATION
 }

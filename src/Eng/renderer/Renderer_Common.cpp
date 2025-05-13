@@ -159,11 +159,12 @@ void Eng::Renderer::InitPipelines() {
     blit_gauss_prog_ = sh_.LoadProgram("internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
     blit_ao_prog_ = sh_.LoadProgram("internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
     blit_bilateral_prog_ = sh_.LoadProgram("internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
-    blit_taa_prog_[0] = sh_.LoadProgram("internal/blit_taa.vert.glsl",
-                                        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg.frag.glsl");
-    blit_taa_prog_[1] =
+    blit_taa_prog_[0] =
         sh_.LoadProgram("internal/blit_taa.vert.glsl",
-                        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR.frag.glsl");
+                        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
+    blit_taa_prog_[1] = sh_.LoadProgram(
+        "internal/blit_taa.vert.glsl",
+        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR;LOCKING.frag.glsl");
     blit_taa_static_prog_ =
         sh_.LoadProgram("internal/blit_taa.vert.glsl", "internal/blit_taa@STATIC_ACCUMULATION.frag.glsl");
     blit_ssr_prog_ = sh_.LoadProgram("internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
