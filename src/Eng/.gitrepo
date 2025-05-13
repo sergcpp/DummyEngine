@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = d668a88f3608f5eae5426bc7c92891e73eb79093
+	branch = px_locking
+	commit = 577ee33fc5670d0103c4fd340e69d469ba9be711
 	method = merge
 	cmdver = 0.4.6
-	parent = 35fd1525032a1737974fa26ef00967125cef677e
+	parent = 2b5fe9eb051d7f91c8fbb6f000c7cd91274a634e
