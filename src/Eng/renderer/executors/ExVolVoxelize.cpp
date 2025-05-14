@@ -29,7 +29,8 @@ void Eng::ExVolVoxelize::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
 void Eng::ExVolVoxelize::Execute_SWRT(FgBuilder &builder) {
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocBuf &random_seq_buf = builder.GetReadBuffer(args_->random_seq);
+    FgAllocBuf &bn_pmj_seq_buf = builder.GetReadBuffer(args_->bn_pmj_seq);
+
     FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
     FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
     FgAllocBuf &tlas_buf = builder.GetReadBuffer(args_->tlas_buf);
@@ -49,7 +50,7 @@ void Eng::ExVolVoxelize::Execute_SWRT(FgBuilder &builder) {
     }
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::UTBuf, Fog::RANDOM_SEQ_BUF_SLOT, *random_seq_buf.ref},
+                                     {Ren::eBindTarget::UTBuf, Fog::BN_PMJ_SEQ_BUF_SLOT, *bn_pmj_seq_buf.ref},
                                      {Ren::eBindTarget::SBufRO, Fog::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
                                      {Ren::eBindTarget::SBufRO, Fog::MATERIAL_BUF_SLOT, *materials_buf.ref},
                                      {Ren::eBindTarget::UTBuf, Fog::BLAS_BUF_SLOT, *blas_buf.ref},
