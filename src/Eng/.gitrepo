@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = bn_experiment
-	commit = 08b53d8b8b597b28bb44d0c9e8834b280edc8e5e
+	branch = mem_priority
+	commit = d709f259df8160a20618cfa08a96546a8792711e
 	method = merge
 	cmdver = 0.4.6
-	parent = bc5becbebf90c23142127e414cbcc93f5ae1a925
+	parent = 4cb90c77db678baa3fed3e57294db638fe453887
