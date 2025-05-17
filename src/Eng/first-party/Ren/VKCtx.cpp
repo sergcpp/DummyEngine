@@ -656,9 +656,17 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], const int enabl
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PAGEABLE_DEVICE_LOCAL_MEMORY_FEATURES_EXT};
     pageable_mem_features.pageableDeviceLocalMemory = VK_TRUE;
 
+    VkPhysicalDeviceMemoryPriorityFeaturesEXT memory_prio_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT
+    };
+    memory_prio_features.memoryPriority = VK_TRUE;
+
     if (this->pageable_memory_supported) {
         (*pp_next) = &pageable_mem_features;
         pp_next = &pageable_mem_features.pNext;
+
+        (*pp_next) = &memory_prio_features;
+        pp_next = &memory_prio_features.pNext;
     }
 
 #if defined(VK_USE_PLATFORM_MACOS_MVK)

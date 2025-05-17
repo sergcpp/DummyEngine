@@ -177,8 +177,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, int validation_leve
         const VkResult res = api_ctx_->vkCreateDebugReportCallbackEXT(api_ctx_->instance, &callback_create_info,
                                                                       nullptr, &api_ctx_->debug_callback);
         if (res != VK_SUCCESS) {
-            log->Error("Failed to create debug report callback");
-            return false;
+            log->Warning("Failed to create debug report callback");
         }
     }
 

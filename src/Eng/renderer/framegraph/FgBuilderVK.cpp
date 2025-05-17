@@ -264,11 +264,20 @@ bool Eng::FgBuilder::AllocateNeededResources_MemHeaps() {
         VkMemoryAllocateInfo mem_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
         mem_alloc_info.allocationSize = total_heap_size;
         mem_alloc_info.memoryTypeIndex = i;
+        const void **pp_next = &mem_alloc_info.pNext;
+
+        VkMemoryPriorityAllocateInfoEXT prio_info = {VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT};
+        prio_info.priority = 1.0f; // highest priority
+        if (api_ctx->pageable_memory_supported) {
+            (*pp_next) = &prio_info;
+            pp_next = &prio_info.pNext;
+        }
 
         VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
+        additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
         if (api_ctx->raytracing_supported) {
-            additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
-            mem_alloc_info.pNext = &additional_flags;
+            (*pp_next) = &additional_flags;
+            pp_next = &additional_flags.pNext;
         }
 
         auto &heap = memory_heaps_.emplace_back();
