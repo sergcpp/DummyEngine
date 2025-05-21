@@ -1251,9 +1251,9 @@ Ren::ApiContext::~ApiContext() {
     }
 }
 
-bool Ren::MatchDeviceNames(const char *name, const char *pattern) {
-    std::regex match_name(pattern);
-    return std::regex_search(name, match_name) || strcmp(name, pattern) == 0;
+bool Ren::MatchDeviceNames(std::string_view name, std::string_view pattern) {
+    std::regex match_name(pattern.data());
+    return std::regex_search(name.data(), match_name) || name == pattern;
 }
 
 bool Ren::ReadbackTimestampQueries(ApiContext *api_ctx, int i) {

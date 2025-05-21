@@ -302,7 +302,7 @@ inline VkDeviceSize AlignTo(VkDeviceSize size, VkDeviceSize alignment) {
     return alignment * ((size + alignment - 1) / alignment);
 }
 
-bool MatchDeviceNames(const char *name, const char *pattern);
+bool MatchDeviceNames(std::string_view name, std::string_view pattern);
 
 class ILog;
 
