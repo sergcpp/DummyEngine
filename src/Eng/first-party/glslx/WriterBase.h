@@ -7,9 +7,10 @@
 #include "parser/AST.h"
 
 namespace glslx {
-enum class eOutputFlags { WriteTabs, Semicolon, NewLine };
-const Bitmask<eOutputFlags> DefaultOutputFlags =
-    Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::Semicolon | eOutputFlags::NewLine;
+enum class eOutputFlags { WriteTabs, VarType, VarName, VarArrSize, Coma, Semicolon, NewLine };
+const Bitmask<eOutputFlags> DefaultOutputFlags = Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::VarType |
+                                                 eOutputFlags::VarName | eOutputFlags::VarArrSize |
+                                                 eOutputFlags::Semicolon | eOutputFlags::NewLine;
 
 struct writer_config_t {
     std::string tab = "    ";
@@ -36,7 +37,5 @@ class WriterBase {
 
   public:
     explicit WriterBase(writer_config_t config) : config_(std::move(config)) {}
-
-
 };
 } // namespace glslx

@@ -210,13 +210,17 @@ void glslx::WriterGLSL::Write_FunctionVariable(const ast_function_variable *vari
     if (variable->flags & eVariableFlags::Const) {
         out_stream << "const ";
     }
-    Write_Variable(variable, out_stream);
+    Write_Variable(variable, out_stream, output_flags);
     if (variable->initial_value) {
         out_stream << " = ";
         Write_Expression(variable->initial_value, false, out_stream);
     }
+    [[maybe_unused]] static const auto ComaOrSemicolon = Bitmask{eOutputFlags::Coma} | eOutputFlags::Semicolon;
+    assert((output_flags & ComaOrSemicolon) != ComaOrSemicolon);
     if (output_flags & eOutputFlags::Semicolon) {
         out_stream << ";";
+    } else if (output_flags & eOutputFlags::Coma) {
+        out_stream << ", ";
     }
     if (output_flags & eOutputFlags::NewLine) {
         out_stream << "\n";
@@ -244,10 +248,22 @@ void glslx::WriterGLSL::Write_EmptyStatement(const ast_empty_statement *statemen
 }
 
 void glslx::WriterGLSL::Write_DeclarationStatement(const ast_declaration_statement *statement, std::ostream &out_stream,
-                                                   const Bitmask<eOutputFlags> output_flags) {
+                                                   const Bitmask<eOutputFlags> _output_flags) {
     for (int i = 0; i < int(statement->variables.size()); ++i) {
-        if (i > 0 && (output_flags & eOutputFlags::WriteTabs)) {
+        if (i > 0 && (_output_flags & eOutputFlags::WriteTabs)) {
             Write_Tabs(out_stream);
+        }
+        static const auto ComaOrSemicolon = Bitmask{eOutputFlags::Coma} | eOutputFlags::Semicolon;
+        Bitmask<eOutputFlags> output_flags = _output_flags;
+        if ((output_flags & ComaOrSemicolon) == ComaOrSemicolon) {
+            if (i != int(statement->variables.size()) - 1) {
+                output_flags &= ~Bitmask{eOutputFlags::Semicolon};
+            } else {
+                output_flags &= ~Bitmask{eOutputFlags::Coma};
+            }
+            if (i != 0) {
+                output_flags &= ~Bitmask{eOutputFlags::VarType};
+            }
         }
         Write_FunctionVariable(statement->variables[i], out_stream, output_flags);
     }
@@ -354,14 +370,16 @@ void glslx::WriterGLSL::Write_ForStatement(const ast_for_statement *statement, s
     Write_LoopAttributes(statement->flow_params, out_stream);
     out_stream << "for (";
     if (statement->init) {
+        static const auto OutputFlags =
+            Bitmask{eOutputFlags::VarType} | eOutputFlags::VarName | eOutputFlags::VarArrSize | eOutputFlags::Semicolon;
         switch (statement->init->type) {
         case eStatement::Declaration:
             Write_DeclarationStatement(static_cast<ast_declaration_statement *>(statement->init), out_stream,
-                                       eOutputFlags::Semicolon);
+                                       OutputFlags | eOutputFlags::Coma);
             break;
         case eStatement::Expression:
             Write_ExpressionStatement(static_cast<ast_expression_statement *>(statement->init), out_stream,
-                                      eOutputFlags::Semicolon);
+                                      OutputFlags);
             break;
         default:
             break;
@@ -492,23 +510,25 @@ void glslx::WriterGLSL::Write_ArraySize(Span<const ast_constant_expression *cons
     }
 }
 
-void glslx::WriterGLSL::Write_Variable(const ast_variable *variable, std::ostream &out_stream, const bool name_only) {
-    if (name_only) {
+void glslx::WriterGLSL::Write_Variable(const ast_variable *variable, std::ostream &out_stream,
+                                       const Bitmask<eOutputFlags> output_flags) {
+    if (output_flags & eOutputFlags::VarType) {
+        if (variable->flags & eVariableFlags::Precise) {
+            out_stream << "precise ";
+        }
+
+        Write_Precision(variable->precision, out_stream);
+
+        Write_Type(variable->base_type, out_stream);
+        out_stream << " ";
+    }
+    if (output_flags & eOutputFlags::VarName) {
         out_stream << variable->name;
-        return;
     }
-
-    if (variable->flags & eVariableFlags::Precise) {
-        out_stream << "precise ";
-    }
-
-    Write_Precision(variable->precision, out_stream);
-
-    Write_Type(variable->base_type, out_stream);
-    out_stream << " " << variable->name;
-
-    if (variable->flags & eVariableFlags::Array) {
-        Write_ArraySize(variable->array_sizes, out_stream);
+    if (output_flags & eOutputFlags::VarArrSize) {
+        if (variable->flags & eVariableFlags::Array) {
+            Write_ArraySize(variable->array_sizes, out_stream);
+        }
     }
 }
 
@@ -691,7 +711,7 @@ void glslx::WriterGLSL::Write_GlobalVariable(const ast_global_variable *variable
 }
 
 void glslx::WriterGLSL::Write_VariableIdentifier(const ast_variable_identifier *expression, std::ostream &out_stream) {
-    Write_Variable(expression->variable, out_stream, true /* name_only */);
+    Write_Variable(expression->variable, out_stream, eOutputFlags::VarName /* name only */);
 }
 
 void glslx::WriterGLSL::Write_FieldOrSwizzle(const ast_field_or_swizzle *expression, std::ostream &out_stream) {

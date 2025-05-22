@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = mem_priority
-	commit = d709f259df8160a20618cfa08a96546a8792711e
+	branch = master
+	commit = 1ec64882490363c7e5fbcc72c8e1665b9aa559ab
 	method = merge
 	cmdver = 0.4.6
 	parent = 4cb90c77db678baa3fed3e57294db638fe453887

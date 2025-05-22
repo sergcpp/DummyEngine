@@ -12,7 +12,8 @@ class WriterGLSL : public WriterBase {
     void Write_Builtin(const ast_builtin *builtin, std::ostream &out_stream);
     void Write_Type(const ast_type *type, std::ostream &out_stream);
     void Write_ArraySize(Span<const ast_constant_expression *const> array_sizes, std::ostream &out_stream);
-    void Write_Variable(const ast_variable *variable, std::ostream &out_stream, bool name_only = false);
+    void Write_Variable(const ast_variable *variable, std::ostream &out_stream,
+                        Bitmask<eOutputFlags> output_flags = DefaultOutputFlags);
     void Write_Layout(Span<const ast_layout_qualifier *const> qualifiers, std::ostream &out_stream);
     void Write_Storage(eStorage storage, std::ostream &out_stream);
     void Write_AuxStorage(eAuxStorage aux_storage, std::ostream &out_stream);

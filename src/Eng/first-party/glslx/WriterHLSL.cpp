@@ -213,32 +213,31 @@ std::pair<int, int> get_binding_and_set(Span<const ast_layout_qualifier *const> 
 extern const HashSet32<const char *> g_atomic_functions{
     {"atomicAdd", "atomicAnd", "atomicOr", "atomicXor", "atomicMin", "atomicMax", "atomicCompSwap", "atomicExchange"}};
 
-const HashMap32<std::string, std::string> g_hlsl_function_mapping{
-    {"intBitsToFloat", "asfloat"},
-    {"uintBitsToFloat", "asfloat"},
-    {"floatBitsToInt", "asint"},
-    {"floatBitsToUint", "asuint"},
-    {"fract", "frac"},
-    {"fma", "mad"},
-    {"inversesqrt", "rsqrt"},
-    {"mix", "lerp"},
-    {"barrier", "GroupMemoryBarrierWithGroupSync"},
-    {"groupMemoryBarrier", "AllMemoryBarrier"},
-    {"atomicAdd", "InterlockedAdd"},
-    {"atomicAnd", "InterlockedAnd"},
-    {"atomicOr", "InterlockedOr"},
-    {"atomicXor", "InterlockedXor"},
-    {"atomicMin", "InterlockedMin"},
-    {"atomicMax", "InterlockedMax"},
-    {"atomicExchange", "InterlockedExchange"},
-    {"atomicCompSwap", "InterlockedCompareExchange"},
-    {"subgroupAll", "WaveActiveAllTrue"},
-    {"subgroupAny", "WaveActiveAnyTrue"},
-    {"subgroupAdd", "WaveActiveSum"},
-    {"subgroupElect", "WaveIsFirstLane"},
-    {"subgroupExclusiveAdd", "WavePrefixSum"},
-    {"bitCount", "countbits"},
-    {"nonuniformEXT", "NonUniformResourceIndex"}};
+const HashMap32<std::string, std::string> g_hlsl_function_mapping{{"intBitsToFloat", "asfloat"},
+                                                                  {"uintBitsToFloat", "asfloat"},
+                                                                  {"floatBitsToInt", "asint"},
+                                                                  {"floatBitsToUint", "asuint"},
+                                                                  {"fract", "frac"},
+                                                                  {"fma", "mad"},
+                                                                  {"inversesqrt", "rsqrt"},
+                                                                  {"mix", "lerp"},
+                                                                  {"barrier", "GroupMemoryBarrierWithGroupSync"},
+                                                                  {"groupMemoryBarrier", "AllMemoryBarrier"},
+                                                                  {"atomicAdd", "InterlockedAdd"},
+                                                                  {"atomicAnd", "InterlockedAnd"},
+                                                                  {"atomicOr", "InterlockedOr"},
+                                                                  {"atomicXor", "InterlockedXor"},
+                                                                  {"atomicMin", "InterlockedMin"},
+                                                                  {"atomicMax", "InterlockedMax"},
+                                                                  {"atomicExchange", "InterlockedExchange"},
+                                                                  {"atomicCompSwap", "InterlockedCompareExchange"},
+                                                                  {"subgroupAll", "WaveActiveAllTrue"},
+                                                                  {"subgroupAny", "WaveActiveAnyTrue"},
+                                                                  {"subgroupAdd", "WaveActiveSum"},
+                                                                  {"subgroupElect", "WaveIsFirstLane"},
+                                                                  {"subgroupExclusiveAdd", "WavePrefixSum"},
+                                                                  {"bitCount", "countbits"},
+                                                                  {"nonuniformEXT", "NonUniformResourceIndex"}};
 } // namespace glslx
 
 void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool nested, std::ostream &out_stream) {
@@ -441,13 +440,17 @@ void glslx::WriterHLSL::Write_FunctionVariable(const ast_function_variable *vari
     if (variable->flags & eVariableFlags::Const) {
         out_stream << "const ";
     }
-    Write_Variable(variable, {}, out_stream);
+    Write_Variable(variable, {}, out_stream, output_flags);
     if (variable->initial_value) {
         out_stream << " = ";
         Write_Expression(variable->initial_value, false, out_stream);
     }
+    [[maybe_unused]] static const auto ComaOrSemicolon = Bitmask{eOutputFlags::Coma} | eOutputFlags::Semicolon;
+    assert((output_flags & ComaOrSemicolon) != ComaOrSemicolon);
     if (output_flags & eOutputFlags::Semicolon) {
         out_stream << ";";
+    } else if (output_flags & eOutputFlags::Coma) {
+        out_stream << ", ";
     }
     if (output_flags & eOutputFlags::NewLine) {
         out_stream << "\n";
@@ -475,10 +478,22 @@ void glslx::WriterHLSL::Write_EmptyStatement(const ast_empty_statement *statemen
 }
 
 void glslx::WriterHLSL::Write_DeclarationStatement(const ast_declaration_statement *statement, std::ostream &out_stream,
-                                                   const Bitmask<eOutputFlags> output_flags) {
+                                                   const Bitmask<eOutputFlags> _output_flags) {
     for (int i = 0; i < int(statement->variables.size()); ++i) {
-        if (i > 0 && (output_flags & eOutputFlags::WriteTabs)) {
+        if (i > 0 && (_output_flags & eOutputFlags::WriteTabs)) {
             Write_Tabs(out_stream);
+        }
+        static const auto ComaOrSemicolon = Bitmask{eOutputFlags::Coma} | eOutputFlags::Semicolon;
+        Bitmask<eOutputFlags> output_flags = _output_flags;
+        if ((output_flags & ComaOrSemicolon) == ComaOrSemicolon) {
+            if (i != int(statement->variables.size()) - 1) {
+                output_flags &= ~Bitmask{eOutputFlags::Semicolon};
+            } else {
+                output_flags &= ~Bitmask{eOutputFlags::Coma};
+            }
+            if (i != 0) {
+                output_flags &= ~Bitmask{eOutputFlags::VarType};
+            }
         }
         Write_FunctionVariable(statement->variables[i], out_stream, output_flags);
     }
@@ -585,14 +600,16 @@ void glslx::WriterHLSL::Write_ForStatement(const ast_for_statement *statement, s
     Write_LoopAttributes(statement->flow_params, out_stream);
     out_stream << "for (";
     if (statement->init) {
+        static const auto OutputFlags =
+            Bitmask{eOutputFlags::VarType} | eOutputFlags::VarName | eOutputFlags::VarArrSize | eOutputFlags::Semicolon;
         switch (statement->init->type) {
         case eStatement::Declaration:
             Write_DeclarationStatement(static_cast<ast_declaration_statement *>(statement->init), out_stream,
-                                       eOutputFlags::Semicolon);
+                                       OutputFlags | eOutputFlags::Coma);
             break;
         case eStatement::Expression:
             Write_ExpressionStatement(static_cast<ast_expression_statement *>(statement->init), out_stream,
-                                      eOutputFlags::Semicolon);
+                                      OutputFlags);
             break;
         default:
             // TODO: report error
@@ -723,94 +740,98 @@ void glslx::WriterHLSL::Write_ArraySize(Span<const ast_constant_expression *cons
 }
 
 void glslx::WriterHLSL::Write_Variable(const ast_variable *variable, Span<const ast_layout_qualifier *const> qualifiers,
-                                       std::ostream &out_stream, const bool name_only) {
+                                       std::ostream &out_stream, const Bitmask<eOutputFlags> output_flags) {
     // if (variable->is_precise) {
     //     out_stream << "precise ";
     // }
 
-    if (name_only) {
+    if (output_flags & eOutputFlags::VarType) {
+        Write_Type(variable->base_type, out_stream);
+        if (requires_template_argument(variable->base_type)) {
+            bool found = false;
+            for (const ast_layout_qualifier *q : qualifiers) {
+                if (q->initial_value) {
+                    continue;
+                }
+                if (strcmp(q->name, "rgba32f") == 0 || strcmp(q->name, "rgba16f") == 0) {
+                    out_stream << "<float4>";
+                    found = true;
+                } else if (strcmp(q->name, "rgba16") == 0 || strcmp(q->name, "rgb10_a2") == 0 ||
+                           strcmp(q->name, "rgba8") == 0) {
+                    out_stream << "<unorm float4>";
+                    found = true;
+                } else if (strcmp(q->name, "rgba16_snorm") == 0 || strcmp(q->name, "rgba8_snorm") == 0) {
+                    out_stream << "<snorm float4>";
+                    found = true;
+                } else if (strcmp(q->name, "rgba32i") == 0 || strcmp(q->name, "rgba16i") == 0 ||
+                           strcmp(q->name, "rgba8i") == 0) {
+                    out_stream << "<int4>";
+                    found = true;
+                } else if (strcmp(q->name, "rgba32ui") == 0 || strcmp(q->name, "rgba16ui") == 0 ||
+                           strcmp(q->name, "rgb10_a2ui") == 0 || strcmp(q->name, "rgba8ui") == 0) {
+                    out_stream << "<uint4>";
+                    found = true;
+                } else if (strcmp(q->name, "r11f_g11f_b10f") == 0) {
+                    out_stream << "<float3>";
+                    found = true;
+                } else if (strcmp(q->name, "rg32f") == 0 || strcmp(q->name, "rg16f") == 0) {
+                    out_stream << "<float2>";
+                    found = true;
+                } else if (strcmp(q->name, "rg16") == 0 || strcmp(q->name, "rg8") == 0) {
+                    out_stream << "<unorm float2>";
+                    found = true;
+                } else if (strcmp(q->name, "rg16_snorm") == 0 || strcmp(q->name, "rg8_snorm") == 0) {
+                    out_stream << "<snorm float2>";
+                    found = true;
+                } else if (strcmp(q->name, "rg32i") == 0 || strcmp(q->name, "rg16i") == 0 ||
+                           strcmp(q->name, "rg8i") == 0) {
+                    out_stream << "<int2>";
+                    found = true;
+                } else if (strcmp(q->name, "rg32ui") == 0 || strcmp(q->name, "rg16ui") == 0 ||
+                           strcmp(q->name, "rg8ui") == 0) {
+                    out_stream << "<uint2>";
+                    found = true;
+                } else if (strcmp(q->name, "r32f") == 0 || strcmp(q->name, "r16f") == 0) {
+                    out_stream << "<float>";
+                    found = true;
+                } else if (strcmp(q->name, "r16") == 0 || strcmp(q->name, "r8") == 0) {
+                    out_stream << "<unorm float>";
+                    found = true;
+                } else if (strcmp(q->name, "r16_snorm") == 0 || strcmp(q->name, "r8_snorm") == 0) {
+                    out_stream << "<snorm float>";
+                    found = true;
+                } else if (strcmp(q->name, "r32i") == 0 || strcmp(q->name, "r16i") == 0 ||
+                           strcmp(q->name, "r8i") == 0) {
+                    out_stream << "<int>";
+                    found = true;
+                } else if (strcmp(q->name, "r32ui") == 0 || strcmp(q->name, "r16ui") == 0 ||
+                           strcmp(q->name, "r8ui") == 0) {
+                    out_stream << "<uint>";
+                    found = true;
+                }
+                if (found) {
+                    break;
+                }
+            }
+            if (!found) {
+                if (is_int_image(variable->base_type)) {
+                    out_stream << "<int4>";
+                } else if (is_uint_image(variable->base_type)) {
+                    out_stream << "<uint4>";
+                } else {
+                    out_stream << "<float4>";
+                }
+            }
+        }
+        out_stream << " ";
+    }
+    if (output_flags & eOutputFlags::VarName) {
         out_stream << variable->name;
-        return;
     }
-
-    Write_Type(variable->base_type, out_stream);
-    if (requires_template_argument(variable->base_type)) {
-        bool found = false;
-        for (const ast_layout_qualifier *q : qualifiers) {
-            if (q->initial_value) {
-                continue;
-            }
-            if (strcmp(q->name, "rgba32f") == 0 || strcmp(q->name, "rgba16f") == 0) {
-                out_stream << "<float4>";
-                found = true;
-            } else if (strcmp(q->name, "rgba16") == 0 || strcmp(q->name, "rgb10_a2") == 0 ||
-                       strcmp(q->name, "rgba8") == 0) {
-                out_stream << "<unorm float4>";
-                found = true;
-            } else if (strcmp(q->name, "rgba16_snorm") == 0 || strcmp(q->name, "rgba8_snorm") == 0) {
-                out_stream << "<snorm float4>";
-                found = true;
-            } else if (strcmp(q->name, "rgba32i") == 0 || strcmp(q->name, "rgba16i") == 0 ||
-                       strcmp(q->name, "rgba8i") == 0) {
-                out_stream << "<int4>";
-                found = true;
-            } else if (strcmp(q->name, "rgba32ui") == 0 || strcmp(q->name, "rgba16ui") == 0 ||
-                       strcmp(q->name, "rgb10_a2ui") == 0 || strcmp(q->name, "rgba8ui") == 0) {
-                out_stream << "<uint4>";
-                found = true;
-            } else if (strcmp(q->name, "r11f_g11f_b10f") == 0) {
-                out_stream << "<float3>";
-                found = true;
-            } else if (strcmp(q->name, "rg32f") == 0 || strcmp(q->name, "rg16f") == 0) {
-                out_stream << "<float2>";
-                found = true;
-            } else if (strcmp(q->name, "rg16") == 0 || strcmp(q->name, "rg8") == 0) {
-                out_stream << "<unorm float2>";
-                found = true;
-            } else if (strcmp(q->name, "rg16_snorm") == 0 || strcmp(q->name, "rg8_snorm") == 0) {
-                out_stream << "<snorm float2>";
-                found = true;
-            } else if (strcmp(q->name, "rg32i") == 0 || strcmp(q->name, "rg16i") == 0 || strcmp(q->name, "rg8i") == 0) {
-                out_stream << "<int2>";
-                found = true;
-            } else if (strcmp(q->name, "rg32ui") == 0 || strcmp(q->name, "rg16ui") == 0 ||
-                       strcmp(q->name, "rg8ui") == 0) {
-                out_stream << "<uint2>";
-                found = true;
-            } else if (strcmp(q->name, "r32f") == 0 || strcmp(q->name, "r16f") == 0) {
-                out_stream << "<float>";
-                found = true;
-            } else if (strcmp(q->name, "r16") == 0 || strcmp(q->name, "r8") == 0) {
-                out_stream << "<unorm float>";
-                found = true;
-            } else if (strcmp(q->name, "r16_snorm") == 0 || strcmp(q->name, "r8_snorm") == 0) {
-                out_stream << "<snorm float>";
-                found = true;
-            } else if (strcmp(q->name, "r32i") == 0 || strcmp(q->name, "r16i") == 0 || strcmp(q->name, "r8i") == 0) {
-                out_stream << "<int>";
-                found = true;
-            } else if (strcmp(q->name, "r32ui") == 0 || strcmp(q->name, "r16ui") == 0 || strcmp(q->name, "r8ui") == 0) {
-                out_stream << "<uint>";
-                found = true;
-            }
-            if (found) {
-                break;
-            }
+    if (output_flags & eOutputFlags::VarArrSize) {
+        if (variable->flags & eVariableFlags::Array) {
+            Write_ArraySize(variable->array_sizes, out_stream);
         }
-        if (!found) {
-            if (is_int_image(variable->base_type)) {
-                out_stream << "<int4>";
-            } else if (is_uint_image(variable->base_type)) {
-                out_stream << "<uint4>";
-            } else {
-                out_stream << "<float4>";
-            }
-        }
-    }
-    out_stream << " " << variable->name;
-
-    if (variable->flags & eVariableFlags::Array) {
-        Write_ArraySize(variable->array_sizes, out_stream);
     }
 }
 
@@ -1048,7 +1069,7 @@ void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable
 }
 
 void glslx::WriterHLSL::Write_VariableIdentifier(const ast_variable_identifier *expression, std::ostream &out_stream) {
-    Write_Variable(expression->variable, {}, out_stream, true /* name_only */);
+    Write_Variable(expression->variable, {}, out_stream, eOutputFlags::VarName /* name_only */);
 }
 
 void glslx::WriterHLSL::Write_FieldOrSwizzle(const ast_field_or_swizzle *expression, std::ostream &out_stream) {

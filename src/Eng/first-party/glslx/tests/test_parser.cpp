@@ -696,6 +696,7 @@ void test_parser() {
                                      "    for(i = 0;; ) { }\n"
                                      "    [[unroll, dependency_infinite]] for(int i = 0; i < 10;) { }\n"
                                      "    [[dont_unroll, dependency_length(4)]] for(int i = 0; i < 10; i++) { }\n"
+                                     "    for (int i = 0, j = 10; i <= 10; ++i, --j) {}\n"
                                      "}\n";
         static const char expected[] = "void main() {\n"
                                        "    int i = 0;\n"
@@ -706,6 +707,8 @@ void test_parser() {
                                        "    [[unroll, dependency_infinite]] for (int i = 0; (i < 10);) {\n"
                                        "    }\n"
                                        "    [[dont_unroll, dependency_length(4)]] for (int i = 0; (i < 10); i++) {\n"
+                                       "    }\n"
+                                       "    for (int i = 0, j = 10; (i <= 10); (++i, --j)) {\n"
                                        "    }\n"
                                        "}\n";
 
