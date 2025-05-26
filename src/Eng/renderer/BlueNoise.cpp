@@ -6,7 +6,7 @@
 
 namespace Eng {
 namespace BNInternal {
-static const int SampleCountPow = 0;
+static const int SampleCountPow = 6;
 static const int SampleCount = (1 << SampleCountPow);
 static const int TileRes = 128;
 static const int TotalFunctionsCount = 4 * 1024;
@@ -55,6 +55,10 @@ float test_function_2D(const Ren::Vec2f x, const Ren::Vec2f o, const float angle
     const float d = Dot(x - o, normal);
     return float(d >= 0.0f);
 }
+float test_function_2D(const Ren::Vec2f x, const Ren::Vec2f o, const Ren::Vec2f normal) {
+    const float d = Dot(x - o, normal);
+    return float(d >= 0.0f);
+}
 
 void evaluate_integrals(const float samples[], const uint32_t sample_count, const uint32_t sample_sorting_key,
                         float out_errors[]) {
@@ -73,9 +77,7 @@ void evaluate_integrals(const float samples[], const uint32_t sample_count, cons
 }
 
 struct heavyside_func_t {
-    Ren::Vec2f o;
-    float angle;
-
+    Ren::Vec2f o, n;
     float integral_val;
 };
 
@@ -88,7 +90,7 @@ void evaluate_integrals(const heavyside_func_t functions[], const Ren::Vec2f sam
 
         float result = 0.0f;
         for (uint32_t k = 0; k < sample_count; ++k) {
-            result += test_function_2D(samples[k ^ sample_sorting_key], f.o, f.angle);
+            result += test_function_2D(samples[k ^ sample_sorting_key], f.o, f.n);
         }
         result /= sample_count;
 
@@ -590,10 +592,12 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
 
     { // Generate randomly oriented heavysides
         std::mt19937 gen(45678);
+        functions.resize(TotalFunctionsCount);
         for (int i = 0; i < TotalFunctionsCount; ++i) {
-            heavyside_func_t &f = functions.emplace_back();
+            heavyside_func_t &f = functions[i];
             f.o = Ren::Vec2f(uniform_unorm_float(gen), uniform_unorm_float(gen));
-            f.angle = 2.0f * Ren::Pi<float>() * uniform_unorm_float(gen);
+            const float angle = 2.0f * Ren::Pi<float>() * uniform_unorm_float(gen);
+            f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
 
             std::vector<float> test_data(256 * 256);
 
@@ -603,7 +607,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                 for (int x = 0; x < 256; ++x) {
                     const float fx = float(x) / 255.0f;
 
-                    const float val = test_function_2D(Ren::Vec2f(fx, fy), f.o, f.angle);
+                    const float val = test_function_2D(Ren::Vec2f(fx, fy), f.o, f.n);
                     integral_val += val;
                     test_data[y * 256 + x] = val;
                 }
@@ -649,10 +653,11 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                 best_proximity += data->proximity[y][x];
             }
         }
+        float last_proximity = best_proximity;
         printf("Best proximity = %f\n", best_proximity);
 
         const int ParallelCount = 16;
-        const int ParallelIterations = 100;
+        const int ParallelIterations = 128;
 
         std::mt19937 local_gens[ParallelCount];
         std::unique_ptr<bn_data_t> local_data[ParallelCount];
@@ -661,17 +666,26 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
             local_data[i] = std::make_unique<bn_data_t>();
         }
 
-        for (int iter = 0; iter < MaxScramblingIterations && best_proximity < ProximityGoal;
-             iter += ParallelIterations) {
+        for (int iter = 0; iter < MaxScramblingIterations && best_proximity < ProximityGoal; ++iter) {
             if ((iter % 1000) == 0) {
                 printf("Annealing Iteration %i\n", iter);
             }
 
+#if 1
             float local_best_proximities[ParallelCount];
 
 #pragma omp parallel for
             for (int i = 0; i < ParallelCount; ++i) {
-                *local_data[i] = *data;
+                memcpy(&local_data[i]->scrambling_keys[0][0], &data->scrambling_keys[0][0],
+                       sizeof(data->scrambling_keys));
+                memcpy(&local_data[i]->samples[0][0], &data->samples[0][0], sizeof(data->samples));
+                memcpy(&local_data[i]->proximity[0][0], &data->proximity[0][0], sizeof(data->proximity));
+                for (int y = 0; y < TileRes; ++y) {
+                    for (int x = 0; x < TileRes; ++x) {
+                        local_data[i]->errors[y][x].assign(begin(data->errors[y][x]), end(data->errors[y][x]));
+                    }
+                }
+                //*local_data[i] = *data;
                 local_best_proximities[i] = best_proximity;
 
                 float last_proximity = best_proximity;
@@ -750,6 +764,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
             }
 
             // Choose the best run
+            const float prev_best_proximity = best_proximity;
 
             int best_index = -1;
             for (int i = 0; i < ParallelCount; ++i) {
@@ -762,7 +777,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
             if (best_index != -1) {
                 *data = *local_data[best_index];
 
-                printf("Best proximity = %f\n", best_proximity);
+                printf("Best proximity = %f (+%f)\n", best_proximity, best_proximity - prev_best_proximity);
 
                 { // save current state
                     snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/scrambling_keys_2D_%ispp.bin",
@@ -789,7 +804,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                 WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
             }
 
-#if 0
+#else
             // Randomly swap two scrambling keys
             const int index1 = uniform_index(gen), index2 = uniform_index(gen);
             const int oy1 = index1 / TileRes, ox1 = index1 % TileRes;
@@ -831,8 +846,8 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                 // Accept this iteration (don't swap back)
                 last_proximity = total_proximity;
                 if (total_proximity > best_proximity) {
+                    printf("Best proximity = %f (+%f)\n", total_proximity, total_proximity - best_proximity);
                     best_proximity = total_proximity;
-                    printf("Best proximity = %f\n", best_proximity);
 
                     { // save current state
                         snprintf(name_buf, sizeof(name_buf),
