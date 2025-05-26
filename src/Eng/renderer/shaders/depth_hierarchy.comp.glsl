@@ -1,6 +1,6 @@
 #version 430 core
 #ifndef NO_SUBGROUP
-#extension GL_KHR_shader_subgroup_quad : require
+#extension GL_KHR_shader_subgroup_shuffle : require
 #endif
 
 #include "_cs_common.glsl"
@@ -42,10 +42,10 @@ float ReduceSrcDepth4(ivec2 base) {
 
 #if !defined(NO_SUBGROUP)
 float ReduceQuad(float v) {
-    float v0 = v;
-    float v1 = subgroupQuadSwapHorizontal(v);
-    float v2 = subgroupQuadSwapVertical(v);
-    float v3 = subgroupQuadSwapDiagonal(v);
+    const float v0 = v;
+    const float v1 = subgroupShuffleXor(v, 1u); // vertical opposite
+    const float v2 = subgroupShuffleXor(v, 2u); // horisontal opposite
+    const float v3 = subgroupShuffleXor(v, 3u); // diagonal opposite
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 #endif // !defined(NO_SUBGROUP)
@@ -207,26 +207,12 @@ void main() {
         }
     }
 
-    int required_mips = g_params.depth_size.z;
+    const int required_mips = g_params.depth_size.z;
     if (required_mips <= 1) return;
 
-    //
-    // Remap index for easier reduction (rearrange to nested quads)
-    //
-    //  00 01 02 03 04 05 06 07           00 01 08 09 10 11 18 19
-    //  08 09 0a 0b 0c 0d 0e 0f           02 03 0a 0b 12 13 1a 1b
-    //  10 11 12 13 14 15 16 17           04 05 0c 0d 14 15 1c 1d
-    //  18 19 1a 1b 1c 1d 1e 1f   ---->   06 07 0e 0f 16 17 1e 1f
-    //  20 21 22 23 24 25 26 27           20 21 28 29 30 31 38 39
-    //  28 29 2a 2b 2c 2d 2e 2f           22 23 2a 2b 32 33 3a 3b
-    //  30 31 32 33 34 35 36 37           24 25 2c 2d 34 35 3c 3d
-    //  38 39 3a 3b 3c 3d 3e 3f           26 27 2e 2f 36 37 3e 3f
-
-    uint sub_64 = uint(gl_LocalInvocationIndex % 64);
-    uvec2 sub_8x8 = uvec2(bitfieldInsert(bitfieldExtract(sub_64, 2, 3), sub_64, 0, 1),
-                          bitfieldInsert(bitfieldExtract(sub_64, 3, 3), bitfieldExtract(sub_64, 1, 2), 0, 2));
-    uint x = sub_8x8.x + 8 * ((gl_LocalInvocationIndex / 64) % 2);
-    uint y = sub_8x8.y + 8 * ((gl_LocalInvocationIndex / 64) / 2);
+    const uvec2 sub_8x8 = RemapLane8x8(gl_LocalInvocationIndex % 64);
+    const uint x = sub_8x8.x + 8 * ((gl_LocalInvocationIndex / 64) % 2);
+    const uint y = sub_8x8.y + 8 * ((gl_LocalInvocationIndex / 64) / 2);
 
     { // Init mip levels 1 and 2
         float v[4];
