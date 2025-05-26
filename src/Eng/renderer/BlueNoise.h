@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <Ren/MVec.h>
+
 //
 // Blue noise optimization described in "A Low-Discrepancy Sampler that Distributes Monte Carlo Errors as a Blue Noise
 // in Screen Space" https://hal.science/hal-02150657
@@ -11,6 +13,8 @@ namespace Eng {
 // This is a slow single-threaded implementation, but it's ok for now
 // Initial samples must be 24-bit fixed-point numbers obtained with 'uint32_t(val * 16777216.0) << 8'
 void Generate1D_BlueNoiseTiles_StepFunction(const uint32_t initial_samples[]);
+
+void Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_samples[]);
 
 /*
 #include <Ray/internal/PMJ.h>

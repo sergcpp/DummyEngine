@@ -6,12 +6,12 @@
 
 namespace Eng {
 namespace BNInternal {
-static const int SampleCountPow = 4;
+static const int SampleCountPow = 6;
 static const int SampleCount = (1 << SampleCountPow);
 static const int TileRes = 128;
-static const int TotalFunctionsCount = 1024;
+static const int TotalFunctionsCount = 4 * 1024;
 // Ideally this should be equal to tile res, but this would be too slow due to quadratic complexity
-static const int ProximityRadius = 4;
+static const int ProximityRadius = 2;
 static const float ProximityGoal = 6500.0f;
 static const int MaxScramblingIterations = 100000;
 static const int MaxSortingIterations = 1000000;
@@ -42,13 +42,19 @@ static const float GaussTable[] = {
     std::exp(-84 / GaussOmega), std::exp(-85 / GaussOmega), std::exp(-86 / GaussOmega), std::exp(-87 / GaussOmega)};
 
 // Simple step
-float test_function(float x, float min, float max) {
+float test_function_1D(float x, float min, float max) {
     if (x > min && x < max) {
         return 1.0f;
     }
     return 0.0f;
 }
-float integral_val(float min, float max) { return max - min; }
+float test_function_1D_integral(float min, float max) { return max - min; }
+
+float test_function_2D(const Ren::Vec2f x, const Ren::Vec2f o, const float angle) {
+    const Ren::Vec2f normal(std::cos(angle), std::sin(angle));
+    const float d = Dot(x - o, normal);
+    return float(d >= 0.0f);
+}
 
 void evaluate_integrals(const float samples[], const uint32_t sample_count, const uint32_t sample_sorting_key,
                         float out_errors[]) {
@@ -57,12 +63,36 @@ void evaluate_integrals(const float samples[], const uint32_t sample_count, cons
 
         float result = 0.0f;
         for (uint32_t k = 0; k < sample_count; ++k) {
-            result += test_function(samples[k ^ sample_sorting_key], 0.0f - 0.1f, point);
+            result += test_function_1D(samples[k ^ sample_sorting_key], 0.0f - 0.1f, point);
         }
         result /= sample_count;
 
-        const float integral = integral_val(0.0f, point);
+        const float integral = test_function_1D_integral(0.0f, point);
         out_errors[j] = std::abs(result - integral);
+    }
+}
+
+struct heavyside_func_t {
+    Ren::Vec2f o;
+    float angle;
+
+    float integral_val;
+};
+
+void evaluate_integrals(const heavyside_func_t functions[], const Ren::Vec2f samples[], const uint32_t sample_count,
+                        const uint32_t sample_sorting_key, float out_errors[]) {
+    for (uint32_t j = 0; j < TotalFunctionsCount; ++j) {
+        const heavyside_func_t &f = functions[j];
+
+        const float point = float(j) / float(TotalFunctionsCount - 1);
+
+        float result = 0.0f;
+        for (uint32_t k = 0; k < sample_count; ++k) {
+            result += test_function_2D(samples[k ^ sample_sorting_key], f.o, f.angle);
+        }
+        result /= sample_count;
+
+        out_errors[j] = std::abs(result - f.integral_val);
     }
 }
 
@@ -134,6 +164,8 @@ uint32_t hash(uint32_t x) {
     x ^= x >> 16;
     return x;
 }
+
+uint32_t hash_combine(const uint32_t seed, const uint32_t v) { return seed ^ (v + (seed << 6) + (seed >> 2)); }
 
 void WriteTGA(const float *data, int pitch, const int w, const int h, int px_stride, const int bpp, const char *name);
 
@@ -488,6 +520,237 @@ void Eng::Generate1D_BlueNoiseTiles_StepFunction(const uint32_t initial_samples[
             }
         }
         out_file << "};\n";
+    }
+}
+
+void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_samples[]) {
+    using namespace BNInternal;
+
+    // Dynamic allocation is used to avoid stack overflow
+    struct bn_data_t {
+        std::vector<Ren::Vec2f> samples[TileRes][TileRes];
+        Ren::Vec2u scrambling_keys[TileRes][TileRes] = {};
+        uint32_t sorting_keys[TileRes][TileRes] = {};
+
+        // temp data
+        float proximity[TileRes][TileRes] = {};
+        std::vector<float> errors[TileRes][TileRes];
+        std::vector<float> errors_first[TileRes][TileRes], errors_last[TileRes][TileRes];
+        float debug_errors[TileRes][TileRes];
+    };
+    std::unique_ptr<bn_data_t> data = std::make_unique<bn_data_t>();
+
+    for (int y = 0; y < TileRes; ++y) {
+        for (int x = 0; x < TileRes; ++x) {
+            data->scrambling_keys[y][x][0] = hash_combine(hash(y * TileRes + x), 0x3a647d5b) & 0xffffff00;
+            data->scrambling_keys[y][x][1] = hash_combine(hash(y * TileRes + x), 0x9b10f813) & 0xffffff00;
+        }
+    }
+
+    char name_buf[128];
+    { // load scrambling keys
+        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/scrambling_keys_2D_%ispp.bin", SampleCount);
+        std::ifstream in_file(name_buf, std::ios::binary | std::ios::ate);
+        const size_t in_file_size = size_t(in_file.tellg());
+        if (in_file_size == sizeof(data->scrambling_keys)) {
+            in_file.seekg(0, std::ios::beg);
+            in_file.read((char *)data->scrambling_keys, sizeof(data->scrambling_keys));
+        }
+    }
+    { // load sorting keys
+        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/sorting_keys_2D_%ispp.bin", SampleCount);
+        std::ifstream in_file(name_buf, std::ios::binary | std::ios::ate);
+        const size_t in_file_size = size_t(in_file.tellg());
+        if (in_file_size == sizeof(data->sorting_keys)) {
+            in_file.seekg(0, std::ios::beg);
+            in_file.read((char *)data->sorting_keys, sizeof(data->sorting_keys));
+        }
+    }
+
+    // Calculate samples based on current scrambling
+    for (int y = 0; y < TileRes; ++y) {
+        for (int x = 0; x < TileRes; ++x) {
+            data->samples[y][x].resize(SampleCount);
+            for (int i = 0; i < SampleCount; ++i) {
+                const uint32_t scrambled_val_x = initial_samples[i][0] ^ data->scrambling_keys[y][x][0];
+                data->samples[y][x][i][0] = float(scrambled_val_x >> 8) / 16777216.0f;
+                const uint32_t scrambled_val_y = initial_samples[i][1] ^ data->scrambling_keys[y][x][1];
+                data->samples[y][x][i][1] = float(scrambled_val_y >> 8) / 16777216.0f;
+            }
+        }
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> uniform_unorm_float(0.0f, 1.0f);
+    std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1);
+    std::uniform_int_distribution<uint32_t> uniform_uint32(0, 0xffffffff);
+
+    std::vector<heavyside_func_t> functions;
+
+    { // Generate randomly oriented heavysides
+        std::mt19937 gen(45678);
+        for (int i = 0; i < TotalFunctionsCount; ++i) {
+            heavyside_func_t &f = functions.emplace_back();
+            f.o = Ren::Vec2f(uniform_unorm_float(gen), uniform_unorm_float(gen));
+            f.angle = 2.0f * Ren::Pi<float>() * uniform_unorm_float(gen);
+
+            std::vector<float> test_data(256 * 256);
+
+            double integral_val = 0.0;
+            for (int y = 0; y < 256; ++y) {
+                const float fy = float(y) / 255.0f;
+                for (int x = 0; x < 256; ++x) {
+                    const float fx = float(x) / 255.0f;
+
+                    const float val = test_function_2D(Ren::Vec2f(fx, fy), f.o, f.angle);
+                    integral_val += val;
+                    test_data[y * 256 + x] = val;
+                }
+            }
+            integral_val /= (256 * 256);
+
+            f.integral_val = float(integral_val);
+
+            /*if (i < 16) {
+                char name_buf[128];
+                snprintf(name_buf, sizeof(name_buf), "debug_%i.tga", i);
+                WriteTGA(test_data.data(), 256, 256, 256, 1, 3, name_buf);
+            }*/
+        }
+    }
+
+    {     // Scrambling optimization
+        { // Sample test functions
+            float min_error = FLT_MAX, max_error = 0.0f;
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    data->errors[y][x].resize(TotalFunctionsCount);
+                    evaluate_integrals(functions.data(), data->samples[y][x].data(), SampleCount,
+                                       data->sorting_keys[y][x], data->errors[y][x].data());
+                    for (const float e : data->errors[y][x]) {
+                        min_error = std::min(min_error, e);
+                        max_error = std::max(max_error, e);
+                    }
+                }
+            }
+            // normalize errors (for easier debugging)
+            for (int j = 0; j < TileRes * TileRes; ++j) {
+                for (float &e : data->errors[j / TileRes][j % TileRes]) {
+                    e = (e - min_error) / (max_error - min_error);
+                }
+            }
+        }
+
+        float best_proximity = 0.0f, last_proximity = 0.0f;
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                data->proximity[y][x] = calc_pixel_proximity(x, y, data->errors);
+                best_proximity += data->proximity[y][x];
+            }
+        }
+        last_proximity = best_proximity;
+        printf("Best proximity = %f\n", best_proximity);
+
+        for (int iter = 0; iter < MaxScramblingIterations && best_proximity < ProximityGoal; ++iter) {
+            if ((iter % 1000) == 0) {
+                printf("Annealing Iteration %i\n", iter);
+            }
+
+            // Randomly swap two scrambling keys
+            const int index1 = uniform_index(gen), index2 = uniform_index(gen);
+            const int oy1 = index1 / TileRes, ox1 = index1 % TileRes;
+            const int oy2 = index2 / TileRes, ox2 = index2 % TileRes;
+
+            std::swap(data->scrambling_keys[oy1][ox1], data->scrambling_keys[oy2][ox2]);
+            std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
+            std::swap(data->errors[oy1][ox1], data->errors[oy2][ox2]);
+
+            { // Recalc proximity around changed pixels
+                for (int y = oy1 - ProximityRadius; y <= oy1 + ProximityRadius; ++y) {
+                    const int wrapped_y = (y + TileRes) % TileRes;
+                    for (int x = ox1 - ProximityRadius; x <= ox1 + ProximityRadius; ++x) {
+                        const int wrapped_x = (x + TileRes) % TileRes;
+                        data->proximity[wrapped_y][wrapped_x] =
+                            calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
+                    }
+                }
+                for (int y = oy2 - ProximityRadius; y <= oy2 + ProximityRadius; ++y) {
+                    const int wrapped_y = (y + TileRes) % TileRes;
+                    for (int x = ox2 - ProximityRadius; x <= ox2 + ProximityRadius; ++x) {
+                        const int wrapped_x = (x + TileRes) % TileRes;
+                        data->proximity[wrapped_y][wrapped_x] =
+                            calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
+                    }
+                }
+            }
+            float total_proximity = 0.0f;
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    total_proximity += data->proximity[y][x];
+                }
+            }
+
+            // In simulated annealing we still accept worse permutation sometimes to avoid being stuck in local minimum
+            // (not really sure if this helps)
+            const float acceptance_prob = std::exp((total_proximity - last_proximity) * best_proximity);
+            if (total_proximity > last_proximity || uniform_unorm_float(gen) < acceptance_prob) {
+                // Accept this iteration (don't swap back)
+                last_proximity = total_proximity;
+                if (total_proximity > best_proximity) {
+                    best_proximity = total_proximity;
+                    printf("Best proximity = %f\n", best_proximity);
+
+                    { // save current state
+                        snprintf(name_buf, sizeof(name_buf),
+                                 "src/Eng/renderer/precomputed/scrambling_keys_2D_%ispp.bin", SampleCount);
+                        std::ofstream out_file(name_buf, std::ios::binary);
+                        out_file.write((const char *)data->scrambling_keys, sizeof(data->scrambling_keys));
+                    }
+
+                    float min_error = FLT_MAX, max_error = 0.0f;
+                    for (int j = 0; j < TileRes * TileRes; ++j) {
+                        data->debug_errors[j / TileRes][j % TileRes] = 0.0f;
+                        for (int k = 0; k < TotalFunctionsCount; ++k) {
+                            data->debug_errors[j / TileRes][j % TileRes] += data->errors[j / TileRes][j % TileRes][k];
+                        }
+                        min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
+                        max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                    }
+                    // normalize errors (for easier debugging)
+                    for (int j = 0; j < TileRes * TileRes; ++j) {
+                        float &e = data->debug_errors[j / TileRes][j % TileRes];
+                        e = (e - min_error) / (max_error - min_error);
+                    }
+                    snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount, SampleCount);
+                    WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
+                }
+            } else {
+                // Discard this iteration (swap values back)
+                std::swap(data->scrambling_keys[oy1][ox1], data->scrambling_keys[oy2][ox2]);
+                std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
+                std::swap(data->errors[oy1][ox1], data->errors[oy2][ox2]);
+
+                { // Recalc proximity around changed pixels
+                    for (int y = oy1 - ProximityRadius; y <= oy1 + ProximityRadius; ++y) {
+                        const int wrapped_y = (y + TileRes) % TileRes;
+                        for (int x = ox1 - ProximityRadius; x <= ox1 + ProximityRadius; ++x) {
+                            const int wrapped_x = (x + TileRes) % TileRes;
+                            data->proximity[wrapped_y][wrapped_x] =
+                                calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
+                        }
+                    }
+                    for (int y = oy2 - ProximityRadius; y <= oy2 + ProximityRadius; ++y) {
+                        const int wrapped_y = (y + TileRes) % TileRes;
+                        for (int x = ox2 - ProximityRadius; x <= ox2 + ProximityRadius; ++x) {
+                            const int wrapped_x = (x + TileRes) % TileRes;
+                            data->proximity[wrapped_y][wrapped_x] =
+                                calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
