@@ -656,7 +656,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
         float last_proximity = best_proximity;
         printf("Best proximity = %f\n", best_proximity);
 
-        const int ParallelCount = 16;
+        const int ParallelCount = 8;
         const int ParallelIterations = 128;
 
         std::mt19937 local_gens[ParallelCount];
