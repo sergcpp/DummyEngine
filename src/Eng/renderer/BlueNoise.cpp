@@ -678,10 +678,10 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
             for (int i = 0; i < ParallelCount; ++i) {
                 memcpy(&local_data[i]->scrambling_keys[0][0], &data->scrambling_keys[0][0],
                        sizeof(data->scrambling_keys));
-                memcpy(&local_data[i]->samples[0][0], &data->samples[0][0], sizeof(data->samples));
                 memcpy(&local_data[i]->proximity[0][0], &data->proximity[0][0], sizeof(data->proximity));
                 for (int y = 0; y < TileRes; ++y) {
                     for (int x = 0; x < TileRes; ++x) {
+                        local_data[i]->samples[y][x].assign(begin(data->samples[y][x]), end(data->samples[y][x]));
                         local_data[i]->errors[y][x].assign(begin(data->errors[y][x]), end(data->errors[y][x]));
                     }
                 }
