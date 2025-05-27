@@ -6,15 +6,19 @@
 
 namespace Eng {
 namespace BNInternal {
-static const int SampleCountPow = 6;
+static const int SampleCountPow = 2;
 static const int SampleCount = (1 << SampleCountPow);
 static const int TileRes = 128;
 static const int TotalFunctionsCount = 4 * 1024;
 // Ideally this should be equal to tile res, but this would be too slow due to quadratic complexity
 static const int ProximityRadius = 2;
 static const float ProximityGoal = 6500.0f;
-static const int MaxScramblingIterations = 1000000;
-static const int MaxSortingIterations = 1000000;
+static const int MaxScramblingIterations = 100000;
+static const int MaxSortingIterations = 100;
+
+static const float DeltaThreshold = 0.01f;
+static const int ParallelCount = 8;
+static const int ParallelIterations = 128;
 
 static const float GaussOmega = 2.1f;
 static const float GaussTable[] = {
@@ -588,6 +592,12 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
     std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1);
     std::uniform_int_distribution<uint32_t> uniform_uint32(0, 0xffffffff);
 
+    std::mt19937 local_gens[ParallelCount];
+    std::vector<bn_data_t> local_data(ParallelCount);
+    for (int i = 0; i < ParallelCount; ++i) {
+        local_gens[i] = std::mt19937(rd());
+    }
+
     std::vector<heavyside_func_t> functions;
 
     { // Generate randomly oriented heavysides
@@ -656,36 +666,31 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
         float last_proximity = best_proximity;
         printf("Best proximity = %f\n", best_proximity);
 
-        const int ParallelCount = 8;
-        const int ParallelIterations = 128;
-
-        std::mt19937 local_gens[ParallelCount];
-        std::unique_ptr<bn_data_t> local_data[ParallelCount];
         for (int i = 0; i < ParallelCount; ++i) {
-            local_gens[i] = std::mt19937(rd());
-            local_data[i] = std::make_unique<bn_data_t>();
+            local_data[i] = *data;
         }
 
-        for (int iter = 0; iter < MaxScramblingIterations && best_proximity < ProximityGoal; ++iter) {
+        float smooth_delta = FLT_MAX;
+
+        for (int iter = 0; iter < MaxScramblingIterations && smooth_delta >= DeltaThreshold; ++iter) {
             if ((iter % 1000) == 0) {
                 printf("Annealing Iteration %i\n", iter);
             }
 
-#if 1
             float local_best_proximities[ParallelCount];
 
 #pragma omp parallel for
             for (int i = 0; i < ParallelCount; ++i) {
-                memcpy(&local_data[i]->scrambling_keys[0][0], &data->scrambling_keys[0][0],
+                // Slightly faster than naive copy
+                memcpy(&local_data[i].scrambling_keys[0][0], &data->scrambling_keys[0][0],
                        sizeof(data->scrambling_keys));
-                memcpy(&local_data[i]->proximity[0][0], &data->proximity[0][0], sizeof(data->proximity));
+                memcpy(&local_data[i].proximity[0][0], &data->proximity[0][0], sizeof(data->proximity));
                 for (int y = 0; y < TileRes; ++y) {
                     for (int x = 0; x < TileRes; ++x) {
-                        local_data[i]->samples[y][x].assign(begin(data->samples[y][x]), end(data->samples[y][x]));
-                        local_data[i]->errors[y][x].assign(begin(data->errors[y][x]), end(data->errors[y][x]));
+                        local_data[i].samples[y][x].assign(begin(data->samples[y][x]), end(data->samples[y][x]));
+                        local_data[i].errors[y][x].assign(begin(data->errors[y][x]), end(data->errors[y][x]));
                     }
                 }
-                //*local_data[i] = *data;
                 local_best_proximities[i] = best_proximity;
 
                 float last_proximity = best_proximity;
@@ -695,38 +700,37 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                     const int oy1 = index1 / TileRes, ox1 = index1 % TileRes;
                     const int oy2 = index2 / TileRes, ox2 = index2 % TileRes;
 
-                    std::swap(local_data[i]->scrambling_keys[oy1][ox1], local_data[i]->scrambling_keys[oy2][ox2]);
-                    std::swap(local_data[i]->samples[oy1][ox1], local_data[i]->samples[oy2][ox2]);
-                    std::swap(local_data[i]->errors[oy1][ox1], local_data[i]->errors[oy2][ox2]);
+                    std::swap(local_data[i].scrambling_keys[oy1][ox1], local_data[i].scrambling_keys[oy2][ox2]);
+                    std::swap(local_data[i].samples[oy1][ox1], local_data[i].samples[oy2][ox2]);
+                    std::swap(local_data[i].errors[oy1][ox1], local_data[i].errors[oy2][ox2]);
 
                     { // Recalc proximity around changed pixels
                         for (int y = oy1 - ProximityRadius; y <= oy1 + ProximityRadius; ++y) {
                             const int wrapped_y = (y + TileRes) % TileRes;
                             for (int x = ox1 - ProximityRadius; x <= ox1 + ProximityRadius; ++x) {
                                 const int wrapped_x = (x + TileRes) % TileRes;
-                                local_data[i]->proximity[wrapped_y][wrapped_x] =
-                                    calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i]->errors);
+                                local_data[i].proximity[wrapped_y][wrapped_x] =
+                                    calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i].errors);
                             }
                         }
                         for (int y = oy2 - ProximityRadius; y <= oy2 + ProximityRadius; ++y) {
                             const int wrapped_y = (y + TileRes) % TileRes;
                             for (int x = ox2 - ProximityRadius; x <= ox2 + ProximityRadius; ++x) {
                                 const int wrapped_x = (x + TileRes) % TileRes;
-                                local_data[i]->proximity[wrapped_y][wrapped_x] =
-                                    calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i]->errors);
+                                local_data[i].proximity[wrapped_y][wrapped_x] =
+                                    calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i].errors);
                             }
                         }
                     }
                     float total_proximity = 0.0f;
                     for (int y = 0; y < TileRes; ++y) {
                         for (int x = 0; x < TileRes; ++x) {
-                            total_proximity += local_data[i]->proximity[y][x];
+                            total_proximity += local_data[i].proximity[y][x];
                         }
                     }
 
                     // In simulated annealing we still accept worse permutation sometimes to avoid being stuck in local
-                    // minimum
-                    // (not really sure if this helps)
+                    // minimum (not really sure if this helps)
                     const float acceptance_prob =
                         std::exp((total_proximity - last_proximity) * local_best_proximities[i]);
                     if (total_proximity > last_proximity || uniform_unorm_float(local_gens[i]) < acceptance_prob) {
@@ -737,25 +741,25 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                         }
                     } else {
                         // Discard this iteration (swap values back)
-                        std::swap(local_data[i]->scrambling_keys[oy1][ox1], local_data[i]->scrambling_keys[oy2][ox2]);
-                        std::swap(local_data[i]->samples[oy1][ox1], local_data[i]->samples[oy2][ox2]);
-                        std::swap(local_data[i]->errors[oy1][ox1], local_data[i]->errors[oy2][ox2]);
+                        std::swap(local_data[i].scrambling_keys[oy1][ox1], local_data[i].scrambling_keys[oy2][ox2]);
+                        std::swap(local_data[i].samples[oy1][ox1], local_data[i].samples[oy2][ox2]);
+                        std::swap(local_data[i].errors[oy1][ox1], local_data[i].errors[oy2][ox2]);
 
                         { // Recalc proximity around changed pixels
                             for (int y = oy1 - ProximityRadius; y <= oy1 + ProximityRadius; ++y) {
                                 const int wrapped_y = (y + TileRes) % TileRes;
                                 for (int x = ox1 - ProximityRadius; x <= ox1 + ProximityRadius; ++x) {
                                     const int wrapped_x = (x + TileRes) % TileRes;
-                                    local_data[i]->proximity[wrapped_y][wrapped_x] =
-                                        calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i]->errors);
+                                    local_data[i].proximity[wrapped_y][wrapped_x] =
+                                        calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i].errors);
                                 }
                             }
                             for (int y = oy2 - ProximityRadius; y <= oy2 + ProximityRadius; ++y) {
                                 const int wrapped_y = (y + TileRes) % TileRes;
                                 for (int x = ox2 - ProximityRadius; x <= ox2 + ProximityRadius; ++x) {
                                     const int wrapped_x = (x + TileRes) % TileRes;
-                                    local_data[i]->proximity[wrapped_y][wrapped_x] =
-                                        calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i]->errors);
+                                    local_data[i].proximity[wrapped_y][wrapped_x] =
+                                        calc_pixel_proximity(wrapped_x, wrapped_y, local_data[i].errors);
                                 }
                             }
                         }
@@ -775,9 +779,14 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
             }
 
             if (best_index != -1) {
-                *data = *local_data[best_index];
+                // Accept as a new state
+                *data = local_data[best_index];
 
-                printf("Best proximity = %f (+%f)\n", best_proximity, best_proximity - prev_best_proximity);
+                if (iter == 0) {
+                    smooth_delta = (best_proximity - prev_best_proximity);
+                }
+                smooth_delta = 0.97f * smooth_delta + 0.03f * (best_proximity - prev_best_proximity);
+                printf("Best proximity = %f (+%f)\n", best_proximity, smooth_delta);
 
                 { // save current state
                     snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/scrambling_keys_2D_%ispp.bin",
@@ -788,10 +797,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
 
                 float min_error = FLT_MAX, max_error = 0.0f;
                 for (int j = 0; j < TileRes * TileRes; ++j) {
-                    data->debug_errors[j / TileRes][j % TileRes] = 0.0f;
-                    for (int k = 0; k < TotalFunctionsCount; ++k) {
-                        data->debug_errors[j / TileRes][j % TileRes] += data->errors[j / TileRes][j % TileRes][k];
-                    }
+                    data->debug_errors[j / TileRes][j % TileRes] = data->errors[j / TileRes][j % TileRes][4];
                     min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
                     max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
                 }
@@ -803,65 +809,166 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                 snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount, SampleCount);
                 WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
             }
+        }
+    }
 
-#else
-            // Randomly swap two scrambling keys
-            const int index1 = uniform_index(gen), index2 = uniform_index(gen);
-            const int oy1 = index1 / TileRes, ox1 = index1 % TileRes;
-            const int oy2 = index2 / TileRes, ox2 = index2 % TileRes;
+    //
+    // At this point we have our scrambling keys optimized for SampleCount samples taken,
+    // now we need to find sorting keys which make it work for any power of 2 samples subset
+    //
 
-            std::swap(data->scrambling_keys[oy1][ox1], data->scrambling_keys[oy2][ox2]);
-            std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
-            std::swap(data->errors[oy1][ox1], data->errors[oy2][ox2]);
+    { // Sorting optimization
+        int subset_count_pow = SampleCountPow - 1;
+        while (subset_count_pow >= 0) {
+            const uint32_t subset_sample_count = (1u << subset_count_pow);
 
-            { // Recalc proximity around changed pixels
-                for (int y = oy1 - ProximityRadius; y <= oy1 + ProximityRadius; ++y) {
-                    const int wrapped_y = (y + TileRes) % TileRes;
-                    for (int x = ox1 - ProximityRadius; x <= ox1 + ProximityRadius; ++x) {
-                        const int wrapped_x = (x + TileRes) % TileRes;
-                        data->proximity[wrapped_y][wrapped_x] =
-                            calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
-                    }
-                }
-                for (int y = oy2 - ProximityRadius; y <= oy2 + ProximityRadius; ++y) {
-                    const int wrapped_y = (y + TileRes) % TileRes;
-                    for (int x = ox2 - ProximityRadius; x <= ox2 + ProximityRadius; ++x) {
-                        const int wrapped_x = (x + TileRes) % TileRes;
-                        data->proximity[wrapped_y][wrapped_x] =
-                            calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
-                    }
-                }
-            }
-            float total_proximity = 0.0f;
+            float min_error = FLT_MAX, max_error = 0.0f;
             for (int y = 0; y < TileRes; ++y) {
                 for (int x = 0; x < TileRes; ++x) {
-                    total_proximity += data->proximity[y][x];
+                    data->errors_first[y][x].resize(TotalFunctionsCount);
+                    evaluate_integrals(functions.data(), data->samples[y][x].data(), subset_sample_count,
+                                       data->sorting_keys[y][x], data->errors_first[y][x].data());
+                    data->errors_last[y][x].resize(TotalFunctionsCount);
+                    evaluate_integrals(functions.data(), data->samples[y][x].data(), subset_sample_count,
+                                       data->sorting_keys[y][x] ^ subset_sample_count, data->errors_last[y][x].data());
+                    for (const float e : data->errors_first[y][x]) {
+                        min_error = std::min(min_error, e);
+                        max_error = std::max(max_error, e);
+                    }
+                    for (const float e : data->errors_last[y][x]) {
+                        min_error = std::min(min_error, e);
+                        max_error = std::max(max_error, e);
+                    }
+                }
+            }
+            // normalize (for easier debugging)
+            for (int j = 0; j < TileRes * TileRes; ++j) {
+                for (float &e : data->errors_first[j / TileRes][j % TileRes]) {
+                    e = (e - min_error) / (max_error - min_error);
+                }
+                for (float &e : data->errors_last[j / TileRes][j % TileRes]) {
+                    e = (e - min_error) / (max_error - min_error);
                 }
             }
 
-            // In simulated annealing we still accept worse permutation sometimes to avoid being stuck in local minimum
-            // (not really sure if this helps)
-            const float acceptance_prob = std::exp((total_proximity - last_proximity) * best_proximity);
-            if (total_proximity > last_proximity || uniform_unorm_float(gen) < acceptance_prob) {
-                // Accept this iteration (don't swap back)
-                last_proximity = total_proximity;
-                if (total_proximity > best_proximity) {
-                    printf("Best proximity = %f (+%f)\n", total_proximity, total_proximity - best_proximity);
-                    best_proximity = total_proximity;
+            float best_proximity = 0.0f, last_proximity = 0.0f;
+            for (int y = 0; y < TileRes; ++y) {
+                for (int x = 0; x < TileRes; ++x) {
+                    data->proximity[y][x] = calc_pixel_proximity(x, y, data->errors_first, data->errors_last);
+                    best_proximity += data->proximity[y][x];
+                }
+            }
+            last_proximity = best_proximity;
+            printf("Best proximity (%i) = %f\n", subset_sample_count, best_proximity);
+
+            for (int i = 0; i < ParallelCount; ++i) {
+                local_data[i] = *data;
+            }
+
+            for (int iter = 0; iter < MaxSortingIterations && best_proximity < ProximityGoal; ++iter) {
+                if ((iter % 1000) == 0) {
+                    printf("Iteration %i\n", iter);
+                }
+
+#if 1
+                float local_best_proximities[ParallelCount];
+
+#pragma omp parallel for
+                for (int i = 0; i < ParallelCount; ++i) {
+                    // Slightly faster than naive copy
+                    memcpy(&local_data[i].sorting_keys[0][0], &data->sorting_keys[0][0], sizeof(data->sorting_keys));
+                    memcpy(&local_data[i].proximity[0][0], &data->proximity[0][0], sizeof(data->proximity));
+                    for (int y = 0; y < TileRes; ++y) {
+                        for (int x = 0; x < TileRes; ++x) {
+                            local_data[i].samples[y][x].assign(begin(data->samples[y][x]), end(data->samples[y][x]));
+                            local_data[i].errors_first[y][x].assign(begin(data->errors_first[y][x]),
+                                                                    end(data->errors_first[y][x]));
+                            local_data[i].errors_last[y][x].assign(begin(data->errors_last[y][x]),
+                                                                   end(data->errors_last[y][x]));
+                        }
+                    }
+                    local_best_proximities[i] = best_proximity;
+
+                    float last_proximity = best_proximity;
+                    for (int inner_iter = 0; inner_iter < ParallelIterations; ++inner_iter) {
+                        // Randomly flip one pixel
+                        const int index = uniform_index(local_gens[i]);
+                        const int py = index / TileRes, px = index % TileRes;
+
+                        local_data[i].sorting_keys[py][px] ^= subset_sample_count;
+                        std::swap(local_data[i].errors_first[py][px], local_data[i].errors_last[py][px]);
+
+                        // Recalc proximity around changed pixel
+                        for (int y = py - ProximityRadius; y <= py + ProximityRadius; ++y) {
+                            const int wrapped_y = (y + TileRes) % TileRes;
+                            for (int x = px - ProximityRadius; x <= px + ProximityRadius; ++x) {
+                                const int wrapped_x = (x + TileRes) % TileRes;
+                                local_data[i].proximity[wrapped_y][wrapped_x] = calc_pixel_proximity(
+                                    wrapped_x, wrapped_y, local_data[i].errors_first, local_data[i].errors_last);
+                            }
+                        }
+
+                        float total_proximity = 0.0f;
+                        for (int y = 0; y < TileRes; ++y) {
+                            for (int x = 0; x < TileRes; ++x) {
+                                total_proximity += local_data[i].proximity[y][x];
+                            }
+                        }
+
+                        const float acceptance_prob =
+                            std::exp((total_proximity - last_proximity) * local_best_proximities[i]);
+                        if (total_proximity > last_proximity || uniform_unorm_float(local_gens[i]) < acceptance_prob) {
+                            // Accept this iteration (don't swap back)
+                            last_proximity = total_proximity;
+                            if (total_proximity > local_best_proximities[i]) {
+                                local_best_proximities[i] = total_proximity;
+                            }
+                        } else {
+                            // Discard this iteration (swap values back)
+                            local_data[i].sorting_keys[py][px] ^= subset_sample_count;
+                            std::swap(local_data[i].errors_first[py][px], local_data[i].errors_last[py][px]);
+
+                            // Recalc proximity around changed pixel
+                            for (int y = py - ProximityRadius; y <= py + ProximityRadius; ++y) {
+                                const int wrapped_y = (y + TileRes) % TileRes;
+                                for (int x = px - ProximityRadius; x <= px + ProximityRadius; ++x) {
+                                    const int wrapped_x = (x + TileRes) % TileRes;
+                                    local_data[i].proximity[wrapped_y][wrapped_x] = calc_pixel_proximity(
+                                        wrapped_x, wrapped_y, local_data[i].errors_first, local_data[i].errors_last);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Choose the best run
+                const float prev_best_proximity = best_proximity;
+
+                int best_index = -1;
+                for (int i = 0; i < ParallelCount; ++i) {
+                    if (local_best_proximities[i] > best_proximity) {
+                        best_proximity = local_best_proximities[i];
+                        best_index = i;
+                    }
+                }
+
+                if (best_index != -1) {
+                    // Accept as a new state
+                    *data = local_data[best_index];
+
+                    printf("Best proximity (%i) = %f (+%f)\n", subset_sample_count, best_proximity,
+                           best_proximity - prev_best_proximity);
 
                     { // save current state
-                        snprintf(name_buf, sizeof(name_buf),
-                                 "src/Eng/renderer/precomputed/scrambling_keys_2D_%ispp.bin", SampleCount);
+                        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/sorting_keys_2D_%ispp.bin",
+                                 SampleCount);
                         std::ofstream out_file(name_buf, std::ios::binary);
-                        out_file.write((const char *)data->scrambling_keys, sizeof(data->scrambling_keys));
+                        out_file.write((const char *)data->sorting_keys, sizeof(data->sorting_keys));
                     }
 
                     float min_error = FLT_MAX, max_error = 0.0f;
                     for (int j = 0; j < TileRes * TileRes; ++j) {
-                        data->debug_errors[j / TileRes][j % TileRes] = 0.0f;
-                        for (int k = 0; k < TotalFunctionsCount; ++k) {
-                            data->debug_errors[j / TileRes][j % TileRes] += data->errors[j / TileRes][j % TileRes][k];
-                        }
+                        data->debug_errors[j / TileRes][j % TileRes] = data->errors_first[j / TileRes][j % TileRes][4];
                         min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
                         max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
                     }
@@ -870,35 +977,86 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                         float &e = data->debug_errors[j / TileRes][j % TileRes];
                         e = (e - min_error) / (max_error - min_error);
                     }
-                    snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount, SampleCount);
+
+                    snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount, subset_sample_count);
                     WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                 }
-            } else {
-                // Discard this iteration (swap values back)
-                std::swap(data->scrambling_keys[oy1][ox1], data->scrambling_keys[oy2][ox2]);
-                std::swap(data->samples[oy1][ox1], data->samples[oy2][ox2]);
-                std::swap(data->errors[oy1][ox1], data->errors[oy2][ox2]);
+#else
+                // Randomly flip one pixel
+                const int index = uniform_index(gen);
+                const int py = index / TileRes, px = index % TileRes;
 
-                { // Recalc proximity around changed pixels
-                    for (int y = oy1 - ProximityRadius; y <= oy1 + ProximityRadius; ++y) {
-                        const int wrapped_y = (y + TileRes) % TileRes;
-                        for (int x = ox1 - ProximityRadius; x <= ox1 + ProximityRadius; ++x) {
-                            const int wrapped_x = (x + TileRes) % TileRes;
-                            data->proximity[wrapped_y][wrapped_x] =
-                                calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
-                        }
+                data->sorting_keys[py][px] ^= subset_sample_count;
+                std::swap(data->errors_first[py][px], data->errors_last[py][px]);
+
+                // Recalc proximity around changed pixel
+                for (int y = py - ProximityRadius; y <= py + ProximityRadius; ++y) {
+                    const int wrapped_y = (y + TileRes) % TileRes;
+                    for (int x = px - ProximityRadius; x <= px + ProximityRadius; ++x) {
+                        const int wrapped_x = (x + TileRes) % TileRes;
+                        data->proximity[wrapped_y][wrapped_x] =
+                            calc_pixel_proximity(wrapped_x, wrapped_y, data->errors_first, data->errors_last);
                     }
-                    for (int y = oy2 - ProximityRadius; y <= oy2 + ProximityRadius; ++y) {
+                }
+
+                float total_proximity = 0.0f;
+                for (int y = 0; y < TileRes; ++y) {
+                    for (int x = 0; x < TileRes; ++x) {
+                        total_proximity += data->proximity[y][x];
+                    }
+                }
+
+                const float acceptance_prob = std::exp((total_proximity - last_proximity) * best_proximity);
+                if (total_proximity > last_proximity || uniform_unorm_float(gen) < acceptance_prob) {
+                    // Accept this iteration (don't swap back)
+                    last_proximity = total_proximity;
+                    if (total_proximity > best_proximity) {
+                        best_proximity = total_proximity;
+                        printf("Best proximity (%i) = %f\n", subset_sample_count, best_proximity);
+
+                        { // save current state
+                            snprintf(name_buf, sizeof(name_buf),
+                                     "src/Eng/renderer/precomputed/sorting_keys_2D_%ispp.bin", SampleCount);
+                            std::ofstream out_file(name_buf, std::ios::binary);
+                            out_file.write((const char *)data->sorting_keys, sizeof(data->sorting_keys));
+                        }
+
+                        float min_error = FLT_MAX, max_error = 0.0f;
+                        for (int j = 0; j < TileRes * TileRes; ++j) {
+                            data->debug_errors[j / TileRes][j % TileRes] =
+                                data->errors_first[j / TileRes][j % TileRes][4];
+                            min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
+                            max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                        }
+                        // normalize errors (for easier debugging)
+                        for (int j = 0; j < TileRes * TileRes; ++j) {
+                            float &e = data->debug_errors[j / TileRes][j % TileRes];
+                            e = (e - min_error) / (max_error - min_error);
+                        }
+
+                        snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount,
+                                 subset_sample_count);
+                        WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
+                    }
+                } else {
+                    // Discard this iteration (swap values back)
+                    data->sorting_keys[py][px] ^= subset_sample_count;
+                    std::swap(data->errors_first[py][px], data->errors_last[py][px]);
+
+                    // Recalc proximity around changed pixel
+                    for (int y = py - ProximityRadius; y <= py + ProximityRadius; ++y) {
                         const int wrapped_y = (y + TileRes) % TileRes;
-                        for (int x = ox2 - ProximityRadius; x <= ox2 + ProximityRadius; ++x) {
+                        for (int x = px - ProximityRadius; x <= px + ProximityRadius; ++x) {
                             const int wrapped_x = (x + TileRes) % TileRes;
                             data->proximity[wrapped_y][wrapped_x] =
-                                calc_pixel_proximity(wrapped_x, wrapped_y, data->errors);
+                                calc_pixel_proximity(wrapped_x, wrapped_y, data->errors_first, data->errors_last);
                         }
                     }
                 }
-            }
 #endif
+            }
+
+            --subset_count_pow;
         }
     }
 }
