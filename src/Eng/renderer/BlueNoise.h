@@ -14,7 +14,7 @@ namespace Eng {
 // Initial samples must be 24-bit fixed-point numbers obtained with 'uint32_t(val * 16777216.0) << 8'
 void Generate1D_BlueNoiseTiles_StepFunction(const uint32_t initial_samples[]);
 
-void Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_samples[]);
+void Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_samples[], uint32_t seed);
 
 /*
 #include <Ray/internal/PMJ.h>

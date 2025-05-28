@@ -13,13 +13,13 @@ static const int SampleCount = (1 << SampleCountPow);
 static const int TileRes = 128;
 static const int TotalFunctionsCount = 4 * 1024;
 // Ideally this should be equal to tile res, but this would be too slow due to quadratic complexity
-static const int ProximityRadius = 3;
+static const int ProximityRadius = 4;
 static const float ProximityGoal = 6500.0f;
 static const int MaxScramblingIterations = 100000;
 static const int MaxSortingIterations = 100000;
 
 static const float DeltaThreshold = 0.01f;
-static const int ParallelCount = 8;
+static const int ParallelCount = 16;
 static const int ParallelIterations = 128;
 
 static const float GaussOmega = 2.1f;
@@ -531,7 +531,7 @@ void Eng::Generate1D_BlueNoiseTiles_StepFunction(const uint32_t initial_samples[
     }
 }
 
-void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_samples[]) {
+void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_samples[], const uint32_t seed) {
     using namespace BNInternal;
 
     // Dynamic allocation is used to avoid stack overflow
@@ -550,8 +550,9 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
 
     for (int y = 0; y < TileRes; ++y) {
         for (int x = 0; x < TileRes; ++x) {
-            data->scrambling_keys[y][x][0] = hash_combine(hash(y * TileRes + x), 0x3a647d5b) & 0xffffff00;
-            data->scrambling_keys[y][x][1] = hash_combine(hash(y * TileRes + x), 0x9b10f813) & 0xffffff00;
+            const uint32_t px_hash = hash_combine(seed, hash(y * TileRes + x));
+            data->scrambling_keys[y][x][0] = hash_combine(px_hash, 0x3a647d5b) & 0xffffff00;
+            data->scrambling_keys[y][x][1] = hash_combine(px_hash, 0x9b10f813) & 0xffffff00;
         }
     }
 
@@ -610,7 +611,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
         for (int i = 0; i < TotalFunctionsCount; ++i) {
             heavyside_func_t &f = functions[i];
             f.o = Ren::Vec2f(uniform_unorm_float(gen), uniform_unorm_float(gen));
-            const float angle = 2.0f * Ren::Pi<float>() * uniform_unorm_float(gen);
+            const float angle = 1.0f * Ren::Pi<float>() * uniform_unorm_float(gen);
             f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
 
             std::vector<float> test_data(256 * 256);
@@ -785,7 +786,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                 // Accept as a new state
                 *data = local_data[best_index];
 
-                smooth_delta = 0.85f * smooth_delta + 0.15f * (best_proximity - prev_best_proximity);
+                smooth_delta = 0.65f * smooth_delta + 0.35f * (best_proximity - prev_best_proximity);
                 printf("Best proximity = %f (+%f)\n", best_proximity, smooth_delta);
 
                 { // save current state
@@ -956,7 +957,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
                     // Accept as a new state
                     *data = local_data[best_index];
 
-                    smooth_delta = 0.85f * smooth_delta + 0.15f * (best_proximity - prev_best_proximity);
+                    smooth_delta = 0.65f * smooth_delta + 0.35f * (best_proximity - prev_best_proximity);
                     printf("Best proximity (%i) = %f (+%f)\n", subset_sample_count, best_proximity, smooth_delta);
 
                     { // save current state
@@ -985,6 +986,49 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const Ren::Vec2u initial_sample
 
             --subset_count_pow;
         }
+    }
+
+    { // dump C array
+        snprintf(name_buf, sizeof(name_buf), "src/Eng/renderer/precomputed/__bn_sampler_2D_%ispp.inl", SampleCount);
+        std::ofstream out_file(name_buf, std::ios::binary);
+        out_file << "const int SampleCount = " << SampleCount << ";\n";
+        out_file << "const int TileRes = " << TileRes << ";\n";
+        out_file << "const uint32_t bn_pmj_samples[" << 2 * SampleCount << "] = {\n    ";
+        for (int i = 0; i < SampleCount; ++i) {
+            out_file << initial_samples[i][0] << "u, ";
+            out_file << initial_samples[i][1];
+            if (i != SampleCount - 1) {
+                out_file << "u, ";
+            } else {
+                out_file << "u\n";
+            }
+        }
+        out_file << "};\n";
+        out_file << "const uint32_t bn_pmj_scrambling[" << 2 * TileRes * TileRes << "] = {\n    ";
+        for (int y = 0; y < TileRes; ++y) {
+            for (int x = 0; x < TileRes; ++x) {
+                out_file << data->scrambling_keys[y][x][0] << "u, ";
+                out_file << data->scrambling_keys[y][x][1];
+                if (x != TileRes - 1 || y != TileRes - 1) {
+                    out_file << "u, ";
+                } else {
+                    out_file << "u\n";
+                }
+            }
+        }
+        out_file << "};\n";
+        out_file << "const uint32_t bn_pmj_sorting[" << TileRes * TileRes << "] = {\n    ";
+        for (int i = 0; i < TileRes; ++i) {
+            for (int j = 0; j < TileRes; ++j) {
+                out_file << data->sorting_keys[i][j];
+                if (i != TileRes - 1 || j != TileRes - 1) {
+                    out_file << "u, ";
+                } else {
+                    out_file << "u\n";
+                }
+            }
+        }
+        out_file << "};\n";
     }
 }
 
