@@ -8,18 +8,18 @@
 
 namespace Eng {
 namespace BNInternal {
-static const int SampleCountPow = 3;
+static const int SampleCountPow = 6;
 static const int SampleCount = (1 << SampleCountPow);
 static const int TileRes = 128;
 static const int TotalFunctionsCount = 4 * 1024;
 // Ideally this should be equal to tile res, but this would be too slow due to quadratic complexity
-static const int ProximityRadius = 2;
+static const int ProximityRadius = 3;
 static const float ProximityGoal = 6500.0f;
 static const int MaxScramblingIterations = 100000;
 static const int MaxSortingIterations = 100000;
 
 static const float DeltaThreshold = 0.01f;
-static const int ParallelCount = 16;
+static const int ParallelCount = 8;
 static const int ParallelIterations = 128;
 
 static const float GaussOmega = 2.1f;
