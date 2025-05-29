@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
         }
         Eng::Generate2D_BlueNoiseTiles_StepFunction(0, initial_samples, 0x97c083e3);
     }
-    /*{ // Dims 2, 3
+    { // Dims 2, 3
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0x9fcc6472, 256, 1);
         Ren::Vec2u initial_samples[256];
         for (int i = 0; i < 256; ++i) {
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
         }
         Eng::Generate2D_BlueNoiseTiles_StepFunction(3, initial_samples, 0x5f047a2c);
     }
-    { // Dims 8, 9
+    /*{ // Dims 8, 9
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0x15ecd441, 256, 1);
         Ren::Vec2u initial_samples[256];
         for (int i = 0; i < 256; ++i) {
