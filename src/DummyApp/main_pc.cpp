@@ -4,7 +4,7 @@
 #include <Ray/internal/PMJ.h>
 
 int main(int argc, char *argv[]) {
-    { // Dims 0, 1
+    /*{ // Dims 0, 1
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0xdf2c196c, 256, 1);
         Ren::Vec2u initial_samples[256];
         for (int i = 0; i < 256; ++i) {
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
             initial_samples[i][1] = uint32_t(pmj_samples[i].get<1>() * 16777216.0) << 8;
         }
         Eng::Generate2D_BlueNoiseTiles_StepFunction(2, initial_samples, 0xb3e00166);
-    }
+    }*/
     { // Dims 6, 7
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0x093118a8, 256, 1);
         Ren::Vec2u initial_samples[256];
@@ -40,14 +40,14 @@ int main(int argc, char *argv[]) {
         }
         Eng::Generate2D_BlueNoiseTiles_StepFunction(3, initial_samples, 0x5f047a2c);
     }
-    /*{ // Dims 8, 9
+    { // Dims 8, 9
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0x15ecd441, 256, 1);
         Ren::Vec2u initial_samples[256];
         for (int i = 0; i < 256; ++i) {
             initial_samples[i][0] = uint32_t(pmj_samples[i].get<0>() * 16777216.0) << 8;
             initial_samples[i][1] = uint32_t(pmj_samples[i].get<1>() * 16777216.0) << 8;
         }
-        Eng::Generate2D_BlueNoiseTiles_StepFunction(3, initial_samples, 0xf6a26ff4);
+        Eng::Generate2D_BlueNoiseTiles_StepFunction(4, initial_samples, 0xf6a26ff4);
     }
     { // Dims 10, 11
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0x1e313309, 256, 1);
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
             initial_samples[i][0] = uint32_t(pmj_samples[i].get<0>() * 16777216.0) << 8;
             initial_samples[i][1] = uint32_t(pmj_samples[i].get<1>() * 16777216.0) << 8;
         }
-        Eng::Generate2D_BlueNoiseTiles_StepFunction(3, initial_samples, 0x786a5d4d);
+        Eng::Generate2D_BlueNoiseTiles_StepFunction(5, initial_samples, 0x786a5d4d);
     }
     { // Dims 12, 13
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0xf53a4eb9, 256, 1);
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
             initial_samples[i][0] = uint32_t(pmj_samples[i].get<0>() * 16777216.0) << 8;
             initial_samples[i][1] = uint32_t(pmj_samples[i].get<1>() * 16777216.0) << 8;
         }
-        Eng::Generate2D_BlueNoiseTiles_StepFunction(3, initial_samples, 0x10ccee0f);
+        Eng::Generate2D_BlueNoiseTiles_StepFunction(6, initial_samples, 0x10ccee0f);
     }
     { // Dims 14, 15
         Ray::aligned_vector<Ray::Ref::dvec2> pmj_samples = Ray::GeneratePMJSamples(0x5d54efe3, 256, 1);
@@ -74,8 +74,8 @@ int main(int argc, char *argv[]) {
             initial_samples[i][0] = uint32_t(pmj_samples[i].get<0>() * 16777216.0) << 8;
             initial_samples[i][1] = uint32_t(pmj_samples[i].get<1>() * 16777216.0) << 8;
         }
-        Eng::Generate2D_BlueNoiseTiles_StepFunction(3, initial_samples, 0xce15c1af);
-    }*/
+        Eng::Generate2D_BlueNoiseTiles_StepFunction(7, initial_samples, 0xce15c1af);
+    }
     return 0;
 
     return DummyApp().Run(argc, argv);
