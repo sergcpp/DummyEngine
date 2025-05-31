@@ -14,13 +14,13 @@ float Sample1D_BN_PMJ_16SPP(usamplerBuffer bn_pmj_data, const uvec2 pixel, uint 
     sample_index = sample_index & (SampleCount - 1);
 
     // xor index based on optimized sorting
-    const uint ranked_sample_index = sample_index ^ texelFetch(bn_pmj_data, SortingDataOffset + int(pixel_i + pixel_j * 128u)).x;
+    const uint ranked_sample_index = sample_index ^ texelFetch(bn_pmj_data, SortingDataOffset + int(pixel_i + pixel_j * TileRes)).x;
 
     // fetch value in sequence
     uint value = texelFetch(bn_pmj_data, int(ranked_sample_index)).x;
 
     // xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(bn_pmj_data, ScramblingDataOffset + int(pixel_i + pixel_j * 128u)).x;
+    value = value ^ texelFetch(bn_pmj_data, ScramblingDataOffset + int(pixel_i + pixel_j * TileRes)).x;
 
     // convert to float and return
     return float(value >> 8) / 16777216.0;

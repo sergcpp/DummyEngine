@@ -8,6 +8,7 @@
 
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
+#include "bn_pmj_2d_64spp.glsl"
 #include "gi_classify_interface.h"
 
 #pragma multi_compile _ NO_SUBGROUP
@@ -29,9 +30,8 @@ layout(std430, binding = RAY_LIST_SLOT) restrict writeonly buffer RayList {
 layout(std430, binding = TILE_LIST_SLOT) restrict writeonly buffer TileList {
     uint g_tile_list[];
 };
-layout(binding = SOBOL_BUF_SLOT) uniform usamplerBuffer g_sobol_seq_tex;
-layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform usamplerBuffer g_scrambling_tile_tex;
-layout(binding = RANKING_TILE_BUF_SLOT) uniform usamplerBuffer g_ranking_tile_tex;
+
+layout(binding = BN_PMJ_SEQ_BUF_SLOT) uniform usamplerBuffer g_bn_pmj_seq;
 
 layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_gi_img;
 layout(binding = OUT_NOISE_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_noise_img;
@@ -185,34 +185,9 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen
     }
 }
 
-//
-// https://eheitzresearch.wordpress.com/762-2/
-//
-float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
-    // wrap arguments
-    const uint pixel_i = pixel.x & 127u;
-    const uint pixel_j = pixel.y & 127u;
-    sample_index = sample_index & 255u;
-    sample_dimension = sample_dimension & 255u;
-
-    // xor index based on optimized ranking
-    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
-
-    // fetch value in sequence
-    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).x;
-
-    // if the dimension is optimized, xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).x;
-
-    // convert to float and return
-    return (float(value) + 0.5) / 256.0;
-}
-
 vec4 SampleRandomVector2D(const uvec2 pixel) {
-    return vec4(SampleRandomNumber(pixel, g_params.frame_index % 32u, 4u),
-                SampleRandomNumber(pixel, g_params.frame_index % 32u, 5u),
-                SampleRandomNumber(pixel, g_params.frame_index % 32u, 6u),
-                SampleRandomNumber(pixel, g_params.frame_index % 32u, 7u));
+    return vec4(Sample2D_BN_PMJ_64SPP(g_bn_pmj_seq, pixel, 2u, g_params.frame_index % 64u),
+                Sample2D_BN_PMJ_64SPP(g_bn_pmj_seq, pixel, 3u, g_params.frame_index % 64u));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

@@ -66,7 +66,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             FgResRef shared_data;
             FgResRef tile_counter;
             FgResRef tile_list;
-            FgResRef sobol, scrambling_tile, ranking_tile;
+            FgResRef bn_pmj_seq;
             FgResRef out_ray_hits_tex, out_noise_tex;
         };
 
@@ -75,9 +75,7 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->normal = sh_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->shared_data = sh_classify.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         indir_args = data->tile_counter = sh_classify.AddStorageOutput(indir_args, Stg::ComputeShader);
-        data->sobol = sh_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
-        data->scrambling_tile = sh_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
-        data->ranking_tile = sh_classify.AddStorageReadonlyInput(ranking_tile_buf_, Stg::ComputeShader);
+        data->bn_pmj_seq = sh_classify.AddStorageReadonlyInput(bn_pmj_2D_64spp_seq_buf_, Stg::ComputeShader);
 
         { // tile list
             FgBufDesc desc = {};
@@ -110,26 +108,21 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             FgAllocTex &depth_tex = builder.GetReadTexture(data->depth);
             FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
-            FgAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
-            FgAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
-            FgAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
+            FgAllocBuf &bn_pmj_seq = builder.GetReadBuffer(data->bn_pmj_seq);
 
             FgAllocBuf &tile_counter_buf = builder.GetWriteBuffer(data->tile_counter);
             FgAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
             FgAllocTex &ray_hits_tex = builder.GetWriteTexture(data->out_ray_hits_tex);
             FgAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
 
-            const Ren::Binding bindings[] = {
-                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::TexSampled, RTShadowClassify::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Trg::TexSampled, RTShadowClassify::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, *tile_counter_buf.ref},
-                {Trg::SBufRO, RTShadowClassify::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Trg::UTBuf, RTShadowClassify::SOBOL_BUF_SLOT, *sobol_buf.ref},
-                {Trg::UTBuf, RTShadowClassify::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.ref},
-                {Trg::UTBuf, RTShadowClassify::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.ref},
-                {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
-                {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                             {Trg::TexSampled, RTShadowClassify::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                                             {Trg::TexSampled, RTShadowClassify::NORM_TEX_SLOT, *norm_tex.ref},
+                                             {Trg::SBufRO, RTShadowClassify::TILE_COUNTER_SLOT, *tile_counter_buf.ref},
+                                             {Trg::SBufRO, RTShadowClassify::TILE_LIST_SLOT, *tile_list_buf.ref},
+                                             {Trg::UTBuf, RTShadowClassify::BN_PMJ_SEQ_BUF_SLOT, *bn_pmj_seq.ref},
+                                             {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
+                                             {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const auto grp_count = Ren::Vec3u{(view_state_.act_res[0] + RTShadowClassify::LOCAL_GROUP_SIZE_X - 1u) /
                                                   RTShadowClassify::LOCAL_GROUP_SIZE_X,
@@ -161,7 +154,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         data->noise_tex = rt_shadows.AddTextureInput(noise_tex, stage);
         data->depth_tex = rt_shadows.AddTextureInput(frame_textures.depth, stage);
         data->normal_tex = rt_shadows.AddTextureInput(frame_textures.normal, stage);
-        data->tlas_buf = rt_shadows.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Shadow)], stage);
+        data->tlas_buf =
+            rt_shadows.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf[int(eTLASIndex::Shadow)], stage);
         data->tile_list_buf = rt_shadows.AddStorageReadonlyInput(tile_list, stage);
         data->indir_args = rt_shadows.AddIndirectBufferInput(indir_args);
 

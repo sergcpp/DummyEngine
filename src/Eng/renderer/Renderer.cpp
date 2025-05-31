@@ -75,7 +75,6 @@ extern const Ren::Vec2f PMJSamples64[64] = {
 extern const int TaaSampleCountNormal = 16;
 extern const int TaaSampleCountStatic = 64;
 
-#include "precomputed/__blue_noise.inl"
 #include "precomputed/__brdf_lut.inl"
 #include "precomputed/__cone_rt_lut.inl"
 #include "precomputed/__ltc_clearcoat.inl"
@@ -87,6 +86,31 @@ extern const int TaaSampleCountStatic = 64;
 
 namespace bn_1D_16spp {
 #include "precomputed/__bn_sampler_1D_16spp.inl"
+}
+
+namespace bn_2D_64spp_0 {
+#include "precomputed/__bn_sampler_2D_64spp_0.inl"
+}
+namespace bn_2D_64spp_1 {
+#include "precomputed/__bn_sampler_2D_64spp_1.inl"
+}
+namespace bn_2D_64spp_2 {
+#include "precomputed/__bn_sampler_2D_64spp_2.inl"
+}
+namespace bn_2D_64spp_3 {
+#include "precomputed/__bn_sampler_2D_64spp_3.inl"
+}
+namespace bn_2D_64spp_4 {
+#include "precomputed/__bn_sampler_2D_64spp_4.inl"
+}
+namespace bn_2D_64spp_5 {
+#include "precomputed/__bn_sampler_2D_64spp_5.inl"
+}
+namespace bn_2D_64spp_6 {
+#include "precomputed/__bn_sampler_2D_64spp_6.inl"
+}
+namespace bn_2D_64spp_7 {
+#include "precomputed/__bn_sampler_2D_64spp_7.inl"
 }
 
 __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawList");
@@ -288,60 +312,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         "assets/textures/skin_diffusion.uncompressed.png");
     }*/
 
-    { // blue noise sampling
-        Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
-
-        // Sobol sequence
-        sobol_seq_buf_ = ctx_.LoadBuffer("SobolSequenceBuf", Ren::eBufType::Texture, 256 * 256 * sizeof(int));
-        sobol_seq_buf_->AddBufferView(Ren::eTexFormat::R32UI);
-        Ren::Buffer sobol_seq_buf_stage("SobolSequenceBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                        sobol_seq_buf_->size());
-
-        { // init stage buf
-            uint8_t *mapped_ptr = sobol_seq_buf_stage.Map();
-            memcpy(mapped_ptr, g_sobol_256spp_256d, 256 * 256 * sizeof(int));
-            sobol_seq_buf_stage.Unmap();
-        }
-
-        CopyBufferToBuffer(sobol_seq_buf_stage, 0, *sobol_seq_buf_, 0, 256 * 256 * sizeof(int), cmd_buf);
-
-        // Scrambling tile
-        scrambling_tile_buf_ =
-            ctx_.LoadBuffer("ScramblingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        scrambling_tile_buf_->AddBufferView(Ren::eTexFormat::R32UI);
-        Ren::Buffer scrambling_tile_buf_stage("ScramblingTileBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                              scrambling_tile_buf_->size());
-
-        { // init stage buf
-            uint8_t *mapped_ptr = scrambling_tile_buf_stage.Map();
-            memcpy(mapped_ptr, g_scrambling_tile_1spp, 128 * 128 * 8 * sizeof(int));
-            scrambling_tile_buf_stage.Unmap();
-        }
-
-        CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_buf_, 0, 128 * 128 * 8 * sizeof(int),
-                           cmd_buf);
-
-        // Ranking tile
-        ranking_tile_buf_ = ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        ranking_tile_buf_->AddBufferView(Ren::eTexFormat::R32UI);
-        Ren::Buffer ranking_tile_buf_stage("RankingTileBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                           ranking_tile_buf_->size());
-
-        { // init stage buf
-            uint8_t *mapped_ptr = ranking_tile_buf_stage.Map();
-            memcpy(mapped_ptr, g_ranking_tile_1spp, 128 * 128 * 8 * sizeof(int));
-            ranking_tile_buf_stage.Unmap();
-        }
-
-        CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_buf_, 0, 128 * 128 * 8 * sizeof(int), cmd_buf);
-
-        ctx_.EndTempSingleTimeCommands(cmd_buf);
-
-        sobol_seq_buf_stage.FreeImmediate();
-        scrambling_tile_buf_stage.FreeImmediate();
-        ranking_tile_buf_stage.FreeImmediate();
-    }
-
     { // PMJ 1D blue-noise sampler
         Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
 
@@ -363,6 +333,115 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         ctx_.EndTempSingleTimeCommands(cmd_buf);
 
         bn_pmj_1D_16spp_seq_buf_stage.FreeImmediate();
+    }
+
+    { // PMJ 2D blue-noise sampler
+        Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
+
+        static const int SampleSizePerDimPair = 2 * 64 * sizeof(uint32_t);
+        static const int ScramblingSizePerDimPair = 2 * 128 * 128 * sizeof(uint32_t);
+        static const int SortingSizePerDimPair = 128 * 128 * sizeof(uint32_t);
+
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_0::bn_pmj_samples));
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_1::bn_pmj_samples));
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_2::bn_pmj_samples));
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_3::bn_pmj_samples));
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_4::bn_pmj_samples));
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_5::bn_pmj_samples));
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_6::bn_pmj_samples));
+        static_assert(SampleSizePerDimPair == sizeof(bn_2D_64spp_7::bn_pmj_samples));
+
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_0::bn_pmj_scrambling));
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_1::bn_pmj_scrambling));
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_2::bn_pmj_scrambling));
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_3::bn_pmj_scrambling));
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_4::bn_pmj_scrambling));
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_5::bn_pmj_scrambling));
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_6::bn_pmj_scrambling));
+        static_assert(ScramblingSizePerDimPair == sizeof(bn_2D_64spp_7::bn_pmj_scrambling));
+
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_0::bn_pmj_sorting));
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_1::bn_pmj_sorting));
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_2::bn_pmj_sorting));
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_3::bn_pmj_sorting));
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_4::bn_pmj_sorting));
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_5::bn_pmj_sorting));
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_6::bn_pmj_sorting));
+        static_assert(SortingSizePerDimPair == sizeof(bn_2D_64spp_7::bn_pmj_sorting));
+
+        bn_pmj_2D_64spp_seq_buf_ =
+            ctx_.LoadBuffer("BN_PMJ_2D_64SPP", Ren::eBufType::Texture,
+                            8 * (SampleSizePerDimPair + ScramblingSizePerDimPair + SortingSizePerDimPair));
+        bn_pmj_2D_64spp_seq_buf_->AddBufferView(Ren::eTexFormat::R32UI);
+        Ren::Buffer bn_pmj_2D_64spp_seq_buf_stage("BN_PMJ_2D_64SPP_Stage", ctx_.api_ctx(), Ren::eBufType::Upload,
+                                                  bn_pmj_2D_64spp_seq_buf_->size());
+
+        { // init stage buf
+            uint8_t *mapped_ptr = bn_pmj_2D_64spp_seq_buf_stage.Map();
+
+            // sample data
+            memcpy(mapped_ptr, bn_2D_64spp_0::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_1::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_2::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_3::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_4::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_5::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_6::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_7::bn_pmj_samples, SampleSizePerDimPair);
+            mapped_ptr += SampleSizePerDimPair;
+
+            // scrambling data
+            memcpy(mapped_ptr, bn_2D_64spp_0::bn_pmj_scrambling, ScramblingSizePerDimPair);
+            mapped_ptr += ScramblingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_1::bn_pmj_scrambling, ScramblingSizePerDimPair);
+            mapped_ptr += ScramblingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_2::bn_pmj_scrambling, ScramblingSizePerDimPair);
+            mapped_ptr += ScramblingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_3::bn_pmj_scrambling, ScramblingSizePerDimPair);
+            mapped_ptr += ScramblingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_4::bn_pmj_scrambling, ScramblingSizePerDimPair);
+            mapped_ptr += ScramblingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_5::bn_pmj_scrambling, ScramblingSizePerDimPair);
+            mapped_ptr += ScramblingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_6::bn_pmj_scrambling, ScramblingSizePerDimPair);
+            mapped_ptr += ScramblingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_7::bn_pmj_scrambling, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+
+            // sorting data
+            memcpy(mapped_ptr, bn_2D_64spp_0::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_1::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_2::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_3::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_4::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_5::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_6::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+            memcpy(mapped_ptr, bn_2D_64spp_7::bn_pmj_sorting, SortingSizePerDimPair);
+            mapped_ptr += SortingSizePerDimPair;
+
+            bn_pmj_2D_64spp_seq_buf_stage.Unmap();
+        }
+
+        CopyBufferToBuffer(bn_pmj_2D_64spp_seq_buf_stage, 0, *bn_pmj_2D_64spp_seq_buf_, 0,
+                           8 * (SampleSizePerDimPair + ScramblingSizePerDimPair + SortingSizePerDimPair), cmd_buf);
+
+        ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+        bn_pmj_2D_64spp_seq_buf_stage.FreeImmediate();
     }
 
     { // PMJ samples

@@ -17,9 +17,7 @@ const int DEPTH_TEX_SLOT = 2;
 const int NORM_TEX_SLOT = 3;
 const int TILE_COUNTER_SLOT = 5;
 const int TILE_LIST_SLOT = 6;
-const int SOBOL_BUF_SLOT = 7;
-const int SCRAMLING_TILE_BUF_SLOT = 8;
-const int RANKING_TILE_BUF_SLOT = 9;
+const int BN_PMJ_SEQ_BUF_SLOT = 7;
 
 const int OUT_RAY_HITS_IMG_SLOT = 0;
 const int OUT_NOISE_IMG_SLOT = 1;

@@ -25,9 +25,7 @@ const int VARIANCE_TEX_SLOT = 5;
 const int RAY_COUNTER_SLOT = 6;
 const int RAY_LIST_SLOT = 7;
 const int TILE_LIST_SLOT = 8;
-const int SOBOL_BUF_SLOT = 9;
-const int SCRAMLING_TILE_BUF_SLOT = 10;
-const int RANKING_TILE_BUF_SLOT = 11;
+const int BN_PMJ_SEQ_BUF_SLOT = 9;
 
 const int OUT_REFL_IMG_SLOT = 0;
 const int OUT_NOISE_IMG_SLOT = 1;

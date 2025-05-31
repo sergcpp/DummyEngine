@@ -75,7 +75,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgResRef specular;
             FgResRef normal;
             FgResRef variance_history;
-            FgResRef sobol, scrambling_tile, ranking_tile;
+            FgResRef bn_pmj_seq;
             FgResRef ray_counter;
             FgResRef ray_list;
             FgResRef tile_list;
@@ -87,9 +87,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         data->specular = ssr_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
         data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->variance_history = ssr_classify.AddHistoryTextureInput(SPECULAR_VARIANCE_TEX, Stg::ComputeShader);
-        data->sobol = ssr_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
-        data->scrambling_tile = ssr_classify.AddStorageReadonlyInput(scrambling_tile_buf_, Stg::ComputeShader);
-        data->ranking_tile = ssr_classify.AddStorageReadonlyInput(ranking_tile_buf_, Stg::ComputeShader);
+        data->bn_pmj_seq = ssr_classify.AddStorageReadonlyInput(bn_pmj_2D_64spp_seq_buf_, Stg::ComputeShader);
         ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
@@ -132,9 +130,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             FgAllocTex &spec_tex = builder.GetReadTexture(data->specular);
             FgAllocTex &norm_tex = builder.GetReadTexture(data->normal);
             FgAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
-            FgAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
-            FgAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
-            FgAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
+            FgAllocBuf &bn_pmj_seq = builder.GetReadBuffer(data->bn_pmj_seq);
 
             FgAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
             FgAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
@@ -149,9 +145,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                              {Trg::SBufRO, RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                                              {Trg::SBufRO, RAY_LIST_SLOT, *ray_list_buf.ref},
                                              {Trg::SBufRO, TILE_LIST_SLOT, *tile_list_buf.ref},
-                                             {Trg::UTBuf, SOBOL_BUF_SLOT, *sobol_buf.ref},
-                                             {Trg::UTBuf, SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.ref},
-                                             {Trg::UTBuf, RANKING_TILE_BUF_SLOT, *ranking_tile_buf.ref},
+                                             {Trg::UTBuf, BN_PMJ_SEQ_BUF_SLOT, *bn_pmj_seq.ref},
                                              {Trg::ImageRW, OUT_REFL_IMG_SLOT, *refl_tex.ref},
                                              {Trg::ImageRW, OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
