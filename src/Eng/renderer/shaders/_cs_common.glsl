@@ -59,16 +59,17 @@ vec3 EvaluateSH(const vec3 normal, const  vec4 sh_coeffs[3]) {
 }
 */
 
-//  LANE TO 8x8 MAPPING
-//  ===================
-//  00 01 08 09 10 11 18 19
-//  02 03 0a 0b 12 13 1a 1b
-//  04 05 0c 0d 14 15 1c 1d
-//  06 07 0e 0f 16 17 1e 1f
-//  20 21 28 29 30 31 38 39
-//  22 23 2a 2b 32 33 3a 3b
-//  24 25 2c 2d 34 35 3c 3d
-//  26 27 2e 2f 36 37 3e 3f
+//
+// Index remapping (nested quads)
+//
+//  00 01 02 03 04 05 06 07           00 01 08 09 10 11 18 19
+//  08 09 0a 0b 0c 0d 0e 0f           02 03 0a 0b 12 13 1a 1b
+//  10 11 12 13 14 15 16 17           04 05 0c 0d 14 15 1c 1d
+//  18 19 1a 1b 1c 1d 1e 1f   ---->   06 07 0e 0f 16 17 1e 1f
+//  20 21 22 23 24 25 26 27           20 21 28 29 30 31 38 39
+//  28 29 2a 2b 2c 2d 2e 2f           22 23 2a 2b 32 33 3a 3b
+//  30 31 32 33 34 35 36 37           24 25 2c 2d 34 35 3c 3d
+//  38 39 3a 3b 3c 3d 3e 3f           26 27 2e 2f 36 37 3e 3f
 uvec2 RemapLane8x8(const uint lane) {
     return uvec2(bitfieldInsert(bitfieldExtract(lane, 2, 3), lane, 0, 1),
                  bitfieldInsert(bitfieldExtract(lane, 3, 3), bitfieldExtract(lane, 1, 2), 0, 2));
