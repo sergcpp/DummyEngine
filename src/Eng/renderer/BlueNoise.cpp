@@ -1,6 +1,7 @@
 #include "BlueNoise.h"
 
 #include <cassert>
+#include <cfloat>
 #include <chrono>
 #include <fstream>
 #include <random>
@@ -419,7 +420,7 @@ void Eng::Generate1D_BlueNoiseTiles_StepFunction(const uint32_t initial_samples[
                 }
             }
             last_proximity = best_proximity;
-            printf("Best proximity (%i) = %f\n", subset_sample_count, best_proximity);
+            printf("Best proximity (%u) = %f\n", subset_sample_count, best_proximity);
 
             for (int iter = 0; iter < MaxSortingIterations && best_proximity < ProximityGoal; ++iter) {
                 if ((iter % 1000) == 0) {
@@ -455,7 +456,7 @@ void Eng::Generate1D_BlueNoiseTiles_StepFunction(const uint32_t initial_samples[
                     last_proximity = total_proximity;
                     if (total_proximity > best_proximity) {
                         best_proximity = total_proximity;
-                        printf("Best proximity (%i) = %f\n", subset_sample_count, best_proximity);
+                        printf("Best proximity (%u) = %f\n", subset_sample_count, best_proximity);
 
                         { // save current state
                             snprintf(name_buf, sizeof(name_buf),
@@ -464,20 +465,20 @@ void Eng::Generate1D_BlueNoiseTiles_StepFunction(const uint32_t initial_samples[
                             out_file.write((const char *)data->sorting_keys, sizeof(data->sorting_keys));
                         }
 
-                        float min_error = FLT_MAX, max_error = 0.0f;
+                        float _min_error = FLT_MAX, _max_error = 0.0f;
                         for (int j = 0; j < TileRes * TileRes; ++j) {
                             data->debug_errors[j / TileRes][j % TileRes] +=
                                 data->errors_first[j / TileRes][j % TileRes][7 * TotalFunctionsCount / 11];
-                            min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
-                            max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                            _min_error = std::min(_min_error, data->debug_errors[j / TileRes][j % TileRes]);
+                            _max_error = std::max(_max_error, data->debug_errors[j / TileRes][j % TileRes]);
                         }
                         // normalize errors (for easier debugging)
                         for (int j = 0; j < TileRes * TileRes; ++j) {
                             float &e = data->debug_errors[j / TileRes][j % TileRes];
-                            e = (e - min_error) / (max_error - min_error);
+                            e = (e - _min_error) / (_max_error - _min_error);
                         }
 
-                        snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount,
+                        snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%u.tga", SampleCount,
                                  subset_sample_count);
                         WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                     }
@@ -599,7 +600,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
     std::uniform_int_distribution<int> uniform_index(0, TileRes * TileRes - 1);
     std::uniform_int_distribution<uint32_t> uniform_uint32(0, 0xffffffff);
 
-    std::mt19937 local_gens[ParallelCount];
+    std::vector<std::mt19937> local_gens(ParallelCount);
     std::vector<bn_data_t> local_data(ParallelCount);
     for (int i = 0; i < ParallelCount; ++i) {
         local_gens[i] = std::mt19937(rd());
@@ -610,12 +611,12 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
     std::vector<heavyside_func_t> functions;
 
     { // Generate randomly oriented heavysides
-        std::mt19937 gen(45678);
+        std::mt19937 temp_gen(45678);
         functions.resize(TotalFunctionsCount);
         for (int i = 0; i < TotalFunctionsCount; ++i) {
             heavyside_func_t &f = functions[i];
-            f.o = Ren::Vec2f(uniform_unorm_float(gen), uniform_unorm_float(gen));
-            const float angle = 1.0f * Ren::Pi<float>() * uniform_unorm_float(gen);
+            f.o = Ren::Vec2f(uniform_unorm_float(temp_gen), uniform_unorm_float(temp_gen));
+            const float angle = 1.0f * Ren::Pi<float>() * uniform_unorm_float(temp_gen);
             f.n = Ren::Vec2f(std::cos(angle), std::sin(angle));
 
             std::vector<float> test_data(256 * 256);
@@ -697,10 +698,9 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                 [&local_data, &data, &local_best_proximities, best_proximity, &uniform_index, &uniform_unorm_float,
                  &local_gens](const int i) {
                     // Slightly faster than naive copy
-                    memcpy(&local_data[i].scrambling_keys[0][0], &data->scrambling_keys[0][0],
-                           sizeof(data->scrambling_keys));
                     for (int y = 0; y < TileRes; ++y) {
                         for (int x = 0; x < TileRes; ++x) {
+                            local_data[i].scrambling_keys[y][x] = data->scrambling_keys[y][x];
                             local_data[i].proximity[y][x] = data->proximity[y][x];
                             local_data[i].samples[y][x].assign(begin(data->samples[y][x]), end(data->samples[y][x]));
                             local_data[i].errors[y][x].assign(begin(data->errors[y][x]), end(data->errors[y][x]));
@@ -879,7 +879,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                 }
             }
             last_proximity = best_proximity;
-            printf("Best proximity (%i) = %f\n", subset_sample_count, best_proximity);
+            printf("Best proximity (%u) = %f\n", subset_sample_count, best_proximity);
 
             for (int i = 0; i < ParallelCount; ++i) {
                 local_data[i] = *data;
@@ -990,7 +990,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                     last_update = std::chrono::high_resolution_clock::now();
 
                     smooth_update_rate = 0.75f * smooth_update_rate + 0.25f * update_rate;
-                    printf("Best proximity (%i) = %f (+%f/m)\n", subset_sample_count, best_proximity,
+                    printf("Best proximity (%u) = %f (+%f/m)\n", subset_sample_count, best_proximity,
                            smooth_update_rate);
 
                     { // save current state
@@ -1000,19 +1000,19 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                         out_file.write((const char *)data->sorting_keys, sizeof(data->sorting_keys));
                     }
 
-                    float min_error = FLT_MAX, max_error = 0.0f;
+                    float _min_error = FLT_MAX, _max_error = 0.0f;
                     for (int j = 0; j < TileRes * TileRes; ++j) {
                         data->debug_errors[j / TileRes][j % TileRes] = data->errors_first[j / TileRes][j % TileRes][4];
-                        min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
-                        max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                        _min_error = std::min(_min_error, data->debug_errors[j / TileRes][j % TileRes]);
+                        _max_error = std::max(_max_error, data->debug_errors[j / TileRes][j % TileRes]);
                     }
                     // normalize errors (for easier debugging)
                     for (int j = 0; j < TileRes * TileRes; ++j) {
                         float &e = data->debug_errors[j / TileRes][j % TileRes];
-                        e = (e - min_error) / (max_error - min_error);
+                        e = (e - _min_error) / (_max_error - _min_error);
                     }
 
-                    snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount, subset_sample_count);
+                    snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%u.tga", SampleCount, subset_sample_count);
                     WriteTGA(&data->debug_errors[0][0], TileRes, TileRes, TileRes, 1, 3, name_buf);
                 }
             }
