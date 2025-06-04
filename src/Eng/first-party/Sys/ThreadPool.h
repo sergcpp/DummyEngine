@@ -137,7 +137,7 @@ class ThreadPool {
     }
 
   private:
-    Sys::SmallVector<std::thread, 64> workers_;
+    std::vector<std::thread> workers_;
     std::deque<SmallVector<Task, 16>> task_lists_;
     std::atomic_int active_tasks_ = {};
 
