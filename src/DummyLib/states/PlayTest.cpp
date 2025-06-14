@@ -222,7 +222,7 @@ void PlayTest::UpdateAnim(const uint64_t dt_us) {
 
     BaseState::UpdateAnim(dt_us);
 
-    scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
+    scene_manager_->SetupView(cam_ctrl_->view_origin, cam_ctrl_->view_origin + Ren::Vec3d(cam_ctrl_->view_dir),
                               Ren::Vec3f{0, 1, 0}, cam_ctrl_->view_fov, Ren::Vec2f{0.0f}, 1, cam_ctrl_->min_exposure,
                               cam_ctrl_->max_exposure);
 

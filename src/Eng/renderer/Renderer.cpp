@@ -636,20 +636,33 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
     }
 
+    if (view_state_.prev_world_origin != list.world_origin) {
+        const Ren::Vec3f origin_diff = Ren::Vec3f(list.world_origin - view_state_.prev_world_origin);
+
+        view_state_.prev_view_from_world = Ren::Translate(view_state_.prev_view_from_world, origin_diff);
+        view_state_.prev_clip_from_world = Ren::Translate(view_state_.prev_clip_from_world, origin_diff);
+
+        for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
+            const probe_volume_t &volume = persistent_data.probe_volumes[i];
+
+            const Ren::Vec3d new_pivot = view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.pivot);
+            volume.pivot = Ren::Vec3f(new_pivot);
+
+            const Ren::Vec3d new_orig = view_state_.prev_world_origin - list.world_origin + Ren::Vec3d(volume.origin);
+            volume.origin = Ren::Vec3f(new_orig);
+
+            const Ren::Vec3i test = Ren::Vec3i{Floor((volume.pivot - volume.origin) / volume.spacing)};
+            assert(test == volume.scroll);
+        }
+    }
+
     for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
         const probe_volume_t &volume = persistent_data.probe_volumes[i];
         if (i == list.volume_to_update) {
-            Ren::Vec3i new_scroll = Ren::Vec3i{(list.draw_cam.world_position() - volume.origin) / volume.spacing};
-            // Ren::Vec3i new_scroll = Ren::Vec3i{list.draw_cam.world_position() / volume.spacing};
+            const Ren::Vec3i new_scroll =
+                Ren::Vec3i{Floor((list.draw_cam.world_position() - volume.origin) / volume.spacing)};
 
-            /*volume.origin[0] = float(new_scroll[0] / PROBE_VOLUME_RES_X) * volume.spacing[0] * PROBE_VOLUME_RES_X;
-            volume.origin[1] = float(new_scroll[1] / PROBE_VOLUME_RES_Y) * volume.spacing[1] * PROBE_VOLUME_RES_Y;
-            volume.origin[2] = float(new_scroll[2] / PROBE_VOLUME_RES_Z) * volume.spacing[2] * PROBE_VOLUME_RES_Z;
-
-            new_scroll[0] = new_scroll[0] % PROBE_VOLUME_RES_X;
-            new_scroll[1] = new_scroll[1] % PROBE_VOLUME_RES_Y;
-            new_scroll[2] = new_scroll[2] % PROBE_VOLUME_RES_Z;*/
-
+            volume.pivot = list.draw_cam.world_position();
             volume.scroll_diff = new_scroll - volume.scroll;
             volume.scroll = new_scroll;
             ++volume.updates_count;
@@ -663,12 +676,14 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         const probe_volume_t &last_volume = persistent_data.probe_volumes[PROBE_VOLUMES_COUNT - 1];
         last_volume.spacing =
             (list.bbox_max - list.bbox_min) / Ren::Vec3f{PROBE_VOLUME_RES_X, PROBE_VOLUME_RES_Y, PROBE_VOLUME_RES_Z};
-        last_volume.spacing =
-            Ren::Vec3f{std::max(std::max(last_volume.spacing[0], last_volume.spacing[1]), last_volume.spacing[2])};
+        const float scalar_spacing =
+            std::max(std::max(last_volume.spacing[0], last_volume.spacing[1]), last_volume.spacing[2]);
+        last_volume.spacing = Ren::Vec3f{scalar_spacing};
         const Ren::Vec3i new_scroll =
             Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - last_volume.origin) / last_volume.spacing};
         last_volume.scroll_diff = new_scroll - last_volume.scroll;
         last_volume.scroll = new_scroll;
+        last_volume.pivot = 0.5f * (list.bbox_max + list.bbox_min);
     }
 
     float probe_volume_spacing = 0.5f;
@@ -679,6 +694,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             volume.spacing = last_volume.spacing[0];
             volume.scroll = Ren::Vec3i{(0.5f * (list.bbox_max + list.bbox_min) - volume.origin) / volume.spacing};
             volume.scroll_diff = Ren::Vec3i(0);
+            volume.pivot = 0.5f * (list.bbox_max + list.bbox_min);
         } else {
             volume.spacing = probe_volume_spacing;
         }
@@ -1668,14 +1684,20 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     { // store info to use it in next frame
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
-        view_state_.prev_cam_pos = list.draw_cam.world_position();
         view_state_.prev_sun_dir = list.env.sun_dir;
 
         view_state_.prev_clip_from_world = list.draw_cam.proj_matrix() * list.draw_cam.view_matrix();
         view_state_.prev_view_from_world = list.draw_cam.view_matrix();
         view_state_.prev_clip_from_view = list.draw_cam.proj_matrix_offset();
 
+        Ren::Mat4f view_from_world_no_translation = list.draw_cam.view_matrix();
+        view_from_world_no_translation[3][0] = view_from_world_no_translation[3][1] =
+            view_from_world_no_translation[3][2] = 0;
+        view_state_.prev_clip_from_world_no_translation =
+            (list.draw_cam.proj_matrix() * view_from_world_no_translation);
+
         view_state_.prev_pre_exposure = view_state_.pre_exposure;
+        view_state_.prev_world_origin = list.world_origin;
     }
 
     const uint64_t cpu_draw_end_us = Sys::GetTimeUs();

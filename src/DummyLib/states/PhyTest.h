@@ -29,9 +29,11 @@ class Renderer;
 class PhyTest final : public BaseState {
     int view_pointer_ = 0, move_pointer_ = 0;
 
-    Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
+    Ren::Vec3d initial_view_pos_ = Ren::Vec3d{0, 1, 0};
+    Ren::Vec3f initial_view_dir_ = Ren::Vec3f{0, 0, -1};
 
-    Ren::Vec3f view_origin_, view_dir_;
+    Ren::Vec3d view_origin_;
+    Ren::Vec3f view_dir_;
 
     float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 

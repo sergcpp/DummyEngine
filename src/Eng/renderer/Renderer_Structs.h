@@ -393,9 +393,10 @@ struct view_state_t {
     float vertical_fov;
     float pixel_spread_angle;
     int frame_index, volume_to_update, stochastic_lights_count, stochastic_lights_count_cache;
-    Ren::Vec3f prev_cam_pos, prev_sun_dir;
-    Ren::Mat4f clip_from_world, clip_from_world_no_translation, view_from_world, prev_view_from_world,
-        prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
+    Ren::Vec3f prev_sun_dir;
+    Ren::Vec3d prev_world_origin;
+    Ren::Mat4f clip_from_world, clip_from_world_no_translation, prev_clip_from_world_no_translation, view_from_world,
+        prev_view_from_world, prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
     mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[2];
     float pre_exposure = 1.0f, prev_pre_exposure = 1.0f;
     Ren::Quatf probe_ray_rotator;
@@ -406,12 +407,13 @@ struct view_state_t {
 };
 
 struct shared_data_t {
-    Ren::Mat4f view_from_world, clip_from_view, clip_from_world, prev_view_from_world, prev_clip_from_world;
-    Ren::Mat4f world_from_view, view_from_clip, world_from_clip, delta_matrix;
+    Ren::Mat4f view_from_world, clip_from_view, clip_from_world, prev_view_from_world, prev_clip_from_world,
+        prev_clip_from_world_no_translation;
+    Ren::Mat4f world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
     Ren::Mat4f rt_clip_from_world;
     shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
-    Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
+    Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4i ires_and_ifres;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
@@ -424,9 +426,9 @@ struct shared_data_t {
     ellipse_item_t ellipsoids[MAX_ELLIPSES_TOTAL] = {};
     Types::atmosphere_params_t atmosphere;
 };
-static_assert(sizeof(shared_data_t) == sizeof(Ren::Mat4f) * 10 +                                 //
+static_assert(sizeof(shared_data_t) == sizeof(Ren::Mat4f) * 12 +                                 //
                                            sizeof(shadow_map_region_t) * MAX_SHADOWMAPS_TOTAL +  //
-                                           sizeof(Ren::Vec4f) * 24 +                             //
+                                           sizeof(Ren::Vec4f) * 23 +                             //
                                            sizeof(Types::probe_volume_t) * PROBE_VOLUMES_COUNT + //
                                            sizeof(uint32_t) * MAX_PORTALS_TOTAL +
                                            sizeof(probe_item_t) * MAX_PROBES_TOTAL +     //

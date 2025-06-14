@@ -117,8 +117,8 @@ struct volume_params_t {
     float anisotropy = 0.0f;
     float absorption = 0.0f;
     Ren::Vec3f emission_color = Ren::Vec3f{0.0f, 0.0f, 0.0f};
-    Ren::Vec3f bbox_min = Ren::Vec3f{-1e6f, -1e6f, -1e6f};
-    Ren::Vec3f bbox_max = Ren::Vec3f{1e6f, 1e6f, 1e6f};
+    Ren::Vec3d bbox_min = Ren::Vec3d{-1e6, -1e6, -1e6};
+    Ren::Vec3d bbox_max = Ren::Vec3d{1e6, 1e6, 1e6};
 };
 inline bool operator==(const volume_params_t &lhs, const volume_params_t &rhs) {
     return lhs.scatter_color == rhs.scatter_color && lhs.density == rhs.density && lhs.anisotropy == rhs.anisotropy &&
@@ -194,6 +194,7 @@ namespace Eng {
 struct probe_volume_t {
     mutable Ren::Vec3f origin, spacing;
     mutable Ren::Vec3i scroll, scroll_diff;
+    mutable Ren::Vec3f pivot;
     mutable int updates_count = 0;
     mutable bool reset_relocation = true;
     mutable bool reset_classification = true;
@@ -291,6 +292,7 @@ struct SceneData {
 
     CompStorage *comp_store[MAX_COMPONENT_TYPES] = {};
 
+    Ren::Vec3d origin = {};
     std::vector<SceneObject> objects;
     Ren::HashMap32<Ren::String, uint32_t> name_to_object;
     Ren::HashMap32<uint32_t, uint32_t> object_counts;

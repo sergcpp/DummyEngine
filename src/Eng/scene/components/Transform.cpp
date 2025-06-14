@@ -29,10 +29,11 @@ void Eng::Transform::Read(const Sys::JsObjectP &js_in, Transform &tr) {
     if (js_in.Has("pos")) {
         const Sys::JsArrayP &js_pos = js_in.at("pos").as_arr();
 
-        const auto pos = Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
-                                    float(js_pos.at(2).as_num().val)};
+        tr.position[0] = js_pos.at(0).as_num().val;
+        tr.position[1] = js_pos.at(1).as_num().val;
+        tr.position[2] = js_pos.at(2).as_num().val;
 
-        tr.world_from_object = Translate(tr.world_from_object, pos);
+        tr.world_from_object = Translate(tr.world_from_object, Ren::Vec3f(tr.position));
     }
 
     if (js_in.Has("rot")) {
@@ -74,9 +75,9 @@ void Eng::Transform::Write(const Transform &tr, Sys::JsObjectP &js_out) {
     { // write position
         Sys::JsArrayP js_pos(alloc);
 
-        js_pos.Push(Sys::JsNumber{tr.world_from_object[3][0]});
-        js_pos.Push(Sys::JsNumber{tr.world_from_object[3][1]});
-        js_pos.Push(Sys::JsNumber{tr.world_from_object[3][2]});
+        js_pos.Push(Sys::JsNumber{tr.position[0]});
+        js_pos.Push(Sys::JsNumber{tr.position[1]});
+        js_pos.Push(Sys::JsNumber{tr.position[2]});
 
         js_out.Insert("pos", std::move(js_pos));
     }

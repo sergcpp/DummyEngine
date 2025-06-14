@@ -11,8 +11,8 @@ void Eng::FreeCamController::Update(uint64_t dt_us) {
     const float fwd_speed = std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed), -max_fwd_speed),
                 side_speed = std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed), -max_fwd_speed);
 
-    view_origin += view_dir * fwd_speed;
-    view_origin += side * side_speed;
+    view_origin += Vec3d(view_dir) * fwd_speed;
+    view_origin += Vec3d(side) * side_speed;
 
     if (std::abs(fwd_speed) > 0.0f || std::abs(side_speed) > 0.0f) {
         invalidate_view = true;

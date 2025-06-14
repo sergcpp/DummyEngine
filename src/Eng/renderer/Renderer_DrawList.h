@@ -59,7 +59,7 @@ struct EnvironmentWeak {
     volume_params_t fog;
 
     EnvironmentWeak() = default;
-    explicit EnvironmentWeak(const Environment &env) {
+    explicit EnvironmentWeak(const Environment &env, const Ren::Vec3d &world_origin) {
         sun_dir = env.sun_dir;
         sun_col = env.sun_col;
         env_col = env.env_col;
@@ -82,6 +82,8 @@ struct EnvironmentWeak {
         env_map_name = env.env_map_name;
         atmosphere = env.atmosphere;
         fog = env.fog;
+        fog.bbox_min -= world_origin;
+        fog.bbox_max -= world_origin;
         generation = env.generation;
     }
 };
@@ -137,6 +139,8 @@ struct DrawList {
 
     int volume_to_update = -1;
     Ren::Vec3f bbox_min, bbox_max;
+
+    Ren::Vec3d world_origin;
 
     std::vector<TexEntry> visible_textures;
     std::vector<TexEntry> desired_textures;

@@ -9,6 +9,7 @@
 namespace Eng {
 struct Transform {
     // streaming data
+    Ren::Vec3d position;
     Ren::Vec3f euler_angles_rad, scale;
 
     // temporary data

@@ -293,10 +293,10 @@ void UITest3::Draw() {
         up_vector = Ren::Vec3f{-1, 0, 0};
     }
 
-    const Ren::Vec3f view_origin = view_origin_ + Ren::Vec3f{0, view_offset_, 0};
+    const Ren::Vec3d view_origin = view_origin_ + Ren::Vec3d{0, view_offset_, 0};
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, Ren::Vec2f{0.0f}, 1,
-                              min_exposure_, max_exposure_);
+    scene_manager_->SetupView(view_origin, view_origin + Ren::Vec3d(view_dir_), up_vector, view_fov_, Ren::Vec2f{0.0f},
+                              1, min_exposure_, max_exposure_);
 
     BaseState::Draw();
 }

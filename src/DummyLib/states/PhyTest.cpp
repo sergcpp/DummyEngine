@@ -218,8 +218,8 @@ void PhyTest::UpdateFixed(const uint64_t dt_us) {
                     side_speed =
                         std::max(std::min(side_press_speed_ + side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
 
-        view_origin_ += view_dir_ * fwd_speed;
-        view_origin_ += side * side_speed;
+        view_origin_ += Ren::Vec3d(view_dir_) * fwd_speed;
+        view_origin_ += Ren::Vec3d(side) * side_speed;
 
         if (std::abs(fwd_speed) > 0 || std::abs(side_speed) > 0) {
             invalidate_view_ = true;
@@ -376,7 +376,7 @@ void PhyTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0, 1, 0}, view_fov_,
+    scene_manager_->SetupView(view_origin_, view_origin_ + Ren::Vec3d(view_dir_), Ren::Vec3f{0, 1, 0}, view_fov_,
                               Ren::Vec2f{0.0f}, 1, min_exposure_, max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f",

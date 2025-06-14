@@ -195,7 +195,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     list.frame_index = frame_index_;
     list.draw_cam = cam;
     list.ext_cam = ext_cam;
-    list.env = EnvironmentWeak{scene.env};
+    list.env = EnvironmentWeak{scene.env, scene.origin};
 
     list.materials = &scene.materials;
     list.decals_atlas = &scene.decals_atlas;
@@ -251,6 +251,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     list.visible_textures.clear();
     list.desired_textures.clear();
+
+    list.world_origin = scene.origin;
 
     const bool culling_enabled = list.render_settings.enable_culling;
     const bool lighting_enabled = list.render_settings.enable_lights;
@@ -1144,6 +1146,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             if (sun_shadow_cache_[casc].valid && !should_update) {
                 // keep this cascade unchanged
                 reg.clip_from_world = sun_shadow_cache_[casc].clip_from_world;
+                if (sun_shadow_cache_[casc].world_origin != scene.origin) {
+                    const Ren::Vec3f origin_diff = Ren::Vec3f(scene.origin - sun_shadow_cache_[casc].world_origin);
+                    reg.clip_from_world = Ren::Translate(reg.clip_from_world, origin_diff);
+                }
                 continue;
             } else {
                 reg.clip_from_world = sh_clip_from_world;
@@ -1152,6 +1158,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 sun_shadow_cache_[casc].view_pos = list.draw_cam.world_position();
                 sun_shadow_cache_[casc].view_dir = view_dir;
                 sun_shadow_cache_[casc].clip_from_world = sh_clip_from_world;
+                sun_shadow_cache_[casc].world_origin = scene.origin;
             }
 
             const int ZSliceCount = (casc + 1) * 6;

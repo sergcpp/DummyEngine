@@ -146,6 +146,7 @@ class Renderer {
     struct ShadowFrustumCache {
         bool valid = false;
         Ren::Vec3f view_pos, view_dir;
+        Ren::Vec3d world_origin;
         Ren::Mat4f clip_from_world;
     };
 

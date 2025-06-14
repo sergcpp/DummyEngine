@@ -33,6 +33,8 @@ namespace SceneManagerConstants {
 const float NEAR_CLIP = 0.05f;
 const float FAR_CLIP = 10000.0f;
 
+const int SCROLLING_DISTANCE = 64;
+
 extern const int DECALS_ATLAS_RESX = 4096 / 4, DECALS_ATLAS_RESY = 2048 / 4;
 extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
@@ -509,15 +511,15 @@ void Eng::SceneManager::LoadScene(const Sys::JsObjectP &js_scene, const Ren::Bit
             }
             if (js_fog.Has("bbox_min")) {
                 const Sys::JsArrayP &js_bbox_min = js_fog.at("bbox_min").as_arr();
-                scene_data_.env.fog.bbox_min[0] = float(js_bbox_min[0].as_num().val);
-                scene_data_.env.fog.bbox_min[1] = float(js_bbox_min[1].as_num().val);
-                scene_data_.env.fog.bbox_min[2] = float(js_bbox_min[2].as_num().val);
+                scene_data_.env.fog.bbox_min[0] = js_bbox_min[0].as_num().val;
+                scene_data_.env.fog.bbox_min[1] = js_bbox_min[1].as_num().val;
+                scene_data_.env.fog.bbox_min[2] = js_bbox_min[2].as_num().val;
             }
             if (js_fog.Has("bbox_max")) {
                 const Sys::JsArrayP &js_bbox_max = js_fog.at("bbox_max").as_arr();
-                scene_data_.env.fog.bbox_max[0] = float(js_bbox_max[0].as_num().val);
-                scene_data_.env.fog.bbox_max[1] = float(js_bbox_max[1].as_num().val);
-                scene_data_.env.fog.bbox_max[2] = float(js_bbox_max[2].as_num().val);
+                scene_data_.env.fog.bbox_max[0] = js_bbox_max[0].as_num().val;
+                scene_data_.env.fog.bbox_max[1] = js_bbox_max[1].as_num().val;
+                scene_data_.env.fog.bbox_max[2] = js_bbox_max[2].as_num().val;
             }
         }
     } else {
@@ -528,8 +530,6 @@ void Eng::SceneManager::LoadScene(const Sys::JsObjectP &js_scene, const Ren::Bit
 
     // scene_data_.probe_storage.Finalize();
     // LoadProbeCache();
-
-    log->Info("SceneManager: RebuildSceneBVH!");
 
     RebuildSceneBVH();
     RebuildMaterialTextureGraph();
@@ -901,8 +901,7 @@ void Eng::SceneManager::Release_TLAS(const bool immediate) {
     }
     std::fill(std::begin(scene_data_.persistent_data.rt_tlas_buf), std::end(scene_data_.persistent_data.rt_tlas_buf),
               Ren::BufRef{});
-    std::fill(std::begin(scene_data_.persistent_data.rt_tlas), std::end(scene_data_.persistent_data.rt_tlas),
-              nullptr);
+    std::fill(std::begin(scene_data_.persistent_data.rt_tlas), std::end(scene_data_.persistent_data.rt_tlas), nullptr);
 }
 
 void Eng::SceneManager::AllocMeshBuffers() {
@@ -1146,7 +1145,7 @@ void Eng::SceneManager::LoadProbeCache() {
 #endif
 }
 
-void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up,
+void Eng::SceneManager::SetupView(const Ren::Vec3d &origin, const Ren::Vec3d &target, const Ren::Vec3f &up,
                                   const float fov, const Ren::Vec2f sensor_shift, const float gamma,
                                   const float min_exposure, const float max_exposure) {
     using namespace SceneManagerConstants;
@@ -1157,17 +1156,31 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
         return;
     }
 
-    cam_.SetupView(origin, target, up);
+    int origin_dist = int(std::abs(origin[0] - scene_data_.origin[0]));
+    origin_dist = std::max(origin_dist, int(std::abs(origin[1] - scene_data_.origin[1])));
+    origin_dist = std::max(origin_dist, int(std::abs(origin[2] - scene_data_.origin[2])));
+
+    if (origin_dist > SCROLLING_DISTANCE) {
+        const Ren::Vec3i cam_sector = Ren::Vec3i(origin / double(SCROLLING_DISTANCE / 2));
+        const Ren::Vec3d new_origin = Ren::Vec3d(cam_sector) * double(SCROLLING_DISTANCE / 2);
+
+        UpdateWorldScrolling(new_origin);
+    }
+
+    const Ren::Vec3f rel_origin = Ren::Vec3f(origin - scene_data_.origin);
+    const Ren::Vec3f rel_target = Ren::Vec3f(target - scene_data_.origin);
+
+    cam_.SetupView(rel_origin, rel_target, up);
     cam_.Perspective(Ren::eZRange::OneToZero, fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP,
                      sensor_shift);
     cam_.UpdatePlanes();
 
     cam_.set_render_mask(Ren::Bitmask<Drawable::eVisibility>{Drawable::eVisibility::Camera});
 
-    const float ExtendedFrustumOffset = 100.0f;
-    const float ExtendedFrustumFrontOffset = 200.0f;
+    static const float ExtendedFrustumOffset = 100.0f;
+    static const float ExtendedFrustumFrontOffset = 200.0f;
 
-    ext_cam_.SetupView(origin - ExtendedFrustumOffset * cam_.fwd(), origin, cam_.up());
+    ext_cam_.SetupView(rel_origin - ExtendedFrustumOffset * cam_.fwd(), rel_origin, cam_.up());
     ext_cam_.Perspective(Ren::eZRange::OneToZero, cam_.angle(), cam_.aspect(), 1.0f,
                          ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
     ext_cam_.UpdatePlanes();
@@ -1177,13 +1190,13 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     cam_.max_exposure = max_exposure;
 
     const double cur_time_s = Sys::GetTimeS();
-    const Ren::Vec3f velocity = (origin - last_cam_pos_) / float(cur_time_s - last_cam_time_s_);
+    const Ren::Vec3f velocity = Ren::Vec3f(origin - last_cam_pos_) / float(cur_time_s - last_cam_time_s_);
     last_cam_pos_ = origin;
     last_cam_time_s_ = cur_time_s;
 
     if (snd_ctx_) {
         const Ren::Vec3f fwd_up[2] = {cam_.fwd(), cam_.up()};
-        snd_ctx_->SetupListener(ValuePtr(origin), ValuePtr(velocity), ValuePtr(fwd_up[0]));
+        snd_ctx_->SetupListener(ValuePtr(rel_origin), ValuePtr(velocity), ValuePtr(fwd_up[0]));
     }
 }
 

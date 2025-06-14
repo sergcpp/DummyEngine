@@ -89,7 +89,7 @@ void main() {
     }*/
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, 0.0, 1.0);
-    view_dir_ws = normalize(TransformFromClipSpace(g_shrd_data.world_from_clip, pos_cs));
+    view_dir_ws = normalize(TransformFromClipSpace(g_shrd_data.world_from_clip_no_translation, pos_cs));
 #endif
 
     const vec3 rotated_dir = rotate_xz(view_dir_ws, g_shrd_data.env_col.w);

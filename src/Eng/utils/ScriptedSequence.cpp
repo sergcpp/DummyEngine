@@ -614,11 +614,11 @@ void Eng::ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction 
         cam_skel->bone_matrix("tip", cam_mat);
         cam_skel->bone_matrix("target", target_mat);
 
-        const auto pos = Ren::Vec3f{cam_mat[3]};
-        const Ren::Vec3f trg = pos - Ren::Vec3f{cam_mat[2]};
+        const auto pos = Ren::Vec3d{cam_mat[3]};
+        const Ren::Vec3d trg = pos - Ren::Vec3d{cam_mat[2]};
 
         cam.focus_depth = 3.0f;
-        cam.focus_distance = Distance(pos, Ren::Vec3f{target_mat[3]});
+        cam.focus_distance = float(Distance(pos, Ren::Vec3d{target_mat[3]}));
         cam.focus_far_mul = cam.focus_near_mul = action.dof ? 1.0f : 0.0f;
         cam.fade = Ren::Mix(action.fade_beg, action.fade_end, t_norm);
         cam.max_exposure = 32.0f;

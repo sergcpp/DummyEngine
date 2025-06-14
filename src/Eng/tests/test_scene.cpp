@@ -158,23 +158,23 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
         require_return(js_scene.Read(in_stream));
     }
 
-    Ren::Vec3f view_pos, view_dir;
+    Ren::Vec3d view_pos, view_dir;
     float view_fov = 45.0f, gamma = 1.0f, min_exposure = 0.0f, max_exposure = 0.0f;
 
     if (js_scene.Has("camera")) {
         const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
-            view_pos[0] = float(js_orig.at(0).as_num().val);
-            view_pos[1] = float(js_orig.at(1).as_num().val);
-            view_pos[2] = float(js_orig.at(2).as_num().val);
+            view_pos[0] = js_orig.at(0).as_num().val;
+            view_pos[1] = js_orig.at(1).as_num().val;
+            view_pos[2] = js_orig.at(2).as_num().val;
         }
 
         if (js_cam.Has("view_dir")) {
             const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
-            view_dir[0] = float(js_dir.at(0).as_num().val);
-            view_dir[1] = float(js_dir.at(1).as_num().val);
-            view_dir[2] = float(js_dir.at(2).as_num().val);
+            view_dir[0] = js_dir.at(0).as_num().val;
+            view_dir[1] = js_dir.at(1).as_num().val;
+            view_dir[2] = js_dir.at(2).as_num().val;
         }
 
         if (js_cam.Has("fov")) {

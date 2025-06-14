@@ -232,9 +232,9 @@ void UITest4::OnPostloadScene(Sys::JsObjectP &js_scene) {
         const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
             const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
-            cam_ctrl_->view_origin[0] = float(js_orig.at(0).as_num().val);
-            cam_ctrl_->view_origin[1] = float(js_orig.at(1).as_num().val);
-            cam_ctrl_->view_origin[2] = float(js_orig.at(2).as_num().val);
+            cam_ctrl_->view_origin[0] = js_orig.at(0).as_num().val;
+            cam_ctrl_->view_origin[1] = js_orig.at(1).as_num().val;
+            cam_ctrl_->view_origin[2] = js_orig.at(2).as_num().val;
         }
 
         if (js_cam.Has("view_dir")) {
@@ -274,7 +274,7 @@ void UITest4::UpdateAnim(const uint64_t dt_us) {
     }
 
     if (use_free_cam_) {
-        scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
+        scene_manager_->SetupView(cam_ctrl_->view_origin, cam_ctrl_->view_origin + Ren::Vec3d(cam_ctrl_->view_dir),
                                   Ren::Vec3f{0, 1, 0}, cam_ctrl_->view_fov, Ren::Vec2f{0.0f}, 1,
                                   cam_ctrl_->min_exposure, cam_ctrl_->max_exposure);
     }

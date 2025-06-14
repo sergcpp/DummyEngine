@@ -1,6 +1,7 @@
 #version 430 core
 
 #include "_cs_common.glsl"
+#include "taa_common.glsl"
 #include "skydome_interface.h"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -35,7 +36,7 @@ void main() {
 #endif
 
     const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0 - unjitter, ray_origin_ss.z, 1.0);
-    const vec3 ray_origin_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, ray_origin_cs);
+    const vec3 ray_origin_ws = TransformFromClipSpace(g_shrd_data.world_from_clip_no_translation, ray_origin_cs);
 
     const vec3 view_ray_ws = normalize(ray_origin_ws);
 
@@ -50,7 +51,7 @@ void main() {
     }
     out_color = compress_hdr(out_color, g_shrd_data.cam_pos_and_exp.w);
 
-    vec4 prev_ray_origin_cs = g_shrd_data.prev_clip_from_world * vec4(ray_origin_ws, 1.0);
+    vec4 prev_ray_origin_cs = g_shrd_data.prev_clip_from_world_no_translation * vec4(ray_origin_ws, 1.0);
     prev_ray_origin_cs /= prev_ray_origin_cs.w;
 #if defined(VULKAN)
     prev_ray_origin_cs.y = -prev_ray_origin_cs.y;
@@ -58,7 +59,7 @@ void main() {
 
     const vec2 hist_uvs = 0.5 * prev_ray_origin_cs.xy + 0.5;
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
-        const vec4 history = textureLod(g_sky_hist_tex, hist_uvs, 0.0);
+        const vec4 history = SampleTextureCatmullRom(g_sky_hist_tex, hist_uvs, g_params.img_size);
         if (history.w > 0.0) {
             out_color = g_params.hist_weight * history.xyz;
         }

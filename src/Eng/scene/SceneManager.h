@@ -160,7 +160,7 @@ class SceneManager {
 
     void LoadProbeCache();
 
-    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov,
+    void SetupView(const Ren::Vec3d &origin, const Ren::Vec3d &target, const Ren::Vec3f &up, float fov,
                    Ren::Vec2f sensor_shift, float gamma, float min_exposure, float max_exposure);
 
     using PostLoadFunc = void(const Sys::JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
@@ -231,6 +231,8 @@ class SceneManager {
                        Ren::PipelineStorage &storage, Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)>
         init_pipelines_;
 
+    void UpdateWorldScrolling(const Ren::Vec3d &new_origin);
+
     bool UpdateMaterialsBuffer();
     bool UpdateInstanceBuffer();
     void UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end);
@@ -251,7 +253,7 @@ class SceneManager {
     path_config_t paths_;
 
     Ren::Camera cam_, ext_cam_;
-    Ren::Vec3f last_cam_pos_;
+    Ren::Vec3d last_cam_pos_;
     double last_cam_time_s_ = 0.0;
     Snd::Source amb_sound_;
 

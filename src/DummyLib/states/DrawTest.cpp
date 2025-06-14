@@ -680,8 +680,8 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
     }
 
     // Update camera
-    scene_manager_->SetupView(Vec3f(view_origin_), Vec3f(view_origin_ + view_dir), Vec3f{0, 1, 0}, view_fov_,
-                              view_sensor_shift_, gamma_, min_exposure_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, view_origin_ + view_dir, Vec3f{0, 1, 0}, view_fov_, view_sensor_shift_,
+                              gamma_, min_exposure_, max_exposure_);
 
     BaseState::UpdateAnim(dt_us);
 }

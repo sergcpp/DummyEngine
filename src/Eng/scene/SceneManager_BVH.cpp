@@ -98,6 +98,8 @@ void Eng::SceneManager::RebuildSceneBVH() {
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_rebuild_bvh_str);
 
+    ren_ctx_.log()->Info("SceneManager: RebuildSceneBVH!");
+
     auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     std::vector<Phy::prim_t> primitives;
@@ -120,12 +122,14 @@ void Eng::SceneManager::RebuildSceneBVH() {
     }
 
     struct prims_coll_t {
+        uint32_t parent_index = 0xffffffff;
         std::vector<uint32_t> indices;
         Phy::Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()},
                    max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
         prims_coll_t() = default;
-        prims_coll_t(std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min, const Phy::Vec3f &_max)
-            : indices(std::move(_indices)), min(_min), max(_max) {}
+        prims_coll_t(const uint32_t _parent_index, std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min,
+                     const Phy::Vec3f &_max)
+            : parent_index(_parent_index), indices(std::move(_indices)), min(_min), max(_max) {}
     };
 
     std::deque<prims_coll_t> prim_lists;
@@ -145,23 +149,12 @@ void Eng::SceneManager::RebuildSceneBVH() {
     s.min_primitives_in_leaf = 1;
 
     while (!prim_lists.empty()) {
+        const uint32_t parent_index = prim_lists.back().parent_index;
         Phy::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
                                                            prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         const auto leaf_index = uint32_t(scene_data_.nodes.size());
-        uint32_t parent_index = 0xffffffff;
-
-        if (leaf_index) {
-            // skip bound checks in debug mode
-            const bvh_node_t *_out_nodes = &scene_data_.nodes[0];
-            for (uint32_t i = leaf_index - 1; i >= scene_data_.root_node; i--) {
-                if (_out_nodes[i].left_child == leaf_index || _out_nodes[i].right_child == leaf_index) {
-                    parent_index = uint32_t(i);
-                    break;
-                }
-            }
-        }
 
         if (split_data.right_indices.empty()) {
             const Phy::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
@@ -210,27 +203,73 @@ void Eng::SceneManager::RebuildSceneBVH() {
             n.right_child = index + 2;
             n.parent = parent_index;
 
-            prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0],
+            prim_lists.emplace_front(leaf_index, std::move(split_data.left_indices), split_data.left_bounds[0],
                                      split_data.left_bounds[1]);
-            prim_lists.emplace_front(std::move(split_data.right_indices), split_data.right_bounds[0],
+            prim_lists.emplace_front(leaf_index, std::move(split_data.right_indices), split_data.right_bounds[0],
                                      split_data.right_bounds[1]);
 
             nodes_count += 2;
         }
     }
 
-    /*{   // reorder objects
-        uint32_t j, k;
-        for (uint32_t i = 0; i < uint32_t(objects_.size()); i++) {
-            while (i != (j = obj_indices[i])) {
-                k = obj_indices[j];
-                std::swap(objects_[j], objects_[k]);
-                std::swap(obj_indices[i], obj_indices[j]);
-            }
-        }
-    }*/
-
     __itt_task_end(__g_itt_domain);
+}
+
+void Eng::SceneManager::UpdateWorldScrolling(const Ren::Vec3d &new_origin) {
+    using namespace SceneManagerInternal;
+
+    ren_ctx_.log()->Info("SceneManager: UpdateWorldScrolling!");
+
+    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+
+    bvh_node_t *nodes = scene_data_.nodes.data();
+
+    const Ren::Vec3f origin_diff = Ren::Vec3f(new_origin - scene_data_.origin);
+
+    for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
+        SceneObject &obj = scene_data_.objects[i];
+        if (obj.comp_mask & CompTransformBit) {
+            Transform &tr = transforms[obj.components[CompTransform]];
+
+            tr.world_from_object[3][0] = float(tr.position[0] - new_origin[0]);
+            tr.world_from_object[3][1] = float(tr.position[1] - new_origin[1]);
+            tr.world_from_object[3][2] = float(tr.position[2] - new_origin[2]);
+            tr.UpdateTemporaryData();
+
+            // The best we can do here is to translate previous matrix into the space of a new camera sector
+            tr.world_from_object_prev[3][0] += origin_diff[0];
+            tr.world_from_object_prev[3][1] += origin_diff[1];
+            tr.world_from_object_prev[3][2] += origin_diff[2];
+
+            if (tr.node_index != 0xffffffff) {
+                bvh_node_t &node = nodes[tr.node_index];
+
+                const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
+                node.bbox_min = tr.bbox_min_ws - BoundsMargin * d;
+                node.bbox_max = tr.bbox_max_ws + BoundsMargin * d;
+
+                // update hierarchy boxes
+                uint32_t up_parent = node.parent;
+                while (up_parent != 0xffffffff) {
+                    if (up_parent == 3) {
+                        volatile int ii = 0;
+                    }
+                    const uint32_t ch0 = nodes[up_parent].left_child, ch1 = nodes[up_parent].right_child;
+
+                    nodes[up_parent].bbox_min = Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
+                    nodes[up_parent].bbox_max = Max(nodes[ch0].bbox_max, nodes[ch1].bbox_max);
+
+                    // NOTE: children sorting is unnecessary here
+
+                    up_parent = nodes[up_parent].parent;
+                }
+            }
+
+            instance_data_to_update_.push_back(i);
+        }
+    }
+
+    scene_data_.origin = new_origin;
 }
 
 void Eng::SceneManager::RemoveNode(const uint32_t node_index) {

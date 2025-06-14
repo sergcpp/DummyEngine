@@ -37,7 +37,8 @@ class UITest3 : public BaseState {
     std::unique_ptr<Gui::Image9Patch> test_frame_;
     std::unique_ptr<PagedReader> paged_reader_;
 
-    Ren::Vec3f view_origin_, view_dir_;
+    Ren::Vec3d view_origin_;
+    Ren::Vec3f view_dir_;
     float view_fov_ = 0, view_offset_ = 0;
     float min_exposure_ = -1000, max_exposure_ = 1000;
 

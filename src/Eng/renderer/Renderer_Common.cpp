@@ -304,9 +304,11 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
 
             shrd_data.prev_view_from_world = view_state_.prev_view_from_world;
             shrd_data.prev_clip_from_world = view_state_.prev_clip_from_world;
+            shrd_data.prev_clip_from_world_no_translation = view_state_.prev_clip_from_world_no_translation;
             shrd_data.world_from_view = Inverse(shrd_data.view_from_world);
             shrd_data.view_from_clip = Inverse(shrd_data.clip_from_view);
             shrd_data.world_from_clip = Inverse(shrd_data.clip_from_world);
+            shrd_data.world_from_clip_no_translation = Inverse(view_state_.clip_from_world_no_translation);
             // delta matrix between current and previous frame
             shrd_data.delta_matrix =
                 view_state_.prev_clip_from_view * (view_state_.down_buf_view_from_world * shrd_data.world_from_view);
@@ -402,8 +404,6 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             }
 
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
-            shrd_data.prev_cam_pos =
-                Ren::Vec4f{view_state_.prev_cam_pos[0], view_state_.prev_cam_pos[1], view_state_.prev_cam_pos[2], 0.0f};
             shrd_data.cam_pos_and_exp = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], view_state_.pre_exposure};
             shrd_data.wind_scroll =
                 Ren::Vec4f{p_list_->env.curr_wind_scroll_lf[0], p_list_->env.curr_wind_scroll_lf[1],
