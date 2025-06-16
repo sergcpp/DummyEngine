@@ -503,3 +503,5 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     stbi_flip_vertically_on_write(false);
     stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
 }
+
+void test_empty_scene(Sys::ThreadPool &threads) { run_image_test(threads, "empty", 51.70, Full); }

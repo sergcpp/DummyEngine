@@ -648,7 +648,7 @@ Gui::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, std::string_view text_
             const int len_before = portion_buf_len;
 
             int next_pos = char_pos;
-            while (text_data[next_pos] && next_pos < text_data.size()) {
+            while (next_pos < text_data.size()) {
                 const int next_start = next_pos;
 
                 uint32_t _unicode;

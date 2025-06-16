@@ -66,7 +66,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     if (pers_data.textures_descr_pool->descr_count(Ren::eDescrType::CombinedImageSampler) < max_tex_count) {
         assert(materials_per_descriptor > 0);
         const int needed_descriptors_count =
-            int(max_mat_count + materials_per_descriptor - 1) / materials_per_descriptor;
+            std::max(1, int(max_mat_count + materials_per_descriptor - 1) / materials_per_descriptor);
 
         Ren::DescrSizes descr_sizes;
         descr_sizes.img_sampler_count =
