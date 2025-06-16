@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = intel_arc
-	commit = 7ed9b12d0000a98da8b2e0437400a8aad6c3a914
+	branch = master
+	commit = 30ef2fde17fddd9634b8cbfd96aea99a99bb7cab
 	method = merge
 	cmdver = 0.4.6
-	parent = f6800069d5dba7c66efc65525e4c8fb1873ed447
+	parent = eb47ed6717e1b05f1558a51026303ee445f7def7
