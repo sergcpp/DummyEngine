@@ -123,9 +123,9 @@ float Luma(vec3 col) {
 }
 
 void main() {
-    ivec2 uvs_px = ivec2(g_vtx_uvs);
-    vec2 texel_size = vec2(1.0) / g_params.tex_size;
-    vec2 norm_uvs = g_vtx_uvs / g_params.tex_size;
+    const ivec2 uvs_px = ivec2(g_vtx_uvs);
+    const vec2 texel_size = vec2(1.0) / g_params.tex_size;
+    const vec2 norm_uvs = g_vtx_uvs / g_params.tex_size;
 
     const float depth = texelFetch(g_depth_curr, uvs_px, 0).x;
     vec4 col_curr = textureLod(g_color_curr_nearest, norm_uvs, 0.0);
@@ -159,7 +159,7 @@ void main() {
             min_depth = depth;
         }
 
-        vec3 col = FetchColor(g_color_curr_nearest, uvs_px + offsets[i]).xyz;
+        const vec3 col = FetchColor(g_color_curr_nearest, uvs_px + offsets[i]).xyz;
         col_avg += col;
         col_var += col * col;
     }
@@ -173,15 +173,15 @@ void main() {
 
     vec3 closest_vel = texelFetch(g_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(g_params.tex_size - vec2(1))), 0).xyz;
 #else
-    vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, -1)).xyz));
-    vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, -1)).xyz));
-    vec3 col_tr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, -1)).xyz));
-    vec3 col_ml = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +0)).xyz));
-    vec3 col_mc = col_curr.xyz;
-    vec3 col_mr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +0)).xyz));
-    vec3 col_bl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +1)).xyz));
-    vec3 col_bc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, +1)).xyz));
-    vec3 col_br = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +1)).xyz));
+    const vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, -1)).xyz));
+    const vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, -1)).xyz));
+    const vec3 col_tr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, -1)).xyz));
+    const vec3 col_ml = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +0)).xyz));
+    const vec3 col_mc = col_curr.xyz;
+    const vec3 col_mr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +0)).xyz));
+    const vec3 col_bl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +1)).xyz));
+    const vec3 col_bc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, +1)).xyz));
+    const vec3 col_br = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +1)).xyz));
 
     vec3 col_min = min3(min3(col_tl, col_tc, col_tr),
                         min3(col_ml, col_mc, col_mr),
@@ -193,15 +193,15 @@ void main() {
     vec3 col_avg = (col_tl + col_tc + col_tr + col_ml + col_mc + col_mr + col_bl + col_bc + col_br) / 9.0;
 
     #if defined(ROUNDED_NEIBOURHOOD)
-        vec3 col_min5 = min(col_tc, min(col_ml, min(col_mc, min(col_mr, col_bc))));
-        vec3 col_max5 = max(col_tc, max(col_ml, max(col_mc, max(col_mr, col_bc))));
-        vec3 col_avg5 = (col_tc + col_ml + col_mc + col_mr + col_bc) / 5.0;
+        const vec3 col_min5 = min(col_tc, min(col_ml, min(col_mc, min(col_mr, col_bc))));
+        const vec3 col_max5 = max(col_tc, max(col_ml, max(col_mc, max(col_mr, col_bc))));
+        const vec3 col_avg5 = (col_tc + col_ml + col_mc + col_mr + col_bc) / 5.0;
         col_min = 0.5 * (col_min + col_min5);
         col_max = 0.5 * (col_max + col_max5);
         col_avg = 0.5 * (col_avg + col_avg5);
     #endif
 
-    #if defined(YCoCg)
+    #if defined(YCoCg) && 0
         const vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.x - col_min.x));
         const vec2 chroma_center = 0.5 * (col_min.yz + col_max.yz);//col_curr.yz;
         col_min.yz = chroma_center - chroma_extent;
@@ -209,7 +209,7 @@ void main() {
         col_avg.yz = chroma_center;
     #endif
 
-    vec3 closest_frag = FindClosestFragment_3x3(g_depth_curr, norm_uvs, texel_size);
+    const vec3 closest_frag = FindClosestFragment_3x3(g_depth_curr, norm_uvs, texel_size);
     vec3 closest_vel = textureLod(g_velocity, closest_frag.xy, 0.0).xyz;
 
 #if defined(LOCKING)
@@ -312,10 +312,10 @@ void main() {
     const float HistoryWeightMin = 0.88;
     const float HistoryWeightMax = 0.93;
 
-    float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.2);
-    float unbiased_weight = 1.0 - unbiased_diff;
-    float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
-    float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
+    const float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.2);
+    const float unbiased_weight = 1.0 - unbiased_diff;
+    const float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
+    const float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
     vec3 col_temporal = mix(col_curr.xyz, col_hist.xyz, history_weight);
 #if defined(YCoCg)
