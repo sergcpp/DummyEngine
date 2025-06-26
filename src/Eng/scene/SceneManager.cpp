@@ -1551,10 +1551,6 @@ std::array<Ren::MaterialRef, 3> Eng::SceneManager::OnLoadMaterial(std::string_vi
         }
     }*/
 
-    if (name == "mat_test/vol_mat0.mat") {
-        volatile int ii = 0;
-    }
-
     ret[0] = scene_data_.materials.FindByName(name);
     ret[1] = scene_data_.materials.FindByName(backside_name);
     if (!ret[1]) {

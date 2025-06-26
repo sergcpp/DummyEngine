@@ -251,9 +251,6 @@ void Eng::SceneManager::UpdateWorldScrolling(const Ren::Vec3d &new_origin) {
                 // update hierarchy boxes
                 uint32_t up_parent = node.parent;
                 while (up_parent != 0xffffffff) {
-                    if (up_parent == 3) {
-                        volatile int ii = 0;
-                    }
                     const uint32_t ch0 = nodes[up_parent].left_child, ch1 = nodes[up_parent].right_child;
 
                     nodes[up_parent].bbox_min = Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
@@ -744,6 +741,7 @@ void Eng::SceneManager::Alloc_SWRT_TLAS() {
         scene_data_.persistent_data.swrt.rt_prim_indices_buf =
             scene_data_.buffers.Insert("SWRT Prim Indices", api_ctx, Ren::eBufType::Texture,
                                        uint32_t(1024 * sizeof(uint32_t)), uint32_t(sizeof(uint32_t)));
+        scene_data_.persistent_data.swrt.rt_prim_indices_buf->AddBufferView(Ren::eTexFormat::R32UI);
     }
     if (!scene_data_.persistent_data.swrt.rt_blas_buf) {
         scene_data_.persistent_data.swrt.rt_blas_buf = scene_data_.buffers.Insert(
