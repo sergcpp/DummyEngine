@@ -82,8 +82,8 @@ void main() {
 
     const vec3 dither = vec3(Bayer4x4(uvec2(gl_FragCoord.xy), 0),
                              Bayer4x4(uvec2(gl_FragCoord.xy), 1),
-                             Bayer4x4(uvec2(gl_FragCoord.xy), 2));
-    const vec4 result = vec4(col + dither / 255.0, 1.0);
+                             Bayer4x4(uvec2(gl_FragCoord.xy), 2)) - vec3(7.5 / 16.0);
+    const vec4 result = vec4(clamp(col + (dither / 255.0), vec3(0.0), vec3(1.0)), 1.0);
 
     g_out_color = result;
 #ifdef TWO_TARGETS

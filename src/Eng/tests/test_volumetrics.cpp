@@ -6,8 +6,8 @@ void test_volumetrics(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "vol_global0", 24.80, Full_Ultra);
     run_image_test(threads, "vol_global1", 25.20, Full);
     run_image_test(threads, "vol_global1", 25.25, Full_Ultra);
-    run_image_test(threads, "vol_global2", 30.50, Full);
-    run_image_test(threads, "vol_global2", 30.60, Full_Ultra);
+    run_image_test(threads, "vol_global2", 30.45, Full);
+    run_image_test(threads, "vol_global2", 30.55, Full_Ultra);
     run_image_test(threads, "vol_global3", 32.80, Full);
     run_image_test(threads, "vol_global3", 32.90, Full_Ultra);
     run_image_test(threads, "vol_global4", 27.65, Full);
@@ -26,14 +26,14 @@ void test_volumetrics(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "vol_global_absorption", 25.80, Full_Ultra);
 
     // emission
-    run_image_test(threads, "vol_global_emission", 26.60, Full);
-    run_image_test(threads, "vol_global_emission", 26.70, Full_Ultra);
+    run_image_test(threads, "vol_global_emission", 26.30, Full);
+    run_image_test(threads, "vol_global_emission", 26.40, Full_Ultra);
 
     // meshes
     run_image_test(threads, "vol_local", 26.10, Full);
     run_image_test(threads, "vol_local", 26.45, Full_Ultra);
     run_image_test(threads, "vol_local_absorption", 25.95, Full);
     run_image_test(threads, "vol_local_absorption", 26.50, Full_Ultra);
-    run_image_test(threads, "vol_local_emission", 24.60, Full);
-    run_image_test(threads, "vol_local_emission", 25.00, Full_Ultra);
+    run_image_test(threads, "vol_local_emission", 24.40, Full);
+    run_image_test(threads, "vol_local_emission", 24.80, Full_Ultra);
 }
