@@ -77,10 +77,12 @@ class WordPuzzleUI : public Gui::BaseElement {
 
     void Resize() override;
 
+    bool HandleInput(const Gui::input_event_t &ev, const std::vector<bool> &keys_state) override;
+
     void Draw(Gui::Renderer *r) override;
 
-    //void Hover(const Gui::Vec2f &p) override;
-    //void Press(const Gui::Vec2f &p, bool push) override;
+    bool Hover(const Gui::Vec2f &lp);
+    bool Press(const Gui::Vec2f &lp, bool push);
 
     Gui::SignalN<void()> puzzle_solved_signal;
 };

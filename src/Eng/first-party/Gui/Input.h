@@ -30,4 +30,6 @@ struct input_event_t {
     Vec2f move;
     uint64_t time_stamp;
 };
+
+char CharFromKeycode(uint32_t key_code);
 }

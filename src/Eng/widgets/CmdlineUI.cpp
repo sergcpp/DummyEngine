@@ -147,7 +147,7 @@ bool Eng::CmdlineUI::HandleInput(const Gui::input_event_t &ev, const std::vector
             history_index_ = std::max(--history_index_, 0);
             history_.back() = history_[history_.size() - 2 - history_index_];
         } else {
-            char ch = Eng::InputManager::CharFromKeycode(ev.key_code);
+            char ch = Eng::CharFromKeycode(ev.key_code);
             if (keys_state[eKey::LeftShift] || keys_state[eKey::RightShift]) {
                 if (ch == '-') {
                     ch = '_';

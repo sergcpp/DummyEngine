@@ -104,7 +104,7 @@ bool Gui::BitmapFont::Load(std::string_view name, std::istream &data, Ren::Conte
             p.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             Ren::eTexLoadStatus status;
-            tex_ = ctx.LoadTextureRegion(name, stage_buf, 0, img_data_size, cmd_buf, p, &status);
+            tex_ = ctx.LoadTextureRegion(name, stage_buf, 0, img_data_size, p, cmd_buf, &status);
 
             ctx.EndTempSingleTimeCommands(cmd_buf);
             stage_buf.FreeImmediate();

@@ -1045,14 +1045,6 @@ bool Ren::ApiContext::InitCommandBuffers(uint32_t family_index, ILog *log) {
     VkCommandBufferAllocateInfo cmd_buf_alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     cmd_buf_alloc_info.commandPool = command_pool;
     cmd_buf_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    cmd_buf_alloc_info.commandBufferCount = 1;
-
-    res = vkAllocateCommandBuffers(device, &cmd_buf_alloc_info, &setup_cmd_buf);
-    if (res != VK_SUCCESS) {
-        log->Error("Failed to create command buffer!");
-        return false;
-    }
-
     cmd_buf_alloc_info.commandBufferCount = MaxFramesInFlight;
     res = vkAllocateCommandBuffers(device, &cmd_buf_alloc_info, draw_cmd_buf);
     if (res != VK_SUCCESS) {
@@ -1143,7 +1135,7 @@ bool Ren::ApiContext::InitPresentImageViews(ILog *log) {
     for (uint32_t i = 0; i < image_count; i++) {
         present_images_view_create_info.image = present_images[i];
 
-        vkBeginCommandBuffer(setup_cmd_buf, &begin_info);
+        VkCommandBuffer cmd_buf = BegSingleTimeCommands();
 
         VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         layout_transition_barrier.srcAccessMask = 0;
@@ -1157,33 +1149,12 @@ bool Ren::ApiContext::InitPresentImageViews(ILog *log) {
         VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         layout_transition_barrier.subresourceRange = resource_range;
 
-        vkCmdPipelineBarrier(setup_cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0,
+        vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0,
                              nullptr, 0, nullptr, 1, &layout_transition_barrier);
 
-        vkEndCommandBuffer(setup_cmd_buf);
+        EndSingleTimeCommands(cmd_buf);
 
-        VkPipelineStageFlags wait_stage_mask[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        submit_info.waitSemaphoreCount = 0;
-        submit_info.pWaitSemaphores = nullptr;
-        submit_info.pWaitDstStageMask = wait_stage_mask;
-        submit_info.commandBufferCount = 1;
-        submit_info.pCommandBuffers = &setup_cmd_buf;
-        submit_info.signalSemaphoreCount = 0;
-        submit_info.pSignalSemaphores = nullptr;
-
-        VkResult res = vkQueueSubmit(present_queue, 1, &submit_info, submit_fence);
-        if (res != VK_SUCCESS) {
-            log->Error("vkQueueSubmit failed");
-            return false;
-        }
-
-        vkWaitForFences(device, 1, &submit_fence, VK_TRUE, UINT64_MAX);
-        vkResetFences(device, 1, &submit_fence);
-
-        vkResetCommandBuffer(setup_cmd_buf, 0);
-
-        res = vkCreateImageView(device, &present_images_view_create_info, nullptr, &present_image_views[i]);
+        VkResult res = vkCreateImageView(device, &present_images_view_create_info, nullptr, &present_image_views[i]);
         if (res != VK_SUCCESS) {
             log->Error("vkCreateImageView failed");
             return false;

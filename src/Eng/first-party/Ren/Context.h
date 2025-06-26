@@ -217,9 +217,9 @@ class Context {
 
     /** Texture regions (placed on default atlas) **/
     TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p,
-                                       eTexLoadStatus *load_status);
+                                       CommandBuffer cmd_buf, eTexLoadStatus *load_status);
     TextureRegionRef LoadTextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
-                                       CommandBuffer cmd_buf, const TexParams &p, eTexLoadStatus *load_status);
+                                       const TexParams &p, CommandBuffer cmd_buf, eTexLoadStatus *load_status);
 
     void ReleaseTextureRegions();
 

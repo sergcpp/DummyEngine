@@ -59,20 +59,3 @@ bool Eng::InputManager::PollEvent(const uint64_t time_us, input_event_t &evt) {
 }
 
 void Eng::InputManager::ClearBuffer() { imp_->input_buffer.clear(); }
-
-char Eng::InputManager::CharFromKeycode(const uint32_t key_code) {
-    if (key_code >= Eng::eKey::A && key_code <= Eng::eKey::Z) {
-        return 'a' + char(key_code - Eng::eKey::A);
-    } else if (key_code >= Eng::eKey::_1 && key_code <= Eng::eKey::_9) {
-        return '1' + char(key_code - Eng::eKey::_1);
-    } else if (key_code == Eng::eKey::_0) {
-        return '0';
-    } else if (key_code == Eng::eKey::Minus) {
-        return '-';
-    } else if (key_code == Eng::eKey::Space) {
-        return ' ';
-    } else if (key_code == Eng::eKey::Period) {
-        return '.';
-    }
-    return 0;
-}

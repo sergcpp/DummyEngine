@@ -108,7 +108,6 @@ Ren::Context::~Context() {
 
         api_ctx_->vkDestroyPipelineCache(api_ctx_->device, api_ctx_->pipeline_cache, nullptr);
 
-        api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &api_ctx_->setup_cmd_buf);
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, MaxFramesInFlight,
                                        &api_ctx_->draw_cmd_buf[0]);
 
@@ -447,7 +446,7 @@ void Ren::Context::InsertReadbackMemoryBarrier(CommandBuffer cmd_buf) {
                                    &mem_barrier, 0, nullptr, 0, nullptr);
 }
 
-Ren::CommandBuffer Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
+Ren::CommandBuffer Ren::Context::current_cmd_buf() { return api_ctx_->curr_cmd_buf; }
 
 int Ren::Context::WriteTimestamp(const bool start) {
     VkCommandBuffer cmd_buf = api_ctx_->draw_cmd_buf[api_ctx_->backend_frame];

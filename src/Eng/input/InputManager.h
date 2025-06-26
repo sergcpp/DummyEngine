@@ -14,6 +14,8 @@ using Gui::eInputEvent;
 using Gui::eKey;
 using Gui::input_event_t;
 
+using Gui::CharFromKeycode;
+
 class InputManager {
     std::unique_ptr<InputManagerImp> imp_;
 
@@ -30,7 +32,5 @@ class InputManager {
     void AddRawInputEvent(input_event_t evt);
     bool PollEvent(uint64_t time_us, input_event_t &evt);
     void ClearBuffer();
-
-    static char CharFromKeycode(uint32_t key_code);
 };
 } // namespace Eng

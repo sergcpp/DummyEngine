@@ -61,7 +61,7 @@ class DebugFrameUI final : public Gui::BaseElement {
     };
 
     struct {
-        Ren::SmallVector<pass_info_smooth_t, 256> passes_info;
+        std::vector<pass_info_smooth_t> passes_info;
         std::vector<resource_info_t> resources_info;
 
         float cpu_total_ms = 0, gpu_total_ms = 0;

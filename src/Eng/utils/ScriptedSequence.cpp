@@ -658,7 +658,7 @@ Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(std::string_view na
                                                              int samples_count, const Snd::BufParams &params) {
     { // check if sound-wave picture was already loaded
         Ren::eTexLoadStatus status;
-        Ren::TextureRegionRef ret = ren_ctx_.LoadTextureRegion(name, {}, {}, &status);
+        Ren::TextureRegionRef ret = ren_ctx_.LoadTextureRegion(name, {}, {}, ren_ctx_.current_cmd_buf(), &status);
         if (status == Ren::eTexLoadStatus::Found) {
             return ret;
         }
@@ -719,7 +719,7 @@ Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(std::string_view na
     p.format = Ren::eTexFormat::RGBA8;
 
     Ren::eTexLoadStatus status;
-    Ren::TextureRegionRef ret = ren_ctx_.LoadTextureRegion(name, tex_data, p, &status);
+    Ren::TextureRegionRef ret = ren_ctx_.LoadTextureRegion(name, tex_data, p, ren_ctx_.current_cmd_buf(), &status);
     assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
     return ret;

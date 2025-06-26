@@ -50,6 +50,4 @@ class UITest final : public BaseState {
 
     void Enter() override;
     void Exit() override;
-
-    bool HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) override;
 };

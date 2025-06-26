@@ -45,7 +45,7 @@ void UITest::Enter() {
     BaseState::Enter();
 
     log_->Info("GSUITest: Loading scene!");
-    // BaseState::LoadScene(SCENE_NAME);
+    BaseState::LoadScene("scenes/empty.json");
 
 #if defined(__ANDROID__)
     const char *dialog_name = "assets/scenes/test/test_puzzle.json";
@@ -192,81 +192,4 @@ void UITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace UITestInternal;
 
     BaseState::DrawUI(r, root);
-
-    // dialog_font_->set_scale(std::max(root->size_px()[0] / 1024, 1));
-
-    word_puzzle_->Draw(r);
-}
-
-bool UITest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
-    using namespace Ren;
-    using namespace UITestInternal;
-
-    // pt switch for touch controls
-    if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
-        if (evt.point[0] > float(ren_ctx_->w()) * 0.9f && evt.point[1] < float(ren_ctx_->h()) * 0.1f) {
-            const uint64_t new_time = Sys::GetTimeMs();
-            if (new_time - click_time_ < 400) {
-                use_pt_ = !use_pt_;
-                if (use_pt_) {
-                    // scene_manager_->InitScene_PT();
-                    invalidate_view_ = true;
-                }
-
-                click_time_ = 0;
-            } else {
-                click_time_ = new_time;
-            }
-        }
-    }
-
-    bool input_processed = true;
-
-    switch (evt.type) {
-    case Eng::eInputEvent::P1Down: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
-                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        // word_puzzle_->Press(p, true);
-    } break;
-    case Eng::eInputEvent::P2Down: {
-
-    } break;
-    case Eng::eInputEvent::P1Up: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
-                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        // word_puzzle_->Press(p, false);
-    } break;
-    case Eng::eInputEvent::P2Up: {
-
-    } break;
-    case Eng::eInputEvent::P1Move: {
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
-                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        // word_puzzle_->Hover(p);
-    } break;
-    case Eng::eInputEvent::P2Move: {
-
-    } break;
-    case Eng::eInputEvent::KeyDown: {
-        input_processed = false;
-    } break;
-    case Eng::eInputEvent::KeyUp: {
-        if (evt.key_code == Eng::eKey::Up || (evt.key_code == Eng::eKey::W && !cmdline_ui_->enabled)) {
-            // word_puzzle_->restart();
-        } else {
-            input_processed = false;
-        }
-    } break;
-    case Eng::eInputEvent::Resize:
-        // word_puzzle_->Resize(ui_root_);
-        break;
-    default:
-        break;
-    }
-
-    if (!input_processed) {
-        BaseState::HandleInput(evt, keys_state);
-    }
-
-    return true;
 }

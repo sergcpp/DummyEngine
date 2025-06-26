@@ -332,6 +332,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
         begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
         api_ctx->vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
+        api_ctx->curr_cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
         api_ctx->vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame],
                                      api_ctx->query_pools[api_ctx->backend_frame], 0, Ren::MaxTimestampQueries);

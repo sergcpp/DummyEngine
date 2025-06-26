@@ -351,7 +351,7 @@ Gui::dist_result_t Gui::Bezier1Distance(const Vec2d &p0, const Vec2d &p1, const 
 
         const double ortho_dist = Dot(p10_ortho, pp0);
         if (ortho_dist < to_closest_dist) {
-            return { ortho_dist, sign * Distance(_pp1, p), _abs(orthogonality), t, 0.0 };
+            return { ortho_dist, sign * Distance(_pp1, p), std::abs(orthogonality), t, 0.0 };
         }*/
 
         const Vec2d _pp0 = p0 + t * p10, _pp1 = p0 + t_unclumped * p10;
@@ -406,7 +406,7 @@ Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const 
     if (res_t == 0.0) { // Extend start of curve
         const Vec2d der0 = p0 - p1;
         const dist_result_t res0 = Bezier1Distance(p0 + der0 * 10000.0, p0, p);
-        if (res0.t <= 1.0 /*&& _abs(res0.sdist) < _abs(min_sdist)*/) {
+        if (res0.t <= 1.0 /*&& std::abs(res0.sdist) < std::abs(min_sdist)*/) {
             // min_sdist = res0.sdist;
             res_pseudodist = res0.pseudodist;
             res_orthogonality = res0.ortho;
@@ -417,7 +417,7 @@ Gui::dist_result_t Gui::Bezier2Distance(const Vec2d &p0, const Vec2d &p1, const 
     } else if (res_t == 1.0) { // Extend end of curve
         const Vec2d der1 = p2 - p1;
         const dist_result_t res1 = Bezier1Distance(p2, p2 + der1 * 10000.0, p);
-        if (res1.t >= 0.0 /*&& _abs(res1.sdist) < _abs(min_sdist)*/) {
+        if (res1.t >= 0.0 /*&& std::abs(res1.sdist) < std::abs(min_sdist)*/) {
             // min_sdist = res1.sdist;
             res_pseudodist = res1.pseudodist;
             res_orthogonality = res1.ortho;
@@ -550,5 +550,3 @@ int Gui::FixSDFCollisions(uint8_t *img_data, int w, int h, int channels, int thr
 
     return marked_pixels_count;
 }
-
-#undef _abs

@@ -55,6 +55,7 @@ set(SOURCE_FILES    AlignedAlloc.h
                     Image9Patch.h
                     Image9Patch.cpp
                     Input.h
+                    Input.cpp
                     Keycode.h
                     LinearLayout.h
                     LinearLayout.cpp

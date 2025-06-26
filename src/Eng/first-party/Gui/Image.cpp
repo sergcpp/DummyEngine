@@ -17,11 +17,10 @@ Gui::Image::Image(const Ren::TextureRegionRef &tex, const Vec2f &pos, const Vec2
 Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos, const Vec2f &size,
                   const BaseElement *parent)
     : BaseElement(pos, size, parent) {
-    uvs_px_[0] = Vec2f{0};
-    uvs_px_[1] = Vec2f{0};
+    uvs_px_[0] = uvs_px_[1] = Vec2f{0};
 
     Ren::eTexLoadStatus status;
-    tex_ = ctx.LoadTextureRegion(tex_name, {}, {}, &status);
+    tex_ = ctx.LoadTextureRegion(tex_name, {}, {}, ctx.current_cmd_buf(), &status);
     if (status == Ren::eTexLoadStatus::CreatedDefault) {
         std::ifstream in_file(tex_name.data(), std::ios::binary | std::ios::ate);
         const size_t in_file_size = size_t(in_file.tellg());
@@ -29,7 +28,7 @@ Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos
         std::vector<uint8_t> data(in_file_size);
         in_file.read((char *)data.data(), std::streamsize(in_file_size));
 
-        tex_ = ctx.LoadTextureRegion(tex_name, data, {}, &status);
+        tex_ = ctx.LoadTextureRegion(tex_name, data, {}, ctx.current_cmd_buf(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
         const Ren::TexParams &p = tex_->params;
@@ -41,7 +40,7 @@ Gui::Image::Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos
 void Gui::Image::Draw(Renderer *r) {
     const Vec2f pos[2] = {dims_[0], dims_[0] + dims_[1]};
 
-    //const Ren::TexParams &p = tex_->params;
+    // const Ren::TexParams &p = tex_->params;
     const int tex_layer = tex_->pos(2);
 
     r->PushImageQuad(eDrawMode::Passthrough, tex_layer, ColorWhite, pos, uvs_px_);
@@ -51,6 +50,6 @@ void Gui::Image::ResizeToContent(const Vec2f &pos) {
     const Ren::TexParams &p = tex_->params;
     const Vec2i parent_size_px = parent_->size_px();
 
-    BaseElement::Resize(
-        pos, Vec2f{2 * float(p.w) / float(parent_size_px[0]), 2 * float(p.h) / float(parent_size_px[1])});
+    BaseElement::Resize(pos,
+                        Vec2f{2 * float(p.w) / float(parent_size_px[0]), 2 * float(p.h) / float(parent_size_px[1])});
 }

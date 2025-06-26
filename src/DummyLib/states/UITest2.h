@@ -36,13 +36,11 @@ class UITest2 : public BaseState {
 
     std::vector<std::string> results_lines_;
 
-    uint32_t zenith_index_ = 0xffffffff;
-
     void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
-    void UpdateHint();
+    void UpdateHint(std::string_view line);
     static void MutateWord(std::string_view in_word, const std::function<void(const char *, int)> &callback);
 
   public:
@@ -51,8 +49,4 @@ class UITest2 : public BaseState {
 
     void Enter() override;
     void Exit() override;
-
-    void UpdateAnim(uint64_t dt_us) override;
-
-    bool HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) override;
 };

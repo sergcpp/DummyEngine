@@ -8,6 +8,8 @@
 #include <Sys/Json.h>
 #include <Sys/Time_.h>
 
+#include <Eng/input/InputManager.h>
+
 namespace WordPuzzleUIInternal {
 const char Frame01[] =
 #if defined(__ANDROID__)
@@ -15,14 +17,14 @@ const char Frame01[] =
 #else
     "assets_pc/"
 #endif
-    "textures/ui/frame_01.uncompressed.png";
+    "textures/ui/frame_01.dds";
 const char Frame02[] =
 #if defined(__ANDROID__)
     "assets/"
 #else
     "assets_pc/"
 #endif
-    "textures/ui/frame_02.uncompressed.png";
+    "textures/ui/frame_02.dds";
 
 const float SideMarginPx = 16;
 const float TopMarginPx = 24;
@@ -32,10 +34,8 @@ const float BottomMarginPx = 24;
 WordPuzzleUI::WordPuzzleUI(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent,
                            const Gui::BitmapFont &font)
     : Gui::BaseElement(pos, size, parent), font_(font),
-      background_small_(ctx, WordPuzzleUIInternal::Frame01, Gui::Vec2f{3}, 1, Gui::Vec2f{0}, Gui::Vec2f{1},
-                        this),
-      background_large_(ctx, WordPuzzleUIInternal::Frame02, Gui::Vec2f{20}, 1, Gui::Vec2f{-1},
-                        Gui::Vec2f{2}, this) {
+      background_small_(ctx, WordPuzzleUIInternal::Frame01, Gui::Vec2f{3}, 1, Gui::Vec2f{0}, Gui::Vec2f{1}, this),
+      background_large_(ctx, WordPuzzleUIInternal::Frame02, Gui::Vec2f{20}, 1, Gui::Vec2f{-1}, Gui::Vec2f{2}, this) {
     log_ = ctx.log();
 }
 
@@ -171,6 +171,23 @@ bool WordPuzzleUI::Load(const Sys::JsObject &js_puzzle) {
 }
 
 void WordPuzzleUI::Resize() { BaseElement::Resize(); }
+
+bool WordPuzzleUI::HandleInput(const Gui::input_event_t &ev, const std::vector<bool> &keys_state) {
+    bool handled = false;
+    if (ev.type == Eng::eInputEvent::P1Down || ev.type == Eng::eInputEvent::P2Down) {
+        handled = Press(ToLocal(Gui::Vec2i(ev.point)), true);
+    } else if (ev.type == Eng::eInputEvent::P1Up || ev.type == Eng::eInputEvent::P2Up) {
+        handled = Press(ToLocal(Gui::Vec2i(ev.point)), false);
+    } else if (ev.type == Eng::eInputEvent::P1Move) {
+        handled = Hover(ToLocal(Gui::Vec2i(ev.point)));
+    }
+
+    if (handled) {
+        return true;
+    }
+
+    return BaseElement::HandleInput(ev, keys_state);
+}
 
 void WordPuzzleUI::Draw(Gui::Renderer *r) {
     using namespace WordPuzzleUIInternal;
@@ -320,9 +337,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
     }
 }
 
-/*void WordPuzzleUI::Hover(const Gui::Vec2f &p) {
-    BaseElement::Hover(p);
-
+bool WordPuzzleUI::Hover(const Gui::Vec2f &lp) {
     for (OptionData &opt : text_options_) {
         opt.is_hover = false;
     }
@@ -330,8 +345,6 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
     for (HintData &hint : text_hints_) {
         hint.is_hover = false;
     }
-
-    const Gui::Vec2f lp = ToLocal(p);
 
     hover_var_ = -1;
     if (expanded_option_ != -1) {
@@ -344,8 +357,10 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
             }
         }
 
-        return;
+        return (hover_var_ != -1);
     }
+
+    bool handled = false;
 
     for (int i = 0; i < int(options_rects_.size()) && state_ == eState::Correcting; i++) {
         const rect_t &rect = options_rects_[i];
@@ -354,11 +369,11 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
         if (lp[0] >= rect.dims[0][0] && lp[1] >= rect.dims[0][1] && lp[0] <= rect.dims[0][0] + rect.dims[1][0] &&
             lp[1] <= rect.dims[0][1] + rect.dims[1][1]) {
             opt.is_hover = true;
+            handled = true;
         }
     }
 
     expanded_hint_ = -1;
-
     for (int i = 0; i < int(hint_rects_.size()) && state_ > eState::AnimIntro; i++) {
         const rect_t &rect = hint_rects_[i];
         HintData &opt = text_hints_[rect.data];
@@ -367,15 +382,15 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
             lp[1] <= rect.dims[0][1] + rect.dims[1][1]) {
             expanded_hint_ = i;
             opt.is_hover = true;
+            handled = true;
         }
     }
-}*/
 
-#if 0
-void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
-    BaseElement::Press(p, push);
+    return handled;
+}
 
-    const Gui::Vec2f lp = ToLocal(p);
+bool WordPuzzleUI::Press(const Gui::Vec2f &lp, const bool push) {
+    bool handled = false;
 
     if (expanded_option_ != -1) {
         OptionData &opt = text_options_[expanded_option_];
@@ -385,9 +400,9 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
 
             if (lp[0] >= rect.dims[0][0] && lp[1] >= rect.dims[0][1] && lp[0] <= rect.dims[0][0] + rect.dims[1][0] &&
                 lp[1] <= rect.dims[0][1] + rect.dims[1][1]) {
-
+                handled = true;
                 if (push) {
-                    return;
+                    return handled;
                 } else {
                     opt.var_selected = i;
                 }
@@ -396,14 +411,13 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
     }
 
     expanded_option_ = -1;
-
     for (int i = 0; i < int(options_rects_.size()) && state_ == eState::Correcting; i++) {
         const rect_t &rect = options_rects_[i];
         OptionData &opt = text_options_[rect.data];
 
         if (lp[0] >= rect.dims[0][0] && lp[1] >= rect.dims[0][1] && lp[0] <= rect.dims[0][0] + rect.dims[1][0] &&
             lp[1] <= rect.dims[0][1] + rect.dims[1][1]) {
-
+            handled = true;
             if (push) {
                 opt.is_pressed = true;
             } else {
@@ -424,7 +438,7 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
 
         if (lp[0] >= rect.dims[0][0] && lp[1] >= rect.dims[0][1] && lp[0] <= rect.dims[0][0] + rect.dims[1][0] &&
             lp[1] <= rect.dims[0][1] + rect.dims[1][1]) {
-
+            handled = true;
             if (i < int(chosen_splits_.size())) {
                 const int split_index = chosen_splits_[i];
                 chosen_splits_.erase(chosen_splits_.begin() + i);
@@ -446,8 +460,9 @@ void WordPuzzleUI::Press(const Gui::Vec2f &p, const bool push) {
             break;
         }
     }
+
+    return handled;
 }
-#endif
 
 void WordPuzzleUI::UpdateTextBuffer() {
     // replace options

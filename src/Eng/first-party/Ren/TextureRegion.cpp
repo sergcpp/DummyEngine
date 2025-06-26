@@ -10,16 +10,16 @@ Ren::TextureRegion::TextureRegion(std::string_view name, TextureAtlasArray *atla
 }
 
 Ren::TextureRegion::TextureRegion(std::string_view name, Span<const uint8_t> data, const TexParams &p,
-                                  TextureAtlasArray *atlas, eTexLoadStatus *load_status)
+                                  CommandBuffer cmd_buf, TextureAtlasArray *atlas, eTexLoadStatus *load_status)
     : name_(name) {
-    Init(data, p, atlas, load_status);
+    Init(data, p, cmd_buf, atlas, load_status);
 }
 
 Ren::TextureRegion::TextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
-                                  CommandBuffer cmd_buf, const TexParams &p, TextureAtlasArray *atlas,
+                                  const TexParams &p, CommandBuffer cmd_buf, TextureAtlasArray *atlas,
                                   eTexLoadStatus *load_status)
     : name_(name) {
-    Init(sbuf, data_off, data_len, cmd_buf, p, atlas, load_status);
+    Init(sbuf, data_off, data_len, p, cmd_buf, atlas, load_status);
 }
 
 Ren::TextureRegion::~TextureRegion() {
@@ -44,8 +44,8 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
     return (*this);
 }
 
-void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, TextureAtlasArray *atlas,
-                              eTexLoadStatus *load_status) {
+void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, CommandBuffer _cmd_buf,
+                              TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
     if (data.empty()) {
         auto stage_buf = Buffer{"Temp Stage Buf", atlas->api_ctx(), eBufType::Upload, 4};
         { // Update staging buffer
@@ -55,15 +55,20 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, Text
             stage_buf.Unmap();
         }
 
-        CommandBuffer cmd_buf = atlas->api_ctx()->BegSingleTimeCommands();
+        CommandBuffer cmd_buf = _cmd_buf;
+        if (!cmd_buf) {
+            cmd_buf = atlas->api_ctx()->BegSingleTimeCommands();
+        }
 
         TexParams _p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RGBA8;
         [[maybe_unused]] const bool res = InitFromRAWData(stage_buf, 0, 4, cmd_buf, _p, atlas);
 
-        atlas->api_ctx()->EndSingleTimeCommands(cmd_buf);
-        stage_buf.FreeImmediate();
+        if (!_cmd_buf) {
+            atlas->api_ctx()->EndSingleTimeCommands(cmd_buf);
+            stage_buf.FreeImmediate();
+        }
 
         // mark it as not ready
         ready_ = false;
@@ -82,16 +87,21 @@ void Ren::TextureRegion::Init(Span<const uint8_t> data, const TexParams &p, Text
                 memcpy(stage_data, data.data(), data.size());
                 stage_buf.Unmap();
             }
-            CommandBuffer cmd_buf = atlas->api_ctx()->BegSingleTimeCommands();
+            CommandBuffer cmd_buf = _cmd_buf;
+            if (!cmd_buf) {
+                cmd_buf = atlas->api_ctx()->BegSingleTimeCommands();
+            }
             ready_ = InitFromRAWData(stage_buf, 0, int(data.size()), cmd_buf, p, atlas);
-            atlas->api_ctx()->EndSingleTimeCommands(cmd_buf);
-            stage_buf.FreeImmediate();
+            if (!_cmd_buf) {
+                atlas->api_ctx()->EndSingleTimeCommands(cmd_buf);
+                stage_buf.FreeImmediate();
+            }
         }
         (*load_status) = ready_ ? eTexLoadStatus::CreatedFromData : eTexLoadStatus::Error;
     }
 }
 
-void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, const TexParams &p,
+void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, const TexParams &p, CommandBuffer cmd_buf,
                               TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
     if (atlas_) {
         atlas_->Free(texture_pos_);

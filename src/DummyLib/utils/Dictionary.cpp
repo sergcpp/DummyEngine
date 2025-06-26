@@ -14,7 +14,7 @@ bool Dictionary::Lookup(std::string_view key, dict_entry_res_t &result) {
             result.pron = entry.pron_str_off != 0xffffffff ? &comb_str_buf_[entry.pron_str_off] : std::string_view{};
 
             uint32_t j = 0, str_off = entry.trans_str_off;
-            while (j < entry.trans_count && j < uint32_t(result.trans->length())) {
+            while (j < entry.trans_count && j < std::size(result.trans)) {
                 result.trans[j++] = &comb_str_buf_[str_off];
 
                 // skip to next string

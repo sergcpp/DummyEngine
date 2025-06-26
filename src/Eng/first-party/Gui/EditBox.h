@@ -2,8 +2,10 @@
 
 #include <bitset>
 
+#include "Bitmask.h"
 #include "Image9Patch.h"
 #include "LinearLayout.h"
+#include "Signal.h"
 
 namespace Gui {
 enum class eEditBoxFlags { Integers, Chars, Floats, Signed, Multiline };
@@ -11,12 +13,15 @@ enum class eEditBoxFlags { Integers, Chars, Floats, Signed, Multiline };
 class EditBox : public BaseElement {
     Image9Patch frame_;
     std::vector<std::string> lines_;
-    const BitmapFont *font_;
-    std::bitset<32> edit_flags_;
-    bool focused_;
-    int current_line_, current_char_;
+    const BitmapFont *font_ = nullptr;
+    int current_line_ = 0, current_char_ = 0;
+    bool focused_ = false;
 
   public:
+    Bitmask<eEditBoxFlags> edit_flags;
+
+    Signal<void(std::string_view)> updated_signal;
+
     EditBox(Ren::Context &ctx, std::string_view frame_tex_name, const Vec2f &frame_offsets, const BitmapFont *font,
             const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
     EditBox(Image9Patch frame, const BitmapFont *font, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
@@ -25,17 +30,13 @@ class EditBox : public BaseElement {
 
     [[nodiscard]] std::string_view line_text(int line) const { return lines_[line]; }
 
-    bool focused() const { return focused_; }
-
-    void set_focused(bool b) { focused_ = b; }
-
-    void set_flag(eEditBoxFlags flag, bool enabled) { edit_flags_.set(size_t(flag), enabled); }
-
     void Resize() override;
 
-    //void Press(const Vec2f &p, bool push) override;
-
     void Draw(Renderer *r) override;
+
+    bool HandleInput(const input_event_t &ev, const std::vector<bool> &keys_state) override;
+
+    bool Press(const Vec2i &p, bool push);
 
     int AddLine(std::string text);
     int InsertLine(std::string text);

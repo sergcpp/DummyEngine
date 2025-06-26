@@ -47,7 +47,8 @@ void LoadingState::Enter() {
     params.format = Ren::eTexFormat::RGBA8;
 
     Ren::eTexLoadStatus load_status;
-    dummy_white_ = ren_ctx_->LoadTextureRegion("dummy_white", Gui::ColorWhite, params, &load_status);
+    dummy_white_ =
+        ren_ctx_->LoadTextureRegion("dummy_white", Gui::ColorWhite, params, ren_ctx_->current_cmd_buf(), &load_status);
     assert(load_status == Ren::eTexLoadStatus::CreatedFromData);
 
     { // Init loading program

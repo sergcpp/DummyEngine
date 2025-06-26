@@ -18,15 +18,6 @@
 #include "../utils/Dictionary.h"
 #include "../widgets/FontStorage.h"
 
-namespace UITest2Internal {
-#if defined(__ANDROID__)
-const char SCENE_NAME[] = "assets/scenes/"
-#else
-const char SCENE_NAME[] = "assets_pc/scenes/"
-#endif
-                          "zenith.json";
-} // namespace UITest2Internal
-
 UITest2::UITest2(Viewer *viewer) : BaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
     // dialog_font_->set_scale(1.5f);
@@ -36,51 +27,34 @@ UITest2::UITest2(Viewer *viewer) : BaseState(viewer) {
     const float font_height = dialog_font_->height(ui_root_);
 
     Gui::Image9Patch edit_box_frame{
-        *ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Gui::Vec2f{8}, 1, Gui::Vec2f{-1}, Gui::Vec2f{2},
-        ui_root_};
+        *ren_ctx_, "assets_pc/textures/ui/frame_01.dds", Gui::Vec2f{8}, 1, Gui::Vec2f{-1}, Gui::Vec2f{2}, nullptr};
     edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_, Gui::Vec2f{-0.5f, 0.75f},
-                                               Gui::Vec2f{1.0f, 0.75f * font_height}, ui_root_);
-    edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
+                                               Gui::Vec2f{1.0f, 1.25f * font_height}, ui_root_);
+    edit_box_->edit_flags &= ~Gui::Bitmask<Gui::eEditBoxFlags>{Gui::eEditBoxFlags::Multiline};
 
-    results_frame_ = std::make_unique<Gui::Image9Patch>(*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
-                                                        Gui::Vec2f{8.0f}, 1.0f, Gui::Vec2f{-0.5f, -0.75f},
-                                                        Gui::Vec2f{1.0f, 1.5f}, ui_root_);
+    edit_box_->updated_signal.Connect<UITest2, &UITest2::UpdateHint>(this);
+
+    results_frame_ =
+        std::make_unique<Gui::Image9Patch>(*ren_ctx_, "assets_pc/textures/ui/frame_01.dds", Gui::Vec2f{8.0f}, 1.0f,
+                                           Gui::Vec2f{-0.5f, -0.75f}, Gui::Vec2f{1.0f, 1.5f}, ui_root_);
 }
 
 UITest2::~UITest2() = default;
 
 void UITest2::Enter() {
-    using namespace UITest2Internal;
-
     BaseState::Enter();
 
-    log_->Info("GSUITest: Loading scene!");
-    // BaseState::LoadScene(SCENE_NAME);
+    log_->Info("GSUITest2: Loading scene!");
+    BaseState::LoadScene("scenes/empty.json");
 
-    /*{
+    { // Load dictionary
         std::ifstream dict_file("assets_pc/scenes/test/test_dict/de-en.dict",
                                 std::ios::binary);
-        dict_->Load(dict_file, log_.get());
-
-        const uint64_t t1_us = Sys::GetTimeUs();
-
-        Dictionary::dict_entry_res_t result = {};
-        if (dict_->Lookup("Apfel", result)) {
-            volatile int ii = 0;
-        }
-
-        const uint64_t t2_us = Sys::GetTimeUs();
-
-        const double t_diff_ms = double(t2_us - t1_us) / 1000.0;
-        volatile int ii = 0;
-    }*/
-
-    zenith_index_ = scene_manager_->FindObject("zenith");
+        dict_->Load(dict_file, log_);
+    }
 }
 
 void UITest2::OnPostloadScene(Sys::JsObjectP &js_scene) {
-    using namespace UITest2Internal;
-
     BaseState::OnPostloadScene(js_scene);
 
     Ren::Vec3d view_origin, view_dir = Ren::Vec3d{0, 0, 1};
@@ -127,57 +101,10 @@ void UITest2::OnPostloadScene(Sys::JsObjectP &js_scene) {
                               min_exposure, max_exposure);
 }
 
-void UITest2::UpdateAnim(const uint64_t dt_us) {
-    using namespace UITest2Internal;
-
-    BaseState::UpdateAnim(dt_us);
-
-    const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
-    /*test_time_counter_s += delta_time_s;
-
-    const float char_period_s = 0.025f;
-
-    while (test_time_counter_s > char_period_s) {
-        text_printer_->incr_progress();
-        test_time_counter_s -= char_period_s;
-    }*/
-
-    const Eng::SceneData &scene = scene_manager_->scene_data();
-
-    if (zenith_index_ != 0xffffffff) {
-        Eng::SceneObject *zenith = scene_manager_->GetObject(zenith_index_);
-
-        uint32_t mask = Eng::CompDrawableBit | Eng::CompAnimStateBit;
-        if ((zenith->comp_mask & mask) == mask) {
-            auto *dr = (Eng::Drawable *)scene.comp_store[Eng::CompDrawable]->Get(zenith->components[Eng::CompDrawable]);
-            auto *as =
-                (Eng::AnimState *)scene.comp_store[Eng::CompAnimState]->Get(zenith->components[Eng::CompAnimState]);
-
-            // keep previous palette for velocity calculation
-            std::swap(as->matr_palette_curr, as->matr_palette_prev);
-            as->anim_time_s += delta_time_s;
-
-            Ren::Mesh *mesh = dr->mesh.get();
-            Ren::Skeleton *skel = mesh->skel();
-
-            const int anim_index = 0;
-
-            skel->UpdateAnim(anim_index, as->anim_time_s);
-            skel->ApplyAnim(anim_index);
-            skel->UpdateBones(&as->matr_palette_curr[0]);
-        }
-    }
-}
-
 void UITest2::Exit() { BaseState::Exit(); }
 
 void UITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
-    using namespace UITest2Internal;
-
-    // BaseState::DrawUI(r, root);
-
-    edit_box_->Draw(r);
-    results_frame_->Draw(r);
+    BaseState::DrawUI(r, root);
 
     static const uint8_t color_white[] = {255, 255, 255, 255};
     const float font_height = dialog_font_->height(root);
@@ -192,9 +119,7 @@ void UITest2::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     }
 }
 
-void UITest2::UpdateHint() {
-    const std::string_view line = edit_box_->line_text(0);
-
+void UITest2::UpdateHint(const std::string_view line) {
     results_lines_.clear();
 
     auto lookup_word = [this](std::string_view word, int mutation_cost) {
@@ -246,7 +171,7 @@ void UITest2::MutateWord(std::string_view in_word, const std::function<void(cons
     int unicode_word_len = 0;
 
     int word_pos = 0;
-    while (in_word[word_pos]) {
+    while (word_pos < in_word.size()) {
         uint32_t unicode;
         word_pos += Gui::ConvChar_UTF8_to_Unicode(&in_word[word_pos], unicode);
         unicode_word[unicode_word_len++] = unicode;
@@ -319,105 +244,4 @@ void UITest2::MutateWord(std::string_view in_word, const std::function<void(cons
     ctx.mutation_chain[2] = output_utf8;
 
     ctx.mutation_chain[0](ctx, unicode_word, 0);
-}
-
-bool UITest2::HandleInput(const Eng::input_event_t &evt, const std::vector<bool> &keys_state) {
-    using namespace Ren;
-    using namespace UITest2Internal;
-
-    // pt switch for touch controls
-    if (evt.type == Eng::eInputEvent::P1Down || evt.type == Eng::eInputEvent::P2Down) {
-        if (evt.point[0] > float(ren_ctx_->w()) * 0.9f && evt.point[1] < float(ren_ctx_->h()) * 0.1f) {
-            const uint64_t new_time = Sys::GetTimeMs();
-            if (new_time - click_time_ < 400) {
-                use_pt_ = !use_pt_;
-                if (use_pt_) {
-                    // scene_manager_->InitScene_PT();
-                    invalidate_view_ = true;
-                }
-
-                click_time_ = 0;
-            } else {
-                click_time_ = new_time;
-            }
-        }
-    }
-
-    bool input_processed = true;
-
-    switch (evt.type) {
-    case Eng::eInputEvent::P1Down: {
-        Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
-                                             Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        // text_printer_->Press(p, true);
-        // edit_box_->Press(p, true);
-    } break;
-    case Eng::eInputEvent::P2Down: {
-
-    } break;
-    case Eng::eInputEvent::P1Up: {
-        // text_printer_->skip();
-
-        const Gui::Vec2f p = Gui::MapPointToScreen(Gui::Vec2i{int(evt.point[0]), int(evt.point[1])},
-                                                   Gui::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
-        // text_printer_->Press(p, false);
-        // edit_box_->Press(p, false);
-
-        is_visible_ = !is_visible_;
-    } break;
-    case Eng::eInputEvent::P2Up:
-    case Eng::eInputEvent::P2Move: {
-
-    } break;
-    case Eng::eInputEvent::KeyDown: {
-        input_processed = false;
-
-        if (evt.key_code == Eng::eKey::LeftShift || evt.key_code == Eng::eKey::RightShift) {
-        } else if (evt.key_code == Eng::eKey::Return) {
-            edit_box_->InsertLine({});
-        } else if (evt.key_code == Eng::eKey::Left) {
-            edit_box_->MoveCursorH(-1);
-        } else if (evt.key_code == Eng::eKey::Right) {
-            edit_box_->MoveCursorH(1);
-        } else if (evt.key_code == Eng::eKey::Up) {
-            edit_box_->MoveCursorV(-1);
-        } else if (evt.key_code == Eng::eKey::Down) {
-            edit_box_->MoveCursorV(1);
-        } else if (evt.key_code == Eng::eKey::Delete) {
-            edit_box_->DeleteBck();
-        } else if (evt.key_code == Eng::eKey::DeleteForward) {
-            edit_box_->DeleteFwd();
-        } else {
-            char ch = Eng::InputManager::CharFromKeycode(evt.key_code);
-            if (keys_state[Eng::eKey::LeftShift] || keys_state[Eng::eKey::RightShift]) {
-                if (ch == '-') {
-                    ch = '_';
-                } else {
-                    ch = char(std::toupper(ch));
-                }
-            }
-            edit_box_->AddChar(ch);
-        }
-
-        UpdateHint();
-    } break;
-    case Eng::eInputEvent::KeyUp: {
-        if (evt.key_code == Eng::eKey::Up || (evt.key_code == Eng::eKey::W && !cmdline_ui_->enabled)) {
-            // text_printer_->restart();
-        } else {
-            input_processed = false;
-        }
-    } break;
-    case Eng::eInputEvent::Resize:
-        // edit_box_->Resize(ui_root_);
-        break;
-    default:
-        break;
-    }
-
-    if (!input_processed) {
-        BaseState::HandleInput(evt, keys_state);
-    }
-
-    return true;
 }

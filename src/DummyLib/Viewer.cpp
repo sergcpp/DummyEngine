@@ -145,6 +145,7 @@ void Viewer::Frame() {
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     api_ctx->vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
+    api_ctx->curr_cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     { // command buffer scope
         OPTICK_GPU_CONTEXT(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
@@ -202,6 +203,7 @@ void Viewer::Frame() {
     }
 
     api_ctx->vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
+    api_ctx->curr_cmd_buf = {};
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
 

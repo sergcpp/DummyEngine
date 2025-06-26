@@ -326,31 +326,32 @@ void Ren::Context::ReleaseTextures() {
 }
 
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Span<const uint8_t> data,
-                                                      const TexParams &p, eTexLoadStatus *load_status) {
+                                                      const TexParams &p, CommandBuffer cmd_buf,
+                                                      eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {
-        ref = texture_regions_.Insert(name, data, p, &texture_atlas_, load_status);
+        ref = texture_regions_.Insert(name, data, p, cmd_buf, &texture_atlas_, load_status);
     } else {
         if (ref->ready()) {
             (*load_status) = eTexLoadStatus::Found;
         } else {
-            ref->Init(data, p, &texture_atlas_, load_status);
+            ref->Init(data, p, cmd_buf, &texture_atlas_, load_status);
         }
     }
     return ref;
 }
 
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, const Buffer &sbuf, const int data_off,
-                                                      const int data_len, CommandBuffer cmd_buf, const TexParams &p,
+                                                      const int data_len, const TexParams &p, CommandBuffer cmd_buf,
                                                       eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {
-        ref = texture_regions_.Insert(name, sbuf, data_off, data_len, cmd_buf, p, &texture_atlas_, load_status);
+        ref = texture_regions_.Insert(name, sbuf, data_off, data_len, p, cmd_buf, &texture_atlas_, load_status);
     } else {
         if (ref->ready()) {
             (*load_status) = eTexLoadStatus::Found;
         } else {
-            ref->Init(sbuf, data_off, data_len, cmd_buf, p, &texture_atlas_, load_status);
+            ref->Init(sbuf, data_off, data_len, p, cmd_buf, &texture_atlas_, load_status);
         }
     }
     return ref;

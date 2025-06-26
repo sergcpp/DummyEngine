@@ -440,7 +440,7 @@ bool UITest4::HandleInput(const Eng::input_event_t &evt, const std::vector<bool>
                 dial_edit_mode_ = -1;
             }
         } else {
-            char ch = Eng::InputManager::CharFromKeycode(evt.key_code);
+            char ch = Eng::CharFromKeycode(evt.key_code);
             if (keys_state[Eng::eKey::LeftShift] || keys_state[Eng::eKey::RightShift]) {
                 if (ch == '-') {
                     ch = '_';

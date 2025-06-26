@@ -1911,8 +1911,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     tex_feedback_.data[temp_sort_spans_32_[0].data[i].base + j];
             }
         }
-
-        volatile int ii = 0;
     }*/
 
     std::sort(list.desired_textures.data(), list.desired_textures.data() + list.desired_textures.size(),
