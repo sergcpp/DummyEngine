@@ -116,8 +116,8 @@ void main() {
         const float hash = hash3D(floor(pix_scale * pos_ws_biased));
 
 #ifndef RT_SHADOW
-        final_color = visibility * GetSunVisibilityExt(lin_depth, g_shadow_depth_tex, g_shadow_depth_val_tex, g_shadow_color_tex,
-                                                       transpose(mat3x4(vtx_sh_uvs0, vtx_sh_uvs1, vtx_sh_uvs2)), g_params.softness_factor, hash);
+        //final_color = visibility * GetSunVisibilityExt(lin_depth, g_shadow_depth_tex, g_shadow_depth_val_tex, g_shadow_color_tex,
+        //                                               transpose(mat3x4(vtx_sh_uvs0, vtx_sh_uvs1, vtx_sh_uvs2)), g_params.softness_factor, hash);
 #else
         final_color = textureLod(g_rt_shadow_tex, in_uv, 0.0).xxx;
         final_color *= GetSunVisColor(lin_depth, g_shadow_color_tex,

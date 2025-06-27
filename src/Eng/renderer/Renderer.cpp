@@ -113,6 +113,10 @@ namespace bn_2D_64spp_7 {
 #include "precomputed/__bn_sampler_2D_64spp_7.inl"
 }
 
+namespace bn_1D_64spp_new {
+#include "../../../__bn_sampler_new.inl"
+}
+
 __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawList");
 } // namespace RendererInternal
 
@@ -442,6 +446,21 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         ctx_.EndTempSingleTimeCommands(cmd_buf);
 
         bn_pmj_2D_64spp_seq_buf_stage.FreeImmediate();
+    }
+
+    { // BN samples NEW
+        Ren::TexParams p;
+        p.w = p.h = 64;
+        p.d = 64;
+        p.format = Ren::eTexFormat::R8;
+        p.flags = Ren::eTexFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
+        p.sampling.filter = Ren::eTexFilter::Nearest;
+
+        Ren::eTexLoadStatus status;
+        bn_new_ = ctx_.LoadTexture("BN NEW", {(const uint8_t *)&bn_1D_64spp_new::bn_samples[0], 64 * 64 * 64}, p,
+                                   ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     { // PMJ samples

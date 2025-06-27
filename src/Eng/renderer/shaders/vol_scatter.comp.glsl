@@ -31,6 +31,8 @@ layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_t
 layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
 layout(binding = BN_PMJ_SEQ_BUF_SLOT) uniform usamplerBuffer g_bn_pmj_seq;
+layout(binding = BN_TEX_SLOT) uniform sampler2DArray g_bn_tex;
+
 layout(binding = FR_SCATTER_TEX_SLOT) uniform sampler3D g_fr_scatter_hist_tex;
 layout(binding = FR_EMISSION_TEX_SLOT) uniform sampler3D g_fr_emission_hist_tex;
 
@@ -79,8 +81,13 @@ void main() {
         return;
     }
 
+    const vec2 norm_uvs = (vec2(icoord.xy) + 0.5) / g_params.froxel_res.xy;
+
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = Sample1D_BN_PMJ_16SPP(g_bn_pmj_seq, uvec2(icoord.xy), g_params.frame_index);
+    float offset_rand = Sample1D_BN_PMJ_16SPP(g_bn_pmj_seq, uvec2(icoord.xy), g_params.frame_index);
+    if (icoord.x > (g_params.froxel_res.x / 2)) {
+        offset_rand = textureLod(g_bn_tex, vec3((vec2(icoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
+    }
 
     const vec3 pos_uvw = froxel_to_uvw(icoord, offset_rand, g_params.froxel_res.xyz);
     const vec4 pos_cs = vec4(2.0 * pos_uvw.xy - 1.0, pos_uvw.z, 1.0);
@@ -238,7 +245,7 @@ void main() {
             const float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.001);
             const float unbiased_weight = 1.0 - unbiased_diff;
             const float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
-            const float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
+            const float history_weight = 0.92;//mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
             scatter_absorption.xyz = mix(scatter_absorption.xyz, scatter_absorption_hist.xyz, history_weight);
             scatter_absorption.w = mix(scatter_absorption.w * emission_density.w, scatter_absorption_hist.w * emission_density_hist.w, history_weight);

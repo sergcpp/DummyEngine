@@ -443,6 +443,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
         auto *data = voxelize.AllocNodeData<ExVolVoxelize::Args>();
         data->shared_data = voxelize.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->bn_pmj_seq = voxelize.AddStorageReadonlyInput(bn_pmj_1D_16spp_seq_buf_, Stg::ComputeShader);
+        data->bn_tex = voxelize.AddTextureInput(bn_new_, Stg::ComputeShader);
 
         data->geo_data = voxelize.AddStorageReadonlyInput(rt_geo_instances_res, Stg::ComputeShader);
         data->materials = voxelize.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::ComputeShader);
@@ -484,7 +485,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         struct PassData {
             FgResRef shared_data;
-            FgResRef bn_pmj_seq;
+            FgResRef bn_pmj_seq, bn_tex;
             FgResRef shadow_depth_tex, shadow_color_tex;
             FgResRef fr_emission_tex, fr_scatter_tex;
             FgResRef cells_buf, items_buf, lights_buf, decals_buf;
@@ -496,6 +497,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
         auto *data = scatter.AllocNodeData<PassData>();
         data->shared_data = scatter.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
         data->bn_pmj_seq = scatter.AddStorageReadonlyInput(bn_pmj_1D_16spp_seq_buf_, Stg::ComputeShader);
+        data->bn_tex = scatter.AddTextureInput(bn_new_, Stg::ComputeShader);
         data->shadow_depth_tex = scatter.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
         data->shadow_color_tex = scatter.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
 
@@ -521,6 +523,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             FgAllocBuf &bn_pmj_seq_buf = builder.GetReadBuffer(data->bn_pmj_seq);
 
+            FgAllocTex &bn_tex = builder.GetReadTexture(data->bn_tex);
             FgAllocTex &shad_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
             FgAllocTex &shad_color_tex = builder.GetReadTexture(data->shadow_color_tex);
 
@@ -550,6 +553,7 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             Ren::SmallVector<Ren::Binding, 16> bindings = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::UTBuf, Fog::BN_PMJ_SEQ_BUF_SLOT, *bn_pmj_seq_buf.ref},
+                {Trg::TexSampled, Fog::BN_TEX_SLOT, *bn_tex.ref},
                 {Trg::TexSampled, Fog::SHADOW_DEPTH_TEX_SLOT, *shad_depth_tex.ref},
                 {Trg::TexSampled, Fog::SHADOW_COLOR_TEX_SLOT, *shad_color_tex.ref},
                 {Trg::TexSampled, Fog::FR_EMISSION_TEX_SLOT, *fr_emission_tex.ref},

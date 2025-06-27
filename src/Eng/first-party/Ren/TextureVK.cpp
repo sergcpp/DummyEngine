@@ -654,10 +654,11 @@ void Ren::Texture::InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd
             region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             region.imageSubresource.mipLevel = i;
             region.imageSubresource.baseArrayLayer = 0;
-            region.imageSubresource.layerCount = 1;
+            region.imageSubresource.layerCount = (p.flags & eTexFlags::Array) ? d : 1;
 
             region.imageOffset = {0, 0, 0};
-            region.imageExtent = {uint32_t(w), uint32_t(h), uint32_t(std::max(d, 1))};
+            region.imageExtent = {uint32_t(w), uint32_t(h),
+                                  uint32_t((p.flags & eTexFlags::Array) ? 1 : std::max(d, 1))};
 
             api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf->vk_handle(), handle_.img,
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);

@@ -86,6 +86,7 @@ class Renderer {
     Ren::TexRef tonemap_lut_;
     Ren::BufRef bn_pmj_1D_16spp_seq_buf_, bn_pmj_2D_64spp_seq_buf_;
     Ren::BufRef pmj_samples_buf_;
+    Ren::TexRef bn_new_;
     Ren::TexRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_,
         sky_curl_tex_;
     Ren::TexRef sky_noise3d_tex_;
