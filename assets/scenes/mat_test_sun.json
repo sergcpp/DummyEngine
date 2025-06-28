@@ -18,6 +18,7 @@
             1.0
         ],
         "env_map" : "physical_sky",
+        "env_map_rot" : 45.0,
         "sun_angle" : 10.0,
         "sun_shadow_bias" : [ 0.0, 0.0 ]
     },

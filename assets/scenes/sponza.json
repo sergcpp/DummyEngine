@@ -18,6 +18,7 @@
             -33.61769932118252
         ],
         "env_map": "physical_sky",
+        "env_map_rot": 45.0,
         "fog" : {
             "scatter_color" : [ 0.8, 0.8, 0.8 ],
             "density" : 0.0015,
