@@ -50,7 +50,8 @@ class Renderer {
         }
         return std::min(std::max(1.0f, min_exposure_), max_exposure_);
     }
-    void set_pre_exposure(const float exposure) { pre_exposure_ = exposure; }
+    void set_pre_exposure(const float exposure) { custom_pre_exposure_ = exposure; }
+    void reset_pre_exposure() { custom_pre_exposure_ = {}; }
 
     const backend_info_t &backend_info() const { return backend_info_; }
 
@@ -173,7 +174,7 @@ class Renderer {
     const DrawList *p_list_;
     Ren::SmallVector<FgResRef, 8> backbuffer_sources_;
     float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
-    float pre_exposure_ = 1.0f;
+    std::optional<float> custom_pre_exposure_;
 
     ExReadExposure ex_read_exposure_;
     ExPostprocess::Args ex_postprocess_args_;
@@ -323,7 +324,7 @@ class Renderer {
     void UpdatePixelFilterTable(ePixelFilter filter, float filter_width);
 
     // Postprocess
-    FgResRef AddAutoexposurePasses(FgResRef hdr_texture);
+    FgResRef AddAutoexposurePasses(FgResRef hdr_texture, Ren::Vec2f adaptation_speed = Ren::Vec2f{0.15f, 0.01f});
     FgResRef AddBloomPasses(FgResRef hdr_texture, FgResRef exposure_texture, bool compressed);
 
     // Parallel Jobs

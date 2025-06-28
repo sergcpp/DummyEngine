@@ -756,7 +756,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     view_state_.env_generation = list.env.generation;
-    view_state_.pre_exposure = readback_exposure();
+    view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
     view_state_.prev_pre_exposure = std::min(std::max(view_state_.prev_pre_exposure, min_exposure_), max_exposure_);
 
     view_state_.skip_volumetrics =
@@ -1991,7 +1991,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
         resolution_changed = true;
         view_state_.scr_res = view_state_.act_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
     }
-    view_state_.pre_exposure = readback_exposure();
+    view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
 
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
                                       !fg_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
@@ -2044,7 +2044,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
                                           builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
         });
 
-        FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res);
+        FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res, Ren::Vec2f{1.0f, 1.0f});
 
         FgResRef bloom_tex;
         if (settings.enable_bloom) {
@@ -2144,7 +2144,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, con
         resolution_changed = true;
         view_state_.scr_res = view_state_.act_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
     }
-    view_state_.pre_exposure = readback_exposure();
+    view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
 
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
                                       !fg_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
@@ -2160,7 +2160,7 @@ void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, con
         backbuffer_sources_.clear();
 
         FgResRef output_tex_res = fg_builder_.MakeTextureResource(result);
-        FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res);
+        FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res, Ren::Vec2f{1.0f, 1.0f});
 
         FgResRef bloom_tex;
         if (settings.enable_bloom) {

@@ -343,6 +343,7 @@ void BaseState::Enter() {
             ray_scene_.reset();
             ray_renderer_.reset();
             pt_result_ = {};
+            renderer_->reset_pre_exposure();
             ReloadSceneResources();
         }
         return true;
@@ -1736,7 +1737,7 @@ void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, co
     cam_desc.fov = fov;
 
     const float desired_exposure = log2f(renderer_->readback_exposure());
-    if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 0.5f) {
+    if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 4.0f) {
 #if defined(REN_VK_BACKEND)
         if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
             ray_renderer_->set_command_buffer(

@@ -9,7 +9,10 @@ struct Params {
     float min_exposure;
     float max_exposure;
     float exposure_factor;
+    float adaptation_speed_max;
+    float adaptation_speed_min;
     float _pad1;
+    float _pad2;
 };
 
 const int HISTOGRAM_TEX_SLOT = 1;

@@ -36,7 +36,7 @@ void main() {
     const float exposure_curr = (g_params.exposure_factor / avg_luma);
     const float exposure_prev = texelFetch(g_exposure_prev, ivec2(0), 0).x;
 
-    const float k = (exposure_curr < exposure_prev) ? 0.15 : 0.01;
+    const float k = (exposure_curr < exposure_prev) ? g_params.adaptation_speed_max : g_params.adaptation_speed_min;
     const float exposure = clamp(sqrt((1.0 - k) * sqr(exposure_prev) + k * sqr(exposure_curr)), g_params.min_exposure, g_params.max_exposure);
     imageStore(g_out_img, ivec2(0), vec4(exposure));
 }

@@ -8,7 +8,7 @@
 #include "shaders/histogram_exposure_interface.h"
 #include "shaders/histogram_sample_interface.h"
 
-Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
+Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const Ren::Vec2f adaptation_speed) {
     FgResRef histogram;
     { // Clear histogram image
         auto &histogram_clear = fg_builder_.AddNode("HISTOGRAM CLEAR");
@@ -71,7 +71,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             histogram_exposure.AddStorageImageOutput(EXPOSURE_TEX, params, Ren::eStage::ComputeShader);
         data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStage::ComputeShader);
 
-        histogram_exposure.set_execute_cb([this, data](FgBuilder &builder) {
+        histogram_exposure.set_execute_cb([this, data, adaptation_speed](FgBuilder &builder) {
             FgAllocTex &histogram_tex = builder.GetReadTexture(data->histogram);
             FgAllocTex &exposure_prev_tex = builder.GetReadTexture(data->exposure_prev);
             FgAllocTex &exposure_tex = builder.GetWriteTexture(data->exposure);
@@ -85,6 +85,8 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture) {
             uniform_params.min_exposure = min_exposure_;
             uniform_params.max_exposure = max_exposure_;
             uniform_params.exposure_factor = (settings.tonemap_mode != Eng::eTonemapMode::Standard) ? 1.25f : 0.5f;
+            uniform_params.adaptation_speed_max = adaptation_speed[0];
+            uniform_params.adaptation_speed_min = adaptation_speed[1];
 
             DispatchCompute(*pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.log());
