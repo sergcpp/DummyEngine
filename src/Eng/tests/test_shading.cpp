@@ -38,7 +38,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2_far_away", 27.85, Full_Ultra);
     run_image_test(threads, "complex_mat2_spot_light", 34.55, NoShadow);
     run_image_test(threads, "complex_mat2_spot_light", 35.85, NoGI);
-    run_image_test(threads, "complex_mat2_spot_light", 30.45, NoDiffGI);
+    run_image_test(threads, "complex_mat2_spot_light", 30.95, NoDiffGI);
     run_image_test(threads, "complex_mat2_spot_light", 26.70, MedDiffGI);
     run_image_test(threads, "complex_mat2_spot_light", 26.45, Full);
     run_image_test(threads, "complex_mat2_spot_light", 27.80, Full_Ultra);
