@@ -119,30 +119,30 @@ jobs:
   #       with:
   #         name: macos-x86_64-vk
   #         path: macos-x86_64-vk/
-  # test-img-windows-x86_64-vk-nv:
-  #   runs-on: [ windows, x86_64, nv ]
-  #   needs:
-  #     - build-windows-x86_64-vk-rel
-  #   steps:
-  #     - name: Checkout Workflows
-  #       uses: actions/checkout@v4
-  #       with:
-  #         sparse-checkout: .github
-  #     - name: Re-initialize repository
-  #       uses: ./.github/actions/checkout
-  #     - name: Run Tests
-  #       uses: ./.github/actions/test-img
-  #       with:
-  #         bin-name: "DummyAppVK"
-  #         bin-dir: "windows-x86_64-vk"
-  #         out-dir: "windows-x86_64-vk-nv-img-output"
-  #         test-args: "-d NV --noshow"
-  #     - name: Upload artifacts
-  #       uses: actions/upload-artifact@v3
-  #       if: always()
-  #       with:
-  #         name: windows-x86_64-vk-nv-img-output
-  #         path: windows-x86_64-vk-nv-img-output/
+  test-img-windows-x86_64-vk-amd:
+    runs-on: [ windows, x86_64, amd ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test-img
+        with:
+          bin-name: "DummyAppVK"
+          bin-dir: "windows-x86_64-vk"
+          out-dir: "windows-x86_64-vk-amd-img-output"
+          test-args: "-d AMD --noshow"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-vk-amd-img-output
+          path: windows-x86_64-vk-amd-img-output/
   # test-windows-x86_64-gl-nv:
   #   runs-on: [ windows, x86_64, nv ]
   #   needs:
