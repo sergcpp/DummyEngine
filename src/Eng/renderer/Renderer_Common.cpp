@@ -130,7 +130,8 @@ void Eng::Renderer::InitPipelines() {
     pi_bloom_downsample_[0][1] = sh_.LoadPipeline("internal/bloom_downsample@TONEMAP.comp.glsl");
     pi_bloom_downsample_[1][0] = sh_.LoadPipeline("internal/bloom_downsample@COMPRESSED.comp.glsl");
     pi_bloom_downsample_[1][1] = sh_.LoadPipeline("internal/bloom_downsample@COMPRESSED;TONEMAP.comp.glsl");
-    pi_bloom_upsample_ = sh_.LoadPipeline("internal/bloom_upsample.comp.glsl");
+    pi_bloom_upsample_[0] = sh_.LoadPipeline("internal/bloom_upsample.comp.glsl");
+    pi_bloom_upsample_[1] = sh_.LoadPipeline("internal/bloom_upsample@COMPRESSED.comp.glsl");
 
     // Autoexposure
     pi_histogram_sample_ = sh_.LoadPipeline("internal/histogram_sample.comp.glsl");

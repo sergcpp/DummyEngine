@@ -3,6 +3,8 @@
 #include "_cs_common.glsl"
 #include "bloom_interface.h"
 
+#pragma multi_compile _ COMPRESSED
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -10,7 +12,11 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = INPUT_TEX_SLOT) uniform sampler2D g_input_tex;
 layout(binding = BLEND_TEX_SLOT) uniform sampler2D g_blend_tex;
 
-layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_img;
+#ifdef COMPRESSED
+    layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_img;
+#else
+    layout(binding = OUT_IMG_SLOT, rgba32f) uniform image2D g_out_img;
+#endif
 
 layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
