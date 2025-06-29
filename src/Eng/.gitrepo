@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = autoexposure_swing
-	commit = 392facbf02c885f292702907a52753ec55c2689a
+	branch = fixes_29_06
+	commit = 7a584c35ac56e4f481f639034386c06d6b2fc1f5
 	method = merge
 	cmdver = 0.4.6
-	parent = dfde864856eaff6cbcaec81761ef3b9b5050eea5
+	parent = b185bb328552b917a98af12568da2cd25e87b166
