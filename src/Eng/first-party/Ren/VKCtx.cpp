@@ -800,7 +800,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, 
                 for (const VkCooperativeMatrixPropertiesKHR &p : coop_matrix_props) {
                     if (p.AType == VK_COMPONENT_TYPE_FLOAT16_KHR && p.BType == VK_COMPONENT_TYPE_FLOAT16_KHR &&
                         p.CType == VK_COMPONENT_TYPE_FLOAT16_KHR && p.ResultType == VK_COMPONENT_TYPE_FLOAT16_KHR &&
-                        p.MSize == 16 && p.NSize == 8 && p.KSize == 8 && p.scope == VK_SCOPE_SUBGROUP_KHR) {
+                        p.MSize == 16 && p.NSize == 16 && p.KSize == 16 && p.scope == VK_SCOPE_SUBGROUP_KHR) {
                         found = true;
                         break;
                     }
