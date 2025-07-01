@@ -1,0 +1,1 @@
+DummyAppVK.exe -s scenes/bistro_night_fix.json -w 1920 -h 1080 --preset ultra

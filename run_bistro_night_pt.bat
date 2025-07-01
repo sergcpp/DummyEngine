@@ -1,0 +1,1 @@
+DummyAppVK.exe -s scenes/bistro_night_fix_pt.json -w 1920 -h 1080 --pt
