@@ -1327,7 +1327,8 @@ void BaseState::InitRenderer_PT() {
         auto parallel_for =
             std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, viewer_->threads(), _1, _2, _3);
 
-        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log(), parallel_for));
+        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(
+            Ray::CreateRenderer(s, viewer_->ray_log(), parallel_for/*, Ray::eRendererType::Reference*/));
         unet_props_ = ray_renderer_->InitUNetFilter(true /* alias_memory */, parallel_for);
     }
 }
@@ -1354,6 +1355,9 @@ void BaseState::InitScene_PT() {
         if (scene_data.env.sun_angle < 1) {
             env_desc.envmap_resolution *= 2;
         }
+        /*if (scene_data.env.sun_angle < 0.05) {
+            env_desc.envmap_resolution *= 2;
+        }*/
 
         if (!scene_data.env.env_map_name.empty()) {
             if (scene_data.env.env_map_name == "physical_sky") {
@@ -1737,7 +1741,8 @@ void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, co
     cam_desc.fov = fov;
 
     const float desired_exposure = log2f(renderer_->readback_exposure());
-    if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 4.0f) {
+    log_->Info("%f/%f", desired_exposure, cam_desc.exposure);
+    if (renderer_->readback_exposure() > 0 && std::abs(cam_desc.exposure - desired_exposure) > 0.5f) {
 #if defined(REN_VK_BACKEND)
         if (ray_renderer_->type() == Ray::eRendererType::Vulkan) {
             ray_renderer_->set_command_buffer(
@@ -1766,6 +1771,7 @@ void BaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, co
     if (invalidate_view_) {
         cam_desc.exposure = desired_exposure;
         renderer_->set_pre_exposure(renderer_->readback_exposure());
+        //renderer_->set_pre_exposure(1.0f);
     }
 
     ray_scene_->SetCamera(Ray::CameraHandle{0}, cam_desc);
