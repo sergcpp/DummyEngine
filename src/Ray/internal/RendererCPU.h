@@ -376,7 +376,7 @@ void Ray::Cpu::Renderer<SIMDPolicy>::RenderScene(const SceneBase &scene, RegionC
 
     const auto &s = dynamic_cast<const Cpu::Scene &>(scene);
 
-    std::shared_lock<std::shared_timed_mutex> scene_lock(s.mtx_);
+    std::shared_lock<std::shared_mutex> scene_lock(s.mtx_);
 
     const camera_t &cam = s.cams_[s.current_cam()._index];
     const float cam_exposure = std::pow(2.0f, cam.exposure);
@@ -1016,7 +1016,7 @@ void Ray::Cpu::Renderer<SIMDPolicy>::UpdateSpatialCache(const SceneBase &scene, 
 
     const auto &s = dynamic_cast<const Cpu::Scene &>(scene);
 
-    std::shared_lock<std::shared_timed_mutex> scene_lock(s.mtx_);
+    std::shared_lock<std::shared_mutex> scene_lock(s.mtx_);
 
     ++region.cache_iteration;
 
@@ -1174,7 +1174,7 @@ void Ray::Cpu::Renderer<SIMDPolicy>::ResolveSpatialCache(
 
     const auto time_start = high_resolution_clock::now();
 
-    std::shared_lock<std::shared_timed_mutex> scene_lock(s.mtx_);
+    std::shared_lock<std::shared_mutex> scene_lock(s.mtx_);
 
     const camera_t &cam = s.cams_[s.current_cam()._index];
 
@@ -1219,7 +1219,7 @@ void Ray::Cpu::Renderer<SIMDPolicy>::ResetSpatialCache(
 
     const auto &s = dynamic_cast<const Cpu::Scene &>(scene);
 
-    std::shared_lock<std::shared_timed_mutex> scene_lock(s.mtx_);
+    std::shared_lock<std::shared_mutex> scene_lock(s.mtx_);
 
     static const int ResetPortion = 32768 * 4;
     assert((s.spatial_cache_entries_.size() % ResetPortion) == 0);

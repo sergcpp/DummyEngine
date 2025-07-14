@@ -114,23 +114,23 @@ class Scene : public SceneCommon {
 
     TextureHandle AddTexture(const tex_desc_t &t) override;
     void RemoveTexture(const TextureHandle t) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         tex_storages_[t._index >> 24]->Free(t._index & 0x00ffffff);
     }
 
     MaterialHandle AddMaterial(const shading_node_desc_t &m) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         return AddMaterial_nolock(m);
     }
     MaterialHandle AddMaterial(const principled_mat_desc_t &m) override;
     void RemoveMaterial(const MaterialHandle m) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         materials_.Erase(m._block);
     }
 
     MeshHandle AddMesh(const mesh_desc_t &m) override;
     void RemoveMesh(MeshHandle m) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         RemoveMesh_nolock(m);
     }
 
@@ -141,17 +141,17 @@ class Scene : public SceneCommon {
     LightHandle AddLight(const disk_light_desc_t &l, const float *xform) override;
     LightHandle AddLight(const line_light_desc_t &l, const float *xform) override;
     void RemoveLight(LightHandle l) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         lights_.Erase(l._block);
     }
 
     MeshInstanceHandle AddMeshInstance(const mesh_instance_desc_t &mi) override;
     void SetMeshInstanceTransform(MeshInstanceHandle mi, const float *xform) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         SetMeshInstanceTransform_nolock(mi, xform);
     }
     void RemoveMeshInstance(MeshInstanceHandle mi) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         RemoveMeshInstance_nolock(mi);
     }
 
@@ -160,11 +160,11 @@ class Scene : public SceneCommon {
     void GetBounds(float bbox_min[3], float bbox_max[3]) const;
 
     uint32_t triangle_count() const override {
-        std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+        std::shared_lock<std::shared_mutex> lock(mtx_);
         return uint32_t(tris_.size());
     }
     uint32_t node_count() const override {
-        std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+        std::shared_lock<std::shared_mutex> lock(mtx_);
         return use_wide_bvh_ ? uint32_t(wnodes_.size()) : uint32_t(nodes_.size());
     }
 };

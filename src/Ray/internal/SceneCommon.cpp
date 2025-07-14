@@ -18,7 +18,7 @@ Ref::fvec4 rgb_to_rgbe(const Ref::fvec4 &rgb) {
 } // namespace Ray
 
 void Ray::SceneCommon::GetEnvironment(environment_desc_t &env) {
-    std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+    std::shared_lock<std::shared_mutex> lock(mtx_);
 
     memcpy(env.env_col, env_.env_col, 3 * sizeof(float));
     env.env_map = TextureHandle{env_.env_map};
@@ -32,7 +32,7 @@ void Ray::SceneCommon::GetEnvironment(environment_desc_t &env) {
 }
 
 void Ray::SceneCommon::SetEnvironment(const environment_desc_t &env) {
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     memcpy(env_.env_col, env.env_col, 3 * sizeof(float));
     env_.env_map = env.env_map._index;
@@ -49,7 +49,7 @@ void Ray::SceneCommon::SetEnvironment(const environment_desc_t &env) {
 }
 
 Ray::CameraHandle Ray::SceneCommon::AddCamera(const camera_desc_t &c) {
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> al = cams_.Allocate(1);
     const Ray::CameraHandle i = {al.first, al.second};
@@ -62,7 +62,7 @@ Ray::CameraHandle Ray::SceneCommon::AddCamera(const camera_desc_t &c) {
 }
 
 void Ray::SceneCommon::GetCamera(const CameraHandle i, camera_desc_t &c) const {
-    std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+    std::shared_lock<std::shared_mutex> lock(mtx_);
 
     const camera_t &cam = cams_[i._index];
     c.type = cam.type;
@@ -114,7 +114,7 @@ void Ray::SceneCommon::GetCamera(const CameraHandle i, camera_desc_t &c) const {
 }
 
 void Ray::SceneCommon::RemoveCamera(const CameraHandle i) {
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
     cams_.Erase(i._block);
 }
 

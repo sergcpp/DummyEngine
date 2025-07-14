@@ -44,7 +44,7 @@ const uint32_t AccStructAlignment = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE
 } // namespace Ray
 
 Ray::Dx::Scene::~Scene() {
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     for (auto it = mesh_instances_.begin(); it != mesh_instances_.end();) {
         MeshInstanceHandle to_delete = {it.index(), it.block()};

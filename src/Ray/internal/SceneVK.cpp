@@ -35,7 +35,7 @@ const int AccStructAlignment = 256;
 } // namespace Ray
 
 Ray::Vk::Scene::~Scene() {
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     for (auto it = mesh_instances_.begin(); it != mesh_instances_.end();) {
         MeshInstanceHandle to_delete = {it.index(), it.block()};

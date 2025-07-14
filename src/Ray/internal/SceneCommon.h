@@ -11,7 +11,7 @@ namespace Ray {
 struct atmosphere_params_t;
 class SceneCommon : public SceneBase {
   protected:
-    mutable std::shared_timed_mutex mtx_;
+    mutable std::shared_mutex mtx_;
 
     Cpu::SparseStorage<camera_t> cams_;
 
@@ -33,12 +33,12 @@ class SceneCommon : public SceneBase {
     void SetEnvironment(const environment_desc_t &env) override;
 
     CameraHandle current_cam() const override {
-        std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+        std::shared_lock<std::shared_mutex> lock(mtx_);
         return current_cam_;
     }
 
     void set_current_cam(CameraHandle i) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         current_cam_ = i;
     }
 
@@ -48,7 +48,7 @@ class SceneCommon : public SceneBase {
     void GetCamera(CameraHandle i, camera_desc_t &c) const override;
 
     void SetCamera(CameraHandle i, const camera_desc_t &c) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         SetCamera_nolock(i, c);
     }
 };

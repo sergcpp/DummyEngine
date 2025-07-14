@@ -161,7 +161,7 @@ class Scene : public SceneCommon {
     void SetEnvironment(const environment_desc_t &env) override;
 
     TextureHandle AddTexture(const tex_desc_t &t) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         if (use_bindless_) {
             return AddBindlessTexture_nolock(t);
         } else {
@@ -169,7 +169,7 @@ class Scene : public SceneCommon {
         }
     }
     void RemoveTexture(const TextureHandle t) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         if (use_bindless_) {
             bindless_textures_.Erase(t._block);
         } else {
@@ -178,18 +178,18 @@ class Scene : public SceneCommon {
     }
 
     MaterialHandle AddMaterial(const shading_node_desc_t &m) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         return AddMaterial_nolock(m);
     }
     MaterialHandle AddMaterial(const principled_mat_desc_t &m) override;
     void RemoveMaterial(const MaterialHandle m) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         materials_.Erase(m._block);
     }
 
     MeshHandle AddMesh(const mesh_desc_t &m) override;
     void RemoveMesh(MeshHandle m) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         RemoveMesh_nolock(m);
     }
 
@@ -200,28 +200,28 @@ class Scene : public SceneCommon {
     LightHandle AddLight(const disk_light_desc_t &l, const float *xform) override;
     LightHandle AddLight(const line_light_desc_t &l, const float *xform) override;
     void RemoveLight(const LightHandle i) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         lights_.Erase(i._block);
     }
 
     MeshInstanceHandle AddMeshInstance(const mesh_instance_desc_t &mi) override;
     void SetMeshInstanceTransform(MeshInstanceHandle mi_handle, const float *xform) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         SetMeshInstanceTransform_nolock(mi_handle, xform);
     }
     void RemoveMeshInstance(MeshInstanceHandle mi) override {
-        std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+        std::unique_lock<std::shared_mutex> lock(mtx_);
         RemoveMeshInstance_nolock(mi);
     }
 
     void Finalize(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for) override;
 
     uint32_t triangle_count() const override {
-        std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+        std::shared_lock<std::shared_mutex> lock(mtx_);
         return uint32_t(vtx_indices_.size() / 3);
     }
     uint32_t node_count() const override {
-        std::shared_lock<std::shared_timed_mutex> lock(mtx_);
+        std::shared_lock<std::shared_mutex> lock(mtx_);
         return uint32_t(nodes_.size());
     }
 };
@@ -1043,7 +1043,7 @@ inline Ray::MeshHandle Ray::NS::Scene::AddMesh(const mesh_desc_t &_m) {
         }
     }
 
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     for (int i = 0; i < _m.vtx_indices.size(); ++i) {
         new_vtx_indices.push_back(_m.vtx_indices[i] + _m.base_vertex);
@@ -1202,7 +1202,7 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const directional_light_desc_t 
         l.col[2] *= mul;
     }
 
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> light_index = lights_.push(l);
     return LightHandle{light_index.first, light_index.second};
@@ -1225,7 +1225,7 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const sphere_light_desc_t &_l) 
     l.sph.radius = _l.radius;
     l.sph.spot = l.sph.blend = -1.0f;
 
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> light_index = lights_.push(l);
     return LightHandle{light_index.first, light_index.second};
@@ -1250,7 +1250,7 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const spot_light_desc_t &_l) {
     l.sph.spot = 0.5f * PI * _l.spot_size / 180.0f;
     l.sph.blend = _l.spot_blend * _l.spot_blend;
 
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> light_index = lights_.push(l);
     return LightHandle{light_index.first, light_index.second};
@@ -1285,7 +1285,7 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const rect_light_desc_t &_l, co
     memcpy(l.rect.u, value_ptr(uvec), 3 * sizeof(float));
     memcpy(l.rect.v, value_ptr(vvec), 3 * sizeof(float));
 
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> light_index = lights_.push(l);
     return LightHandle{light_index.first, light_index.second};
@@ -1320,7 +1320,7 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const disk_light_desc_t &_l, co
     memcpy(l.disk.u, value_ptr(uvec), 3 * sizeof(float));
     memcpy(l.disk.v, value_ptr(vvec), 3 * sizeof(float));
 
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> light_index = lights_.push(l);
     return LightHandle{light_index.first, light_index.second};
@@ -1353,14 +1353,14 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const line_light_desc_t &_l, co
     memcpy(l.line.v, value_ptr(vvec), 3 * sizeof(float));
     l.line.height = _l.height;
 
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> light_index = lights_.push(l);
     return LightHandle{light_index.first, light_index.second};
 }
 
 inline Ray::MeshInstanceHandle Ray::NS::Scene::AddMeshInstance(const mesh_instance_desc_t &mi_desc) {
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     const mesh_t &m = meshes_[mi_desc.mesh._index];
 
@@ -1476,7 +1476,7 @@ inline void Ray::NS::Scene::RemoveMeshInstance_nolock(const MeshInstanceHandle i
 }
 
 inline void Ray::NS::Scene::Finalize(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for) {
-    std::unique_lock<std::shared_timed_mutex> lock(mtx_);
+    std::unique_lock<std::shared_mutex> lock(mtx_);
 
     if (env_map_light_ != InvalidLightHandle) {
         lights_.Erase(env_map_light_._block);
