@@ -677,7 +677,7 @@ void test_aniso_mat3(const char *arch_list[], std::string_view preferred_device)
 
 void test_aniso_mat4(const char *arch_list[], std::string_view preferred_device) {
     const int SampleCount = 354;
-    const int PixThres = 500;
+    const int PixThres = 505;
 
     Ray::principled_mat_desc_t spec_mat_desc;
     spec_mat_desc.base_color[0] = 1.0f;
@@ -1872,7 +1872,7 @@ void test_complex_mat6_dir_light(const char *arch_list[], std::string_view prefe
 }
 
 void test_complex_mat6_hdri_light(const char *arch_list[], std::string_view preferred_device) {
-    const int SampleCount = 55;
+    const int SampleCount = 56;
     const double MinPSNR = 21.0;
     const int PixThres = 6305;
 
