@@ -1351,7 +1351,13 @@ void BaseState::InitScene_PT() {
         memcpy(&env_desc.atmosphere, &scene_data.env.atmosphere, sizeof(Ray::atmosphere_params_t));
         static_assert(sizeof(Ray::atmosphere_params_t) == sizeof(Eng::atmosphere_params_t));
 
-        if (scene_data.env.sun_angle < 1) {
+        if (scene_data.env.sun_angle < 0.75) {
+            env_desc.envmap_resolution *= 2;
+        }
+        if (scene_data.env.sun_angle < 0.375) {
+            env_desc.envmap_resolution *= 2;
+        }
+        if (scene_data.env.sun_angle < 0.1875) {
             env_desc.envmap_resolution *= 2;
         }
 
