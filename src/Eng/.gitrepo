@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = coop_amd
-	commit = ac8a025687769aa693a84063d6d5f3ea9131db8a
+	branch = stbn
+	commit = 4d80a6cc22552e694e843a0e8920596579cef046
 	method = merge
 	cmdver = 0.4.6
-	parent = ee64ab10c1ea04fad76dfbe50394ba28929bfb79
+	parent = d2592406ef60fad1142096ec77d9513a928be405
