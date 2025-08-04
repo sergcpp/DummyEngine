@@ -13,6 +13,12 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
 #include <iostream>
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <Windows.h>
 
 #include <Eng/ViewerBase.h>

@@ -601,8 +601,7 @@ bool WriteCubemapDDS(Ren::Span<uint32_t> data[6], const int res, const int chann
     header.dwMipMapCount = mip_count;
     header.sPixelFormat.dwSize = 32;
     header.sPixelFormat.dwFlags = Ren::DDPF_FOURCC;
-    header.sPixelFormat.dwFourCC =
-        (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('1') << 16u) | (uint32_t('0') << 24u);
+    header.sPixelFormat.dwFourCC = Ren::FourCC_DX10;
 
     header.sCaps.dwCaps1 = Ren::DDSCAPS_TEXTURE | Ren::DDSCAPS_COMPLEX | Ren::DDSCAPS_MIPMAP;
     header.sCaps.dwCaps2 = Ren::DDSCAPS2_CUBEMAP | Ren::DDSCAPS2_CUBEMAP_POSITIVEX | Ren::DDSCAPS2_CUBEMAP_NEGATIVEX |

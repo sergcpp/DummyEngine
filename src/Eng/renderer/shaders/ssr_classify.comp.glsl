@@ -8,7 +8,7 @@
 
 #include "_cs_common.glsl"
 #include "ssr_common.glsl"
-#include "bn_pmj_2d_64spp.glsl"
+#include "bn_pmj_2D_64spp.glsl"
 #include "ssr_classify_interface.h"
 
 #pragma multi_compile _ NO_SUBGROUP

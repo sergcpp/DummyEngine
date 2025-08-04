@@ -53,8 +53,10 @@ set(SOURCE_FILES Config.h
 set(INPUT_SOURCE_FILES input/InputManager.h
                        input/InputManager.cpp)
 
-set(RENDERER_SOURCES    renderer/BlueNoise.h
-                        renderer/BlueNoise.cpp
+set(RENDERER_SOURCES    renderer/BlueNoise_Heitz.h
+                        renderer/BlueNoise_Heitz.cpp
+                        renderer/BlueNoise_Wolfe.h
+                        renderer/BlueNoise_Wolfe.cpp
                         renderer/CDFUtils.h
                         renderer/CDFUtils.cpp
                         renderer/ParseJs.h

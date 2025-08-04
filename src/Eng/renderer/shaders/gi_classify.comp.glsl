@@ -8,7 +8,7 @@
 
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
-#include "bn_pmj_2d_64spp.glsl"
+#include "bn_pmj_2D_64spp.glsl"
 #include "gi_classify_interface.h"
 
 #pragma multi_compile _ NO_SUBGROUP

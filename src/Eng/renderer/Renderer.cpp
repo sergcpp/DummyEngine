@@ -84,10 +84,12 @@ extern const int TaaSampleCountStatic = 64;
 #include "precomputed/__noise.inl"
 #include "precomputed/__pmj02_samples.inl"
 
-namespace bn_1D_16spp {
-#include "precomputed/__bn_sampler_1D_16spp.inl"
+// 1D blue noise, used for volumetrics
+namespace stbn_1D_64spp {
+#include "precomputed/__stbn_sampler_1D_64spp.inl"
 }
 
+// 2D blue noise, used for GI
 namespace bn_2D_64spp_0 {
 #include "precomputed/__bn_sampler_2D_64spp_0.inl"
 }
@@ -312,27 +314,21 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         "assets/textures/skin_diffusion.uncompressed.png");
     }*/
 
-    { // PMJ 1D blue-noise sampler
-        Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
+    { // STBN 1D sampler
+        Ren::TexParams p;
+        p.w = stbn_1D_64spp::w;
+        p.h = stbn_1D_64spp::h;
+        p.d = stbn_1D_64spp::d;
+        p.format = Ren::eTexFormat::R8;
+        p.flags = Ren::eTexFlags::Array;
+        p.usage = Ren::Bitmask(Ren::eTexUsage::Transfer) | Ren::eTexUsage::Sampled;
+        p.sampling.filter = Ren::eTexFilter::Nearest;
 
-        bn_pmj_1D_16spp_seq_buf_ =
-            ctx_.LoadBuffer("BN_PMJ_1D_16SPP", Ren::eBufType::Texture, sizeof(bn_1D_16spp::bn_pmj_data));
-        bn_pmj_1D_16spp_seq_buf_->AddBufferView(Ren::eTexFormat::R32UI);
-        Ren::Buffer bn_pmj_1D_16spp_seq_buf_stage("BN_PMJ_1D_16SPP_Stage", ctx_.api_ctx(), Ren::eBufType::Upload,
-                                                  bn_pmj_1D_16spp_seq_buf_->size());
-
-        { // init stage buf
-            uint8_t *mapped_ptr = bn_pmj_1D_16spp_seq_buf_stage.Map();
-            memcpy(mapped_ptr, bn_1D_16spp::bn_pmj_data, sizeof(bn_1D_16spp::bn_pmj_data));
-            bn_pmj_1D_16spp_seq_buf_stage.Unmap();
-        }
-
-        CopyBufferToBuffer(bn_pmj_1D_16spp_seq_buf_stage, 0, *bn_pmj_1D_16spp_seq_buf_, 0,
-                           sizeof(bn_1D_16spp::bn_pmj_data), cmd_buf);
-
-        ctx_.EndTempSingleTimeCommands(cmd_buf);
-
-        bn_pmj_1D_16spp_seq_buf_stage.FreeImmediate();
+        Ren::eTexLoadStatus status;
+        stbn_1D_64spp_ =
+            ctx_.LoadTexture("STBN 1D 64spp", {(const uint8_t *)&stbn_1D_64spp::stbn_samples[0], p.w * p.h * p.d}, p,
+                             ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     { // PMJ 2D blue-noise sampler
@@ -495,7 +491,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eTexFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
+        };
 
         // color_rts[2].flags = Ren::eTexFlags::SRGB;
 

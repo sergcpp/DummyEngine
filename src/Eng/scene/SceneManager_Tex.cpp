@@ -140,8 +140,7 @@ void Eng::SceneManager::TextureLoaderProc() {
                     req->orig_h = temp_params.h;
                     req->orig_mip_count = int(header.dwMipMapCount);
 
-                    if (header.sPixelFormat.dwFourCC == ((unsigned('D') << 0u) | (unsigned('X') << 8u) |
-                                                         (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
+                    if (header.sPixelFormat.dwFourCC == Ren::FourCC_DX10) {
                         Ren::DDS_HEADER_DXT10 dx10_header = {};
                         tex_reader_.ReadFileBlocking(path_buf.c_str(), sizeof(Ren::DDSHeader),
                                                      sizeof(Ren::DDS_HEADER_DXT10), &dx10_header, data_size);

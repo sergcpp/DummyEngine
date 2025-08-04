@@ -121,8 +121,7 @@ bool Ren::TextureRegion::InitFromDDSFile(Span<const uint8_t> data, TexParams p, 
     offset += sizeof(DDSHeader);
 
     ParseDDSHeader(header, &p);
-    if (header.sPixelFormat.dwFourCC ==
-        ((unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
+    if (header.sPixelFormat.dwFourCC == Ren::FourCC_DX10) {
         if (data.size() - offset < sizeof(DDS_HEADER_DXT10)) {
             return false;
         }

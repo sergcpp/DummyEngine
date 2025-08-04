@@ -8,7 +8,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "bn_pmj_2d_64spp.glsl"
+#include "bn_pmj_2D_64spp.glsl"
 #include "rt_shadow_classify_interface.h"
 #include "rt_shadow_common.glsl.inl"
 

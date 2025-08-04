@@ -85,8 +85,9 @@ class Renderer {
     Ren::TexRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
         noise_tex_;
     Ren::TexRef tonemap_lut_;
-    Ren::BufRef bn_pmj_1D_16spp_seq_buf_, bn_pmj_2D_64spp_seq_buf_;
+    Ren::BufRef bn_pmj_2D_64spp_seq_buf_;
     Ren::BufRef pmj_samples_buf_;
+    Ren::TexRef stbn_1D_64spp_;
     Ren::TexRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_,
         sky_curl_tex_;
     Ren::TexRef sky_noise3d_tex_;

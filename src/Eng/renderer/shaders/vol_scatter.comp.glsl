@@ -11,7 +11,6 @@
 #include "gi_cache_common.glsl"
 #include "pmj_common.glsl"
 #include "vol_common.glsl"
-#include "bn_pmj_1D_16spp.glsl"
 
 #include "vol_interface.h"
 
@@ -30,7 +29,8 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(binding = SHADOW_DEPTH_TEX_SLOT) uniform sampler2DShadow g_shadow_depth_tex;
 layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
-layout(binding = BN_PMJ_SEQ_BUF_SLOT) uniform usamplerBuffer g_bn_pmj_seq;
+layout(binding = STBN_TEX_SLOT) uniform sampler2DArray g_stbn_tex;
+
 layout(binding = FR_SCATTER_TEX_SLOT) uniform sampler3D g_fr_scatter_hist_tex;
 layout(binding = FR_EMISSION_TEX_SLOT) uniform sampler3D g_fr_emission_hist_tex;
 
@@ -79,8 +79,10 @@ void main() {
         return;
     }
 
+    const vec2 norm_uvs = (vec2(icoord.xy) + 0.5) / g_params.froxel_res.xy;
+
     const uint px_hash = hash((gl_GlobalInvocationID.x << 16) | gl_GlobalInvocationID.y);
-    const float offset_rand = Sample1D_BN_PMJ_16SPP(g_bn_pmj_seq, uvec2(icoord.xy), g_params.frame_index);
+    const float offset_rand = textureLod(g_stbn_tex, vec3((vec2(icoord.xy) + 0.5) / 64.0, float(g_params.frame_index % 64)), 0.0).x;
 
     const vec3 pos_uvw = froxel_to_uvw(icoord, offset_rand, g_params.froxel_res.xyz);
     const vec4 pos_cs = vec4(2.0 * pos_uvw.xy - 1.0, pos_uvw.z, 1.0);

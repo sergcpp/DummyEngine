@@ -12,7 +12,7 @@
 
 void Eng::ExVolVoxelize::Execute_HWRT(FgBuilder &builder) {
     FgAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(args_->shared_data);
-    FgAllocBuf &bn_pmj_seq_buf = builder.GetReadBuffer(args_->bn_pmj_seq);
+    FgAllocTex &stbn_tex = builder.GetReadTexture(args_->stbn_tex);
 
     FgAllocBuf &geo_data_buf = builder.GetReadBuffer(args_->geo_data);
     FgAllocBuf &materials_buf = builder.GetReadBuffer(args_->materials);
@@ -28,7 +28,7 @@ void Eng::ExVolVoxelize::Execute_HWRT(FgBuilder &builder) {
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(args_->tlas);
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::UTBuf, Fog::BN_PMJ_SEQ_BUF_SLOT, *bn_pmj_seq_buf.ref},
+                                     {Ren::eBindTarget::TexSampled, Fog::STBN_TEX_SLOT, *stbn_tex.ref},
                                      {Ren::eBindTarget::SBufRO, Fog::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
                                      {Ren::eBindTarget::SBufRO, Fog::MATERIAL_BUF_SLOT, *materials_buf.ref},
                                      {Ren::eBindTarget::AccStruct, Fog::TLAS_SLOT, *acc_struct},

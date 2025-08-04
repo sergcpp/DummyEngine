@@ -129,6 +129,9 @@ const uint32_t FourCC_BC4 =
 const uint32_t FourCC_BC5 =
     (uint32_t('A') << 0u) | (uint32_t('T') << 8u) | (uint32_t('I') << 16u) | (uint32_t('2') << 24u);
 
+const uint32_t FourCC_DX10 =
+    (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('1') << 16u) | (uint32_t('0') << 24u);
+
 struct DDSHeader {
     uint32_t dwMagic;
     uint32_t dwSize;

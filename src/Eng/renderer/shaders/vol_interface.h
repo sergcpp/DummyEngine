@@ -27,7 +27,7 @@ const int SHADOW_COLOR_TEX_SLOT = 3;
 const int FR_EMISSION_TEX_SLOT = 4;
 const int FR_SCATTER_TEX_SLOT = 5;
 const int DEPTH_TEX_SLOT = 6;
-const int BN_PMJ_SEQ_BUF_SLOT = 7;
+const int STBN_TEX_SLOT = 7;
 
 const int LIGHT_BUF_SLOT = 8;
 const int DECAL_BUF_SLOT = 9;

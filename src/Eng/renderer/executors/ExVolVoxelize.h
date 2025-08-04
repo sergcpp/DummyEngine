@@ -13,7 +13,7 @@ class ExVolVoxelize final : public FgExecutor {
   public:
     struct Args {
         FgResRef shared_data;
-        FgResRef bn_pmj_seq;
+        FgResRef stbn_tex;
         FgResRef geo_data;
         FgResRef materials;
         FgResRef tlas_buf;

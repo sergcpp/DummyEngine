@@ -20,8 +20,7 @@ std::vector<uint8_t> Eng::LoadDDS(std::string_view path, Ren::TexParams *p) {
     }
 
     Ren::ParseDDSHeader(header, p);
-    if (header.sPixelFormat.dwFourCC ==
-        ((unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
+    if (header.sPixelFormat.dwFourCC == Ren::FourCC_DX10) {
         Ren::DDS_HEADER_DXT10 dx10_header = {};
         bytes_read = in_file.Read((char *)&dx10_header, sizeof(Ren::DDS_HEADER_DXT10));
         if (bytes_read != sizeof(Ren::DDS_HEADER_DXT10)) {
