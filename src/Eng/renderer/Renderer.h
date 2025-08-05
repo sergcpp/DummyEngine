@@ -263,8 +263,8 @@ class Renderer {
 
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                    FgResRef &inout_velocity_tex);
-    void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
-                    FgResRef &resolved_color);
+    void AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
+                      FgResRef &resolved_color);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
     // GI Cache
