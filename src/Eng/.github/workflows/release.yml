@@ -331,6 +331,52 @@ jobs:
         with:
           name: windows-x86_64-vk-asan
           path: windows-x86_64-vk-asan/
+  test-windows-x86_64-vk-full-nv:
+    runs-on: [ windows, x86_64, nv ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-vk"
+          out-dir: "windows-x86_64-vk-full-nv-output"
+          test-args: "-d NV --full"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-vk-full-nv-output
+          path: windows-x86_64-vk-full-nv-output/
+  test-windows-x86_64-gl-full-nv:
+    runs-on: [ windows, x86_64, nv ]
+    needs:
+      - build-windows-x86_64-gl-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-gl"
+          out-dir: "windows-x86_64-gl-full-nv-output"
+          test-args: "-d NV --full"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-gl-full-nv-output
+          path: windows-x86_64-gl-full-nv-output/
   test-windows-x86_64-vk-full-amd:
     runs-on: [ windows, x86_64, amd ]
     needs:
@@ -488,13 +534,21 @@ jobs:
   #         test-args: "-j2"
   analyze-output:
     runs-on: [ linux ]
-    needs: [ test-windows-x86_64-vk-full-amd, test-windows-x86_64-vk-full-uhd, test-windows-x86_64-vk-full-arc, test-linux-x86_64-vk-full-nv, test-linux-x86_64-gl-full-nv ]
+    needs: [ test-windows-x86_64-vk-full-nv, test-windows-x86_64-gl-full-nv, test-windows-x86_64-vk-full-amd, test-windows-x86_64-vk-full-uhd, test-windows-x86_64-vk-full-arc, test-linux-x86_64-vk-full-nv, test-linux-x86_64-gl-full-nv ]
     if: always()
     steps:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
           sparse-checkout: scripts/analyze_output.py
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-vk-full-nv-output
+          path: windows-x86_64-vk-full-nv-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-gl-full-nv-output
+          path: windows-x86_64-gl-full-nv-output/
       - uses: actions/download-artifact@v3
         with:
           name: windows-x86_64-vk-full-amd-output
@@ -513,5 +567,5 @@ jobs:
           path: linux-x86_64-gl-full-nv-output/
       - name: Analyze Output
         run: |
-          python scripts/analyze_output.py windows-x86_64-vk-full-amd-output/test_Eng_output.txt windows-x86_64-vk-full-uhd-output/test_Eng_output.txt windows-x86_64-vk-full-arc-output/test_Eng_output.txt linux-x86_64-vk-full-nv-output/test_Eng_output.txt linux-x86_64-gl-full-nv-output/test_Eng_output.txt
+          python scripts/analyze_output.py windows-x86_64-vk-full-nv-output/test_Eng_output.txt windows-x86_64-gl-full-nv-output/test_Eng_output.txt windows-x86_64-vk-full-amd-output/test_Eng_output.txt windows-x86_64-vk-full-uhd-output/test_Eng_output.txt windows-x86_64-vk-full-arc-output/test_Eng_output.txt linux-x86_64-vk-full-nv-output/test_Eng_output.txt linux-x86_64-gl-full-nv-output/test_Eng_output.txt
         shell: bash

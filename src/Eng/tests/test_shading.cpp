@@ -68,7 +68,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2_sun_light_dyn",
                    std::vector<double>{32.00, 32.50, 32.45, 32.30, 32.05, 31.80, 31.40, 31.00, 30.05, 29.35, //
                                        28.55, 27.55, 26.45, 25.25, 23.75, 22.05, 20.25, 21.30, 22.60, 23.55,
-                                       24.10, 24.95, 25.45, 26.15, 26.45, 26.75, 27.40, 28.15, 28.60, 29.05,
+                                       24.10, 24.95, 25.40, 26.15, 26.45, 26.75, 27.40, 28.15, 28.60, 29.05,
                                        29.00, 29.65, 30.05},
                    Full);
     run_image_test(threads, "complex_mat2_sun_light_dyn",
@@ -100,7 +100,7 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat3", 22.65, Full);
     run_image_test(threads, "complex_mat3", 23.15, Full_Ultra);
     run_image_test(threads, "complex_mat3_dyn",
-                   std::vector<double>{22.55, 22.55, 22.60, 22.60, 22.60, 22.65, 22.65, 22.65, 22.65, 22.70, //
+                   std::vector<double>{22.55, 22.55, 22.60, 22.60, 22.60, 22.65, 22.65, 22.65, 22.65, 22.65, //
                                        22.70, 22.70, 22.70, 22.70, 22.70, 22.75, 22.75, 22.75, 22.75, 22.75,
                                        22.75, 22.80, 22.80, 22.80, 22.80, 22.80, 22.80, 22.80, 22.80, 22.80,
                                        22.80, 22.85, 22.85},
