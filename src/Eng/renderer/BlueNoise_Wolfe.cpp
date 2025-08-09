@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include <array>
 #include <bitset>
 #include <fstream>
 #include <memory>
@@ -15,6 +16,10 @@ static const int TileRes = 64;
 static const int InitialPointsPercentage = 10;
 
 static const float GaussOmega = 7.22f;
+
+std::array<int, 3> xyz_from_index(const int index) {
+    return std::array{index % TileRes, (index / TileRes) % TileRes, (index / TileRes) / TileRes};
+}
 
 template <int SampleCount>
 Ren::Vec2i splat_pixel_energy(const int ox, const int oy, const int oz,
@@ -75,7 +80,7 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
         // temp data
         float debug_values[SampleCount][TileRes][TileRes] = {};
     };
-    std::unique_ptr<bn_data_t> data = std::make_unique<bn_data_t>();
+    auto data = std::make_unique<bn_data_t>();
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -87,7 +92,7 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     // Set initial points
     while (data->points_count < (SampleCount * TileRes * TileRes * InitialPointsPercentage / 100)) {
         const int index = uniform_index(gen);
-        const int oz = (index / TileRes) / TileRes, oy = (index / TileRes) % TileRes, ox = index % TileRes;
+        const auto [ox, oy, oz] = xyz_from_index(index);
         assert(index == oz * (TileRes * TileRes) + oy * TileRes + ox);
 
         if (!data->bitmap[oz][oy][ox]) {
@@ -102,16 +107,17 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     { // Debug energy values
         float min_value = FLT_MAX, max_value = 0.0f;
         for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes] =
-                data->energy[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
-            min_value =
-                std::min(min_value, data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes]);
-            max_value =
-                std::max(max_value, data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes]);
+            const auto [x, y, z] = xyz_from_index(j);
+
+            data->debug_values[z][y][x] = data->energy[z][y][x];
+            min_value = std::min(min_value, data->debug_values[z][y][x]);
+            max_value = std::max(max_value, data->debug_values[z][y][x]);
         }
         // normalize values (for easier debugging)
         for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            float &e = data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
             e = (e - min_value) / (max_value - min_value);
         }
 
@@ -123,15 +129,15 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     int last_point = -1;
     while (data->iminmax[1] != last_point) {
         { // Remove max
-            const int oz = (data->iminmax[1] / TileRes) / TileRes, oy = (data->iminmax[1] / TileRes) % TileRes,
-                      ox = data->iminmax[1] % TileRes;
+            const auto [ox, oy, oz] = xyz_from_index(data->iminmax[1]);
+
             data->bitmap[oz][oy][ox] = false;
             data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, -1.0f, data->energy);
             last_point = data->iminmax[0];
         }
         { // Add min
-            const int oz = (data->iminmax[0] / TileRes) / TileRes, oy = (data->iminmax[0] / TileRes) % TileRes,
-                      ox = data->iminmax[0] % TileRes;
+            const auto [ox, oy, oz] = xyz_from_index(data->iminmax[0]);
+
             data->bitmap[oz][oy][ox] = true;
             data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, data->energy);
         }
@@ -140,14 +146,18 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     { // Debug energy values
         float min_value = FLT_MAX, max_value = 0.0f;
         for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            float &e = data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
-            e = data->energy[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
+            e = data->energy[z][y][x];
             min_value = std::min(min_value, e);
             max_value = std::max(max_value, e);
         }
         // normalize values (for easier debugging)
         for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            float &e = data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
             e = (e - min_value) / (max_value - min_value);
         }
 
@@ -156,14 +166,14 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     }
 
     for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-        data->noise[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes] = 1.0f;
+        const auto [x, y, z] = xyz_from_index(j);
+        data->noise[z][y][x] = 1.0f;
     }
 
     // Phase I - Initial Pattern Ordering
     auto temp = std::make_unique<bn_data_t>(*data);
     while (temp->points_count) {
-        const int oz = (temp->iminmax[1] / TileRes) / TileRes, oy = (temp->iminmax[1] / TileRes) % TileRes,
-                  ox = temp->iminmax[1] % TileRes;
+        const auto [ox, oy, oz] = xyz_from_index(temp->iminmax[1]);
 
         data->noise[oz][oy][ox] = float(--temp->points_count) / (SampleCount * TileRes * TileRes);
         temp->bitmap[oz][oy][ox] = false;
@@ -172,8 +182,7 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
 
     // Phase II - Order First Half of Pixels
     while (data->points_count < (SampleCount * TileRes * TileRes / 2)) {
-        const int oz = (data->iminmax[0] / TileRes) / TileRes, oy = (data->iminmax[0] / TileRes) % TileRes,
-                  ox = data->iminmax[0] % TileRes;
+        const auto [ox, oy, oz] = xyz_from_index(data->iminmax[0]);
 
         data->noise[oz][oy][ox] = float(data->points_count++) / (SampleCount * TileRes * TileRes);
         data->bitmap[oz][oy][ox] = true;
@@ -187,10 +196,11 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
         }
     }
     for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-        data->energy[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes] = 0.0f;
+        const auto [x, y, z] = xyz_from_index(j);
+        data->energy[z][y][x] = 0.0f;
     }
     for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-        const int oz = (j / TileRes) / TileRes, oy = (j / TileRes) % TileRes, ox = j % TileRes;
+        const auto [ox, oy, oz] = xyz_from_index(j);
         if (data->bitmap[oz][oy][ox]) {
             data->iminmax = splat_pixel_energy<SampleCount>(ox, oy, oz, data->bitmap, 1.0f, data->energy);
         }
@@ -198,8 +208,7 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
 
     // Phase III - Order Second Half of Pixels
     while (data->points_count < SampleCount * TileRes * TileRes) {
-        const int oz = (data->iminmax[1] / TileRes) / TileRes, oy = (data->iminmax[1] / TileRes) % TileRes,
-                  ox = data->iminmax[1] % TileRes;
+        const auto [ox, oy, oz] = xyz_from_index(temp->iminmax[1]);
 
         data->noise[oz][oy][ox] = float(data->points_count++) / (SampleCount * TileRes * TileRes);
         data->bitmap[oz][oy][ox] = false;
@@ -209,14 +218,18 @@ template <int Log2SampleCount> void Eng::Generate1D_STBN() {
     { // Debug noise values
         float min_value = FLT_MAX, max_value = 0.0f;
         for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            float &e = data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
-            e = data->noise[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
+            e = data->noise[z][y][x];
             min_value = std::min(min_value, e);
             max_value = std::max(max_value, e);
         }
         // normalize values (for easier debugging)
         for (int j = 0; j < SampleCount * TileRes * TileRes; ++j) {
-            float &e = data->debug_values[(j / TileRes) / TileRes][(j / TileRes) % TileRes][j % TileRes];
+            const auto [x, y, z] = xyz_from_index(j);
+
+            float &e = data->debug_values[z][y][x];
             e = (e - min_value) / (max_value - min_value);
         }
 

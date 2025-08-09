@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cfloat>
 #include <chrono>
+
+#include <array>
 #include <fstream>
 #include <random>
 
@@ -42,6 +44,8 @@ static const float GaussTable[] = {
     std::exp(-88 / GaussOmega), std::exp(-89 / GaussOmega), std::exp(-90 / GaussOmega), std::exp(-91 / GaussOmega),
     std::exp(-92 / GaussOmega), std::exp(-93 / GaussOmega), std::exp(-94 / GaussOmega), std::exp(-95 / GaussOmega),
     std::exp(-96 / GaussOmega), std::exp(-97 / GaussOmega), std::exp(-98 / GaussOmega), std::exp(-99 / GaussOmega)};
+
+std::array<int, 2> xy_from_index(const int index) { return std::array{index % TileRes, index / TileRes}; }
 
 // Simple step
 float test_function_1D(float x, float min, float max) {
@@ -256,11 +260,11 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
 
         // temp data
         float proximity[TileRes][TileRes] = {};
-        std::vector<float> errors[TileRes][TileRes];
-        std::vector<float> errors_first[TileRes][TileRes], errors_last[TileRes][TileRes];
-        float debug_errors[TileRes][TileRes];
+        std::vector<float> errors[TileRes][TileRes] = {};
+        std::vector<float> errors_first[TileRes][TileRes] = {}, errors_last[TileRes][TileRes] = {};
+        float debug_errors[TileRes][TileRes] = {};
     };
-    std::unique_ptr<bn_data_t> data = std::make_unique<bn_data_t>();
+    auto data = std::make_unique<bn_data_t>();
 
     for (int y = 0; y < TileRes; ++y) {
         for (int x = 0; x < TileRes; ++x) {
@@ -350,8 +354,8 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
 
             // Randomly swap two scrambling keys
             const int index1 = uniform_index(gen), index2 = uniform_index(gen);
-            const int oy1 = index1 / TileRes, ox1 = index1 % TileRes;
-            const int oy2 = index2 / TileRes, ox2 = index2 % TileRes;
+            const auto [ox1, oy1] = xy_from_index(index1);
+            const auto [ox2, oy2] = xy_from_index(index2);
 
             // Substract swapped pixels contribution
             splat_pixel_proximity<false>(ox1, oy1, data->errors, data->proximity);
@@ -405,14 +409,17 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
 
                     float min_error = FLT_MAX, max_error = 0.0f;
                     for (int j = 0; j < TileRes * TileRes; ++j) {
-                        data->debug_errors[j / TileRes][j % TileRes] =
-                            data->errors[j / TileRes][j % TileRes][7 * TotalFunctionsCount / 11];
-                        min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
-                        max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                        const auto [x, y] = xy_from_index(j);
+
+                        data->debug_errors[y][x] = data->errors[y][x][7 * TotalFunctionsCount / 11];
+                        min_error = std::min(min_error, data->debug_errors[y][x]);
+                        max_error = std::max(max_error, data->debug_errors[y][x]);
                     }
                     // normalize errors (for easier debugging)
                     for (int j = 0; j < TileRes * TileRes; ++j) {
-                        float &e = data->debug_errors[j / TileRes][j % TileRes];
+                        const auto [x, y] = xy_from_index(j);
+
+                        float &e = data->debug_errors[y][x];
                         e = (e - min_error) / (max_error - min_error);
                     }
                     snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount, SampleCount);
@@ -470,10 +477,12 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
             }
             // normalize (for easier debugging)
             for (int j = 0; j < TileRes * TileRes; ++j) {
-                for (float &e : data->errors_first[j / TileRes][j % TileRes]) {
+                const auto [x, y] = xy_from_index(j);
+
+                for (float &e : data->errors_first[y][x]) {
                     e = (e - min_error) / (max_error - min_error);
                 }
-                for (float &e : data->errors_last[j / TileRes][j % TileRes]) {
+                for (float &e : data->errors_last[y][x]) {
                     e = (e - min_error) / (max_error - min_error);
                 }
             }
@@ -500,7 +509,7 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
                 }
                 // Randomly flip one pixel
                 const int index = uniform_index(gen);
-                const int py = index / TileRes, px = index % TileRes;
+                const auto [px, py] = xy_from_index(index);
 
                 // Substract swapped pixel contribution
                 splat_pixel_proximity<false>(px, py, data->errors_first, data->errors_last, data->proximity);
@@ -549,14 +558,17 @@ template <int Log2SampleCount> void Eng::Generate1D_BlueNoiseTiles_StepFunction(
 
                         float _min_error = FLT_MAX, _max_error = 0.0f;
                         for (int j = 0; j < TileRes * TileRes; ++j) {
-                            data->debug_errors[j / TileRes][j % TileRes] =
-                                data->errors_first[j / TileRes][j % TileRes][7 * TotalFunctionsCount / 11];
-                            _min_error = std::min(_min_error, data->debug_errors[j / TileRes][j % TileRes]);
-                            _max_error = std::max(_max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                            const auto [x, y] = xy_from_index(j);
+
+                            data->debug_errors[y][x] = data->errors_first[y][x][7 * TotalFunctionsCount / 11];
+                            _min_error = std::min(_min_error, data->debug_errors[y][x]);
+                            _max_error = std::max(_max_error, data->debug_errors[y][x]);
                         }
                         // normalize errors (for easier debugging)
                         for (int j = 0; j < TileRes * TileRes; ++j) {
-                            float &e = data->debug_errors[j / TileRes][j % TileRes];
+                            const auto [x, y] = xy_from_index(j);
+
+                            float &e = data->debug_errors[y][x];
                             e = (e - _min_error) / (_max_error - _min_error);
                         }
 
@@ -747,7 +759,9 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
             }
             // normalize errors (for easier debugging)
             for (int j = 0; j < TileRes * TileRes; ++j) {
-                for (float &e : data->errors[j / TileRes][j % TileRes]) {
+                const auto [x, y] = xy_from_index(j);
+
+                for (float &e : data->errors[y][x]) {
                     e = (e - min_error) / (max_error - min_error);
                 }
             }
@@ -831,13 +845,17 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
 
                     float min_error = FLT_MAX, max_error = 0.0f;
                     for (int j = 0; j < TileRes * TileRes; ++j) {
-                        data->debug_errors[j / TileRes][j % TileRes] = data->errors[j / TileRes][j % TileRes][4];
-                        min_error = std::min(min_error, data->debug_errors[j / TileRes][j % TileRes]);
-                        max_error = std::max(max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                        const auto [x, y] = xy_from_index(j);
+
+                        data->debug_errors[y][x] = data->errors[y][x][4];
+                        min_error = std::min(min_error, data->debug_errors[y][x]);
+                        max_error = std::max(max_error, data->debug_errors[y][x]);
                     }
                     // normalize errors (for easier debugging)
                     for (int j = 0; j < TileRes * TileRes; ++j) {
-                        float &e = data->debug_errors[j / TileRes][j % TileRes];
+                        const auto [x, y] = xy_from_index(j);
+
+                        float &e = data->debug_errors[y][x];
                         e = (e - min_error) / (max_error - min_error);
                     }
                     snprintf(name_buf, sizeof(name_buf), "debug_errors_%i_%i.tga", SampleCount, SampleCount);
@@ -895,10 +913,12 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
             }
             // normalize (for easier debugging)
             for (int j = 0; j < TileRes * TileRes; ++j) {
-                for (float &e : data->errors_first[j / TileRes][j % TileRes]) {
+                const auto [x, y] = xy_from_index(j);
+
+                for (float &e : data->errors_first[y][x]) {
                     e = (e - min_error) / (max_error - min_error);
                 }
-                for (float &e : data->errors_last[j / TileRes][j % TileRes]) {
+                for (float &e : data->errors_last[y][x]) {
                     e = (e - min_error) / (max_error - min_error);
                 }
             }
@@ -975,14 +995,18 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
 
                         float _min_error = FLT_MAX, _max_error = 0.0f;
                         for (int j = 0; j < TileRes * TileRes; ++j) {
-                            data->debug_errors[j / TileRes][j % TileRes] =
-                                data->errors_first[j / TileRes][j % TileRes][4];
-                            _min_error = std::min(_min_error, data->debug_errors[j / TileRes][j % TileRes]);
-                            _max_error = std::max(_max_error, data->debug_errors[j / TileRes][j % TileRes]);
+                            const auto [x, y] = xy_from_index(j);
+
+                            data->debug_errors[y][x] =
+                                data->errors_first[y][x][4];
+                            _min_error = std::min(_min_error, data->debug_errors[y][x]);
+                            _max_error = std::max(_max_error, data->debug_errors[y][x]);
                         }
                         // normalize errors (for easier debugging)
                         for (int j = 0; j < TileRes * TileRes; ++j) {
-                            float &e = data->debug_errors[j / TileRes][j % TileRes];
+                            const auto [x, y] = xy_from_index(j);
+
+                            float &e = data->debug_errors[y][x];
                             e = (e - _min_error) / (_max_error - _min_error);
                         }
 
@@ -1085,7 +1109,7 @@ void Eng::BNInternal::WriteTGA(const float *data, int pitch, const int w, const 
 
     header[12] = w & 0xFF;
     header[13] = (w >> 8) & 0xFF;
-    header[14] = (h) & 0xFF;
+    header[14] = (h)&0xFF;
     header[15] = (h >> 8) & 0xFF;
     header[16] = bpp * 8;
     header[17] |= (1 << 5); // set origin to upper left corner
