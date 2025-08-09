@@ -62,6 +62,7 @@ struct AppParams {
     float pt_clamp_direct = 0.0f;
     float pt_clamp_indirect = 0.0f;
     std::optional<float> exposure;
+    std::optional<int> cam_path;
     eGfxPreset gfx_preset = eGfxPreset::High;
     int tex_budget = 2048;
     float sun_dir[3] = {};

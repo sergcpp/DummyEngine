@@ -38,12 +38,12 @@ extern std::string_view g_device_name;
 extern int g_validation_level;
 extern bool g_nohwrt, g_nosubgroup;
 
-void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const double min_psnr,
+void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::Span<const double> min_psnr,
                     const eImgTest img_test) {
     using namespace std::chrono;
     using namespace Eng;
 
-    const auto start_time = high_resolution_clock::now();
+    auto start_time = high_resolution_clock::now();
 
     const char *test_postfix = "";
     if (img_test == eImgTest::NoShadow) {
@@ -61,12 +61,22 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     } else if (img_test == eImgTest::Full_Ultra) {
         test_postfix = "_ultra";
     }
-    const std::string ref_name =
-        "assets_pc/references/" + std::string(test_name) + "/ref" + test_postfix + ".uncompressed.png";
 
-    int ref_w, ref_h, ref_channels;
-    uint8_t *ref_img = stbi_load(ref_name.c_str(), &ref_w, &ref_h, &ref_channels, 4);
-    SCOPE_EXIT({ stbi_image_free(ref_img); })
+    int ref_w = -1, ref_h = -1;
+    { // Determine render resolution
+        std::string ref_name =
+            "assets_pc/references/" + std::string(test_name) + "/ref" + test_postfix + ".uncompressed.png";
+
+        int ref_channels;
+        uint8_t *ref_img = stbi_load(ref_name.c_str(), &ref_w, &ref_h, &ref_channels, 4);
+        if (!ref_img) {
+            ref_name = "assets_pc/references/" + std::string(test_name) + "/ref_0" + test_postfix + ".uncompressed.png";
+            ref_img = stbi_load(ref_name.c_str(), &ref_w, &ref_h, &ref_channels, 4);
+        }
+        require_return(ref_img != nullptr);
+        SCOPE_EXIT({ stbi_image_free(ref_img); })
+    }
+    require_return(ref_w != -1 && ref_h != -1);
 
     LogErr log;
     TestContext ren_ctx(ref_w, ref_h, g_device_name, g_validation_level, g_nohwrt, g_nosubgroup, &log);
@@ -89,6 +99,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     auto renderer = std::make_unique<Renderer>(ren_ctx, shader_loader, rand, threads);
     renderer->InitPipelines();
 
+    renderer->settings.enable_motion_blur = false;
     renderer->settings.enable_bloom = false;
     renderer->settings.enable_shadow_jitter = true;
     renderer->settings.enable_aberration = false;
@@ -161,6 +172,11 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     Ren::Vec3d view_pos, view_dir;
     float view_fov = 45.0f, gamma = 1.0f, min_exposure = 0.0f, max_exposure = 0.0f;
 
+    struct cam_frame_t {
+        Ren::Vec3d pos, dir;
+    };
+    std::vector<cam_frame_t> cam_frames;
+
     if (js_scene.Has("camera")) {
         const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
@@ -207,6 +223,48 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
                                                                      4 * LUT_DIMS * LUT_DIMS * LUT_DIMS));
             }
         }
+
+        if (js_cam.Has("paths")) {
+            const Sys::JsArrayP &js_frames = js_cam.at("paths").as_arr().at(0).as_arr();
+            for (const Sys::JsElementP &el : js_frames.elements) {
+                const Sys::JsObjectP &js_frame = el.as_obj();
+
+                const Sys::JsArrayP &js_frame_pos = js_frame.at("pos").as_arr();
+                const Sys::JsArrayP &js_frame_rot = js_frame.at("rot").as_arr();
+
+                auto rx = float(js_frame_rot.at(0).as_num().val);
+                auto ry = float(js_frame_rot.at(1).as_num().val);
+                auto rz = float(js_frame_rot.at(2).as_num().val);
+
+                rx *= Ren::Pi<float>() / 180;
+                ry *= Ren::Pi<float>() / 180;
+                rz *= Ren::Pi<float>() / 180;
+
+                Ren::Mat4f transform;
+                transform = Rotate(transform, float(rz), Ren::Vec3f{0, 0, 1});
+                transform = Rotate(transform, float(rx), Ren::Vec3f{1, 0, 0});
+                transform = Rotate(transform, float(ry), Ren::Vec3f{0, 1, 0});
+
+                auto view_vec = Ren::Vec4f{0, -1, 0, 0};
+                view_vec = transform * view_vec;
+
+                cam_frame_t &frame = cam_frames.emplace_back();
+                frame.pos[0] = js_frame_pos.at(0).as_num().val;
+                frame.pos[1] = js_frame_pos.at(1).as_num().val;
+                frame.pos[2] = js_frame_pos.at(2).as_num().val;
+                frame.dir = Ren::Vec3d(view_vec);
+            }
+        }
+    }
+
+    if (!cam_frames.empty()) {
+        require_return(min_psnr.size() == cam_frames.size());
+        // Switch to dynamic mode
+        renderer->settings.taa_mode = eTAAMode::Dynamic;
+        renderer->settings.enable_shadow_jitter = false;
+        // Use the first frame for warmup
+        view_pos = cam_frames[0].pos;
+        view_dir = cam_frames[0].dir;
     }
 
     scene_manager.LoadScene(js_scene);
@@ -385,7 +443,87 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
         api_ctx->backend_frame = (api_ctx->backend_frame + 1) % Ren::MaxFramesInFlight;
     };
 
-    // renderer.settings.taa_mode = eTAAMode::Dynamic;
+    auto validate_frame = [&](int frame_index = -1) {
+        Ren::BufRef stage_buf = ren_ctx.LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * ref_w * ref_h);
+
+        { // Download result
+            Ren::CommandBuffer cmd_buf = ren_ctx.BegTempSingleTimeCommands();
+            render_result->CopyTextureData(*stage_buf, cmd_buf, 0, 4 * ref_w * ref_h);
+            ren_ctx.InsertReadbackMemoryBarrier(cmd_buf);
+            ren_ctx.EndTempSingleTimeCommands(cmd_buf);
+        }
+
+        std::unique_ptr<uint8_t[]> diff_data_u8(new uint8_t[ref_w * ref_h * 3]);
+
+        const uint8_t *img_data = stage_buf->Map();
+        SCOPE_EXIT({ stage_buf->Unmap(); })
+
+        double mse = 0.0;
+
+        const bool flip_y =
+#if defined(REN_GL_BACKEND)
+            true;
+#else
+            false;
+#endif
+
+        const std::string index_str = (frame_index != -1 ? "_" + std::to_string(frame_index) : "");
+        const std::string ref_name =
+            "assets_pc/references/" + std::string(test_name) + "/ref" + index_str + test_postfix + ".uncompressed.png";
+
+        int _ref_w, _ref_h, _ref_channels;
+        uint8_t *ref_img = stbi_load(ref_name.c_str(), &_ref_w, &_ref_h, &_ref_channels, 4);
+        SCOPE_EXIT({ stbi_image_free(ref_img); })
+
+        assert(_ref_w == ref_w);
+        assert(_ref_h == ref_h);
+
+        for (int j = 0; j < ref_h; ++j) {
+            const int y = flip_y ? (ref_h - j - 1) : j;
+            for (int i = 0; i < ref_w; ++i) {
+                const uint8_t r = img_data[4 * (y * ref_w + i) + 0];
+                const uint8_t g = img_data[4 * (y * ref_w + i) + 1];
+                const uint8_t b = img_data[4 * (y * ref_w + i) + 2];
+
+                const uint8_t diff_r = std::abs(r - ref_img[4 * (j * ref_w + i) + 0]);
+                const uint8_t diff_g = std::abs(g - ref_img[4 * (j * ref_w + i) + 1]);
+                const uint8_t diff_b = std::abs(b - ref_img[4 * (j * ref_w + i) + 2]);
+
+                diff_data_u8[3 * (j * ref_w + i) + 0] = diff_r;
+                diff_data_u8[3 * (j * ref_w + i) + 1] = diff_g;
+                diff_data_u8[3 * (j * ref_w + i) + 2] = diff_b;
+
+                mse += diff_r * diff_r;
+                mse += diff_g * diff_g;
+                mse += diff_b * diff_b;
+            }
+        }
+
+        mse /= 3.0;
+        mse /= (ref_w * ref_h);
+
+        double psnr = -10.0 * std::log10(mse / (255.0 * 255.0));
+        psnr = std::floor(psnr * 100.0) / 100.0;
+
+        const double test_duration_ms = duration<double>(high_resolution_clock::now() - start_time).count() * 1000.0;
+
+        // std::lock_guard<std::mutex> _(g_stbi_mutex);
+        const std::string combined_test_name = std::string(test_name) + index_str + test_postfix;
+        printf("Test %-36s (PSNR: %.2f/%.2f dB, Time: %.2fms)\n", combined_test_name.c_str(), psnr,
+               min_psnr[std::max(frame_index, 0)], test_duration_ms);
+        fflush(stdout);
+        require(psnr >= min_psnr[std::max(frame_index, 0)]);
+
+        const std::string out_name =
+            "assets_pc/references/" + std::string(test_name) + "/out" + index_str + test_postfix + ".png";
+        const std::string diff_name =
+            "assets_pc/references/" + std::string(test_name) + "/diff" + index_str + test_postfix + ".png";
+
+        stbi_flip_vertically_on_write(flip_y);
+        stbi_write_png(out_name.c_str(), ref_w, ref_h, 4, img_data, 4 * ref_w);
+        stbi_flip_vertically_on_write(false);
+        stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
+    };
 
     // Make sure all textures are loaded
     bool finished = false;
@@ -425,84 +563,39 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, const 
     //
     // Main capture
     //
-    for (int i = 0; i < RendererInternal::TaaSampleCountStatic; ++i) {
-        draw_list.Clear();
-        renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),
-                                  draw_list);
+    if (cam_frames.empty()) {
+        // Static accumulation
+        for (int i = 0; i < RendererInternal::TaaSampleCountStatic; ++i) {
+            draw_list.Clear();
+            renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),
+                                      draw_list);
 
-        begin_frame();
-        renderer->ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
-        end_frame();
-    }
+            begin_frame();
+            renderer->ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
+            end_frame();
+        }
+        validate_frame();
+    } else {
+        // Dynamic accumulation
+        for (int i = 0; i < int(cam_frames.size()); ++i) {
+            const auto &frame = cam_frames[i];
+            scene_manager.SetupView(frame.pos, frame.pos + frame.dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
+                                    Ren::Vec2f{0.0f}, gamma, min_exposure, max_exposure);
 
-    shader_loader.WritePipelineCache("assets_pc/");
+            draw_list.Clear();
+            renderer->PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(),
+                                      draw_list);
 
-    Ren::BufRef stage_buf = ren_ctx.LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * ref_w * ref_h);
+            begin_frame();
+            renderer->ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
+            end_frame();
 
-    { // Download result
-        Ren::CommandBuffer cmd_buf = ren_ctx.BegTempSingleTimeCommands();
-        render_result->CopyTextureData(*stage_buf, cmd_buf, 0, 4 * ref_w * ref_h);
-        ren_ctx.InsertReadbackMemoryBarrier(cmd_buf);
-        ren_ctx.EndTempSingleTimeCommands(cmd_buf);
-    }
-
-    std::unique_ptr<uint8_t[]> diff_data_u8(new uint8_t[ref_w * ref_h * 3]);
-
-    const uint8_t *img_data = stage_buf->Map();
-    SCOPE_EXIT({ stage_buf->Unmap(); })
-
-    double mse = 0.0;
-
-    const bool flip_y =
-#if defined(REN_GL_BACKEND)
-        true;
-#else
-        false;
-#endif
-
-    for (int j = 0; j < ref_h; ++j) {
-        const int y = flip_y ? (ref_h - j - 1) : j;
-        for (int i = 0; i < ref_w; ++i) {
-            const uint8_t r = img_data[4 * (y * ref_w + i) + 0];
-            const uint8_t g = img_data[4 * (y * ref_w + i) + 1];
-            const uint8_t b = img_data[4 * (y * ref_w + i) + 2];
-
-            const uint8_t diff_r = std::abs(r - ref_img[4 * (j * ref_w + i) + 0]);
-            const uint8_t diff_g = std::abs(g - ref_img[4 * (j * ref_w + i) + 1]);
-            const uint8_t diff_b = std::abs(b - ref_img[4 * (j * ref_w + i) + 2]);
-
-            diff_data_u8[3 * (j * ref_w + i) + 0] = diff_r;
-            diff_data_u8[3 * (j * ref_w + i) + 1] = diff_g;
-            diff_data_u8[3 * (j * ref_w + i) + 2] = diff_b;
-
-            mse += diff_r * diff_r;
-            mse += diff_g * diff_g;
-            mse += diff_b * diff_b;
+            validate_frame(i);
+            start_time = high_resolution_clock::now();
         }
     }
 
-    mse /= 3.0;
-    mse /= (ref_w * ref_h);
-
-    double psnr = -10.0 * std::log10(mse / (255.0 * 255.0));
-    psnr = std::floor(psnr * 100.0) / 100.0;
-
-    const double test_duration_ms = duration<double>(high_resolution_clock::now() - start_time).count() * 1000.0;
-
-    // std::lock_guard<std::mutex> _(g_stbi_mutex);
-    const std::string combined_test_name = std::string(test_name) + test_postfix;
-    printf("Test %-36s (PSNR: %.2f/%.2f dB, Time: %.2fms)\n", combined_test_name.c_str(), psnr, min_psnr,
-           test_duration_ms);
-    fflush(stdout);
-    require(psnr >= min_psnr);
-
-    const std::string out_name = "assets_pc/references/" + std::string(test_name) + "/out" + test_postfix + ".png";
-    const std::string diff_name = "assets_pc/references/" + std::string(test_name) + "/diff" + test_postfix + ".png";
-
-    stbi_flip_vertically_on_write(flip_y);
-    stbi_write_png(out_name.c_str(), ref_w, ref_h, 4, img_data, 4 * ref_w);
-    stbi_flip_vertically_on_write(false);
-    stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
+    shader_loader.WritePipelineCache("assets_pc/");
 }
 
 void test_empty_scene(Sys::ThreadPool &threads) { run_image_test(threads, "empty", INFINITY, Full); }

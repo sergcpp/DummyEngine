@@ -62,6 +62,8 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             out_params.pt_clamp_indirect = strtof(argv[++i], nullptr);
         } else if (strcmp(argv[i], "--exposure") == 0 && (++i != argc)) {
             out_params.exposure = strtof(argv[i], nullptr);
+        } else if (strcmp(argv[i], "--cam_path") == 0 && (++i != argc)) {
+            out_params.cam_path = std::stoi(argv[i]);
         } else if (strcmp(argv[i], "--preset") == 0 && (++i != argc)) {
             if (strcmp(argv[i], "medium") == 0) {
                 out_params.gfx_preset = eGfxPreset::Medium;
