@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = stbn
-	commit = 4d80a6cc22552e694e843a0e8920596579cef046
+	branch = dyntaa_tests
+	commit = 33dd0f9415bc859223a2078f7ae219e5b54810e3
 	method = merge
 	cmdver = 0.4.6
-	parent = d2592406ef60fad1142096ec77d9513a928be405
+	parent = 30e0fdcf259f6970d9d455bd0a63979fb0db51c5
