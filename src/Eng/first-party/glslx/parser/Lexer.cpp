@@ -46,9 +46,8 @@ int lookup_keyword(const char *name) {
 } // namespace glslx
 
 int glslx::token_t::precedence() const {
-    // TODO: change precedence direction
     if (type == eTokType::Operator) {
-        return 18 - g_operators[int(as_operator)].precedence;
+        return g_operators[int(as_operator)].precedence;
     }
     return -1;
 }
