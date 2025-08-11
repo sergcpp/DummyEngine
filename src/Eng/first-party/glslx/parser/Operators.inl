@@ -4,15 +4,15 @@ X(parenthesis_end,    ")",   17)
 X(bracket_begin,      "[",   16)
 X(bracket_end,        "]",   16)
 X(dot,                ".",   16)
-X(increment,          "++",  15)  // 16 if post-fix
-X(decrement,          "--",  15)  // 16 if post-fix
+X(increment,          "++",  15)  // +1 if post-fix
+X(decrement,          "--",  15)  // +1 if post-fix
 X(bit_not,            "~",   15)
-X(logital_not,        "~",   15)
+X(logital_not,        "!",   15)
 X(multiply,           "*",   14)
 X(divide,             "/",   14)
 X(modulus,            "%",   14)
-X(plus,               "+",   13)  // 15 if unary
-X(minus,              "-",   13)  // 15 if unary
+X(plus,               "+",   13)  // +2 if unary
+X(minus,              "-",   13)  // +2 if unary
 X(shift_left,         "<<",  12)
 X(shift_right,        ">>",  12)
 X(less,               "<",   11)

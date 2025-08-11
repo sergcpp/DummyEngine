@@ -5,6 +5,7 @@
 #include "Utils.h"
 
 namespace glslx {
+// clang-format off
 #define X(_0, _1) {#_0, _1},
 struct {
     const char *qualifier;
@@ -13,6 +14,7 @@ struct {
 #include "LayoutQualifiers.inl"
 };
 #undef X
+// clang-format on
 
 static const eKeyword g_GenTypesTable[][4] = {
     {eKeyword::K_float, eKeyword::K_vec2, eKeyword::K_vec3, eKeyword::K_vec4},
@@ -1855,7 +1857,8 @@ glslx::ast_expression *glslx::Parser::ParseBinary(const int lhs_precedence, ast_
             return nullptr;
         }
 
-        if (static_cast<ast_expression *>(expression)->type == eExprType::Assign) {
+        const bool is_assignment = static_cast<ast_expression *>(expression)->type == eExprType::Assign;
+        if (is_assignment) {
             ast_expression *find = lhs;
             while (find->type == eExprType::ArraySubscript || find->type == eExprType::FieldOrSwizzle ||
                    find->type == eExprType::Assign) {
@@ -1886,9 +1889,10 @@ glslx::ast_expression *glslx::Parser::ParseBinary(const int lhs_precedence, ast_
         }
 
         const int rhs_precedence = tok_.precedence();
+        const int next_precedence = is_assignment ? binary_precedence : binary_precedence + 1;
 
-        if (binary_precedence < rhs_precedence) {
-            if (!(rhs = ParseBinary(binary_precedence + 1, rhs, condition))) {
+        if (next_precedence <= rhs_precedence) {
+            if (!(rhs = ParseBinary(next_precedence, rhs, condition))) {
                 return nullptr;
             }
         }

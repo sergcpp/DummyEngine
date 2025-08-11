@@ -16,6 +16,19 @@
 #include "Lexer.h"
 
 namespace glslx {
+enum class eAssoc : uint8_t { None, Left, Right };
+
+struct assoc_t {
+    int prec = 0;
+    eAssoc assoc = eAssoc::None;
+    bool is_right = false;
+};
+
+inline bool is_less(const int prec, const eAssoc assoc, const assoc_t &parent) {
+    return (prec < parent.prec) || (prec == parent.prec && parent.assoc != eAssoc::None &&
+                                    (parent.is_right ? assoc == eAssoc::Left : assoc == eAssoc::Right));
+}
+
 class Parser {
     using scope = global_vector<ast_variable *>;
 

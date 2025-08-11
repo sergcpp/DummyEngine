@@ -368,7 +368,7 @@ void test_hlsl_writer() {
                                        "    uint test_hex_suffix_lower = 255u;\n"
                                        "    uint test_hex_no_suffix_mixed = 255;\n"
                                        "    uint test_hex_suffix_mixed = 255u;\n"
-                                       "    int test_negative = (-1);\n"
+                                       "    int test_negative = -1;\n"
                                        "    uint test_octal = 511;\n"
                                        "    short test_int16 = 42s;\n"
                                        "    ushort test_uint16_lower = 42us;\n"
@@ -606,7 +606,7 @@ void test_hlsl_writer() {
                                        "    int i = 0;\n"
                                        "    while (true) {\n"
                                        "    }\n"
-                                       "    while ((i < 10)) {\n"
+                                       "    while (i < 10) {\n"
                                        "    }\n"
                                        "}\n";
 
@@ -633,11 +633,11 @@ void test_hlsl_writer() {
                                        "    }\n"
                                        "    for (i = 0;;) {\n"
                                        "    }\n"
-                                       "    [unroll] for (int i = 0; (i < 10);) {\n"
+                                       "    [unroll] for (int i = 0; i < 10;) {\n"
                                        "    }\n"
-                                       "    [loop] for (int i = 0; (i < 10); i++) {\n"
+                                       "    [loop] for (int i = 0; i < 10; i++) {\n"
                                        "    }\n"
-                                       "    for (int i = 0, j = 10; (i <= 10); (++i, --j)) {\n"
+                                       "    for (int i = 0, j = 10; i <= 10; ++i, --j) {\n"
                                        "    }\n"
                                        "}\n";
 
@@ -653,7 +653,7 @@ void test_hlsl_writer() {
         static const char source[] = "void func_main() {\n"
                                      "    float a = 0, b = 0, c = 0, d = 0;\n"
                                      "    float y = (a < b / 2 ? a - 1 : b - 2);\n"
-                                     "    float w = (a ? a,b : b,c);\n"
+                                     "    float w = (a ? (a,b) : (b,c));\n"
                                      "    float z = a ? b ? c : d : w;\n"
                                      "}\n";
         static const char expected[] = "void func_main() {\n"
@@ -661,9 +661,9 @@ void test_hlsl_writer() {
                                        "    float b = 0;\n"
                                        "    float c = 0;\n"
                                        "    float d = 0;\n"
-                                       "    float y = ((a < (b / 2)) ? (a - 1) : (b - 2));\n"
-                                       "    float w = (a ? (a, b) : (b, c));\n"
-                                       "    float z = (a ? (b ? c : d) : w);\n"
+                                       "    float y = a < b / 2 ? a - 1 : b - 2;\n"
+                                       "    float w = a ? (a, b) : (b, c);\n"
+                                       "    float z = a ? (b ? c : d) : w;\n"
                                        "}\n";
 
         Parser parser(source, "ternary.glsl");
@@ -742,7 +742,7 @@ void test_hlsl_writer() {
             "float func(const float3 color, float x, float y) {\n"
             "    float2 s = { x, y };\n"
             "    float t = f()[2];\n"
-            "    return (((0.212670997 * color[0]) + (0.715160012 * color.y)) + (0.0721689984 * color.z));\n"
+            "    return 0.212670997 * color[0] + 0.715160012 * color.y + 0.0721689984 * color.z;\n"
             "}\n";
 
         Parser parser(source, "vector.glsl");
@@ -1100,10 +1100,10 @@ void test_hlsl_writer() {
                                        "}\n"
                                        "void test() {\n"
                                        "    uint t = __load_g_test(42);\n"
-                                       "    uint __temp0 = (t + 1);\n"
+                                       "    uint __temp0 = t + 1;\n"
                                        "    uint __offset0 = 42 * 4 + 0;\n"
                                        "    g_test.Store(__offset0 + 0, __temp0);\n"
-                                       "    uint __temp1 = (t + 1);\n"
+                                       "    uint __temp1 = t + 1;\n"
                                        "    uint __offset1 = 24 * 48 + 32;\n"
                                        "    g_test2.Store(__offset1 + 0, __temp1);\n"
                                        "}\n";

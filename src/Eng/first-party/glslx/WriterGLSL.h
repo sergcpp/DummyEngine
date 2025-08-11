@@ -22,25 +22,28 @@ class WriterGLSL : public WriterBase {
     void Write_Precision(ePrecision precision, std::ostream &out_stream);
     void Write_GlobalVariable(const ast_global_variable *variable, std::ostream &out_stream);
     void Write_VariableIdentifier(const ast_variable_identifier *expression, std::ostream &out_stream);
-    void Write_FieldOrSwizzle(const ast_field_or_swizzle *expression, std::ostream &out_stream);
-    void Write_ArraySubscript(const ast_array_subscript *expression, std::ostream &out_stream);
-    void Write_FunctionCall(const ast_function_call *expression, std::ostream &out_stream);
-    void Write_ConstructorCall(const ast_constructor_call *expression, std::ostream &out_stream);
-    void Write_PostIncrement(const ast_post_increment_expression *expression, std::ostream &out_stream);
-    void Write_PostDecrement(const ast_post_decrement_expression *expression, std::ostream &out_stream);
-    void Write_UnaryPlus(const ast_unary_plus_expression *expression, std::ostream &out_stream);
-    void Write_UnaryMinus(const ast_unary_minus_expression *expression, std::ostream &out_stream);
-    void Write_UnaryBitNot(const ast_unary_bit_not_expression *expression, std::ostream &out_stream);
-    void Write_UnaryLogicalNot(const ast_unary_logical_not_expression *expression, std::ostream &out_stream);
-    void Write_PrefixIncrement(const ast_prefix_increment_expression *expression, std::ostream &out_stream);
-    void Write_PrefixDecrement(const ast_prefix_decrement_expression *expression, std::ostream &out_stream);
-    void Write_Assignment(const ast_assignment_expression *expression, std::ostream &out_stream);
-    void Write_Sequence(const ast_sequence_expression *expression, std::ostream &out_stream);
-    void Write_Operation(const ast_operation_expression *expression, std::ostream &out_stream);
-    void Write_Ternary(const ast_ternary_expression *expression, std::ostream &out_stream);
+    void Write_FieldOrSwizzle(const ast_field_or_swizzle *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_ArraySubscript(const ast_array_subscript *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_FunctionCall(const ast_function_call *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_ConstructorCall(const ast_constructor_call *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_PostIncrement(const ast_post_increment_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_PostDecrement(const ast_post_decrement_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_UnaryPlus(const ast_unary_plus_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_UnaryMinus(const ast_unary_minus_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_UnaryBitNot(const ast_unary_bit_not_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_UnaryLogicalNot(const ast_unary_logical_not_expression *expression, assoc_t parent,
+                               std::ostream &out_stream);
+    void Write_PrefixIncrement(const ast_prefix_increment_expression *expression, assoc_t parent,
+                               std::ostream &out_stream);
+    void Write_PrefixDecrement(const ast_prefix_decrement_expression *expression, assoc_t parent,
+                               std::ostream &out_stream);
+    void Write_Assignment(const ast_assignment_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_Sequence(const ast_sequence_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_Operation(const ast_operation_expression *expression, assoc_t parent, std::ostream &out_stream);
+    void Write_Ternary(const ast_ternary_expression *expression, assoc_t parent, std::ostream &out_stream);
     void Write_Structure(const ast_struct *structure, std::ostream &out_stream);
     void Write_InterfaceBlock(const ast_interface_block *block, std::ostream &out_stream);
-    void Write_Expression(const ast_expression *expression, bool nested, std::ostream &out_stream);
+    void Write_Expression(const ast_expression *expression, assoc_t parent, std::ostream &out_stream);
     void Write_FunctionParameter(const ast_function_parameter *parameter, std::ostream &out_stream);
     void Write_Function(const ast_function *function, std::ostream &out_stream);
     void Write_SelectionAttributes(Bitmask<eCtrlFlowAttribute> attributes, std::ostream &out_stream);

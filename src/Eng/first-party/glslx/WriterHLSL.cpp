@@ -240,7 +240,8 @@ const HashMap32<std::string, std::string> g_hlsl_function_mapping{{"intBitsToFlo
                                                                   {"nonuniformEXT", "NonUniformResourceIndex"}};
 } // namespace glslx
 
-void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool nested, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, const assoc_t parent,
+                                         std::ostream &out_stream) {
     switch (expression->type) {
     case eExprType::Undefined:
         assert(false);
@@ -268,40 +269,36 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool 
     case eExprType::VariableIdentifier:
         return Write_VariableIdentifier(static_cast<const ast_variable_identifier *>(expression), out_stream);
     case eExprType::FieldOrSwizzle:
-        return Write_FieldOrSwizzle(static_cast<const ast_field_or_swizzle *>(expression), out_stream);
+        return Write_FieldOrSwizzle(static_cast<const ast_field_or_swizzle *>(expression), parent, out_stream);
     case eExprType::ArraySubscript:
-        return Write_ArraySubscript(static_cast<const ast_array_subscript *>(expression), out_stream);
+        return Write_ArraySubscript(static_cast<const ast_array_subscript *>(expression), parent, out_stream);
     case eExprType::FunctionCall:
-        return Write_FunctionCall(static_cast<const ast_function_call *>(expression), out_stream);
+        return Write_FunctionCall(static_cast<const ast_function_call *>(expression), parent, out_stream);
     case eExprType::ConstructorCall:
-        return Write_ConstructorCall(static_cast<const ast_constructor_call *>(expression), out_stream);
+        return Write_ConstructorCall(static_cast<const ast_constructor_call *>(expression), parent, out_stream);
     case eExprType::PostIncrement:
-        return Write_PostIncrement(static_cast<const ast_post_increment_expression *>(expression), out_stream);
+        return Write_PostIncrement(static_cast<const ast_post_increment_expression *>(expression), parent, out_stream);
     case eExprType::PostDecrement:
-        return Write_PostDecrement(static_cast<const ast_post_decrement_expression *>(expression), out_stream);
+        return Write_PostDecrement(static_cast<const ast_post_decrement_expression *>(expression), parent, out_stream);
     case eExprType::UnaryPlus:
-        return Write_UnaryPlus(static_cast<const ast_unary_plus_expression *>(expression), out_stream);
+        return Write_UnaryPlus(static_cast<const ast_unary_plus_expression *>(expression), parent, out_stream);
     case eExprType::UnaryMinus:
-        return Write_UnaryMinus(static_cast<const ast_unary_minus_expression *>(expression), out_stream);
+        return Write_UnaryMinus(static_cast<const ast_unary_minus_expression *>(expression), parent, out_stream);
     case eExprType::BitNot:
-        return Write_UnaryBitNot(static_cast<const ast_unary_bit_not_expression *>(expression), out_stream);
+        return Write_UnaryBitNot(static_cast<const ast_unary_bit_not_expression *>(expression), parent, out_stream);
     case eExprType::LogicalNot:
-        return Write_UnaryLogicalNot(static_cast<const ast_unary_logical_not_expression *>(expression), out_stream);
+        return Write_UnaryLogicalNot(static_cast<const ast_unary_logical_not_expression *>(expression), parent,
+                                     out_stream);
     case eExprType::PrefixIncrement:
-        return Write_PrefixIncrement(static_cast<const ast_prefix_increment_expression *>(expression), out_stream);
+        return Write_PrefixIncrement(static_cast<const ast_prefix_increment_expression *>(expression), parent,
+                                     out_stream);
     case eExprType::PrefixDecrement:
-        return Write_PrefixDecrement(static_cast<const ast_prefix_decrement_expression *>(expression), out_stream);
+        return Write_PrefixDecrement(static_cast<const ast_prefix_decrement_expression *>(expression), parent,
+                                     out_stream);
     case eExprType::Assign:
-        if (nested) {
-            out_stream << "(";
-        }
-        Write_Assignment(static_cast<const ast_assignment_expression *>(expression), out_stream);
-        if (nested) {
-            out_stream << ")";
-        }
-        break;
+        return Write_Assignment(static_cast<const ast_assignment_expression *>(expression), parent, out_stream);
     case eExprType::Sequence:
-        return Write_Sequence(static_cast<const ast_sequence_expression *>(expression), out_stream);
+        return Write_Sequence(static_cast<const ast_sequence_expression *>(expression), parent, out_stream);
     case eExprType::Operation: {
         const auto *operation = static_cast<const ast_operation_expression *>(expression);
         int array_dims = 0;
@@ -314,19 +311,19 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool 
                 func_call.name = tu_->makestr("mul");
                 func_call.parameters.push_back(operation->operand2);
                 func_call.parameters.push_back(operation->operand1);
-                return Write_FunctionCall(&func_call, out_stream);
+                return Write_FunctionCall(&func_call, {}, out_stream);
             }
         }
 
-        return Write_Operation(static_cast<const ast_operation_expression *>(expression), out_stream);
+        return Write_Operation(static_cast<const ast_operation_expression *>(expression), parent, out_stream);
     }
     case eExprType::Ternary:
-        return Write_Ternary(static_cast<const ast_ternary_expression *>(expression), out_stream);
+        return Write_Ternary(static_cast<const ast_ternary_expression *>(expression), parent, out_stream);
     case eExprType::ArraySpecifier:
         const auto *arr_specifier = static_cast<const ast_array_specifier *>(expression);
         out_stream << "{ ";
         for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
-            Write_Expression(arr_specifier->expressions[i], false, out_stream);
+            Write_Expression(arr_specifier->expressions[i], {}, out_stream);
             if (i != int(arr_specifier->expressions.size()) - 1) {
                 out_stream << ", ";
             }
@@ -443,7 +440,8 @@ void glslx::WriterHLSL::Write_FunctionVariable(const ast_function_variable *vari
     Write_Variable(variable, {}, out_stream, output_flags);
     if (variable->initial_value) {
         out_stream << " = ";
-        Write_Expression(variable->initial_value, false, out_stream);
+        const int prec = g_operators[int(eOperator::assign)].precedence;
+        Write_Expression(variable->initial_value, {prec, eAssoc::Right, true}, out_stream);
     }
     [[maybe_unused]] static const auto ComaOrSemicolon = Bitmask{eOutputFlags::Coma} | eOutputFlags::Semicolon;
     assert((output_flags & ComaOrSemicolon) != ComaOrSemicolon);
@@ -502,7 +500,7 @@ void glslx::WriterHLSL::Write_DeclarationStatement(const ast_declaration_stateme
 void glslx::WriterHLSL::Write_ExpressionStatement(const ast_expression_statement *statement, std::ostream &out_stream,
                                                   const Bitmask<eOutputFlags> output_flags) {
     Process_AtomicOperations(statement->expression, out_stream);
-    Write_Expression(statement->expression, false, out_stream);
+    Write_Expression(statement->expression, {}, out_stream);
     if (output_flags & eOutputFlags::Semicolon) {
         out_stream << ";";
     }
@@ -515,7 +513,7 @@ void glslx::WriterHLSL::Write_IfStatement(const ast_if_statement *statement, std
                                           Bitmask<eOutputFlags> output_flags) {
     Write_SelectionAttributes(statement->attributes, out_stream);
     out_stream << "if (";
-    Write_Expression(statement->condition, false, out_stream);
+    Write_Expression(statement->condition, {}, out_stream);
     out_stream << ")";
     if (statement->else_statement) {
         Write_Statement(statement->then_statement, out_stream,
@@ -535,7 +533,7 @@ void glslx::WriterHLSL::Write_SwitchStatement(const ast_switch_statement *statem
                                               Bitmask<eOutputFlags> output_flags) {
     Write_SelectionAttributes(statement->attributes, out_stream);
     out_stream << "switch (";
-    Write_Expression(statement->expression, false, out_stream);
+    Write_Expression(statement->expression, {}, out_stream);
     out_stream << ") {\n";
     ++nest_level_;
     for (int i = 0; i < int(statement->statements.size()); ++i) {
@@ -555,7 +553,7 @@ void glslx::WriterHLSL::Write_CaseLabelStatement(const ast_case_label_statement 
         out_stream << "default";
     } else {
         out_stream << "case ";
-        Write_Expression(statement->condition, false, out_stream);
+        Write_Expression(statement->condition, {}, out_stream);
     }
     out_stream << ":\n";
 }
@@ -588,7 +586,7 @@ void glslx::WriterHLSL::Write_DoStatement(const ast_do_statement *statement, std
     Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
     Write_Tabs(out_stream);
     out_stream << "while (";
-    Write_Expression(statement->condition, false, out_stream);
+    Write_Expression(statement->condition, {}, out_stream);
     out_stream << ");";
     if (output_flags & eOutputFlags::NewLine) {
         out_stream << "\n";
@@ -620,12 +618,12 @@ void glslx::WriterHLSL::Write_ForStatement(const ast_for_statement *statement, s
     }
     if (statement->condition) {
         out_stream << " ";
-        Write_Expression(statement->condition, false, out_stream);
+        Write_Expression(statement->condition, {}, out_stream);
     }
     out_stream << ";";
     if (statement->loop) {
         out_stream << " ";
-        Write_Expression(statement->loop, false, out_stream);
+        Write_Expression(statement->loop, {}, out_stream);
     }
     out_stream << ")";
     Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
@@ -645,7 +643,7 @@ void glslx::WriterHLSL::Write_ReturnStatement(const ast_return_statement *statem
                                               Bitmask<eOutputFlags> output_flags) {
     if (statement->expression) {
         out_stream << "return ";
-        Write_Expression(statement->expression, false, out_stream);
+        Write_Expression(statement->expression, {}, out_stream);
         out_stream << ";\n";
     } else {
         out_stream << "return;\n";
@@ -733,7 +731,7 @@ void glslx::WriterHLSL::Write_ArraySize(Span<const ast_constant_expression *cons
     for (int i = 0; i < int(array_sizes.size()); ++i) {
         out_stream << "[";
         if (array_sizes[i]) {
-            Write_Expression(array_sizes[i], false, out_stream);
+            Write_Expression(array_sizes[i], {}, out_stream);
         }
         out_stream << "]";
     }
@@ -1038,7 +1036,8 @@ void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable
 
     if (variable->initial_value) {
         out_stream << " = ";
-        Write_Expression(variable->initial_value, false, out_stream);
+        const int prec = g_operators[int(eOperator::assign)].precedence;
+        Write_Expression(variable->initial_value, {prec, eAssoc::Right, true}, out_stream);
     }
 
     out_stream << ";\n";
@@ -1055,7 +1054,7 @@ void glslx::WriterHLSL::Write_GlobalVariable(const ast_global_variable *variable
             for (int i = 0; i < int(variable->array_sizes.size()); ++i) {
                 out_stream << "[";
                 if (variable->array_sizes[i]) {
-                    Write_Expression(variable->array_sizes[i], false, out_stream);
+                    Write_Expression(variable->array_sizes[i], {}, out_stream);
                 }
                 out_stream << "]";
             }
@@ -1072,17 +1071,28 @@ void glslx::WriterHLSL::Write_VariableIdentifier(const ast_variable_identifier *
     Write_Variable(expression->variable, {}, out_stream, eOutputFlags::VarName /* name_only */);
 }
 
-void glslx::WriterHLSL::Write_FieldOrSwizzle(const ast_field_or_swizzle *expression, std::ostream &out_stream) {
-    Write_Expression(expression->operand, false, out_stream);
+void glslx::WriterHLSL::Write_FieldOrSwizzle(const ast_field_or_swizzle *expression, const assoc_t parent,
+                                             std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::dot)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->operand, {prec, eAssoc::Left}, out_stream);
     out_stream << ".";
     if (expression->field) {
         Write_VariableIdentifier(expression->field, out_stream);
     } else {
         out_stream << expression->name;
     }
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expression, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expression, const assoc_t parent,
+                                             std::ostream &out_stream) {
     if (expression->operand->type == eExprType::VariableIdentifier) {
         const auto *var = static_cast<const ast_variable_identifier *>(expression->operand);
         auto it = std::find_if(byteaddress_bufs_.begin(), byteaddress_bufs_.end(), [var](const byteaddress_buf_t &buf) {
@@ -1091,19 +1101,28 @@ void glslx::WriterHLSL::Write_ArraySubscript(const ast_array_subscript *expressi
         if (it != byteaddress_bufs_.end()) {
             out_stream << "__load_" << it->name;
             out_stream << "(";
-            Write_Expression(expression->index, false, out_stream);
+            Write_Expression(expression->index, {}, out_stream);
             out_stream << ")";
             return;
         }
     }
-    Write_Expression(expression->operand, false, out_stream);
+    const int prec = g_operators[int(eOperator::bracket_begin)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->operand, {prec, eAssoc::Left}, out_stream);
     out_stream << "[";
-    Write_Expression(expression->index, false, out_stream);
+    Write_Expression(expression->index, {}, out_stream);
     out_stream << "]";
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, std::ostream &out_stream) {
-    bool skip_call = false;
+void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, const assoc_t parent,
+                                           std::ostream &out_stream) {
     bool is_atomic = false;
 
     { // Capture atomic operation
@@ -1118,7 +1137,7 @@ void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, 
         }
     }
 
-    if (!skip_call) {
+    { // Translate call
         auto *p_find = g_hlsl_function_mapping.Find(expression->name);
         if (p_find) {
             out_stream << *p_find;
@@ -1128,7 +1147,7 @@ void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, 
     }
     out_stream << "(";
     for (int i = 0; i < int(expression->parameters.size()); ++i) {
-        Write_Expression(expression->parameters[i], false, out_stream);
+        Write_Expression(expression->parameters[i], {}, out_stream);
         if (expression->parameters[i]->type == eExprType::VariableIdentifier) {
             const auto *tex_arg = static_cast<ast_variable_identifier *>(expression->parameters[i]);
             if (is_combined_texturesampler(tex_arg->variable->base_type)) {
@@ -1145,7 +1164,7 @@ void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, 
                     out_stream << tex_arg->variable->name;
                     out_stream << "_sampler";
                     out_stream << "[";
-                    Write_Expression(subscript->index, false, out_stream);
+                    Write_Expression(subscript->index, {}, out_stream);
                     out_stream << "]";
                 }
             }
@@ -1160,7 +1179,15 @@ void glslx::WriterHLSL::Write_FunctionCall(const ast_function_call *expression, 
     out_stream << ")";
 }
 
-void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expression, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expression, const assoc_t parent,
+                                              std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::parenthesis_begin)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+
     const bool combined_texturesampler = is_combined_texturesampler(expression->type);
     if (!combined_texturesampler) {
         if (!expression->type->builtin) {
@@ -1180,7 +1207,7 @@ void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expres
             if (res_type) {
                 const int vec_size = get_vector_size(expr_type->type);
                 if (is_scalar_type(res_type) && vec_size > 1) {
-                    Write_Expression(expression->parameters[0], false, out_stream);
+                    Write_Expression(expression->parameters[0], {}, out_stream);
                     out_stream << ".";
                     for (int i = 0; i < vec_size; ++i) {
                         out_stream << "x";
@@ -1192,7 +1219,7 @@ void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expres
         }
     }
     for (int i = 0; i < int(expression->parameters.size()); ++i) {
-        Write_Expression(expression->parameters[i], false, out_stream);
+        Write_Expression(expression->parameters[i], {}, out_stream);
         if (i != int(expression->parameters.size()) - 1) {
             out_stream << ", ";
         }
@@ -1200,53 +1227,134 @@ void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expres
     if (!combined_texturesampler) {
         out_stream << ")";
     }
+
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_PostIncrement(const ast_post_increment_expression *expression, std::ostream &out_stream) {
-    Write_Expression(expression->operand, false, out_stream);
+void glslx::WriterHLSL::Write_PostIncrement(const ast_post_increment_expression *expression, const assoc_t parent,
+                                            std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::increment)].precedence + 1;
+    const bool need_parens = is_less(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->operand, {prec, eAssoc::Left}, out_stream);
     out_stream << "++";
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_PostDecrement(const ast_post_decrement_expression *expression, std::ostream &out_stream) {
-    Write_Expression(expression->operand, false, out_stream);
+void glslx::WriterHLSL::Write_PostDecrement(const ast_post_decrement_expression *expression, const assoc_t parent,
+                                            std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::decrement)].precedence + 1;
+    const bool need_parens = is_less(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->operand, {prec, eAssoc::Left}, out_stream);
     out_stream << "--";
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_UnaryPlus(const ast_unary_plus_expression *expression, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write_UnaryPlus(const ast_unary_plus_expression *expression, const assoc_t parent,
+                                        std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::plus)].precedence + 2;
+    const bool need_parens = is_less(prec, eAssoc::Right, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
     out_stream << "+";
-    Write_Expression(expression->operand, false, out_stream);
+    Write_Expression(expression->operand, {prec, eAssoc::Right}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_UnaryMinus(const ast_unary_minus_expression *expression, std::ostream &out_stream) {
-    out_stream << "(-";
-    Write_Expression(expression->operand, false, out_stream);
-    out_stream << ")";
+void glslx::WriterHLSL::Write_UnaryMinus(const ast_unary_minus_expression *expression, const assoc_t parent,
+                                         std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::minus)].precedence + 2;
+    const bool need_parens = is_less(prec, eAssoc::Right, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    out_stream << "-";
+    Write_Expression(expression->operand, {prec, eAssoc::Right}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_UnaryBitNot(const ast_unary_bit_not_expression *expression, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write_UnaryBitNot(const ast_unary_bit_not_expression *expression, const assoc_t parent,
+                                          std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::bit_not)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Right, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
     out_stream << "~";
-    Write_Expression(expression->operand, false, out_stream);
+    Write_Expression(expression->operand, {prec, eAssoc::Right}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_UnaryLogicalNot(const ast_unary_logical_not_expression *expression,
+void glslx::WriterHLSL::Write_UnaryLogicalNot(const ast_unary_logical_not_expression *expression, const assoc_t parent,
                                               std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::logital_not)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Right, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
     out_stream << "!";
-    Write_Expression(expression->operand, false, out_stream);
+    Write_Expression(expression->operand, {prec, eAssoc::Right}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_PrefixIncrement(const ast_prefix_increment_expression *expression,
+void glslx::WriterHLSL::Write_PrefixIncrement(const ast_prefix_increment_expression *expression, const assoc_t parent,
                                               std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::increment)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Right, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
     out_stream << "++";
-    Write_Expression(expression->operand, false, out_stream);
+    Write_Expression(expression->operand, {prec, eAssoc::Right}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_PrefixDecrement(const ast_prefix_decrement_expression *expression,
+void glslx::WriterHLSL::Write_PrefixDecrement(const ast_prefix_decrement_expression *expression, const assoc_t parent,
                                               std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::decrement)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Right, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
     out_stream << "--";
-    Write_Expression(expression->operand, false, out_stream);
+    Write_Expression(expression->operand, {prec, eAssoc::Right}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expression, std::ostream &out_stream) {
+void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expression, const assoc_t parent,
+                                         std::ostream &out_stream) {
     global_vector<access_index_t> indices;
     const auto [buf_index, buf_offset] = Find_BufferAccessExpression(expression->operand1, 0, indices);
     if (buf_index != -1) {
@@ -1254,12 +1362,13 @@ void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expres
         const ast_type *var_type = Evaluate_ExpressionResultType(tu_, expression->operand2, array_dims);
         Write_Type(var_type, out_stream);
         out_stream << " __temp" + std::to_string(temp_var_index_) + " = ";
-        Write_Expression(expression->operand2, false, out_stream);
+        const int prec_assign = g_operators[int(eOperator::assign)].precedence;
+        Write_Expression(expression->operand2, {prec_assign, eAssoc::Right, true}, out_stream);
         out_stream << ";\n";
         Write_Tabs(out_stream);
         out_stream << "uint __offset" + std::to_string(temp_var_index_) + " = ";
         for (int i = 0; i < int(indices.size()); ++i) {
-            Write_Expression(indices[i].index, false, out_stream);
+            Write_Expression(indices[i].index, {prec_assign, eAssoc::Right, true}, out_stream);
             out_stream << " * " << indices[i].multiplier;
             out_stream << " + ";
         }
@@ -1275,36 +1384,68 @@ void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expres
         ++temp_var_index_;
         return;
     }
+    const int prec = g_operators[int(eOperator::assign)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Right, parent);
 
-    Write_Expression(expression->operand1, false, out_stream);
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->operand1, {prec, eAssoc::Right, false}, out_stream);
     out_stream << " " << g_operators[int(expression->oper)].string << " ";
-    Write_Expression(expression->operand2, false, out_stream);
+    Write_Expression(expression->operand2, {prec, eAssoc::Right, true}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_Sequence(const ast_sequence_expression *expression, std::ostream &out_stream) {
-    out_stream << "(";
-    Write_Expression(expression->operand1, false, out_stream);
+void glslx::WriterHLSL::Write_Sequence(const ast_sequence_expression *expression, const assoc_t parent,
+                                       std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::comma)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->operand1, {prec, eAssoc::Left, false}, out_stream);
     out_stream << ", ";
-    Write_Expression(expression->operand2, false, out_stream);
-    out_stream << ")";
+    Write_Expression(expression->operand2, {prec, eAssoc::Left, true}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_Operation(const ast_operation_expression *expression, std::ostream &out_stream) {
-    out_stream << "(";
-    Write_Expression(expression->operand1, true, out_stream);
+void glslx::WriterHLSL::Write_Operation(const ast_operation_expression *expression, const assoc_t parent,
+                                        std::ostream &out_stream) {
+    const int prec = g_operators[int(expression->oper)].precedence;
+    const bool need_parens = is_less(prec, eAssoc::Left, parent);
+
+    if (need_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->operand1, {prec, eAssoc::Left, false}, out_stream);
     out_stream << " " << g_operators[int(expression->oper)].string << " ";
-    Write_Expression(expression->operand2, true, out_stream);
-    out_stream << ")";
+    Write_Expression(expression->operand2, {prec, eAssoc::Left, true}, out_stream);
+    if (need_parens) {
+        out_stream << ")";
+    }
 }
 
-void glslx::WriterHLSL::Write_Ternary(const ast_ternary_expression *expression, std::ostream &out_stream) {
-    out_stream << "(";
-    Write_Expression(expression->condition, true, out_stream);
+void glslx::WriterHLSL::Write_Ternary(const ast_ternary_expression *expression, const assoc_t parent,
+                                      std::ostream &out_stream) {
+    const int prec = g_operators[int(eOperator::questionmark)].precedence;
+    const bool insert_parens = is_less(prec, eAssoc::Right, parent);
+
+    if (insert_parens) {
+        out_stream << "(";
+    }
+    Write_Expression(expression->condition, {prec, eAssoc::Right, false}, out_stream);
     out_stream << " ? ";
-    Write_Expression(expression->on_true, true, out_stream);
+    Write_Expression(expression->on_true, {prec, eAssoc::Right, false}, out_stream);
     out_stream << " : ";
-    Write_Expression(expression->on_false, true, out_stream);
-    out_stream << ")";
+    Write_Expression(expression->on_false, {prec, eAssoc::Right, true}, out_stream);
+    if (insert_parens) {
+        out_stream << ")";
+    }
 }
 
 void glslx::WriterHLSL::Write_Structure(const ast_struct *structure, std::ostream &out_stream) {
@@ -1746,21 +1887,22 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
                 }
                 out_stream << var->variable->name << "." << func_name << "(";
                 out_stream << buf_it->size << " * ";
-                Write_Expression(subscript->index, false, out_stream);
+                const int prec = g_operators[int(eOperator::multiply)].precedence;
+                Write_Expression(subscript->index, {prec, eAssoc::Left, true}, out_stream);
                 out_stream << ", ";
                 for (int j = 1; j < int(call->parameters.size()); ++j) {
-                    Write_Expression(call->parameters[j], false, out_stream);
+                    Write_Expression(call->parameters[j], {}, out_stream);
                     out_stream << ", ";
                 }
                 out_stream << atomic_operations[i].var_name;
                 out_stream << ")";
             } else {
                 var_to_init_ = atomic_operations[i].var_name;
-                Write_Expression(atomic_operations[i].expr, false, out_stream);
+                Write_Expression(atomic_operations[i].expr, {9999, eAssoc::Left, false}, out_stream);
             }
         } else {
             var_to_init_ = atomic_operations[i].var_name;
-            Write_Expression(atomic_operations[i].expr, false, out_stream);
+            Write_Expression(atomic_operations[i].expr, {9999, eAssoc::Left, false}, out_stream);
         }
         out_stream << ";\n";
         Write_Tabs(out_stream);

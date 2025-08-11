@@ -179,15 +179,15 @@ void test_parser() {
                                      "    ((1, 2, 3), 4);\n"
                                      "}\n";
         static const char expected[] = "void test() {\n"
-                                       "    (((1, 2), 3), 4);\n"
-                                       "    ((1, 2), (3, 4));\n"
-                                       "    (1, ((2, 3), 4));\n"
-                                       "    (((1, 2), 3), 4);\n"
-                                       "    (((1, 2), 3), 4);\n"
-                                       "    ((1, 2), (3, 4));\n"
-                                       "    (1, ((2, 3), 4));\n"
-                                       "    (((1, 2), 3), 4);\n"
-                                       "    (((1, 2), 3), 4);\n"
+                                       "    1, 2, 3, 4;\n"
+                                       "    1, 2, (3, 4);\n"
+                                       "    1, (2, 3, 4);\n"
+                                       "    1, 2, 3, 4;\n"
+                                       "    1, 2, 3, 4;\n"
+                                       "    1, 2, (3, 4);\n"
+                                       "    1, (2, 3, 4);\n"
+                                       "    1, 2, 3, 4;\n"
+                                       "    1, 2, 3, 4;\n"
                                        "}\n";
 
         Parser parser(source, "sequence.glsl");
@@ -514,6 +514,7 @@ void test_parser() {
                                      "    float d = c.b.a.x;\n"
                                      "    float e = c.b.a[0];\n"
                                      "    e = d = 1.0;\n"
+                                     "    (e = d) = 2.0;\n"
                                      "}\n";
         static const char expected[] = "struct foo {\n"
                                        "    vec3 a;\n"
@@ -545,6 +546,7 @@ void test_parser() {
                                        "    float d = c.b.a.x;\n"
                                        "    float e = c.b.a[0];\n"
                                        "    e = d = 1.0;\n"
+                                       "    (e = d) = 2.0;\n"
                                        "}\n";
 
         Parser parser(source, "structures.glsl");
@@ -674,7 +676,7 @@ void test_parser() {
                                        "    int i = 0;\n"
                                        "    [[unroll, dependency_infinite]] while (true) {\n"
                                        "    }\n"
-                                       "    [[dont_unroll, dependency_length(4)]] while ((i < 10)) {\n"
+                                       "    [[dont_unroll, dependency_length(4)]] while (i < 10) {\n"
                                        "    }\n"
                                        "}\n";
 
@@ -704,11 +706,11 @@ void test_parser() {
                                        "    }\n"
                                        "    for (i = 0;;) {\n"
                                        "    }\n"
-                                       "    [[unroll, dependency_infinite]] for (int i = 0; (i < 10);) {\n"
+                                       "    [[unroll, dependency_infinite]] for (int i = 0; i < 10;) {\n"
                                        "    }\n"
-                                       "    [[dont_unroll, dependency_length(4)]] for (int i = 0; (i < 10); i++) {\n"
+                                       "    [[dont_unroll, dependency_length(4)]] for (int i = 0; i < 10; i++) {\n"
                                        "    }\n"
-                                       "    for (int i = 0, j = 10; (i <= 10); (++i, --j)) {\n"
+                                       "    for (int i = 0, j = 10; i <= 10; ++i, --j) {\n"
                                        "    }\n"
                                        "}\n";
 
@@ -727,7 +729,7 @@ void test_parser() {
         static const char source[] = "void main() {\n"
                                      "    float a = 0, b = 0, c = 0, d = 0;\n"
                                      "    float y = (a < b / 2 ? a - 1 : b - 2);\n"
-                                     "    float w = (a ? a,b : b,c);\n"
+                                     "    float w = (a ? (a,b) : (b,c));\n"
                                      "    float z = a ? b ? c : d : w;\n"
                                      "}\n";
         static const char expected[] = "void main() {\n"
@@ -735,9 +737,9 @@ void test_parser() {
                                        "    float b = 0;\n"
                                        "    float c = 0;\n"
                                        "    float d = 0;\n"
-                                       "    float y = ((a < (b / 2)) ? (a - 1) : (b - 2));\n"
-                                       "    float w = (a ? (a, b) : (b, c));\n"
-                                       "    float z = (a ? (b ? c : d) : w);\n"
+                                       "    float y = a < b / 2 ? a - 1 : b - 2;\n"
+                                       "    float w = a ? (a, b) : (b, c);\n"
+                                       "    float z = a ? (b ? c : d) : w;\n"
                                        "}\n";
 
         Parser parser(source, "ternary.glsl");
@@ -829,8 +831,8 @@ void test_parser() {
             "float func(const vec3 color, float x, float y) {\n"
             "    vec2 s = { x, y };\n"
             "    highp float t = f()[2];\n"
-            "    vec3 a = ((vec3(1.0) - x) / (vec3(1.0) + x));\n"
-            "    return (((0.212670997 * color[0]) + (0.715160012 * color.y)) + (0.0721689984 * color.z));\n"
+            "    vec3 a = (vec3(1.0) - x) / (vec3(1.0) + x);\n"
+            "    return 0.212670997 * color[0] + 0.715160012 * color.y + 0.0721689984 * color.z;\n"
             "}\n";
 
         Parser parser(source, "vector.glsl");
@@ -846,7 +848,7 @@ void test_parser() {
     }
     { // assignment inside of expression
         static const char source[] = "vec3 normalize_len(const vec3 v, out float len) {\n"
-                                     "    return (v / (len = length(v)));\n"
+                                     "    return v / (len = length(v));\n"
                                      "}\n";
         static const char *expected = source;
 
@@ -864,15 +866,15 @@ void test_parser() {
     { // GL_EXT_control_flow_attributes2
         static const char source[] =
             "void test() {\n"
-            "    [[unroll, min_iterations(2)]] for (int i = 0; (i < 8); ++i) {\n"
+            "    [[unroll, min_iterations(2)]] for (int i = 0; i < 8; ++i) {\n"
             "    }\n"
-            "    [[unroll, min_iterations(2), max_iterations(4)]] for (int i = 0; (i < 8); ++i) {\n"
+            "    [[unroll, min_iterations(2), max_iterations(4)]] for (int i = 0; i < 8; ++i) {\n"
             "    }\n"
-            "    [[unroll, iteration_multiple(4)]] for (int i = 0; (i < 16); ++i) {\n"
+            "    [[unroll, iteration_multiple(4)]] for (int i = 0; i < 16; ++i) {\n"
             "    }\n"
-            "    [[unroll, peel_count(3)]] for (int i = 0; (i < 11); ++i) {\n"
+            "    [[unroll, peel_count(3)]] for (int i = 0; i < 11; ++i) {\n"
             "    }\n"
-            "    [[unroll, partial_count(2)]] for (int i = 0; (i < 8); ++i) {\n"
+            "    [[unroll, partial_count(2)]] for (int i = 0; i < 8; ++i) {\n"
             "    }\n"
             "}\n";
         static const char *expected = source;
@@ -957,12 +959,7 @@ void test_parser() {
                                      "    float gl_ClipDistance[];\n"
                                      "    float gl_CullDistance[];\n"
                                      "} gl_in[];\n";
-        static const char *expected = "in gl_PerVertex {\n"
-                                      "    vec4 gl_Position;\n"
-                                      "    float gl_PointSize;\n"
-                                      "    float gl_ClipDistance[];\n"
-                                      "    float gl_CullDistance[];\n"
-                                      "} gl_in[];\n";
+        static const char *expected = source;
 
         Parser parser(source, "arrayness.glsl");
         std::unique_ptr<TrUnit> tr_unit = parser.Parse(eTrUnitType::Geometry);
