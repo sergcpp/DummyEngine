@@ -16,6 +16,7 @@ struct writer_config_t {
     std::string tab = "    ";
     bool write_hidden = false;
     bool drop_half_float_literals = false;
+    bool insert_adviseable_parentheses = true;
 };
 
 class WriterBase {

@@ -21,13 +21,9 @@ enum class eAssoc : uint8_t { None, Left, Right };
 struct assoc_t {
     int prec = 0;
     eAssoc assoc = eAssoc::None;
+    eOperator op = eOperator::none;
     bool is_right = false;
 };
-
-inline bool is_less(const int prec, const eAssoc assoc, const assoc_t &parent) {
-    return (prec < parent.prec) || (prec == parent.prec && parent.assoc != eAssoc::None &&
-                                    (parent.is_right ? assoc == eAssoc::Left : assoc == eAssoc::Right));
-}
 
 class Parser {
     using scope = global_vector<ast_variable *>;
@@ -162,6 +158,24 @@ class Parser {
     ast_variable *FindVariable(const char *name);
     ast_type *GetType(ast_expression *expression);
 };
+
+inline bool parentheses_required(const int prec, const eAssoc assoc, const assoc_t &parent) {
+    return (prec < parent.prec) || (prec == parent.prec && parent.assoc != eAssoc::None &&
+                                    (parent.is_right ? assoc == eAssoc::Left : assoc == eAssoc::Right));
+}
+
+inline bool parentheses_adviseable(const eOperator op, const assoc_t &parent) {
+    if (op == eOperator::plus || op == eOperator::minus) {
+        return parent.is_right && (parent.op == eOperator::shift_left || parent.op == eOperator::shift_right);
+    }
+    if (op == eOperator::logical_and) {
+        return parent.op == eOperator::logical_or;
+    }
+    if (op == eOperator::bit_and) {
+        return parent.op == eOperator::bit_or;
+    }
+    return false;
+}
 
 extern const char g_builtin_impl[];
 
