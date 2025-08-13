@@ -1363,12 +1363,13 @@ void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expres
         Write_Type(var_type, out_stream);
         out_stream << " __temp" + std::to_string(temp_var_index_) + " = ";
         const int prec_assign = g_operators[int(eOperator::assign)].precedence;
+        const int prec_mul = g_operators[int(eOperator::multiply)].precedence;
         Write_Expression(expression->operand2, {prec_assign, eAssoc::Right, true}, out_stream);
         out_stream << ";\n";
         Write_Tabs(out_stream);
         out_stream << "uint __offset" + std::to_string(temp_var_index_) + " = ";
         for (int i = 0; i < int(indices.size()); ++i) {
-            Write_Expression(indices[i].index, {prec_assign, eAssoc::Right, true}, out_stream);
+            Write_Expression(indices[i].index, {prec_mul, eAssoc::Left, false}, out_stream);
             out_stream << " * " << indices[i].multiplier;
             out_stream << " + ";
         }
