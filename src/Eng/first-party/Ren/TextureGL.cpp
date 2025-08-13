@@ -256,7 +256,6 @@ void Ren::Texture::InitFromRAWData(const Buffer *sbuf, int data_off, const TexPa
                         return;
                     }
 
-                    assert(!(p.flags & eTexFlags::Array));
                     if (p.d == 0) {
                         if (IsCompressedFormat(p.format)) {
                             ren_glCompressedTextureSubImage2D_Comp(
