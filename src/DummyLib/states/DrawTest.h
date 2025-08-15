@@ -52,10 +52,6 @@ class DrawTest final : public BaseState {
     uint32_t leaf_tree_index_ = 0xffffffff;
     float scooters_angle_ = 0;
 
-    std::vector<Ren::Vec3f> cam_follow_path_;
-    int cam_follow_point_ = -1;
-    float cam_follow_param_ = 0;
-
     void OnPreloadScene(Sys::JsObjectP &js_scene) override;
     void OnPostloadScene(Sys::JsObjectP &js_scene) override;
 

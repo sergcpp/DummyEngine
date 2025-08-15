@@ -878,7 +878,7 @@ void BaseState::Draw() {
                 log_->Info("Capturing iteration #%i", iteration);
             } else {
                 log_->Info("Capture finished! (%i samples)", iteration);
-                viewer_->exit_status = WriteAndValidateCaptureResult();
+                viewer_->exit_status = WriteAndValidateCaptureResult(-1);
                 viewer_->Quit();
                 return;
             }
@@ -898,8 +898,11 @@ void BaseState::Draw() {
                     main_view_lists_[1].Clear();
                     random_->Reset(0);
                     renderer_->settings = orig_settings_;
-                    renderer_->settings.taa_mode = Eng::eTAAMode::Static;
-                    renderer_->settings.enable_shadow_jitter = true;
+                    renderer_->settings.enable_motion_blur = false;
+                    if (cam_frames_.empty()) {
+                        renderer_->settings.taa_mode = Eng::eTAAMode::Static;
+                        renderer_->settings.enable_shadow_jitter = true;
+                    }
                     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
                     renderer_->reset_accumulation();
 
@@ -910,17 +913,68 @@ void BaseState::Draw() {
                 log_->Info("Warmup iteration #%i", renderer_->accumulated_frames());
                 if (renderer_->accumulated_frames() >= 64) {
                     capture_state_ = eCaptureState::Started;
+                    cam_frame_ = 0;
                     main_view_lists_[0].frame_index = 0;
                     main_view_lists_[1].frame_index = 0;
                     random_->Reset(0);
                     renderer_->reset_accumulation();
                 }
             } else if (capture_state_ == eCaptureState::Started) {
-                if (renderer_->accumulated_frames() < RendererInternal::TaaSampleCountStatic) {
+                if (!cam_frames_.empty() && cam_frame_ - 1 < int(cam_frames_.size())) {
+                    log_->Info("Capturing dyn iteration #%i", cam_frame_);
+                    if (cam_frame_ >= 1) {
+                        const int status = WriteAndValidateCaptureResult(cam_frame_ - 1);
+                        if (status != 0) {
+                            viewer_->exit_status = status;
+                        }
+                    }
+                    ++cam_frame_;
+                } else if (cam_frames_.empty() &&
+                           renderer_->accumulated_frames() < RendererInternal::TaaSampleCountStatic) {
                     log_->Info("Capturing iteration #%i", renderer_->accumulated_frames());
                 } else {
-                    log_->Info("Capture finished! (%i samples)", renderer_->accumulated_frames());
-                    viewer_->exit_status = WriteAndValidateCaptureResult();
+                    cam_frame_ = -1;
+                    log_->Info("Capture finished! (%i frames)", renderer_->accumulated_frames());
+                    if (cam_frames_.empty()) {
+                        viewer_->exit_status = WriteAndValidateCaptureResult(-1);
+                    } else {
+                        std::string provided_str;
+                        for (const double val : viewer_->app_params.psnr) {
+                            char temp[32];
+                            snprintf(temp, sizeof(temp), "%.2f", val);
+
+                            provided_str += temp;
+                            provided_str += " ";
+                        }
+                        std::string captured_str, rounded_str, marked_str;
+                        for (int i = 0; i < int(captured_psnr_.size()); ++i) {
+                            const double val = captured_psnr_[i];
+                            const double max_val = std::min(std::floor(20 * val - 0.1) / 20.0, viewer_->app_params.psnr[i]);
+
+                            char temp[32];
+                            snprintf(temp, sizeof(temp), "%.2f", val);
+
+                            captured_str += temp;
+                            captured_str += " ";
+
+                            snprintf(temp, sizeof(temp), "%.2f", max_val);
+
+                            rounded_str += temp;
+                            rounded_str += " ";
+
+                            if (val < viewer_->app_params.psnr[i]) {
+                                marked_str += "^^^^^";
+                            } else {
+                                marked_str += "     ";
+                            }
+                            marked_str += " ";
+                        }
+                        log_->Info("Final PSNRs(%s):", viewer_->app_params.scene_name.c_str());
+                        log_->Info("%s", provided_str.c_str());
+                        log_->Info("%s", marked_str.c_str());
+                        log_->Info("%s", captured_str.c_str());
+                        log_->Info("%s", rounded_str.c_str());
+                    }
                     viewer_->Quit();
                     return;
                 }
@@ -2011,7 +2065,7 @@ void BaseState::ReloadSceneResources() {
     }
 }
 
-int BaseState::WriteAndValidateCaptureResult() {
+int BaseState::WriteAndValidateCaptureResult(const int frame) {
     Ren::BufRef stage_buf =
         ren_ctx_->LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * viewer_->width * viewer_->height);
 
@@ -2023,15 +2077,27 @@ int BaseState::WriteAndValidateCaptureResult() {
     }
 
     const uint8_t *img_data = stage_buf->Map();
-    SCOPE_EXIT({ stage_buf->Unmap(); })
+    SCOPE_EXIT({
+        stage_buf->Unmap();
+        stage_buf->FreeImmediate();
+    })
+
+    const std::string index_prefix = (frame != -1) ? "_" + std::to_string(frame) : "";
 
     const std::string base_name =
         viewer_->app_params.scene_name.substr(7, viewer_->app_params.scene_name.size() - 7 - 5);
-    const std::string out_name = base_name + ".png";
-    const std::string diff_name = base_name + "_diff.png";
+    const std::string out_name = base_name + index_prefix + ".png";
+    const std::string diff_name = base_name + index_prefix + "_diff.png";
+
+    std::string ref_name = "assets/" + viewer_->app_params.ref_name;
+    if (frame != -1) {
+        ref_name += "ref";
+        ref_name += index_prefix;
+        ref_name += ".uncompressed.jpg";
+    }
 
     int ref_w, ref_h, ref_channels;
-    uint8_t *ref_img = stbi_load(("assets/" + viewer_->app_params.ref_name).c_str(), &ref_w, &ref_h, &ref_channels, 4);
+    uint8_t *ref_img = stbi_load(ref_name.c_str(), &ref_w, &ref_h, &ref_channels, 4);
     SCOPE_EXIT({ stbi_image_free(ref_img); })
 
     if (!ref_img || ref_w != viewer_->width || ref_h != viewer_->height) {
@@ -2076,12 +2142,19 @@ int BaseState::WriteAndValidateCaptureResult() {
     double psnr = -10.0 * std::log10(mse / (255.0 * 255.0));
     psnr = std::floor(psnr * 100.0) / 100.0;
 
-    log_->Info("PSNR: %.2f/%.2f dB", psnr, viewer_->app_params.psnr);
+    if (frame >= int(viewer_->app_params.psnr.size())) {
+        log_->Error("Not enough psnr values provided!");
+        return -1;
+    }
+
+    captured_psnr_.push_back(psnr);
+
+    log_->Info("PSNR: %.2f/%.2f dB", psnr, viewer_->app_params.psnr[std::max(frame, 0)]);
 
     stbi_flip_vertically_on_write(flip_y);
     stbi_write_png(out_name.c_str(), viewer_->width, viewer_->height, 4, img_data, 4 * viewer_->width);
     stbi_flip_vertically_on_write(false);
     stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
 
-    return (psnr >= viewer_->app_params.psnr) ? 0 : -1;
+    return (psnr >= viewer_->app_params.psnr[std::max(frame, 0)]) ? 0 : -1;
 }

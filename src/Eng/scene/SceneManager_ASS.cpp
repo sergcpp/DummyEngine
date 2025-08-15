@@ -685,6 +685,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
     g_asset_handlers["uncompressed.tga"] = {"uncompressed.tga", HCopy};
     g_asset_handlers["uncompressed.png"] = {"uncompressed.png", HCopy};
+    g_asset_handlers["uncompressed.jpg"] = {"uncompressed.jpg", HCopy};
 
     double last_db_write = Sys::GetTimeS();
     auto convert_file = [out_folder, &last_db_write](assets_context_t &ctx, const std::filesystem::path &in_file) {

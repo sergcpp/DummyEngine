@@ -117,6 +117,13 @@ class BaseState : public Eng::ViewerState {
 
     Ren::TexRef pt_result_;
 
+    struct cam_frame_t {
+        Ren::Vec3d pos, dir;
+    };
+    std::vector<cam_frame_t> cam_frames_;
+    int cam_frame_ = 0;
+    std::vector<double> captured_psnr_;
+
     bool LoadScene(std::string_view name);
 
     virtual void OnPreloadScene(Sys::JsObjectP &js_scene);
@@ -138,7 +145,7 @@ class BaseState : public Eng::ViewerState {
 
     void ReloadSceneResources();
 
-    int WriteAndValidateCaptureResult();
+    int WriteAndValidateCaptureResult(int frame);
 
   public:
     explicit BaseState(Viewer *viewer);

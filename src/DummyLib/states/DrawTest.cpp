@@ -305,9 +305,8 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
 
     BaseState::OnPostloadScene(js_scene);
 
-    cam_follow_path_.clear();
-    cam_follow_point_ = 0;
-    cam_follow_param_ = 0;
+    cam_frames_.clear();
+    cam_frame_ = -1;
 
     if (js_scene.Has("camera")) {
         const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -404,17 +403,43 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
             }
         }
 
-        if (js_cam.Has("follow_path")) {
-            const Sys::JsArrayP &js_points = js_cam.at("follow_path").as_arr();
-            for (const Sys::JsElementP &el : js_points.elements) {
-                const Sys::JsArrayP &js_point = el.as_arr();
+        if (js_cam.Has("paths") && viewer_->app_params.cam_path.has_value()) {
+            const Sys::JsArrayP &js_frames = js_cam.at("paths").as_arr().at(*viewer_->app_params.cam_path).as_arr();
+            for (const Sys::JsElementP &el : js_frames.elements) {
+                const Sys::JsObjectP &js_frame = el.as_obj();
 
-                const Sys::JsNumber &x = js_point.at(0).as_num(), &y = js_point.at(1).as_num(),
-                                    &z = js_point.at(2).as_num();
+                const Sys::JsArrayP &js_frame_pos = js_frame.at("pos").as_arr();
+                const Sys::JsArrayP &js_frame_rot = js_frame.at("rot").as_arr();
 
-                cam_follow_path_.emplace_back(float(x.val), float(y.val), float(z.val));
+                auto rx = float(js_frame_rot.at(0).as_num().val);
+                auto ry = float(js_frame_rot.at(1).as_num().val);
+                auto rz = float(js_frame_rot.at(2).as_num().val);
+
+                rx *= Ren::Pi<float>() / 180;
+                ry *= Ren::Pi<float>() / 180;
+                rz *= Ren::Pi<float>() / 180;
+
+                Ren::Mat4f transform;
+                transform = Rotate(transform, float(rz), Ren::Vec3f{0, 0, 1});
+                transform = Rotate(transform, float(rx), Ren::Vec3f{1, 0, 0});
+                transform = Rotate(transform, float(ry), Ren::Vec3f{0, 1, 0});
+
+                auto view_vec = Ren::Vec4f{0, -1, 0, 0};
+                view_vec = transform * view_vec;
+
+                cam_frame_t &frame = cam_frames_.emplace_back();
+                frame.pos[0] = js_frame_pos.at(0).as_num().val;
+                frame.pos[1] = js_frame_pos.at(1).as_num().val;
+                frame.pos[2] = js_frame_pos.at(2).as_num().val;
+                frame.dir = Ren::Vec3d(view_vec);
             }
         }
+    }
+
+    if (!cam_frames_.empty()) {
+        // Use the first frame as initial state
+        initial_view_pos_ = cam_frames_[0].pos;
+        initial_view_dir_ = cam_frames_[0].dir;
     }
 
     if (viewer_->app_params.exposure.has_value()) {
@@ -510,7 +535,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
 
     prev_view_origin_ = next_view_origin_;
 
-    if (cam_follow_path_.size() < 3) {
+    if (cam_frames_.empty()) {
         const float fwd_speed =
                         std::max(std::min(fwd_press_speed_ + fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_),
                     side_speed =
@@ -518,27 +543,6 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
 
         next_view_origin_ += view_dir_ * fwd_speed;
         next_view_origin_ += side * side_speed;
-    } else {
-        assert(false);
-        /*int next_point = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
-
-        { // update param
-            const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_], &p2 = cam_follow_path_[next_point];
-
-            cam_follow_param_ += 0.000005f * dt_us / Distance(p1, p2);
-            while (cam_follow_param_ > 1) {
-                cam_follow_point_ = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
-                cam_follow_param_ -= 1;
-            }
-        }
-
-        next_point = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
-
-        const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_], &p2 = cam_follow_path_[next_point];
-
-        next_view_origin_ = 0.95f * next_view_origin_ + 0.05f * Mix(p1, p2, cam_follow_param_);
-        view_dir_ = 0.9f * view_dir_ + 0.1f * Normalize(p2 - next_view_origin_);
-        view_dir_ = Normalize(view_dir_);*/
     }
 
     Eng::SceneData &scene = scene_manager_->scene_data();
@@ -606,7 +610,12 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
     TestUpdateAnims(delta_time_s);
 
     const Eng::FrameInfo &fr = fr_info_;
-    const Vec3d smooth_view_origin = Mix(prev_view_origin_, next_view_origin_, fr.time_fract);
+    Vec3d smooth_view_origin = Mix(prev_view_origin_, next_view_origin_, fr.time_fract);
+
+    if (cam_frame_ != -1 && cam_frame_ < cam_frames_.size()) {
+        smooth_view_origin = cam_frames_[cam_frame_].pos;
+        view_dir_ = cam_frames_[cam_frame_].dir;
+    }
 
     // Invalidate view if camera has moved
     invalidate_view_ |= Distance(view_origin_, smooth_view_origin) > 0.00001;

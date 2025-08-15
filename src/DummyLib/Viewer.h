@@ -44,7 +44,7 @@ struct AppParams {
     std::string scene_name = "scenes/mat_test.json";
     std::string device_name;
     std::string ref_name;
-    double psnr = 0.0;
+    std::vector<double> psnr{0.0};
     bool nohwrt = false;
     bool nosubgroup = false;
     bool pt = false;

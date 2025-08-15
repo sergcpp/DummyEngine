@@ -39,7 +39,10 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
         } else if ((strcmp(argv[i], "--reference") == 0 || strcmp(argv[i], "-ref") == 0) && (++i != argc)) {
             out_params.ref_name = argv[i];
         } else if (strcmp(argv[i], "--psnr") == 0 && (++i != argc)) {
-            out_params.psnr = strtod(argv[i], nullptr);
+            out_params.psnr[0] = strtod(argv[i], nullptr);
+            while ((i + 1) != argc && argv[i + 1][0] != '-') {
+                out_params.psnr.push_back(strtod(argv[++i], nullptr));
+            }
         } else if (strcmp(argv[i], "--pt") == 0) {
             out_params.pt = true;
         } else if (strcmp(argv[i], "--pt_nodenoise") == 0) {
