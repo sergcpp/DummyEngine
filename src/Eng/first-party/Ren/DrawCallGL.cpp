@@ -68,7 +68,8 @@ void Ren::DispatchCompute(CommandBuffer, const Pipeline &comp_pipeline, Vec3u gr
             if (b.handle.view_index) {
                 texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
             }
-            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, GL_FALSE, 0,
+            const bool layered = Bitmask<eTexFlags>(b.handle.tex->params.flags) & eTexFlags::Array;
+            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, layered ? GL_TRUE : GL_FALSE, 0,
                                b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         }
@@ -138,7 +139,8 @@ void Ren::DispatchComputeIndirect(CommandBuffer cmd_buf, const Pipeline &comp_pi
             if (b.handle.view_index) {
                 texture_id = GLuint(b.handle.tex->handle().views[b.handle.view_index - 1]);
             }
-            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, GL_FALSE, 0,
+            const bool layered = Bitmask<eTexFlags>(b.handle.tex->params.flags) & eTexFlags::Array;
+            glBindImageTexture(GLuint(b.loc + b.offset), texture_id, 0, layered ? GL_TRUE : GL_FALSE, 0,
                                b.trg == eBindTarget::ImageRO ? GL_READ_ONLY : GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format));
         }
