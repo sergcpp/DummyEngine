@@ -667,6 +667,7 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
     struct PassData {
         FgResRef shared_data;
         FgResRef depth_tex;
+        FgResRef albedo_tex;
         FgResRef normal_tex;
         FgResRef shadow_depth_tex, shadow_color_tex;
 
@@ -678,6 +679,7 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
     auto *data = sun_shadows.AllocNodeData<PassData>();
     data->shared_data = sun_shadows.AddUniformBufferInput(common_buffers.shared_data, Stg::ComputeShader);
     data->depth_tex = sun_shadows.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+    data->albedo_tex = sun_shadows.AddTextureInput(frame_textures.albedo, Stg::ComputeShader);
     data->normal_tex = sun_shadows.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
     data->shadow_depth_tex = sun_shadows.AddTextureInput(frame_textures.shadow_depth, Stg::ComputeShader);
     data->shadow_color_tex = sun_shadows.AddTextureInput(frame_textures.shadow_color, Stg::ComputeShader);
@@ -696,6 +698,7 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
     sun_shadows.set_execute_cb([this, data](FgBuilder &builder) {
         FgAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
         FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+        FgAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
         FgAllocTex &norm_tex = builder.GetReadTexture(data->normal_tex);
         FgAllocTex &shadow_depth_tex = builder.GetReadTexture(data->shadow_depth_tex);
         FgAllocTex &shadow_color_tex = builder.GetReadTexture(data->shadow_color_tex);
@@ -705,6 +708,7 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
             {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
             {Trg::TexSampled, SunShadows::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
             {Trg::TexSampled, SunShadows::DEPTH_LIN_TEX_SLOT, {*depth_tex.ref, *linear_sampler_, 1}},
+            {Trg::TexSampled, SunShadows::ALBEDO_TEX_SLOT, *albedo_tex.ref},
             {Trg::TexSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_SLOT, *shadow_depth_tex.ref},
             {Trg::TexSampled, SunShadows::SHADOW_DEPTH_TEX_VAL_SLOT, {*shadow_depth_tex.ref, *nearest_sampler_}},

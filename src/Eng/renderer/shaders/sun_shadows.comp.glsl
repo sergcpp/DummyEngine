@@ -23,6 +23,8 @@ layout(binding = SHADOW_COLOR_TEX_SLOT) uniform sampler2D g_shadow_color_tex;
 
 #ifdef RT_SHADOW
     layout(binding = RT_SHADOW_TEX_SLOT) uniform sampler2D g_rt_shadow_tex;
+#else
+    layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
 #endif
 
 layout(binding = OUT_SHADOW_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_out_shadow_img;
@@ -75,10 +77,13 @@ void main() {
             const vec3 pos_vs = (g_shrd_data.view_from_world * vec4(pos_ws, 1.0)).xyz;
             const vec3 sun_dir_vs = (g_shrd_data.view_from_world * vec4(g_shrd_data.sun_dir.xyz, 0.0)).xyz;
 
-            vec2 hit_pixel;
+            vec2 hit_uv;
             vec3 hit_point;
-            if (IntersectRay(pos_vs, sun_dir_vs, jitter, hit_pixel, hit_point)) {
-                occlusion = 1.0;
+            if (IntersectRay(pos_vs, sun_dir_vs, jitter, hit_uv, hit_point)) {
+                const float shadow_vis = textureLod(g_albedo_tex, hit_uv, 0.0).w;
+                if (shadow_vis > 0.5) {
+                    occlusion = 1.0;
+                }
             }
 
             // view distance falloff

@@ -10,6 +10,8 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     // complex materials
     run_image_test(threads, "visibility_flags", 25.40, Full);
     run_image_test(threads, "visibility_flags", 25.30, Full_Ultra);
+    run_image_test(threads, "visibility_flags_sun", 25.15, Full);
+    run_image_test(threads, "visibility_flags_sun", 26.50, Full_Ultra);
     run_image_test(threads, "two_sided_mat", 39.45, NoShadow);
     run_image_test(threads, "two_sided_mat", 29.90, NoGI);
     run_image_test(threads, "two_sided_mat", 29.55, NoDiffGI);
