@@ -613,26 +613,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         log->Error("[Renderer] Failed to initialize primitive drawing!");
     }
 
-    if (frame_index_ == 0 && list.render_settings.taa_mode != eTAAMode::Static) {
-        Ren::CommandBuffer cmd_buf = ctx_.current_cmd_buf();
-
-        const Ren::TransitionInfo transitions[] = {{persistent_data.probe_irradiance.get(), Ren::eResState::CopyDst},
-                                                   {persistent_data.probe_distance.get(), Ren::eResState::CopyDst},
-                                                   {persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
-        TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
-
-        static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-        Ren::ClearImage(*persistent_data.probe_irradiance, rgba, cmd_buf);
-        Ren::ClearImage(*persistent_data.probe_distance, rgba, cmd_buf);
-        Ren::ClearImage(*persistent_data.probe_offset, rgba, cmd_buf);
-
-        for (int i = 0; i < PROBE_VOLUMES_COUNT; ++i) {
-            persistent_data.probe_volumes[i].updates_count = 0;
-            persistent_data.probe_volumes[i].reset_relocation = true;
-            persistent_data.probe_volumes[i].reset_classification = true;
-        }
-    }
-
     if (view_state_.prev_world_origin != list.world_origin) {
         const Ren::Vec3f origin_diff = Ren::Vec3f(list.world_origin - view_state_.prev_world_origin);
 

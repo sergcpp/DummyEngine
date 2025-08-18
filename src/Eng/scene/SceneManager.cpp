@@ -1982,5 +1982,7 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
 
     for (probe_volume_t &volume : scene_data_.persistent_data.probe_volumes) {
         volume.updates_count = 0;
+        volume.reset_relocation = true;
+        volume.reset_classification = true;
     }
 }
