@@ -24,8 +24,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const R
         histogram_clear.set_execute_cb([histogram](FgBuilder &builder) {
             FgAllocTex &histogram_tex = builder.GetWriteTexture(histogram);
 
-            const float zero[4] = {};
-            Ren::ClearImage(*histogram_tex.ref, zero, builder.ctx().current_cmd_buf());
+            Ren::ClearImage(*histogram_tex.ref, {}, builder.ctx().current_cmd_buf());
         });
     }
     { // Sample histogram

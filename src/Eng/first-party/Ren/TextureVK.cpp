@@ -1107,7 +1107,7 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
                                       dst_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);
 }
 
-void Ren::ClearImage(const Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
+void Ren::ClearImage(const Texture &tex, const ClearColor &col, CommandBuffer cmd_buf) {
     assert(tex.resource_state == eResState::CopyDst);
 
     VkImageSubresourceRange clear_range = {};
@@ -1120,7 +1120,7 @@ void Ren::ClearImage(const Texture &tex, const float rgba[4], CommandBuffer cmd_
         clear_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
         VkClearColorValue clear_val = {};
-        memcpy(clear_val.float32, rgba, 4 * sizeof(float));
+        memcpy(clear_val.uint32, col.uint32, 4 * sizeof(float));
 
         tex.api_ctx()->vkCmdClearColorImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val,
                                             1, &clear_range);
@@ -1128,7 +1128,7 @@ void Ren::ClearImage(const Texture &tex, const float rgba[4], CommandBuffer cmd_
         clear_range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 
         VkClearDepthStencilValue clear_val = {};
-        clear_val.depth = rgba[0];
+        clear_val.depth = col.float32[0];
 
         tex.api_ctx()->vkCmdClearDepthStencilImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                                    &clear_val, 1, &clear_range);

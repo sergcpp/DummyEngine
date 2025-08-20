@@ -78,8 +78,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             for (int i = 0; i < OIT_REFLECTION_LAYERS; ++i) {
                 FgAllocTex &oit_specular = builder.GetWriteTexture(data->oit_specular[i]);
                 if (p_list_->alpha_blend_start_index != -1) {
-                    const float rgba[4] = {};
-                    Ren::ClearImage(*oit_specular.ref, rgba, ctx.current_cmd_buf());
+                    Ren::ClearImage(*oit_specular.ref, {}, ctx.current_cmd_buf());
                 }
             }
         });

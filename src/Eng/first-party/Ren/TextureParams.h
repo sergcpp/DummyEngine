@@ -118,4 +118,10 @@ int GetColorChannelCount(eTexFormat format);
 
 enum class eTexLoadStatus { Found, Reinitialized, CreatedDefault, CreatedFromData, Error };
 
+union ClearColor {
+    float float32[4];
+    int32_t int32[4];
+    uint32_t uint32[4];
+};
+
 } // namespace Ren

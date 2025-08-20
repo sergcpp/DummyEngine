@@ -483,13 +483,9 @@ void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture &src_tex, const uint32
                        GLsizei(w), GLsizei(h), GLsizei(d));
 }
 
-void Ren::ClearImage(const Texture &tex, const float rgba[4], CommandBuffer cmd_buf) {
-    if (IsDepthStencilFormat(tex.params.format) || IsUnsignedIntegerFormat(tex.params.format)) {
-        glClearTexImage(tex.id(), 0, GLFormatFromTexFormat(tex.params.format), GLTypeFromTexFormat(tex.params.format),
-                        rgba);
-    } else {
-        glClearTexImage(tex.id(), 0, GL_RGBA, GL_FLOAT, rgba);
-    }
+void Ren::ClearImage(const Texture &tex, const ClearColor &col, CommandBuffer cmd_buf) {
+    glClearTexImage(tex.id(), 0, GLFormatFromTexFormat(tex.params.format), GLTypeFromTexFormat(tex.params.format),
+                    col.uint32);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

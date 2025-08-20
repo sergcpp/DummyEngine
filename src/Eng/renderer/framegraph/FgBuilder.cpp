@@ -1677,8 +1677,7 @@ void Eng::FgBuilder::ClearBuffer_AsStorage(Ren::BufRef &buf, Ren::CommandBuffer 
 
 void Eng::FgBuilder::ClearImage_AsTransfer(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {
     // NOTE: we can not really use anything other than zero due to aliasing
-    static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    Ren::ClearImage(*tex, rgba, cmd_buf);
+    Ren::ClearImage(*tex, {}, cmd_buf);
 }
 
 void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer cmd_buf) {

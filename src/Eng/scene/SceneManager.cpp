@@ -1971,10 +1971,9 @@ void Eng::SceneManager::ClearGICache(Ren::CommandBuffer _cmd_buf) {
         {scene_data_.persistent_data.probe_offset.get(), Ren::eResState::CopyDst}};
     TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
 
-    static const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    Ren::ClearImage(*scene_data_.persistent_data.probe_irradiance, rgba, cmd_buf);
-    Ren::ClearImage(*scene_data_.persistent_data.probe_distance, rgba, cmd_buf);
-    Ren::ClearImage(*scene_data_.persistent_data.probe_offset, rgba, cmd_buf);
+    Ren::ClearImage(*scene_data_.persistent_data.probe_irradiance, {}, cmd_buf);
+    Ren::ClearImage(*scene_data_.persistent_data.probe_distance, {}, cmd_buf);
+    Ren::ClearImage(*scene_data_.persistent_data.probe_offset, {}, cmd_buf);
 
     if (!_cmd_buf) {
         ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
