@@ -19,7 +19,7 @@ Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const R
         params.format = Ren::eTexFormat::R32UI;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-        histogram = histogram_clear.AddTransferImageOutput("Exposure Histogram", params);
+        histogram = histogram_clear.AddClearImageOutput("Exposure Histogram", params);
 
         histogram_clear.set_execute_cb([histogram](FgBuilder &builder) {
             FgAllocTex &histogram_tex = builder.GetWriteTexture(histogram);

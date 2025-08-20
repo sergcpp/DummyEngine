@@ -81,6 +81,12 @@ class FgNode {
     FgResRef AddStorageImageOutput(FgResRef handle, Ren::Bitmask<Ren::eStage> stages);
     FgResRef AddStorageImageOutput(const Ren::WeakTexRef &tex, Ren::Bitmask<Ren::eStage> stages);
 
+    FgResRef AddClearImageOutput(std::string_view name, const Ren::TexParams &params) {
+        return AddTransferImageOutput(name, params);
+    }
+    FgResRef AddClearImageOutput(const Ren::WeakTexRef &tex) { return AddTransferImageOutput(tex); }
+    FgResRef AddClearImageOutput(FgResRef handle) { return AddTransferImageOutput(handle); }
+
     FgResRef AddColorOutput(std::string_view name, const Ren::TexParams &params);
     FgResRef AddColorOutput(FgResRef handle);
     FgResRef AddColorOutput(const Ren::WeakTexRef &tex);

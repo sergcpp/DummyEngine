@@ -54,7 +54,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            oit_specular[i] = data->oit_specular[i] = oit_clear.AddTransferImageOutput(tex_name, params);
+            oit_specular[i] = data->oit_specular[i] = oit_clear.AddClearImageOutput(tex_name, params);
         }
 
         { // ray counter
