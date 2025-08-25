@@ -281,6 +281,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
                 Skydome::Params2 uniform_params;
                 uniform_params.img_size = view_state_.scr_res;
+                uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
                 uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
                 uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
@@ -685,9 +686,9 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             rast_state.depth.test_enabled = false;
             rast_state.blend.enabled = true;
             rast_state.blend.src_color = uint8_t(Ren::eBlendFactor::One);
-            rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::One);
+            rast_state.blend.src_alpha = uint8_t(Ren::eBlendFactor::Zero);
             rast_state.blend.dst_color = uint8_t(Ren::eBlendFactor::SrcAlpha);
-            rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::Zero);
+            rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
 
             rast_state.viewport[2] = view_state_.act_res[0];
             rast_state.viewport[3] = view_state_.act_res[1];

@@ -307,7 +307,7 @@ void main() {
     }
 
 #ifdef SPECULAR
-    vec4 refl = SampleTextureCatmullRom(g_specular_tex, norm_uvs, vec2(g_shrd_data.ires_and_ifres.xy / 2));
+    vec4 refl = SampleTextureCatmullRom(g_specular_tex, norm_uvs, 0.5 / vec2(g_shrd_data.ires_and_ifres.xy));
     refl.xyz /= g_shrd_data.cam_pos_and_exp.w;
     refl.xyz /= max(refl.w, 0.001);
     if ((lobe_masks.bits & (LOBE_SPECULAR_BIT | LOBE_REFRACTION_BIT)) != 0) {

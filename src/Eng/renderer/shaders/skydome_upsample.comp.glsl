@@ -59,7 +59,7 @@ void main() {
 
     const vec2 hist_uvs = 0.5 * prev_ray_origin_cs.xy + 0.5;
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
-        const vec4 history = SampleTextureCatmullRom(g_sky_hist_tex, hist_uvs, g_params.img_size);
+        const vec4 history = SampleTextureCatmullRom(g_sky_hist_tex, hist_uvs, g_params.texel_size);
         if (history.w > 0.0) {
             out_color = g_params.hist_weight * history.xyz;
         }

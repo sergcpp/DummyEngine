@@ -34,6 +34,6 @@ void test_volumetrics(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "vol_local", 26.45, Full_Ultra);
     run_image_test(threads, "vol_local_absorption", 25.95, Full);
     run_image_test(threads, "vol_local_absorption", 26.50, Full_Ultra);
-    run_image_test(threads, "vol_local_emission", 24.40, Full);
-    run_image_test(threads, "vol_local_emission", 24.80, Full_Ultra);
+    run_image_test(threads, "vol_local_emission", 25.10, Full);
+    run_image_test(threads, "vol_local_emission", 25.45, Full_Ultra);
 }

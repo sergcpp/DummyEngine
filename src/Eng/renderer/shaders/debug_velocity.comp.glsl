@@ -92,14 +92,14 @@ float arrow(vec2 p, vec2 v) {
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    uvec2 px_coords = gl_GlobalInvocationID.xy;
+    const uvec2 px_coords = gl_GlobalInvocationID.xy;
     if (px_coords.x >= g_params.img_size.x || px_coords.y >= g_params.img_size.y) {
         return;
     }
 
-    vec2 velocity = texelFetch(g_velocity_tex, ivec2(px_coords), 0).xy / vec2(g_params.img_size);
-    const vec2 tile_velocity = texelFetch(g_velocity_tex, ivec2(arrowTileCenterCoord(vec2(px_coords))), 0).xy / vec2(g_params.img_size);
-    const float arrow_res = arrow(vec2(px_coords), tile_velocity * ARROW_TILE_SIZE * 0.4);
+    vec2 velocity = texelFetch(g_velocity_tex, ivec2(px_coords), 0).xy;
+    const vec2 tile_velocity = texelFetch(g_velocity_tex, ivec2(arrowTileCenterCoord(vec2(px_coords))), 0).xy;
+    const float arrow_res = arrow(vec2(px_coords), tile_velocity * ARROW_TILE_SIZE * 0.01);
 
     velocity = velocity * 0.5 + vec2(0.5);
     velocity *= (1.0 - arrow_res);

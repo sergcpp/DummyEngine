@@ -9,15 +9,17 @@ struct Params {
     mat4 clip_from_world;
     ivec2 sample_coord;
     ivec2 img_size;
+    vec2 texel_size;
     float scale;
-    float _pad[3];
+    float _pad;
 };
 
 struct Params2 {
     ivec2 sample_coord;
     ivec2 img_size;
+    vec2 texel_size;
     float hist_weight;
-    float _pad[3];
+    float _pad;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

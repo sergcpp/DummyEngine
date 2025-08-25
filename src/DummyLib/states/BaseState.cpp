@@ -621,6 +621,11 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_showDisocclusion", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_disocclusion = !renderer_->settings.debug_disocclusion;
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_showUI", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         ui_enabled_ = !ui_enabled_;
         return true;

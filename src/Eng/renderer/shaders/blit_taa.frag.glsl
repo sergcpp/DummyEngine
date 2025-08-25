@@ -27,8 +27,9 @@ layout(binding = CURR_NEAREST_TEX_SLOT) uniform sampler2D g_color_curr_nearest;
 layout(binding = CURR_LINEAR_TEX_SLOT) uniform sampler2D g_color_curr_linear;
 layout(binding = HIST_TEX_SLOT) uniform sampler2D g_color_hist;
 
-layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_curr;
-layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity;
+layout(binding = DILATED_DEPTH_TEX_SLOT) uniform sampler2D g_dilated_depth;
+layout(binding = DILATED_VELOCITY_TEX_SLOT) uniform sampler2D g_dilated_velocity;
+layout(binding = DISOCCLUSION_MASK_TEX_SLOT) uniform sampler2D g_disocclusion_mask;
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     shared_data_t g_shrd_data;
@@ -79,7 +80,7 @@ vec4 FetchColor(sampler2D s, ivec2 icoord) {
 
 vec4 SampleColor(sampler2D s, vec2 uvs) {
 #if defined(CATMULL_ROM)
-    vec4 ret = SampleTextureCatmullRom(s, uvs, g_params.tex_size);
+    vec4 ret = SampleTextureCatmullRom(s, uvs, g_params.texel_size);
 #else
     vec4 ret = textureLod(s, uvs, 0.0);
 #endif
@@ -118,18 +119,19 @@ float Luma(vec3 col) {
 #if defined(YCoCg)
     return col.x;
 #else
-    return dot(col, vec3(0.2125, 0.7154, 0.0721));
+    return lum(col);
 #endif
 }
 
 void main() {
     const ivec2 uvs_px = ivec2(g_vtx_uvs);
-    const vec2 texel_size = vec2(1.0) / g_params.tex_size;
-    const vec2 norm_uvs = g_vtx_uvs / g_params.tex_size;
+    const vec2 norm_uvs = g_vtx_uvs * g_params.texel_size;
 
-    const float depth = texelFetch(g_depth_curr, uvs_px, 0).x;
     vec4 col_curr = textureLod(g_color_curr_nearest, norm_uvs, 0.0);
     col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
+    if (col_curr.w >= 1.0) {
+        col_curr.w -= 1.0;
+    }
 
 #if defined(STATIC_ACCUMULATION)
     vec4 col_hist = FetchColor(g_color_hist, uvs_px);
@@ -138,8 +140,6 @@ void main() {
     g_out_color = vec4(TonemapInvert(col), 0.0);
     g_out_history = g_out_color;
 #else // STATIC_ACCUMULATION
-    float min_depth = texelFetch(g_depth_curr, uvs_px, 0).x;
-
     const ivec2 offsets[8] = ivec2[8](
         ivec2(-1, 1),   ivec2(0, 1),    ivec2(1, 1),
         ivec2(-1, 0),                   ivec2(1, 0),
@@ -150,15 +150,7 @@ void main() {
 
 #if !defined(YCoCg) && !defined(ROUNDED_NEIBOURHOOD)
     vec3 col_avg = col_curr.xyz, col_var = col_curr.xyz * col_curr.xyz;
-    ivec2 closest_frag = ivec2(0, 0);
-
     for (int i = 0; i < 8; i++) {
-        const float depth = texelFetch(g_depth_curr, uvs_px + offsets[i], 0).x;
-        if (depth > min_depth) {
-            closest_frag = offsets[i];
-            min_depth = depth;
-        }
-
         const vec3 col = FetchColor(g_color_curr_nearest, uvs_px + offsets[i]).xyz;
         col_avg += col;
         col_var += col * col;
@@ -171,7 +163,7 @@ void main() {
     vec3 col_min = col_avg - 1.25 * sigma;
     vec3 col_max = col_avg + 1.25 * sigma;
 
-    vec3 closest_vel = texelFetch(g_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(g_params.tex_size - vec2(1))), 0).xyz;
+    vec2 closest_vel = texelFetch(g_dilated_velocity, uvs_px, 0).xy;
 #else
     const vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, -1)).xyz));
     const vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, -1)).xyz));
@@ -209,8 +201,7 @@ void main() {
         col_avg.yz = chroma_center;
     #endif
 
-    const vec3 closest_frag = FindClosestFragment_3x3(g_depth_curr, norm_uvs, texel_size);
-    vec3 closest_vel = textureLod(g_velocity, closest_frag.xy, 0.0).xyz;
+    vec2 closest_vel = texelFetch(g_dilated_velocity, uvs_px, 0).xy;
 
 #if defined(LOCKING)
     if (g_params.significant_change < 0.5) {
@@ -269,7 +260,7 @@ void main() {
 
 #endif
 
-    vec2 hist_uvs = norm_uvs - (closest_vel.xy / g_params.tex_size);
+    vec2 hist_uvs = norm_uvs - (closest_vel * g_params.texel_size);
     vec4 col_hist = vec4(col_curr.xyz, 0.0);
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
         col_hist = SampleColor(g_color_hist, hist_uvs);
@@ -287,8 +278,7 @@ void main() {
         lock_status = saturate(lock_status - (1.0 / 12.0));
     }
 
-    const vec2 next_uvs = norm_uvs + (closest_vel.xy / g_params.tex_size);
-    if (any(lessThan(hist_uvs, vec2(0.0))) && any(greaterThan(hist_uvs, vec2(1.0)))) {
+    if (any(lessThan(hist_uvs, 0.5 * g_params.texel_size)) || any(greaterThan(hist_uvs, vec2(1.0) - 0.5 * g_params.texel_size))) {
         lock_status = 0.0;
     }
 
@@ -300,8 +290,15 @@ void main() {
     const float reactive_factor = saturate((lum_diff - 0.1) * 1.0);
     lock_status *= (1.0 - reactive_factor);
 
-    const float k = saturate(4.0 - length(closest_vel.xy));
-    lock_status *= k;
+    // Specular luminance
+    lock_status *= saturate(1.0 - 2.0 * (col_curr.w / col_curr.x));
+
+    const vec2 disocclusion = texelFetch(g_disocclusion_mask, uvs_px, 0).xy;
+
+    // Depth disocclusion
+    lock_status *= float(disocclusion.x < 0.1);
+    // Motion divergence
+    lock_status *= (1.0 - disocclusion.y);
 #endif // LOCKING
 
     const vec3 clamped_hist = ClipAABB(col_min, col_max, col_hist.xyz);
@@ -327,14 +324,14 @@ void main() {
     const float MotionScale = 0.5;
     closest_vel *= MotionScale;
 
-    const float vel_mag = length(closest_vel.xy);
+    const float vel_mag = length(closest_vel);
     [[dont_flatten]] if (vel_mag > 0.01) {
         const float vel_trust_full = 2.0;
         const float vel_trust_none = 15.0;
         const float vel_trust_span = vel_trust_none - vel_trust_full;
         const float trust = 1.0 - clamp(vel_mag - vel_trust_full, 0.0, vel_trust_span) / vel_trust_span;
 
-        vec3 col_motion = SampleColorMotion(g_color_curr_linear, norm_uvs, (closest_vel.xy / g_params.tex_size)).xyz;
+        vec3 col_motion = SampleColorMotion(g_color_curr_linear, norm_uvs, (closest_vel * g_params.texel_size)).xyz;
         col_screen = mix(col_motion, col_temporal, trust);
     }
 #endif // MOTION_BLUR

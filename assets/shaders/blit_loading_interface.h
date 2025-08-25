@@ -7,7 +7,7 @@ INTERFACE_START(Loading)
 
 struct Params {
     vec4 transform;
-    vec2 tex_size;
+    vec2 texel_size;
     float time;
     float fade;
 };

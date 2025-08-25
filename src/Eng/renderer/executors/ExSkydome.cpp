@@ -198,6 +198,7 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
     uniform_params.clip_from_world = view_state_->clip_from_world_no_translation;
     uniform_params.sample_coord = sample_pos(view_state_->frame_index);
     uniform_params.img_size = view_state_->scr_res;
+    uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_->scr_res);
     uniform_params.scale = 0.95f * view_state_->clip_info[2];
 
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};

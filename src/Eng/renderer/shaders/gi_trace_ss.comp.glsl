@@ -95,7 +95,9 @@ void main() {
 
         const float hit_t = distance(hit_point_vs, ray_origin_vs);
         out_color = textureLod(color_tex, uv, 0.0);
-        if (out_color.w > 0.0) {
+
+        const vec4 is_emissive = textureGather(color_tex, uv, 3);
+        if (any(greaterThanEqual(is_emissive, vec4(1.0)))) {
             // Skip emissive surface
             hit_found = false;
         }

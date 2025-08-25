@@ -142,7 +142,7 @@ vec3 ShadeHitPoint(const vec2 uv, const vec4 norm_rough, const vec3 hit_point_vs
 #endif
     const vec4 ss_color = textureLod(g_color_tex, uv, 0.0);
     // Skip emissive surface
-    discard_intersection = (ss_color.w > 0.0 && first_roughness > 1e-7);
+    discard_intersection = (ss_color.w >= 1.0 && first_roughness > 1e-7);
     return ss_color.xyz + compress_hdr(approx_spec, g_shrd_data.cam_pos_and_exp.w);
 }
 

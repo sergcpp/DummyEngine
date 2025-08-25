@@ -288,6 +288,7 @@ struct render_settings_t {
             bool debug_ellipsoids : 1;
             bool debug_freeze : 1;
             bool debug_motion : 1;
+            bool debug_disocclusion : 1;
         };
         uint32_t debug_flags = 0;
     };

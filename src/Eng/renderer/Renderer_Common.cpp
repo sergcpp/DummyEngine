@@ -21,6 +21,8 @@
 #include "shaders/blit_taa_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
+#include "shaders/prepare_disocclusion_interface.h"
+#include "shaders/reconstruct_depth_interface.h"
 
 namespace RendererInternal {
 const float GoldenRatio = 1.61803398875f;
@@ -150,6 +152,10 @@ void Eng::Renderer::InitPipelines() {
         sh_.LoadPipeline(subgroup_select("internal/vol_scatter@ALL_CASCADES;GI_CACHE.comp.glsl", //
                                          "internal/vol_scatter@ALL_CASCADES;GI_CACHE;NO_SUBGROUP.comp.glsl"));
     pi_vol_ray_march_ = sh_.LoadPipeline("internal/vol_ray_march.comp.glsl");
+
+    // TAA
+    pi_reconstruct_depth_ = sh_.LoadPipeline("internal/reconstruct_depth.comp.glsl");
+    pi_prepare_disocclusion_ = sh_.LoadPipeline("internal/prepare_disocclusion.comp.glsl");
 
     // Debugging
     pi_debug_velocity_ = sh_.LoadPipeline("internal/debug_velocity.comp.glsl");
@@ -893,85 +899,257 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     });
 }
 
-void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                               const bool static_accumulation, FgResRef &resolved_color) {
+void Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
+                                 const bool static_accumulation, FgResRef &resolved_color) {
     using Stg = Ren::eStage;
 
-    auto &taa = fg_builder_.AddNode("TAA");
+    FgResRef reconstructed_depth;
+    { // Clear reconstructed depth
+        auto &clear_reconstructed = fg_builder_.AddNode("CLEAR REC. DEPTH");
 
-    struct PassData {
-        FgResRef clean_tex;
-        FgResRef depth_tex;
-        FgResRef velocity_tex;
-        FgResRef history_tex;
+        struct PassData {
+            FgResRef reconstructed_depth;
+        };
 
-        FgResRef output_tex;
-        FgResRef output_history_tex;
-    };
+        auto *data = clear_reconstructed.AllocNodeData<PassData>();
+        { // Reconstructed previous depth
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::R32UI;
+            params.sampling.filter = Ren::eTexFilter::Nearest;
+            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
-    auto *data = taa.AllocNodeData<PassData>();
-    data->clean_tex = taa.AddTextureInput(frame_textures.color, Stg::FragmentShader);
-    data->depth_tex = taa.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
-    data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Stg::FragmentShader);
+            reconstructed_depth = data->reconstructed_depth =
+                clear_reconstructed.AddClearImageOutput("Reconstructed Prev. Depth", params);
+        }
 
-    { // Texture that holds resolved color
-        Ren::TexParams params;
-        params.w = view_state_.scr_res[0];
-        params.h = view_state_.scr_res[1];
-        params.format = Ren::eTexFormat::RGBA16F;
-        params.sampling.filter = Ren::eTexFilter::Bilinear;
-        params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+        clear_reconstructed.set_execute_cb([data](FgBuilder &builder) {
+            FgAllocTex &reconstructed_depth = builder.GetWriteTexture(data->reconstructed_depth);
 
-        resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", params);
-        data->output_history_tex = taa.AddColorOutput("Color History", params);
+            Ren::ClearImage(*reconstructed_depth.ref, {}, builder.ctx().current_cmd_buf());
+        });
     }
-    data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Stg::FragmentShader);
 
-    taa.set_execute_cb([this, data, static_accumulation](FgBuilder &builder) {
-        FgAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
-        FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
-        FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
-        FgAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
-        FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
-        FgAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
+    FgResRef dilated_depth, dilated_velocity;
+    { // Reconstruct previous depth
+        auto &reconstruct = fg_builder_.AddNode("RECONSTRUCT DEPTH");
 
-        Ren::RastState rast_state;
-        rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+        struct PassData {
+            FgResRef depth_tex;
+            FgResRef velocity_tex;
 
-        rast_state.viewport[2] = view_state_.act_res[0];
-        rast_state.viewport[3] = view_state_.act_res[1];
+            FgResRef out_reconstructed_depth_tex;
+            FgResRef out_dilated_depth_tex;
+            FgResRef out_dilated_velocity_tex;
+        };
 
-        { // Blit taa
-            const Ren::RenderTarget render_targets[] = {
-                {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
-                {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+        auto *data = reconstruct.AllocNodeData<PassData>();
+        data->depth_tex = reconstruct.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->velocity_tex = reconstruct.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+
+        data->out_reconstructed_depth_tex = reconstruct.AddStorageImageOutput(reconstructed_depth, Stg::ComputeShader);
+        { // Dilated current depth
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::R32F;
+            params.sampling.filter = Ren::eTexFilter::Nearest;
+            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+
+            dilated_depth = data->out_dilated_depth_tex =
+                reconstruct.AddStorageImageOutput("Dilated Depth", params, Stg::ComputeShader);
+        }
+        { // Dilated velocity
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RG16F;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+
+            dilated_velocity = data->out_dilated_velocity_tex =
+                reconstruct.AddStorageImageOutput("Dilated Velocity", params, Stg::ComputeShader);
+        }
+
+        reconstruct.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+
+            FgAllocTex &reconstructed_depth_tex = builder.GetWriteTexture(data->out_reconstructed_depth_tex);
+            FgAllocTex &dilated_depth_tex = builder.GetWriteTexture(data->out_dilated_depth_tex);
+            FgAllocTex &dilated_velocity_tex = builder.GetWriteTexture(data->out_dilated_velocity_tex);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::TexSampled, TempAA::CURR_NEAREST_TEX_SLOT, {*clean_tex.ref, *nearest_sampler_}},
-                {Ren::eBindTarget::TexSampled, TempAA::CURR_LINEAR_TEX_SLOT, *clean_tex.ref},
-                {Ren::eBindTarget::TexSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
-                {Ren::eBindTarget::TexSampled, TempAA::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
-                {Ren::eBindTarget::TexSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
+                {Ren::eBindTarget::TexSampled, ReconstructDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+                {Ren::eBindTarget::TexSampled, ReconstructDepth::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                {Ren::eBindTarget::ImageRW, ReconstructDepth::OUT_RECONSTRUCTED_DEPTH_IMG_SLOT,
+                 *reconstructed_depth_tex.ref},
+                {Ren::eBindTarget::ImageRW, ReconstructDepth::OUT_DILATED_DEPTH_IMG_SLOT, *dilated_depth_tex.ref},
+                {Ren::eBindTarget::ImageRW, ReconstructDepth::OUT_DILATED_VELOCITY_IMG_SLOT,
+                 *dilated_velocity_tex.ref}};
 
-            TempAA::Params uniform_params;
-            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
-            uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
-            uniform_params.significant_change =
-                Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
-            uniform_params.frame_index = float(view_state_.frame_index % 256);
-            if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
-                uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
-            } else {
-                uniform_params.mix_factor = 0.0f;
-            }
-            ++accumulated_frames_;
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.act_res[0] + ReconstructDepth::LOCAL_GROUP_SIZE_X - 1u) /
+                               ReconstructDepth::LOCAL_GROUP_SIZE_X,
+                           (view_state_.act_res[1] + ReconstructDepth::LOCAL_GROUP_SIZE_Y - 1u) /
+                               ReconstructDepth::LOCAL_GROUP_SIZE_Y,
+                           1u};
 
-            prim_draw_.DrawPrim(
-                PrimDraw::ePrim::Quad,
-                static_accumulation ? blit_taa_static_prog_ : blit_taa_prog_[settings.enable_motion_blur], {},
-                render_targets, rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(TempAA::Params), 0);
+            ReconstructDepth::Params uniform_params;
+            uniform_params.img_size = view_state_.act_res;
+            uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
+
+            DispatchCompute(*pi_reconstruct_depth_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    { // Prepare disocclusion
+        auto &prep_disocclusion = fg_builder_.AddNode("PREP DISOCCLUSION");
+
+        struct PassData {
+            FgResRef dilated_depth_tex;
+            FgResRef dilated_velocity_tex;
+            FgResRef reconstructed_depth_tex;
+            FgResRef velocity_tex;
+
+            FgResRef output_tex;
+        };
+
+        auto *data = prep_disocclusion.AllocNodeData<PassData>();
+        data->dilated_depth_tex = prep_disocclusion.AddTextureInput(dilated_depth, Stg::ComputeShader);
+        data->dilated_velocity_tex = prep_disocclusion.AddTextureInput(dilated_velocity, Stg::ComputeShader);
+        data->reconstructed_depth_tex = prep_disocclusion.AddTextureInput(reconstructed_depth, Stg::ComputeShader);
+        data->velocity_tex = prep_disocclusion.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+
+        { // Texture that holds disocclusion
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RG8;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+
+            frame_textures.disocclusion_mask = data->output_tex =
+                prep_disocclusion.AddStorageImageOutput("Disocclusion Mask", params, Stg::ComputeShader);
         }
-    });
+
+        prep_disocclusion.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &dilated_depth_tex = builder.GetReadTexture(data->dilated_depth_tex);
+            FgAllocTex &dilated_velocity_tex = builder.GetReadTexture(data->dilated_velocity_tex);
+            FgAllocTex &reconstructed_depth_tex = builder.GetReadTexture(data->reconstructed_depth_tex);
+            FgAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::TexSampled, PrepareDisocclusion::DILATED_DEPTH_TEX_SLOT, *dilated_depth_tex.ref},
+                {Ren::eBindTarget::TexSampled, PrepareDisocclusion::DILATED_VELOCITY_TEX_SLOT,
+                 *dilated_velocity_tex.ref},
+                {Ren::eBindTarget::TexSampled, PrepareDisocclusion::RECONSTRUCTED_DEPTH_TEX_SLOT,
+                 *reconstructed_depth_tex.ref},
+                {Ren::eBindTarget::TexSampled, PrepareDisocclusion::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                {Ren::eBindTarget::ImageRW, PrepareDisocclusion::OUT_IMG_SLOT, *output_tex.ref}};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.act_res[0] + PrepareDisocclusion::LOCAL_GROUP_SIZE_X - 1u) /
+                               PrepareDisocclusion::LOCAL_GROUP_SIZE_X,
+                           (view_state_.act_res[1] + PrepareDisocclusion::LOCAL_GROUP_SIZE_Y - 1u) /
+                               PrepareDisocclusion::LOCAL_GROUP_SIZE_Y,
+                           1u};
+
+            PrepareDisocclusion::Params uniform_params;
+            uniform_params.img_size = view_state_.act_res;
+            uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
+            uniform_params.clip_info = view_state_.clip_info;
+            uniform_params.frustum_info = view_state_.frustum_info;
+
+            DispatchCompute(*pi_prepare_disocclusion_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    { // Main TAA pass
+        auto &taa = fg_builder_.AddNode("TAA");
+
+        struct PassData {
+            FgResRef color_tex;
+            FgResRef history_tex;
+            FgResRef dilated_depth_tex;
+            FgResRef dilated_velocity_tex;
+            FgResRef disocclusion_mask_tex;
+
+            FgResRef output_tex;
+            FgResRef output_history_tex;
+        };
+
+        auto *data = taa.AllocNodeData<PassData>();
+        data->color_tex = taa.AddTextureInput(frame_textures.color, Stg::FragmentShader);
+        data->dilated_depth_tex = taa.AddTextureInput(dilated_depth, Stg::FragmentShader);
+        data->dilated_velocity_tex = taa.AddTextureInput(dilated_velocity, Stg::FragmentShader);
+        data->disocclusion_mask_tex = taa.AddTextureInput(frame_textures.disocclusion_mask, Stg::FragmentShader);
+
+        { // Texture that holds resolved color
+            Ren::TexParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RGBA16F;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
+
+            resolved_color = data->output_tex = taa.AddColorOutput("Resolved Color", params);
+            data->output_history_tex = taa.AddColorOutput("Color History", params);
+        }
+        data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Stg::FragmentShader);
+
+        taa.set_execute_cb([this, data, static_accumulation](FgBuilder &builder) {
+            FgAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
+            FgAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
+            FgAllocTex &dilated_depth_tex = builder.GetReadTexture(data->dilated_depth_tex);
+            FgAllocTex &dilated_velocity_tex = builder.GetReadTexture(data->dilated_velocity_tex);
+            FgAllocTex &disocclusion_mask_tex = builder.GetReadTexture(data->disocclusion_mask_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            FgAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0];
+            rast_state.viewport[3] = view_state_.act_res[1];
+
+            { // Blit taa
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                    {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                const Ren::Binding bindings[] = {
+                    {Ren::eBindTarget::TexSampled, TempAA::CURR_NEAREST_TEX_SLOT, {*color_tex.ref, *nearest_sampler_}},
+                    {Ren::eBindTarget::TexSampled, TempAA::CURR_LINEAR_TEX_SLOT, *color_tex.ref},
+                    {Ren::eBindTarget::TexSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
+                    {Ren::eBindTarget::TexSampled, TempAA::DILATED_DEPTH_TEX_SLOT, *dilated_depth_tex.ref},
+                    {Ren::eBindTarget::TexSampled, TempAA::DILATED_VELOCITY_TEX_SLOT, *dilated_velocity_tex.ref},
+                    {Ren::eBindTarget::TexSampled, TempAA::DISOCCLUSION_MASK_TEX_SLOT, *disocclusion_mask_tex.ref}};
+
+                TempAA::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
+                uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
+                uniform_params.significant_change =
+                    Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
+                uniform_params.frame_index = float(view_state_.frame_index % 256);
+                if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
+                    uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
+                } else {
+                    uniform_params.mix_factor = 0.0f;
+                }
+                ++accumulated_frames_;
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
+                                    static_accumulation ? blit_taa_static_prog_
+                                                        : blit_taa_prog_[settings.enable_motion_blur],
+                                    {}, render_targets, rast_state, builder.rast_state(), bindings, &uniform_params,
+                                    sizeof(TempAA::Params), 0);
+            }
+        });
+    }
 }
 
 void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex,

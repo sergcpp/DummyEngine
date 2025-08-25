@@ -1491,8 +1491,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         const bool use_taa = list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe;
         if (use_taa) {
-            AddTaaPass(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static,
-                       resolved_color);
+            AddTaaPasses(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static,
+                         resolved_color);
         } else {
             resolved_color = frame_textures.color;
         }
@@ -1540,6 +1540,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         if (list.render_settings.debug_motion) {
             AddDebugVelocityPass(frame_textures.velocity, resolved_color);
+            bloom_tex = {};
+        }
+        if (list.render_settings.debug_disocclusion) {
+            resolved_color = frame_textures.disocclusion_mask;
             bloom_tex = {};
         }
 

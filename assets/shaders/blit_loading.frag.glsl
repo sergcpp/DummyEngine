@@ -15,9 +15,8 @@ layout(location = 0) out vec4 g_out_color;
 
 void main() {
     ivec2 uvs_px = ivec2(g_vtx_uvs);
-    vec2 texel_size = vec2(1.0) / g_params.tex_size;
-    vec2 uv = -1.0 + 2.0 * g_vtx_uvs / g_params.tex_size;
-    uv.x *= g_params.tex_size.x / g_params.tex_size.y;
+    vec2 uv = -1.0 + 2.0 * g_vtx_uvs * g_params.texel_size;
+    uv.x *= g_params.texel_size.y / g_params.texel_size.x;
 
     uv *= 0.5;
 
@@ -31,7 +30,7 @@ void main() {
     for(int i = 0; i < 128; ++i) {
         float pha =      sin(float(i)*546.13+1.0)*0.5 + 0.5;
         float siz = pow( sin(float(i)*651.74+5.0)*0.5 + 0.5, 4.0 );
-        float pox =      sin(float(i)*321.55+4.1) * g_params.tex_size.x / g_params.tex_size.y;
+        float pox =      sin(float(i)*321.55+4.1) * g_params.texel_size.y / g_params.texel_size.x;
         float rad = 0.1+0.5*siz+sin(pha+siz)/4.0;
         vec2  pos = vec2( pox+sin(iTime/15.+pha+siz), -1.0-rad + (2.0+2.0*rad)*mod(pha+0.3*(iTime/7.)*(0.2+0.8*siz),1.0));
         float dis = length( uv - pos );

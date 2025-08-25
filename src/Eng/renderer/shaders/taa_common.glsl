@@ -70,8 +70,8 @@ vec3 FindClosestFragment_3x3(sampler2D dtex, const vec2 uv, const vec2 texel_siz
 }
 
 // Taken from http://vec3.ca/bicubic-filtering-in-fewer-taps/
-vec4 SampleTextureCatmullRom(sampler2D tex, vec2 uv, vec2 texSize) {
-    const vec2 samplePos = uv * texSize;
+vec4 SampleTextureCatmullRom(sampler2D tex, vec2 uv, vec2 texel_size) {
+    const vec2 samplePos = uv / texel_size;
     const vec2 texPos1 = floor(samplePos - 0.5) + 0.5;
 
     const vec2 f = samplePos - texPos1;
@@ -88,9 +88,9 @@ vec4 SampleTextureCatmullRom(sampler2D tex, vec2 uv, vec2 texSize) {
     vec2 texPos3 = texPos1 + 2.0;
     vec2 texPos12 = texPos1 + offset12;
 
-    texPos0 /= texSize;
-    texPos3 /= texSize;
-    texPos12 /= texSize;
+    texPos0 *= texel_size;
+    texPos3 *= texel_size;
+    texPos12 *= texel_size;
 
     vec4 result = vec4(0.0);
 

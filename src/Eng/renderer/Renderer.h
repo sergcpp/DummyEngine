@@ -211,6 +211,8 @@ class Renderer {
     // Volumetrics
     Ren::PipelineRef pi_sky_upsample_;
     Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_;
+    // TAA
+    Ren::PipelineRef pi_reconstruct_depth_, pi_prepare_disocclusion_;
     // Debug
     Ren::PipelineRef pi_debug_velocity_;
 
@@ -236,6 +238,7 @@ class Renderer {
         FgResRef depth, opaque_depth;
         Ren::TexParams velocity_params;
         FgResRef velocity;
+        FgResRef disocclusion_mask;
 
         FgResRef envmap;
         FgResRef shadow_depth, shadow_color;
@@ -263,8 +266,8 @@ class Renderer {
 
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                    FgResRef &inout_velocity_tex);
-    void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
-                    FgResRef &resolved_color);
+    void AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
+                      FgResRef &resolved_color);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
     // GI Cache

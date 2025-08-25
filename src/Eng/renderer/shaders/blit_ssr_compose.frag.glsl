@@ -104,5 +104,7 @@ void main() {
         final_color += 0.25 * (kS * brdf.x + brdf.y) * refl_color;
     }*/
 
-    g_out_color = vec4(final_color /* (kS * brdf.x + brdf.y)*/, 1.0);
+    const vec3 tonemapped = final_color / (final_color + 1.0);
+
+    g_out_color = vec4(final_color /* (kS * brdf.x + brdf.y)*/, lum(tonemapped) * (1.0 - roughness));
 }
