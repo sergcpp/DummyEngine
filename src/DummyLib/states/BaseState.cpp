@@ -1031,9 +1031,11 @@ void BaseState::Draw() {
                     renderer_->reset_accumulation();
                 }
                 if (std::signbit(sun_dir_[1]) != std::signbit(prev_sun_dir_[1])) {
+                    log_->Info("Clearing GI cache...");
                     scene_manager_->ClearGICache(ren_ctx_->current_cmd_buf());
                 }
-                ++scene_manager_->scene_data().env.generation;
+                // Force full update
+                scene_manager_->scene_data().env.generation = 0xfffffffe;
                 prev_sun_dir_ = scene_manager_->scene_data().env.sun_dir;
             }
 

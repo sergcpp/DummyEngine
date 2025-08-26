@@ -34,6 +34,12 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
         return;
     }
 
+    if (view_state_->env_generation == 0xffffffff) {
+        // full update
+        generation_ = generation_in_progress_ = 0xffffffff;
+        last_updated_faceq_ = 23;
+    }
+
     if (last_updated_faceq_ == 23) {
         last_updated_faceq_ = -1;
         generation_in_progress_ = view_state_->env_generation;
