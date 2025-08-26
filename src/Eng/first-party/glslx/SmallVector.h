@@ -67,16 +67,11 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
             capacity_ = 0;
         }
 
-        reserve(rhs.capacity_ & CapacityMask);
+        reserve(rhs.size_);
 
-        size_ = rhs.size_;
-
-        if (rhs.size_) {
-            T *src = rhs.begin_ + rhs.size_ - 1;
-            T *dst = begin_ + size_ - 1;
-            do {
-                new (dst--) T(*src--);
-            } while (src >= rhs.begin_);
+        while (size_ < rhs.size_) {
+            new (begin_ + size_) T(*(rhs.begin_ + size_));
+            ++size_;
         }
 
         return (*this);
@@ -101,14 +96,12 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
             size_ = std::exchange(rhs.size_, 0);
             capacity_ = std::exchange(rhs.capacity_, 0);
         } else {
-            reserve(rhs.capacity_ & CapacityMask);
+            reserve(rhs.size_);
 
-            size_ = rhs.size_;
-
-            T *dst = begin_ + size_ - 1;
             while (rhs.size_) {
-                new (dst--) T(std::move(*(rhs.begin_ + --rhs.size_)));
-                (rhs.begin_ + rhs.size_)->~T();
+                new (begin_ + size_) T(std::move(*(rhs.begin_ + size_)));
+                ++size_;
+                --rhs.size_;
             }
         }
 
@@ -378,7 +371,7 @@ class SmallVector : public SmallVectorImpl<T, Allocator> {
   public:
     SmallVector(const Allocator &alloc = Allocator()) // NOLINT
         : SmallVectorImpl<T, Allocator>((T *)buffer_, (T *)buffer_, N, alloc) {}
-    SmallVector(const uint32_t size, const T &val = T(), const Allocator &alloc = Allocator()) // NOLINT
+    explicit SmallVector(const uint32_t size, const T &val = T(), const Allocator &alloc = Allocator()) // NOLINT
         : SmallVectorImpl<T, Allocator>((T *)buffer_, (T *)buffer_, N, alloc) {
         SmallVectorImpl<T, Allocator>::resize(size, val);
     }

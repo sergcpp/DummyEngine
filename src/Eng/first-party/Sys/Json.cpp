@@ -115,6 +115,13 @@ template <typename Alloc> const Sys::JsElementT<Alloc> &Sys::JsArrayT<Alloc>::op
     return *it;
 }
 
+template <typename Alloc> Sys::JsElementT<Alloc> &Sys::JsArrayT<Alloc>::at(const size_t i) {
+    if (i >= Size()) {
+        throw std::out_of_range("Index out of range!");
+    }
+    return operator[](i);
+}
+
 template <typename Alloc> const Sys::JsElementT<Alloc> &Sys::JsArrayT<Alloc>::at(const size_t i) const {
     if (i >= Size()) {
         throw std::out_of_range("Index out of range!");

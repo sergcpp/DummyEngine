@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <iosfwd>
 #include <string>
 #include <utility>
@@ -8,13 +9,9 @@
 #include "PoolAlloc.h"
 
 namespace Sys {
-template <size_t arg1, size_t... args> struct _compile_time_max;
-template <size_t arg> struct _compile_time_max<arg> {
-    static const size_t value = arg;
-};
-template <size_t arg1, size_t arg2, size_t... args> struct _compile_time_max<arg1, arg2, args...> {
-    static const size_t value =
-        arg1 >= arg2 ? _compile_time_max<arg1, args...>::value : _compile_time_max<arg2, args...>::value;
+template <size_t... args> struct _compile_time_max {
+    static_assert(sizeof...(args) > 0, "Cannot get max of empty list");
+    static constexpr size_t value = std::max({args...});
 };
 
 enum class JsType { Invalid = -1, Literal, Number, String, Array, Object };
@@ -110,6 +107,7 @@ template <typename Alloc> struct JsArrayT {
     JsElementT<Alloc> &operator[](size_t i);
     const JsElementT<Alloc> &operator[](size_t i) const;
 
+    [[nodiscard]] JsElementT<Alloc> &at(size_t i);
     [[nodiscard]] const JsElementT<Alloc> &at(size_t i) const;
 
     bool operator==(const JsArrayT &rhs) const;
