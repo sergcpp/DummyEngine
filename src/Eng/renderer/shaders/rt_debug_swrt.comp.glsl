@@ -63,7 +63,7 @@ layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
     layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 #endif
 
-layout(binding = OUT_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_image;
+layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_image;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 

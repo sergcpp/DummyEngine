@@ -13,7 +13,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
-layout(binding = OUT_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_image;
+layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2D g_out_image;
 
 layout(location = 0) rayPayloadEXT RayPayload g_pld;
 
