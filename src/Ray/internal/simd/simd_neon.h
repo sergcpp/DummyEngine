@@ -568,8 +568,8 @@ template <> class fixed_size_simd<int, 4> {
         vst1q_s32(comp, vec_);
         vst1q_s32(mask_comp, mask.vec_);
         UNROLLED_FOR(i, 4, { res |= (comp[i] & mask_comp[i]) != 0; })
-#endif
         return res == 0;
+#endif
     }
 
     force_inline bool not_all_zeros() const { return !all_zeros(); }
@@ -664,7 +664,7 @@ template <> class fixed_size_simd<int, 4> {
     }
 
     friend fixed_size_simd<int, 4> vectorcall operator<<(const fixed_size_simd<int, 4> v1, const int v2) {
-        return vshlq_n_s32(v1.vec_, v2);
+        return vshlq_s32(v1.vec_, vdupq_n_s32(v2));
     }
 
     friend force_inline fixed_size_simd<int, 4> vectorcall srai(const fixed_size_simd<int, 4> v1, const int v2) {
@@ -874,8 +874,8 @@ template <> class fixed_size_simd<unsigned, 4> {
         vst1q_u32(comp, vec_);
         vst1q_u32(mask_comp, mask.vec_);
         UNROLLED_FOR(i, 4, { res |= (comp[i] & mask_comp[i]) != 0; })
-#endif
         return res == 0;
+#endif
     }
 
     force_inline bool not_all_zeros() const { return !all_zeros(); }
@@ -970,7 +970,7 @@ template <> class fixed_size_simd<unsigned, 4> {
 
     friend fixed_size_simd<unsigned, 4> vectorcall operator<<(const fixed_size_simd<unsigned, 4> v1,
                                                               const unsigned v2) {
-        return vshlq_n_u32(v1.vec_, v2);
+        return vshlq_u32(v1.vec_, vdupq_n_u32(v2));
     }
 
     friend bool vectorcall is_equal(const fixed_size_simd<unsigned, 4> v1, const fixed_size_simd<unsigned, 4> v2) {
