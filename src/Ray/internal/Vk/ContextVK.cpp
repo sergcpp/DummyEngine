@@ -34,6 +34,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(const VkDebugReportFlagsEXT f
     bool ignore = g_ignore_optick_errors && (location == 0x45e90123 || location == 0xffffffff9cacd67a);
     ignore |= (location == 0x000000004dae5635); // layout warning when blitting within the same image
     ignore |= (location == 0x00000000a5625282); // cooperative matrix type must be A Type
+    ignore |= (location == 0x0000000024b5c69f); // Forcing fragmentStoresAndAtomics to VK_TRUE (internal bs)
     if (!ignore) {
         ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
     }
@@ -215,7 +216,8 @@ bool Ray::Vk::Context::Init(ILog *log, const VulkanDevice &vk_device, const Vulk
 
     CheckVkPhysicalDeviceFeatures(api_, physical_device_, device_properties_, mem_properties_, coop_mat_properties_,
                                   graphics_family_index_, raytracing_supported_, ray_query_supported_, fp16_supported_,
-                                  int64_supported_, int64_atomics_supported_, pageable_memory_supported_);
+                                  int64_supported_, int64_atomics_supported_, pageable_memory_supported_,
+                                  subgroup_size_control_supported_);
 
     // mask out unsupported stages
     if (!raytracing_supported_) {
@@ -227,7 +229,8 @@ bool Ray::Vk::Context::Init(ILog *log, const VulkanDevice &vk_device, const Vulk
 
     if (!external_ && !InitVkDevice(api_, device_, physical_device_, graphics_family_index_, raytracing_supported_,
                                     ray_query_supported_, fp16_supported_, int64_supported_, int64_atomics_supported_,
-                                    coop_mat_properties_.MSize != 0, pageable_memory_supported_, log)) {
+                                    coop_mat_properties_.MSize != 0, pageable_memory_supported_,
+                                    subgroup_size_control_supported_, log)) {
         return false;
     }
 
@@ -240,6 +243,18 @@ bool Ray::Vk::Context::Init(ILog *log, const VulkanDevice &vk_device, const Vulk
         (PFN_vkGetBufferDeviceAddressKHR)api_.vkGetDeviceProcAddr(device_, "vkGetBufferDeviceAddressKHR");
     if (!dev_vkGetBufferDeviceAddressKHR) {
         raytracing_supported_ = ray_query_supported_ = false;
+    }
+
+    if (subgroup_size_control_supported_) {
+        VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroup_size_control_features = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT};
+
+        VkPhysicalDeviceFeatures2 feat2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+        feat2.pNext = &subgroup_size_control_features;
+
+        api_.vkGetPhysicalDeviceFeatures2KHR(physical_device_, &feat2);
+
+        subgroup_size_control_supported_ &= (subgroup_size_control_features.subgroupSizeControl == VK_TRUE);
     }
 
     if (!InitCommandBuffers(api_, command_pool_, temp_command_pool_, draw_cmd_bufs_, render_finished_semaphores_,
@@ -564,7 +579,7 @@ void Ray::Vk::Context::CheckVkPhysicalDeviceFeatures(
     VkPhysicalDeviceMemoryProperties &out_mem_properties, VkCooperativeMatrixPropertiesKHR &out_coop_mat_properties,
     uint32_t &out_graphics_family_index, bool &out_raytracing_supported, bool &out_ray_query_supported,
     bool &out_shader_fp16_supported, bool &out_shader_int64_supported, bool &out_int64_atomics_supported,
-    bool &out_pageable_memory_supported) {
+    bool &out_pageable_memory_supported, bool &out_subgroup_size_control_supported) {
     api.vkGetPhysicalDeviceProperties(physical_device, &out_device_properties);
     api.vkGetPhysicalDeviceMemoryProperties(physical_device, &out_mem_properties);
 
@@ -590,7 +605,7 @@ void Ray::Vk::Context::CheckVkPhysicalDeviceFeatures(
     bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false,
          shader_fp16_supported = false, shader_int64_supported = false, storage_fp16_supported = false,
          shader_buf_int64_atomics_supported = false, memory_priority_supported = false,
-         pageable_memory_supported = false;
+         pageable_memory_supported = false, subgroup_size_control_supported = false;
 
     VkCooperativeMatrixPropertiesKHR coop_mat_properties = {};
 
@@ -623,6 +638,8 @@ void Ray::Vk::Context::CheckVkPhysicalDeviceFeatures(
                 memory_priority_supported = true;
             } else if (strcmp(ext.extensionName, VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME) == 0) {
                 pageable_memory_supported = true;
+            } else if (strcmp(ext.extensionName, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME) == 0) {
+                subgroup_size_control_supported = true;
             }
         }
 
@@ -701,13 +718,15 @@ void Ray::Vk::Context::CheckVkPhysicalDeviceFeatures(
     out_int64_atomics_supported = shader_buf_int64_atomics_supported;
     out_coop_mat_properties = coop_mat_properties;
     out_pageable_memory_supported = (memory_priority_supported && pageable_memory_supported);
+    out_subgroup_size_control_supported = subgroup_size_control_supported;
 }
 
 bool Ray::Vk::Context::InitVkDevice(const Api &api, VkDevice &device, VkPhysicalDevice physical_device,
                                     const uint32_t graphics_family_index, const bool enable_raytracing,
                                     const bool enable_ray_query, const bool enable_fp16, const bool enable_int64,
                                     const bool enable_int64_atomics, const bool enable_coop_matrix,
-                                    const bool enable_pageable_memory, ILog *log) {
+                                    const bool enable_pageable_memory, const bool enable_subgroup_size_control,
+                                    ILog *log) {
     VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
     const float queue_priorities[] = {1.0f};
 
@@ -762,6 +781,10 @@ bool Ray::Vk::Context::InitVkDevice(const Api &api, VkDevice &device, VkPhysical
     if (enable_pageable_memory) {
         device_extensions.push_back(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
         device_extensions.push_back(VK_EXT_PAGEABLE_DEVICE_LOCAL_MEMORY_EXTENSION_NAME);
+    }
+
+    if (enable_subgroup_size_control) {
+        device_extensions.push_back(VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME);
     }
 
     device_info.enabledExtensionCount = device_extensions.size();
@@ -865,6 +888,14 @@ bool Ray::Vk::Context::InitVkDevice(const Api &api, VkDevice &device, VkPhysical
     if (enable_pageable_memory) {
         (*pp_next) = &pageable_mem_features;
         pp_next = &pageable_mem_features.pNext;
+    }
+
+    VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroup_size_control_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT};
+    subgroup_size_control_features.subgroupSizeControl = VK_TRUE;
+    if (enable_subgroup_size_control) {
+        (*pp_next) = &subgroup_size_control_features;
+        pp_next = &subgroup_size_control_features.pNext;
     }
 
 #if defined(VK_USE_PLATFORM_MACOS_MVK)

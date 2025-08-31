@@ -47,6 +47,8 @@ class Context {
 
     bool subgroup_supported_ = false;
 
+    bool subgroup_size_control_supported_ = false;
+
     bool pageable_memory_supported_ = false;
 
     uint32_t supported_stages_mask_ = 0xffffffff;
@@ -93,6 +95,7 @@ class Context {
     bool int64_supported() const { return int64_supported_; }
     bool int64_atomics_supported() const { return int64_atomics_supported_; }
     bool subgroup_supported() const { return subgroup_supported_; }
+    bool subgroup_size_control_supported() const { return subgroup_size_control_supported_; }
 
     uint32_t supported_stages_mask() const { return supported_stages_mask_; };
     bool image_blit_supported() const { return true; }
@@ -156,11 +159,11 @@ class Context {
                                               uint32_t &graphics_family_index, bool &out_raytracing_supported,
                                               bool &out_ray_query_supported, bool &out_shader_fp16_supported,
                                               bool &out_shader_int64_supported, bool &out_int64_atomics_supported,
-                                              bool &out_pageable_memory_supported);
+                                              bool &out_pageable_memory_supported, bool &out_subgroup_size_control_supported);
     static bool InitVkDevice(const Api &api, VkDevice &device, VkPhysicalDevice physical_device,
                              uint32_t graphics_family_index, bool enable_raytracing, bool enable_ray_query,
                              bool enable_fp16, bool enable_int64, bool enable_int64_atomics, bool enable_coop_matrix,
-                             bool enable_pageable_memory, ILog *log);
+                             bool enable_pageable_memory, bool enable_subgroup_size_control, ILog *log);
     static bool InitCommandBuffers(const Api &api, VkCommandPool &command_pool, VkCommandPool &temp_command_pool,
                                    VkCommandBuffer draw_cmd_bufs[MaxFramesInFlight],
                                    VkSemaphore render_finished_semaphores[MaxFramesInFlight],

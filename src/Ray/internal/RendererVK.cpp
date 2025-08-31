@@ -1947,6 +1947,7 @@ AGAIN:
                            internal_shaders_output_convolution_32_3_img_coop_16x16x16_CF16_comp_spv,
                            internal_shaders_output_convolution_32_3_img_coop_8x8x16_CF32_comp_spv),
              eShaderType::Comp, false}};
+    const int subgroup_size = use_coop_matrix_ ? 32 : -1;
     parallel_for(0, int(shaders_to_init.size()), [&](const int i) {
         std::get<6>(shaders_to_init[i]) =
             std::get<0>(shaders_to_init[i])
@@ -1954,7 +1955,7 @@ AGAIN:
                       std::get<5>(shaders_to_init[i]), log);
         std::get<1>(shaders_to_init[i]) =
             Program{std::get<3>(shaders_to_init[i]), ctx_.get(), &std::get<0>(shaders_to_init[i]), log};
-        std::get<2>(shaders_to_init[i]).Init(ctx_.get(), &std::get<1>(shaders_to_init[i]), log);
+        std::get<2>(shaders_to_init[i]).Init(ctx_.get(), &std::get<1>(shaders_to_init[i]), log, subgroup_size);
     });
 
     bool result = true;

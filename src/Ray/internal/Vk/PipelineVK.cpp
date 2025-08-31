@@ -342,12 +342,16 @@ bool Ray::Vk::Pipeline::Init(Context *ctx, const RastState &rast_state, Program 
                 subpass_index, log);
 }
 
-bool Ray::Vk::Pipeline::Init(Context *ctx, Program *prog, ILog *log) {
+bool Ray::Vk::Pipeline::Init(Context *ctx, Program *prog, ILog *log, const int subgroup_size) {
     Destroy();
 
     ePipelineType type = ePipelineType::Undefined;
 
     SmallVector<VkPipelineShaderStageCreateInfo, int(eShaderType::_Count)> shader_stage_create_info;
+    VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroup_size_info = {
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
+    subgroup_size_info.requiredSubgroupSize = subgroup_size == -1 ? 0 : subgroup_size;
+
     int hit_group_index = -1;
     for (int i = 0; i < int(eShaderType::_Count); ++i) {
         const Shader *sh = prog->shader(eShaderType(i));
@@ -415,6 +419,10 @@ bool Ray::Vk::Pipeline::Init(Context *ctx, Program *prog, ILog *log) {
         stage_info.module = prog->shader(eShaderType(i))->module();
         stage_info.pName = "main";
         stage_info.pSpecializationInfo = nullptr;
+
+        if (ctx->subgroup_size_control_supported() && subgroup_size != -1) {
+            stage_info.pNext = &subgroup_size_info;
+        }
     }
 
     if (type == ePipelineType::Undefined) {
