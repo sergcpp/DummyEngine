@@ -1425,6 +1425,30 @@ void test_complex_mat5(const char *arch_list[], std::string_view preferred_devic
                       PixThres, eDenoiseMethod::None, false, textures);
 }
 
+void test_complex_mat5_emissive(const char *arch_list[], std::string_view preferred_device) {
+    const int SampleCount = 78;
+    const int PixThres = 21200;
+
+    Ray::principled_mat_desc_t metal_mat_desc;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
+    metal_mat_desc.roughness = 1.0f;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
+    metal_mat_desc.metallic = 1.0f;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
+    metal_mat_desc.emission_color[0] = metal_mat_desc.emission_color[1] = metal_mat_desc.emission_color[2] = 10.0f;
+    metal_mat_desc.emission_texture = Ray::TextureHandle{4};
+    metal_mat_desc.importance_sample = true;
+
+    const char *textures[] = {
+        "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
+        "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga",
+        "test_data/textures/Fence007A_2K_Opacity.tga"};
+
+    run_material_test(arch_list, preferred_device, "complex_mat5_emissive", metal_mat_desc, SampleCount,
+                      16.8, PixThres, eDenoiseMethod::None, false, textures, eTestScene::Standard_NoLight);
+}
+
 void test_complex_mat5_clipped(const char *arch_list[], std::string_view preferred_device) {
     const int SampleCount = 37;
     const int PixThres = 5220;

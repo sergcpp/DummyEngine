@@ -223,6 +223,43 @@ void load_needed_textures(Ray::SceneBase &scene, Ray::principled_mat_desc_t &mat
 
         mat_desc.alpha_texture = scene.AddTexture(tex_desc);
     }
+
+    if (mat_desc.emission_texture != Ray::InvalidTextureHandle && textures[mat_desc.emission_texture._index]) {
+        int img_w = 0, img_h = 0, mips = 1;
+        Ray::eTextureFormat format = Ray::eTextureFormat::RGB888;
+        Ray::eTextureConvention convention = Ray::eTextureConvention::OGL;
+        std::vector<uint8_t> img_data;
+
+        if (strstr(textures[mat_desc.emission_texture._index], ".tga")) {
+            img_data = LoadTGA(textures[mat_desc.emission_texture._index], true /* flip_y */, img_w, img_h);
+            require(!img_data.empty());
+
+            // drop alpha channel
+            for (int i = 0; i < img_w * img_h; ++i) {
+                img_data[3 * i + 0] = img_data[4 * i + 0];
+                img_data[3 * i + 1] = img_data[4 * i + 1];
+                img_data[3 * i + 2] = img_data[4 * i + 2];
+            }
+        } else if (strstr(textures[mat_desc.emission_texture._index], ".dds")) {
+            int channels = 0;
+            img_data = LoadDDS(textures[mat_desc.emission_texture._index], img_w, img_h, mips, channels);
+            require_fatal(channels == 3);
+            format = Ray::eTextureFormat::BC1;
+            convention = Ray::eTextureConvention::DX;
+        }
+
+        Ray::tex_desc_t tex_desc;
+        tex_desc.format = format;
+        tex_desc.convention = convention;
+        tex_desc.mips_count = mips;
+        tex_desc.data = img_data;
+        tex_desc.w = img_w;
+        tex_desc.h = img_h;
+        tex_desc.generate_mipmaps = true;
+        tex_desc.is_srgb = true;
+
+        mat_desc.emission_texture = scene.AddTexture(tex_desc);
+    }
 }
 
 template <typename MatDesc>
