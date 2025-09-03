@@ -184,6 +184,11 @@ void main() {
     litem.col_and_type.xyz *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
 #endif
 
+    if (hsum(litem.col_and_type.xyz) < FLT_EPS) {
+        imageStore(g_out_specular_img, icoord, vec4(0.0));
+        return;
+    }
+
     float ls_dist;
     const vec3 L = normalize_len(lp - P, ls_dist);
 

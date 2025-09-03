@@ -1324,6 +1324,9 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
         ls.ray_flags = LIGHT_RAY_VISIBILITY(l);
     }
 
+    if (dot(ls.col, vec3(1.0)) < FLT_EPS) {
+        ls.pdf = 0;
+    }
     ls.pdf /= factor;
 }
 
