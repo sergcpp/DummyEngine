@@ -116,7 +116,7 @@ void test_complex_mat6_dir_light(const char *arch_list[], std::string_view prefe
 void test_complex_mat6_hdri_light(const char *arch_list[], std::string_view preferred_device);
 void test_complex_mat7_refractive(const char *arch_list[], std::string_view preferred_device);
 void test_complex_mat7_principled(const char *arch_list[], std::string_view preferred_device);
-void assemble_material_test_images(const char *arch_list[]);
+void assemble_shading_test_images(const char *arch_list[]);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
@@ -555,7 +555,7 @@ int main(int argc, char *argv[]) {
 
     const double test_duration_m = duration<double>(high_resolution_clock::now() - t1).count() / 60.0;
 
-    assemble_material_test_images(arch_list);
+    assemble_shading_test_images(arch_list);
 
     printf("FINISHED ALL TESTS in %.2f minutes\n", test_duration_m);
 

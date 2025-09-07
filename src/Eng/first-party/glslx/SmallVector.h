@@ -39,7 +39,7 @@ template <typename T, typename Allocator = aligned_allocator<T, alignof(T)>> cla
             return;
         }
 
-        uint32_t new_capacity = cur_capacity;
+        uint32_t new_capacity = std::max(cur_capacity, 1u);
         while (new_capacity < req_capacity) {
             new_capacity *= 2;
         }

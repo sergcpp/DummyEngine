@@ -147,7 +147,7 @@ std::vector<uint8_t> LoadTGA(const char file_name[], bool flip_y, int &w, int &h
             tex_data2[4 * i + 2] = tex_data[3 * i + 2];
             tex_data2[4 * i + 3] = 255;
         }
-        tex_data = tex_data2;
+        tex_data = std::move(tex_data2);
     }
 
     for (int y = 0; y < (h / 2) && flip_y; y++) {
