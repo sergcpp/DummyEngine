@@ -19,6 +19,7 @@
 #include "shaders/blit_gauss_interface.h"
 #include "shaders/blit_static_vel_interface.h"
 #include "shaders/blit_taa_interface.h"
+#include "shaders/debug_gbuffer_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
 #include "shaders/prepare_disocclusion_interface.h"
@@ -159,6 +160,10 @@ void Eng::Renderer::InitPipelines() {
 
     // Debugging
     pi_debug_velocity_ = sh_.LoadPipeline("internal/debug_velocity.comp.glsl");
+    pi_debug_gbuffer_[0] = sh_.LoadPipeline("internal/debug_gbuffer@DEPTH.comp.glsl");
+    pi_debug_gbuffer_[1] = sh_.LoadPipeline("internal/debug_gbuffer@NORMALS.comp.glsl");
+    pi_debug_gbuffer_[2] = sh_.LoadPipeline("internal/debug_gbuffer@ROUGHNESS.comp.glsl");
+    pi_debug_gbuffer_[3] = sh_.LoadPipeline("internal/debug_gbuffer@METALLIC.comp.glsl");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1198,7 +1203,7 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
     });
 }
 
-void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &output_tex) {
+Eng::FgResRef Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity) {
     auto &debug_motion = fg_builder_.AddNode("DEBUG MOTION");
 
     struct PassData {
@@ -1209,6 +1214,7 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
     auto *data = debug_motion.AllocNodeData<PassData>();
     data->in_velocity_tex = debug_motion.AddTextureInput(velocity, Ren::eStage::ComputeShader);
 
+    FgResRef output_tex;
     { // Output texture
         Ren::TexParams params;
         params.w = view_state_.scr_res[0];
@@ -1239,4 +1245,64 @@ void Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity, FgResRef &outp
         DispatchCompute(*pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                         ctx_.default_descr_alloc(), ctx_.log());
     });
+
+    return output_tex;
+}
+
+Eng::FgResRef Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame_textures, const int pi_index) {
+    auto &debug_gbuffer = fg_builder_.AddNode("DEBUG GBUFFER");
+
+    struct PassData {
+        FgResRef in_depth_tex;
+        FgResRef in_albedo_tex;
+        FgResRef in_normals_tex;
+        FgResRef in_specular_tex;
+        FgResRef out_color_tex;
+    };
+
+    auto *data = debug_gbuffer.AllocNodeData<PassData>();
+    data->in_depth_tex = debug_gbuffer.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
+    data->in_albedo_tex = debug_gbuffer.AddTextureInput(frame_textures.albedo, Ren::eStage::ComputeShader);
+    data->in_normals_tex = debug_gbuffer.AddTextureInput(frame_textures.normal, Ren::eStage::ComputeShader);
+    data->in_specular_tex = debug_gbuffer.AddTextureInput(frame_textures.specular, Ren::eStage::ComputeShader);
+
+    FgResRef output_tex;
+    { // Output texture
+        Ren::TexParams params;
+        params.w = view_state_.scr_res[0];
+        params.h = view_state_.scr_res[1];
+        params.format = Ren::eTexFormat::RGBA8;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        output_tex = data->out_color_tex =
+            debug_gbuffer.AddStorageImageOutput("GBuffer Debug", params, Ren::eStage::ComputeShader);
+    }
+
+    debug_gbuffer.set_execute_cb([this, data, pi_index](FgBuilder &builder) {
+        FgAllocTex &depth_tex = builder.GetReadTexture(data->in_depth_tex);
+        FgAllocTex &albedo_tex = builder.GetReadTexture(data->in_albedo_tex);
+        FgAllocTex &normals_tex = builder.GetReadTexture(data->in_normals_tex);
+        FgAllocTex &specular_tex = builder.GetReadTexture(data->in_specular_tex);
+        FgAllocTex &output_tex = builder.GetWriteTexture(data->out_color_tex);
+
+        const Ren::Binding bindings[] = {
+            {Ren::eBindTarget::TexSampled, DebugGBuffer::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
+            {Ren::eBindTarget::TexSampled, DebugGBuffer::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+            {Ren::eBindTarget::TexSampled, DebugGBuffer::NORM_TEX_SLOT, *normals_tex.ref},
+            {Ren::eBindTarget::TexSampled, DebugGBuffer::SPEC_TEX_SLOT, *specular_tex.ref},
+            {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
+
+        const Ren::Vec3u grp_count = Ren::Vec3u{
+            (view_state_.act_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,
+            (view_state_.act_res[1] + DebugVelocity::LOCAL_GROUP_SIZE_Y - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_Y, 1u};
+
+        DebugVelocity::Params uniform_params;
+        uniform_params.img_size[0] = view_state_.act_res[0];
+        uniform_params.img_size[1] = view_state_.act_res[1];
+
+        DispatchCompute(*pi_debug_gbuffer_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                        ctx_.default_descr_alloc(), ctx_.log());
+    });
+
+    return output_tex;
 }

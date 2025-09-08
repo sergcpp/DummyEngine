@@ -214,7 +214,7 @@ class Renderer {
     // TAA
     Ren::PipelineRef pi_reconstruct_depth_, pi_prepare_disocclusion_;
     // Debug
-    Ren::PipelineRef pi_debug_velocity_;
+    Ren::PipelineRef pi_debug_velocity_, pi_debug_gbuffer_[4];
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_[2],
         blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
@@ -321,7 +321,8 @@ class Renderer {
                              FgResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
     // Debugging
-    void AddDebugVelocityPass(FgResRef velocity, FgResRef &output_tex);
+    FgResRef AddDebugVelocityPass(FgResRef velocity);
+    FgResRef AddDebugGBufferPass(const FrameTextures &frame_textures, int pi_index);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 

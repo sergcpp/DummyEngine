@@ -548,11 +548,6 @@ void BaseState::Enter() {
         return true;
     });
 
-    cmdline_ui_->RegisterCommand("r_showBlur", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        renderer_->settings.debug_blur = !renderer_->settings.debug_blur;
-        return true;
-    });
-
     cmdline_ui_->RegisterCommand("r_showSSAO", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         renderer_->settings.debug_ssao = !renderer_->settings.debug_ssao;
         return true;
@@ -623,6 +618,31 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showDisocclusion", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         renderer_->settings.debug_disocclusion = !renderer_->settings.debug_disocclusion;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_showAlbedo", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_albedo = !renderer_->settings.debug_albedo;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_showDepth", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_depth = !renderer_->settings.debug_depth;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_showNormals", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_normals = !renderer_->settings.debug_normals;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_showRoughness", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_roughness = !renderer_->settings.debug_roughness;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_showMetallic", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.debug_metallic = !renderer_->settings.debug_metallic;
         return true;
     });
 

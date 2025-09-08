@@ -283,12 +283,16 @@ struct render_settings_t {
             bool debug_lights : 1;
             bool debug_decals : 1;
             bool debug_deferred : 1;
-            bool debug_blur : 1;
             bool debug_bvh : 1;
             bool debug_ellipsoids : 1;
             bool debug_freeze : 1;
             bool debug_motion : 1;
             bool debug_disocclusion : 1;
+            bool debug_albedo : 1;
+            bool debug_depth : 1;
+            bool debug_normals : 1;
+            bool debug_roughness : 1;
+            bool debug_metallic : 1;
         };
         uint32_t debug_flags = 0;
     };

@@ -1539,11 +1539,35 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // Debugging
         //
         if (list.render_settings.debug_motion) {
-            AddDebugVelocityPass(frame_textures.velocity, resolved_color);
+            resolved_color = AddDebugVelocityPass(frame_textures.velocity);
             bloom_tex = {};
         }
         if (list.render_settings.debug_disocclusion) {
             resolved_color = frame_textures.disocclusion_mask;
+            bloom_tex = {};
+        }
+        if (list.render_settings.debug_ssao) {
+            resolved_color = frame_textures.ssao;
+            bloom_tex = {};
+        }
+        if (list.render_settings.debug_depth) {
+            resolved_color = AddDebugGBufferPass(frame_textures, 0);
+            bloom_tex = {};
+        }
+        if (list.render_settings.debug_albedo) {
+            resolved_color = frame_textures.albedo;
+            bloom_tex = {};
+        }
+        if (list.render_settings.debug_normals) {
+            resolved_color = AddDebugGBufferPass(frame_textures, 1);
+            bloom_tex = {};
+        }
+        if (list.render_settings.debug_roughness) {
+            resolved_color = AddDebugGBufferPass(frame_textures, 2);
+            bloom_tex = {};
+        }
+        if (list.render_settings.debug_metallic) {
+            resolved_color = AddDebugGBufferPass(frame_textures, 3);
             bloom_tex = {};
         }
 
