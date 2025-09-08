@@ -161,12 +161,16 @@ struct light_t {
 #define RECT_POS param1.xyz
 #define RECT_AREA param1.w
 #define RECT_U param2.xyz
+#define RECT_TAN_HALF_SPREAD param2.w
 #define RECT_V param3.xyz
+#define RECT_SPREAD_NORMALIZATION param3.w
 
 #define DISK_POS param1.xyz
 #define DISK_AREA param1.w
 #define DISK_U param2.xyz
+#define DISK_TAN_HALF_SPREAD param2.w
 #define DISK_V param3.xyz
+#define DISK_SPREAD_NORMALIZATION param3.w
 
 #define LINE_POS param1.xyz
 #define LINE_AREA param1.w

@@ -1279,6 +1279,14 @@ force_inline float angle_between(const fvec4 &v1, const fvec4 &v2) {
     }
 }
 
+force_inline float tan_angle(const fvec4 &a, const fvec4 &b) { return safe_div(length(cross(a, b)), dot(a, b)); }
+
+float spread_attenuation(const fvec4 &D, const fvec4 &light_fwd, const float tan_half_spread,
+                         const float spread_normalization) {
+    const float tan_a = tan_angle(-D, light_fwd);
+    return fmaxf((tan_half_spread - tan_a) * spread_normalization, 0.0f);
+}
+
 } // namespace Ref
 } // namespace Ray
 
@@ -3422,6 +3430,9 @@ void Ray::Ref::SampleLightSource(const fvec4 &P, const fvec4 &T, const fvec4 &B,
                 ls.col *= env_col;
                 ls.from_env = 1;
             }
+            if (l.rect.spread_normalization > 0.0f) {
+                ls.col *= spread_attenuation(ls.L, light_forward, l.rect.tan_half_spread, l.rect.spread_normalization);
+            }
         }
     } else if (l.type == LIGHT_TYPE_DISK) {
         const fvec4 light_pos = make_fvec3(l.disk.pos);
@@ -3472,6 +3483,9 @@ void Ray::Ref::SampleLightSource(const fvec4 &P, const fvec4 &T, const fvec4 &B,
             }
             ls.col *= env_col;
             ls.from_env = 1;
+        }
+        if (l.disk.spread_normalization > 0.0f) {
+            ls.col *= spread_attenuation(ls.L, light_forward, l.disk.tan_half_spread, l.disk.spread_normalization);
         }
     } else if (l.type == LIGHT_TYPE_LINE) {
         const fvec4 light_pos = make_fvec3(l.line.pos);
@@ -3622,9 +3636,7 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
         const ray_data_t &ray = rays[_i];
         hit_data_t &inout_inter = inout_inters[_i];
 
-        const fvec4 ro = make_fvec3(ray.o);
-        const fvec4 rd = make_fvec3(ray.d);
-
+        const fvec4 ro = make_fvec3(ray.o), rd = make_fvec3(ray.d);
         const uint32_t ray_flags = (1u << get_ray_type(ray.depth));
 
         float inv_d[3];
@@ -3793,10 +3805,12 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
                         if (a1 >= -0.5f && a1 <= 0.5f) {
                             const float a2 = dot(light_v, vi);
                             if (a2 >= -0.5f && a2 <= 0.5f) {
-                                inout_inter.v = 0.0f;
-                                inout_inter.obj_index = -int(light_index) - 1;
-                                inout_inter.t = t;
-                                inout_inter.u = cur.factor;
+                                if (tan_angle(-rd, light_forward) < l.rect.tan_half_spread) {
+                                    inout_inter.v = 0.0f;
+                                    inout_inter.obj_index = -int(light_index) - 1;
+                                    inout_inter.t = t;
+                                    inout_inter.u = cur.factor;
+                                }
                             }
                         }
                     }
@@ -3819,7 +3833,8 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
                         const float a1 = dot(light_u, vi);
                         const float a2 = dot(light_v, vi);
 
-                        if (sqrtf(a1 * a1 + a2 * a2) <= 0.5f) {
+                        if (sqrtf(a1 * a1 + a2 * a2) <= 0.5f &&
+                            tan_angle(-rd, light_forward) < l.disk.tan_half_spread) {
                             inout_inter.v = 0.0f;
                             inout_inter.obj_index = -int(light_index) - 1;
                             inout_inter.t = t;
@@ -3868,9 +3883,7 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
         const ray_data_t &ray = rays[_i];
         hit_data_t &inout_inter = inout_inters[_i];
 
-        const fvec4 ro = make_fvec3(ray.o);
-        const fvec4 rd = make_fvec3(ray.d);
-
+        const fvec4 ro = make_fvec3(ray.o), rd = make_fvec3(ray.d);
         const uint32_t ray_flags = (1u << get_ray_type(ray.depth));
 
         float inv_d[3];
@@ -4114,9 +4127,7 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
         const ray_data_t &ray = rays[i];
         hit_data_t &inout_inter = inout_inters[i];
 
-        const fvec4 ro = make_fvec3(ray.o);
-        const fvec4 rd = make_fvec3(ray.d);
-
+        const fvec4 ro = make_fvec3(ray.o), rd = make_fvec3(ray.d);
         const uint32_t ray_flags = (1u << get_ray_type(ray.depth));
 
         float inv_d[3];
@@ -4311,9 +4322,7 @@ void Ray::Ref::IntersectAreaLights(Span<const ray_data_t> rays, Span<const light
 float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t> lights,
                                     Span<const light_wbvh_node_t> nodes) {
     const float rdist = fabsf(ray.dist);
-
-    const fvec4 ro = make_fvec3(ray.o);
-    const fvec4 rd = make_fvec3(ray.d);
+    const fvec4 ro = make_fvec3(ray.o), rd = make_fvec3(ray.d);
 
     float inv_d[3];
     safe_invert(value_ptr(rd), inv_d);
@@ -4454,9 +4463,7 @@ float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t>
 float Ray::Ref::IntersectAreaLights(const shadow_ray_t &ray, Span<const light_t> lights,
                                     Span<const light_cwbvh_node_t> nodes) {
     const float rdist = fabsf(ray.dist);
-
-    const fvec4 ro = make_fvec3(ray.o);
-    const fvec4 rd = make_fvec3(ray.d);
+    const fvec4 ro = make_fvec3(ray.o), rd = make_fvec3(ray.d);
 
     float inv_d[3];
     safe_invert(value_ptr(rd), inv_d);

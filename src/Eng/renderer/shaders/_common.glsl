@@ -94,6 +94,10 @@ float approx_acos(float x) { // max error is 0.000068f
     return negate * M_PI + ret;
 }
 
+float tan_angle(const vec3 a, const vec3 b) {
+    return length(cross(a, b)) / dot(a, b);
+}
+
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
     return vec3(1.0) - r * r;

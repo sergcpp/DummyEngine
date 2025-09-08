@@ -32,7 +32,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 #endif // !NO_BINDLESS
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
-layout(binding = LIGHT_BUF_SLOT) uniform samplerBuffer g_lights_buf;
+layout(binding = LIGHT_BUF_SLOT) uniform usamplerBuffer g_lights_buf;
 layout(binding = DECAL_BUF_SLOT) uniform samplerBuffer g_decals_buf;
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;

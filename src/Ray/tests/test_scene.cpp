@@ -288,6 +288,10 @@ void setup_test_scene(ThreadPool &threads, Ray::SceneBase &scene, const int min_
             memcpy(&cam_desc.origin[0], &view_origin_refr[0], 3 * sizeof(float));
             memcpy(&cam_desc.fwd[0], &view_dir_refr[0], 3 * sizeof(float));
             cam_desc.fov = 45.1806f;
+        } else if (test_scene == eTestScene::Standard_AreaSpread) {
+            memcpy(&cam_desc.origin[0], &view_origin_standard[0], 3 * sizeof(float));
+            memcpy(&cam_desc.fwd[0], &view_dir_standard[0], 3 * sizeof(float));
+            cam_desc.fov = 60.0f;
         } else {
             memcpy(&cam_desc.origin[0], &view_origin_standard[0], 3 * sizeof(float));
             memcpy(&cam_desc.fwd[0], &view_dir_standard[0], 3 * sizeof(float));
@@ -843,7 +847,8 @@ void setup_test_scene(ThreadPool &threads, Ray::SceneBase &scene, const int min_
                test_scene == eTestScene::Standard_InsideLight || test_scene == eTestScene::Standard_SpotLight ||
                test_scene == eTestScene::Standard_DOF0 || test_scene == eTestScene::Standard_DOF1 ||
                test_scene == eTestScene::Standard_GlassBall0 || test_scene == eTestScene::Standard_GlassBall1 ||
-               test_scene == eTestScene::Standard_Clipped || test_scene == eTestScene::Two_Sided) {
+               test_scene == eTestScene::Standard_Clipped || test_scene == eTestScene::Standard_AreaSpread ||
+               test_scene == eTestScene::Two_Sided) {
         //
         // Use explicit lights sources
         //
@@ -955,6 +960,45 @@ void setup_test_scene(ThreadPool &threads, Ray::SceneBase &scene, const int min_
                 new_light.spot_blend = 0.15f;
 
                 scene.AddLight(new_light);
+            }
+        } else if (test_scene == eTestScene::Standard_AreaSpread) {
+            { // rect light
+                static const float xform[16] = {1.00000000f, 0.00000000f, 0.00000000f, 0.00000000f,
+                                                0.00000000f, 1.00000000f, 0.00000000f, 0.00000000f,
+                                                0.00000000f, 0.00000000f, 1.00000000f, 0.00000000f,
+                                                -0.40000000f, 0.50000000f, 0.00000000f, 1.00000000f};
+
+                rect_light_desc_t new_light;
+
+                new_light.color[0] = 6.24999952f;
+                new_light.color[1] = 6.24999952f;
+                new_light.color[2] = 6.24999952f;
+
+                new_light.width = 0.2f;
+                new_light.height = 0.2f;
+
+                new_light.spread_angle = 15.0f;
+
+                scene.AddLight(new_light, xform);
+            }
+            { // disk light
+                static const float xform[16] = {1.00000000f,  0.00000000f, 0.00000000f, 0.00000000f,
+                                                0.00000000f,  1.00000000f, 0.00000000f, 0.00000000f,
+                                                0.00000000f,  0.00000000f, 1.00000000f, 0.00000000f,
+                                                0.00000000f, 0.50000000f, -0.40000000f, 1.00000000f};
+
+                disk_light_desc_t new_light;
+
+                new_light.color[0] = 7.95774698f;
+                new_light.color[1] = 7.95774698f;
+                new_light.color[2] = 7.95774698f;
+
+                new_light.size_x = 0.2f;
+                new_light.size_y = 0.2f;
+
+                new_light.spread_angle = 15.0f;
+
+                scene.AddLight(new_light, xform);
             }
         }
     } else if (test_scene == eTestScene::Standard_DirLight) {

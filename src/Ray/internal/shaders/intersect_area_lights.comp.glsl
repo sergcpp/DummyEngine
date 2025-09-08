@@ -108,7 +108,7 @@ void main() {
             }
         } else {
             const int light_index = int(cur & PRIM_INDEX_BITS);
-            light_t l = g_lights[light_index];
+            const light_t l = g_lights[light_index];
             [[dont_flatten]] if (!LIGHT_VISIBLE(l) || (LIGHT_RAY_VISIBILITY(l) & rt) == 0) {
                 // Skip invisible light
                 continue;
@@ -118,7 +118,7 @@ void main() {
                 continue;
             }
 
-            bool no_shadow = !LIGHT_CAST_SHADOW(l);
+            const bool no_shadow = !LIGHT_CAST_SHADOW(l);
 
             const uint light_type = LIGHT_TYPE(l);
             if (light_type == LIGHT_TYPE_SPHERE) {
@@ -162,54 +162,55 @@ void main() {
                     inter.u = cur_factor;
                 }
             } else if (light_type == LIGHT_TYPE_RECT) {
-                vec3 light_pos = l.RECT_POS;
+                const vec3 light_pos = l.RECT_POS;
                 vec3 light_u = l.RECT_U;
                 vec3 light_v = l.RECT_V;
 
-                vec3 light_forward = normalize(cross(light_u, light_v));
+                const vec3 light_forward = normalize(cross(light_u, light_v));
 
-                float plane_dist = dot(light_forward, light_pos);
-                float cos_theta = dot(rd, light_forward);
-                float t = (plane_dist - dot(light_forward, ro)) / cos_theta;
+                const float plane_dist = dot(light_forward, light_pos);
+                const float cos_theta = dot(rd, light_forward);
+                const float t = (plane_dist - dot(light_forward, ro)) / cos_theta;
 
                 if (cos_theta < 0.0 && t > HIT_EPS && (t < inter.t || no_shadow)) {
                     light_u /= dot(light_u, light_u);
                     light_v /= dot(light_v, light_v);
 
-                    vec3 p = ro + rd * t;
-                    vec3 vi = p - light_pos;
-                    float a1 = dot(light_u, vi);
+                    const vec3 p = ro + rd * t;
+                    const vec3 vi = p - light_pos;
+                    const float a1 = dot(light_u, vi);
                     if (a1 >= -0.5 && a1 <= 0.5) {
-                        float a2 = dot(light_v, vi);
+                        const float a2 = dot(light_v, vi);
                         if (a2 >= -0.5 && a2 <= 0.5) {
-                            inter.v = 0.0;
-                            inter.obj_index = -int(light_index) - 1;
-                            inter.t = t;
-                            inter.u = cur_factor;
+                            if (tan_angle(-rd, light_forward) < l.RECT_TAN_HALF_SPREAD) {
+                                inter.v = 0.0;
+                                inter.obj_index = -int(light_index) - 1;
+                                inter.t = t;
+                                inter.u = cur_factor;
+                            }
                         }
                     }
                 }
             } else if (light_type == LIGHT_TYPE_DISK) {
-                vec3 light_pos = l.DISK_POS;
+                const vec3 light_pos = l.DISK_POS;
                 vec3 light_u = l.DISK_U;
                 vec3 light_v = l.DISK_V;
 
-                vec3 light_forward = normalize(cross(light_u, light_v));
+                const vec3 light_forward = normalize(cross(light_u, light_v));
 
-                float plane_dist = dot(light_forward, light_pos);
-                float cos_theta = dot(rd, light_forward);
-                float t = (plane_dist - dot(light_forward, ro)) / cos_theta;
+                const float plane_dist = dot(light_forward, light_pos);
+                const float cos_theta = dot(rd, light_forward);
+                const float t = (plane_dist - dot(light_forward, ro)) / cos_theta;
 
                 if (cos_theta < 0.0 && t > HIT_EPS && (t < inter.t || no_shadow)) {
                     light_u /= dot(light_u, light_u);
                     light_v /= dot(light_v, light_v);
 
-                    vec3 p = ro + rd * t;
-                    vec3 vi = p - light_pos;
-                    float a1 = dot(light_u, vi);
-                    float a2 = dot(light_v, vi);
+                    const vec3 p = ro + rd * t;
+                    const vec3 vi = p - light_pos;
+                    const float a1 = dot(light_u, vi), a2 = dot(light_v, vi);
 
-                    if (sqrt(a1 * a1 + a2 * a2) <= 0.5) {
+                    if (sqrt(a1 * a1 + a2 * a2) <= 0.5 && tan_angle(-rd, light_forward) < l.DISK_TAN_HALF_SPREAD) {
                         inter.v = 0.0;
                         inter.obj_index = -int(light_index) - 1;
                         inter.t = t;
@@ -217,19 +218,19 @@ void main() {
                     }
                 }
             } else if (light_type == LIGHT_TYPE_LINE) {
-                vec3 light_pos = l.LINE_POS;
-                vec3 light_u = l.LINE_U;
-                vec3 light_dir = l.LINE_V;
-                vec3 light_v = cross(light_u, light_dir);
+                const vec3 light_pos = l.LINE_POS;
+                const vec3 light_u = l.LINE_U;
+                const vec3 light_dir = l.LINE_V;
+                const vec3 light_v = cross(light_u, light_dir);
 
                 vec3 _ro = ro - light_pos;
                 _ro = vec3(dot(_ro, light_dir), dot(_ro, light_u), dot(_ro, light_v));
 
-                vec3 _rd = vec3(dot(rd, light_dir), dot(rd, light_u), dot(rd, light_v));
+                const vec3 _rd = vec3(dot(rd, light_dir), dot(rd, light_u), dot(rd, light_v));
 
-                float A = _rd[2] * _rd[2] + _rd[1] * _rd[1];
-                float B = 2.0 * (_rd[2] * _ro[2] + _rd[1] * _ro[1]);
-                float C = _ro[2] * _ro[2] + _ro[1] * _ro[1] - l.LINE_RADIUS * l.LINE_RADIUS;
+                const float A = _rd[2] * _rd[2] + _rd[1] * _rd[1];
+                const float B = 2.0 * (_rd[2] * _ro[2] + _rd[1] * _ro[1]);
+                const float C = _ro[2] * _ro[2] + _ro[1] * _ro[1] - l.LINE_RADIUS * l.LINE_RADIUS;
 
                 float t0, t1;
                 if (quadratic(A, B, C, t0, t1) && t0 > HIT_EPS && t1 > HIT_EPS) {

@@ -64,7 +64,7 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
 
 #if defined(STOCH_LIGHTS)
     layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
-    layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform samplerBuffer g_stoch_lights_buf;
+    layout(binding = STOCH_LIGHTS_BUF_SLOT) uniform usamplerBuffer g_stoch_lights_buf;
     layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
 #endif
 

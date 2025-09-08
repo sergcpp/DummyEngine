@@ -227,15 +227,20 @@ struct _light_item_t {
     vec4 shadow_pos_and_tri_index;
 };
 
-_light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
+_light_item_t FetchLightItem(usamplerBuffer lights_buf, const int li) {
     _light_item_t ret;
-    ret.col_and_type = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 0);
-    ret.pos_and_radius = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 1);
-    ret.dir_and_spot = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 2);
-    ret.u_and_reg = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 3);
-    ret.v_and_blend = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 4);
-    ret.shadow_pos_and_tri_index = texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 5);
+    ret.col_and_type = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 0));
+    ret.pos_and_radius = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 1));
+    ret.dir_and_spot = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 2));
+    ret.u_and_reg = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 3));
+    ret.v_and_blend = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 4));
+    ret.shadow_pos_and_tri_index = uintBitsToFloat(texelFetch(lights_buf, li * LIGHTS_BUF_STRIDE + 5));
     return ret;
+}
+
+float spread_attenuation(const vec3 D, const vec3 light_fwd, const float tan_half_spread, const float spread_normalization) {
+    const float tan_a = tan_angle(-D, light_fwd);
+    return max((tan_half_spread - tan_a) * spread_normalization, 0.0);
 }
 
 #ifndef ENABLE_SPHERE_LIGHT
@@ -255,6 +260,7 @@ _light_item_t FetchLightItem(samplerBuffer lights_buf, const int li) {
     #define ENABLE_DIFFUSE 1
 #endif
 #ifndef ENABLE_SHEEN
+    // NOTE: Sheen is disabled as it requires different LTC implementation
     #define ENABLE_SHEEN 0
 #endif
 #ifndef ENABLE_SPECULAR
@@ -272,7 +278,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
     const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
     const float _dot = -dot(from_light, litem.dir_and_spot.xyz);
     const float _angle = approx_acos(_dot);
-    if (type != LIGHT_TYPE_LINE && _angle > litem.dir_and_spot.w) {
+    if (type == LIGHT_TYPE_SPHERE && _angle > litem.dir_and_spot.w) {
         return vec3(0.0);
     }
 
@@ -325,6 +331,9 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / M_PI;
         }
+        if (litem.v_and_blend.w > 0.0) {
+            ret *= saturate((litem.dir_and_spot.w - _angle) / sqr(litem.v_and_blend.w));
+        }
     } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
         vec3 points[4];
         points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_blend.xyz;
@@ -360,6 +369,15 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
+        }
+        const float tan_half_spread = litem.dir_and_spot.w, spread_normalization = litem.v_and_blend.w;
+        if (spread_normalization > 0.0) {
+            vec2 tuv = vec2(dot(litem.u_and_reg.xyz, P - litem.pos_and_radius.xyz) / length2(litem.u_and_reg.xyz),
+                            dot(litem.v_and_blend.xyz, P - litem.pos_and_radius.xyz) / length2(litem.v_and_blend.xyz));
+            tuv = clamp(tuv, vec2(-1.0), vec2(1.0));
+
+            const vec3 closest_P = litem.pos_and_radius.xyz + tuv.x * litem.u_and_reg.xyz + tuv.y * litem.v_and_blend.xyz;
+            ret *= spread_attenuation(normalize(P - closest_P), litem.dir_and_spot.xyz, tan_half_spread, spread_normalization);
         }
     } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
         vec3 points[4];
@@ -397,6 +415,15 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
         }
+        const float tan_half_spread = litem.dir_and_spot.w, spread_normalization = litem.v_and_blend.w;
+        if (spread_normalization > 0.0) {
+            vec2 tuv = vec2(dot(litem.u_and_reg.xyz, P - litem.pos_and_radius.xyz) / length2(litem.u_and_reg.xyz),
+                            dot(litem.v_and_blend.xyz, P - litem.pos_and_radius.xyz) / length2(litem.v_and_blend.xyz));
+            tuv /= max(1.0 , length(tuv));
+
+            const vec3 closest_P = litem.pos_and_radius.xyz + tuv.x * litem.u_and_reg.xyz + tuv.y * litem.v_and_blend.xyz;
+            ret *= spread_attenuation(normalize(P - closest_P), litem.dir_and_spot.xyz, tan_half_spread, spread_normalization);
+        }
     } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
         vec3 points[2];
         points[0] = litem.pos_and_radius.xyz + litem.v_and_blend.xyz;
@@ -431,10 +458,6 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
         }
-    }
-
-    if (type == LIGHT_TYPE_SPHERE && litem.v_and_blend.w > 0.0) {
-        ret *= saturate((litem.dir_and_spot.w - _angle) / litem.v_and_blend.w);
     }
 
     return ret;
@@ -504,7 +527,7 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
     const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
     const float _dot = -dot(from_light, litem.dir_and_spot.xyz);
     const float _angle = approx_acos(_dot);
-    if (type != LIGHT_TYPE_LINE && _angle > litem.dir_and_spot.w) {
+    if (type == LIGHT_TYPE_SPHERE && _angle > litem.dir_and_spot.w) {
         return vec3(0.0);
     }
 
@@ -557,6 +580,9 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / M_PI;
         }
+        if (litem.v_and_blend.w > 0.0) {
+            ret *= saturate((litem.dir_and_spot.w - _angle) / sqr(litem.v_and_blend.w));
+        }
     } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
         vec3 points[4];
         points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_blend.xyz;
@@ -592,6 +618,15 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
             coat *= ccol * g_ltc[gl_LocalInvocationIndex].coat_t2.x + (1.0 - ccol) * g_ltc[gl_LocalInvocationIndex].coat_t2.y;
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
+        }
+        const float tan_half_spread = litem.dir_and_spot.w, spread_normalization = litem.v_and_blend.w;
+        if (spread_normalization > 0.0) {
+            vec2 tuv = vec2(dot(litem.u_and_reg.xyz, P - litem.pos_and_radius.xyz) / length2(litem.u_and_reg.xyz),
+                            dot(litem.v_and_blend.xyz, P - litem.pos_and_radius.xyz) / length2(litem.v_and_blend.xyz));
+            tuv = clamp(tuv, vec2(-1.0), vec2(1.0));
+
+            const vec3 closest_P = litem.pos_and_radius.xyz + tuv.x * litem.u_and_reg.xyz + tuv.y * litem.v_and_blend.xyz;
+            ret *= spread_attenuation(normalize(P - closest_P), litem.dir_and_spot.xyz, tan_half_spread, spread_normalization);
         }
     } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
         vec3 points[4];
@@ -629,6 +664,15 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
         }
+        const float tan_half_spread = litem.dir_and_spot.w, spread_normalization = litem.v_and_blend.w;
+        if (spread_normalization > 0.0) {
+            vec2 tuv = vec2(dot(litem.u_and_reg.xyz, P - litem.pos_and_radius.xyz) / length2(litem.u_and_reg.xyz),
+                            dot(litem.v_and_blend.xyz, P - litem.pos_and_radius.xyz) / length2(litem.v_and_blend.xyz));
+            tuv /= max(1.0 , length(tuv));
+
+            const vec3 closest_P = litem.pos_and_radius.xyz + tuv.x * litem.u_and_reg.xyz + tuv.y * litem.v_and_blend.xyz;
+            ret *= spread_attenuation(normalize(P - closest_P), litem.dir_and_spot.xyz, tan_half_spread, spread_normalization);
+        }
     } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
         vec3 points[2];
         points[0] = litem.pos_and_radius.xyz + litem.v_and_blend.xyz;
@@ -663,10 +707,6 @@ vec3 EvaluateLightSource_LTC(const _light_item_t litem, const vec3 P, const vec3
 
             ret += 0.25 * lobe_masks.specular_mul * litem.col_and_type.xyz * coat / 4.0;
         }
-    }
-
-    if (type == LIGHT_TYPE_SPHERE && litem.v_and_blend.w > 0.0) {
-        ret *= saturate((litem.dir_and_spot.w - _angle) / litem.v_and_blend.w);
     }
 
     return ret;
@@ -777,7 +817,10 @@ vec3 EvaluateLightSource_Approx(const _light_item_t litem, const vec3 P, const v
     const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
     const float _dot = -dot(from_light, litem.dir_and_spot.xyz);
     const float _angle = approx_acos(_dot);
-    if (type != LIGHT_TYPE_LINE && _angle > litem.dir_and_spot.w) {
+    if (type == LIGHT_TYPE_SPHERE && _angle > litem.dir_and_spot.w) {
+        return vec3(0.0);
+    } else if (type != LIGHT_TYPE_LINE && _angle > (0.5 * M_PI)) {
+        // Single-sided
         return vec3(0.0);
     }
 
@@ -790,6 +833,9 @@ vec3 EvaluateLightSource_Approx(const _light_item_t litem, const vec3 P, const v
 
     if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
         brightness_mul = litem.pos_and_radius.w * litem.pos_and_radius.w;
+        if (litem.v_and_blend.w > 0.0) {
+            brightness_mul *= saturate((litem.dir_and_spot.w - _angle) / sqr(litem.v_and_blend.w));
+        }
         if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
             ret += brightness_mul * lobe_masks.diffuse_mul * N_dot_L * base_color * litem.col_and_type.xyz * PrincipledDiffuse(roughness, N_dot_V, N_dot_L, L_dot_H) / (M_PI * max(0.001, sqr_dist));
         }
@@ -809,12 +855,34 @@ vec3 EvaluateLightSource_Approx(const _light_item_t litem, const vec3 P, const v
                                                                 saturate(dot(normalize(litem.pos_and_radius.xyz - P), N)));
             ret += lobe_masks.diffuse_mul * litem.col_and_type.xyz * diff / (4.0 * M_PI);
         }
+        const float tan_half_spread = litem.dir_and_spot.w, spread_normalization = litem.v_and_blend.w;
+        if (spread_normalization > 0.0) {
+            vec2 tuv = vec2(dot(litem.u_and_reg.xyz, P - litem.pos_and_radius.xyz) / length2(litem.u_and_reg.xyz),
+                            dot(litem.v_and_blend.xyz, P - litem.pos_and_radius.xyz) / length2(litem.v_and_blend.xyz));
+            tuv = clamp(tuv, vec2(-1.0), vec2(1.0));
+
+            const vec3 closest_P = litem.pos_and_radius.xyz + tuv.x * litem.u_and_reg.xyz + tuv.y * litem.v_and_blend.xyz;
+            const float att = spread_attenuation(normalize(P - closest_P), litem.dir_and_spot.xyz, tan_half_spread, spread_normalization);
+            brightness_mul *= att;
+            ret *= att;
+        }
     } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
         brightness_mul = 0.25 * M_PI * length(litem.u_and_reg.xyz) * length(litem.v_and_blend.xyz);
         if ((lobe_masks.bits & LOBE_DIFFUSE_BIT) != 0 && ENABLE_DIFFUSE != 0) {
             const float inv_solid_angle = sqr_dist / (length(litem.u_and_reg.xyz) * length(litem.v_and_blend.xyz));
             const float front_dot_l = saturate(dot(litem.dir_and_spot.xyz, L));
             ret += lobe_masks.diffuse_mul * base_color * litem.col_and_type.xyz * saturate(front_dot_l * N_dot_L / (1.0 + inv_solid_angle)) / 4.0;
+        }
+        const float tan_half_spread = litem.dir_and_spot.w, spread_normalization = litem.v_and_blend.w;
+        if (spread_normalization > 0.0) {
+            vec2 tuv = vec2(dot(litem.u_and_reg.xyz, P - litem.pos_and_radius.xyz) / length2(litem.u_and_reg.xyz),
+                            dot(litem.v_and_blend.xyz, P - litem.pos_and_radius.xyz) / length2(litem.v_and_blend.xyz));
+            tuv /= max(1.0 , length(tuv));
+
+            const vec3 closest_P = litem.pos_and_radius.xyz + tuv.x * litem.u_and_reg.xyz + tuv.y * litem.v_and_blend.xyz;
+            const float att = spread_attenuation(normalize(P - closest_P), litem.dir_and_spot.xyz, tan_half_spread, spread_normalization);
+            brightness_mul *= att;
+            ret *= att;
         }
     } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
         brightness_mul = 0.004 * litem.pos_and_radius.w;
@@ -835,10 +903,6 @@ vec3 EvaluateLightSource_Approx(const _light_item_t litem, const vec3 P, const v
         const float roughness2 = sqr(max(roughness_mod, MIN_SPEC_ROUGHNESS));
         const vec3 spec = spec_color * PrincipledSpecular(roughness2, N_dot_V, N_dot_L, N_dot_H);
         ret += lobe_masks.specular_mul * litem.col_and_type.xyz * brightness_mul * N_dot_L * spec / max(0.001, sqr_dist);
-    }
-
-    if (type == LIGHT_TYPE_SPHERE && litem.v_and_blend.w > 0.0) {
-        ret *= saturate((litem.dir_and_spot.w - _angle) / litem.v_and_blend.w);
     }
 
     return ret;

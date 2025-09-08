@@ -142,6 +142,22 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
         ls.spot_blend = float(js_spot_blend.val);
     }
 
+    ls.spread_deg = 180.0f;
+    if (js_in.Has("spread")) {
+        const Sys::JsNumber &js_spread = js_in.at("spread").as_num();
+        ls.spread_deg = float(js_spread.val);
+    }
+
+    if (ls.type == eLightType::Rect || ls.type == eLightType::Disk) {
+        const float half_spread = fmaxf(0.5f * ls.spread_deg * Ren::Pi<float>() / 180.0f, 0.1f);
+        const float tan_half_spread = (ls.spread_deg == 180.0f) ? FLT_MAX : tanf(half_spread);
+        const float spread_normalization = (0.5f * Ren::Pi<float>() / half_spread) / tan_half_spread;
+
+        // Occupy spot parameters for now
+        ls.spot_angle = tan_half_spread;
+        ls.spot_blend = spread_normalization;
+    }
+
     ls.flags = Ren::Bitmask{eLightFlags::AffectDiffuse} | eLightFlags::AffectSpecular | eLightFlags::AffectRefraction |
                eLightFlags::AffectVolume;
 
@@ -260,8 +276,12 @@ void Eng::LightSource::Write(const LightSource &ls, Sys::JsObjectP &js_out) {
         js_out.Insert("spot_angle", Sys::JsNumber{ls.angle_deg});
     }
 
-    if (ls.spot_blend != 0.0f) {
+    if (ls.type == eLightType::Sphere && ls.spot_blend != 0.0f) {
         js_out.Insert("spot_blend", Sys::JsNumber{ls.spot_blend});
+    }
+
+    if (ls.spread_deg != 180.0f) {
+        js_out.Insert("spread", Sys::JsNumber{ls.spread_deg});
     }
 
     if (ls.cull_offset != 0.1f) {

@@ -1740,6 +1740,7 @@ void BaseState::InitScene_PT() {
                     }
                     rect_light_desc.width = ls.width;
                     rect_light_desc.height = ls.height;
+                    rect_light_desc.spread_angle = ls.spread_deg;
                     rect_light_desc.sky_portal = (ls.flags & Eng::eLightFlags::SkyPortal);
                     rect_light_desc.diffuse_visibility = (ls.flags & Eng::eLightFlags::AffectDiffuse);
                     rect_light_desc.specular_visibility = (ls.flags & Eng::eLightFlags::AffectSpecular);
@@ -1751,6 +1752,7 @@ void BaseState::InitScene_PT() {
                     memcpy(disk_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                     disk_light_desc.size_x = ls.width;
                     disk_light_desc.size_y = ls.height;
+                    disk_light_desc.spread_angle = ls.spread_deg;
                     disk_light_desc.diffuse_visibility = (ls.flags & Eng::eLightFlags::AffectDiffuse);
                     disk_light_desc.specular_visibility = (ls.flags & Eng::eLightFlags::AffectSpecular);
                     disk_light_desc.refraction_visibility = (ls.flags & Eng::eLightFlags::AffectRefraction);

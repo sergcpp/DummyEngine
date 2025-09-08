@@ -24,6 +24,7 @@ enum class eTestScene {
     Standard_GlassBall0,
     Standard_GlassBall1,
     Standard_Clipped,
+    Standard_AreaSpread,
     Refraction_Plane,
     Ray_Flags,
     Two_Sided

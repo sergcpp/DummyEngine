@@ -18,7 +18,7 @@
 #include <Gui/Utils.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 79;
+const uint32_t AssetsBuildVersion = 80;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -433,7 +433,7 @@ void ReplaceTextureExtension(std::string_view platform, std::string &tex) {
     }
 }
 
-void LoadDB(const char *out_folder, Sys::JsObjectP &out_js_assets_db) {
+void LoadDB(const std::string_view out_folder, Sys::JsObjectP &out_js_assets_db) {
     const std::string file_names[] = {std::string(out_folder) + "/assets_db.json",
                                       std::string(out_folder) + "/assets_db.json1",
                                       std::string(out_folder) + "/assets_db.json2"};

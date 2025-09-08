@@ -35,6 +35,10 @@ void test_shading(Sys::ThreadPool &threads, const bool full) {
     run_image_test(threads, "complex_mat2", 25.05, MedDiffGI);
     run_image_test(threads, "complex_mat2", 24.75, Full);
     run_image_test(threads, "complex_mat2", 27.70, Full_Ultra);
+    run_image_test(threads, "complex_mat2_area_spread", 17.10, NoDiffGI);
+    run_image_test(threads, "complex_mat2_area_spread", 17.15, MedDiffGI);
+    run_image_test(threads, "complex_mat2_area_spread", 18.50, Full);
+    run_image_test(threads, "complex_mat2_area_spread", 18.35, Full_Ultra);
     run_image_test(threads, "complex_mat2_emissive", 18.35, Full);
     run_image_test(threads, "complex_mat2_emissive", 17.35, Full_Ultra);
     run_image_test(threads, "complex_mat2_dyn",

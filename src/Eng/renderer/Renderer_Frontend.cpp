@@ -644,7 +644,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
                         ls.shadowreg_index = -1;
                         memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
-                        ls.blend = light.spot_blend * light.spot_blend;
+                        ls.blend = light.spot_blend;
                         if (shadows_jitter_enabled) {
                             pos += JitterLightOffset(light.type, ls.radius, u, v, list.frame_index);
                         }
@@ -832,7 +832,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
                     ls.shadowreg_index = -1;
                     memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
-                    ls.blend = light.spot_blend * light.spot_blend;
+                    ls.blend = light.spot_blend;
                     if (shadows_jitter_enabled) {
                         pos += JitterLightOffset(light.type, ls.radius, u, v, list.frame_index);
                     }

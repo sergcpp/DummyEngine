@@ -668,6 +668,12 @@ float peek_ior_stack(float stack[4], bool skip_first, float default_value) {
     return default_value;
 }
 
+float spread_attenuation(const vec3 D, const vec3 light_fwd, const float tan_half_spread,
+                         const float spread_normalization) {
+    const float tan_a = tan_angle(-D, light_fwd);
+    return max((tan_half_spread - tan_a) * spread_normalization, 0.0);
+}
+
 float BRDF_PrincipledDiffuse(vec3 V, vec3 N, vec3 L, vec3 H, float roughness) {
     const float N_dot_L = dot(N, L);
     const float N_dot_V = dot(N, V);
@@ -1132,6 +1138,9 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
                 ls.col *= env_col;
                 ls.from_env = true;
             }
+            if (l.RECT_SPREAD_NORMALIZATION > 0.0) {
+                ls.col *= spread_attenuation(ls.L, light_forward, l.RECT_TAN_HALF_SPREAD, l.RECT_SPREAD_NORMALIZATION);
+            }
         }
     } else [[dont_flatten]] if (l_type == LIGHT_TYPE_DISK) {
         const vec3 light_pos = l.DISK_POS;
@@ -1185,6 +1194,9 @@ void SampleLightSource(vec3 P, vec3 T, vec3 B, vec3 N, const float rand_pick_lig
             }
             ls.col *= env_col;
             ls.from_env = true;
+        }
+        if (l.DISK_SPREAD_NORMALIZATION > 0.0) {
+            ls.col *= spread_attenuation(ls.L, light_forward, l.DISK_TAN_HALF_SPREAD, l.DISK_SPREAD_NORMALIZATION);
         }
     } else [[dont_flatten]] if (l_type == LIGHT_TYPE_LINE) {
         const vec3 light_pos = l.LINE_POS;
@@ -1479,6 +1491,11 @@ vec3 Evaluate_LightColor(const ray_data_t ray, const hit_data_t inter, const vec
     } else if (l_type == LIGHT_TYPE_RECT) {
         const vec3 light_pos = l.RECT_POS;
         const vec3 light_u = l.RECT_U, light_v = l.RECT_V;
+        const vec3 light_forward = normalize(cross(light_u, light_v));
+
+        if (l.RECT_SPREAD_NORMALIZATION > 0.0) {
+            lcol *= spread_attenuation(rd, light_forward, l.RECT_TAN_HALF_SPREAD, l.RECT_SPREAD_NORMALIZATION);
+        }
 
         float light_pdf;
 #if USE_SPHERICAL_AREA_LIGHT_SAMPLING
@@ -1498,12 +1515,14 @@ vec3 Evaluate_LightColor(const ray_data_t ray, const hit_data_t inter, const vec
         lcol *= mis_weight;
     } else if (l_type == LIGHT_TYPE_DISK) {
         const vec3 light_pos = l.DISK_POS;
-        const vec3 light_u = l.DISK_U;
-        const vec3 light_v = l.DISK_V;
-
+        const vec3 light_u = l.DISK_U, light_v = l.DISK_V;
         const vec3 light_forward = normalize(cross(light_u, light_v));
-        const float light_area = l.DISK_AREA;
 
+        if (l.DISK_SPREAD_NORMALIZATION > 0.0) {
+            lcol *= spread_attenuation(rd, light_forward, l.DISK_TAN_HALF_SPREAD, l.DISK_SPREAD_NORMALIZATION);
+        }
+
+        const float light_area = l.DISK_AREA;
         const float plane_dist = dot(light_forward, light_pos);
         const float cos_theta = dot(rd, light_forward);
 

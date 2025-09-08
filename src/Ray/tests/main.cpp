@@ -105,6 +105,7 @@ void test_complex_mat5_dir_light(const char *arch_list[], std::string_view prefe
 void test_complex_mat5_sun_light(const char *arch_list[], std::string_view preferred_device);
 void test_complex_mat5_moon_light(const char *arch_list[], std::string_view preferred_device);
 void test_complex_mat5_hdri_light(const char *arch_list[], std::string_view preferred_device);
+void test_complex_mat5_area_spread(const char *arch_list[], std::string_view preferred_device);
 void test_complex_mat6(const char *arch_list[], std::string_view preferred_device);
 void test_complex_mat6_nlm_filter(const char *arch_list[], std::string_view preferred_device);
 void test_complex_mat6_unet_filter(const char *arch_list[], std::string_view preferred_device);
@@ -288,6 +289,7 @@ int main(int argc, char *argv[]) {
         futures.push_back(mt_run_pool.Enqueue(test_complex_mat5_sun_light, arch_list, device_name));
         futures.push_back(mt_run_pool.Enqueue(test_complex_mat5_moon_light, arch_list, device_name));
         futures.push_back(mt_run_pool.Enqueue(test_complex_mat5_hdri_light, arch_list, device_name));
+        futures.push_back(mt_run_pool.Enqueue(test_complex_mat5_area_spread, arch_list, device_name));
         futures.push_back(mt_run_pool.Enqueue(test_complex_mat6, arch_list, device_name));
         futures.push_back(mt_run_pool.Enqueue(test_complex_mat6_nlm_filter, arch_list, device_name));
         futures.push_back(mt_run_pool.Enqueue(test_complex_mat6_unet_filter, arch_list, device_name));

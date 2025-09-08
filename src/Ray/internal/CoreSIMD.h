@@ -2851,6 +2851,34 @@ template <int S> uvec<S> calc_grid_level(const fvec<S> p[3], const cache_grid_pa
     return uvec<S>(ret);
 }
 
+template <int S> fvec<S> tan_angle(const fvec<S> a[3], const fvec<S> b[3]) {
+    fvec<S> temp[3];
+    cross(a, b, temp);
+    return safe_div(length(temp), dot3(a, b));
+}
+
+template <int S> fvec<S> tan_angle(const fvec<S> a[3], const float b[3]) {
+    fvec<S> temp[3];
+    cross(a, b, temp);
+    return safe_div(length(temp), dot3(a, b));
+}
+
+template <int S>
+fvec<S> spread_attenuation(const fvec<S> D[3], const fvec<S> light_fwd[3], const float tan_half_spread,
+                           const float spread_normalization) {
+    const fvec<S> temp[3] = {-D[0], -D[1], -D[2]};
+    const fvec<S> tan_a = tan_angle(temp, light_fwd);
+    return max((tan_half_spread - tan_a) * spread_normalization, 0.0f);
+}
+
+template <int S>
+fvec<S> spread_attenuation(const fvec<S> D[3], const float light_fwd[3], const float tan_half_spread,
+                           const float spread_normalization) {
+    const fvec<S> temp[3] = {-D[0], -D[1], -D[2]};
+    const fvec<S> tan_a = tan_angle(temp, light_fwd);
+    return max((tan_half_spread - tan_a) * spread_normalization, 0.0f);
+}
+
 } // namespace NS
 } // namespace Ray
 
@@ -5683,6 +5711,11 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
                 UNROLLED_FOR(i, 3, { where(ray_queue[index], ls.col[i]) *= sc.env.env_col[i]; })
                 where(ray_queue[index], ls.from_env) = -1;
             }
+            if (l.rect.spread_normalization > 0.0f) {
+                const fvec<S> att =
+                    spread_attenuation(ls.L, _light_forward, l.rect.tan_half_spread, l.rect.spread_normalization);
+                UNROLLED_FOR(i, 3, { where(ray_queue[index], ls.col[i]) *= att; })
+            }
         } else if (l.type == LIGHT_TYPE_DISK) {
             fvec<S> offset[2] = {2.0f * rand_light_uv[0] - 1.0f, 2.0f * rand_light_uv[1] - 1.0f};
             const ivec<S> mask = simd_cast(offset[0] != 0.0f & offset[1] != 0.0f);
@@ -5739,6 +5772,11 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
                 }
                 UNROLLED_FOR(i, 3, { where(ray_queue[index], ls.col[i]) *= sc.env.env_col[i]; })
                 where(ray_queue[index], ls.from_env) = -1;
+            }
+            if (l.disk.spread_normalization > 0.0f) {
+                const fvec<S> att =
+                    spread_attenuation(ls.L, _light_forward, l.disk.tan_half_spread, l.disk.spread_normalization);
+                UNROLLED_FOR(i, 3, { where(ray_queue[index], ls.col[i]) *= att; })
             }
         } else if (l.type == LIGHT_TYPE_LINE) {
             fvec<S> center_to_surface[3];
@@ -6158,8 +6196,11 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                         const fvec<S> a1 = dot3(l.rect.u, vi) / dot_u;
                         const fvec<S> a2 = dot3(l.rect.v, vi) / dot_v;
 
-                        const fvec<S> final_mask =
-                            (a1 >= -0.5f & a1 <= 0.5f) & (a2 >= -0.5f & a2 <= 0.5f) & simd_cast(imask);
+                        const fvec<S> temp[3] = {-r.d[0], -r.d[1], -r.d[2]};
+                        const fvec<S> tan_angl = tan_angle(temp, light_fwd);
+
+                        const fvec<S> final_mask = (a1 >= -0.5f & a1 <= 0.5f) & (a2 >= -0.5f & a2 <= 0.5f) &
+                                                   (tan_angl < l.rect.tan_half_spread) & simd_cast(imask);
 
                         where(final_mask, inout_inter.v) = 0.0f;
                         where(final_mask, inout_inter.obj_index) = -ivec<S>(light_index) - 1;
@@ -6190,7 +6231,11 @@ void Ray::NS::IntersectAreaLights(const ray_data_t<S> &r, Span<const light_t> li
                         const fvec<S> a1 = dot3(l.disk.u, vi) / dot_u;
                         const fvec<S> a2 = dot3(l.disk.v, vi) / dot_v;
 
-                        const fvec<S> final_mask = (sqrt(a1 * a1 + a2 * a2) <= 0.5f) & simd_cast(imask);
+                        const fvec<S> temp[3] = {-r.d[0], -r.d[1], -r.d[2]};
+                        const fvec<S> tan_angl = tan_angle(temp, light_fwd);
+
+                        const fvec<S> final_mask =
+                            (sqrt(a1 * a1 + a2 * a2) <= 0.5f) & (tan_angl < l.disk.tan_half_spread) & simd_cast(imask);
 
                         where(final_mask, inout_inter.v) = 0.0f;
                         where(final_mask, inout_inter.obj_index) = -ivec<S>(light_index) - 1;
@@ -6385,8 +6430,11 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
                         const fvec<S> a1 = dot3(l.rect.u, vi) / dot_u;
                         const fvec<S> a2 = dot3(l.rect.v, vi) / dot_v;
 
-                        const fvec<S> final_mask =
-                            (a1 >= -0.5f & a1 <= 0.5f) & (a2 >= -0.5f & a2 <= 0.5f) & simd_cast(imask);
+                        const fvec<S> temp[3] = {-r.d[0], -r.d[1], -r.d[2]};
+                        const fvec<S> tan_angl = tan_angle(temp, light_fwd);
+
+                        const fvec<S> final_mask = (a1 >= -0.5f & a1 <= 0.5f) & (a2 >= -0.5f & a2 <= 0.5f) &
+                                                   (tan_angl < l.rect.tan_half_spread) & simd_cast(imask);
 
                         ray_mask &= ~simd_cast(final_mask);
                         where(final_mask, ret) = 0.0f;
@@ -6415,7 +6463,11 @@ Ray::NS::fvec<S> Ray::NS::IntersectAreaLights(const shadow_ray_t<S> &r, Span<con
                         const fvec<S> a1 = dot3(l.disk.u, vi) / dot_u;
                         const fvec<S> a2 = dot3(l.disk.v, vi) / dot_v;
 
-                        const fvec<S> final_mask = (sqrt(a1 * a1 + a2 * a2) <= 0.5f) & simd_cast(imask);
+                        const fvec<S> temp[3] = {-r.d[0], -r.d[1], -r.d[2]};
+                        const fvec<S> tan_angl = tan_angle(temp, light_fwd);
+
+                        const fvec<S> final_mask =
+                            (sqrt(a1 * a1 + a2 * a2) <= 0.5f) & (tan_angl < l.disk.tan_half_spread) & simd_cast(imask);
 
                         ray_mask &= ~simd_cast(final_mask);
                         where(final_mask, ret) = 0.0f;
@@ -6654,6 +6706,12 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
             cross(l.rect.u, l.rect.v, light_fwd);
             normalize(light_fwd);
 
+            if (l.rect.spread_normalization > 0.0f) {
+                const fvec<S> att =
+                    spread_attenuation(ray.d, light_fwd, l.rect.tan_half_spread, l.rect.spread_normalization);
+                UNROLLED_FOR(i, 3, { lcol[i] *= att; })
+            }
+
             const fvec<S> cos_theta = dot3(ray.d, light_fwd);
 
             fvec<S> light_pdf = 0.0f;
@@ -6672,6 +6730,12 @@ void Ray::NS::Evaluate_LightColor(const fvec<S> P[3], const ray_data_t<S> &ray, 
             float light_fwd[3];
             cross(l.disk.u, l.disk.v, light_fwd);
             normalize(light_fwd);
+
+            if (l.disk.spread_normalization > 0.0f) {
+                const fvec<S> att =
+                    spread_attenuation(ray.d, light_fwd, l.disk.tan_half_spread, l.disk.spread_normalization);
+                UNROLLED_FOR(i, 3, { lcol[i] *= att; })
+            }
 
             const fvec<S> cos_theta = dot3(ray.d, light_fwd);
 

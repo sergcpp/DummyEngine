@@ -220,6 +220,8 @@ float angle_between(const vec3 v1, const vec3 v2) {
     }
 }
 
+float tan_angle(const vec3 a, const vec3 b) { return length(cross(a, b)) / dot(a, b); }
+
 // Gram-Schmidt method
 vec3 orthogonalize(const vec3 a, const vec3 b) {
     // we assume that a is normalized

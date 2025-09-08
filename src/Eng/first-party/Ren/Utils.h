@@ -62,6 +62,10 @@ struct vertex_t {
 
 uint16_t f32_to_f16(float value);
 
+inline uint32_t pack_2xf16(const float val1, const float val2) {
+    return (uint32_t(f32_to_f16(val2)) << 16) | f32_to_f16(val1);
+}
+
 inline int16_t f32_to_s16(const float value) { return int16_t(value * 32767); }
 inline uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
 

@@ -489,7 +489,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
         FgBufDesc desc = {};
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
-        desc.views.push_back(Ren::eTexFormat::RGBA32F);
+        desc.views.push_back(Ren::eTexFormat::RGBA32UI);
         common_buffers.lights = update_light_bufs.AddTransferOutput("Lights Buffer", desc);
     }
     { // create decals buffer
@@ -1294,13 +1294,13 @@ Eng::FgResRef Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame_text
             {Ren::eBindTarget::TexSampled, DebugGBuffer::ALBEDO_TEX_SLOT, *albedo_tex.ref},
             {Ren::eBindTarget::TexSampled, DebugGBuffer::NORM_TEX_SLOT, *normals_tex.ref},
             {Ren::eBindTarget::TexSampled, DebugGBuffer::SPEC_TEX_SLOT, *specular_tex.ref},
-            {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
+            {Ren::eBindTarget::ImageRW, DebugGBuffer::OUT_IMG_SLOT, *output_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.act_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,
-            (view_state_.act_res[1] + DebugVelocity::LOCAL_GROUP_SIZE_Y - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_Y, 1u};
+            (view_state_.act_res[0] + DebugGBuffer::LOCAL_GROUP_SIZE_X - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_X,
+            (view_state_.act_res[1] + DebugGBuffer::LOCAL_GROUP_SIZE_Y - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_Y, 1u};
 
-        DebugVelocity::Params uniform_params;
+        DebugGBuffer::Params uniform_params;
         uniform_params.img_size[0] = view_state_.act_res[0];
         uniform_params.img_size[1] = view_state_.act_res[1];
 

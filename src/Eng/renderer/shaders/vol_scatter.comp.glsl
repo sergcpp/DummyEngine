@@ -34,7 +34,7 @@ layout(binding = STBN_TEX_SLOT) uniform sampler2DArray g_stbn_tex;
 layout(binding = FR_SCATTER_TEX_SLOT) uniform sampler3D g_fr_scatter_hist_tex;
 layout(binding = FR_EMISSION_TEX_SLOT) uniform sampler3D g_fr_emission_hist_tex;
 
-layout(binding = LIGHT_BUF_SLOT) uniform samplerBuffer g_lights_buf;
+layout(binding = LIGHT_BUF_SLOT) uniform usamplerBuffer g_lights_buf;
 layout(binding = DECAL_BUF_SLOT) uniform samplerBuffer g_decals_buf;
 layout(binding = CELLS_BUF_SLOT) uniform usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform usamplerBuffer g_items_buf;

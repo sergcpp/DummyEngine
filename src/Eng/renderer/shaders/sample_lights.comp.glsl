@@ -39,7 +39,7 @@ layout(binding = NORM_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
 layout(binding = RANDOM_SEQ_BUF_SLOT) uniform usamplerBuffer g_random_seq;
-layout(binding = LIGHTS_BUF_SLOT) uniform samplerBuffer g_lights_buf;
+layout(binding = LIGHTS_BUF_SLOT) uniform usamplerBuffer g_lights_buf;
 layout(binding = LIGHT_NODES_BUF_SLOT) uniform samplerBuffer g_light_nodes_buf;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {

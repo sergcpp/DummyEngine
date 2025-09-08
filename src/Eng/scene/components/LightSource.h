@@ -31,6 +31,7 @@ struct LightSource {
     Ren::Vec3f bbox_min;
     float angle_deg;
     Ren::Vec3f bbox_max;
+    float spread_deg;
 
     static void Read(const Sys::JsObjectP &js_in, LightSource &ls);
     static void Write(const LightSource &ls, Sys::JsObjectP &js_out);

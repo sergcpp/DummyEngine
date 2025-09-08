@@ -208,13 +208,13 @@ struct light_t {
         } sph;
         struct {
             float pos[3], area;
-            float u[3], _unused0;
-            float v[3], _unused1;
+            float u[3], tan_half_spread;
+            float v[3], spread_normalization;
         } rect;
         struct {
             float pos[3], area;
-            float u[3], _unused0;
-            float v[3], _unused1;
+            float u[3], tan_half_spread;
+            float v[3], spread_normalization;
         } disk;
         struct {
             float pos[3], area;

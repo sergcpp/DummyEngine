@@ -233,6 +233,7 @@ struct spot_light_desc_t {
 struct rect_light_desc_t {
     float color[3] = {1.0f, 1.0f, 1.0f};
     float width = 1.0f, height = 1.0f;
+    float spread_angle = 180.0f;
     bool doublesided = false;
     bool sky_portal = false;
     bool multiple_importance = true;   ///< Use combination of explicit and implicit light sampling
@@ -246,6 +247,7 @@ struct rect_light_desc_t {
 struct disk_light_desc_t {
     float color[3] = {1.0f, 1.0f, 1.0f};
     float size_x = 1.0f, size_y = 1.0f;
+    float spread_angle = 180.0f;
     bool doublesided = false;
     bool sky_portal = false;
     bool multiple_importance = true;   ///< Use combination of explicit and implicit light sampling

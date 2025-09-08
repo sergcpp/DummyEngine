@@ -380,6 +380,8 @@ float peek_ior_stack(const float stack[4], bool skip_first, const float default_
     })
     return default_value;
 }
+
+float spread_attenuation(const fvec4 &D, const fvec4 &light_fwd, float tan_half_spread, float spread_normalization);
 } // namespace Ray::Ref
 
 float Ray::Ref::BRDF_PrincipledDiffuse(const fvec4 &V, const fvec4 &N, const fvec4 &L, const fvec4 &H,
@@ -1127,13 +1129,17 @@ Ray::Ref::fvec4 Ray::Ref::Evaluate_LightColor(const ray_data_t &ray, const hit_d
         } else if (l.type == LIGHT_TYPE_RECT) {
             const fvec4 light_pos = make_fvec3(l.rect.pos);
             const fvec4 light_u = make_fvec3(l.rect.u), light_v = make_fvec3(l.rect.v);
+            const fvec4 light_forward = normalize(cross(light_u, light_v));
+
+            if (l.rect.spread_normalization > 0.0f) {
+                lcol *= spread_attenuation(I, light_forward, l.rect.tan_half_spread, l.rect.spread_normalization);
+            }
 
             float light_pdf = 0.0f;
             if (USE_SPHERICAL_AREA_LIGHT_SAMPLING) {
                 light_pdf = SampleSphericalRectangle(ro, light_pos, light_u, light_v, {}, nullptr) / pdf_factor;
             }
             if (light_pdf == 0.0f) {
-                const fvec4 light_forward = normalize(cross(light_u, light_v));
                 const float light_area = l.rect.area;
                 const float cos_theta = dot(I, light_forward);
                 light_pdf = (inter.t * inter.t) / (light_area * cos_theta * pdf_factor);
@@ -1143,11 +1149,14 @@ Ray::Ref::fvec4 Ray::Ref::Evaluate_LightColor(const ray_data_t &ray, const hit_d
             const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
             lcol *= mis_weight;
         } else if (l.type == LIGHT_TYPE_DISK) {
-            fvec4 light_u = make_fvec3(l.disk.u), light_v = make_fvec3(l.disk.v);
-
+            const fvec4 light_u = make_fvec3(l.disk.u), light_v = make_fvec3(l.disk.v);
             const fvec4 light_forward = normalize(cross(light_u, light_v));
-            const float light_area = l.disk.area;
 
+            if (l.disk.spread_normalization > 0.0f) {
+                lcol *= spread_attenuation(I, light_forward, l.disk.tan_half_spread, l.disk.spread_normalization);
+            }
+
+            const float light_area = l.disk.area;
             const float cos_theta = dot(I, light_forward);
 
             const float light_pdf = (inter.t * inter.t) / (light_area * cos_theta * pdf_factor);

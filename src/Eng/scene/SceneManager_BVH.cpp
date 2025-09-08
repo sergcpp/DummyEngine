@@ -1539,7 +1539,7 @@ void Eng::SceneManager::RebuildLightTree() {
         scene_data_.persistent_data.stoch_lights_buf =
             scene_data_.buffers.Insert("Stochastic Lights", ren_ctx_.api_ctx(), Ren::eBufType::Texture,
                                        uint32_t(stochastic_lights.size() * sizeof(light_item_t)));
-        scene_data_.persistent_data.stoch_lights_buf->AddBufferView(Ren::eTexFormat::RGBA32F);
+        scene_data_.persistent_data.stoch_lights_buf->AddBufferView(Ren::eTexFormat::RGBA32UI);
         scene_data_.persistent_data.stoch_lights_nodes_buf =
             scene_data_.buffers.Insert("Stochastic Light Nodes", ren_ctx_.api_ctx(), Ren::eBufType::Texture,
                                        uint32_t(light_wnodes.size() * sizeof(gpu_light_cwbvh_node_t)));

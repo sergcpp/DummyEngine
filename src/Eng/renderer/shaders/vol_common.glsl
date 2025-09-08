@@ -72,7 +72,10 @@ vec3 EvaluateLightSource_Vol(const _light_item_t litem, const vec3 P, const vec3
     const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
     const float _dot = -dot(from_light, litem.dir_and_spot.xyz);
     const float _angle = approx_acos(_dot);
-    if (type != LIGHT_TYPE_LINE && _angle > litem.dir_and_spot.w) {
+    if (type == LIGHT_TYPE_SPHERE && _angle > litem.dir_and_spot.w) {
+        return vec3(0.0);
+    } else if (type != LIGHT_TYPE_LINE && _angle > (0.5 * M_PI)) {
+        // Single-sided
         return vec3(0.0);
     }
 
@@ -84,6 +87,9 @@ vec3 EvaluateLightSource_Vol(const _light_item_t litem, const vec3 P, const vec3
     if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
         const float brightness_mul = litem.pos_and_radius.w * litem.pos_and_radius.w;
         ret += brightness_mul * litem.col_and_type.xyz / (M_PI * max(0.001, sqr_dist));
+        if (litem.v_and_blend.w > 0.0) {
+            ret *= saturate((litem.dir_and_spot.w - _angle) / sqr(litem.v_and_blend.w));
+        }
     } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
         vec3 points[4];
         points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_blend.xyz;
@@ -107,10 +113,6 @@ vec3 EvaluateLightSource_Vol(const _light_item_t litem, const vec3 P, const vec3
     }
 
     ret *= HenyeyGreenstein(dot(L, I), anisotropy);
-
-    if (type == LIGHT_TYPE_SPHERE && litem.v_and_blend.w > 0.0) {
-        ret *= saturate((litem.dir_and_spot.w - _angle) / litem.v_and_blend.w);
-    }
 
     return ret;
 }

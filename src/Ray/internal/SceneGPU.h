@@ -1285,6 +1285,16 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const rect_light_desc_t &_l, co
     memcpy(l.rect.u, value_ptr(uvec), 3 * sizeof(float));
     memcpy(l.rect.v, value_ptr(vvec), 3 * sizeof(float));
 
+    l.rect.tan_half_spread = FLT_MAX;
+    l.rect.spread_normalization = 0.0f;
+    if (!_l.sky_portal && _l.spread_angle < 180.0f) {
+        const float half_spread = fmaxf(0.5f * _l.spread_angle * PI / 180.0f, 0.1f);
+        l.rect.tan_half_spread = tanf(half_spread);
+
+        // Integrate cos(x) * (1 - tan(x) / tan(half_spread)) * sin(x) from x = 0 to half_spread
+        l.rect.spread_normalization = 1.0f / (l.rect.tan_half_spread - half_spread);
+    }
+
     std::unique_lock<std::shared_timed_mutex> lock(mtx_);
 
     const std::pair<uint32_t, uint32_t> light_index = lights_.push(l);
@@ -1319,6 +1329,16 @@ inline Ray::LightHandle Ray::NS::Scene::AddLight(const disk_light_desc_t &_l, co
 
     memcpy(l.disk.u, value_ptr(uvec), 3 * sizeof(float));
     memcpy(l.disk.v, value_ptr(vvec), 3 * sizeof(float));
+
+    l.disk.tan_half_spread = FLT_MAX;
+    l.disk.spread_normalization = 0.0f;
+    if (!_l.sky_portal && _l.spread_angle < 180.0f) {
+        const float half_spread = fmaxf(0.5f * _l.spread_angle * PI / 180.0f, 0.1f);
+        l.disk.tan_half_spread = tanf(half_spread);
+
+        // Integrate cos(x) * (1 - tan(x) / tan(half_spread)) * sin(x) from x = 0 to half_spread
+        l.disk.spread_normalization = 1.0f / (l.disk.tan_half_spread - half_spread);
+    }
 
     std::unique_lock<std::shared_timed_mutex> lock(mtx_);
 

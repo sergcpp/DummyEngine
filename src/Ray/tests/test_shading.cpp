@@ -1761,6 +1761,27 @@ void test_complex_mat5_hdri_light(const char *arch_list[], std::string_view pref
                      PixThres, eDenoiseMethod::None, false, textures, eTestScene::Standard_HDRLight);
 }
 
+void test_complex_mat5_area_spread(const char *arch_list[], std::string_view preferred_device) {
+    const int SampleCount = 64;
+    const double MinPSNR = 24.65;
+    const int PixThres = 1230;
+
+    Ray::principled_mat_desc_t metal_mat_desc;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
+    metal_mat_desc.roughness = 1.0f;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
+    metal_mat_desc.metallic = 1.0f;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
+
+    const char *textures[] = {
+        "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
+        "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga"};
+
+    run_shading_test(arch_list, preferred_device, "complex_mat5_area_spread", metal_mat_desc, SampleCount, MinPSNR,
+                     PixThres, eDenoiseMethod::UNet, false, textures, eTestScene::Standard_AreaSpread);
+}
+
 void test_complex_mat6(const char *arch_list[], std::string_view preferred_device) {
     const int SampleCount = 43;
     const double MinPSNR = 23.0;
