@@ -76,7 +76,7 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.cull_mask = args_->cull_mask;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_->layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_->layout(), pi_debug_->prog()->pc_range(0).stageFlags, 0,
                                 sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdTraceRaysKHR(cmd_buf, pi_debug_->rgen_table(), pi_debug_->miss_table(), pi_debug_->hit_table(),
