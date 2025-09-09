@@ -199,18 +199,18 @@ void Eng::PrimDraw::DrawPrim(Ren::CommandBuffer cmd_buf, const ePrim prim, const
     }
 
     if (uniform_data) {
-        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
+        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_range(0).stageFlags,
                                     uniform_data_offset, uniform_data_len, uniform_data);
     }
 
     if (prim == ePrim::Quad) {
         pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
 
-        api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
-                                  instances,            // instance count
-                                  0,                    // first index
-                                  0,                    // vertex offset
-                                  0);                   // first instance
+        api_ctx->vkCmdDrawIndexed(cmd_buf, 6u, // index count
+                                  instances,   // instance count
+                                  0,           // first index
+                                  0,           // vertex offset
+                                  0);          // first instance
     } else if (prim == ePrim::Sphere) {
         pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, sphere_ndx_.offset, VK_INDEX_TYPE_UINT16);
 

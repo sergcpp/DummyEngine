@@ -82,6 +82,7 @@ class Program : public RefCounter {
 
     Span<const VkDescriptorSetLayout> descr_set_layouts() const { return descr_set_layouts_; }
     Span<const VkPushConstantRange> pc_ranges() const { return pc_ranges_; }
+    const VkPushConstantRange &pc_range(const int i) const { return pc_ranges_[i]; }
 
     void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, ShaderRef gs_ref, ILog *log);
     void Init(ShaderRef cs_ref, ILog *log);
