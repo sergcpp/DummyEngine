@@ -47,7 +47,8 @@ void WordPuzzleUI::Restart() {
 }
 
 bool WordPuzzleUI::Load(const Sys::JsObject &js_puzzle) {
-    if (!js_puzzle.Has("text")) {
+    const size_t text_ndx = js_puzzle.IndexOf("text");
+    if (text_ndx >= js_puzzle.Size()) {
         return false;
     }
 
@@ -60,11 +61,11 @@ bool WordPuzzleUI::Load(const Sys::JsObject &js_puzzle) {
 
     std::mt19937 rand_gen(std::random_device{}());
 
-    const Sys::JsString &js_text = js_puzzle.at("text").as_str();
+    const Sys::JsString &js_text = js_puzzle[text_ndx].second.as_str();
     text_data_ = js_text.val;
 
-    if (js_puzzle.Has("options")) {
-        const Sys::JsArray &js_options = js_puzzle.at("options").as_arr();
+    if (const size_t options_ndx = js_puzzle.IndexOf("options"); options_ndx < js_puzzle.Size()) {
+        const Sys::JsArray &js_options = js_puzzle[options_ndx].second.as_arr();
         for (const Sys::JsElement &js_opt_el : js_options.elements) {
             const Sys::JsObject &js_opt = js_opt_el.as_obj();
 
@@ -95,8 +96,8 @@ bool WordPuzzleUI::Load(const Sys::JsObject &js_puzzle) {
         }
     }
 
-    if (js_puzzle.Has("hints")) {
-        const Sys::JsArray &js_hints = js_puzzle.at("hints").as_arr();
+    if (const size_t hints_ndx = js_puzzle.IndexOf("hints"); hints_ndx < js_puzzle.Size()) {
+        const Sys::JsArray &js_hints = js_puzzle[hints_ndx].second.as_arr();
         for (const Sys::JsElement &js_hint_el : js_hints.elements) {
             const Sys::JsObject &js_hint = js_hint_el.as_obj();
 

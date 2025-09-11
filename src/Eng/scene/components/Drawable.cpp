@@ -9,8 +9,8 @@ const Ren::Bitmask<Eng::Drawable::eVisibility> Eng::Drawable::DefaultVisMask =
 void Eng::Drawable::Read(const Sys::JsObjectP &js_in, Drawable &dr) {
     dr.vis_mask = DefaultVisMask;
 
-    if (js_in.Has("visible_to_camera")) {
-        Sys::JsLiteral v = js_in.at("visible_to_camera").as_lit();
+    if (const size_t visible_to_camera_ndx = js_in.IndexOf("visible_to_camera"); visible_to_camera_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_camera_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             dr.vis_mask |= eVisibility::Camera;
         } else {
@@ -18,8 +18,8 @@ void Eng::Drawable::Read(const Sys::JsObjectP &js_in, Drawable &dr) {
         }
     }
 
-    if (js_in.Has("visible_to_shadow")) {
-        Sys::JsLiteral v = js_in.at("visible_to_shadow").as_lit();
+    if (const size_t visible_to_shadow_ndx = js_in.IndexOf("visible_to_shadow"); visible_to_shadow_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_shadow_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             dr.vis_mask |= eVisibility::Shadow;
         } else {
@@ -27,21 +27,17 @@ void Eng::Drawable::Read(const Sys::JsObjectP &js_in, Drawable &dr) {
         }
     }
 
-    if (js_in.Has("visible_to_probes")) {
-        Sys::JsLiteral v = js_in.at("visible_to_probes").as_lit();
+    if (const size_t visible_to_probes_ndx = js_in.IndexOf("visible_to_probes"); visible_to_probes_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_probes_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::False) {
             dr.vis_mask &= ~Ren::Bitmask(eVisibility::Probes);
         }
     }
 
-    // if (js_in.Has("material_override")) {
-    //     dr.flags |= eFlags::MaterialOverride;
-    // }
-
-    /*if (js_in.Has("ellipsoids")) {
-        const Sys::JsArrayP &js_ellipsoids = js_in.at("ellipsoids").as_arr();
+    /*if (const size_t ellipsoids_ndx = js_in.IndexOf("ellipsoids"); ellipsoids_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_ellipsoids = js_in[ellipsoids_ndx].second.as_arr();
         for (size_t i = 0; i < js_ellipsoids.elements.size(); i++) {
-            const JsObjectP &js_ellipsoid = js_ellipsoids[i].as_obj();
+            const Sys::JsObjectP &js_ellipsoid = js_ellipsoids[i].as_obj();
 
             const Sys::JsArrayP &js_ellipsoid_offset = js_ellipsoid.at("offset").as_arr();
             dr.ellipsoids[i].offset[0] = float(js_ellipsoid_offset[0].as_num().val);
@@ -54,8 +50,8 @@ void Eng::Drawable::Read(const Sys::JsObjectP &js_in, Drawable &dr) {
             dr.ellipsoids[i].axis[1] = float(js_ellipsoid_axis[1].as_num().val);
             dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num().val);
 
-            if (js_ellipsoid.Has("bone")) {
-                dr.ellipsoids[i].bone_name = Ren::String{js_ellipsoid.at("bone").as_str().val.c_str()};
+            if (const size_t bone_ndx = js_ellipsoid.IndexOf("bone"); bone_ndx < js_ellipsoid.Size()) {
+                dr.ellipsoids[i].bone_name = Ren::String{js_ellipsoid[bone_ndx].second.as_str().val.c_str()};
             }
             dr.ellipsoids[i].bone_index = -1;
         }

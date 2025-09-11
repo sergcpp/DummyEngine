@@ -331,8 +331,8 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
 
             entry.orth = Ren::String{js_orth.val};
 
-            if (js_form.Has("pron")) {
-                const Sys::JsString &js_pron = js_form.at("pron").as_str();
+            if (const size_t pron_ndx = js_form.IndexOf("pron"); pron_ndx < js_form.Size()) {
+                const Sys::JsString &js_pron = js_form[pron_ndx].second.as_str();
                 entry.pron = Ren::String{js_pron.val};
             }
 
@@ -341,10 +341,10 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             entry.num = eGramGrpNum::Singular;
             entry.gen = eGramGrpGen::Masculine;
 
-            if (js_entry.Has("gramGrp")) {
-                const Sys::JsObject &js_gram_grp = js_entry.at("gramGrp").as_obj();
-                if (js_gram_grp.Has("pos")) {
-                    const Sys::JsString &js_gram_grp_pos = js_gram_grp.at("pos").as_str();
+            if (const size_t gram_grp_ndx = js_entry.IndexOf("gramGrp"); gram_grp_ndx < js_entry.Size()) {
+                const Sys::JsObject &js_gram_grp = js_entry[gram_grp_ndx].second.as_obj();
+                if (const size_t pos_ndx = js_gram_grp.IndexOf("pos"); pos_ndx < js_gram_grp.Size()) {
+                    const Sys::JsString &js_gram_grp_pos = js_gram_grp[pos_ndx].second.as_str();
                     if (js_gram_grp_pos.val == "n") {
                         entry.pos = eGramGrpPos::Noun;
                     } else if (js_gram_grp_pos.val == "v") {
@@ -353,17 +353,17 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
                         entry.pos = eGramGrpPos::Adjective;
                     }
                 }
-                if (js_gram_grp.Has("num")) {
-                    if (js_gram_grp.at("num").type() == Sys::JsType::String) {
-                        const Sys::JsString &js_gram_grp_num = js_gram_grp.at("num").as_str();
+                if (const size_t num_ndx = js_gram_grp.IndexOf("num"); num_ndx < js_gram_grp.Size()) {
+                    if (js_gram_grp[num_ndx].second.type() == Sys::JsType::String) {
+                        const Sys::JsString &js_gram_grp_num = js_gram_grp[num_ndx].second.as_str();
                         if (js_gram_grp_num.val == "p") {
                             entry.num = eGramGrpNum::Plural;
                         }
                     }
                 }
-                if (js_gram_grp.Has("gen")) {
-                    if (js_gram_grp.at("gen").type() == Sys::JsType::String) {
-                        const Sys::JsString &js_gram_grp_gen = js_gram_grp.at("gen").as_str();
+                if (const size_t gen_ndx = js_gram_grp.IndexOf("gen"); gen_ndx < js_gram_grp.Size()) {
+                    if (js_gram_grp[gen_ndx].second.type() == Sys::JsType::String) {
+                        const Sys::JsString &js_gram_grp_gen = js_gram_grp[gen_ndx].second.as_str();
                         if (js_gram_grp_gen.val == "f") {
                             entry.gen = eGramGrpGen::Feminine;
                         } else if (js_gram_grp_gen.val == "n") {

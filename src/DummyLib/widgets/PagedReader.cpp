@@ -39,67 +39,75 @@ void PagedReader::Clear() {
     // cur_text_data_.clear();
 }
 
-bool PagedReader::LoadBook(const Sys::JsObject &js_book, const char *src_lang, const char *trg_lang) {
+bool PagedReader::LoadBook(const Sys::JsObject &js_book, std::string_view src_lang, std::string_view trg_lang) {
     Clear();
 
-    if (js_book.Has("title")) {
-        const Sys::JsObject &js_title = js_book.at("title").as_obj();
-        if (!js_title.Has(src_lang)) {
-            log_->Error("Language %s is missing in title!", src_lang);
+    if (const size_t title_ndx = js_book.IndexOf("title"); title_ndx < js_book.Size()) {
+        const Sys::JsObject &js_title = js_book[title_ndx].second.as_obj();
+
+        const size_t src_lang_ndx = js_title.IndexOf(src_lang);
+        if (src_lang_ndx >= js_title.Size()) {
+            log_->Error("Language %.*s is missing in title!", int(src_lang.length()), src_lang.data());
             return false;
         }
-        if (!js_title.Has(trg_lang)) {
-            log_->Error("Language %s is missing in title!", trg_lang);
+        const size_t trg_lang_ndx = js_title.IndexOf(trg_lang);
+        if (trg_lang_ndx >= js_title.Size()) {
+            log_->Error("Language %.*s is missing in title!", int(trg_lang.length()), trg_lang.data());
             return false;
         }
 
-        const Sys::JsString &js_src_title = js_title.at(src_lang).as_str(),
-                            &js_trg_title = js_title.at(trg_lang).as_str();
+        const Sys::JsString &js_src_title = js_title[src_lang_ndx].second.as_str(),
+                            &js_trg_title = js_title[trg_lang_ndx].second.as_str();
 
         title_[0] = js_src_title.val;
         title_[1] = js_trg_title.val;
     }
 
-    if (js_book.Has("chapters")) {
-        const Sys::JsArray &js_chapters = js_book.at("chapters").as_arr();
+    if (const size_t chapters_ndx = js_book.IndexOf("chapters"); chapters_ndx < js_book.Size()) {
+        const Sys::JsArray &js_chapters = js_book[chapters_ndx].second.as_arr();
         for (const Sys::JsElement &js_chapter_el : js_chapters.elements) {
             const auto &js_chapter = (const Sys::JsObject &)js_chapter_el.as_obj();
 
             ChapterData &chapter_src = chapters_[0].emplace_back();
             ChapterData &chapter_trg = chapters_[1].emplace_back();
 
-            if (js_chapter.Has("caption")) {
-                const Sys::JsObject &js_caption = js_chapter.at("caption").as_obj();
-                if (!js_caption.Has(src_lang)) {
-                    log_->Error("Language %s is missing in caption!", src_lang);
+            if (const size_t caption_ndx = js_chapter.IndexOf("caption"); caption_ndx < js_chapter.Size()) {
+                const Sys::JsObject &js_caption = js_chapter[caption_ndx].second.as_obj();
+
+                const size_t src_lang_ndx = js_caption.IndexOf(src_lang);
+                if (src_lang_ndx >= js_caption.Size()) {
+                    log_->Error("Language %.*s is missing in caption!", int(src_lang.length()), src_lang.data());
                     return false;
                 }
-                if (!js_caption.Has(trg_lang)) {
-                    log_->Error("Language %s is missing in caption!", trg_lang);
+                const size_t trg_lang_ndx = js_caption.IndexOf(trg_lang);
+                if (trg_lang_ndx >= js_caption.Size()) {
+                    log_->Error("Language %.*s is missing in caption!", int(trg_lang.length()), trg_lang.data());
                     return false;
                 }
 
-                const Sys::JsString &js_src_caption = js_caption.at(src_lang).as_str(),
-                                    &js_trg_caption = js_caption.at(trg_lang).as_str();
+                const Sys::JsString &js_src_caption = js_caption[src_lang_ndx].second.as_str(),
+                                    &js_trg_caption = js_caption[trg_lang_ndx].second.as_str();
 
                 chapter_src.caption = js_src_caption.val;
                 chapter_trg.caption = js_trg_caption.val;
             }
 
-            if (js_chapter.Has("text_data")) {
-                const Sys::JsObject &js_data = js_chapter.at("text_data").as_obj();
+            if (const size_t text_data_ndx = js_chapter.IndexOf("text_data"); text_data_ndx < js_chapter.Size()) {
+                const Sys::JsObject &js_data = js_chapter[text_data_ndx].second.as_obj();
 
-                if (!js_data.Has(src_lang)) {
-                    log_->Error("Language %s is missing in data!", src_lang);
+                const size_t src_lang_ndx = js_data.IndexOf(src_lang);
+                if (src_lang_ndx >= js_data.Size()) {
+                    log_->Error("Language %.*s is missing in data!", int(src_lang.length()), src_lang.data());
                     return false;
                 }
-                if (!js_data.Has(trg_lang)) {
-                    log_->Error("Language %s is missing in data!", trg_lang);
+                const size_t trg_lang_ndx = js_data.IndexOf(trg_lang);
+                if (trg_lang_ndx >= js_data.Size()) {
+                    log_->Error("Language %.*s is missing in data!", int(trg_lang.length()), trg_lang.data());
                     return false;
                 }
 
-                const Sys::JsString &js_src_data = js_data.at(src_lang).as_str(),
-                                    &js_trg_data = js_data.at(trg_lang).as_str();
+                const Sys::JsString &js_src_data = js_data[src_lang_ndx].second.as_str(),
+                                    &js_trg_data = js_data[trg_lang_ndx].second.as_str();
 
                 chapter_src.text_data = js_src_data.val;
                 chapter_trg.text_data = js_trg_data.val;

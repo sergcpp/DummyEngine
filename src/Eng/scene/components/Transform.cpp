@@ -26,8 +26,8 @@ void Eng::Transform::UpdateInvMatrix() { object_from_world = InverseAffine(world
 void Eng::Transform::Read(const Sys::JsObjectP &js_in, Transform &tr) {
     tr.world_from_object = Ren::Mat4f{1.0f};
 
-    if (js_in.Has("pos")) {
-        const Sys::JsArrayP &js_pos = js_in.at("pos").as_arr();
+    if (const size_t pos_ndx = js_in.IndexOf("pos"); pos_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_pos = js_in[pos_ndx].second.as_arr();
 
         tr.position[0] = js_pos.at(0).as_num().val;
         tr.position[1] = js_pos.at(1).as_num().val;
@@ -36,8 +36,8 @@ void Eng::Transform::Read(const Sys::JsObjectP &js_in, Transform &tr) {
         tr.world_from_object = Translate(tr.world_from_object, Ren::Vec3f(tr.position));
     }
 
-    if (js_in.Has("rot")) {
-        const Sys::JsArrayP &js_rot = js_in.at("rot").as_arr();
+    if (const size_t rot_ndx = js_in.IndexOf("rot"); rot_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_rot = js_in[rot_ndx].second.as_arr();
 
         // angles in degrees
         tr.euler_angles_rad = Ren::Vec3f{float(js_rot.at(0).as_num().val), float(js_rot.at(1).as_num().val),
@@ -54,8 +54,8 @@ void Eng::Transform::Read(const Sys::JsObjectP &js_in, Transform &tr) {
         }
     }
 
-    if (js_in.Has("scale")) {
-        const Sys::JsArrayP &js_scale = js_in.at("scale").as_arr();
+    if (const size_t scale_ndx = js_in.IndexOf("scale"); scale_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_scale = js_in[scale_ndx].second.as_arr();
 
         tr.scale[0] = float(js_scale[0].as_num().val);
         tr.scale[1] = float(js_scale[1].as_num().val);

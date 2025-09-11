@@ -11,8 +11,8 @@ const Ren::Bitmask<Eng::AccStructure::eRayType> Eng::AccStructure::DefaultVisMas
 void Eng::AccStructure::Read(const Sys::JsObjectP &js_in, AccStructure &acc) {
     acc.vis_mask = DefaultVisMask;
 
-    if (js_in.Has("visible_to_camera")) {
-        Sys::JsLiteral v = js_in.at("visible_to_camera").as_lit();
+    if (const size_t visible_to_camera_ndx = js_in.IndexOf("visible_to_camera"); visible_to_camera_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_camera_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             acc.vis_mask |= eRayType::Camera;
         } else {
@@ -20,8 +20,9 @@ void Eng::AccStructure::Read(const Sys::JsObjectP &js_in, AccStructure &acc) {
         }
     }
 
-    if (js_in.Has("visible_to_diffuse")) {
-        Sys::JsLiteral v = js_in.at("visible_to_diffuse").as_lit();
+    if (const size_t visible_to_diffuse_ndx = js_in.IndexOf("visible_to_diffuse");
+        visible_to_diffuse_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_diffuse_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             acc.vis_mask |= eRayType::Diffuse;
         } else {
@@ -29,8 +30,9 @@ void Eng::AccStructure::Read(const Sys::JsObjectP &js_in, AccStructure &acc) {
         }
     }
 
-    if (js_in.Has("visible_to_specular")) {
-        Sys::JsLiteral v = js_in.at("visible_to_specular").as_lit();
+    if (const size_t visible_to_specular_ndx = js_in.IndexOf("visible_to_specular");
+        visible_to_specular_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_specular_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             acc.vis_mask |= eRayType::Specular;
         } else {
@@ -38,8 +40,9 @@ void Eng::AccStructure::Read(const Sys::JsObjectP &js_in, AccStructure &acc) {
         }
     }
 
-    if (js_in.Has("visible_to_refraction")) {
-        Sys::JsLiteral v = js_in.at("visible_to_refraction").as_lit();
+    if (const size_t visible_to_refraction_ndx = js_in.IndexOf("visible_to_refraction");
+        visible_to_refraction_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_refraction_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             acc.vis_mask |= eRayType::Refraction;
         } else {
@@ -47,8 +50,8 @@ void Eng::AccStructure::Read(const Sys::JsObjectP &js_in, AccStructure &acc) {
         }
     }
 
-    if (js_in.Has("visible_to_shadow")) {
-        Sys::JsLiteral v = js_in.at("visible_to_shadow").as_lit();
+    if (const size_t visible_to_shadow_ndx = js_in.IndexOf("visible_to_shadow"); visible_to_shadow_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_shadow_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             acc.vis_mask |= eRayType::Shadow;
         } else {
@@ -56,8 +59,8 @@ void Eng::AccStructure::Read(const Sys::JsObjectP &js_in, AccStructure &acc) {
         }
     }
 
-    if (js_in.Has("visible_to_volume")) {
-        Sys::JsLiteral v = js_in.at("visible_to_volume").as_lit();
+    if (const size_t visible_to_volume_ndx = js_in.IndexOf("visible_to_volume"); visible_to_volume_ndx < js_in.Size()) {
+        const Sys::JsLiteral v = js_in[visible_to_volume_ndx].second.as_lit();
         if (v.val == Sys::JsLiteralType::True) {
             acc.vis_mask |= eRayType::Volume;
         } else {

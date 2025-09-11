@@ -3,27 +3,25 @@
 #include <Sys/Json.h>
 
 void Eng::LightProbe::Read(const Sys::JsObjectP &js_in, LightProbe &pr) {
-    if (js_in.Has("offset")) {
-        const Sys::JsArrayP &js_offset = js_in.at("offset").as_arr();
+    if (const size_t offset_ndx = js_in.IndexOf("offset"); offset_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_offset = js_in[offset_ndx].second.as_arr();
 
-        pr.offset = Ren::Vec3f{float(js_offset.at(0).as_num().val),
-                               float(js_offset.at(1).as_num().val),
+        pr.offset = Ren::Vec3f{float(js_offset.at(0).as_num().val), float(js_offset.at(1).as_num().val),
                                float(js_offset.at(2).as_num().val)};
     }
 
-    if (js_in.Has("radius")) {
-        const Sys::JsNumber &js_radius = js_in.at("radius").as_num();
+    if (const size_t radius_ndx = js_in.IndexOf("radius"); radius_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_radius = js_in[radius_ndx].second.as_num();
         pr.radius = float(js_radius.val);
     }
 
-    if (js_in.Has("sh_coeffs")) {
-        const Sys::JsArrayP &js_sh_coeffs = js_in.at("sh_coeffs").as_arr();
+    if (const size_t sh_coeffs_ndx = js_in.IndexOf("sh_coeffs"); sh_coeffs_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_sh_coeffs = js_in[sh_coeffs_ndx].second.as_arr();
 
         for (int i = 0; i < 4; i++) {
             const Sys::JsArrayP &js_sh_coeff = js_sh_coeffs.at(i).as_arr();
 
-            pr.sh_coeffs[i] = Ren::Vec3f{float(js_sh_coeff.at(0).as_num().val),
-                                         float(js_sh_coeff.at(1).as_num().val),
+            pr.sh_coeffs[i] = Ren::Vec3f{float(js_sh_coeff.at(0).as_num().val), float(js_sh_coeff.at(1).as_num().val),
                                          float(js_sh_coeff.at(2).as_num().val)};
         }
     }

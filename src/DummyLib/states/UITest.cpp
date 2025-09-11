@@ -85,39 +85,30 @@ void UITest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     Ren::Vec3d view_origin, view_dir = Ren::Vec3d{0, 0, 1};
     float view_fov = 45, min_exposure = -1000, max_exposure = 1000;
 
-    if (js_scene.Has("camera")) {
-        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
-        if (js_cam.Has("view_origin")) {
-            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+    if (const size_t camera_ndx = js_scene.IndexOf("camera"); camera_ndx < js_scene.Size()) {
+        const Sys::JsObjectP &js_cam = js_scene[camera_ndx].second.as_obj();
+        if (const size_t view_origin_ndx = js_cam.IndexOf("view_origin"); view_origin_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_orig = js_cam[view_origin_ndx].second.as_arr();
             view_origin[0] = js_orig.at(0).as_num().val;
             view_origin[1] = js_orig.at(1).as_num().val;
             view_origin[2] = js_orig.at(2).as_num().val;
         }
-
-        if (js_cam.Has("view_dir")) {
-            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+        if (const size_t view_dir_ndx = js_cam.IndexOf("view_dir"); view_dir_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_dir = js_cam[view_dir_ndx].second.as_arr();
             view_dir[0] = js_dir.at(0).as_num().val;
             view_dir[1] = js_dir.at(1).as_num().val;
             view_dir[2] = js_dir.at(2).as_num().val;
         }
-
-        /*if (js_cam.Has("fwd_speed")) {
-            const JsNumber &js_fwd_speed = (const JsNumber &)js_cam.at("fwd_speed");
-            max_fwd_speed_ = float(js_fwd_speed.val);
-        }*/
-
-        if (js_cam.Has("fov")) {
-            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
+        if (const size_t fov_ndx = js_cam.IndexOf("fov"); fov_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_fov = js_cam[fov_ndx].second.as_num();
             view_fov = float(js_fov.val);
         }
-
-        if (js_cam.Has("min_exposure")) {
-            const Sys::JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+        if (const size_t min_exposure_ndx = js_cam.IndexOf("min_exposure"); min_exposure_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_min_exposure = js_cam[min_exposure_ndx].second.as_num();
             min_exposure = float(js_min_exposure.val);
         }
-
-        if (js_cam.Has("max_exposure")) {
-            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+        if (const size_t max_exposure_ndx = js_cam.IndexOf("max_exposure"); max_exposure_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_max_exposure = js_cam[max_exposure_ndx].second.as_num();
             max_exposure = float(js_max_exposure.val);
         }
     }

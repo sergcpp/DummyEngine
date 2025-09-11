@@ -177,44 +177,38 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
     };
     std::vector<cam_frame_t> cam_frames;
 
-    if (js_scene.Has("camera")) {
-        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
-        if (js_cam.Has("view_origin")) {
-            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+    if (const size_t camera_ndx = js_scene.IndexOf("camera"); camera_ndx < js_scene.Size()) {
+        const Sys::JsObjectP &js_cam = js_scene[camera_ndx].second.as_obj();
+        if (const size_t view_origin_ndx = js_cam.IndexOf("view_origin"); view_origin_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_orig = js_cam[view_origin_ndx].second.as_arr();
             view_pos[0] = js_orig.at(0).as_num().val;
             view_pos[1] = js_orig.at(1).as_num().val;
             view_pos[2] = js_orig.at(2).as_num().val;
         }
-
-        if (js_cam.Has("view_dir")) {
-            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+        if (const size_t view_dir_ndx = js_cam.IndexOf("view_dir"); view_dir_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_dir = js_cam[view_dir_ndx].second.as_arr();
             view_dir[0] = js_dir.at(0).as_num().val;
             view_dir[1] = js_dir.at(1).as_num().val;
             view_dir[2] = js_dir.at(2).as_num().val;
         }
-
-        if (js_cam.Has("fov")) {
-            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
+        if (const size_t fov_ndx = js_cam.IndexOf("fov"); fov_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_fov = js_cam[fov_ndx].second.as_num();
             view_fov = float(js_fov.val);
         }
-
-        if (js_cam.Has("gamma")) {
-            const Sys::JsNumber &js_gamma = js_cam.at("gamma").as_num();
+        if (const size_t gamma_ndx = js_cam.IndexOf("gamma"); gamma_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_gamma = js_cam[gamma_ndx].second.as_num();
             gamma = float(js_gamma.val);
         }
-
-        if (js_cam.Has("min_exposure")) {
-            const Sys::JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+        if (const size_t min_exposure_ndx = js_cam.IndexOf("min_exposure"); min_exposure_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_min_exposure = js_cam[min_exposure_ndx].second.as_num();
             min_exposure = float(js_min_exposure.val);
         }
-
-        if (js_cam.Has("max_exposure")) {
-            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+        if (const size_t max_exposure_ndx = js_cam.IndexOf("max_exposure"); max_exposure_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_max_exposure = js_cam[max_exposure_ndx].second.as_num();
             max_exposure = float(js_max_exposure.val);
         }
-
-        if (js_cam.Has("view_transform")) {
-            const Sys::JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
+        if (const size_t view_transform_ndx = js_cam.IndexOf("view_transform"); view_transform_ndx < js_cam.Size()) {
+            const Sys::JsStringP &js_view_transform = js_cam[view_transform_ndx].second.as_str();
             if (js_view_transform.val == "agx") {
                 renderer->settings.tonemap_mode = eTonemapMode::LUT;
                 renderer->SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RGB10_A2,
@@ -224,8 +218,8 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
             }
         }
 
-        if (js_cam.Has("paths")) {
-            const Sys::JsArrayP &js_frames = js_cam.at("paths").as_arr().at(0).as_arr();
+        if (const size_t paths_ndx = js_cam.IndexOf("paths"); paths_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_frames = js_cam[paths_ndx].second.as_arr().at(0).as_arr();
             for (const Sys::JsElementP &el : js_frames.elements) {
                 const Sys::JsObjectP &js_frame = el.as_obj();
 

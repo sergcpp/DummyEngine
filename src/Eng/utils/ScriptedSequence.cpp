@@ -44,13 +44,13 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
         lookup_name_ = lookup_name;
     }
 
-    if (js_seq.Has("name")) {
-        const Sys::JsString &js_name = js_seq.at("name").as_str();
+    if (const size_t name_ndx = js_seq.IndexOf("name"); name_ndx < js_seq.Size()) {
+        const Sys::JsString &js_name = js_seq[name_ndx].second.as_str();
         name_ = js_name.val;
     }
 
-    if (js_seq.Has("tracks")) {
-        const Sys::JsArray &js_tracks = js_seq.at("tracks").as_arr();
+    if (const size_t tracks_ndx = js_seq.IndexOf("tracks"); tracks_ndx < js_seq.Size()) {
+        const Sys::JsArray &js_tracks = js_seq[tracks_ndx].second.as_arr();
         tracks_.reserve(js_tracks.Size());
         for (const Sys::JsElement &js_track_el : js_tracks.elements) {
             const Sys::JsObject &js_track = js_track_el.as_obj();
@@ -103,23 +103,23 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
 
                 action.time_beg = js_action.at("time_beg").as_num().val;
 
-                if (js_action.Has("time_end")) {
-                    action.time_end = js_action.at("time_end").as_num().val;
+                if (const size_t time_end_ndx = js_action.IndexOf("time_end"); time_end_ndx < js_action.Size()) {
+                    action.time_end = js_action[time_end_ndx].second.as_num().val;
                 } else {
                     // TODO: derive from audio length etc.
                     ren_ctx_.log()->Error("Action end_time is not set");
                     return false;
                 }
 
-                if (js_action.Has("pos_beg")) {
-                    const Sys::JsArray &js_pos_beg = js_action.at("pos_beg").as_arr();
+                if (const size_t pos_beg_ndx = js_action.IndexOf("pos_beg"); pos_beg_ndx < js_action.Size()) {
+                    const Sys::JsArray &js_pos_beg = js_action[pos_beg_ndx].second.as_arr();
 
                     action.pos_beg[0] = float(js_pos_beg[0].as_num().val);
                     action.pos_beg[1] = float(js_pos_beg[1].as_num().val);
                     action.pos_beg[2] = float(js_pos_beg[2].as_num().val);
 
-                    if (js_action.Has("pos_end")) {
-                        const Sys::JsArray &js_pos_end = js_action.at("pos_end").as_arr();
+                    if (const size_t pos_end_ndx = js_action.IndexOf("pos_end"); pos_end_ndx < js_action.Size()) {
+                        const Sys::JsArray &js_pos_end = js_action[pos_end_ndx].second.as_arr();
 
                         action.pos_end[0] = float(js_pos_end[0].as_num().val);
                         action.pos_end[1] = float(js_pos_end[1].as_num().val);
@@ -132,15 +132,15 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
                     memcpy(action.pos_end, action.pos_beg, 3 * sizeof(float));
                 }
 
-                if (js_action.Has("rot_beg")) {
-                    const Sys::JsArray &js_rot_beg = js_action.at("rot_beg").as_arr();
+                if (const size_t rot_beg_ndx = js_action.IndexOf("rot_beg"); rot_beg_ndx < js_action.Size()) {
+                    const Sys::JsArray &js_rot_beg = js_action[rot_beg_ndx].second.as_arr();
 
                     action.rot_beg[0] = float(js_rot_beg[0].as_num().val);
                     action.rot_beg[1] = float(js_rot_beg[1].as_num().val);
                     action.rot_beg[2] = float(js_rot_beg[2].as_num().val);
 
-                    if (js_action.Has("rot_end")) {
-                        const Sys::JsArray &js_rot_end = js_action.at("rot_end").as_arr();
+                    if (const size_t rot_end_ndx = js_action.IndexOf("rot_end"); rot_end_ndx < js_action.Size()) {
+                        const Sys::JsArray &js_rot_end = js_action[rot_end_ndx].second.as_arr();
 
                         action.rot_end[0] = float(js_rot_end[0].as_num().val);
                         action.rot_end[1] = float(js_rot_end[1].as_num().val);
@@ -153,8 +153,8 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
                     memcpy(action.rot_end, action.rot_beg, 3 * sizeof(float));
                 }
 
-                if (js_action.Has("anim")) {
-                    const Sys::JsString &js_action_anim = js_action.at("anim").as_str();
+                if (const size_t anim_ndx = js_action.IndexOf("anim"); anim_ndx < js_action.Size()) {
+                    const Sys::JsString &js_action_anim = js_action[anim_ndx].second.as_str();
                     const std::string anim_path = std::string(MODELS_PATH) + js_action_anim.val;
 
                     Sys::AssetFile in_file(anim_path);
@@ -173,13 +173,13 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
                     action.anim_ref = ren_ctx_.LoadAnimSequence(js_action_anim.val, in_file_stream);
                 }
 
-                if (js_action.Has("caption")) {
-                    const Sys::JsString &js_caption = js_action.at("caption").as_str();
+                if (const size_t caption_ndx = js_action.IndexOf("caption"); caption_ndx < js_action.Size()) {
+                    const Sys::JsString &js_caption = js_action[caption_ndx].second.as_str();
                     action.caption = js_caption.val;
                 }
 
-                if (js_action.Has("sound")) {
-                    const Sys::JsString &js_action_sound = js_action.at("sound").as_str();
+                if (const size_t sound_ndx = js_action.IndexOf("sound"); sound_ndx < js_action.Size()) {
+                    const Sys::JsString &js_action_sound = js_action[sound_ndx].second.as_str();
                     const auto &name = js_action_sound.val;
                     // check if sound was alpready loaded
                     Snd::eBufLoadStatus status;
@@ -227,15 +227,15 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
                     }
                 }
 
-                if (js_action.Has("sound_offset")) {
-                    const Sys::JsNumber &js_action_sound_off = js_action.at("sound_offset").as_num();
+                if (const size_t sound_offset_ndx = js_action.IndexOf("sound_offset"); sound_offset_ndx < js_action.Size()) {
+                    const Sys::JsNumber &js_action_sound_off = js_action[sound_offset_ndx].second.as_num();
                     action.sound_offset = js_action_sound_off.val;
                 } else {
                     action.sound_offset = 0.0;
                 }
 
-                if (js_action.Has("dof")) {
-                    const Sys::JsLiteral js_action_dof = js_action.at("dof").as_lit();
+                if (const size_t dof_ndx = js_action.IndexOf("dof"); dof_ndx < js_action.Size()) {
+                    const Sys::JsLiteral js_action_dof = js_action[dof_ndx].second.as_lit();
                     action.dof = (js_action_dof.val == Sys::JsLiteralType::True);
                 } else {
                     action.dof = false;
@@ -251,12 +251,12 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
         }
     }
 
-    if (js_seq.Has("ending")) {
-        const Sys::JsObject &js_ending = js_seq.at("ending").as_obj();
+    if (const size_t ending_ndx = js_seq.IndexOf("ending"); ending_ndx < js_seq.Size()) {
+        const Sys::JsObject &js_ending = js_seq[ending_ndx].second.as_obj();
         end_time_ = js_ending.at("time_point").as_num().val;
 
-        if (js_ending.Has("choices")) {
-            const Sys::JsArray &js_choices = js_ending.at("choices").as_arr();
+        if (const size_t choices_ndx = js_ending.IndexOf("choices"); choices_ndx < js_ending.Size()) {
+            const Sys::JsArray &js_choices = js_ending[choices_ndx].second.as_arr();
             for (const Sys::JsElement &js_choice_el : js_choices.elements) {
                 const Sys::JsObject &js_choice = js_choice_el.as_obj();
 
@@ -264,21 +264,21 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const Sys::
 
                 choice.key = js_choice.at("key").as_str().val;
 
-                if (js_choice.Has("text")) {
-                    choice.text = js_choice.at("text").as_str().val;
+                if (const size_t text_ndx = js_choice.IndexOf("text"); text_ndx < js_choice.Size()) {
+                    choice.text = js_choice[text_ndx].second.as_str().val;
                 }
 
                 choice.seq_name = js_choice.at("sequence").as_str().val;
 
-                if (js_choice.Has("puzzle")) {
-                    const Sys::JsString &js_choice_puz = js_choice.at("puzzle").as_str();
+                if (const size_t puzzle_ndx = js_choice.IndexOf("puzzle"); puzzle_ndx < js_choice.Size()) {
+                    const Sys::JsString &js_choice_puz = js_choice[puzzle_ndx].second.as_str();
                     choice.puzzle_name = js_choice_puz.val;
                 }
             }
         }
 
-        if (js_ending.Has("choice_align")) {
-            const Sys::JsString &js_choice_align = js_ending.at("choice_align").as_str();
+        if (const size_t choice_align_ndx = js_ending.IndexOf("choice_align"); choice_align_ndx < js_ending.Size()) {
+            const Sys::JsString &js_choice_align = js_ending[choice_align_ndx].second.as_str();
             if (js_choice_align.val == "left") {
                 choice_align_ = eChoiceAlign::Left;
             } else if (js_choice_align.val == "right") {

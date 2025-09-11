@@ -214,10 +214,10 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
         const Sys::JsObjectP &js_pipeline = js_pipelines.elements[i].as_obj();
         const Sys::JsStringP &js_pi_type = js_pipeline.at("type").as_str();
         const Sys::JsArrayP &js_pi_shaders = js_pipeline.at("shaders").as_arr();
-        if (js_pipeline.Has("features")) {
-            const Sys::JsObjectP &js_features = js_pipeline.at("features").as_obj();
-            if (js_features.Has("bindless")) {
-                const Sys::JsLiteral &js_bindless = js_features.at("bindless").as_lit();
+        if (const size_t features_ndx = js_pipeline.IndexOf("features"); features_ndx < js_pipeline.Size()) {
+            const Sys::JsObjectP &js_features = js_pipeline[features_ndx].second.as_obj();
+            if (const size_t bindless_ndx = js_features.IndexOf("bindless"); bindless_ndx < js_features.Size()) {
+                const Sys::JsLiteral &js_bindless = js_features[bindless_ndx].second.as_lit();
 #if defined(REN_VK_BACKEND)
                 if (js_bindless.val != Sys::JsLiteralType::True) {
                     continue;
@@ -228,19 +228,19 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
                 }
 #endif
             }
-            if (js_features.Has("subgroup")) {
-                const Sys::JsLiteral &js_subgroup = js_features.at("subgroup").as_lit();
+            if (const size_t subgroup_ndx = js_features.IndexOf("subgroup"); subgroup_ndx < js_features.Size()) {
+                const Sys::JsLiteral &js_subgroup = js_features[subgroup_ndx].second.as_lit();
                 if ((js_subgroup.val == Sys::JsLiteralType::True) != ren_ctx_->capabilities.subgroup) {
                     continue;
                 }
             }
-            if (js_features.Has("hwrt")) {
-                const Sys::JsLiteral &js_hwrt = js_features.at("hwrt").as_lit();
+            if (const size_t hwrt_ndx = js_features.IndexOf("hwrt"); hwrt_ndx < js_features.Size()) {
+                const Sys::JsLiteral &js_hwrt = js_features[hwrt_ndx].second.as_lit();
                 if ((js_hwrt.val == Sys::JsLiteralType::True) != ren_ctx_->capabilities.hwrt) {
                     continue;
                 }
             }
-            if (js_features.Has("swrt")) {
+            if (const size_t swrt_ndx = js_features.IndexOf("swrt"); swrt_ndx < js_features.Size()) {
                 const Sys::JsLiteral &js_swrt = js_features.at("swrt").as_lit();
                 if ((js_swrt.val == Sys::JsLiteralType::True) != ren_ctx_->capabilities.swrt) {
                     continue;
@@ -249,8 +249,8 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
         }
         if (js_pi_type.val == "compute") {
             int subgroup_size = -1;
-            if (js_pipeline.Has("subgroup_size")) {
-                subgroup_size = int(js_pipeline.at("subgroup_size").as_num().val);
+            if (const size_t subgroup_size_ndx = js_pipeline.IndexOf("subgroup_size"); subgroup_size_ndx < js_pipeline.Size()) {
+                subgroup_size = int(js_pipeline[subgroup_size_ndx].second.as_num().val);
             }
             const std::string shader_name = js_pi_shaders.at(0).as_str().val.c_str();
 #if defined(REN_VK_BACKEND)
@@ -261,8 +261,8 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
 #endif
         } else if (js_pi_type.val == "graphics") {
             Ren::RastState rast_state;
-            if (js_pipeline.Has("rast_state")) {
-                const Sys::JsObjectP &js_rast_state = js_pipeline.at("rast_state").as_obj();
+            if (const size_t rast_state_ndx = js_pipeline.IndexOf("rast_state"); rast_state_ndx < js_pipeline.Size()) {
+                const Sys::JsObjectP &js_rast_state = js_pipeline[rast_state_ndx].second.as_obj();
                 rast_state = Eng::ParseRastState(js_rast_state);
             }
 
@@ -270,8 +270,8 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
                 sh_loader_->LoadProgram(js_pi_shaders.at(0).as_str().val, js_pi_shaders.at(1).as_str().val);
 
             Ren::SmallVector<Ren::VtxAttribDesc, 4> attribs;
-            if (js_pipeline.Has("vertex_input")) {
-                const Sys::JsArrayP &js_vertex_input = js_pipeline.at("vertex_input").as_arr();
+            if (const size_t vertex_input_ndx = js_pipeline.IndexOf("vertex_input"); vertex_input_ndx < js_pipeline.Size()) {
+                const Sys::JsArrayP &js_vertex_input = js_pipeline[vertex_input_ndx].second.as_arr();
                 for (const Sys::JsElementP &el : js_vertex_input.elements) {
                     const Sys::JsObjectP &js_attrib = el.as_obj();
 
@@ -294,15 +294,15 @@ void LoadingState::InitPipelines(const Sys::JsArrayP &js_pipelines, const int st
 
             Ren::RenderTargetInfo depth_rt;
             Ren::SmallVector<Ren::RenderTargetInfo, 4> color_rts;
-            if (js_pipeline.Has("render_pass")) {
-                const Sys::JsObjectP &js_render_pass = js_pipeline.at("render_pass").as_obj();
-                if (js_render_pass.Has("depth")) {
-                    const Sys::JsObjectP &js_rt_info = js_render_pass.at("depth").as_obj();
+            if (const size_t render_pass_ndx = js_pipeline.IndexOf("render_pass"); render_pass_ndx < js_pipeline.Size()) {
+                const Sys::JsObjectP &js_render_pass = js_pipeline[render_pass_ndx].second.as_obj();
+                if (const size_t depth_ndx = js_render_pass.IndexOf("depth"); depth_ndx < js_render_pass.Size()) {
+                    const Sys::JsObjectP &js_rt_info = js_render_pass[depth_ndx].second.as_obj();
                     depth_rt = Eng::ParseRTInfo(js_rt_info);
                     depth_rt.layout = Ren::eImageLayout::DepthStencilAttachmentOptimal;
                 }
-                if (js_render_pass.Has("color")) {
-                    const Sys::JsArrayP &js_color_rts = js_render_pass.at("color").as_arr();
+                if (const size_t color_ndx = js_render_pass.IndexOf("color"); color_ndx < js_render_pass.Size()) {
+                    const Sys::JsArrayP &js_color_rts = js_render_pass[color_ndx].second.as_arr();
                     for (const Sys::JsElementP &js_rt : js_color_rts.elements) {
                         const Sys::JsObjectP &js_rt_info = js_rt.as_obj();
                         color_rts.push_back(Eng::ParseRTInfo(js_rt_info));

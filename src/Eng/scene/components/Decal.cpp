@@ -3,8 +3,8 @@
 #include <Sys/Json.h>
 
 void Eng::Decal::Read(const Sys::JsObjectP &js_in, Decal &de) {
-    if (js_in.Has("pos")) {
-        const Sys::JsArrayP &js_pos = js_in.at("pos").as_arr();
+    if (const size_t pos_ndx = js_in.IndexOf("pos"); pos_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_pos = js_in[pos_ndx].second.as_arr();
 
         const auto pos = Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
                                     float(js_pos.at(2).as_num().val)};
@@ -12,8 +12,8 @@ void Eng::Decal::Read(const Sys::JsObjectP &js_in, Decal &de) {
         de.view = Translate(de.view, pos);
     }
 
-    if (js_in.Has("rot")) {
-        const Sys::JsArrayP &js_rot = js_in.at("rot").as_arr();
+    if (const size_t rot_ndx = js_in.IndexOf("rot"); rot_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_rot = js_in[rot_ndx].second.as_arr();
 
         auto rot = Ren::Vec3f{float(js_rot.at(0).as_num().val), float(js_rot.at(1).as_num().val),
                               float(js_rot.at(2).as_num().val)};
@@ -32,8 +32,8 @@ void Eng::Decal::Read(const Sys::JsObjectP &js_in, Decal &de) {
 
     auto dim = Ren::Vec3f{1.0f, 1.0f, 1.0f};
 
-    if (js_in.Has("dim")) {
-        const Sys::JsArrayP &js_dim = js_in.at("dim").as_arr();
+    if (const size_t dim_ndx = js_in.IndexOf("dim"); dim_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_dim = js_in[dim_ndx].second.as_arr();
 
         dim = Ren::Vec3f{float(js_dim.at(0).as_num().val), float(js_dim.at(1).as_num().val),
                          float(js_dim.at(2).as_num().val)};

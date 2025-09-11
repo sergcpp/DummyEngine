@@ -5,8 +5,8 @@
 void Eng::Physics::Read(const Sys::JsObjectP &js_in, Physics &ph) {
     using Phy::real;
 
-    if (js_in.Has("pos")) {
-        const Sys::JsArrayP &js_pos = js_in.at("pos").as_arr();
+    if (const size_t pos_ndx = js_in.IndexOf("pos"); pos_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_pos = js_in[pos_ndx].second.as_arr();
 
         ph.body.pos =
             Phy::Vec3(real(js_pos[0].as_num().val), real(js_pos[1].as_num().val), real(js_pos[2].as_num().val));
@@ -14,8 +14,8 @@ void Eng::Physics::Read(const Sys::JsObjectP &js_in, Physics &ph) {
         ph.body.pos = Phy::Vec3{};
     }
 
-    if (js_in.Has("vel")) {
-        const Sys::JsArrayP &js_vel = js_in.at("vel").as_arr();
+    if (const size_t vel_ndx = js_in.IndexOf("vel"); vel_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_vel = js_in[vel_ndx].second.as_arr();
 
         ph.body.vel_lin =
             Phy::Vec3(real(js_vel[0].as_num().val), real(js_vel[1].as_num().val), real(js_vel[2].as_num().val));
@@ -25,8 +25,8 @@ void Eng::Physics::Read(const Sys::JsObjectP &js_in, Physics &ph) {
 
     ph.body.vel_ang = {};
 
-    if (js_in.Has("rot")) {
-        const Sys::JsArrayP &js_rot = js_in.at("rot").as_arr();
+    if (const size_t rot_ndx = js_in.IndexOf("rot"); rot_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_rot = js_in[rot_ndx].second.as_arr();
 
         if (js_rot.Size() == 4) { // quaternion
             ph.body.rot = Phy::Quat(real(js_rot[0].as_num().val), real(js_rot[1].as_num().val),
@@ -41,22 +41,22 @@ void Eng::Physics::Read(const Sys::JsObjectP &js_in, Physics &ph) {
         ph.body.rot = Phy::Quat{};
     }
 
-    if (js_in.Has("inv_mass")) {
-        const Sys::JsNumber &js_inv_mass = js_in.at("inv_mass").as_num();
+    if (const size_t inv_mass_ndx = js_in.IndexOf("inv_mass"); inv_mass_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_inv_mass = js_in[inv_mass_ndx].second.as_num();
         ph.body.inv_mass = real(js_inv_mass.val);
     } else {
         ph.body.inv_mass = real(0);
     }
 
-    if (js_in.Has("elasticity")) {
-        const Sys::JsNumber &js_elasticity = js_in.at("elasticity").as_num();
+    if (const size_t elasticity_ndx = js_in.IndexOf("elasticity"); elasticity_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_elasticity = js_in[elasticity_ndx].second.as_num();
         ph.body.elasticity = real(js_elasticity.val);
     } else {
         ph.body.elasticity = real(1);
     }
 
-    if (js_in.Has("friction")) {
-        const Sys::JsNumber &js_friction = js_in.at("friction").as_num();
+    if (const size_t friction_ndx = js_in.IndexOf("friction"); friction_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_friction = js_in[friction_ndx].second.as_num();
         ph.body.friction = real(js_friction.val);
     } else {
         ph.body.friction = real(0);

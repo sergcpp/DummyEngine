@@ -18,7 +18,7 @@
 #include <Gui/Utils.h>
 
 namespace SceneManagerInternal {
-const uint32_t AssetsBuildVersion = 77;
+const uint32_t AssetsBuildVersion = 78;
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = size_t(in_file.size());
@@ -245,11 +245,12 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
         bool file_not_changed = true;
 
         Sys::JsObjectP &js_in_file = js_files[in_ndx].second.as_obj();
-        if (js_in_file.Has("time") && js_in_file.Has("outputs")) {
-            const Sys::JsStringP &js_in_file_time = js_in_file.at("time").as_str();
+        if (const size_t time_ndx = js_in_file.IndexOf("time"), outputs_ndx = js_in_file.IndexOf("outputs");
+            time_ndx < js_in_file.Size() && outputs_ndx < js_in_file.Size()) {
+            const Sys::JsStringP &js_in_file_time = js_in_file[time_ndx].second.as_str();
             file_not_changed &= (strncmp(js_in_file_time.val.c_str(), in_t_str.c_str(), 32) == 0);
 
-            const Sys::JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
+            const Sys::JsObjectP &js_outputs = js_in_file[outputs_ndx].second.as_obj();
             for (const auto &output : js_outputs.elements) {
                 const Ren::Bitmask<Eng::eAssetBuildFlags> flags = Ren::Bitmask<Eng::eAssetBuildFlags>{
                     uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
@@ -265,13 +266,15 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                 }
                 const std::string out_t_str = std::to_string(out_t);
 
-                if (!output.second.as_obj().Has("in_time") || !output.second.as_obj().Has("out_time")) {
+                const size_t in_time_ndx = output.second.as_obj().IndexOf("in_time"),
+                             out_time_ndx = output.second.as_obj().IndexOf("out_time");
+                if (in_time_ndx >= output.second.as_obj().Size() || out_time_ndx >= output.second.as_obj().Size()) {
                     file_not_changed = false;
                     continue;
                 }
 
-                const Sys::JsStringP &js_out_in_file_time = output.second.as_obj().at("in_time").as_str();
-                const Sys::JsStringP &js_out_file_time = output.second.as_obj().at("out_time").as_str();
+                const Sys::JsStringP &js_out_in_file_time = output.second.as_obj()[in_time_ndx].second.as_str();
+                const Sys::JsStringP &js_out_file_time = output.second.as_obj()[out_time_ndx].second.as_str();
 
                 file_not_changed &= (js_out_in_file_time.val == js_in_file_time.val);
                 file_not_changed &= (strncmp(js_out_file_time.val.c_str(), out_t_str.c_str(), 32) == 0);
@@ -284,10 +287,11 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
             const uint32_t in_hash = HashFile(in_file, ctx.log);
             const std::string in_hash_str = std::to_string(in_hash);
 
-            if (js_in_file.Has("hash") && js_in_file.Has("outputs")) {
-                const Sys::JsStringP &js_in_file_hash = js_in_file.at("hash").as_str();
+            if (const size_t in_hash_ndx = js_in_file.IndexOf("hash"), outputs_ndx = js_in_file.IndexOf("outputs");
+                in_hash_ndx < js_in_file.Size() && outputs_ndx < js_in_file.Size()) {
+                const Sys::JsStringP &js_in_file_hash = js_in_file[in_hash_ndx].second.as_str();
                 if (js_in_file_hash.val == in_hash_str) {
-                    Sys::JsObjectP &js_outputs = js_in_file["outputs"].as_obj();
+                    Sys::JsObjectP &js_outputs = js_in_file[outputs_ndx].second.as_obj();
                     for (auto &output : js_outputs.elements) {
                         const Ren::Bitmask<Eng::eAssetBuildFlags> flags = Ren::Bitmask<Eng::eAssetBuildFlags>{
                             uint32_t(atoi(output.second.as_obj().at("flags").as_str().val.c_str()))};
@@ -297,7 +301,8 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
                         Sys::JsObjectP &js_output = output.second.as_obj();
 
-                        if (!js_output.Has("hash")) {
+                        const size_t out_hash_ndx = js_output.IndexOf("hash");
+                        if (out_hash_ndx >= js_output.Size()) {
                             file_not_changed = false;
                             continue;
                         }
@@ -305,7 +310,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                         const uint32_t out_hash = HashFile(output.first, ctx.log);
                         const std::string out_hash_str = std::to_string(out_hash);
 
-                        const Sys::JsStringP &js_out_file_hash = js_output.at("hash").as_str();
+                        const Sys::JsStringP &js_out_file_hash = js_output[out_hash_ndx].second.as_str();
                         if (js_out_file_hash.val == out_hash_str) {
                             // write new time
                             time_t out_t = {};
@@ -355,16 +360,18 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
         bool dependencies_have_changed = false;
 
-        if (js_in_file.Has("deps")) {
-            const Sys::JsObjectP &js_deps = js_in_file.at("deps").as_obj();
+        if (const size_t deps_ndx = js_in_file.IndexOf("deps"); deps_ndx < js_in_file.Size()) {
+            const Sys::JsObjectP &js_deps = js_in_file[deps_ndx].second.as_obj();
             for (const auto &dep : js_deps.elements) {
                 const Sys::JsObjectP &js_dep = dep.second.as_obj();
-                if (!js_dep.Has("time") || !js_dep.Has("hash")) {
+
+                const size_t time_ndx = js_dep.IndexOf("time"), hash_ndx = js_dep.IndexOf("hash");
+                if (time_ndx >= js_dep.Size() || hash_ndx >= js_dep.Size()) {
                     dependencies_have_changed = true;
                     break;
                 }
 
-                const Sys::JsStringP &js_dep_time = js_dep.at("time").as_str();
+                const Sys::JsStringP &js_dep_time = js_dep[time_ndx].second.as_str();
 
                 if (!fs::exists(dep.first)) {
                     ctx.log->Error("File does not exist: %s!", dep.first.c_str());
@@ -376,7 +383,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                         const uint32_t dep_hash = HashFile(dep.first, ctx.log);
                         const std::string dep_hash_str = std::to_string(dep_hash);
 
-                        const Sys::JsStringP &js_dep_hash = js_dep.at("hash").as_str();
+                        const Sys::JsStringP &js_dep_hash = js_dep[hash_ndx].second.as_str();
                         if (js_dep_hash.val != dep_hash_str) {
                             dependencies_have_changed = true;
                             break;
@@ -869,12 +876,12 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
     LoadDB(out_folder, ctx.cache->js_db);
 
-    if (ctx.cache->js_db.Has("files")) {
-        const Sys::JsObjectP &js_files = ctx.cache->js_db.at("files").as_obj();
+    if (const size_t files_ndx = ctx.cache->js_db.IndexOf("files"); files_ndx < ctx.cache->js_db.Size()) {
+        const Sys::JsObjectP &js_files = ctx.cache->js_db[files_ndx].second.as_obj();
         for (auto it = begin(js_files.elements); it != end(js_files.elements); ++it) {
-            const size_t ndx = it->second.as_obj().IndexOf("color");
-            if (ndx < it->second.as_obj().Size()) {
-                const Sys::JsNumber &js_color = it->second.as_obj()[ndx].second.as_num();
+            const size_t color_ndx = it->second.as_obj().IndexOf("color");
+            if (color_ndx < it->second.as_obj().Size()) {
+                const Sys::JsNumber &js_color = it->second.as_obj()[color_ndx].second.as_num();
                 ctx.cache->texture_averages[it->first.c_str()] = uint32_t(js_color.val);
             }
         }
@@ -1045,8 +1052,8 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
                     memcpy(&uvs[uvs_off], &uvs_buf[uvs_byte_off], uvs_byte_len);
                 }
 
-                if (js_attributes.Has("TANGENT")) {
-                    const int tan_ndx = int(js_attributes.at("TANGENT").as_num().val);
+                if (const size_t tangent_ndx = js_attributes.IndexOf("TANGENT"); tangent_ndx < js_attributes.Size()) {
+                    const int tan_ndx = int(js_attributes[tangent_ndx].second.as_num().val);
                     const Sys::JsObject &js_tan_accessor = js_accessors.at(tan_ndx).as_obj();
                     const Sys::JsObject &js_tan_view =
                         js_buffer_views.at(int(js_tan_accessor.at("bufferView").as_num().val)).as_obj();
@@ -1368,40 +1375,40 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
     if (js_root_el.type() == Sys::JsType::Object) {
         const std::filesystem::path base_path = std::filesystem::path(in_file).parent_path();
         Sys::JsObject &js_root = js_root_el.as_obj();
-        if (js_root.Has("objects")) {
-            Sys::JsArray &js_objects = js_root.at("objects").as_arr();
+        if (const size_t objects_ndx = js_root.IndexOf("objects"); objects_ndx < js_root.Size()) {
+            Sys::JsArray &js_objects = js_root[objects_ndx].second.as_arr();
             for (Sys::JsElement &js_obj_el : js_objects.elements) {
                 Sys::JsObject &js_obj = js_obj_el.as_obj();
 
-                if (js_obj.Has("decal")) {
-                    Sys::JsObject &js_decal = js_obj.at("decal").as_obj();
-                    if (js_decal.Has("diff")) {
-                        Sys::JsString &js_diff_tex = js_decal.at("diff").as_str();
+                if (const size_t decal_ndx = js_obj.IndexOf("decal"); decal_ndx < js_obj.Size()) {
+                    Sys::JsObject &js_decal = js_obj[decal_ndx].second.as_obj();
+                    if (const size_t diff_ndx = js_decal.IndexOf("diff"); diff_ndx < js_decal.Size()) {
+                        Sys::JsString &js_diff_tex = js_decal[diff_ndx].second.as_str();
                         ReplaceTextureExtension(ctx.platform, js_diff_tex.val);
                     }
-                    if (js_decal.Has("norm")) {
-                        Sys::JsString &js_norm_tex = js_decal.at("norm").as_str();
+                    if (const size_t norm_ndx = js_decal.IndexOf("norm"); norm_ndx < js_decal.Size()) {
+                        Sys::JsString &js_norm_tex = js_decal[norm_ndx].second.as_str();
                         ReplaceTextureExtension(ctx.platform, js_norm_tex.val);
                     }
-                    if (js_decal.Has("spec")) {
-                        Sys::JsString &js_spec_tex = js_decal.at("spec").as_str();
+                    if (const size_t spec_ndx = js_decal.IndexOf("spec"); spec_ndx < js_decal.Size()) {
+                        Sys::JsString &js_spec_tex = js_decal[spec_ndx].second.as_str();
                         ReplaceTextureExtension(ctx.platform, js_spec_tex.val);
                     }
-                    if (js_decal.Has("mask")) {
-                        Sys::JsString &js_mask_tex = js_decal.at("mask").as_str();
+                    if (const size_t mask_ndx = js_decal.IndexOf("mask"); mask_ndx < js_decal.Size()) {
+                        Sys::JsString &js_mask_tex = js_decal[mask_ndx].second.as_str();
                         ReplaceTextureExtension(ctx.platform, js_mask_tex.val);
                     }
                 }
             }
         }
 
-        if (js_root.Has("probes")) {
-            Sys::JsArray &js_probes = js_root.at("probes").as_arr();
+        if (const size_t probes_ndx = js_root.IndexOf("probes"); probes_ndx < js_root.Size()) {
+            Sys::JsArray &js_probes = js_root[probes_ndx].second.as_arr();
             for (Sys::JsElement &js_probe_el : js_probes.elements) {
                 Sys::JsObject &js_probe = js_probe_el.as_obj();
 
-                if (js_probe.Has("faces")) {
-                    Sys::JsArray &js_faces = js_probe.at("faces").as_arr();
+                if (const size_t faces_ndx = js_probe.IndexOf("faces"); faces_ndx < js_probe.Size()) {
+                    Sys::JsArray &js_faces = js_probe[faces_ndx].second.as_arr();
                     for (Sys::JsElement &js_face_el : js_faces.elements) {
                         Sys::JsString &js_face_str = js_face_el.as_str();
                         ReplaceTextureExtension(ctx.platform, js_face_str.val);
@@ -1410,15 +1417,15 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
             }
         }
 
-        if (js_root.Has("chapters")) {
-            Sys::JsArray &js_chapters = js_root.at("chapters").as_arr();
+        if (const size_t chapters_ndx = js_root.IndexOf("chapters"); chapters_ndx < js_root.Size()) {
+            Sys::JsArray &js_chapters = js_root[chapters_ndx].second.as_arr();
             for (Sys::JsElement &js_chapter_el : js_chapters.elements) {
                 Sys::JsObject &js_chapter = js_chapter_el.as_obj();
 
                 Sys::JsObject js_caption, js_text_data;
 
-                if (js_chapter.Has("html_src")) {
-                    Sys::JsObject &js_html_src = js_chapter.at("html_src").as_obj();
+                if (const size_t html_src_ndx = js_chapter.IndexOf("html_src"); html_src_ndx < js_chapter.Size()) {
+                    Sys::JsObject &js_html_src = js_chapter[html_src_ndx].second.as_obj();
                     for (auto &js_src_pair : js_html_src.elements) {
                         const std::string &js_lang = js_src_pair.first, &js_file_path = js_src_pair.second.as_str().val;
 
@@ -1471,34 +1478,35 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
             }
         }
 
-        if (js_root.Has("environment")) {
-            Sys::JsObject &js_environment = js_root.at("environment").as_obj();
-            if (js_environment.Has("env_map")) {
-                Sys::JsString &js_env_map = js_environment.at("env_map").as_str();
+        if (const size_t environment_ndx = js_root.IndexOf("environment"); environment_ndx < js_root.Size()) {
+            Sys::JsObject &js_environment = js_root[environment_ndx].second.as_obj();
+            if (const size_t env_map_ndx = js_environment.IndexOf("env_map"); env_map_ndx < js_environment.Size()) {
+                Sys::JsString &js_env_map = js_environment[env_map_ndx].second.as_str();
                 ReplaceTextureExtension(ctx.platform, js_env_map.val);
             }
         }
 
-        if (js_root.Has("objects")) {
-            Sys::JsArray &js_objects = js_root.at("objects").as_arr();
+        if (const size_t objects_ndx = js_root.IndexOf("objects"); objects_ndx < js_root.Size()) {
+            Sys::JsArray &js_objects = js_root[objects_ndx].second.as_arr();
             for (Sys::JsElement &js_obj_el : js_objects.elements) {
                 Sys::JsObject &js_obj = js_obj_el.as_obj();
-                if (js_obj.Has("drawable")) {
-                    Sys::JsObject &js_drawable = js_obj.at("drawable").as_obj();
-                    if (js_drawable.Has("mesh_file")) {
-                        Sys::JsString &js_mesh_file = js_drawable.at("mesh_file").as_str();
-                        size_t n;
-                        if ((n = js_mesh_file.val.find(".gltf")) != std::string::npos) {
+                if (const size_t drawable_ndx = js_obj.IndexOf("drawable"); drawable_ndx < js_obj.Size()) {
+                    Sys::JsObject &js_drawable = js_obj[drawable_ndx].second.as_obj();
+                    if (const size_t mesh_file_ndx = js_drawable.IndexOf("mesh_file");
+                        mesh_file_ndx < js_drawable.Size()) {
+                        Sys::JsString &js_mesh_file = js_drawable[mesh_file_ndx].second.as_str();
+                        if (const size_t n = js_mesh_file.val.find(".gltf"); n != std::string::npos) {
                             js_mesh_file.val.replace(n + 1, 4, "mesh");
                         }
                     }
                 }
-                if (js_obj.Has("acc_structure")) {
-                    Sys::JsObject &js_acc_structure = js_obj.at("acc_structure").as_obj();
-                    if (js_acc_structure.Has("mesh_file")) {
-                        Sys::JsString &js_mesh_file = js_acc_structure.at("mesh_file").as_str();
-                        size_t n;
-                        if ((n = js_mesh_file.val.find(".gltf")) != std::string::npos) {
+                if (const size_t acc_structure_ndx = js_obj.IndexOf("acc_structure");
+                    acc_structure_ndx < js_obj.Size()) {
+                    Sys::JsObject &js_acc_structure = js_obj[acc_structure_ndx].second.as_obj();
+                    if (const size_t mesh_file_ndx = js_acc_structure.IndexOf("mesh_file");
+                        mesh_file_ndx < js_acc_structure.Size()) {
+                        Sys::JsString &js_mesh_file = js_acc_structure[mesh_file_ndx].second.as_str();
+                        if (const size_t n = js_mesh_file.val.find(".gltf"); n != std::string::npos) {
                             js_mesh_file.val.replace(n + 1, 4, "mesh");
                         }
                     }

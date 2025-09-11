@@ -34,8 +34,8 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
 
     ls.type = eLightType::Sphere;
 
-    if (js_in.Has("type")) {
-        const Sys::JsStringP &js_type = js_in.at("type").as_str();
+    if (const size_t type_ndx = js_in.IndexOf("type"); type_ndx < js_in.Size()) {
+        const Sys::JsStringP &js_type = js_in[type_ndx].second.as_str();
         for (int i = 0; i < int(eLightType::_Count); ++i) {
             if (js_type.val == g_type_names[i]) {
                 ls.type = eLightType(i);
@@ -45,21 +45,21 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
     }
 
     ls.col[0] = ls.col[1] = ls.col[2] = 1.0f;
-    if (js_in.Has("color")) {
-        const Sys::JsArrayP &js_color = js_in.at("color").as_arr();
+    if (const size_t color_ndx = js_in.IndexOf("color"); color_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_color = js_in[color_ndx].second.as_arr();
         ls.col[0] = float(js_color[0].as_num().val);
         ls.col[1] = float(js_color[1].as_num().val);
         ls.col[2] = float(js_color[2].as_num().val);
     }
 
     ls.power = 1.0f;
-    if (js_in.Has("power")) {
-        const Sys::JsNumber &js_power = js_in.at("power").as_num();
+    if (const size_t power_ndx = js_in.IndexOf("power"); power_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_power = js_in[power_ndx].second.as_num();
         ls.power = float(js_power.val);
     }
 
-    if (js_in.Has("offset")) {
-        const Sys::JsArrayP &js_offset = js_in.at("offset").as_arr();
+    if (const size_t offset_ndx = js_in.IndexOf("offset"); offset_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_offset = js_in[offset_ndx].second.as_arr();
 
         ls.offset[0] = float(js_offset[0].as_num().val);
         ls.offset[1] = float(js_offset[1].as_num().val);
@@ -67,21 +67,21 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
     }
 
     ls.radius = 1.0f;
-    if (js_in.Has("radius")) {
-        const Sys::JsNumber &js_radius = js_in.at("radius").as_num();
+    if (const size_t radius_ndx = js_in.IndexOf("radius"); radius_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_radius = js_in[radius_ndx].second.as_num();
         ls.radius = float(js_radius.val);
     }
     ls._radius = ls.radius;
 
     ls.width = 1.0f;
-    if (js_in.Has("width")) {
-        const Sys::JsNumber &js_width = js_in.at("width").as_num();
+    if (const size_t width_ndx = js_in.IndexOf("width"); width_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_width = js_in[width_ndx].second.as_num();
         ls.width = float(js_width.val);
     }
 
     ls.height = 1.0f;
-    if (js_in.Has("height")) {
-        const Sys::JsNumber &js_height = js_in.at("height").as_num();
+    if (const size_t height_ndx = js_in.IndexOf("height"); height_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_height = js_in[height_ndx].second.as_num();
         ls.height = float(js_height.val);
     }
 
@@ -100,15 +100,15 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
         ls._radius = ls.area = ls.height;
     }
 
-    if (js_in.Has("cull_offset")) {
-        const Sys::JsNumber &js_cull_offset = js_in.at("cull_offset").as_num();
+    if (const size_t cull_offset_ndx = js_in.IndexOf("cull_offset"); cull_offset_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_cull_offset = js_in[cull_offset_ndx].second.as_num();
         ls.cull_offset = float(js_cull_offset.val);
     } else {
         ls.cull_offset = 0.1f;
     }
 
-    if (js_in.Has("cull_radius")) {
-        const Sys::JsNumber &js_cull_radius = js_in.at("cull_radius").as_num();
+    if (const size_t cull_radius_ndx = js_in.IndexOf("cull_radius"); cull_radius_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_cull_radius = js_in[cull_radius_ndx].second.as_num();
         ls.cull_radius = float(js_cull_radius.val);
     } else {
         ls.cull_radius = calc_cull_radius(ls.col, ls.radius);
@@ -116,8 +116,8 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
 
     ls.dir[0] = ls.dir[2] = 0.0f;
     ls.dir[1] = -1.0f;
-    if (js_in.Has("direction")) {
-        const Sys::JsArrayP &js_dir = js_in.at("direction").as_arr();
+    if (const size_t direction_ndx = js_in.IndexOf("direction"); direction_ndx < js_in.Size()) {
+        const Sys::JsArrayP &js_dir = js_in[direction_ndx].second.as_arr();
 
         ls.dir[0] = float(js_dir[0].as_num().val);
         ls.dir[1] = float(js_dir[1].as_num().val);
@@ -125,8 +125,8 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
     }
 
     ls.angle_deg = default_angle(ls.type);
-    if (js_in.Has("spot_angle")) {
-        const Sys::JsNumber &js_spot_angle = js_in.at("spot_angle").as_num();
+    if (const size_t spot_angle_ndx = js_in.IndexOf("spot_angle"); spot_angle_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_spot_angle = js_in[spot_angle_ndx].second.as_num();
         ls.angle_deg = float(js_spot_angle.val);
     }
 
@@ -137,52 +137,52 @@ void Eng::LightSource::Read(const Sys::JsObjectP &js_in, LightSource &ls) {
     ls.cap_radius = ls.cull_radius * std::tan(angle_rad);
 
     ls.spot_blend = 0.0f;
-    if (js_in.Has("spot_blend")) {
-        const Sys::JsNumber &js_spot_blend = js_in.at("spot_blend").as_num();
+    if (const size_t spot_blend_ndx = js_in.IndexOf("spot_blend"); spot_blend_ndx < js_in.Size()) {
+        const Sys::JsNumber &js_spot_blend = js_in[spot_blend_ndx].second.as_num();
         ls.spot_blend = float(js_spot_blend.val);
     }
 
     ls.flags = Ren::Bitmask{eLightFlags::AffectDiffuse} | eLightFlags::AffectSpecular | eLightFlags::AffectRefraction |
                eLightFlags::AffectVolume;
 
-    if (js_in.Has("sky_portal")) {
-        const Sys::JsLiteral &js_sky_portal = js_in.at("sky_portal").as_lit();
+    if (const size_t sky_portal_ndx = js_in.IndexOf("sky_portal"); sky_portal_ndx < js_in.Size()) {
+        const Sys::JsLiteral &js_sky_portal = js_in[sky_portal_ndx].second.as_lit();
         if (js_sky_portal.val == Sys::JsLiteralType::True) {
             ls.flags |= eLightFlags::SkyPortal;
         }
     }
 
-    if (js_in.Has("cast_shadow")) {
-        if (js_in.at("cast_shadow").as_lit().val == Sys::JsLiteralType::True) {
+    if (const size_t cast_shadow_ndx = js_in.IndexOf("cast_shadow"); cast_shadow_ndx < js_in.Size()) {
+        if (js_in[cast_shadow_ndx].second.as_lit().val == Sys::JsLiteralType::True) {
             ls.flags |= eLightFlags::CastShadow;
         }
     }
 
-    if (js_in.Has("affect_diffuse")) {
-        if (js_in.at("affect_diffuse").as_lit().val == Sys::JsLiteralType::False) {
+    if (const size_t affect_diffuse_ndx = js_in.IndexOf("affect_diffuse"); affect_diffuse_ndx < js_in.Size()) {
+        if (js_in[affect_diffuse_ndx].second.as_lit().val == Sys::JsLiteralType::False) {
             ls.flags &= ~Ren::Bitmask{eLightFlags::AffectDiffuse};
         }
     }
 
-    if (js_in.Has("affect_specular")) {
-        if (js_in.at("affect_specular").as_lit().val == Sys::JsLiteralType::False) {
+    if (const size_t affect_specular_ndx = js_in.IndexOf("affect_specular"); affect_specular_ndx < js_in.Size()) {
+        if (js_in[affect_specular_ndx].second.as_lit().val == Sys::JsLiteralType::False) {
             ls.flags &= ~Ren::Bitmask{eLightFlags::AffectSpecular};
         }
     }
 
-    if (js_in.Has("affect_refraction")) {
-        if (js_in.at("affect_refraction").as_lit().val == Sys::JsLiteralType::False) {
+    if (const size_t affect_refraction_ndx = js_in.IndexOf("affect_refraction"); affect_refraction_ndx < js_in.Size()) {
+        if (js_in[affect_refraction_ndx].second.as_lit().val == Sys::JsLiteralType::False) {
             ls.flags &= ~Ren::Bitmask{eLightFlags::AffectRefraction};
         }
     }
 
-    if (js_in.Has("affect_volume")) {
-        if (js_in.at("affect_volume").as_lit().val == Sys::JsLiteralType::False) {
+    if (const size_t affect_volume_ndx = js_in.IndexOf("affect_volume"); affect_volume_ndx < js_in.Size()) {
+        if (js_in[affect_volume_ndx].second.as_lit().val == Sys::JsLiteralType::False) {
             ls.flags &= ~Ren::Bitmask{eLightFlags::AffectVolume};
         }
     }
 
-    if (js_in.Has("shadow_bias")) {
+    if (const size_t shadow_bias_ndx = js_in.IndexOf("shadow_bias"); shadow_bias_ndx < js_in.Size()) {
         const Sys::JsArrayP &js_shadow_bias = js_in.at("shadow_bias").as_arr();
         ls.shadow_bias[0] = float(js_shadow_bias.at(0).as_num().val);
         ls.shadow_bias[1] = float(js_shadow_bias.at(1).as_num().val);

@@ -19,8 +19,8 @@ bool Eng::ScriptedDialog::Load(const std::string_view lookup_name, const Sys::Js
         const int cur_seq_index = int(sequences_.size()) - 1;
 
         const Sys::JsObject &js_ending = js_seq.at("ending").as_obj();
-        if (js_ending.Has("choices")) {
-            const Sys::JsArray &js_choices = js_ending.at("choices").as_arr();
+        if (const size_t choices_ndx = js_ending.IndexOf("choices"); choices_ndx < js_ending.Size()) {
+            const Sys::JsArray &js_choices = js_ending[choices_ndx].second.as_arr();
 
             for (const Sys::JsElement &js_choice_el : js_choices.elements) {
                 const Sys::JsObject &js_choice = js_choice_el.as_obj();

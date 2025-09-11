@@ -68,7 +68,7 @@ class PagedReader : public Gui::BaseElement {
     int page_count() const { return int(chapters_[0][cur_chapter_].pages.size()); }
 
     void Clear();
-    bool LoadBook(const Sys::JsObject &js_book, const char *src_lang, const char *trg_lang);
+    bool LoadBook(const Sys::JsObject &js_book, std::string_view src_lang, std::string_view trg_lang);
 
     void Resize() override;
 

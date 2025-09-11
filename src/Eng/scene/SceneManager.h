@@ -57,8 +57,8 @@ struct AssetCache {
         const size_t i = js_files.IndexOf(tex_name);
         if (i < js_files.Size()) {
             Sys::JsObjectP &js_file = js_files[i].second.as_obj();
-            if (js_file.Has("color")) {
-                Sys::JsNumber &js_color = js_file.at("color").as_num();
+            if (const size_t color_ndx = js_file.IndexOf("color"); color_ndx < js_file.Size()) {
+                Sys::JsNumber &js_color = js_file[color_ndx].second.as_num();
                 js_color.val = double(color);
             } else {
                 auto js_color = Sys::JsNumber{double(color)};

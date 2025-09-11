@@ -81,216 +81,6 @@ void DrawTest::Enter() {
 void DrawTest::OnPreloadScene(Sys::JsObjectP &js_scene) {
     BaseState::OnPreloadScene(js_scene);
 
-#if 0 // texture compression test
-    std::ifstream src_stream("assets/textures/lenna.png",
-                             std::ios::binary | std::ios::ate);
-    assert(src_stream);
-    auto src_size = size_t(src_stream.tellg());
-    src_stream.seekg(0, std::ios::beg);
-
-    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
-    src_stream.read((char *)&src_buf[0], src_size);
-
-    int width, height, channels;
-    unsigned char *image_data = stbi_load_from_memory(
-        &src_buf[0], int(src_size), &width, &height, &channels, 0);
-
-#ifdef NDEBUG
-    const int RepeatCount = 1000;
-#else
-    const int RepeatCount = 1;
-#endif
-
-#if 0 // test DXT1/DXT5
-    int dxt_size_total;
-    if (channels == 3) {
-        dxt_size_total = Ren::GetRequiredMemory_DXT1(width, height);
-    } else {
-        dxt_size_total = Ren::GetRequiredMemory_DXT5(width, height);
-    }
-    std::unique_ptr<uint8_t[]> img_dst(new uint8_t[dxt_size_total]);
-
-    const uint64_t t1 = Sys::GetTimeUs();
-
-    if (channels == 3) {
-        for (int i = 0; i < RepeatCount; i++) {
-            Ren::CompressImage_DXT1<3 /* Channels */>(image_data, width, height,
-                                                      img_dst.get());
-        }
-    } else {
-        for (int i = 0; i < RepeatCount; i++) {
-            Ren::CompressImage_DXT5(image_data, width, height, img_dst.get());
-        }
-    }
-#else // test YCoCg-DXT5
-    assert(channels == 3);
-    std::unique_ptr<uint8_t[]> image_data_YCoCg =
-        Ren::ConvertRGB_to_CoCgxY(image_data, width, height);
-    channels = 4;
-
-    // SceneManagerInternal::WriteImage(image_data_YCoCg.get(), width, height, channels,
-    //                                false, false,
-    //                                "assets/textures/wall_picture_YCoCg.png");
-
-    const int dxt_size_total = Ren::GetRequiredMemory_DXT5(width, height);
-    std::unique_ptr<uint8_t[]> img_dst(new uint8_t[dxt_size_total]);
-
-    const uint64_t t1 = Sys::GetTimeUs();
-
-    for (int i = 0; i < RepeatCount; i++) {
-        Ren::CompressImage_DXT5<true /* Is_YCoCg */>(image_data_YCoCg.get(), width,
-                                                     height, img_dst.get());
-    }
-#endif
-    const uint64_t t2 = Sys::GetTimeUs();
-
-    const double elapsed_ms = double(t2 - t1) / (double(RepeatCount) * 1000.0);
-    const double elapsed_s = elapsed_ms / 1000.0;
-
-    log_->Info("Compressed in %f ms", elapsed_ms);
-    log_->Info("Speed is %f Mpixels per second",
-               double(width * height) / (1000000.0 * elapsed_s));
-
-    free(image_data);
-
-#ifdef NDEBUG
-    system("pause");
-#endif
-
-    //
-    // Write out file
-    //
-
-    Ren::DDSHeader header = {};
-    header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) |
-                     (unsigned('S') << 16u) | (unsigned(' ') << 24u);
-    header.dwSize = 124;
-    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) |
-                     unsigned(DDSD_PIXELFORMAT) | unsigned(DDSD_LINEARSIZE) |
-                     unsigned(DDSD_MIPMAPCOUNT);
-    header.dwWidth = width;
-    header.dwHeight = height;
-    header.dwPitchOrLinearSize = dxt_size_total;
-    header.dwMipMapCount = 1;
-    header.sPixelFormat.dwSize = 32;
-    header.sPixelFormat.dwFlags = DDPF_FOURCC;
-
-    if (channels == 3) {
-        header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
-                                       (unsigned('T') << 16u) | (unsigned('1') << 24u);
-    } else {
-        header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
-                                       (unsigned('T') << 16u) | (unsigned('5') << 24u);
-    }
-
-    header.sCaps.dwCaps1 = unsigned(DDSCAPS_TEXTURE) | unsigned(DDSCAPS_MIPMAP);
-
-    std::ofstream out_stream("assets_pc/textures/wall_picture_YCoCg.dds",
-                             std::ios::binary);
-    out_stream.write((char *)&header, sizeof(header));
-    out_stream.write((char *)img_dst.get(), dxt_size_total);
-#endif
-
-#if 0
-    JsArray &js_objects = js_scene.at("objects").as_arr();
-    if (js_objects.elements.size() < 2) return;
-
-    JsObject 
-        js_leaf_tree = js_objects.elements.begin()->as_obj(),
-        js_palm_tree = (++js_objects.elements.begin())->as_obj();
-    if (!js_leaf_tree.Has("name") || !js_palm_tree.Has("name")) return;
-
-    if (js_leaf_tree.at("name").as_str().val != "leaf_tree" ||
-        js_palm_tree.at("name").as_str().val != "palm_tree") return;
-    
-    for (int j = -9; j < 10; j++) {
-        for (int i = -9; i < 10; i++) {
-            if (j == 0 && i == 0) continue;
-
-            js_leaf_tree.at("name").as_str().val = "leaf " + std::to_string(j) + ":" + std::to_string(i);
-            js_palm_tree.at("name").as_str().val = "palm " + std::to_string(j) + ":" + std::to_string(i);
-
-            {   // set leaf tree position
-                JsObject &js_leaf_tree_tr = js_leaf_tree.at("transform").as_obj();
-                JsArray &js_leaf_tree_pos = js_leaf_tree_tr.at("pos").as_arr();
-                JsArray &js_leaf_tree_rot = js_leaf_tree_tr.at("rot").as_arr();
-
-                JsNumber &js_leaf_posx = js_leaf_tree_pos.elements.begin()->as_num();
-                JsNumber &js_leaf_posz = (++(++js_leaf_tree_pos.elements.begin()))->as_num();
-
-                js_leaf_posx.val = double(i * 10);
-                js_leaf_posz.val = double(j * 10);
-
-                JsNumber &js_leaf_roty = (++js_leaf_tree_rot.elements.begin())->as_num();
-                js_leaf_roty.val = double(i) * 43758.5453;
-            }
-
-            {   // set palm tree position
-                JsObject &js_palm_tree_tr = js_palm_tree.at("transform").as_obj();
-                JsArray &js_palm_tree_pos = js_palm_tree_tr.at("pos").as_arr();
-                JsArray &js_palm_tree_rot = js_palm_tree_tr.at("rot").as_arr();
-
-                JsNumber &js_palm_posx = js_palm_tree_pos.elements.begin()->as_num();
-                JsNumber &js_palm_posz = (++(++js_palm_tree_pos.elements.begin()))->as_num();
-
-                js_palm_posx.val = double(i * 10) + 5.0;
-                js_palm_posz.val = double(j * 10);
-
-                JsNumber &js_palm_roty = (++js_palm_tree_rot.elements.begin())->as_num();
-                js_palm_roty.val = double(i) * 12.9898;
-            }
-
-            js_objects.elements.push_back(js_leaf_tree);
-            js_objects.elements.push_back(js_palm_tree);
-        }
-    }
-#endif
-
-#if 0
-    JsArrayP &js_objects = js_scene.at("objects").as_arr();
-
-    JsArrayP js_new_objects(scene_manager_->mp_alloc());
-
-    const int CountPerDim = 4;
-    for (int z = -CountPerDim; z <= CountPerDim; ++z) {
-        for (int y = -CountPerDim; y <= 0; ++y) {
-            for (int x = -CountPerDim; x <= CountPerDim; ++x) {
-                if (x == 0 && y == 0 && z == 0) {
-                    continue;
-                }
-
-                for (size_t j = 0; j < js_objects.elements.size(); ++j) {
-                    JsObjectP &js_obj_orig = js_objects[j].as_obj();
-                    if (js_obj_orig.Has("probe")) {
-                        continue;
-                    }
-
-                    JsObjectP js_obj_copy = js_obj_orig;
-
-                    { // set new position
-                        JsObjectP &js_tr = js_obj_copy.at("transform").as_obj();
-                        JsArrayP &js_pos = js_tr.at("pos").as_arr();
-
-                        JsNumber &js_posx = js_pos.elements.at(0).as_num();
-                        JsNumber &js_posy = js_pos.elements.at(1).as_num();
-                        JsNumber &js_posz = js_pos.elements.at(2).as_num();
-
-                        js_posx.val += double(x * 15);
-                        js_posy.val += double(y * 5);
-                        js_posz.val += double(z * 15);
-                    }
-
-                    js_new_objects.Push(std::move(js_obj_copy));
-                }
-            }
-        }
-    }
-
-    for (auto &js_obj : js_new_objects.elements) {
-        js_objects.Push(std::move(js_obj));
-    }
-#endif
-
     std::fill_n(wolf_indices_, 32, 0xffffffff);
     std::fill_n(scooter_indices_, 16, 0xffffffff);
     std::fill_n(sophia_indices_, 2, 0xffffffff);
@@ -308,22 +98,22 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     cam_frames_.clear();
     cam_frame_ = -1;
 
-    if (js_scene.Has("camera")) {
-        const Sys::JsObjectP &js_cam = js_scene.at("camera").as_obj();
-        if (js_cam.Has("view_origin")) {
-            const Sys::JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
+    if (const size_t camera_ndx = js_scene.IndexOf("camera"); camera_ndx < js_scene.Size()) {
+        const Sys::JsObjectP &js_cam = js_scene[camera_ndx].second.as_obj();
+        if (const size_t view_origin_ndx = js_cam.IndexOf("view_origin"); view_origin_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_orig = js_cam[view_origin_ndx].second.as_arr();
             initial_view_pos_[0] = float(js_orig.at(0).as_num().val);
             initial_view_pos_[1] = float(js_orig.at(1).as_num().val);
             initial_view_pos_[2] = float(js_orig.at(2).as_num().val);
         }
 
-        if (js_cam.Has("view_dir")) {
-            const Sys::JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
+        if (const size_t view_dir_ndx = js_cam.IndexOf("view_dir"); view_dir_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_dir = js_cam[view_dir_ndx].second.as_arr();
             initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
             initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
             initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
-        } else if (js_cam.Has("view_rot")) {
-            const Sys::JsArrayP &js_view_rot = js_cam.at("view_rot").as_arr();
+        } else if (const size_t view_rot_ndx = js_cam.IndexOf("view_rot"); view_rot_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_view_rot = js_cam[view_rot_ndx].second.as_arr();
 
             auto rx = float(js_view_rot.at(0).as_num().val);
             auto ry = float(js_view_rot.at(1).as_num().val);
@@ -344,39 +134,39 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
             initial_view_dir_ = Ren::Vec3d{view_vec};
         }
 
-        if (js_cam.Has("fwd_speed")) {
-            const Sys::JsNumber &js_fwd_speed = js_cam.at("fwd_speed").as_num();
+        if (const size_t fwd_speed_ndx = js_cam.IndexOf("fwd_speed"); fwd_speed_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_fwd_speed = js_cam[fwd_speed_ndx].second.as_num();
             max_fwd_speed_ = float(js_fwd_speed.val);
         }
 
-        if (js_cam.Has("fov")) {
-            const Sys::JsNumber &js_fov = js_cam.at("fov").as_num();
+        if (const size_t fov_ndx = js_cam.IndexOf("fov"); fov_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_fov = js_cam[fov_ndx].second.as_num();
             view_fov_ = float(js_fov.val);
         }
 
-        if (js_cam.Has("gamma")) {
-            const Sys::JsNumber &js_gamma = js_cam.at("gamma").as_num();
+        if (const size_t gamma_ndx = js_cam.IndexOf("gamma"); gamma_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_gamma = js_cam[gamma_ndx].second.as_num();
             gamma_ = float(js_gamma.val);
         }
 
-        if (js_cam.Has("min_exposure")) {
-            const Sys::JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+        if (const size_t min_exposure_ndx = js_cam.IndexOf("min_exposure"); min_exposure_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_min_exposure = js_cam[min_exposure_ndx].second.as_num();
             min_exposure_ = float(js_min_exposure.val);
         }
 
-        if (js_cam.Has("max_exposure")) {
-            const Sys::JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
+        if (const size_t max_exposure_ndx = js_cam.IndexOf("max_exposure"); max_exposure_ndx < js_cam.Size()) {
+            const Sys::JsNumber &js_max_exposure = js_cam[max_exposure_ndx].second.as_num();
             max_exposure_ = float(js_max_exposure.val);
         }
 
-        if (js_cam.Has("shift")) {
-            const Sys::JsArrayP &js_shift = js_cam.at("shift").as_arr();
+        if (const size_t shift_ndx = js_cam.IndexOf("shift"); shift_ndx < js_cam.Size()) {
+            const Sys::JsArrayP &js_shift = js_cam[shift_ndx].second.as_arr();
             view_sensor_shift_[0] = float(js_shift[0].as_num().val);
             view_sensor_shift_[1] = float(js_shift[1].as_num().val);
         }
 
-        if (js_cam.Has("filter")) {
-            const Sys::JsStringP &js_filter = js_cam.at("filter").as_str();
+        if (const size_t filter_ndx = js_cam.IndexOf("filter"); filter_ndx < js_cam.Size()) {
+            const Sys::JsStringP &js_filter = js_cam[filter_ndx].second.as_str();
             if (js_filter.val == "box") {
                 renderer_->settings.pixel_filter = Eng::ePixelFilter::Box;
             } else if (js_filter.val == "gaussian") {
@@ -384,15 +174,15 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
             } else if (js_filter.val == "blackman-harris") {
                 renderer_->settings.pixel_filter = Eng::ePixelFilter::BlackmanHarris;
                 renderer_->settings.pixel_filter_width = 1.5f;
-                if (js_cam.Has("filter_width")) {
-                    const Sys::JsNumber &js_filter_width = js_cam.at("filter_width").as_num();
+                if (const size_t filter_width_ndx = js_cam.IndexOf("filter_width"); filter_width_ndx < js_cam.Size()) {
+                    const Sys::JsNumber &js_filter_width = js_cam[filter_width_ndx].second.as_num();
                     renderer_->settings.pixel_filter_width = float(js_filter_width.val);
                 }
             }
         }
 
-        if (js_cam.Has("view_transform")) {
-            const Sys::JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
+        if (const size_t view_transform_ndx = js_cam.IndexOf("view_transform"); view_transform_ndx < js_cam.Size()) {
+            const Sys::JsStringP &js_view_transform = js_cam[view_transform_ndx].second.as_str();
             if (js_view_transform.val == "standard") {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
             } else if (js_view_transform.val == "off") {
@@ -403,8 +193,10 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
             }
         }
 
-        if (js_cam.Has("paths") && viewer_->app_params.cam_path.has_value()) {
-            const Sys::JsArrayP &js_frames = js_cam.at("paths").as_arr().at(*viewer_->app_params.cam_path).as_arr();
+        if (const size_t paths_ndx = js_cam.IndexOf("paths");
+            paths_ndx < js_cam.Size() && viewer_->app_params.cam_path.has_value()) {
+            const Sys::JsArrayP &js_frames =
+                js_cam[paths_ndx].second.as_arr().at(*viewer_->app_params.cam_path).as_arr();
             for (const Sys::JsElementP &el : js_frames.elements) {
                 const Sys::JsObjectP &js_frame = el.as_obj();
 
