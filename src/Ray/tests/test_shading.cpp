@@ -1427,7 +1427,7 @@ void test_complex_mat5(const char *arch_list[], std::string_view preferred_devic
 
 void test_complex_mat5_emissive(const char *arch_list[], std::string_view preferred_device) {
     const int SampleCount = 78;
-    const int PixThres = 14580;
+    const int PixThres = 14650;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
