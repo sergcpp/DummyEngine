@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_12_09
-	commit = 46196a5a38630539acd3807769ad55debb1529d5
+	branch = perlin_simplex
+	commit = ef12ee7d5ea82dbc6406c1bdfc23409c26209f13
 	method = merge
 	cmdver = 0.4.6
-	parent = 94d927bda447dc6f6ce7f96821405e453760006c
+	parent = a86b103fad71bacb20b26b2f30f0c7055be0358c
