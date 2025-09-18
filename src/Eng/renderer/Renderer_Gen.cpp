@@ -139,27 +139,27 @@ std::unique_ptr<int8_t[]> Eng::Renderer::Generate_PeriodicPerlin(const int res, 
                 float fval = 0.0f;
 
 #if 1
-                fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise(0.25f * coord, Ren::Vec4f{0.25f * scale}));
-                fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{0.25f * scale}));
-                fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{scale}));
-                fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{2.0f * scale}));
-                fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise(4.0f * coord, Ren::Vec4f{4.0f * scale}));
+                fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise4D(0.25f * coord, Ren::Vec4f{0.25f * scale}));
+                fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise4D(0.5f * coord, Ren::Vec4f{0.25f * scale}));
+                fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise4D(coord, Ren::Vec4f{scale}));
+                fval += 0.66f * (0.5f + 0.5f * Ren::PerlinNoise4D(2.0f * coord, Ren::Vec4f{2.0f * scale}));
+                fval += 0.33f * (0.5f + 0.5f * Ren::PerlinNoise4D(4.0f * coord, Ren::Vec4f{4.0f * scale}));
 
                 fval /= (1.0f + 2.0f * 0.66f + 2.0f * 0.33f);
 #elif 0
-                fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise(0.125f * coord, Ren::Vec4f{0.125f * scale}));
-                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(0.25f * coord, Ren::Vec4f{0.25f * scale}));
-                fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{0.5f * scale}));
-                fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{scale}));
-                fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{2.0f * scale}));
-                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(4.0f * coord, Ren::Vec4f{4.0f * scale}));
-                fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise(8.0f * coord, Ren::Vec4f{8.0f * scale}));
+                fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise4D(0.125f * coord, Ren::Vec4f{0.125f * scale}));
+                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise4D(0.25f * coord, Ren::Vec4f{0.25f * scale}));
+                fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise4D(0.5f * coord, Ren::Vec4f{0.5f * scale}));
+                fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise4D(coord, Ren::Vec4f{scale}));
+                fval += 0.75f * (0.5f + 0.5f * Ren::PerlinNoise4D(2.0f * coord, Ren::Vec4f{2.0f * scale}));
+                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise4D(4.0f * coord, Ren::Vec4f{4.0f * scale}));
+                fval += 0.25f * (0.5f + 0.5f * Ren::PerlinNoise4D(8.0f * coord, Ren::Vec4f{8.0f * scale}));
 
                 fval /= (1.0f + 2.0f * 0.75f + 2.0f * 0.5f + 2.0f * 0.25f);
 #else
-                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(0.5f * coord, Ren::Vec4f{0.5f * scale}));
-                fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise(coord, Ren::Vec4f{scale}));
-                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise(2.0f * coord, Ren::Vec4f{2.0f * scale}));
+                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise4D(0.5f * coord, Ren::Vec4f{0.5f * scale}));
+                fval += 1.0f * (0.5f + 0.5f * Ren::PerlinNoise4D(coord, Ren::Vec4f{scale}));
+                fval += 0.5f * (0.5f + 0.5f * Ren::PerlinNoise4D(2.0f * coord, Ren::Vec4f{2.0f * scale}));
 
                 fval /= (1.0f + 2.0f * 0.5f);
 #endif

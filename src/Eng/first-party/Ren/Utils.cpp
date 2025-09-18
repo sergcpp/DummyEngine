@@ -274,9 +274,67 @@ force_inline Vec4f permute(const Vec4f &x) { return Mod(((x * 34.0f) + Vec4f{1.0
 
 force_inline Vec4f taylor_inv_sqrt(const Vec4f &r) { return Vec4f{1.79284291400159f} - 0.85373472095314f * r; }
 
-force_inline Vec4f fade(const Vec4f &t) { return t * t * t * (t * (t * 6.0f - Vec4f{15}) + Vec4f{10}); }
+force_inline Vec3f fade(const Vec3f &t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
+force_inline Vec4f fade(const Vec4f &t) { return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f); }
 
 int round_up(int v, int align) { return align * ((v + align - 1) / align); }
+
+// Skew constants for simplex noise
+static const float F3 = 1.0f / 3.0f;
+static const float G3 = 1.0f / 6.0f;
+
+// Randomly shuffled numbers from 0 to 255
+static const int g_perm[] = {
+    151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240,
+    21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33, 88,
+    237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83,
+    111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216, 80,
+    73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64,
+    52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182,
+    189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9, 129, 22,
+    39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193, 238, 210,
+    144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157, 184, 84,
+    204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78,
+    66, 215, 61, 156, 180,
+    // duplicate
+    151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240,
+    21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33, 88,
+    237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83,
+    111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216, 80,
+    73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64,
+    52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182,
+    189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9, 129, 22,
+    39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193, 238, 210,
+    144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157, 184, 84,
+    204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78,
+    66, 215, 61, 156, 180};
+
+// Gradients table (12 vectors + 4 repeated to use with 4bit index)
+static const Vec3f g_grad3[] = {Vec3f{1, 1, 0}, Vec3f{-1, 1, 0}, Vec3f{1, -1, 0}, Vec3f{-1, -1, 0}, Vec3f{1, 0, 1},
+                                Vec3f{-1, 0, 1}, Vec3f{1, 0, -1}, Vec3f{-1, 0, -1}, Vec3f{0, 1, 1}, Vec3f{0, -1, 1},
+                                Vec3f{0, 1, -1}, Vec3f{0, -1, -1},
+                                // redundant (round up to 16)
+                                Vec3f{1, 1, 0}, Vec3f{0, -1, 1}, Vec3f{-1, 1, 0}, Vec3f{0, -1, -1}};
+
+// Maps hash value to one of the 12 gradients and returns dot product with (x, y, z)
+float grad(int hash, float x, float y, float z) {
+    const int h = hash & 15;
+    const float u = h < 8 ? x : y;
+    const float v = h < 4 ? y : h == 12 || h == 14 ? x : z;
+    return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+}
+
+Vec3f SinRandom3(const Vec3f &c) {
+    float j = 4096.0f * std::sin(Dot(c, Vec3f{17.0f, 59.4f, 15.0f}));
+    Vec3f r;
+    float _unused;
+    r[2] = std::modf(512.0f * j, &_unused);
+    j *= 0.125f;
+    r[0] = std::modf(512.0f * j, &_unused);
+    j *= 0.125f;
+    r[1] = std::modf(512.0f * j, &_unused);
+    return r - 0.5f;
+}
 
 // https://registry.khronos.org/OpenGL/extensions/EXT/EXT_texture_shared_exponent.txt
 static const int RGB9E5_EXPONENT_BITS = 5;
@@ -1306,10 +1364,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
     }
 }
 
-//	Classic Perlin 3D Noise
-//	by Stefan Gustavson
-//
-float Ren::PerlinNoise(const Vec4f &P) {
+float Ren::PerlinNoise4D(const Vec4f &P) {
     Vec4f Pi0 = Floor(P);       // Integer part for indexing
     Vec4f Pi1 = Pi0 + Vec4f{1}; // Integer part + 1
     Pi0 = Mod(Pi0, Vec4f{289});
@@ -1447,7 +1502,7 @@ float Ren::PerlinNoise(const Vec4f &P) {
 }
 
 // Classic Perlin noise, periodic version
-float Ren::PerlinNoise(const Vec4f &P, const Vec4f &rep) {
+float Ren::PerlinNoise4D(const Vec4f &P, const Vec4f &rep) {
     const Vec4f Pi0 = Mod(Floor(P), rep);          // Integer part modulo rep
     const Vec4f Pi1 = Mod(Pi0 + Vec4f{1.0f}, rep); // Integer part + 1 mod rep
     const Vec4f Pf0 = Fract(P);                    // Fractional part for interpolation
@@ -1580,6 +1635,182 @@ float Ren::PerlinNoise(const Vec4f &P, const Vec4f &rep) {
     const Vec2f n_yzw = Mix(Vec2f{n_zw[0], n_zw[1]}, Vec2f{n_zw[2], n_zw[3]}, fade_xyzw[1]);
     const float n_xyzw = Mix(n_yzw[0], n_yzw[1], fade_xyzw[0]);
     return 2.2f * n_xyzw;
+}
+
+float Ren::PerlinNoise3D_Perm(const Vec3f &P) {
+    const Vec3f grid_cell = Floor(P);
+    const Vec3i grid_cell_i = Vec3i(grid_cell) % 256;
+    const Vec3i grid_cell_n = (grid_cell_i + 1) % 256;
+
+    const Vec3f rel_P = P - grid_cell;
+
+    // Gradient indices
+    const int gi000 = g_perm[grid_cell_i[0] + g_perm[grid_cell_i[1] + g_perm[grid_cell_i[2]]]] % 16;
+    const int gi001 = g_perm[grid_cell_i[0] + g_perm[grid_cell_i[1] + g_perm[grid_cell_n[2]]]] % 16;
+    const int gi010 = g_perm[grid_cell_i[0] + g_perm[grid_cell_n[1] + g_perm[grid_cell_i[2]]]] % 16;
+    const int gi011 = g_perm[grid_cell_i[0] + g_perm[grid_cell_n[1] + g_perm[grid_cell_n[2]]]] % 16;
+    const int gi100 = g_perm[grid_cell_n[0] + g_perm[grid_cell_i[1] + g_perm[grid_cell_i[2]]]] % 16;
+    const int gi101 = g_perm[grid_cell_n[0] + g_perm[grid_cell_i[1] + g_perm[grid_cell_n[2]]]] % 16;
+    const int gi110 = g_perm[grid_cell_n[0] + g_perm[grid_cell_n[1] + g_perm[grid_cell_i[2]]]] % 16;
+    const int gi111 = g_perm[grid_cell_n[0] + g_perm[grid_cell_n[1] + g_perm[grid_cell_n[2]]]] % 16;
+
+    // Calculate noise contributions from each of the eight corners
+    const float n000 = Dot(g_grad3[gi000], rel_P);
+    const float n100 = Dot(g_grad3[gi100], rel_P - Vec3f{1, 0, 0});
+    const float n010 = Dot(g_grad3[gi010], rel_P - Vec3f{0, 1, 0});
+    const float n110 = Dot(g_grad3[gi110], rel_P - Vec3f{1, 1, 0});
+    const float n001 = Dot(g_grad3[gi001], rel_P - Vec3f{0, 0, 1});
+    const float n101 = Dot(g_grad3[gi101], rel_P - Vec3f{1, 0, 1});
+    const float n011 = Dot(g_grad3[gi011], rel_P - Vec3f{0, 1, 1});
+    const float n111 = Dot(g_grad3[gi111], rel_P - Vec3f{1, 1, 1});
+
+    // Compute the fade curve value
+    const Vec3f uvw = fade(rel_P);
+
+    // Interpolate along x the contributions from each of the corners
+    const float nx00 = Mix(n000, n100, uvw[0]);
+    const float nx01 = Mix(n001, n101, uvw[0]);
+    const float nx10 = Mix(n010, n110, uvw[0]);
+    const float nx11 = Mix(n011, n111, uvw[0]);
+
+    // Interpolate the four results along y
+    const float nxy0 = Mix(nx00, nx10, uvw[1]);
+    const float nxy1 = Mix(nx01, nx11, uvw[1]);
+
+    // Interpolate the two last results along z
+    const float nxyz = Mix(nxy0, nxy1, uvw[2]);
+
+    return nxyz;
+}
+
+float Ren::SimplexNoise3D_Perm(const Vec3f &P) {
+    const float s = (P[0] + P[1] + P[2]) * F3;
+    const Vec3i ijk = Vec3i(Floor(P + s));
+
+    const float t = (ijk[0] + ijk[1] + ijk[2]) * G3;
+    const Vec3f _XYZ0 = Vec3f(ijk) - t;
+    const Vec3f xyz0 = P - _XYZ0;
+
+    // For the 3D case, the simplex shape is a slightly irregular tetrahedron.
+    // Determine which simplex we are in.
+    Vec3i i1; // Offsets for second corner of simplex in (i,j,k) coords
+    Vec3i i2; // Offsets for third corner of simplex in (i,j,k) coords
+    if (xyz0[0] >= xyz0[1]) {
+        if (xyz0[1] >= xyz0[2]) {
+            // X Y Z order
+            i1 = Vec3i{1, 0, 0};
+            i2 = Vec3i{1, 1, 0};
+        } else if (xyz0[0] >= xyz0[2]) {
+            // X Z Y order
+            i1 = Vec3i{1, 0, 0};
+            i2 = Vec3i{1, 0, 1};
+        } else {
+            // Z X Y order
+            i1 = Vec3i{0, 0, 1};
+            i2 = Vec3i{1, 0, 1};
+        }
+    } else {
+        if (xyz0[1] < xyz0[2]) {
+            // Z Y X order
+            i1 = Vec3i{0, 0, 1};
+            i2 = Vec3i{0, 1, 1};
+        } else if (xyz0[0] < xyz0[2]) {
+            // Y Z X order
+            i1 = Vec3i{0, 1, 0};
+            i2 = Vec3i{0, 1, 1};
+        } else {
+            // Y X Z order
+            i1 = Vec3i{0, 1, 0};
+            i2 = Vec3i{1, 1, 0};
+        }
+    }
+
+    // A step of (1,0,0) in (i,j,k) means a step of (1-c,-c,-c) in (x,y,z),
+    // a step of (0,1,0) in (i,j,k) means a step of (-c,1-c,-c) in (x,y,z), and
+    // a step of (0,0,1) in (i,j,k) means a step of (-c,-c,1-c) in (x,y,z), where
+    // c = 1/6.
+    Vec3f xyz1 = xyz0 - Vec3f(i1) + G3;        // Offsets for second corner in (x,y,z) coords
+    Vec3f xyz2 = xyz0 - Vec3f(i2) + 2.0f * G3; // Offsets for third corner in (x,y,z) coords
+    Vec3f xyz3 = xyz0 - 1.0f + 3.0f * G3;      // Offsets for last corner in (x,y,z) coords
+
+    Vec3i _ijk = ijk % 256;
+    const int gi0 = g_perm[_ijk[0] + g_perm[_ijk[1] + g_perm[_ijk[2]]]] % 16;
+    const int gi1 = g_perm[_ijk[0] + i1[0] + g_perm[_ijk[1] + i1[1] + g_perm[_ijk[2] + i1[2]]]] % 16;
+    const int gi2 = g_perm[_ijk[0] + i2[0] + g_perm[_ijk[1] + i2[1] + g_perm[_ijk[2] + i2[2]]]] % 16;
+    const int gi3 = g_perm[_ijk[0] + 1 + g_perm[_ijk[1] + 1 + g_perm[_ijk[2] + 1]]] % 16;
+
+    // Calculate the contribution from the four corners
+    float n0 = 0.0f, n1 = 0.0f, n2 = 0.0f, n3 = 0.0f;
+
+    float t0 = 0.6f - Length2(xyz0); // x0 * x0 - y0 * y0 - z0 * z0;
+    if (t0 > 0.0f) {
+        t0 *= t0;
+        n0 = t0 * t0 * Dot(g_grad3[gi0], xyz0);
+    }
+    float t1 = 0.6f - Length2(xyz1);
+    if (t1 > 0.0f) {
+        t1 *= t1;
+        n1 = t1 * t1 * Dot(g_grad3[gi1], xyz1);
+    }
+    float t2 = 0.6f - Length2(xyz2);
+    if (t2 > 0.0f) {
+        t2 *= t2;
+        n2 = t2 * t2 * Dot(g_grad3[gi2], xyz2);
+    }
+    float t3 = 0.6f - Length2(xyz3);
+    if (t3 > 0.0f) {
+        t3 *= t3;
+        n3 = t3 * t3 * Dot(g_grad3[gi3], xyz3);
+    }
+
+    return 32.0f * (n0 + n1 + n2 + n3);
+}
+
+float Ren::SimplexNoise3D_Rand(const Vec3f &P) {
+    // 1. find current tetrahedron T and it's four vertices
+    // s, s+i1, s+i2, s+1.0 - absolute skewed (integer) coordinates of T vertices
+    // x, x1, x2, x3 - unskewed coordinates of p relative to each of T vertices
+
+    // calculate s and x
+    const Vec3f s = Floor(P + (P[0] + P[1] + P[2]) * F3);
+    const Vec3f x = P - s + (s[0] + s[1] + s[2]) * G3;
+
+    // calculate i1 and i2
+    Vec3f e = Step(Vec3f(0.0f), x - Vec3f(x[1], x[2], x[0]));
+    e[2] = Min(e[2], 3.0f - e[0] - e[1] - e[2]);
+    assert(e[0] != 1.0f || e[1] != 1.0f || e[2] != 1.0f);
+    Vec3f i1 = e * (1.0f - Vec3f(e[2], e[0], e[1]));
+    Vec3f i2 = 1.0f - Vec3f(e[2], e[0], e[1]) * (1.0f - e);
+
+    // x1, x2, x3
+    const Vec3f x1 = x - i1 + G3;
+    const Vec3f x2 = x - i2 + 2.0f * G3;
+    const Vec3f x3 = x - 1.0f + 3.0f * G3;
+
+    // calculate surflet weights
+    Vec4f w;
+    w[0] = Length2(x);
+    w[1] = Length2(x1);
+    w[2] = Length2(x2);
+    w[3] = Length2(x3);
+
+    // w fades from 0.6 at the center of the surflet to 0.0 at the margin
+    w = Max(0.6f - w, Vec4f(0.0f));
+
+    // calculate surflet components
+    Vec4f d;
+    d[0] = Dot(SinRandom3(s), x);
+    d[1] = Dot(SinRandom3(s + i1), x1);
+    d[2] = Dot(SinRandom3(s + i2), x2);
+    d[3] = Dot(SinRandom3(s + 1.0f), x3);
+
+    // multiply d by w^4
+    w *= w;
+    w *= w;
+    d *= w;
+
+    // 3. return the sum of the four surflets
+    return Dot(d, Vec4f(52.0f));
 }
 
 //

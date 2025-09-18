@@ -315,8 +315,13 @@ extern const int _blank_DXT5_block_4x4_len;
 extern const uint8_t _blank_ASTC_block_4x4[];
 extern const int _blank_ASTC_block_4x4_len;
 
-float PerlinNoise(const Vec4f &P);
-float PerlinNoise(const Vec4f &P, const Vec4f &rep);
+float PerlinNoise4D(const Vec4f &P);
+float PerlinNoise4D(const Vec4f &P, const Vec4f &rep);
+
+float PerlinNoise3D_Perm(const Vec3f &P);
+
+float SimplexNoise3D_Perm(const Vec3f &P);
+float SimplexNoise3D_Rand(const Vec3f &P);
 
 //
 // YUV image processing
