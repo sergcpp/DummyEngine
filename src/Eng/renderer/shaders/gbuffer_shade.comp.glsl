@@ -257,7 +257,7 @@ void main() {
             lobe_masks_t _lobe_masks = lobe_masks;
             [[flatten]] if (is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
             [[flatten]] if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
-            [[flatten]] if (!is_specular) _lobe_masks.bits = ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
+            [[flatten]] if (!is_specular) _lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
             vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             if (all(equal(light_contribution, vec3(0.0)))) {
@@ -294,7 +294,7 @@ void main() {
                 lobe_masks_t _lobe_masks = lobe_masks;
                 [[flatten]] if (is_portal) _lobe_masks.specular_mul *= portals_specular_ltc_weight;
                 [[flatten]] if (!is_diffuse) _lobe_masks.bits &= ~LOBE_DIFFUSE_BIT;
-                [[flatten]] if (!is_specular) _lobe_masks.bits = ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
+                [[flatten]] if (!is_specular) _lobe_masks.bits &= ~(LOBE_SPECULAR_BIT | LOBE_CLEARCOAT_BIT);
                 vec3 light_contribution = EvaluateLightSource_LTC(litem, P, I, N, _lobe_masks, g_ltc_luts,
                                                                   sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 if (all(equal(light_contribution, vec3(0.0)))) {
