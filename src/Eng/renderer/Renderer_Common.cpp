@@ -157,6 +157,8 @@ void Eng::Renderer::InitPipelines() {
     // TAA
     pi_reconstruct_depth_ = sh_.LoadPipeline("internal/reconstruct_depth.comp.glsl");
     pi_prepare_disocclusion_ = sh_.LoadPipeline("internal/prepare_disocclusion.comp.glsl");
+    pi_sharpen_[0] = sh_.LoadPipeline("internal/sharpen.comp.glsl");
+    pi_sharpen_[1] = sh_.LoadPipeline("internal/sharpen@COMPRESSED.comp.glsl");
 
     // Debugging
     pi_debug_velocity_ = sh_.LoadPipeline("internal/debug_velocity.comp.glsl");
@@ -904,8 +906,8 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     });
 }
 
-void Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                                 const bool static_accumulation, FgResRef &resolved_color) {
+Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
+                                          const bool static_accumulation) {
     using Stg = Ren::eStage;
 
     FgResRef reconstructed_depth;
@@ -1073,6 +1075,7 @@ void Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, FrameTextu
                             ctx_.default_descr_alloc(), ctx_.log());
         });
     }
+    FgResRef resolved_color;
     { // Main TAA pass
         auto &taa = fg_builder_.AddNode("TAA");
 
@@ -1155,6 +1158,7 @@ void Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, FrameTextu
             }
         });
     }
+    return resolved_color;
 }
 
 void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex,

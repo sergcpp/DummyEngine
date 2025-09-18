@@ -212,7 +212,7 @@ class Renderer {
     Ren::PipelineRef pi_sky_upsample_;
     Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_;
     // TAA
-    Ren::PipelineRef pi_reconstruct_depth_, pi_prepare_disocclusion_;
+    Ren::PipelineRef pi_reconstruct_depth_, pi_prepare_disocclusion_, pi_sharpen_[2];
     // Debug
     Ren::PipelineRef pi_debug_velocity_, pi_debug_gbuffer_[4];
 
@@ -266,8 +266,8 @@ class Renderer {
 
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
                                    FgResRef &inout_velocity_tex);
-    void AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
-                      FgResRef &resolved_color);
+    FgResRef AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation);
+    FgResRef AddSharpenPass(FgResRef input_tex, FgResRef exposure_tex, bool compressed);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
     // GI Cache

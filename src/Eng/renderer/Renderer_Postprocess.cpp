@@ -7,6 +7,7 @@
 #include "shaders/bloom_interface.h"
 #include "shaders/histogram_exposure_interface.h"
 #include "shaders/histogram_sample_interface.h"
+#include "shaders/sharpen_interface.h"
 
 Eng::FgResRef Eng::Renderer::AddAutoexposurePasses(FgResRef hdr_texture, const Ren::Vec2f adaptation_speed) {
     FgResRef histogram;
@@ -202,10 +203,63 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
                 (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
 
-            DispatchCompute(*pi_bloom_upsample_[compressed], grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                            builder.ctx().default_descr_alloc(), builder.log());
+            DispatchCompute(*pi_bloom_upsample_[compressed], grp_count, bindings, &uniform_params,
+                            sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
 
     return upsampled[0];
+}
+
+Eng::FgResRef Eng::Renderer::AddSharpenPass(FgResRef input_tex, FgResRef exposure_tex, const bool compressed) {
+    auto &sharpen = fg_builder_.AddNode("SHARPEN");
+
+    struct PassData {
+        FgResRef input_tex;
+        FgResRef exposure_tex;
+        FgResRef output_tex;
+    };
+
+    auto *data = sharpen.AllocNodeData<PassData>();
+    data->input_tex = sharpen.AddTextureInput(input_tex, Ren::eStage::ComputeShader);
+    data->exposure_tex = sharpen.AddTextureInput(exposure_tex, Ren::eStage::ComputeShader);
+
+    FgResRef output_tex;
+    { // Texture that holds downsampled bloom image
+        Ren::TexParams params;
+        params.w = view_state_.scr_res[0];
+        params.h = view_state_.scr_res[1];
+        params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
+        params.sampling.filter = Ren::eTexFilter::Bilinear;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        output_tex = data->output_tex =
+            sharpen.AddStorageImageOutput("Sharpen Output", params, Ren::eStage::ComputeShader);
+    }
+
+    sharpen.set_execute_cb([this, data, compressed](FgBuilder &builder) {
+        FgAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+        FgAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
+        FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+        Sharpen::Params uniform_params;
+        uniform_params.img_size[0] = output_tex.ref->params.w;
+        uniform_params.img_size[1] = output_tex.ref->params.h;
+        uniform_params.sharpness = 0.15f; // hardcoded for now
+        uniform_params.pre_exposure = view_state_.pre_exposure;
+
+        const Ren::Binding bindings[] = {
+            {Ren::eBindTarget::TexSampled, Sharpen::INPUT_TEX_SLOT, {*input_tex.ref, *linear_sampler_}},
+            {Ren::eBindTarget::TexSampled, Sharpen::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
+            {Ren::eBindTarget::ImageRW, Sharpen::OUT_IMG_SLOT, *output_tex.ref}};
+
+        const Ren::Vec3u grp_count = Ren::Vec3u{
+            (uniform_params.img_size[0] + Sharpen::LOCAL_GROUP_SIZE_X - 1u) / Sharpen::LOCAL_GROUP_SIZE_X,
+            (uniform_params.img_size[1] + Sharpen::LOCAL_GROUP_SIZE_Y - 1u) / Sharpen::LOCAL_GROUP_SIZE_Y, 1u};
+
+        DispatchCompute(*pi_sharpen_[compressed], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                        builder.ctx().default_descr_alloc(), builder.log());
+    });
+
+    return output_tex;
 }

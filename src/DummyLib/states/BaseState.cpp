@@ -259,6 +259,11 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_sharpen", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.enable_sharpen = !renderer_->settings.enable_sharpen;
+        return true;
+    });
+
     cmdline_ui_->RegisterCommand("r_shadows", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
             if (args[1].val > 1.5) {
@@ -820,6 +825,7 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
     renderer_->settings.enable_bloom = viewer_->app_params.postprocess;
     renderer_->settings.enable_aberration = viewer_->app_params.postprocess;
     renderer_->settings.enable_purkinje = viewer_->app_params.postprocess;
+    renderer_->settings.enable_sharpen = viewer_->app_params.postprocess;
 
     main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
 }

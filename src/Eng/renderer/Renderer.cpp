@@ -491,8 +491,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eTexFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
-        };
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
         // color_rts[2].flags = Ren::eTexFlags::SRGB;
 
@@ -1491,10 +1490,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         const bool use_taa = list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe;
         if (use_taa) {
-            AddTaaPasses(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static,
-                         resolved_color);
+            resolved_color =
+                AddTaaPasses(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static);
         } else {
             resolved_color = frame_textures.color;
+        }
+
+        //
+        // Sharpening
+        //
+        if (list.render_settings.enable_sharpen) {
+            resolved_color = AddSharpenPass(resolved_color, frame_textures.exposure, true);
         }
 
 #if defined(REN_GL_BACKEND) && 0 // gl-only for now
@@ -2023,33 +2029,39 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
         fg_builder_.Reset();
         backbuffer_sources_.clear();
 
-        auto &update_image = fg_builder_.AddNode("UPDATE IMAGE");
-
-        FgResRef stage_buf_res = update_image.AddTransferInput(temp_upload_buf);
-
         FgResRef output_tex_res;
-        { // output image
-            Ren::TexParams params;
-            params.w = cur_scr_w;
-            params.h = cur_scr_h;
-            params.format = format;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-            output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
+        { // Upload image data
+            auto &update_image = fg_builder_.AddNode("UPDATE IMAGE");
+
+            FgResRef stage_buf_res = update_image.AddTransferInput(temp_upload_buf);
+
+            { // output image
+                Ren::TexParams params;
+                params.w = cur_scr_w;
+                params.h = cur_scr_h;
+                params.format = format;
+                params.sampling.filter = Ren::eTexFilter::Bilinear;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
+            }
+
+            update_image.set_execute_cb([stage_buf_res, output_tex_res](FgBuilder &builder) {
+                FgAllocBuf &stage_buf = builder.GetReadBuffer(stage_buf_res);
+                FgAllocTex &output_image = builder.GetWriteTexture(output_tex_res);
+
+                const int w = output_image.ref->params.w;
+                const int h = output_image.ref->params.h;
+
+                output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
+                                              builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
+            });
         }
 
-        update_image.set_execute_cb([stage_buf_res, output_tex_res](FgBuilder &builder) {
-            FgAllocBuf &stage_buf = builder.GetReadBuffer(stage_buf_res);
-            FgAllocTex &output_image = builder.GetWriteTexture(output_tex_res);
-
-            const int w = output_image.ref->params.w;
-            const int h = output_image.ref->params.h;
-
-            output_image.ref->SetSubImage(0, 0, w, h, Ren::eTexFormat::RGBA32F, *stage_buf.ref,
-                                          builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
-        });
-
         FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res, Ren::Vec2f{1.0f, 1.0f});
+
+        if (settings.enable_sharpen) {
+            output_tex_res = AddSharpenPass(output_tex_res, exposure_tex, compressed);
+        }
 
         FgResRef bloom_tex;
         if (settings.enable_bloom) {
@@ -2166,6 +2178,10 @@ void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, con
 
         FgResRef output_tex_res = fg_builder_.MakeTextureResource(result);
         FgResRef exposure_tex = AddAutoexposurePasses(output_tex_res, Ren::Vec2f{1.0f, 1.0f});
+
+        if (settings.enable_sharpen) {
+            output_tex_res = AddSharpenPass(output_tex_res, exposure_tex, compressed);
+        }
 
         FgResRef bloom_tex;
         if (settings.enable_bloom) {

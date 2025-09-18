@@ -104,6 +104,7 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
     renderer->settings.enable_shadow_jitter = true;
     renderer->settings.enable_aberration = false;
     renderer->settings.enable_purkinje = false;
+    renderer->settings.enable_sharpen = false;
     renderer->settings.taa_mode = eTAAMode::Static;
     renderer->settings.pixel_filter = ePixelFilter::Box;
     renderer->settings.gi_cache_update_mode = eGICacheUpdateMode::Full;

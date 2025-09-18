@@ -9,7 +9,7 @@
 #pragma multi_compile _ LUT
 #pragma multi_compile _ TWO_TARGETS
 
-layout(binding = HDR_TEX_SLOT) uniform sampler2D g_tex;
+layout(binding = INPUT_TEX_SLOT) uniform sampler2D g_input_tex;
 layout(binding = BLOOM_TEX_SLOT) uniform sampler2D g_bloom_tex;
 layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 #if defined(LUT)
@@ -27,7 +27,7 @@ layout(location = 0) out vec4 g_out_color;
     layout(location = 1) out vec4 g_out_color2;
 #endif
 
-vec3 TonemapLUT(sampler3D lut, vec3 col) {
+vec3 TonemapLUT(sampler3D lut, const vec3 col) {
     const vec3 encoded = col / (col + 1.0);
 
     // Align the encoded range to texel centers
@@ -48,12 +48,12 @@ void main() {
                                             vec3(0.1, 0.2, 0.3),
                                             vec3(0.0, 0.05, 0.4));
         for (int i = -2; i <= 2; ++i) {
-            col += AberrFactors[2 + i] * textureLod(g_tex, vec2(0.5) + uvs_centered * (1.0 - float(i) * 0.0005 * g_params.aberration), 0.0).xyz;
+            col += AberrFactors[2 + i] * textureLod(g_input_tex, vec2(0.5) + uvs_centered * (1.0 - float(i) * 0.0005 * g_params.aberration), 0.0).xyz;
         }
     } else
 #endif
     {
-        col += textureLod(g_tex, g_vtx_uvs, 0.0).xyz;
+        col += textureLod(g_input_tex, g_vtx_uvs, 0.0).xyz;
     }
 
     // add bloom
