@@ -150,6 +150,7 @@ const float PROBE_STATE_ACTIVE_OUTDOOR = 2;
 
 // GI
 const float GI_CACHE_MULTIBOUNCE_FACTOR = 0.8f;
+const float GI_LIGHT_CUTOFF = 0.0001f;
 
 // Transparency
 const int OIT_LAYERS_HIGH = 4;

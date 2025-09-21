@@ -184,11 +184,6 @@ void main() {
     litem.col_and_type.xyz *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
 #endif
 
-    if (hsum(litem.col_and_type.xyz) < FLT_EPS) {
-        imageStore(g_out_specular_img, icoord, vec4(0.0));
-        return;
-    }
-
     float ls_dist;
     const vec3 L = normalize_len(lp - P, ls_dist);
 
@@ -197,6 +192,11 @@ void main() {
         cos_theta = abs(cos_theta);
     }
     const float ls_pdf = pdf_factor * (ls_dist * ls_dist) / (0.5 * light_fwd_len * cos_theta);
+
+    if (hsum(litem.col_and_type.xyz) * g_shrd_data.cam_pos_and_exp.w / ls_pdf < 3.0 * GI_LIGHT_CUTOFF) {
+        imageStore(g_out_specular_img, icoord, vec4(0.0));
+        return;
+    }
 
     //
 
@@ -356,7 +356,7 @@ void main() {
         specular_col.w = dot(specular_col.xyz, specular_col.xyz) > 1e-7 ? ls_dist : -1.0;
     }
 
-    const vec4 prev_val = imageLoad(g_out_diffuse_img, icoord);
-    imageStore(g_out_diffuse_img, icoord, vec4(prev_val.xyz + compress_hdr(visibility * diffuse_col, g_shrd_data.cam_pos_and_exp.w), prev_val.w));
+    const vec4 prev_diff_val = imageLoad(g_out_diffuse_img, icoord);
+    imageStore(g_out_diffuse_img, icoord, vec4(prev_diff_val.xyz + compress_hdr(visibility * diffuse_col, g_shrd_data.cam_pos_and_exp.w), prev_diff_val.w));
     imageStore(g_out_specular_img, icoord, vec4(compress_hdr(visibility * specular_col.xyz, g_shrd_data.cam_pos_and_exp.w), specular_col.w));
 }

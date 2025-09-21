@@ -16,7 +16,6 @@ const int LOCAL_GROUP_SIZE_Y = 8;
 
 const int INPUT_TEX_SLOT = 1;
 const int EXPOSURE_TEX_SLOT = 2;
-const int BLEND_TEX_SLOT = 2;
 
 const int OUT_IMG_SLOT = 0;
 

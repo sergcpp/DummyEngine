@@ -225,7 +225,7 @@ Eng::FgResRef Eng::Renderer::AddSharpenPass(FgResRef input_tex, FgResRef exposur
     data->exposure_tex = sharpen.AddTextureInput(exposure_tex, Ren::eStage::ComputeShader);
 
     FgResRef output_tex;
-    { // Texture that holds downsampled bloom image
+    { // Texture that holds output image
         Ren::TexParams params;
         params.w = view_state_.scr_res[0];
         params.h = view_state_.scr_res[1];
