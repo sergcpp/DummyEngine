@@ -5931,6 +5931,8 @@ void Ray::NS::SampleLightSource(const fvec<S> P[3], const fvec<S> T[3], const fv
         ++index;
     }
 
+    const ivec<S> temp_mask = simd_cast((ls.col[0] + ls.col[1] + ls.col[2]) < FLT_EPS);
+    where(ray_mask & temp_mask, ls.pdf) = 0.0f;
     where(ray_mask, ls.pdf) /= factor;
 }
 

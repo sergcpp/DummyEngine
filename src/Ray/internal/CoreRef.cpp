@@ -3610,6 +3610,9 @@ void Ray::Ref::SampleLightSource(const fvec4 &P, const fvec4 &T, const fvec4 &B,
         ls.ray_flags = l.ray_visibility;
     }
 
+    if (hsum(ls.col) < FLT_EPS) {
+        ls.pdf = 0.0f;
+    }
     ls.pdf /= factor;
 }
 
