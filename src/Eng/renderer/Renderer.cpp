@@ -1796,10 +1796,10 @@ void Eng::Renderer::UpdatePixelFilterTable(const ePixelFilter filter, float filt
 }
 
 void Eng::Renderer::InitBackendInfo() {
-    if (frame_index_ < 10) {
+    /*if (frame_index_ < 10) {
         // Skip a few initial frames
         return;
-    }
+    }*/
 
     backend_info_.passes_info.clear();
     backend_info_.resources_info.clear();

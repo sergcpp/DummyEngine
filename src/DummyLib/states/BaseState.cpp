@@ -890,6 +890,14 @@ void BaseState::Draw() {
             viewer_->app_params.pt = false;
         }
         if (!viewer_->app_params.ref_name.empty() && capture_state_ == eCaptureState::None) {
+            if (USE_TWO_THREADS) {
+                std::unique_lock<std::mutex> lock(mtx_);
+                while (notified_) {
+                    thr_done_.wait(lock);
+                }
+            }
+            main_view_lists_[0].Clear();
+            main_view_lists_[1].Clear();
             renderer_->reset_accumulation();
             scene_manager_->ClearGICache(ren_ctx_->current_cmd_buf());
             capture_state_ = eCaptureState::UpdateGICache;
@@ -897,6 +905,9 @@ void BaseState::Draw() {
             renderer_->settings.gi_cache_update_mode = Eng::eGICacheUpdateMode::Full;
             main_view_lists_[0].render_settings = main_view_lists_[1].render_settings = renderer_->settings;
             log_->Info("Starting capture!");
+
+            notified_ = true;
+            thr_notify_.notify_one();
         }
     }
 
@@ -944,11 +955,20 @@ void BaseState::Draw() {
                 log_->Info("Warmup iteration #%i", renderer_->accumulated_frames());
                 if (renderer_->accumulated_frames() >= 64) {
                     capture_state_ = eCaptureState::Started;
+                    if (USE_TWO_THREADS) {
+                        std::unique_lock<std::mutex> lock(mtx_);
+                        while (notified_) {
+                            thr_done_.wait(lock);
+                        }
+                    }
                     cam_frame_ = 0;
-                    main_view_lists_[0].frame_index = 0;
-                    main_view_lists_[1].frame_index = 0;
+                    main_view_lists_[0].Clear();
+                    main_view_lists_[1].Clear();
                     random_->Reset(0);
                     renderer_->reset_accumulation();
+
+                    notified_ = true;
+                    thr_notify_.notify_one();
                 }
             } else if (capture_state_ == eCaptureState::Started) {
                 if (!cam_frames_.empty() && cam_frame_ - 1 < int(cam_frames_.size())) {
@@ -980,7 +1000,8 @@ void BaseState::Draw() {
                         std::string captured_str, rounded_str, marked_str;
                         for (int i = 0; i < int(captured_psnr_.size()); ++i) {
                             const double val = captured_psnr_[i];
-                            const double max_val = std::min(std::floor(20 * val - 0.1) / 20.0, viewer_->app_params.psnr[i]);
+                            const double max_val =
+                                std::min(std::floor(20 * val - 0.1) / 20.0, viewer_->app_params.psnr[i]);
 
                             char temp[32];
                             snprintf(temp, sizeof(temp), "%.2f", val);
