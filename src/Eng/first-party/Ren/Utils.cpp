@@ -97,19 +97,19 @@ const eTexFormat g_tex_format_from_dxgi_format[] = {
     eTexFormat::Undefined,   // DXGI_FORMAT_R8G8_B8G8_UNORM
     eTexFormat::Undefined,   // DXGI_FORMAT_G8R8_G8B8_UNORM
     eTexFormat::Undefined,   // DXGI_FORMAT_BC1_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC1_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC1_UNORM_SRGB
+    eTexFormat::BC1,         // DXGI_FORMAT_BC1_UNORM
+    eTexFormat::BC1_srgb,    // DXGI_FORMAT_BC1_UNORM_SRGB
     eTexFormat::Undefined,   // DXGI_FORMAT_BC2_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC2_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC2_UNORM_SRGB
+    eTexFormat::BC2,         // DXGI_FORMAT_BC2_UNORM
+    eTexFormat::BC2_srgb,    // DXGI_FORMAT_BC2_UNORM_SRGB
     eTexFormat::Undefined,   // DXGI_FORMAT_BC3_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC3_UNORM
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC3_UNORM_SRGB
+    eTexFormat::BC3,         // DXGI_FORMAT_BC3_UNORM
+    eTexFormat::BC3_srgb,    // DXGI_FORMAT_BC3_UNORM_SRGB
     eTexFormat::Undefined,   // DXGI_FORMAT_BC4_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC4_UNORM
+    eTexFormat::BC4,         // DXGI_FORMAT_BC4_UNORM
     eTexFormat::Undefined,   // DXGI_FORMAT_BC4_SNORM
     eTexFormat::Undefined,   // DXGI_FORMAT_BC5_TYPELESS
-    eTexFormat::Undefined,   // DXGI_FORMAT_BC5_UNORM
+    eTexFormat::BC5,         // DXGI_FORMAT_BC5_UNORM
     eTexFormat::Undefined,   // DXGI_FORMAT_BC5_SNORM
     eTexFormat::Undefined,   // DXGI_FORMAT_B5G6R5_UNORM
     eTexFormat::Undefined,   // DXGI_FORMAT_B5G5R5A1_UNORM

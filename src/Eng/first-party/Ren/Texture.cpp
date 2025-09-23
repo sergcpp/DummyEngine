@@ -99,8 +99,9 @@ int Ren::GetBlockCount(const int w, const int h, const eTexFormat format) {
 
 int Ren::GetDataLenBytes(const int w, const int h, const int d, const eTexFormat format) {
     if (IsCompressedFormat(format)) {
-        assert(d == 0 || d == 1);
-        return GetBlockCount(w, h, format) * GetBlockLenBytes(format);
+        const int block_len = GetBlockLenBytes(format);
+        const int block_cnt = GetBlockCount(w, h, format);
+        return block_len * block_cnt * std::max(d, 1);
     } else {
         assert(g_tex_format_info[int(format)].pp_data_len != 0);
         return w * h * d * g_tex_format_info[int(format)].pp_data_len;
@@ -118,8 +119,7 @@ uint32_t Ren::GetDataLenBytes(const TexParams &params) {
             const int block_len = GetBlockLenBytes(params.format);
             const int block_cnt = GetBlockCount(w, h, params.format);
 
-            assert(params.d == 0);
-            total_len += uint32_t(block_len) * block_cnt;
+            total_len += uint32_t(block_len) * block_cnt * std::max(int(params.d), 1);
         } else {
             assert(g_tex_format_info[int(params.format)].pp_data_len != 0);
             total_len += w * h * d * g_tex_format_info[int(params.format)].pp_data_len;
