@@ -88,6 +88,8 @@ void Eng::Renderer::InitSkyResources() {
 
                 const std::vector<uint8_t> data = LoadDDS(weather, &p);
                 if (!data.empty()) {
+                    assert(p.format == Ren::eTexFormat::BC1_srgb);
+                    p.format = Ren::eTexFormat::BC1;
                     Ren::eTexLoadStatus status;
                     sky_weather_tex_ = ctx_.LoadTexture(weather, data, p, ctx_.default_mem_allocs(), &status);
                     assert(status == Ren::eTexLoadStatus::CreatedFromData);
@@ -141,8 +143,53 @@ void Eng::Renderer::InitSkyResources() {
                 p.sampling.filter = Ren::eTexFilter::Bilinear;
                 p.sampling.wrap = Ren::eTexWrap::Repeat;
 
-                const std::vector<uint8_t> data = LoadDDS(noise, &p);
+                std::vector<uint8_t> data = LoadDDS(noise, &p);
                 if (!data.empty()) {
+                    assert(p.format == Ren::eTexFormat::BC4);
+                    if (!ctx_.capabilities.bc4_3d_texture_format) {
+                        // Decompress texture
+                        std::vector<uint8_t> decompressed_data(p.w * p.h * p.d);
+                        for (int z = 0; z < int(p.d); ++z) {
+                            const uint8_t *compressed_block = &data[z * p.w * p.h / 2];
+                            uint8_t *out_data = &decompressed_data[z * p.w * p.h];
+                            for (int y = 0; y < int(p.h); y += 4) {
+                                for (int x = 0; x < int(p.w); x += 4) {
+                                    uint8_t decode_data[8];
+                                    decode_data[0] = compressed_block[0];
+                                    decode_data[1] = compressed_block[1];
+
+                                    // 6-step intermediate values
+                                    decode_data[2] = (6 * decode_data[0] + 1 * decode_data[1]) / 7;
+                                    decode_data[3] = (5 * decode_data[0] + 2 * decode_data[1]) / 7;
+                                    decode_data[4] = (4 * decode_data[0] + 3 * decode_data[1]) / 7;
+                                    decode_data[5] = (3 * decode_data[0] + 4 * decode_data[1]) / 7;
+                                    decode_data[6] = (2 * decode_data[0] + 5 * decode_data[1]) / 7;
+                                    decode_data[7] = (1 * decode_data[0] + 6 * decode_data[1]) / 7;
+
+                                    int next_bit = 8 * 2;
+                                    for (int i = 0; i < 16; ++i) {
+                                        int idx = 0, bit;
+                                        bit = (compressed_block[next_bit >> 3] >> (next_bit & 7)) & 1;
+                                        idx += bit << 0;
+                                        ++next_bit;
+                                        bit = (compressed_block[next_bit >> 3] >> (next_bit & 7)) & 1;
+                                        idx += bit << 1;
+                                        ++next_bit;
+                                        bit = (compressed_block[next_bit >> 3] >> (next_bit & 7)) & 1;
+                                        idx += bit << 2;
+                                        ++next_bit;
+
+                                        out_data[(y + (i / 4)) * int(p.w) + x + (i % 4)] = decode_data[idx & 7];
+                                    }
+
+                                    compressed_block += 8;
+                                }
+                            }
+                        }
+                        p.format = Ren::eTexFormat::R8;
+                        data = std::move(decompressed_data);
+                    }
+
                     Ren::eTexLoadStatus status;
                     sky_noise3d_tex_ = ctx_.LoadTexture(noise, data, p, ctx_.default_mem_allocs(), &status);
                     assert(status == Ren::eTexLoadStatus::CreatedFromData);
