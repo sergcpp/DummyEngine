@@ -852,11 +852,11 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     std::filesystem::path image_path = in_file;
     image_path.replace_filename(tex.image_name);
 
+    out_dependencies.push_back(image_path.generic_u8string());
+
     if (tex.copy) {
         return std::filesystem::copy_file(image_path, out_file, std::filesystem::copy_options::overwrite_existing);
     }
-
-    out_dependencies.push_back(image_path.generic_u8string());
 
     std::ifstream src_image(image_path, std::ios::binary | std::ios::ate);
     if (!src_image) {
