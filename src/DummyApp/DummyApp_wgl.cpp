@@ -99,6 +99,9 @@ typedef BOOL(WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
 #define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
 
+#define WGL_CONTEXT_FLAGS_ARB 0x2094
+#define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
+
 DummyApp::DummyApp() { g_app = this; }
 
 DummyApp::~DummyApp() {}
@@ -311,9 +314,13 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
         return -1;
     }
 
-    static const int context_attribs[] = {
-        WGL_CONTEXT_MAJOR_VERSION_ARB,    4, WGL_CONTEXT_MINOR_VERSION_ARB, 3, WGL_CONTEXT_PROFILE_MASK_ARB,
-        WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 0};
+    int context_attribs[] = {WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+                             WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+                             WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                             WGL_CONTEXT_FLAGS_ARB,         0, 0};
+    if (app_params.validation_level > 0) {
+        context_attribs[std::size(context_attribs) - 2] |= WGL_CONTEXT_DEBUG_BIT_ARB;
+    }
 
     gl_ctx_main_ = wglCreateContextAttribsARB(device_context_, 0, context_attribs);
     if (!gl_ctx_main_) {

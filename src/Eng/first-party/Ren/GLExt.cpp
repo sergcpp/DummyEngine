@@ -245,6 +245,7 @@ bool Ren::InitGLExtentions(ILog *log) {
     LOAD_GL_FUN(glGetFloati_v)
     LOAD_GL_FUN(glGetDoublei_v)
     LOAD_GL_FUN(glGetInteger64i_v)
+    LOAD_GL_FUN(glGetInternalformativ)
 
     LOAD_GL_FUN(glGetTextureLevelParameterfv)
     LOAD_GL_FUN(glGetTextureLevelParameteriv)

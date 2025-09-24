@@ -406,6 +406,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC ren_glBindTextureUnit_Comp;
 
 #define GL_TEXTURE_3D 0x806F
 
+#define GL_INTERNALFORMAT_SUPPORTED 0x826F
+
 #define GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT 0x00000001
 #define GL_ELEMENT_ARRAY_BARRIER_BIT 0x00000002
 #define GL_UNIFORM_BARRIER_BIT 0x00000004
@@ -542,11 +544,11 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC ren_glBindTextureUnit_Comp;
 #define GL_NEGATIVE_ONE_TO_ONE 0x935E
 #define GL_ZERO_TO_ONE 0x935F
 
-#define GL_FUNC_ADD                 0x8006
-#define GL_FUNC_SUBTRACT            0x800A
-#define GL_FUNC_REVERSE_SUBTRACT    0x800B
-#define GL_MIN                      0x8007
-#define GL_MAX                      0x8008
+#define GL_FUNC_ADD 0x8006
+#define GL_FUNC_SUBTRACT 0x800A
+#define GL_FUNC_REVERSE_SUBTRACT 0x800B
+#define GL_MIN 0x8007
+#define GL_MAX 0x8008
 
 #ifndef APIENTRY
 #if defined(_WIN32)
@@ -790,6 +792,8 @@ typedef void(APIENTRY *PFNGLGETINTEGERI_VPROC)(GLenum target, GLuint index, GLin
 typedef void(APIENTRY *PFNGLGETFLOATI_VPROC)(GLenum target, GLuint index, GLfloat *data);
 typedef void(APIENTRY *PFNGLGETDOUBLEI_VPROC)(GLenum target, GLuint index, GLdouble *data);
 typedef void(APIENTRY *PFNGLGETINTEGER64I_VPROC)(GLenum target, GLuint index, GLint64 *data);
+typedef void(APIENTRY *PFNGLGETINTERNALFORMATIV)(GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize,
+                                                 GLint *params);
 
 typedef void(APIENTRY *PFNGLGETTEXTURELEVELPARAMETERFVPROC)(GLuint texture, GLint level, GLenum pname, GLfloat *params);
 typedef void(APIENTRY *PFNGLGETTEXTURELEVELPARAMETERIVPROC)(GLuint texture, GLint level, GLenum pname, GLint *params);
@@ -1103,6 +1107,7 @@ typedef void(APIENTRY *PFNGLBLENDEQUATIONSEPARATEPROC)(GLenum modeRGB, GLenum mo
 #define glGetFloati_v ren_glGetFloati_v
 #define glGetDoublei_v ren_glGetDoublei_v
 #define glGetInteger64i_v ren_glGetInteger64i_v
+#define glGetInternalformativ ren_glGetInternalformativ
 
 #define glGetTextureLevelParameterfv ren_glGetTextureLevelParameterfv
 #define glGetTextureLevelParameteriv ren_glGetTextureLevelParameteriv
@@ -1360,6 +1365,7 @@ EXTERN_FUNC PFNGLGETINTEGERI_VPROC ren_glGetIntegeri_v;
 EXTERN_FUNC PFNGLGETFLOATI_VPROC ren_glGetFloati_v;
 EXTERN_FUNC PFNGLGETDOUBLEI_VPROC ren_glGetDoublei_v;
 EXTERN_FUNC PFNGLGETINTEGER64I_VPROC ren_glGetInteger64i_v;
+EXTERN_FUNC PFNGLGETINTERNALFORMATIV ren_glGetInternalformativ;
 
 EXTERN_FUNC PFNGLGETTEXTURELEVELPARAMETERFVPROC ren_glGetTextureLevelParameterfv;
 EXTERN_FUNC PFNGLGETTEXTURELEVELPARAMETERIVPROC ren_glGetTextureLevelParameteriv;
@@ -1481,7 +1487,6 @@ EXTERN_FUNC PFNGLSAMPLERPARAMETERF ren_glSamplerParameterf;
 
 EXTERN_FUNC PFNGLBLENDEQUATIONPROC ren_glBlendEquation;
 EXTERN_FUNC PFNGLBLENDEQUATIONSEPARATEPROC ren_glBlendEquationSeparate;
-
 }
 
 #undef EXTERN_FUNC
