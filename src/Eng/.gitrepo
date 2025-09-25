@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = area_spread
-	commit = c9cd4defb92a8cdcde69743f6b1e552caadbcef7
+	branch = compressed_sky
+	commit = 6b80dfc1ddbc80dc1019b6f03885d492d4f9cac7
 	method = merge
-	cmdver = 0.4.9
-	parent = 5da224ed52ad3c7a11153c6f2e72556947ca12ea
+	cmdver = 0.4.6
+	parent = 430329f2efb74c1640075c947d00c05d2c6e7b10
