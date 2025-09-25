@@ -378,12 +378,22 @@ void Ren::Context::Resize(const int w, const int h) {
 }
 
 void Ren::Context::CheckDeviceCapabilities() {
-    VkImageFormatProperties props;
-    const VkResult res = api_ctx_->vkGetPhysicalDeviceImageFormatProperties(
-        api_ctx_->physical_device, VK_FORMAT_D24_UNORM_S8_UINT, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &props);
+    { // Depth-stencil
+        VkImageFormatProperties props;
+        const VkResult res = api_ctx_->vkGetPhysicalDeviceImageFormatProperties(
+            api_ctx_->physical_device, VK_FORMAT_D24_UNORM_S8_UINT, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &props);
 
-    capabilities.depth24_stencil8_format = (res == VK_SUCCESS);
+        capabilities.depth24_stencil8_format = (res == VK_SUCCESS);
+    }
+    { // BC4-compressed 3D texture
+        VkImageFormatProperties props;
+        const VkResult res = api_ctx_->vkGetPhysicalDeviceImageFormatProperties(
+            api_ctx_->physical_device, VK_FORMAT_BC4_UNORM_BLOCK, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_SAMPLED_BIT, 0, &props);
+
+        capabilities.bc4_3d_texture_format = (res == VK_SUCCESS);
+    }
 
     VkPhysicalDeviceProperties2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
     void **pp_next = const_cast<void **>(&prop2.pNext);
