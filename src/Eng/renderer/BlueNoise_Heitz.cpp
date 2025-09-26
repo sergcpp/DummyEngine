@@ -6,6 +6,7 @@
 
 #include <array>
 #include <fstream>
+#include <memory>
 #include <random>
 
 namespace Eng::BNInternal {
@@ -997,8 +998,7 @@ void Eng::Generate2D_BlueNoiseTiles_StepFunction(const int dim_index, const Ren:
                         for (int j = 0; j < TileRes * TileRes; ++j) {
                             const auto [x, y] = xy_from_index(j);
 
-                            data->debug_errors[y][x] =
-                                data->errors_first[y][x][4];
+                            data->debug_errors[y][x] = data->errors_first[y][x][4];
                             _min_error = std::min(_min_error, data->debug_errors[y][x]);
                             _max_error = std::max(_max_error, data->debug_errors[y][x]);
                         }
@@ -1109,7 +1109,7 @@ void Eng::BNInternal::WriteTGA(const float *data, int pitch, const int w, const 
 
     header[12] = w & 0xFF;
     header[13] = (w >> 8) & 0xFF;
-    header[14] = (h)&0xFF;
+    header[14] = (h) & 0xFF;
     header[15] = (h >> 8) & 0xFF;
     header[16] = bpp * 8;
     header[17] |= (1 << 5); // set origin to upper left corner

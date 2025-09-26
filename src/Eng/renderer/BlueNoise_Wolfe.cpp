@@ -1,6 +1,7 @@
 #include "BlueNoise_Wolfe.h"
 
 #include <cassert>
+#include <cfloat>
 
 #include <array>
 #include <bitset>
