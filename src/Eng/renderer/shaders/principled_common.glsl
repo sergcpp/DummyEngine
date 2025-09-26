@@ -819,7 +819,7 @@ vec3 EvaluateLightSource_Approx(const _light_item_t litem, const vec3 P, const v
     const float _angle = approx_acos(_dot);
     if (type == LIGHT_TYPE_SPHERE && _angle > litem.dir_and_spot.w) {
         return vec3(0.0);
-    } else if (type != LIGHT_TYPE_LINE && _angle > (0.5 * M_PI)) {
+    } else if (type != LIGHT_TYPE_LINE && type != LIGHT_TYPE_SPHERE && _angle > (0.5 * M_PI)) {
         // Single-sided
         return vec3(0.0);
     }
