@@ -555,6 +555,10 @@ jobs:
           path: windows-x86_64-vk-full-amd-output/
       - uses: actions/download-artifact@v3
         with:
+          name: windows-x86_64-vk-full-arc-output
+          path: windows-x86_64-vk-full-arc-output/
+      - uses: actions/download-artifact@v3
+        with:
           name: windows-x86_64-vk-full-uhd-output
           path: windows-x86_64-vk-full-uhd-output/
       - uses: actions/download-artifact@v3
@@ -567,5 +571,5 @@ jobs:
           path: linux-x86_64-gl-full-nv-output/
       - name: Analyze Output
         run: |
-          python scripts/analyze_output.py windows-x86_64-vk-full-nv-output/test_Eng_output.txt windows-x86_64-gl-full-nv-output/test_Eng_output.txt windows-x86_64-vk-full-amd-output/test_Eng_output.txt windows-x86_64-vk-full-uhd-output/test_Eng_output.txt windows-x86_64-vk-full-arc-output/test_Eng_output.txt linux-x86_64-vk-full-nv-output/test_Eng_output.txt linux-x86_64-gl-full-nv-output/test_Eng_output.txt
+          python scripts/analyze_output.py windows-x86_64-vk-full-nv-output/test_Eng_output.txt windows-x86_64-gl-full-nv-output/test_Eng_output.txt windows-x86_64-vk-full-amd-output/test_Eng_output.txt windows-x86_64-vk-full-arc-output/test_Eng_output.txt windows-x86_64-vk-full-uhd-output/test_Eng_output.txt windows-x86_64-vk-full-arc-output/test_Eng_output.txt linux-x86_64-vk-full-nv-output/test_Eng_output.txt linux-x86_64-gl-full-nv-output/test_Eng_output.txt
         shell: bash
