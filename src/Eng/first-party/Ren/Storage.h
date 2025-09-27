@@ -284,6 +284,13 @@ template <typename T, typename StorageType> class StrongRef {
         return false;
     }
 
+    bool operator==(const WeakRef<T, StorageType> &rhs) const {
+        return storage_ == rhs.storage_ && index_ == rhs.index_;
+    }
+    bool operator!=(const WeakRef<T, StorageType> &rhs) const {
+        return storage_ != rhs.storage_ || index_ != rhs.index_;
+    }
+
     void Release() {
         if (storage_) {
             const T &p = storage_->at(index_);
