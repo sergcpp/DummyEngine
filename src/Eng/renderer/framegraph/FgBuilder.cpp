@@ -560,7 +560,7 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTexRef &ref, const Ren
     tex.written_in_nodes.push_back({node.index_, int16_t(node.output_.size())});
     ++tex.write_count;
 
-    if (slot_index == -1) {
+    if (slot_index == -1 || slot_index >= int(node.output_.size())) {
 #ifndef NDEBUG
         for (const FgResource &r : node.output_) {
             assert(r.type != eFgResType::Texture || r.index != ret.index);
@@ -568,7 +568,8 @@ Eng::FgResRef Eng::FgBuilder::WriteTexture(const Ren::WeakTexRef &ref, const Ren
 #endif
         // Add new output
         node.output_.push_back(ret);
-    } else if (slot_index < int(node.output_.size()) && node.output_[slot_index]) {
+    } else {
+        assert(slot_index < int(node.output_.size()) && node.output_[slot_index]);
         // Replace existing output
         FgAllocTex &prev_tex = textures_[node.output_[slot_index].index];
         --prev_tex.write_count;

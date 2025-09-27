@@ -1638,6 +1638,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(output_tex, params);
             } else if (target) {
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(target);
+                if (blit_to_backbuffer) {
+                    ex_postprocess_args_.output_tex2 = postprocess.AddColorOutput(ctx_.backbuffer_ref());
+                }
             } else {
                 ex_postprocess_args_.output_tex = postprocess.AddColorOutput(ctx_.backbuffer_ref());
             }
@@ -1679,11 +1682,13 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         auto &postprocess = *fg_builder_.FindNode("POSTPROCESS");
         if (target) {
             ex_postprocess_args_.output_tex = postprocess.ReplaceColorOutput(0, target);
+            ex_postprocess_args_.output_tex2 = {};
             if (blit_to_backbuffer) {
                 ex_postprocess_args_.output_tex2 = postprocess.ReplaceColorOutput(1, ctx_.backbuffer_ref());
             }
         } else {
             ex_postprocess_args_.output_tex = postprocess.ReplaceColorOutput(0, ctx_.backbuffer_ref());
+            ex_postprocess_args_.output_tex2 = {};
         }
 
         ex_postprocess_args_.fade = list.draw_cam.fade;
