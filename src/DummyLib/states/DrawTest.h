@@ -50,7 +50,8 @@ class DrawTest final : public BaseState {
     uint32_t zenith_index_ = 0xffffffff;
     uint32_t palm_index_ = 0xffffffff;
     uint32_t leaf_tree_index_ = 0xffffffff;
-    float scooters_angle_ = 0;
+    uint32_t dynamic_light_index_ = 0xffffffff;
+    float scooters_angle_ = 0, light_angle_ = 0;
 
     void OnPreloadScene(Sys::JsObjectP &js_scene) override;
     void OnPostloadScene(Sys::JsObjectP &js_scene) override;

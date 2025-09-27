@@ -309,6 +309,8 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     zenith_index_ = scene_manager_->FindObject("zenith");
     palm_index_ = scene_manager_->FindObject("palm");
     leaf_tree_index_ = scene_manager_->FindObject("leaf_tree");
+
+    dynamic_light_index_ = scene_manager_->FindObject("__dynamic_test_light");
 }
 
 void DrawTest::Exit() { BaseState::Exit(); }
@@ -377,6 +379,26 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
         }
 
         scene_manager_->InvalidateObjects(scooter_indices_, Eng::CompTransformBit);
+    }
+
+    if (dynamic_light_index_ != 0xffffffff) {
+        Eng::SceneObject *light = scene_manager_->GetObject(dynamic_light_index_);
+
+        light_angle_ += 0.000001f * dt_us;
+
+        const uint32_t mask = Eng::CompTransform;
+        if ((light->comp_mask & mask) == mask) {
+            auto *tr =
+                (Eng::Transform *)scene.comp_store[Eng::CompTransform]->Get(light->components[Eng::CompTransform]);
+
+            tr->world_from_object_prev = tr->world_from_object;
+            tr->world_from_object = Ren::Mat4f{1};
+
+            tr->world_from_object = Rotate(tr->world_from_object, light_angle_, Ren::Vec3f{0, 1, 0});
+            tr->world_from_object = Translate(tr->world_from_object, Ren::Vec3f{0.4f, 0.5f, 0.0f});
+        }
+
+        scene_manager_->InvalidateObjects({&dynamic_light_index_, 1}, Eng::CompTransformBit);
     }
 
     wind_update_time_ += dt_us;
