@@ -321,11 +321,12 @@ void DrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { BaseState::Dra
 
 void DrawTest::UpdateFixed(const uint64_t dt_us) {
     using namespace DrawTestInternal;
+    using namespace Ren;
 
     OPTICK_EVENT("DrawTest::UpdateFixed");
     BaseState::UpdateFixed(dt_us);
 
-    const Ren::Vec3d up = Ren::Vec3d{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
+    const Vec3d up = Vec3d{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
 
     prev_view_origin_ = next_view_origin_;
 
@@ -342,7 +343,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
     Eng::SceneData &scene = scene_manager_->scene_data();
 
     if (scooter_indices_[0] != 0xffffffff) {
-        const auto rot_center = Ren::Vec3f{44.5799f, 0.15f, 24.7763f};
+        const auto rot_center = Vec3f{44.5799f, 0.15f, 24.7763f};
 
         scooters_angle_ += 0.0000005f * dt_us;
 
@@ -359,21 +360,19 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
                     scooter->components[Eng::CompTransform]);
 
                 tr->world_from_object_prev = tr->world_from_object;
-                tr->world_from_object = Ren::Mat4f{1};
+                tr->world_from_object = Mat4f{1};
                 tr->world_from_object = Translate(tr->world_from_object, rot_center);
 
                 if (i < 8) {
                     // inner circle
                     tr->world_from_object =
-                        Rotate(tr->world_from_object, scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(),
-                               Ren::Vec3f{0, 1, 0});
-                    tr->world_from_object = Translate(tr->world_from_object, Ren::Vec3f{6.5f, 0.0f, 0.0f});
+                        Rotate(tr->world_from_object, scooters_angle_ + float(i) * 0.25f * Pi<float>(), Vec3f{0, 1, 0});
+                    tr->world_from_object = Translate(tr->world_from_object, Vec3f{6.5f, 0.0f, 0.0f});
                 } else {
                     // outer circle
-                    tr->world_from_object =
-                        Rotate(tr->world_from_object, -scooters_angle_ + float(i - 8) * 0.25f * Ren::Pi<float>(),
-                               Ren::Vec3f{0, 1, 0});
-                    tr->world_from_object = Translate(tr->world_from_object, Ren::Vec3f{-8.5f, 0.0f, 0.0f});
+                    tr->world_from_object = Rotate(
+                        tr->world_from_object, -scooters_angle_ + float(i - 8) * 0.25f * Pi<float>(), Vec3f{0, 1, 0});
+                    tr->world_from_object = Translate(tr->world_from_object, Vec3f{-8.5f, 0.0f, 0.0f});
                 }
             }
         }
@@ -384,7 +383,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
     if (dynamic_light_index_ != 0xffffffff) {
         Eng::SceneObject *light = scene_manager_->GetObject(dynamic_light_index_);
 
-        light_angle_ += 0.000001f * dt_us;
+        light_angle_ += 0.000002f * dt_us;
 
         const uint32_t mask = Eng::CompTransform;
         if ((light->comp_mask & mask) == mask) {
@@ -392,10 +391,14 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
                 (Eng::Transform *)scene.comp_store[Eng::CompTransform]->Get(light->components[Eng::CompTransform]);
 
             tr->world_from_object_prev = tr->world_from_object;
-            tr->world_from_object = Ren::Mat4f{1};
+            tr->world_from_object = Mat4f{1};
 
-            tr->world_from_object = Rotate(tr->world_from_object, light_angle_, Ren::Vec3f{0, 1, 0});
-            tr->world_from_object = Translate(tr->world_from_object, Ren::Vec3f{0.4f, 0.5f, 0.0f});
+            const float x = std::cos(light_angle_) * 0.4f, z = std::sin(light_angle_) * 0.4f;
+
+            LookAt(tr->world_from_object, Vec3f{x, 0.5f, z}, Vec3f{0.0f, 0.0f, 0.0f}, Vec3f{0.0f, 1.0f, 0.0f});
+
+            tr->world_from_object = Inverse(tr->world_from_object);
+            std::swap(tr->world_from_object[1], tr->world_from_object[2]);
         }
 
         scene_manager_->InvalidateObjects({&dynamic_light_index_, 1}, Eng::CompTransformBit);

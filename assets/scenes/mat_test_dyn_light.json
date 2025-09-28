@@ -227,6 +227,8 @@
                 "power" : 10.0,
                 "power0" : 0.0,
                 "radius" : 0.05,
+                "spot_angle" : 45,
+                "spot_blend" : 0.15,
                 "cull_radius" : 2.0,
                 "cast_shadow" : true
             }
