@@ -326,7 +326,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
     OPTICK_EVENT("DrawTest::UpdateFixed");
     BaseState::UpdateFixed(dt_us);
 
-    const Vec3d up = Vec3d{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
+    const Vec3d up = Vec3d(view_up_), side = Normalize(Cross(view_dir_, up));
 
     prev_view_origin_ = next_view_origin_;
 
@@ -418,6 +418,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
 }
 
 void DrawTest::UpdateAnim(const uint64_t dt_us) {
+    using namespace DrawTestInternal;
     using namespace Ren;
 
     OPTICK_EVENT();
@@ -465,9 +466,8 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
             break;
         case Eng::eInputEvent::P1Move:
             if (view_pointer == 1) {
-                auto up = Vec3d{0, 1, 0};
-                Vec3d side = Normalize(Cross(view_dir, up));
-                up = Cross(side, view_dir);
+                Vec3d side = Normalize(Cross(view_dir, view_up_));
+                Vec3d up = Cross(side, view_dir);
 
                 Mat4d rot;
                 rot = Rotate(rot, -0.005 * evt.move[0], up);
@@ -481,9 +481,8 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
             break;
         case Eng::eInputEvent::P2Move:
             if (view_pointer == 2) {
-                auto up = Vec3d{0, 1, 0};
-                Vec3d side = Normalize(Cross(view_dir, up));
-                up = Cross(side, view_dir);
+                Vec3d side = Normalize(Cross(view_dir, view_up_));
+                Vec3d up = Cross(side, view_dir);
 
                 Mat4d rot;
                 rot = Rotate(rot, 0.01 * evt.move[0], up);
@@ -500,14 +499,20 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
         }
     }
 
+    auto view_up = Vec3f(view_up_);
+    if (Length2(Cross(view_dir_, view_up_)) < 0.001) {
+        view_up = Vec3f{1, 0, 0};
+    }
+
     const bool view_locked = !viewer_->app_params.ref_name.empty();
     if (view_locked) {
         view_dir = view_dir_;
+        view_up = Vec3f(view_up_);
     }
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, view_origin_ + view_dir, Vec3f{0, 1, 0}, view_fov_, view_sensor_shift_,
-                              gamma_, min_exposure_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, view_origin_ + view_dir, view_up, view_fov_,
+                              view_sensor_shift_, gamma_, min_exposure_, max_exposure_);
 
     BaseState::UpdateAnim(dt_us);
 }
@@ -539,7 +544,7 @@ bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
         }
     }
 
-    const Ren::Vec3d view_dir_before = view_dir_;
+    const Ren::Vec3d view_dir_before = view_dir_, view_up_before = view_up_;
 
     switch (evt.type) {
     case Eng::eInputEvent::P1Down:
@@ -586,9 +591,8 @@ bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
             fwd_touch_speed_ += evt.move[1] * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 1) {
-            auto up = Vec3d{0, 1, 0};
-            Vec3d side = Normalize(Cross(view_dir_, up));
-            up = Cross(side, view_dir_);
+            Vec3d side = Normalize(Cross(view_dir_, view_up_));
+            Vec3d up = Cross(side, view_dir_);
 
             Mat4d rot;
             rot = Rotate(rot, -0.005 * evt.move[0], up);
@@ -619,9 +623,8 @@ bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
             fwd_touch_speed_ += evt.move[1] * 0.002f;
             fwd_touch_speed_ = std::max(std::min(fwd_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
         } else if (view_pointer_ == 2) {
-            auto up = Vec3d{0, 1, 0};
-            Vec3d side = Normalize(Cross(view_dir_, up));
-            up = Cross(side, view_dir_);
+            Vec3d side = Normalize(Cross(view_dir_, view_up_));
+            Vec3d up = Cross(side, view_dir_);
 
             Mat4d rot;
             rot = Rotate(rot, 0.01 * evt.move[0], up);
@@ -665,9 +668,15 @@ bool DrawTest::HandleInput(const Eng::input_event_t &evt, const std::vector<bool
         break;
     }
 
+    view_up_ = Vec3d{0, 1, 0};
+    if (Length2(Cross(view_dir_, view_up_)) < 0.001) {
+        view_up_ = Vec3d{1, 0, 0};
+    }
+
     const bool view_locked = !viewer_->app_params.ref_name.empty();
     if (view_locked) {
         view_dir_ = view_dir_before;
+        view_up_ = view_up_before;
         fwd_touch_speed_ = side_touch_speed_ = 0;
         fwd_press_speed_ = side_press_speed_ = 0;
     }
