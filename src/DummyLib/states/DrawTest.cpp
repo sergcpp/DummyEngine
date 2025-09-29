@@ -383,7 +383,7 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
     if (dynamic_light_index_ != 0xffffffff) {
         Eng::SceneObject *light = scene_manager_->GetObject(dynamic_light_index_);
 
-        light_angle_ += 0.000002f * dt_us;
+        light_offset_ += 0.000002f * dt_us;
 
         const uint32_t mask = Eng::CompTransform;
         if ((light->comp_mask & mask) == mask) {
@@ -393,12 +393,14 @@ void DrawTest::UpdateFixed(const uint64_t dt_us) {
             tr->world_from_object_prev = tr->world_from_object;
             tr->world_from_object = Mat4f{1};
 
-            const float x = std::cos(light_angle_) * 0.4f, z = std::sin(light_angle_) * 0.4f;
+            // const float x = std::cos(light_offset_) * 0.4f, z = std::sin(light_offset_) * 0.4f;
+            // LookAt(tr->world_from_object, Vec3f{x, 0.5f, z}, Vec3f{0.0f, 0.0f, 0.0f}, Vec3f{0.0f, 1.0f, 0.0f});
+            // tr->world_from_object = Inverse(tr->world_from_object);
+            // std::swap(tr->world_from_object[1], tr->world_from_object[2]);
 
-            LookAt(tr->world_from_object, Vec3f{x, 0.5f, z}, Vec3f{0.0f, 0.0f, 0.0f}, Vec3f{0.0f, 1.0f, 0.0f});
-
-            tr->world_from_object = Inverse(tr->world_from_object);
-            std::swap(tr->world_from_object[1], tr->world_from_object[2]);
+            const float x = std::cos(light_offset_) * 0.2f;
+            tr->world_from_object = Translate(tr->world_from_object, Vec3f{x, 0.5f, -0.5f});
+            tr->world_from_object = Rotate(tr->world_from_object, -0.65f, Vec3f{1.0f, 0.0f, 0.0f});
         }
 
         scene_manager_->InvalidateObjects({&dynamic_light_index_, 1}, Eng::CompTransformBit);
@@ -511,8 +513,8 @@ void DrawTest::UpdateAnim(const uint64_t dt_us) {
     }
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, view_origin_ + view_dir, view_up, view_fov_,
-                              view_sensor_shift_, gamma_, min_exposure_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, view_origin_ + view_dir, view_up, view_fov_, view_sensor_shift_, gamma_,
+                              min_exposure_, max_exposure_);
 
     BaseState::UpdateAnim(dt_us);
 }
