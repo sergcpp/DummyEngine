@@ -97,7 +97,7 @@ bool Eng::CmdlineUI::Parse(std::string_view str, Ren::SmallVectorImpl<ArgData> &
             memcpy(temp_buf, arg.str.data(), arg.str.length());
             temp_buf[arg.str.length()] = '\0';
 
-            arg.val = strtod(temp_buf, nullptr);
+            arg.num = strtod(temp_buf, nullptr);
         }
     }
 
@@ -123,7 +123,7 @@ bool Eng::CmdlineUI::HandleInput(const Gui::input_event_t &ev, const std::vector
 
             history_.emplace_back();
             history_index_ = -1;
-            if (history_.size() > MaxHistoryCount) {
+            if (history_.size() > MaxHistoryLength) {
                 history_.erase(history_.begin());
             }
         } else if (ev.key_code == Gui::eKey::Tab) {
@@ -136,7 +136,7 @@ bool Eng::CmdlineUI::HandleInput(const Gui::input_event_t &ev, const std::vector
             if (!history_.back().empty()) {
                 history_.emplace_back();
                 // cmdline_history_index_ = -1;
-                if (history_.size() > MaxHistoryCount) {
+                if (history_.size() > MaxHistoryLength) {
                     history_.erase(history_.begin());
                 }
             }

@@ -38,7 +38,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         { // output buffer
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Texture;
-            desc.size = oit_layer_count * view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
+            desc.size = oit_layer_count * view_state_.ren_res[0] * view_state_.ren_res[1] * sizeof(uint32_t);
             desc.views.push_back(Ren::eTexFormat::R32UI);
             oit_depth_buf = data->oit_depth_buf = oit_clear.AddTransferOutput("Depth Values", desc);
         }
@@ -48,8 +48,8 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             const std::string tex_name = "OIT REFL #" + std::to_string(i);
 
             Ren::TexParams params;
-            params.w = (view_state_.scr_res[0] / 2);
-            params.h = (view_state_.scr_res[1] / 2);
+            params.w = (view_state_.ren_res[0] / 2);
+            params.h = (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -154,7 +154,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         { // packed ray list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = OIT_REFLECTION_LAYERS * (view_state_.scr_res[0] / 2) * (view_state_.scr_res[1] / 2) * 2 *
+            desc.size = OIT_REFLECTION_LAYERS * (view_state_.ren_res[0] / 2) * (view_state_.ren_res[1] / 2) * 2 *
                         sizeof(uint32_t);
 
             oit_ray_list = oit_schedule.AddStorageOutput("OIT Ray List", desc, Stg::FragmentShader);
@@ -246,7 +246,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
         { // packed ray list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = OIT_REFLECTION_LAYERS * (view_state_.scr_res[0] / 2) * (view_state_.scr_res[1] / 2) * 2 *
+            desc.size = OIT_REFLECTION_LAYERS * (view_state_.ren_res[0] / 2) * (view_state_.ren_res[1] / 2) * 2 *
                         sizeof(uint32_t);
 
             ray_rt_list = data->out_ray_list =
@@ -306,7 +306,7 @@ void Eng::Renderer::AddOITPasses(const CommonBuffers &common_buffers, const Pers
             }
 
             Params uniform_params;
-            uniform_params.resolution = Ren::Vec4u(view_state_.act_res[0], view_state_.act_res[1], 0, 0);
+            uniform_params.resolution = Ren::Vec4u(view_state_.ren_res[0], view_state_.ren_res[1], 0, 0);
 
             DispatchComputeIndirect(*pi_ssr_trace_hq_[1][irr_tex != nullptr], *indir_args_buf.ref, 0, bindings,
                                     &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),

@@ -15,9 +15,4 @@ const char SPECULAR_VARIANCE_TEX[] = "Specular Variance";
 const char DIFFUSE_VARIANCE_TEX[] = "Diffuse Variance";
 
 const char EXPOSURE_TEX[] = "Exposure";
-
-const char DEPTH_DOWN_2X_TEX[] = "Depth Down 2x";
-const char DEPTH_DOWN_4X_TEX[] = "Depth Down 4x";
-
-const char DOF_COLOR_TEX[] = "DOF Color";
 } // namespace Eng

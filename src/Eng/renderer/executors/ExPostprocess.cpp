@@ -43,12 +43,12 @@ void Eng::ExPostprocess::Execute(FgBuilder &builder) {
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
+    rast_state.viewport[2] = view_state_->out_res[0];
+    rast_state.viewport[3] = view_state_->out_res[1];
 
     BlitPostprocess::Params uniform_params;
     uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
-    uniform_params.tex_size = Ren::Vec2f{float(view_state_->scr_res[0]), float(view_state_->scr_res[1])};
+    uniform_params.tex_size = Ren::Vec2f{float(view_state_->out_res[0]), float(view_state_->out_res[1])};
     uniform_params.tonemap_mode = float(args_->tonemap_mode);
     uniform_params.inv_gamma = args_->inv_gamma;
     uniform_params.fade = args_->fade;

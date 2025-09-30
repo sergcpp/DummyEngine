@@ -34,10 +34,10 @@ bool IntersectRay(const vec3 ray_origin_ss, const vec3 ray_origin_vs, const vec3
 
     int cur_mip = MOST_DETAILED_MIP;
 
-    vec2 cur_mip_res = g_shrd_data.res_and_fres.xy / exp2(MOST_DETAILED_MIP);
+    vec2 cur_mip_res = g_shrd_data.ren_res.xy / exp2(MOST_DETAILED_MIP);
     vec2 cur_mip_res_inv = 1.0 / cur_mip_res;
 
-    vec2 uv_offset = 0.005 * exp2(MOST_DETAILED_MIP) / g_shrd_data.res_and_fres.xy;
+    vec2 uv_offset = 0.005 * exp2(MOST_DETAILED_MIP) * g_shrd_data.ren_res.zw;
     uv_offset = mix(uv_offset, -uv_offset, lessThan(ray_dir_ss.xy, vec2(0.0)));
 
     const vec2 floor_offset = mix(vec2(1.0), vec2(0.0), lessThan(ray_dir_ss.xy, vec2(0.0)));

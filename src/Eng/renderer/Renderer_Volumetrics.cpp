@@ -257,8 +257,8 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                     skymap.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
 
                 Ren::TexParams params;
-                params.w = (view_state_.scr_res[0] + 3) / 4;
-                params.h = (view_state_.scr_res[1] + 3) / 4;
+                params.w = (view_state_.ren_res[0] + 3) / 4;
+                params.h = (view_state_.ren_res[1] + 3) / 4;
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -299,8 +299,8 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
             data->sky_temp_tex = sky_upsample.AddTextureInput(sky_temp, Stg::ComputeShader);
 
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -323,12 +323,12 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                                                  {Trg::ImageRW, Skydome::OUT_IMG_SLOT, *output_tex.ref}};
 
                 const Ren::Vec3u grp_count = Ren::Vec3u{
-                    (view_state_.act_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
-                    (view_state_.act_res[1] + Skydome::LOCAL_GROUP_SIZE_Y - 1u) / Skydome::LOCAL_GROUP_SIZE_Y, 1u};
+                    (view_state_.ren_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
+                    (view_state_.ren_res[1] + Skydome::LOCAL_GROUP_SIZE_Y - 1u) / Skydome::LOCAL_GROUP_SIZE_Y, 1u};
 
                 Skydome::Params2 uniform_params;
-                uniform_params.img_size = view_state_.scr_res;
-                uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
+                uniform_params.img_size = view_state_.ren_res;
+                uniform_params.texel_size = 1.0f / Ren::Vec2f{view_state_.ren_res};
                 uniform_params.sample_coord = ExSkydomeScreen::sample_pos(view_state_.frame_index);
                 uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
@@ -363,15 +363,14 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                 rast_state.depth.test_enabled = true;
                 rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
 
-                rast_state.viewport[2] = view_state_.act_res[0];
-                rast_state.viewport[3] = view_state_.act_res[1];
+                rast_state.viewport[2] = view_state_.ren_res[0];
+                rast_state.viewport[3] = view_state_.ren_res[1];
 
                 const Ren::Binding bindings[] = {{Trg::TexSampled, FXAA::INPUT_TEX_SLOT, *sky_tex.ref}};
 
                 FXAA::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
-                uniform_params.inv_resolution =
-                    1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+                uniform_params.inv_resolution = 1.0f / Ren::Vec2f{view_state_.ren_res};
 
                 const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
                 const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -512,8 +511,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         { // Emission/Density and Scatter/Absorption textures
             Ren::TexParams p;
-            p.w = (view_state_.act_res[0] + TileSize - 1) / TileSize;
-            p.h = (view_state_.act_res[1] + TileSize - 1) / TileSize;
+            p.w = (view_state_.ren_res[0] + TileSize - 1) / TileSize;
+            p.h = (view_state_.ren_res[1] + TileSize - 1) / TileSize;
             p.d = 144;
             p.format = Ren::eTexFormat::RGBA16F;
             p.sampling.filter = Ren::eTexFilter::Bilinear;
@@ -656,8 +655,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
 
         { //
             Ren::TexParams p;
-            p.w = (view_state_.act_res[0] + TileSize - 1) / TileSize;
-            p.h = (view_state_.act_res[1] + TileSize - 1) / TileSize;
+            p.w = (view_state_.ren_res[0] + TileSize - 1) / TileSize;
+            p.h = (view_state_.ren_res[1] + TileSize - 1) / TileSize;
             p.d = 144;
             p.format = Ren::eTexFormat::RGBA16F;
             p.sampling.filter = Ren::eTexFilter::Bilinear;
@@ -737,8 +736,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             rast_state.blend.dst_color = uint8_t(Ren::eBlendFactor::SrcAlpha);
             rast_state.blend.dst_alpha = uint8_t(Ren::eBlendFactor::One);
 
-            rast_state.viewport[2] = view_state_.act_res[0];
-            rast_state.viewport[3] = view_state_.act_res[1];
+            rast_state.viewport[2] = view_state_.ren_res[0];
+            rast_state.viewport[3] = view_state_.ren_res[1];
 
             const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                              {Trg::TexSampled, VolCompose::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},

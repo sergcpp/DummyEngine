@@ -347,10 +347,10 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     //
     // Setup viewport
     //
-    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
+    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->ren_res[0]), float(view_state_->ren_res[1]),
                                  0.0f, 1.0f};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
@@ -371,7 +371,7 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_opaque_->vk_handle();
         rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
         draw_pass_vi_->BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);

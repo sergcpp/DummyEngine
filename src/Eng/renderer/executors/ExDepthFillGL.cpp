@@ -162,16 +162,16 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
             Ren::RastState rast_state = pi_static_solid_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
             i = _draw_range(zfill_batch_indices, zfill_batches, i, 0u, &draws_count);
 
             rast_state = pi_static_solid_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -182,8 +182,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
             Ren::RastState rast_state = pi_static_solid_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -203,8 +203,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
             Ren::RastState rast_state = pi_moving_solid_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -215,8 +215,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
             Ren::RastState rast_state = pi_moving_solid_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -239,8 +239,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
                 Ren::RastState rast_state = pi_static_transp_[0]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -252,8 +252,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
                 Ren::RastState rast_state = pi_static_transp_[2]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -273,8 +273,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
                 Ren::RastState rast_state = pi_moving_transp_[0]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -287,8 +287,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
                 Ren::RastState rast_state = pi_moving_transp_[2]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -310,8 +310,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
             Ren::RastState rast_state = pi_vege_static_solid_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -322,8 +322,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
             Ren::RastState rast_state = pi_vege_static_solid_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -341,8 +341,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
             Ren::RastState rast_state = pi_vege_moving_solid_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -354,8 +354,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
             Ren::RastState rast_state = pi_vege_moving_solid_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -376,8 +376,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
                 Ren::RastState rast_state = pi_vege_static_transp_[0]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -390,8 +390,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
                 Ren::RastState rast_state = pi_vege_static_transp_[1]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -409,8 +409,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
                 Ren::RastState rast_state = pi_vege_moving_transp_[0]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -423,8 +423,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
                 Ren::RastState rast_state = pi_vege_moving_transp_[1]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -445,8 +445,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
             Ren::RastState rast_state = pi_skin_static_solid_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -457,8 +457,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
             Ren::RastState rast_state = pi_skin_static_solid_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -475,8 +475,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
             Ren::RastState rast_state = pi_skin_moving_solid_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -488,8 +488,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
             Ren::RastState rast_state = pi_skin_moving_solid_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -510,8 +510,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
                 Ren::RastState rast_state = pi_skin_static_transp_[0]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -524,8 +524,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
                 Ren::RastState rast_state = pi_skin_static_transp_[1]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -543,8 +543,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED");
 
                 Ren::RastState rast_state = pi_skin_moving_transp_[0]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
@@ -557,8 +557,8 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
                 Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED");
 
                 Ren::RastState rast_state = pi_skin_moving_transp_[1]->rast_state();
-                rast_state.viewport[2] = view_state_->act_res[0];
-                rast_state.viewport[3] = view_state_->act_res[1];
+                rast_state.viewport[2] = view_state_->ren_res[0];
+                rast_state.viewport[3] = view_state_->ren_res[1];
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 

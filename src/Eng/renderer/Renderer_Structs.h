@@ -312,6 +312,8 @@ struct render_settings_t {
     eVolQuality vol_quality = eVolQuality::High;
     eTransparencyQuality transparency_quality = eTransparencyQuality::High;
 
+    float resolution_scale = 1.0f;
+
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
 #if !defined(NDEBUG)
@@ -330,7 +332,8 @@ struct render_settings_t {
                ssao_quality == rhs.ssao_quality && gi_quality == rhs.gi_quality &&
                gi_cache_update_mode == rhs.gi_cache_update_mode && sky_quality == rhs.sky_quality &&
                vol_quality == rhs.vol_quality && transparency_quality == rhs.transparency_quality &&
-               debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
+               resolution_scale == rhs.resolution_scale && debug_rt == rhs.debug_rt &&
+               debug_denoise == rhs.debug_denoise && debug_probes == rhs.debug_probes &&
                debug_oit_layer == rhs.debug_oit_layer;
     }
     bool operator!=(const render_settings_t &rhs) const { return !operator==(rhs); }
@@ -353,6 +356,7 @@ struct render_settings_t {
         vol_quality = eVolQuality(std::min(uint8_t(vol_quality), uint8_t(rhs.vol_quality)));
         transparency_quality =
             eTransparencyQuality(std::min(uint8_t(transparency_quality), uint8_t(rhs.transparency_quality)));
+        resolution_scale = std::min(resolution_scale, rhs.resolution_scale);
 
         return (*this);
     }
@@ -395,7 +399,7 @@ struct items_info_t {
 };
 
 struct view_state_t {
-    Ren::Vec2i act_res, scr_res;
+    Ren::Vec2i ren_res, out_res;
     float vertical_fov;
     float pixel_spread_angle;
     int frame_index, volume_to_update, stochastic_lights_count, stochastic_lights_count_cache;
@@ -420,7 +424,7 @@ struct shared_data_t {
     shadow_map_region_t shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, sun_col_point, sun_col_point_sh, env_col, taa_info, frustum_info;
     Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp;
-    Ren::Vec4f res_and_fres, transp_params_and_time;
+    Ren::Vec4f ren_res, transp_params_and_time;
     Ren::Vec4i ires_and_ifres;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     Ren::Vec4u item_counts;

@@ -52,10 +52,10 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
+    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->ren_res[0]), float(view_state_->ren_res[1]),
                                  0.0f, 1.0f};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const Ren::Span<const basic_draw_batch_t> batches = {(*p_list_)->basic_batches};
@@ -68,7 +68,7 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = pi_simple_[0]->render_pass()->vk_handle();
         rp_begin_info.framebuffer = main_draw_fb_[api_ctx->backend_frame][fb_to_use_].vk_handle();
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         const VkClearValue clear_values[4] = {{}, {}, {}, {}};
         rp_begin_info.pClearValues = clear_values;
         rp_begin_info.clearValueCount = 4;

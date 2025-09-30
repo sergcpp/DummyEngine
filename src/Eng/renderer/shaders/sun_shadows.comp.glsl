@@ -34,7 +34,7 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 #define MAX_TRACE_DIST 0.15
 #define MAX_TRACE_STEPS 16
 #define Z_THICKNESS 0.025
-#define STRIDE (3.0 / g_shrd_data.res_and_fres.x)
+#define STRIDE (3.0 * g_shrd_data.ren_res.z)
 
 float LinearDepthFetch_Nearest(const vec2 hit_uv) {
     return LinearizeDepth(textureLod(g_depth_tex, hit_uv, 0.0).x, g_shrd_data.clip_info);
@@ -66,7 +66,7 @@ void main() {
     const float dot_N_L = saturate(dot(normal_ws, g_shrd_data.sun_dir.xyz));
 
     vec3 final_color = vec3(1.0);
-    if (dot_N_L > -0.01) {
+    if (length2(g_shrd_data.sun_col.xyz) > FLT_EPS && dot_N_L > -0.01) {
         float visibility = 1.0;
 
 #ifdef SS_SHADOW

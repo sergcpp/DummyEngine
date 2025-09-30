@@ -87,7 +87,7 @@ void main() {
         g_out_color = vec4(0.0, 0.0, 0.0, 0.0);
         return;
     }*/
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, 0.0, 1.0);
     view_dir_ws = normalize(TransformFromClipSpace(g_shrd_data.world_from_clip_no_translation, pos_cs));
 #endif

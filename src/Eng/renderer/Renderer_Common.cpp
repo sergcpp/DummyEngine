@@ -262,7 +262,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             shrd_data.taa_info[1] = p_list_->draw_cam.px_offset()[1];
             memcpy(&shrd_data.taa_info[2], &view_state_.frame_index, sizeof(float));
             shrd_data.taa_info[3] =
-                std::tan(0.5f * p_list_->draw_cam.angle() * Ren::Pi<float>() / 180.0f) / float(view_state_.act_res[1]);
+                std::tan(0.5f * p_list_->draw_cam.angle() * Ren::Pi<float>() / 180.0f) / float(view_state_.ren_res[1]);
 
             { // Ray Tracing Gems II, Listing 49-1
                 const Ren::Plane &l = p_list_->draw_cam.frustum_plane_vs(Ren::eCamPlane::Left);
@@ -349,11 +349,11 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers, const Pe
             shrd_data.env_col = Ren::Vec4f{p_list_->env.env_col[0], p_list_->env.env_col[1], p_list_->env.env_col[2],
                                            p_list_->env.env_map_rot};
 
-            // actual resolution and full resolution
-            shrd_data.res_and_fres = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
-                                                float(view_state_.scr_res[0]), float(view_state_.scr_res[1])};
-            shrd_data.ires_and_ifres = Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1],
-                                                  view_state_.scr_res[0], view_state_.scr_res[1]};
+            // render resolution and full resolution
+            shrd_data.ren_res = Ren::Vec4f{float(view_state_.ren_res[0]), float(view_state_.ren_res[1]),
+                                           1.0f / float(view_state_.ren_res[0]), 1.0f / float(view_state_.ren_res[1])};
+            shrd_data.ires_and_ifres = Ren::Vec4i{view_state_.ren_res[0], view_state_.ren_res[1],
+                                                  view_state_.out_res[0], view_state_.out_res[1]};
             { // main cam
                 const float near = p_list_->draw_cam.near(), far = p_list_->draw_cam.far();
                 const float time_s = 0.001f * float(Sys::GetTimeMs());
@@ -808,11 +808,11 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Trg::ImageRW, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.act_res[0] + GBufferShade::LOCAL_GROUP_SIZE_X - 1u) / GBufferShade::LOCAL_GROUP_SIZE_X,
-            (view_state_.act_res[1] + GBufferShade::LOCAL_GROUP_SIZE_Y - 1u) / GBufferShade::LOCAL_GROUP_SIZE_Y, 1u};
+            (view_state_.ren_res[0] + GBufferShade::LOCAL_GROUP_SIZE_X - 1u) / GBufferShade::LOCAL_GROUP_SIZE_X,
+            (view_state_.ren_res[1] + GBufferShade::LOCAL_GROUP_SIZE_Y - 1u) / GBufferShade::LOCAL_GROUP_SIZE_Y, 1u};
 
         GBufferShade::Params uniform_params;
-        uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+        uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
         DispatchCompute(*pi_gbuf_shade_[settings.enable_shadow_jitter], grp_count, bindings, &uniform_params,
@@ -887,8 +887,8 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
         rast_state.stencil.write_mask = 0x00;
         rast_state.stencil.compare_op = unsigned(Ren::eCompareOp::Equal);
 
-        rast_state.viewport[2] = view_state_.act_res[0];
-        rast_state.viewport[3] = view_state_.act_res[1];
+        rast_state.viewport[2] = view_state_.ren_res[0];
+        rast_state.viewport[3] = view_state_.ren_res[1];
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::TexSampled, BlitStaticVel::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}},
@@ -899,7 +899,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
                                                 Ren::eLoadOp::Load, Ren::eStoreOp::None};
 
         BlitStaticVel::Params uniform_params;
-        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.ren_res[0]), float(view_state_.ren_res[1])};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_static_vel_prog_, depth_target, render_targets, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(BlitStaticVel::Params), 0);
@@ -921,8 +921,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
         auto *data = clear_reconstructed.AllocNodeData<PassData>();
         { // Reconstructed previous depth
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R32UI;
             params.sampling.filter = Ren::eTexFilter::Nearest;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
@@ -958,8 +958,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
         data->out_reconstructed_depth_tex = reconstruct.AddStorageImageOutput(reconstructed_depth, Stg::ComputeShader);
         { // Dilated current depth
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R32F;
             params.sampling.filter = Ren::eTexFilter::Nearest;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
@@ -967,10 +967,10 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
             dilated_depth = data->out_dilated_depth_tex =
                 reconstruct.AddStorageImageOutput("Dilated Depth", params, Stg::ComputeShader);
         }
-        { // Dilated velocity
+        { // Dilated motion
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
@@ -997,15 +997,15 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
                  *dilated_velocity_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + ReconstructDepth::LOCAL_GROUP_SIZE_X - 1u) /
+                Ren::Vec3u{(view_state_.ren_res[0] + ReconstructDepth::LOCAL_GROUP_SIZE_X - 1u) /
                                ReconstructDepth::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + ReconstructDepth::LOCAL_GROUP_SIZE_Y - 1u) /
+                           (view_state_.ren_res[1] + ReconstructDepth::LOCAL_GROUP_SIZE_Y - 1u) /
                                ReconstructDepth::LOCAL_GROUP_SIZE_Y,
                            1u};
 
             ReconstructDepth::Params uniform_params;
-            uniform_params.img_size = view_state_.act_res;
-            uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
+            uniform_params.img_size = view_state_.ren_res;
+            uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.ren_res);
 
             DispatchCompute(*pi_reconstruct_depth_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             ctx_.default_descr_alloc(), ctx_.log());
@@ -1031,8 +1031,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
 
         { // Texture that holds disocclusion
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
@@ -1059,15 +1059,15 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
                 {Ren::eBindTarget::ImageRW, PrepareDisocclusion::OUT_IMG_SLOT, *output_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + PrepareDisocclusion::LOCAL_GROUP_SIZE_X - 1u) /
+                Ren::Vec3u{(view_state_.ren_res[0] + PrepareDisocclusion::LOCAL_GROUP_SIZE_X - 1u) /
                                PrepareDisocclusion::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + PrepareDisocclusion::LOCAL_GROUP_SIZE_Y - 1u) /
+                           (view_state_.ren_res[1] + PrepareDisocclusion::LOCAL_GROUP_SIZE_Y - 1u) /
                                PrepareDisocclusion::LOCAL_GROUP_SIZE_Y,
                            1u};
 
             PrepareDisocclusion::Params uniform_params;
-            uniform_params.img_size = view_state_.act_res;
-            uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
+            uniform_params.img_size = view_state_.ren_res;
+            uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.ren_res);
             uniform_params.clip_info = view_state_.clip_info;
             uniform_params.frustum_info = view_state_.frustum_info;
 
@@ -1098,8 +1098,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
 
         { // Texture that holds resolved color
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
@@ -1121,8 +1121,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            rast_state.viewport[2] = view_state_.act_res[0];
-            rast_state.viewport[3] = view_state_.act_res[1];
+            rast_state.viewport[2] = view_state_.ren_res[0];
+            rast_state.viewport[3] = view_state_.ren_res[1];
 
             { // Blit taa
                 const Ren::RenderTarget render_targets[] = {
@@ -1138,8 +1138,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
                     {Ren::eBindTarget::TexSampled, TempAA::DISOCCLUSION_MASK_TEX_SLOT, *disocclusion_mask_tex.ref}};
 
                 TempAA::Params uniform_params;
-                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
-                uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.scr_res);
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.ren_res[0], view_state_.ren_res[1]};
+                uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.ren_res);
                 uniform_params.significant_change =
                     Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
                 uniform_params.frame_index = float(view_state_.frame_index % 256);
@@ -1175,12 +1175,12 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
 
     { // Texture that holds 2x downsampled linear depth
         Ren::TexParams params;
-        params.w = view_state_.scr_res[0] / 2;
-        params.h = view_state_.scr_res[1] / 2;
+        params.w = view_state_.ren_res[0] / 2;
+        params.h = view_state_.ren_res[1] / 2;
         params.format = Ren::eTexFormat::R32F;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-        out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput(DEPTH_DOWN_2X_TEX, params);
+        out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput("Depth Down 2X", params);
     }
 
     downsample_depth.set_execute_cb([this, data](FgBuilder &builder) {
@@ -1189,14 +1189,14 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
 
         Ren::RastState rast_state;
 
-        rast_state.viewport[2] = view_state_.act_res[0] / 2;
-        rast_state.viewport[3] = view_state_.act_res[1] / 2;
+        rast_state.viewport[2] = view_state_.ren_res[0] / 2;
+        rast_state.viewport[3] = view_state_.ren_res[1] / 2;
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::TexSampled, DownDepth::DEPTH_TEX_SLOT, {*depth_tex.ref, 1}}};
 
         DownDepth::Params uniform_params;
-        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.ren_res[0]), float(view_state_.ren_res[1])};
         uniform_params.clip_info = view_state_.clip_info;
         uniform_params.linearize = 1.0f;
 
@@ -1221,13 +1221,13 @@ Eng::FgResRef Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity) {
     FgResRef output_tex;
     { // Output texture
         Ren::TexParams params;
-        params.w = view_state_.scr_res[0];
-        params.h = view_state_.scr_res[1];
+        params.w = view_state_.out_res[0];
+        params.h = view_state_.out_res[1];
         params.format = Ren::eTexFormat::RGBA8;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         output_tex = data->out_color_tex =
-            debug_motion.AddStorageImageOutput("Velocity Debug", params, Ren::eStage::ComputeShader);
+            debug_motion.AddStorageImageOutput("Motion Debug", params, Ren::eStage::ComputeShader);
     }
 
     debug_motion.set_execute_cb([this, data](FgBuilder &builder) {
@@ -1239,12 +1239,11 @@ Eng::FgResRef Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity) {
             {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.act_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,
-            (view_state_.act_res[1] + DebugVelocity::LOCAL_GROUP_SIZE_Y - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_Y, 1u};
+            (view_state_.out_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,
+            (view_state_.out_res[1] + DebugVelocity::LOCAL_GROUP_SIZE_Y - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_Y, 1u};
 
         DebugVelocity::Params uniform_params;
-        uniform_params.img_size[0] = view_state_.act_res[0];
-        uniform_params.img_size[1] = view_state_.act_res[1];
+        uniform_params.img_size = Ren::Vec2u{view_state_.out_res};
 
         DispatchCompute(*pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                         ctx_.default_descr_alloc(), ctx_.log());
@@ -1273,8 +1272,8 @@ Eng::FgResRef Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame_text
     FgResRef output_tex;
     { // Output texture
         Ren::TexParams params;
-        params.w = view_state_.scr_res[0];
-        params.h = view_state_.scr_res[1];
+        params.w = view_state_.out_res[0];
+        params.h = view_state_.out_res[1];
         params.format = Ren::eTexFormat::RGBA8;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1297,12 +1296,12 @@ Eng::FgResRef Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame_text
             {Ren::eBindTarget::ImageRW, DebugGBuffer::OUT_IMG_SLOT, *output_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.act_res[0] + DebugGBuffer::LOCAL_GROUP_SIZE_X - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_X,
-            (view_state_.act_res[1] + DebugGBuffer::LOCAL_GROUP_SIZE_Y - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_Y, 1u};
+            (view_state_.out_res[0] + DebugGBuffer::LOCAL_GROUP_SIZE_X - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_X,
+            (view_state_.out_res[1] + DebugGBuffer::LOCAL_GROUP_SIZE_Y - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_Y, 1u};
 
         DebugGBuffer::Params uniform_params;
-        uniform_params.img_size[0] = view_state_.act_res[0];
-        uniform_params.img_size[1] = view_state_.act_res[1];
+        uniform_params.img_size[0] = view_state_.out_res[0];
+        uniform_params.img_size[1] = view_state_.out_res[1];
 
         DispatchCompute(*pi_debug_gbuffer_[pi_index], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                         ctx_.default_descr_alloc(), ctx_.log());

@@ -63,8 +63,7 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
 }
 
 uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
-                     uint32_t i,
-                     uint64_t mask);
+                     uint32_t i, uint64_t mask);
 } // namespace ExSharedInternal
 
 void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAllocBuf &vtx_buf2, FgAllocBuf &ndx_buf) {
@@ -83,10 +82,10 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
     //
     // Setup viewport
     //
-    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
+    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->ren_res[0]), float(view_state_->ren_res[1]),
                                  0.0f, 1.0f};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
@@ -141,7 +140,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_depth_only_[rp_index]->vk_handle();
         rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -178,7 +177,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -224,7 +223,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_depth_only_[rp_index]->vk_handle();
         rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].vk_handle();
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -267,7 +266,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -315,7 +314,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_only_[rp_index]->vk_handle();
@@ -354,7 +353,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -394,7 +393,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -436,7 +435,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -478,7 +477,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -517,7 +516,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -557,7 +556,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();
@@ -599,7 +598,7 @@ void Eng::ExDepthFill::DrawDepth(FgBuilder &builder, FgAllocBuf &vtx_buf1, FgAll
         clear_value.depthStencil.stencil = 0;
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
         rp_begin_info.renderPass = rp_depth_velocity_[rp_index]->vk_handle();

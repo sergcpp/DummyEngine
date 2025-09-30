@@ -67,11 +67,11 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
-        (view_state_->act_res[0] + SampleLights::LOCAL_GROUP_SIZE_X - 1u) / SampleLights::LOCAL_GROUP_SIZE_X,
-        (view_state_->act_res[1] + SampleLights::LOCAL_GROUP_SIZE_Y - 1u) / SampleLights::LOCAL_GROUP_SIZE_Y, 1u};
+        (view_state_->ren_res[0] + SampleLights::LOCAL_GROUP_SIZE_X - 1u) / SampleLights::LOCAL_GROUP_SIZE_X,
+        (view_state_->ren_res[1] + SampleLights::LOCAL_GROUP_SIZE_Y - 1u) / SampleLights::LOCAL_GROUP_SIZE_Y, 1u};
 
     SampleLights::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
+    uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.lights_count = uint32_t(lights_buf.desc.size / sizeof(light_item_t));
     uniform_params.frame_index = view_state_->frame_index;
 

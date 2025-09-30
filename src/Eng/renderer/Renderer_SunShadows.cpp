@@ -80,14 +80,14 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         { // tile list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 3) / 4) * 4 * sizeof(uint32_t);
+            desc.size = ((view_state_.ren_res[0] + 7) / 8) * ((view_state_.ren_res[1] + 3) / 4) * 4 * sizeof(uint32_t);
 
             tile_list = data->tile_list = sh_classify.AddStorageOutput("SH Tile List", desc, Stg::ComputeShader);
         }
         { // ray hits texture
             Ren::TexParams params;
-            params.w = (view_state_.scr_res[0] + 7) / 8;
-            params.h = (view_state_.scr_res[1] + 3) / 4;
+            params.w = (view_state_.ren_res[0] + 7) / 8;
+            params.h = (view_state_.ren_res[1] + 3) / 4;
             params.format = Ren::eTexFormat::R32UI;
             params.sampling.filter = Ren::eTexFilter::Nearest;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -124,14 +124,14 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                                              {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
                                              {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
-            const auto grp_count = Ren::Vec3u{(view_state_.act_res[0] + RTShadowClassify::LOCAL_GROUP_SIZE_X - 1u) /
+            const auto grp_count = Ren::Vec3u{(view_state_.ren_res[0] + RTShadowClassify::LOCAL_GROUP_SIZE_X - 1u) /
                                                   RTShadowClassify::LOCAL_GROUP_SIZE_X,
-                                              (view_state_.act_res[1] + RTShadowClassify::LOCAL_GROUP_SIZE_Y - 1u) /
+                                              (view_state_.ren_res[1] + RTShadowClassify::LOCAL_GROUP_SIZE_Y - 1u) /
                                                   RTShadowClassify::LOCAL_GROUP_SIZE_Y,
                                               1u};
 
             RTShadowClassify::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
             uniform_params.frame_index = view_state_.frame_index;
 
             DispatchCompute(*pi_shadow_classify_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
@@ -191,8 +191,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 
         { // shadow mask buffer
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -208,12 +208,12 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                                              {Trg::ImageRW, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + RTShadowDebug::LOCAL_GROUP_SIZE_X - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + RTShadowDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_Y,
+                (view_state_.ren_res[0] + RTShadowDebug::LOCAL_GROUP_SIZE_X - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_X,
+                (view_state_.ren_res[1] + RTShadowDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_Y,
                 1u};
 
             RTShadowDebug::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
 
             DispatchCompute(*pi_shadow_debug_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -239,8 +239,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
 
-            const uint32_t x_tiles = (view_state_.scr_res[0] + 8u - 1u) / 8;
-            const uint32_t y_tiles = (view_state_.scr_res[1] + 4u - 1u) / 4;
+            const uint32_t x_tiles = (view_state_.ren_res[0] + 8u - 1u) / 8;
+            const uint32_t y_tiles = (view_state_.ren_res[1] + 4u - 1u) / 4;
             desc.size = x_tiles * y_tiles * sizeof(uint32_t);
             shadow_mask = data->out_shadow_mask_buf =
                 rt_prep_mask.AddStorageOutput("RT SH Mask", desc, Stg::ComputeShader);
@@ -255,13 +255,13 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 {Trg::TexSampled, RTShadowPrepareMask::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
                 {Trg::SBufRW, RTShadowPrepareMask::SHADOW_MASK_BUF_SLOT, *out_shadow_mask_buf.ref}};
 
-            const uint32_t x_tiles = (view_state_.act_res[0] + 8u - 1u) / 8;
-            const uint32_t y_tiles = (view_state_.act_res[1] + 4u - 1u) / 4;
+            const uint32_t x_tiles = (view_state_.ren_res[0] + 8u - 1u) / 8;
+            const uint32_t y_tiles = (view_state_.ren_res[1] + 4u - 1u) / 4;
 
             const Ren::Vec3u grp_count = Ren::Vec3u{(x_tiles + 4u - 1u) / 4u, (y_tiles + 4u - 1u) / 4u, 1u};
 
             RTShadowPrepareMask::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
 
             DispatchCompute(*pi_shadow_prepare_mask_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -306,16 +306,16 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
 
-            const uint32_t x_tiles = (view_state_.scr_res[0] + 8u - 1u) / 8;
-            const uint32_t y_tiles = (view_state_.scr_res[1] + 4u - 1u) / 4;
+            const uint32_t x_tiles = (view_state_.ren_res[0] + 8u - 1u) / 8;
+            const uint32_t y_tiles = (view_state_.ren_res[1] + 4u - 1u) / 4;
             desc.size = x_tiles * y_tiles * sizeof(uint32_t);
             tiles_metadata = data->out_tile_metadata_buf =
                 rt_classify_tiles.AddStorageOutput("RT SH Tile Meta", desc, Stg::ComputeShader);
         }
         { // reprojected texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -324,8 +324,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
         }
         { // moments texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG11F_B10F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -362,16 +362,16 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             };
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
+                Ren::Vec3u{(view_state_.ren_res[0] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
                                RTShadowClassifyTiles::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_Y - 1u) /
+                           (view_state_.ren_res[1] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_Y - 1u) /
                                RTShadowClassifyTiles::LOCAL_GROUP_SIZE_Y,
                            1u};
 
             RTShadowClassifyTiles::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
             uniform_params.inv_img_size =
-                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+                1.0f / Ren::Vec2f{float(view_state_.ren_res[0]), float(view_state_.ren_res[1])};
 
             DispatchCompute(*pi_shadow_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -402,8 +402,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 
         { // out result texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -430,14 +430,13 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             };
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
+                (view_state_.ren_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
+                (view_state_.ren_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
                 1u};
 
             RTShadowFilter::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
-            uniform_params.inv_img_size =
-                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
+            uniform_params.inv_img_size = 1.0f / Ren::Vec2f{view_state_.ren_res};
 
             DispatchCompute(*pi_shadow_filter_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -468,8 +467,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 
         { // out result texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -496,14 +495,13 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             };
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
+                (view_state_.ren_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
+                (view_state_.ren_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
                 1u};
 
             RTShadowFilter::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
-            uniform_params.inv_img_size =
-                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
+            uniform_params.inv_img_size = 1.0f / Ren::Vec2f{view_state_.ren_res};
 
             DispatchCompute(*pi_shadow_filter_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -534,8 +532,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 
         { // out result texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -562,14 +560,13 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             };
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
+                (view_state_.ren_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
+                (view_state_.ren_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
                 1u};
 
             RTShadowFilter::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
-            uniform_params.inv_img_size =
-                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+            uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
+            uniform_params.inv_img_size = 1.0f / Ren::Vec2f{view_state_.ren_res};
 
             DispatchCompute(*pi_shadow_filter_[2], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -605,8 +602,8 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
 
         { // shadows texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -635,11 +632,11 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.act_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
-                (view_state_.act_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
+                (view_state_.ren_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
+                (view_state_.ren_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
 
             SunShadows::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
             uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
             uniform_params.softness_factor =
                 std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;
@@ -686,8 +683,8 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
 
     { // shadows texture
         Ren::TexParams params;
-        params.w = view_state_.scr_res[0];
-        params.h = view_state_.scr_res[1];
+        params.w = view_state_.ren_res[0];
+        params.h = view_state_.ren_res[1];
         params.format = Ren::eTexFormat::RGBA8;
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -716,11 +713,11 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
             {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.act_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
-            (view_state_.act_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
+            (view_state_.ren_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
+            (view_state_.ren_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
 
         SunShadows::Params uniform_params;
-        uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+        uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
         uniform_params.softness_factor =
             std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;

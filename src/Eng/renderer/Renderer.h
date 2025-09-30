@@ -264,8 +264,7 @@ class Renderer {
     void AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
-    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
-                                   FgResRef &inout_velocity_tex);
+    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &inout_velocity_tex);
     FgResRef AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation);
     FgResRef AddSharpenPass(FgResRef input_tex, FgResRef exposure_tex, bool compressed);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);

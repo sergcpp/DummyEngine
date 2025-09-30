@@ -26,7 +26,7 @@ void main() {
     }
 
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
 
     const vec3 ray_origin_ss = vec3(norm_uvs, 0.0);
 

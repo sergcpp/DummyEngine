@@ -203,8 +203,8 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
     Skydome::Params uniform_params = {};
     uniform_params.clip_from_world = view_state_->clip_from_world_no_translation;
     uniform_params.sample_coord = sample_pos(view_state_->frame_index);
-    uniform_params.img_size = view_state_->scr_res;
-    uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_->scr_res);
+    uniform_params.img_size = view_state_->ren_res;
+    uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_->ren_res);
     uniform_params.scale = 0.95f * view_state_->clip_info[2];
 
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -227,8 +227,8 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::CURL_TEX_SLOT, *curl_tex.ref);
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::NOISE3D_TEX_SLOT, *noise3d_tex.ref);
 
-        rast_state.viewport[2] = view_state_->act_res[0];
-        rast_state.viewport[3] = view_state_->act_res[1];
+        rast_state.viewport[2] = view_state_->ren_res[0];
+        rast_state.viewport[3] = view_state_->ren_res[1];
 
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
                                                 Ren::eLoadOp::Load, Ren::eStoreOp::Store};
@@ -265,8 +265,8 @@ void Eng::ExSkydomeScreen::Execute(FgBuilder &builder) {
 
         bindings.emplace_back(Ren::eBindTarget::TexSampled, Skydome::ENV_TEX_SLOT, *env_tex.ref);
 
-        rast_state.viewport[2] = view_state_->act_res[0];
-        rast_state.viewport[3] = view_state_->act_res[1];
+        rast_state.viewport[2] = view_state_->ren_res[0];
+        rast_state.viewport[3] = view_state_->ren_res[1];
 
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
                                                 Ren::eLoadOp::Load, Ren::eStoreOp::Store};

@@ -190,7 +190,7 @@ void main() {
     const float first_roughness = 0.0;
 
     const ivec2 icoord = ivec2(ray_coords);
-    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec2 norm_uvs = (vec2(ray_coords) + 0.5) * g_shrd_data.ren_res.zw;
     const vec3 ray_origin_ss = vec3(norm_uvs, depth);
     const vec4 ray_origin_cs = vec4(2.0 * ray_origin_ss.xy - 1.0, ray_origin_ss.z, 1.0);
     const vec3 ray_origin_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, ray_origin_cs);

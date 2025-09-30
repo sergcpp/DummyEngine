@@ -40,8 +40,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, main_draw_fb_[0][fb_to_use_].id());
 
-    _rast_state.viewport[2] = view_state_->act_res[0];
-    _rast_state.viewport[3] = view_state_->act_res[1];
+    _rast_state.viewport[2] = view_state_->ren_res[0];
+    _rast_state.viewport[3] = view_state_->ren_res[1];
 
     _rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = _rast_state;
@@ -98,8 +98,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -107,8 +107,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
                                  cur_mat_id, &draws_count);
 
             rast_state = pi_simple_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -119,8 +119,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -131,8 +131,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -143,8 +143,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -156,8 +156,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -168,8 +168,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -181,8 +181,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -194,8 +194,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -214,8 +214,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -226,8 +226,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -239,8 +239,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-MOVING-SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -252,8 +252,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-MOVING-SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -265,8 +265,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -278,8 +278,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -291,8 +291,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-MOVING-ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -304,8 +304,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "VEGE-MOVING-ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_vegetation_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -326,8 +326,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -338,8 +338,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -351,8 +351,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-MOVING-SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -364,8 +364,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-MOVING-SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -377,8 +377,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -390,8 +390,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -403,8 +403,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-MOVING-ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -416,8 +416,8 @@ void Eng::ExEmissive::DrawOpaque(FgBuilder &builder) {
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-MOVING-ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 

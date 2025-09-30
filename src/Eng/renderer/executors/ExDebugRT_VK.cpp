@@ -71,8 +71,8 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
                                      descr_sets, 0, nullptr);
 
     RTDebug::Params uniform_params;
-    uniform_params.img_size[0] = view_state_->scr_res[0];
-    uniform_params.img_size[1] = view_state_->scr_res[1];
+    uniform_params.img_size[0] = view_state_->ren_res[0];
+    uniform_params.img_size[1] = view_state_->ren_res[1];
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.cull_mask = args_->cull_mask;
 
@@ -80,8 +80,8 @@ void Eng::ExDebugRT::Execute_HWRT(FgBuilder &builder) {
                                 sizeof(uniform_params), &uniform_params);
 
     api_ctx->vkCmdTraceRaysKHR(cmd_buf, pi_debug_->rgen_table(), pi_debug_->miss_table(), pi_debug_->hit_table(),
-                               pi_debug_->call_table(), uint32_t(view_state_->scr_res[0]),
-                               uint32_t(view_state_->scr_res[1]), 1);
+                               pi_debug_->call_table(), uint32_t(view_state_->ren_res[0]),
+                               uint32_t(view_state_->ren_res[1]), 1);
 }
 
 void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
@@ -141,12 +141,11 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
     }
 
     const auto grp_count =
-        Ren::Vec3u{(view_state_->act_res[0] + RTDebug::LOCAL_GROUP_SIZE_X - 1u) / RTDebug::LOCAL_GROUP_SIZE_X,
-                   (view_state_->act_res[1] + RTDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTDebug::LOCAL_GROUP_SIZE_Y, 1u};
+        Ren::Vec3u{(view_state_->ren_res[0] + RTDebug::LOCAL_GROUP_SIZE_X - 1u) / RTDebug::LOCAL_GROUP_SIZE_X,
+                   (view_state_->ren_res[1] + RTDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTDebug::LOCAL_GROUP_SIZE_Y, 1u};
 
     RTDebug::Params uniform_params;
-    uniform_params.img_size[0] = view_state_->act_res[0];
-    uniform_params.img_size[1] = view_state_->act_res[1];
+    uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.root_node = args_->swrt.root_node;
     uniform_params.cull_mask = args_->cull_mask;

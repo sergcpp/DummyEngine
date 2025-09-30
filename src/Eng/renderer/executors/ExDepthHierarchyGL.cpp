@@ -36,7 +36,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
         Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(DepthHierarchy::Params));
     {
         DepthHierarchy::Params *stage_data = reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map());
-        stage_data->depth_size = Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1],
+        stage_data->depth_size = Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1],
                                             output_tex.ref->params.mip_count, grp_x * grp_y};
         stage_data->clip_info = view_state_->clip_info;
 

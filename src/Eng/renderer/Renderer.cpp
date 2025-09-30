@@ -491,7 +491,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eTexFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
+        };
 
         // color_rts[2].flags = Ren::eTexFlags::SRGB;
 
@@ -686,11 +687,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     bool rendertarget_changed = false;
 
-    if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1] ||
+    if (cur_scr_w != view_state_.out_res[0] || cur_scr_h != view_state_.out_res[1] ||
         list.render_settings.taa_mode != taa_mode_ || cur_dof_enabled != dof_enabled_ || cached_rp_index_ != 0) {
         rendertarget_changed = true;
 
-        view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.out_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
         taa_mode_ = list.render_settings.taa_mode;
         dof_enabled_ = cur_dof_enabled;
         accumulated_frames_ = 0;
@@ -704,23 +705,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     if (!target) {
-        // TODO: Change actual resolution dynamically
-#if defined(__ANDROID__)
-        view_state_.act_res[0] = int(float(view_state_.scr_res[0]) * 0.4f);
-        view_state_.act_res[1] = int(float(view_state_.scr_res[1]) * 0.6f);
-#else
-        view_state_.act_res[0] = int(float(view_state_.scr_res[0]) * 1.0f);
-        view_state_.act_res[1] = int(float(view_state_.scr_res[1]) * 1.0f);
-#endif
+        view_state_.ren_res[0] = int(float(view_state_.out_res[0]) * list.render_settings.resolution_scale);
+        view_state_.ren_res[1] = int(float(view_state_.out_res[1]) * list.render_settings.resolution_scale);
     } else {
-        view_state_.act_res[0] = target->params.w;
-        view_state_.act_res[1] = target->params.h;
+        view_state_.ren_res[0] = target->params.w;
+        view_state_.ren_res[1] = target->params.h;
     }
-    assert(view_state_.act_res[0] <= view_state_.scr_res[0] && view_state_.act_res[1] <= view_state_.scr_res[1]);
+    assert(view_state_.ren_res[0] <= view_state_.out_res[0] && view_state_.ren_res[1] <= view_state_.out_res[1]);
 
     view_state_.vertical_fov = list.draw_cam.angle();
     view_state_.pixel_spread_angle = std::atan(
-        2.0f * std::tan(0.5f * view_state_.vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_.scr_res[1]));
+        2.0f * std::tan(0.5f * view_state_.vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_.ren_res[1]));
     view_state_.frame_index = list.frame_index;
     view_state_.volume_to_update = list.volume_to_update;
     view_state_.stochastic_lights_count = view_state_.stochastic_lights_count_cache = 0;
@@ -770,7 +765,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             jitter[1] = lookup_filter_table(jitter[1]);
         }
 
-        jitter = (2.0f * jitter - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.act_res};
+        jitter = (2.0f * jitter - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.ren_res};
         list.draw_cam.SetPxOffset(jitter);
     } else {
         list.draw_cam.SetPxOffset(Ren::Vec2f{0.0f, 0.0f});
@@ -1173,35 +1168,35 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 frame_textures.shadow_depth, frame_textures.shadow_color);
         }
 
-        frame_textures.depth_params.w = view_state_.scr_res[0];
-        frame_textures.depth_params.h = view_state_.scr_res[1];
+        frame_textures.depth_params.w = view_state_.ren_res[0];
+        frame_textures.depth_params.h = view_state_.ren_res[1];
         frame_textures.depth_params.format = Ren::eTexFormat::D32_S8;
         // ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::D24_S8 : Ren::eTexFormat::D32_S8;
         frame_textures.depth_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         // Main HDR color
-        frame_textures.color_params.w = view_state_.scr_res[0];
-        frame_textures.color_params.h = view_state_.scr_res[1];
+        frame_textures.color_params.w = view_state_.ren_res[0];
+        frame_textures.color_params.h = view_state_.ren_res[1];
         frame_textures.color_params.format = Ren::eTexFormat::RGBA16F;
         frame_textures.color_params.sampling.filter = Ren::eTexFilter::Bilinear;
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
         if (deferred_shading) {
             // 4-component world-space normal (alpha or z is roughness)
-            frame_textures.normal_params.w = view_state_.scr_res[0];
-            frame_textures.normal_params.h = view_state_.scr_res[1];
+            frame_textures.normal_params.w = view_state_.ren_res[0];
+            frame_textures.normal_params.h = view_state_.ren_res[1];
             frame_textures.normal_params.format = Ren::eTexFormat::R32UI;
             frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             // packed material params
-            frame_textures.specular_params.w = view_state_.scr_res[0];
-            frame_textures.specular_params.h = view_state_.scr_res[1];
+            frame_textures.specular_params.w = view_state_.ren_res[0];
+            frame_textures.specular_params.h = view_state_.ren_res[1];
             frame_textures.specular_params.format = Ren::eTexFormat::R32UI;
             frame_textures.specular_params.flags = {};
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         } else {
             // 4-component world-space normal (alpha or z is roughness)
-            frame_textures.normal_params.w = view_state_.scr_res[0];
-            frame_textures.normal_params.h = view_state_.scr_res[1];
+            frame_textures.normal_params.w = view_state_.ren_res[0];
+            frame_textures.normal_params.h = view_state_.ren_res[1];
 #if USE_OCT_PACKED_NORMALS == 1
             frame_textures.normal_params.format = Ren::eTexFormat::RGB10_A2;
 #else
@@ -1209,15 +1204,15 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 #endif
             frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             // 4-component specular (alpha is roughness)
-            frame_textures.specular_params.w = view_state_.scr_res[0];
-            frame_textures.specular_params.h = view_state_.scr_res[1];
+            frame_textures.specular_params.w = view_state_.ren_res[0];
+            frame_textures.specular_params.h = view_state_.ren_res[1];
             frame_textures.specular_params.format = Ren::eTexFormat::RGBA8;
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         }
 
         // 4-component albedo (alpha is unused)
-        frame_textures.albedo_params.w = view_state_.scr_res[0];
-        frame_textures.albedo_params.h = view_state_.scr_res[1];
+        frame_textures.albedo_params.w = view_state_.ren_res[0];
+        frame_textures.albedo_params.h = view_state_.ren_res[1];
         frame_textures.albedo_params.format = Ren::eTexFormat::RGBA8;
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1250,10 +1245,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-            { // Texture that holds 2D velocity
+            { // Texture that holds 3D motion vectors
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1285,9 +1280,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             { // 32-bit float depth hierarchy
                 Ren::TexParams params;
-                params.w = ((view_state_.scr_res[0] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
+                params.w = ((view_state_.ren_res[0] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
                            ExDepthHierarchy::TileSize;
-                params.h = ((view_state_.scr_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
+                params.h = ((view_state_.ren_res[1] + ExDepthHierarchy::TileSize - 1) / ExDepthHierarchy::TileSize) *
                            ExDepthHierarchy::TileSize;
                 params.format = Ren::eTexFormat::R32F;
                 params.mip_count = ExDepthHierarchy::MipCount;
@@ -1629,8 +1624,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
             if (output_tex) {
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.out_res[0];
+                params.h = view_state_.out_res[1];
                 params.format = Ren::eTexFormat::RGB8;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -2003,9 +1998,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *px_data, const int w, const
     max_exposure_ = std::pow(2.0f, max_exposure);
 
     bool resolution_changed = false;
-    if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1]) {
+    if (cur_scr_w != view_state_.out_res[0] || cur_scr_h != view_state_.out_res[1]) {
         resolution_changed = true;
-        view_state_.scr_res = view_state_.act_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.out_res = view_state_.ren_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
     }
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
 
@@ -2162,9 +2157,9 @@ void Eng::Renderer::BlitImageTonemap(const Ren::TexRef &result, const int w, con
     max_exposure_ = std::pow(2.0f, max_exposure);
 
     bool resolution_changed = false;
-    if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1]) {
+    if (cur_scr_w != view_state_.out_res[0] || cur_scr_h != view_state_.out_res[1]) {
         resolution_changed = true;
-        view_state_.scr_res = view_state_.act_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+        view_state_.out_res = view_state_.ren_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
     }
     view_state_.pre_exposure = custom_pre_exposure_.value_or(readback_exposure());
 

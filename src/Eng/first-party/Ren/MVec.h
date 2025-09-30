@@ -55,11 +55,11 @@ template <typename T, int N> class Vec {
         }
     }
 
-    template <typename S> force_inline explicit Vec(const Vec<S, N - 1> &rhs, const float last) noexcept {
+    template <typename S> force_inline explicit Vec(const Vec<S, N - 1> &rhs, const S last) noexcept {
         for (int i = 0; i < N - 1; ++i) {
             data_[i] = T(rhs[i]);
         }
-        data_[N - 1] = last;
+        data_[N - 1] = T(last);
     }
 
     force_inline T &operator[](const int i) { return data_[i]; }

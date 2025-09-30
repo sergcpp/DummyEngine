@@ -22,15 +22,15 @@ layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    vec2 norm_uvs = g_vtx_uvs / g_shrd_data.res_and_fres.xy;
+    vec2 norm_uvs = g_vtx_uvs * g_shrd_data.ren_res.zw;
 
     float depth = texelFetch(g_depth_tex, ivec2(g_vtx_uvs), 0).x;
     depth = 2.0 * depth - 1.0;
 
-    vec4 ray_start_cs = vec4(g_vtx_uvs / g_shrd_data.res_and_fres.xy, 0.0, 1.0);
+    vec4 ray_start_cs = vec4(g_vtx_uvs * g_shrd_data.ren_res.zw, 0.0, 1.0);
     ray_start_cs.xy = 2.0 * ray_start_cs.xy - 1.0;
 
-    vec4 ray_end_cs = vec4(g_vtx_uvs / g_shrd_data.res_and_fres.xy, depth, 1.0);
+    vec4 ray_end_cs = vec4(g_vtx_uvs * g_shrd_data.ren_res.zw, depth, 1.0);
     ray_end_cs.xy = 2.0 * ray_end_cs.xy - 1.0;
 
     vec4 ray_start_ws = g_shrd_data.world_from_clip * ray_start_cs;

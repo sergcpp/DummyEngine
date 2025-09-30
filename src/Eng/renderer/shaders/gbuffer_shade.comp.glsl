@@ -59,7 +59,7 @@ layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, lo
 #define MAX_TRACE_DIST 0.15
 #define MAX_TRACE_STEPS 16
 #define Z_THICKNESS 0.025
-#define STRIDE (3.0 / g_shrd_data.res_and_fres.x)
+#define STRIDE (3.0 * g_shrd_data.ren_res.z)
 
 float LinearDepthFetch_Nearest(const vec2 hit_uv) {
     return LinearizeDepth(textureLod(g_depth_tex, hit_uv, 0.0).x, g_shrd_data.clip_info);
@@ -150,7 +150,7 @@ void main() {
     }
 
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     if (depth == 0.0) {
@@ -161,7 +161,7 @@ void main() {
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
-    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.res_and_fres.xy);
+    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.ren_res.xy);
 
     const vec4 pos_cs = vec4(2.0 * norm_uvs - 1.0, depth, 1.0);
     const vec3 pos_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, pos_cs);
@@ -350,7 +350,7 @@ void main() {
         }
     }
 
-    const vec2 px_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.zw;
+    const vec2 px_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
     const vec4 gi_fetch = textureLod(g_gi_tex, px_uvs, 0.0);
     vec3 gi_contribution = lobe_masks.diffuse_mul * gi_fetch.xyz / g_shrd_data.cam_pos_and_exp.w;
     gi_contribution *= base_color * g_ltc[gl_LocalInvocationIndex].diff_t2.x;

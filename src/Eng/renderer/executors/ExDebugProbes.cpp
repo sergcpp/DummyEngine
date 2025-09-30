@@ -23,8 +23,8 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
+    rast_state.viewport[2] = view_state_->ren_res[0];
+    rast_state.viewport[3] = view_state_->ren_res[1];
 
     rast_state.depth.test_enabled = true;
     rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);

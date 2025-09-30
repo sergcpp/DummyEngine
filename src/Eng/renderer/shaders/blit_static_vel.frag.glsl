@@ -18,7 +18,7 @@ void main() {
 
     float depth = texelFetch(g_depth_tex, pix_uvs, 0).x;
 
-    vec4 point_cs = vec4(2.0 * (g_vtx_uvs.xy / g_shrd_data.res_and_fres.xy) - 1.0, depth, 1.0);
+    vec4 point_cs = vec4(2.0 * (g_vtx_uvs.xy * g_shrd_data.ren_res.zw) - 1.0, depth, 1.0);
     const vec3 point_vs = TransformFromClipSpace(g_shrd_data.view_from_clip, point_cs);
     const vec3 point_ws = TransformFromClipSpace(g_shrd_data.world_from_clip, point_cs);
 
@@ -36,7 +36,7 @@ void main() {
 #if defined(VULKAN)
     g_out_velocity.y = -g_out_velocity.y;
 #endif
-    g_out_velocity.xy *= g_shrd_data.res_and_fres.xy; // improve fp16 utilization
+    g_out_velocity.xy *= g_shrd_data.ren_res.xy; // improve fp16 utilization
     g_out_velocity.z = -(point_vs.z - point_prev_vs.z);
     g_out_velocity.w = 0.0;
 }

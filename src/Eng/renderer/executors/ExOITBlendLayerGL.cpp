@@ -72,8 +72,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     { // blit depth layer
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-        rast_state.viewport[2] = view_state_->act_res[0];
-        rast_state.viewport[3] = view_state_->act_res[1];
+        rast_state.viewport[2] = view_state_->ren_res[0];
+        rast_state.viewport[3] = view_state_->ren_res[1];
 
         rast_state.depth.test_enabled = true;
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
@@ -82,8 +82,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             {Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref}};
 
         BlitOITDepth::Params uniform_params = {};
-        uniform_params.img_size[0] = view_state_->act_res[0];
-        uniform_params.img_size[1] = view_state_->act_res[1];
+        uniform_params.img_size = view_state_->ren_res;
         uniform_params.layer_index = depth_layer_index_;
 
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
@@ -168,8 +167,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -177,8 +176,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
                                  cur_mat_id, &draws_count);
 
             rast_state = pi_simple_[1]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -189,8 +188,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -201,8 +200,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -213,8 +212,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -226,8 +225,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -238,8 +237,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -251,8 +250,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-ONE-SIDED");
 
             Ren::RastState rast_state = pi_simple_[0]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
@@ -264,8 +263,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-TWO-SIDED");
 
             Ren::RastState rast_state = pi_simple_[2]->rast_state();
-            rast_state.viewport[2] = view_state_->act_res[0];
-            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.viewport[2] = view_state_->ren_res[0];
+            rast_state.viewport[3] = view_state_->ren_res[1];
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 

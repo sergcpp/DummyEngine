@@ -148,8 +148,8 @@ void Eng::ExOpaque::DrawOpaque(FgBuilder &builder) {
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, opaque_draw_fb_[0][fb_to_use_].id());
 
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
+    rast_state.viewport[2] = view_state_->ren_res[0];
+    rast_state.viewport[3] = view_state_->ren_res[1];
 
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;

@@ -19,9 +19,9 @@ class CmdlineUI final : public Gui::BaseElement {
     struct ArgData {
         eArgType type;
         std::string_view str;
-        double val;
+        double num;
     };
-    static const int MaxHistoryCount = 64;
+    static const int MaxHistoryLength = 64;
 
     using CommandHandler = std::function<bool(Ren::Span<const ArgData> args)>;
 

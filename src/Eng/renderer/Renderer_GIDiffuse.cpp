@@ -71,8 +71,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
         { // gi texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -103,18 +103,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 {Trg::ImageRW, OUT_IMG_SLOT, *out_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+                Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                           (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[0].origin;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[0].scroll;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[0].spacing;
 
             Params uniform_params;
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
-            uniform_params.img_size = Ren::Vec2u{view_state_.act_res};
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin, 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll, 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing, 0.0f};
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
             DispatchCompute(*pi_probe_sample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -162,7 +162,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         });
     }
 
-    const int tile_count = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8);
+    const int tile_count = ((view_state_.ren_res[0] + 7) / 8) * ((view_state_.ren_res[1] + 7) / 8);
 
     FgResRef ray_list, tile_list;
     FgResRef gi_tex, noise_tex;
@@ -195,7 +195,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         { // packed ray list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
+            desc.size = view_state_.ren_res[0] * view_state_.ren_res[1] * sizeof(uint32_t);
 
             ray_list = data->ray_list = gi_classify.AddStorageOutput("GI Ray List", desc, Stg::ComputeShader);
         }
@@ -208,8 +208,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         }
         { // final gi texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -250,11 +250,11 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                              {Trg::ImageRW, OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+                Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                           (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
             Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
             uniform_params.samples_and_guided = Ren::Vec2u{SamplesPerQuad, VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.tile_count = tile_count;
@@ -329,7 +329,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         { // packed ray list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
+            desc.size = view_state_.ren_res[0] * view_state_.ren_res[1] * sizeof(uint32_t);
 
             ray_rt_list = data->out_ray_list = gi_trace_ss.AddStorageOutput("GI RT Ray List", desc, Stg::ComputeShader);
         }
@@ -360,7 +360,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                              {Trg::SBufRW, OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
             Params uniform_params;
-            uniform_params.resolution = Ren::Vec4u(view_state_.act_res[0], view_state_.act_res[1], 0, 0);
+            uniform_params.resolution =
+                Ren::Vec4u{uint32_t(view_state_.ren_res[0]), uint32_t(view_state_.ren_res[1]), 0, 0};
 
             DispatchComputeIndirect(*pi_gi_trace_ss_, *indir_args_buf.ref, 0, bindings, &uniform_params,
                                     sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -506,8 +507,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             { // reflections texture
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -559,8 +560,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
         { // Reprojected gi texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -570,8 +571,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         }
         { // 8x8 average gi texture
             Ren::TexParams params;
-            params.w = (view_state_.scr_res[0] + 7) / 8;
-            params.h = (view_state_.scr_res[1] + 7) / 8;
+            params.w = (view_state_.ren_res[0] + 7) / 8;
+            params.h = (view_state_.ren_res[1] + 7) / 8;
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -581,8 +582,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         }
         { // Variance
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -592,8 +593,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         }
         { // Sample count
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -644,7 +645,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                     {Trg::ImageRW, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
                 Params uniform_params;
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                 uniform_params.hist_weight = (view_state_.pre_exposure / view_state_.prev_pre_exposure);
 
                 DispatchComputeIndirect(*pi_gi_reproject_, *indir_args_buf.ref, data->indir_args_offset1, bindings,
@@ -698,8 +699,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
         { // Final diffuse
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -736,7 +737,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
                 Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[0];
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
                 DispatchComputeIndirect(*pi_gi_filter_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
@@ -789,8 +790,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
         if (EnableBlur) {
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -800,11 +801,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
         } else {
             gi_diffuse_tex = gi_tex = data->out_gi_tex = gi_temporal.AddStorageImageOutput(gi_tex, Stg::ComputeShader);
         }
-
         { // Variance texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -844,7 +844,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                  {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
                 DispatchComputeIndirect(*pi_gi_temporal_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
                                         data->indir_args_offset1, bindings, &uniform_params, sizeof(uniform_params),
@@ -896,8 +896,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             { // Final diffuse
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -934,7 +934,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[0];
-                    uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                    uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                     uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
                     DispatchComputeIndirect(*pi_gi_filter_[2], *indir_args_buf.ref, data->indir_args_offset1, bindings,
@@ -985,8 +985,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             { // Final diffuse
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1023,7 +1023,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[1];
-                    uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                    uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                     uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
                     DispatchComputeIndirect(*pi_gi_filter_[3], *indir_args_buf.ref, data->indir_args_offset1, bindings,
@@ -1063,8 +1063,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
 
             { // Final gi
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1092,11 +1092,11 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                  {Trg::ImageRW, OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =
-                    Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                               (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+                    Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                               (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
                 Params uniform_params;
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
                 DispatchCompute(*pi_gi_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -1134,8 +1134,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
 
         { // Allocate output texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0] / 2;
-            params.h = view_state_.scr_res[1] / 2;
+            params.w = view_state_.ren_res[0] / 2;
+            params.h = view_state_.ren_res[1] / 2;
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1151,15 +1151,15 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            rast_state.viewport[2] = view_state_.act_res[0] / 2;
-            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+            rast_state.viewport[2] = (view_state_.ren_res[0] / 2);
+            rast_state.viewport[3] = (view_state_.ren_res[1] / 2);
 
             const Ren::Binding bindings[] = {{Trg::TexSampled, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
                                              {Trg::TexSampled, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
 
             SSAO::Params uniform_params;
-            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0] / 2, view_state_.act_res[1] / 2};
-            uniform_params.resolution = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.ren_res[0] / 2, view_state_.ren_res[1] / 2};
+            uniform_params.resolution = Ren::Vec2f{view_state_.ren_res};
 
             const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
@@ -1185,8 +1185,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
 
         { // Allocate output texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0] / 2;
-            params.h = view_state_.scr_res[1] / 2;
+            params.w = (view_state_.ren_res[0] / 2);
+            params.h = (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1202,8 +1202,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            rast_state.viewport[2] = view_state_.act_res[0] / 2;
-            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+            rast_state.viewport[2] = (view_state_.ren_res[0] / 2);
+            rast_state.viewport[3] = (view_state_.ren_res[1] / 2);
 
             { // blur ao buffer
                 const Ren::RenderTarget render_targets[] = {
@@ -1240,8 +1240,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
 
         { // Allocate output texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0] / 2;
-            params.h = view_state_.scr_res[1] / 2;
+            params.w = (view_state_.ren_res[0] / 2);
+            params.h = (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1257,8 +1257,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            rast_state.viewport[2] = view_state_.act_res[0] / 2;
-            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+            rast_state.viewport[2] = (view_state_.ren_res[0] / 2);
+            rast_state.viewport[3] = (view_state_.ren_res[1] / 2);
 
             { // blur ao buffer
                 const Ren::RenderTarget render_targets[] = {
@@ -1296,8 +1296,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
 
         { // Allocate output texture
             Ren::TexParams params;
-            params.w = view_state_.act_res[0];
-            params.h = view_state_.act_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1313,8 +1313,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
 
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-            rast_state.viewport[2] = view_state_.act_res[0];
-            rast_state.viewport[3] = view_state_.act_res[1];
+            rast_state.viewport[2] = view_state_.ren_res[0];
+            rast_state.viewport[3] = view_state_.ren_res[1];
             { // upsample ao
                 const Ren::RenderTarget render_targets[] = {
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
@@ -1323,8 +1323,8 @@ void Eng::Renderer::AddSSAOPasses(const FgResRef depth_down_2x, const FgResRef _
                                                  {Trg::TexSampled, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
                 Upscale::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
-                uniform_params.resolution = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
-                                                       float(view_state_.scr_res[0]), float(view_state_.scr_res[1])};
+                uniform_params.resolution =
+                    Ren::Vec4f{float(view_state_.ren_res[0]), float(view_state_.ren_res[1]), 0.0f, 0.0f};
                 uniform_params.clip_info = view_state_.clip_info;
                 prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_upscale_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(Upscale::Params), 0);
@@ -1354,8 +1354,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
         { // Output texture
             Ren::TexParams params;
-            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
-            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.ren_res[0] : (view_state_.ren_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.ren_res[1] : (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1373,17 +1373,16 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                              {Trg::TexSampled, GTAO::NORM_TEX_SLOT, *norm_tex.ref},
                                              {Trg::ImageRW, GTAO::OUT_IMG_SLOT, *output_tex.ref}};
 
-            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
-                                                                         : uint32_t(view_state_.act_res[0] / 2),
-                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
-                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+            const Ren::Vec2u img_size{quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[0])
+                                                                     : uint32_t(view_state_.ren_res[0] / 2),
+                                      quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[1])
+                                                                     : uint32_t(view_state_.ren_res[1] / 2)};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                                       (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
+            uniform_params.img_size = img_size;
             uniform_params.rand[0] = RendererInternal::GTAORandSamples[view_state_.frame_index % 32][0];
             uniform_params.rand[1] = RendererInternal::GTAORandSamples[view_state_.frame_index % 32][1];
             uniform_params.clip_info = view_state_.clip_info;
@@ -1409,8 +1408,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
         { // Output texture
             Ren::TexParams params;
-            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
-            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.ren_res[0] : (view_state_.ren_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.ren_res[1] : (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1429,17 +1428,17 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                              {Trg::TexSampled, GTAO::GTAO_TEX_SLOT, *ao_tex.ref},
                                              {Trg::ImageRW, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
-            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
-                                                                         : uint32_t(view_state_.act_res[0] / 2),
-                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
-                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+            const Ren::Vec2u img_size{quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[0])
+                                                                     : uint32_t(view_state_.ren_res[0] / 2),
+                                      quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[1])
+                                                                     : uint32_t(view_state_.ren_res[1] / 2)};
 
             const auto grp_count =
                 Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
                            (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
+            uniform_params.img_size = img_size;
             uniform_params.clip_info = view_state_.clip_info;
 
             DispatchCompute(*pi_gtao_filter_[quality == eSSAOQuality::High], grp_count, bindings, &uniform_params,
@@ -1462,8 +1461,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
         { // Final ao
             Ren::TexParams params;
-            params.w = quality == eSSAOQuality::Ultra ? view_state_.scr_res[0] : (view_state_.scr_res[0] / 2);
-            params.h = quality == eSSAOQuality::Ultra ? view_state_.scr_res[1] : (view_state_.scr_res[1] / 2);
+            params.w = quality == eSSAOQuality::Ultra ? view_state_.ren_res[0] : (view_state_.ren_res[0] / 2);
+            params.h = quality == eSSAOQuality::Ultra ? view_state_.ren_res[1] : (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1490,17 +1489,17 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                              {Trg::TexSampled, GTAO::GTAO_HIST_TEX_SLOT, *ao_hist_tex.ref},
                                              {Trg::ImageRW, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
-            const uint32_t img_size[2] = {quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[0])
-                                                                         : uint32_t(view_state_.act_res[0] / 2),
-                                          quality == eSSAOQuality::Ultra ? uint32_t(view_state_.act_res[1])
-                                                                         : uint32_t(view_state_.act_res[1] / 2)};
+            const Ren::Vec2u img_size{quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[0])
+                                                                     : uint32_t(view_state_.ren_res[0] / 2),
+                                      quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[1])
+                                                                     : uint32_t(view_state_.ren_res[1] / 2)};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
                            (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u{img_size[0], img_size[1]};
+            uniform_params.img_size = img_size;
             uniform_params.clip_info = view_state_.clip_info;
 
             DispatchCompute(*pi_gtao_accumulate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
@@ -1521,8 +1520,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
 
         { // Final ao
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R8;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1542,11 +1541,11 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                              {Trg::ImageRW, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+                Ren::Vec3u{(view_state_.ren_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
+                           (view_state_.ren_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
             DispatchCompute(*pi_gtao_upsample_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                             builder.ctx().default_descr_alloc(), builder.ctx().log());

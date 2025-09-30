@@ -62,7 +62,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         });
     }
 
-    const int tile_count = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8);
+    const int tile_count = ((view_state_.ren_res[0] + 7) / 8) * ((view_state_.ren_res[1] + 7) / 8);
 
     FgResRef ray_list, tile_list;
     FgResRef refl_tex, noise_tex;
@@ -93,7 +93,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         { // packed ray list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
+            desc.size = view_state_.ren_res[0] * view_state_.ren_res[1] * sizeof(uint32_t);
 
             ray_list = data->ray_list = ssr_classify.AddStorageOutput("Ray List", desc, Stg::ComputeShader);
         }
@@ -106,8 +106,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
         { // reflections texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -150,11 +150,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                              {Trg::ImageRW, OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+                Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                           (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
             Params uniform_params;
-            uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+            uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
             uniform_params.samples_and_guided = Ren::Vec2u(SamplesPerQuad, VarianceGuided ? 1u : 0u);
             uniform_params.frame_index = view_state_.frame_index;
             uniform_params.clear = (view_state_.stochastic_lights_count > 0) ? 0.0f : 1.0f;
@@ -241,7 +241,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         { // packed ray list
             FgBufDesc desc = {};
             desc.type = Ren::eBufType::Storage;
-            desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
+            desc.size = view_state_.ren_res[0] * view_state_.ren_res[1] * sizeof(uint32_t);
 
             ray_rt_list = data->out_ray_list = ssr_trace_hq.AddStorageOutput("Ray RT List", desc, Stg::ComputeShader);
         }
@@ -294,7 +294,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
             }
 
             Params uniform_params;
-            uniform_params.resolution = Ren::Vec4u(view_state_.act_res[0], view_state_.act_res[1], 0, 0);
+            uniform_params.resolution = Ren::Vec4u(view_state_.ren_res[0], view_state_.ren_res[1], 0, 0);
 
             DispatchComputeIndirect(*pi_ssr_trace_hq_[0][irr_tex != nullptr], *indir_args_buf.ref, 0, bindings,
                                     &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
@@ -448,8 +448,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
         { // Reprojected reflections texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -459,8 +459,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
         { // 8x8 average reflections texture
             Ren::TexParams params;
-            params.w = (view_state_.scr_res[0] + 7) / 8;
-            params.h = (view_state_.scr_res[1] + 7) / 8;
+            params.w = (view_state_.ren_res[0] + 7) / 8;
+            params.h = (view_state_.ren_res[1] + 7) / 8;
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -470,8 +470,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
         { // Variance
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -481,8 +481,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
         { // Sample count
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -533,7 +533,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                     {Trg::ImageRW, OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
                 Params uniform_params;
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
                 DispatchComputeIndirect(*pi_ssr_reproject_, *indir_args_buf.ref, data->indir_args_offset1, bindings,
                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
@@ -587,8 +587,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
         { // Final reflection
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -627,7 +627,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                 Params uniform_params;
                 uniform_params.rotator = view_state_.rand_rotators[0];
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                 uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
                 DispatchComputeIndirect(*pi_ssr_filter_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
@@ -679,8 +679,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
         if (EnableBlur) {
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -693,8 +693,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         }
         { // Variance texture
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
+            params.w = view_state_.ren_res[0];
+            params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::R16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -732,7 +732,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                                  {Trg::ImageRW, OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
                 Params uniform_params;
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
                 DispatchComputeIndirect(*pi_ssr_temporal_[settings.taa_mode == eTAAMode::Static], *indir_args_buf.ref,
                                         data->indir_args_offset1, bindings, &uniform_params, sizeof(uniform_params),
@@ -787,8 +787,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             { // Final reflection
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -826,7 +826,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[0];
-                    uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                    uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                     uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
                     DispatchComputeIndirect(*pi_ssr_filter_[2], *indir_args_buf.ref, data->indir_args_offset1, bindings,
@@ -878,8 +878,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             { // Final reflection
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -917,7 +917,7 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
                     Params uniform_params;
                     uniform_params.rotator = view_state_.rand_rotators[1];
-                    uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                    uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
                     uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
                     DispatchComputeIndirect(*pi_ssr_filter_[3], *indir_args_buf.ref, data->indir_args_offset1, bindings,
@@ -957,8 +957,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
 
             { // Final gi
                 Ren::TexParams params;
-                params.w = view_state_.scr_res[0];
-                params.h = view_state_.scr_res[1];
+                params.w = view_state_.ren_res[0];
+                params.h = view_state_.ren_res[1];
                 params.format = Ren::eTexFormat::RGBA16F;
                 params.sampling.filter = Ren::eTexFilter::Bilinear;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -986,11 +986,11 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                                  {Trg::ImageRW, OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
 
                 const Ren::Vec3u grp_count =
-                    Ren::Vec3u{(view_state_.act_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                               (view_state_.act_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+                    Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
+                               (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
 
                 Params uniform_params;
-                uniform_params.img_size = Ren::Vec2u(view_state_.act_res[0], view_state_.act_res[1]);
+                uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
 
                 DispatchCompute(*pi_ssr_stabilization_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -1061,8 +1061,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
         rast_state.blend.src_alpha = unsigned(Ren::eBlendFactor::One);
         rast_state.blend.dst_alpha = unsigned(Ren::eBlendFactor::One);
 
-        rast_state.viewport[2] = view_state_.act_res[0];
-        rast_state.viewport[3] = view_state_.act_res[1];
+        rast_state.viewport[2] = view_state_.ren_res[0];
+        rast_state.viewport[3] = view_state_.ren_res[1];
 
         { // compose reflections on top of clean buffer
             const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -1110,8 +1110,8 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0] / 2;
-            params.h = view_state_.scr_res[1] / 2;
+            params.w = (view_state_.ren_res[0] / 2);
+            params.h = (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::RGB10_A2;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1130,8 +1130,8 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             rast_state.depth.write_enabled = false;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            rast_state.viewport[2] = view_state_.scr_res[0] / 2;
-            rast_state.viewport[3] = view_state_.scr_res[1] / 2;
+            rast_state.viewport[2] = (view_state_.ren_res[0] / 2);
+            rast_state.viewport[3] = (view_state_.ren_res[1] / 2);
 
             { // screen space tracing
                 const Ren::RenderTarget render_targets[] = {
@@ -1144,7 +1144,7 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
 
                 SSRTrace::Params uniform_params;
                 uniform_params.transform =
-                    Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0] / 2), float(view_state_.act_res[1] / 2)};
+                    Ren::Vec4f{0.0f, 0.0f, float(view_state_.ren_res[0] / 2), float(view_state_.ren_res[1] / 2)};
 
                 prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_prog_, {}, render_targets, rast_state,
                                     builder.rast_state(), bindings, &uniform_params, sizeof(SSRTrace::Params), 0);
@@ -1165,8 +1165,8 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
             Ren::TexParams params;
-            params.w = view_state_.scr_res[0] / 2;
-            params.h = view_state_.scr_res[1] / 2;
+            params.w = (view_state_.ren_res[0] / 2);
+            params.h = (view_state_.ren_res[1] / 2);
             params.format = Ren::eTexFormat::RGB10_A2;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1183,8 +1183,8 @@ void Eng::Renderer::AddLQSpecularPasses(const CommonBuffers &common_buffers, con
             rast_state.depth.write_enabled = false;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            rast_state.viewport[2] = view_state_.scr_res[0] / 2;
-            rast_state.viewport[3] = view_state_.scr_res[1] / 2;
+            rast_state.viewport[2] = (view_state_.ren_res[0] / 2);
+            rast_state.viewport[3] = (view_state_.ren_res[1] / 2);
 
             { // dilate ssr buffer
                 const Ren::RenderTarget render_targets[] = {

@@ -23,7 +23,7 @@ layout(location = 0) out vec4 g_out_color;
 
 void main() {
     ivec2 icoord = ivec2(gl_FragCoord.xy);
-    vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
+    vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     const float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);

@@ -119,8 +119,8 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
         { // Texture that holds downsampled bloom image
             Ren::TexParams params;
-            params.w = (view_state_.scr_res[0] / 2) >> mip;
-            params.h = (view_state_.scr_res[1] / 2) >> mip;
+            params.w = (view_state_.ren_res[0] / 2) >> mip;
+            params.h = (view_state_.ren_res[1] / 2) >> mip;
             params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -174,8 +174,8 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
         { // Texture that holds upsampled bloom image
             Ren::TexParams params;
-            params.w = (view_state_.scr_res[0] / 2) >> mip;
-            params.h = (view_state_.scr_res[1] / 2) >> mip;
+            params.w = (view_state_.ren_res[0] / 2) >> mip;
+            params.h = (view_state_.ren_res[1] / 2) >> mip;
             params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -227,8 +227,8 @@ Eng::FgResRef Eng::Renderer::AddSharpenPass(FgResRef input_tex, FgResRef exposur
     FgResRef output_tex;
     { // Texture that holds output image
         Ren::TexParams params;
-        params.w = view_state_.scr_res[0];
-        params.h = view_state_.scr_res[1];
+        params.w = view_state_.out_res[0];
+        params.h = view_state_.out_res[1];
         params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
         params.sampling.filter = Ren::eTexFilter::Bilinear;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;

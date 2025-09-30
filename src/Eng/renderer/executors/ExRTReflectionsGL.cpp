@@ -112,7 +112,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     }
 
     RTReflections::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
+    uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     if (oit_depth_buf) {
         // Expected to be half resolution

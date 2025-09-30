@@ -54,7 +54,7 @@ void main() {
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(g_shrd_data.res_and_fres.x);
+    int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(g_shrd_data.ren_res.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(g_shrd_data.ren_res.x);
 
     uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
@@ -200,7 +200,7 @@ void main() {
 
     vec3 sun_diffuse = texture(SAMPLER2D(g_sss_tex), vec2(N_dot_L * 0.5 + 0.5, curvature)).xyz;
 
-    vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
+    vec2 ao_uvs = (vec2(ix, iy) + 0.5) * g_shrd_data.ren_res.zw;
     float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).x;
     vec3 base_color = albedo_color * (g_shrd_data.sun_col.xyz * sun_diffuse * visibility + ambient_occlusion * indirect_col + additional_light);
 

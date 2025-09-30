@@ -58,8 +58,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
     { // blit depth layer
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-        rast_state.viewport[2] = view_state_->act_res[0];
-        rast_state.viewport[3] = view_state_->act_res[1];
+        rast_state.viewport[2] = view_state_->ren_res[0];
+        rast_state.viewport[3] = view_state_->ren_res[1];
 
         rast_state.depth.test_enabled = true;
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
@@ -68,8 +68,8 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
             {Ren::eBindTarget::UTBuf, BlitOITDepth::OIT_DEPTH_BUF_SLOT, *oit_depth_buf.ref}};
 
         BlitOITDepth::Params uniform_params = {};
-        uniform_params.img_size[0] = view_state_->act_res[0];
-        uniform_params.img_size[1] = view_state_->act_res[1];
+        uniform_params.img_size[0] = view_state_->ren_res[0];
+        uniform_params.img_size[1] = view_state_->ren_res[1];
         uniform_params.layer_index = depth_layer_index_;
 
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
@@ -113,10 +113,10 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
+    const VkViewport viewport = {0.0f, 0.0f, float(view_state_->ren_res[0]), float(view_state_->ren_res[1]),
                                  0.0f, 1.0f};
     api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
-    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+    const VkRect2D scissor = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const Ren::Span<const basic_draw_batch_t> batches = {(*p_list_)->basic_batches};
@@ -129,7 +129,7 @@ void Eng::ExOITBlendLayer::DrawTransparent(FgBuilder &builder, FgAllocTex &depth
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = pi_simple_[0]->render_pass()->vk_handle();
         rp_begin_info.framebuffer = main_draw_fb_[api_ctx->backend_frame][fb_to_use_].vk_handle();
-        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])}};
+        rp_begin_info.renderArea = {{0, 0}, {uint32_t(view_state_->ren_res[0]), uint32_t(view_state_->ren_res[1])}};
         const VkClearValue clear_values[4] = {{}, {}, {}, {}};
         rp_begin_info.pClearValues = clear_values;
         rp_begin_info.clearValueCount = 4;

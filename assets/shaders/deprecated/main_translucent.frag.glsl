@@ -61,7 +61,7 @@ void main() {
     int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
+    int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.ren_res.xy);
 
     uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),

@@ -266,9 +266,9 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_shadows", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val > 1.5) {
+            if (args[1].num > 1.5) {
                 renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-            } else if (args[1].val > 0.5) {
+            } else if (args[1].num > 0.5) {
                 renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
             } else {
                 renderer_->settings.shadows_quality = Eng::eShadowsQuality::Off;
@@ -279,11 +279,11 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_reflections", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val > 2.5) {
+            if (args[1].num > 2.5) {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
-            } else if (args[1].val > 1.5) {
+            } else if (args[1].num > 1.5) {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
-            } else if (args[1].val > 0.5) {
+            } else if (args[1].num > 0.5) {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::High;
             } else {
                 renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Off;
@@ -294,9 +294,9 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_taa", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val > 1.5) {
+            if (args[1].num > 1.5) {
                 renderer_->settings.taa_mode = Eng::eTAAMode::Static;
-            } else if (args[1].val > 0.5) {
+            } else if (args[1].num > 0.5) {
                 renderer_->settings.taa_mode = Eng::eTAAMode::Dynamic;
             } else {
                 renderer_->settings.taa_mode = Eng::eTAAMode::Off;
@@ -307,21 +307,21 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_tonemap", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val > 3.5) {
+            if (args[1].num > 3.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (args[1].val > 2.5) {
+            } else if (args[1].num > 2.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
                                              4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (args[1].val > 1.5) {
+            } else if (args[1].num > 1.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RGB10_A2,
@@ -329,7 +329,7 @@ void BaseState::Enter() {
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-            } else if (args[1].val > 0.5) {
+            } else if (args[1].num > 0.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
             } else {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
@@ -355,7 +355,7 @@ void BaseState::Enter() {
     });
 
     cmdline_ui_->RegisterCommand("r_mode", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        if (args[1].val > 0.5) {
+        if (args[1].num > 0.5) {
             renderer_->settings.render_mode = Eng::eRenderMode::Forward;
         } else {
             renderer_->settings.render_mode = Eng::eRenderMode::Deferred;
@@ -364,9 +364,9 @@ void BaseState::Enter() {
     });
 
     cmdline_ui_->RegisterCommand("r_ssao", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        if (args[1].val > 1.5) {
+        if (args[1].num > 1.5) {
             renderer_->settings.ssao_quality = Eng::eSSAOQuality::Ultra;
-        } else if (args[1].val > 0.5) {
+        } else if (args[1].num > 0.5) {
             renderer_->settings.ssao_quality = Eng::eSSAOQuality::High;
         } else {
             renderer_->settings.ssao_quality = Eng::eSSAOQuality::Off;
@@ -375,11 +375,11 @@ void BaseState::Enter() {
     });
 
     cmdline_ui_->RegisterCommand("r_gi", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        if (args[1].val > 2.5) {
+        if (args[1].num > 2.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
-        } else if (args[1].val > 1.5) {
+        } else if (args[1].num > 1.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::High;
-        } else if (args[1].val > 0.5) {
+        } else if (args[1].num > 0.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::Medium;
         } else {
             renderer_->settings.gi_quality = Eng::eGIQuality::Off;
@@ -388,9 +388,9 @@ void BaseState::Enter() {
     });
 
     cmdline_ui_->RegisterCommand("r_sky", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        if (args[1].val > 1.5) {
+        if (args[1].num > 1.5) {
             renderer_->settings.sky_quality = Eng::eSkyQuality::Ultra;
-        } else if (args[1].val > 0.5) {
+        } else if (args[1].num > 0.5) {
             renderer_->settings.sky_quality = Eng::eSkyQuality::High;
         } else {
             renderer_->settings.sky_quality = Eng::eSkyQuality::Medium;
@@ -399,7 +399,7 @@ void BaseState::Enter() {
     });
 
     cmdline_ui_->RegisterCommand("r_oit", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        if (args[1].val > 0.5) {
+        if (args[1].num > 0.5) {
             renderer_->settings.transparency_quality = Eng::eTransparencyQuality::Ultra;
         } else {
             renderer_->settings.transparency_quality = Eng::eTransparencyQuality::High;
@@ -408,9 +408,9 @@ void BaseState::Enter() {
     });
 
     cmdline_ui_->RegisterCommand("r_volumetrics", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
-        if (args[1].val > 1.5) {
+        if (args[1].num > 1.5) {
             renderer_->settings.vol_quality = Eng::eVolQuality::Ultra;
-        } else if (args[1].val > 0.5) {
+        } else if (args[1].num > 0.5) {
             renderer_->settings.vol_quality = Eng::eVolQuality::High;
         } else {
             renderer_->settings.vol_quality = Eng::eVolQuality::Off;
@@ -420,6 +420,11 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_shadowJitter", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         renderer_->settings.enable_shadow_jitter = !renderer_->settings.enable_shadow_jitter;
+        return true;
+    });
+
+    cmdline_ui_->RegisterCommand("r_resScale", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        renderer_->settings.resolution_scale = float(args[1].num);
         return true;
     });
 
@@ -565,7 +570,7 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showProbes", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            renderer_->settings.debug_probes = int8_t(args[1].val);
+            renderer_->settings.debug_probes = int8_t(args[1].num);
         } else {
             renderer_->settings.debug_probes = -1;
         }
@@ -574,7 +579,7 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showOIT", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            renderer_->settings.debug_oit_layer = int8_t(args[1].val);
+            renderer_->settings.debug_oit_layer = int8_t(args[1].num);
         } else {
             renderer_->settings.debug_oit_layer = -1;
         }
@@ -588,9 +593,9 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showRT", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val > 1.5) {
+            if (args[1].num > 1.5) {
                 renderer_->settings.debug_rt = Eng::eDebugRT::Volume;
-            } else if (args[1].val > 0.5) {
+            } else if (args[1].num > 0.5) {
                 renderer_->settings.debug_rt = Eng::eDebugRT::Shadow;
             } else {
                 renderer_->settings.debug_rt = Eng::eDebugRT::Main;
@@ -603,11 +608,11 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showDenoise", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val < 0.5) {
+            if (args[1].num < 0.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::Reflection;
-            } else if (args[1].val < 1.5) {
+            } else if (args[1].num < 1.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::GI;
-            } else if (args[1].val < 2.5) {
+            } else if (args[1].num < 2.5) {
                 renderer_->settings.debug_denoise = Eng::eDebugDenoise::Shadow;
             }
         } else {
@@ -658,7 +663,7 @@ void BaseState::Enter() {
 
     cmdline_ui_->RegisterCommand("r_showFrame", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         if (args.size() > 1) {
-            if (args[1].val > 0.5) {
+            if (args[1].num > 0.5) {
                 renderer_->settings.debug_frame = Eng::eDebugFrame::Full;
             } else {
                 renderer_->settings.debug_frame = Eng::eDebugFrame::Simple;

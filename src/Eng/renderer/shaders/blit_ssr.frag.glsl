@@ -35,7 +35,7 @@ void main() {
     out_color = vec4(0.0);
 
     ivec2 pix_uvs = ivec2(g_vtx_uvs + vec2(0.5));
-    vec2 norm_uvs = 2.0 * g_vtx_uvs / g_shrd_data.res_and_fres.xy;
+    vec2 norm_uvs = 2.0 * g_vtx_uvs * g_shrd_data.ren_res.zw;
 
     vec4 normal_fetch = texelFetch(g_norm_tex, 2 * pix_uvs, 0);
     vec4 normal_roughness = UnpackNormalAndRoughness(normal_fetch);

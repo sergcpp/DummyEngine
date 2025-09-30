@@ -52,8 +52,8 @@ void Eng::ExTransparent::DrawTransparent_Simple(FgBuilder &builder, FgAllocBuf &
     // Bind main buffer for drawing
     glBindFramebuffer(GL_FRAMEBUFFER, transparent_draw_fb_[0][fb_to_use_].id());
 
-    _rast_state.viewport[2] = view_state_->act_res[0];
-    _rast_state.viewport[3] = view_state_->act_res[1];
+    _rast_state.viewport[2] = view_state_->ren_res[0];
+    _rast_state.viewport[3] = view_state_->ren_res[1];
 
     _rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = _rast_state;
@@ -227,8 +227,8 @@ void Eng::ExTransparent::DrawTransparent_OIT_MomentBased(FgBuilder &builder) {
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
     rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
 
-    rast_state.viewport[2] = view_state_->act_res[0];
-    rast_state.viewport[3] = view_state_->act_res[1];
+    rast_state.viewport[2] = view_state_->ren_res[0];
+    rast_state.viewport[3] = view_state_->ren_res[1];
 
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
@@ -467,11 +467,11 @@ if (list.render_flags & EnableOIT) {
         : transparent_comb_framebuf_;
 
     // glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target_framebuffer);
-    // glViewport(0, 0, view_state_.act_res[0], view_state_.act_res[1]);
+    // glViewport(0, 0, view_state_.ren_res[0], view_state_.ren_res[1]);
 
     // glUseProgram(blit_transparent_compose->id());
-    // glUniform4f(0, 0.0f, 0.0f, float(view_state_.act_res[0]),
-    //            float(view_state_.act_res[1]));
+    // glUniform4f(0, 0.0f, 0.0f, float(view_state_.ren_res[0]),
+    //            float(view_state_.ren_res[1]));
 
     PrimDraw::Binding bindings[3];
 
@@ -522,12 +522,12 @@ if (list.render_flags & EnableOIT) {
     //               (const GLvoid *)uintptr_t(quad_ndx_offset_));
 
     const PrimDraw::Uniform uniforms[] = {
-        {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]),
-                       float(view_state_.act_res[1])}} };
+        {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_.ren_res[0]),
+                       float(view_state_.ren_res[1])}} };
 
     prim_draw_.DrawFsQuad(
         { target_framebuffer, 0,
-         Ren::Vec4i{0, 0, view_state_.act_res[0], view_state_.act_res[1]} },
+         Ren::Vec4i{0, 0, view_state_.ren_res[0], view_state_.ren_res[1]} },
         blit_transparent_compose, bindings, sizeof(bindings) / sizeof(bindings[0]),
         uniforms, 1);
 

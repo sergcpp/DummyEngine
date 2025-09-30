@@ -140,7 +140,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     f16vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
 
     vec3 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xyz;
-    motion_vector.xy /= g_shrd_data.res_and_fres.xy;
+    motion_vector.xy *= g_shrd_data.ren_res.zw;
     const vec2 surf_repr_uv = uv - motion_vector.xy;
 
     f16vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);

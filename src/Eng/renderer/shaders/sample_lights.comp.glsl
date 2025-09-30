@@ -74,7 +74,7 @@ void main() {
     }
 
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).x;
     if (depth == 0.0) {

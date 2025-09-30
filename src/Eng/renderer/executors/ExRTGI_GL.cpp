@@ -89,7 +89,7 @@ void Eng::ExRTGI::Execute_SWRT(FgBuilder &builder) {
                                                 : (stoch_lights_buf ? *pi_rt_gi_[1] : *pi_rt_gi_[0]);
 
     RTGI::Params uniform_params;
-    uniform_params.img_size = Ren::Vec2u(view_state_->act_res[0], view_state_->act_res[1]);
+    uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
     uniform_params.lights_count = view_state_->stochastic_lights_count;

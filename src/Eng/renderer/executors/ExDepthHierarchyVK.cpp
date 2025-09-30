@@ -93,7 +93,7 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
 
     DepthHierarchy::Params uniform_params;
     uniform_params.depth_size =
-        Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1], output_tex.ref->params.mip_count, grp_x * grp_y};
+        Ren::Vec4i{view_state_->ren_res[0], view_state_->ren_res[1], output_tex.ref->params.mip_count, grp_x * grp_y};
     uniform_params.clip_info = view_state_->clip_info;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_depth_hierarchy_->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,

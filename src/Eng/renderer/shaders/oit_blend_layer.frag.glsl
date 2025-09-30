@@ -77,9 +77,9 @@ void main() {
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     const ivec2 icoord = ivec2(gl_FragCoord.xy);
-    const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const vec2 norm_uvs = (vec2(icoord) + 0.5) * g_shrd_data.ren_res.zw;
 
-    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.res_and_fres.xy);
+    const int cell_index = GetCellIndex(icoord.x, icoord.y, slice, g_shrd_data.ren_res.xy);
     const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                           bitfieldExtract(cell_data.x, 24, 8));
