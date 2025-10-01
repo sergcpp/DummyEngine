@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = fixes_26_09
-	commit = ce86bec18add32bef09e6aad48b0b17973f4bd91
+	branch = upscaling
+	commit = b67db9882107ce31a79a6615a7692f0d1ae3a37c
 	method = merge
 	cmdver = 0.4.6
-	parent = 5993995c537711cc9885eb1a6682e282c6acd164
+	parent = f480a5d218495c44cfc10c0138d056331752d074
