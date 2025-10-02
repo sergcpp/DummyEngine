@@ -75,6 +75,8 @@ void DummyApp::ParseArgs(int argc, char *argv[], int &w, int &h, AppParams &out_
             } else if (strcmp(argv[i], "ultra") == 0) {
                 out_params.gfx_preset = eGfxPreset::Ultra;
             }
+        } else if (strcmp(argv[i], "--res_scale") == 0 && (++i != argc)) {
+            out_params.res_scale = strtof(argv[i], nullptr);
         } else if (strcmp(argv[i], "--sun_dir") == 0 && (++i != argc)) {
             out_params.sun_dir[0] = strtof(argv[i++], nullptr);
             out_params.sun_dir[1] = strtof(argv[i++], nullptr);

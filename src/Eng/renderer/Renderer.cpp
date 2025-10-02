@@ -705,11 +705,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     if (!target) {
-        view_state_.ren_res[0] = int(float(view_state_.out_res[0]) * list.render_settings.resolution_scale);
-        view_state_.ren_res[1] = int(float(view_state_.out_res[1]) * list.render_settings.resolution_scale);
+        view_state_.ren_res[0] = int(float(view_state_.out_res[0]) / list.render_settings.resolution_scale);
+        view_state_.ren_res[1] = int(float(view_state_.out_res[1]) / list.render_settings.resolution_scale);
     } else {
-        view_state_.ren_res[0] = target->params.w;
-        view_state_.ren_res[1] = target->params.h;
+        view_state_.ren_res[0] = int(float(target->params.w) / list.render_settings.resolution_scale);
+        view_state_.ren_res[1] = int(float(target->params.h) / list.render_settings.resolution_scale);
     }
     assert(view_state_.ren_res[0] <= view_state_.out_res[0] && view_state_.ren_res[1] <= view_state_.out_res[1]);
 

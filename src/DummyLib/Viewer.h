@@ -64,6 +64,7 @@ struct AppParams {
     std::optional<float> exposure;
     std::optional<int> cam_path;
     eGfxPreset gfx_preset = eGfxPreset::High;
+    float res_scale = 1.5f;
     int tex_budget = 2048;
     float sun_dir[3] = {};
 #ifndef NDEBUG

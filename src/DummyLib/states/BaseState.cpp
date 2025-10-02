@@ -813,6 +813,8 @@ void BaseState::OnPostloadScene(Sys::JsObjectP &js_scene) {
         renderer_->settings.vol_quality = Eng::eVolQuality::Ultra;
     }
 
+    renderer_->settings.resolution_scale = viewer_->app_params.res_scale;
+
     if (!viewer_->app_params.fog) {
         renderer_->settings.vol_quality = Eng::eVolQuality::Off;
     }

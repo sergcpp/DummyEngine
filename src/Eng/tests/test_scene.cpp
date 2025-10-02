@@ -39,7 +39,7 @@ extern int g_validation_level;
 extern bool g_nohwrt, g_nosubgroup;
 
 void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::Span<const double> min_psnr,
-                    const eImgTest img_test) {
+                    const eImgTest img_test, const float res_scale) {
     using namespace std::chrono;
     using namespace Eng;
 
@@ -98,6 +98,8 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
     Random rand(0);
     auto renderer = std::make_unique<Renderer>(ren_ctx, shader_loader, rand, threads);
     renderer->InitPipelines();
+
+    renderer->settings.resolution_scale = res_scale;
 
     renderer->settings.enable_motion_blur = false;
     renderer->settings.enable_bloom = false;

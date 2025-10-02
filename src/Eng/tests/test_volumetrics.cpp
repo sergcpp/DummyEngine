@@ -1,6 +1,6 @@
 #include "test_scene.h"
 
-void test_volumetrics(Sys::ThreadPool &threads, const bool full) {
+void test_volumetrics(Sys::ThreadPool &threads) {
     // standart lights
     run_image_test(threads, "vol_global0", 24.95, Full);
     run_image_test(threads, "vol_global0", 24.80, Full_Ultra);

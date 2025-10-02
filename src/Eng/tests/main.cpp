@@ -15,7 +15,8 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 void test_cmdline();
 void test_empty_scene(Sys::ThreadPool &threads);
 void test_shading(Sys::ThreadPool &threads, bool full);
-void test_volumetrics(Sys::ThreadPool &threads, bool full);
+void test_upscaling(Sys::ThreadPool &threads);
+void test_volumetrics(Sys::ThreadPool &threads);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
@@ -98,7 +99,9 @@ int main(int argc, char *argv[]) {
     test_empty_scene(mt_run_pool);
     test_shading(mt_run_pool, full);
     puts(" ---------------");
-    test_volumetrics(mt_run_pool, full);
+    test_upscaling(mt_run_pool);
+    puts(" ---------------");
+    test_volumetrics(mt_run_pool);
 
     bool tests_success_final = g_tests_success;
     tests_success_final &= !g_log_contains_errors;
