@@ -12,8 +12,8 @@ struct Params {
     float _pad2;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int HDR_TEX_SLOT = 1;
 const int OUT_IMG_SLOT = 0;

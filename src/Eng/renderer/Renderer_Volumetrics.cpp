@@ -322,9 +322,9 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                                                  {Trg::TexSampled, Skydome::SKY_HIST_TEX_SLOT, *sky_hist_tex.ref},
                                                  {Trg::ImageRW, Skydome::OUT_IMG_SLOT, *output_tex.ref}};
 
-                const Ren::Vec3u grp_count = Ren::Vec3u{
-                    (view_state_.ren_res[0] + Skydome::LOCAL_GROUP_SIZE_X - 1u) / Skydome::LOCAL_GROUP_SIZE_X,
-                    (view_state_.ren_res[1] + Skydome::LOCAL_GROUP_SIZE_Y - 1u) / Skydome::LOCAL_GROUP_SIZE_Y, 1u};
+                const Ren::Vec3u grp_count =
+                    Ren::Vec3u{(view_state_.ren_res[0] + Skydome::GRP_SIZE_X - 1u) / Skydome::GRP_SIZE_X,
+                               (view_state_.ren_res[1] + Skydome::GRP_SIZE_Y - 1u) / Skydome::GRP_SIZE_Y, 1u};
 
                 Skydome::Params2 uniform_params;
                 uniform_params.img_size = view_state_.ren_res;
@@ -618,8 +618,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
                                                out_emission_tex.ref->params.d, 0};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(froxel_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
-                           (froxel_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, froxel_res[2]};
+                Ren::Vec3u{(froxel_res[0] + Fog::GRP_SIZE_X - 1u) / Fog::GRP_SIZE_X,
+                           (froxel_res[1] + Fog::GRP_SIZE_Y - 1u) / Fog::GRP_SIZE_Y, froxel_res[2]};
 
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;
@@ -685,9 +685,8 @@ void Eng::Renderer::AddVolumetricPasses(const CommonBuffers &common_buffers, con
             const auto froxel_res =
                 Ren::Vec4i{output_tex.ref->params.w, output_tex.ref->params.h, output_tex.ref->params.d, 0};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(froxel_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
-                           (froxel_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, 1};
+            const Ren::Vec3u grp_count = Ren::Vec3u{(froxel_res[0] + Fog::GRP_SIZE_X - 1u) / Fog::GRP_SIZE_X,
+                                                    (froxel_res[1] + Fog::GRP_SIZE_Y - 1u) / Fog::GRP_SIZE_Y, 1};
 
             Fog::Params uniform_params;
             uniform_params.froxel_res = froxel_res;

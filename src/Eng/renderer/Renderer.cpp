@@ -491,8 +491,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
              Ren::eStoreOp::Store},
 #endif
             {Ren::eTexFormat::RGBA8_srgb, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
-        };
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
         // color_rts[2].flags = Ren::eTexFlags::SRGB;
 
@@ -765,9 +764,13 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             jitter[1] = lookup_filter_table(jitter[1]);
         }
 
+        view_state_.jitter = jitter;
+
         jitter = (2.0f * jitter - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.ren_res};
+        //jitter = Ren::Vec2f{0.0f};
         list.draw_cam.SetPxOffset(jitter);
     } else {
+        view_state_.jitter = Ren::Vec2f{0.0f};
         list.draw_cam.SetPxOffset(Ren::Vec2f{0.0f, 0.0f});
     }
 
@@ -1341,7 +1344,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddDeferredShadingPass(common_buffers, frame_textures, list.render_settings.gi_quality != eGIQuality::Off);
 
             // Emissives pass
-            AddEmissivesPass(common_buffers, persistent_data, bindless_tex, frame_textures);
+            AddEmissivePass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
             // Additional forward pass (for custom-shaded objects)
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
@@ -1486,7 +1489,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         const bool use_taa = list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe;
         if (use_taa) {
             resolved_color =
-                AddTaaPasses(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static);
+                AddTSRPasses(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static);
         } else {
             resolved_color = frame_textures.color;
         }

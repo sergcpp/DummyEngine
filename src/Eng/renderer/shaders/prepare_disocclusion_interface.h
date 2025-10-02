@@ -12,8 +12,8 @@ struct Params {
     vec4 frustum_info;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int DILATED_DEPTH_TEX_SLOT = 1;
 const int DILATED_VELOCITY_TEX_SLOT = 2;

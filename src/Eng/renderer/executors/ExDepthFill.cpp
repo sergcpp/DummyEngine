@@ -7,8 +7,7 @@
 
 namespace ExSharedInternal {
 uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
-                     uint32_t i,
-                     const uint64_t mask) {
+                     uint32_t i, const uint64_t mask) {
     for (; i < batch_indices.size(); ++i) {
         const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & Eng::basic_draw_batch_t::FlagBits) != mask) {
@@ -291,9 +290,9 @@ void Eng::ExDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, FgAllo
 
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
-    if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(
-            ctx.api_ctx(), *rp_depth_only_[0], depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
-            Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
+    if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), *rp_depth_only_[0], depth_tex.desc.w,
+                                                               depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
+                                                               Ren::Span<const Ren::WeakTexRef>{}, false, ctx.log())) {
         ctx.log()->Error("[ExDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 

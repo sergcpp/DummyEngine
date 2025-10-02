@@ -54,7 +54,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout (local_size_x = LOCAL_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.uSkinParams.y) {

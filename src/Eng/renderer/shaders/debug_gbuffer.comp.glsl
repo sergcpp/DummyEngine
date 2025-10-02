@@ -16,7 +16,7 @@ layout(binding = SPEC_TEX_SLOT) uniform usampler2D g_specular_tex;
 
 layout(binding = OUT_IMG_SLOT, rgba8) uniform restrict writeonly image2D g_out_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const uvec2 px_coords = gl_GlobalInvocationID.xy;

@@ -21,15 +21,15 @@ layout(std430, binding = OUT_BUF_SLOT) writeonly buffer OutBuf {
 
 shared uvec3 g_avg_transmittance;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     if (gl_LocalInvocationIndex == 0) {
         g_avg_transmittance = uvec3(0.0);
     }
 
-    const vec2 u = vec2(float(gl_LocalInvocationID.x) / LOCAL_GROUP_SIZE_X,
-                        float(gl_LocalInvocationID.y) / LOCAL_GROUP_SIZE_Y);
+    const vec2 u = vec2(float(gl_LocalInvocationID.x) / GRP_SIZE_X,
+                        float(gl_LocalInvocationID.y) / GRP_SIZE_Y);
     const vec3 sample_dir = MapToCone(u, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w);
     const vec3 sample_pos = vec3(0.0, g_shrd_data.atmosphere.viewpoint_height, 0.0);
 

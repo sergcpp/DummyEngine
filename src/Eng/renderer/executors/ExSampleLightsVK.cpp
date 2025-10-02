@@ -58,8 +58,8 @@ void Eng::ExSampleLights::Execute_HWRT(FgBuilder &builder) {
         {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
-        (view_state_->ren_res[0] + SampleLights::LOCAL_GROUP_SIZE_X - 1u) / SampleLights::LOCAL_GROUP_SIZE_X,
-        (view_state_->ren_res[1] + SampleLights::LOCAL_GROUP_SIZE_Y - 1u) / SampleLights::LOCAL_GROUP_SIZE_Y, 1u};
+        (view_state_->ren_res[0] + SampleLights::GRP_SIZE_X - 1u) / SampleLights::GRP_SIZE_X,
+        (view_state_->ren_res[1] + SampleLights::GRP_SIZE_Y - 1u) / SampleLights::GRP_SIZE_Y, 1u};
 
     SampleLights::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};
@@ -135,8 +135,8 @@ void Eng::ExSampleLights::Execute_SWRT(FgBuilder &builder) {
         {Ren::eBindTarget::ImageRW, SampleLights::OUT_SPECULAR_IMG_SLOT, *out_specular_tex.ref}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
-        (view_state_->ren_res[0] + SampleLights::LOCAL_GROUP_SIZE_X - 1u) / SampleLights::LOCAL_GROUP_SIZE_X,
-        (view_state_->ren_res[1] + SampleLights::LOCAL_GROUP_SIZE_Y - 1u) / SampleLights::LOCAL_GROUP_SIZE_Y, 1u};
+        (view_state_->ren_res[0] + SampleLights::GRP_SIZE_X - 1u) / SampleLights::GRP_SIZE_X,
+        (view_state_->ren_res[1] + SampleLights::GRP_SIZE_Y - 1u) / SampleLights::GRP_SIZE_Y, 1u};
 
     SampleLights::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};

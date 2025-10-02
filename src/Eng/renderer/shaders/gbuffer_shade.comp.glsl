@@ -54,7 +54,7 @@ layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
 layout(binding = OUT_COLOR_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 #define MAX_TRACE_DIST 0.15
 #define MAX_TRACE_STEPS 16

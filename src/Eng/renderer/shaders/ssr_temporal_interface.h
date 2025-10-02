@@ -10,8 +10,8 @@ struct Params {
     vec2 thresholds;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int NORM_TEX_SLOT = 2;
 const int AVG_REFL_TEX_SLOT = 3;

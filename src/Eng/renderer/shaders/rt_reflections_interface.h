@@ -11,7 +11,7 @@ struct Params {
     int lights_count;
 };
 
-const int LOCAL_GROUP_SIZE_X = 64;
+const int GRP_SIZE_X = 64;
 
 const float TEX_LOD_OFFSET_MIN = 1;
 const float TEX_LOD_OFFSET_MAX = 3;

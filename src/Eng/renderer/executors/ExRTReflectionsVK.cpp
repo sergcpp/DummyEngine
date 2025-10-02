@@ -97,20 +97,15 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::ImageRW, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
-    const Ren::Pipeline *pi = nullptr;
-    if (stoch_lights_buf) {
-        pi = pi_rt_reflections_[1].get();
-    } else {
-        pi = pi_rt_reflections_[0].get();
-    }
+    const Ren::Pipeline &pi = *pi_rt_reflections_[stoch_lights_buf != nullptr];
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi->prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings,
                                          ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->layout(), 0, 2, descr_sets, 0,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.layout(), 0, 2, descr_sets, 0,
                                      nullptr);
 
     RTReflections::Params uniform_params;
@@ -118,7 +113,7 @@ void Eng::ExRTReflections::Execute_HWRT(FgBuilder &builder) {
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
+    api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);
 
     api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(),
@@ -217,20 +212,15 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::ImageRW, RTReflections::OUT_REFL_IMG_SLOT, i, 1, *out_refl_tex.ref);
     }
 
-    const Ren::Pipeline *pi = nullptr;
-    if (stoch_lights_buf) {
-        pi = pi_rt_reflections_[1].get();
-    } else {
-        pi = pi_rt_reflections_[0].get();
-    }
+    const Ren::Pipeline &pi = *pi_rt_reflections_[stoch_lights_buf != nullptr];
 
     VkDescriptorSet descr_sets[2];
-    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi->prog()->descr_set_layouts()[0], bindings,
+    descr_sets[0] = PrepareDescriptorSet(api_ctx, pi.prog()->descr_set_layouts()[0], bindings,
                                          ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->handle());
-    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi->layout(), 0, 2, descr_sets, 0,
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi.layout(), 0, 2, descr_sets, 0,
                                      nullptr);
 
     RTReflections::Params uniform_params;
@@ -242,7 +232,7 @@ void Eng::ExRTReflections::Execute_SWRT(FgBuilder &builder) {
     }
     uniform_params.lights_count = view_state_->stochastic_lights_count;
 
-    api_ctx->vkCmdPushConstants(cmd_buf, pi->layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
+    api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                                 &uniform_params);
 
     api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(),

@@ -20,7 +20,7 @@ layout(binding = RAY_DATA_TEX_SLOT) uniform sampler2DArray g_ray_data;
 
 layout(binding = OUT_IMG_SLOT, rgba16f) uniform image2DArray g_out_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
     int probe_index = int(gl_GlobalInvocationID.x);

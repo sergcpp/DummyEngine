@@ -190,7 +190,7 @@ vec4 SampleRandomVector2D(const uvec2 pixel) {
                 Sample2D_BN_PMJ_64SPP(g_bn_pmj_seq, pixel, 3u, g_params.frame_index % 64u));
 }
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     if (gl_GlobalInvocationID.x < 128u && gl_GlobalInvocationID.y < 128u) {

@@ -5,8 +5,8 @@
 
 INTERFACE_START(ClearImage)
 
-const int LOCAL_GROUP_SIZE_X = 16;
-const int LOCAL_GROUP_SIZE_Y = 16;
+const int GRP_SIZE_X = 16;
+const int GRP_SIZE_Y = 16;
 
 const int OUT_IMG_SLOT = 0;
 

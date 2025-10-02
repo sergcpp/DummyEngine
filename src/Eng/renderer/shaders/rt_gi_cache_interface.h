@@ -22,7 +22,7 @@ struct RayPayload {
     float cone_width;
 };
 
-const int LOCAL_GROUP_SIZE_X = 64;
+const int GRP_SIZE_X = 64;
 
 const float TEX_LOD_OFFSET = 4;
 

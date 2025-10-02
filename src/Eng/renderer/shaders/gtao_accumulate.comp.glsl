@@ -61,7 +61,7 @@ void Accumulate(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_si
     imageStore(g_out_img, dispatch_thread_id, vec4(ao));
 }
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const uvec2 group_id = gl_WorkGroupID.xy;

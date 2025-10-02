@@ -11,8 +11,8 @@ struct Params {
     float pre_exposure;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int INPUT_TEX_SLOT = 1;
 const int EXPOSURE_TEX_SLOT = 2;

@@ -13,7 +13,7 @@ layout(binding = OUTPUT_IMG_SLOT, rgba16f) uniform restrict writeonly image2D g_
 
 shared vec4 g_shared[8][8];
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const vec2 norm_uvs = (vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(g_params.img_size);

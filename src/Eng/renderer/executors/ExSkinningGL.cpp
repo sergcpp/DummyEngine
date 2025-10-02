@@ -55,7 +55,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
 
                 glBindBufferBase(GL_UNIFORM_BUFFER, BIND_PUSH_CONSTANT_BUF, temp_unif_buffer.id());
 
-                glDispatchCompute((sr.vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1,
+                glDispatchCompute((sr.vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1,
                                   1);
             }
 
@@ -80,7 +80,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
                 glBindBufferBase(GL_UNIFORM_BUFFER, BIND_PUSH_CONSTANT_BUF, temp_unif_buffer.id());
 
                 glDispatchCompute(
-                    (sr.shape_keyed_vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);
+                    (sr.shape_keyed_vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1, 1);
             }
         }
     }

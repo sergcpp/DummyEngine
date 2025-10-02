@@ -18,7 +18,7 @@
 #include "shaders/blit_down_interface.h"
 #include "shaders/blit_gauss_interface.h"
 #include "shaders/blit_static_vel_interface.h"
-#include "shaders/blit_taa_interface.h"
+#include "shaders/blit_tsr_interface.h"
 #include "shaders/debug_gbuffer_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
@@ -154,7 +154,7 @@ void Eng::Renderer::InitPipelines() {
                                          "internal/vol_scatter@ALL_CASCADES;GI_CACHE;NO_SUBGROUP.comp.glsl"));
     pi_vol_ray_march_ = sh_.LoadPipeline("internal/vol_ray_march.comp.glsl");
 
-    // TAA
+    // TSR
     pi_reconstruct_depth_ = sh_.LoadPipeline("internal/reconstruct_depth.comp.glsl");
     pi_prepare_disocclusion_ = sh_.LoadPipeline("internal/prepare_disocclusion.comp.glsl");
     pi_sharpen_[0] = sh_.LoadPipeline("internal/sharpen.comp.glsl");
@@ -173,14 +173,14 @@ void Eng::Renderer::InitPipelines() {
     blit_gauss_prog_ = sh_.LoadProgram("internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
     blit_ao_prog_ = sh_.LoadProgram("internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
     blit_bilateral_prog_ = sh_.LoadProgram("internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
-    blit_taa_prog_[0] =
-        sh_.LoadProgram("internal/blit_taa.vert.glsl",
-                        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
-    blit_taa_prog_[1] = sh_.LoadProgram(
-        "internal/blit_taa.vert.glsl",
-        "internal/blit_taa@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;MOTION_BLUR;LOCKING.frag.glsl");
-    blit_taa_static_prog_ =
-        sh_.LoadProgram("internal/blit_taa.vert.glsl", "internal/blit_taa@STATIC_ACCUMULATION.frag.glsl");
+    blit_tsr_prog_[0] =
+        sh_.LoadProgram("internal/blit_tsr.vert.glsl",
+                        "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
+    blit_tsr_prog_[1] =
+        sh_.LoadProgram("internal/blit_tsr.vert.glsl",
+                        "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
+    blit_tsr_static_prog_ =
+        sh_.LoadProgram("internal/blit_tsr.vert.glsl", "internal/blit_tsr@STATIC_ACCUMULATION.frag.glsl");
     blit_ssr_prog_ = sh_.LoadProgram("internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
     blit_ssr_dilate_prog_ = sh_.LoadProgram("internal/blit_ssr_dilate.vert.glsl", "internal/blit_ssr_dilate.frag.glsl");
     blit_ssr_compose_prog_ =
@@ -807,9 +807,9 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Trg::TexSampled, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
             {Trg::ImageRW, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
-        const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.ren_res[0] + GBufferShade::LOCAL_GROUP_SIZE_X - 1u) / GBufferShade::LOCAL_GROUP_SIZE_X,
-            (view_state_.ren_res[1] + GBufferShade::LOCAL_GROUP_SIZE_Y - 1u) / GBufferShade::LOCAL_GROUP_SIZE_Y, 1u};
+        const Ren::Vec3u grp_count =
+            Ren::Vec3u{(view_state_.ren_res[0] + GBufferShade::GRP_SIZE_X - 1u) / GBufferShade::GRP_SIZE_X,
+                       (view_state_.ren_res[1] + GBufferShade::GRP_SIZE_Y - 1u) / GBufferShade::GRP_SIZE_Y, 1u};
 
         GBufferShade::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
@@ -820,8 +820,8 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     });
 }
 
-void Eng::Renderer::AddEmissivesPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                     const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+void Eng::Renderer::AddEmissivePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                    const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStage;
 
     auto &emissive = fg_builder_.AddNode("EMISSIVE");
@@ -906,7 +906,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
     });
 }
 
-Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
+Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                           const bool static_accumulation) {
     using Stg = Ren::eStage;
 
@@ -972,7 +972,7 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
             params.w = view_state_.ren_res[0];
             params.h = view_state_.ren_res[1];
             params.format = Ren::eTexFormat::RG16F;
-            params.sampling.filter = Ren::eTexFilter::Bilinear;
+            params.sampling.filter = Ren::eTexFilter::Nearest;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             dilated_velocity = data->out_dilated_velocity_tex =
@@ -996,12 +996,9 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
                 {Ren::eBindTarget::ImageRW, ReconstructDepth::OUT_DILATED_VELOCITY_IMG_SLOT,
                  *dilated_velocity_tex.ref}};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.ren_res[0] + ReconstructDepth::LOCAL_GROUP_SIZE_X - 1u) /
-                               ReconstructDepth::LOCAL_GROUP_SIZE_X,
-                           (view_state_.ren_res[1] + ReconstructDepth::LOCAL_GROUP_SIZE_Y - 1u) /
-                               ReconstructDepth::LOCAL_GROUP_SIZE_Y,
-                           1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.ren_res[0] + ReconstructDepth::GRP_SIZE_X - 1u) / ReconstructDepth::GRP_SIZE_X,
+                (view_state_.ren_res[1] + ReconstructDepth::GRP_SIZE_Y - 1u) / ReconstructDepth::GRP_SIZE_Y, 1u};
 
             ReconstructDepth::Params uniform_params;
             uniform_params.img_size = view_state_.ren_res;
@@ -1058,12 +1055,9 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
                 {Ren::eBindTarget::TexSampled, PrepareDisocclusion::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                 {Ren::eBindTarget::ImageRW, PrepareDisocclusion::OUT_IMG_SLOT, *output_tex.ref}};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.ren_res[0] + PrepareDisocclusion::LOCAL_GROUP_SIZE_X - 1u) /
-                               PrepareDisocclusion::LOCAL_GROUP_SIZE_X,
-                           (view_state_.ren_res[1] + PrepareDisocclusion::LOCAL_GROUP_SIZE_Y - 1u) /
-                               PrepareDisocclusion::LOCAL_GROUP_SIZE_Y,
-                           1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.ren_res[0] + PrepareDisocclusion::GRP_SIZE_X - 1u) / PrepareDisocclusion::GRP_SIZE_X,
+                (view_state_.ren_res[1] + PrepareDisocclusion::GRP_SIZE_Y - 1u) / PrepareDisocclusion::GRP_SIZE_Y, 1u};
 
             PrepareDisocclusion::Params uniform_params;
             uniform_params.img_size = view_state_.ren_res;
@@ -1076,8 +1070,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
         });
     }
     FgResRef resolved_color;
-    { // Main TAA pass
-        auto &taa = fg_builder_.AddNode("TAA");
+    { // Main TSR pass
+        auto &taa = fg_builder_.AddNode("TSR");
 
         struct PassData {
             FgResRef color_tex;
@@ -1098,8 +1092,8 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
 
         { // Texture that holds resolved color
             Ren::TexParams params;
-            params.w = view_state_.ren_res[0];
-            params.h = view_state_.ren_res[1];
+            params.w = view_state_.out_res[0];
+            params.h = view_state_.out_res[1];
             params.format = Ren::eTexFormat::RGBA16F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
@@ -1121,41 +1115,40 @@ Eng::FgResRef Eng::Renderer::AddTaaPasses(const CommonBuffers &common_buffers, F
             Ren::RastState rast_state;
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            rast_state.viewport[2] = view_state_.ren_res[0];
-            rast_state.viewport[3] = view_state_.ren_res[1];
+            rast_state.viewport[2] = view_state_.out_res[0];
+            rast_state.viewport[3] = view_state_.out_res[1];
 
-            { // Blit taa
-                const Ren::RenderTarget render_targets[] = {
-                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
-                    {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+            const Ren::RenderTarget render_targets[] = {
+                {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::TexSampled, TempAA::CURR_NEAREST_TEX_SLOT, {*color_tex.ref, *nearest_sampler_}},
-                    {Ren::eBindTarget::TexSampled, TempAA::CURR_LINEAR_TEX_SLOT, *color_tex.ref},
-                    {Ren::eBindTarget::TexSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
-                    {Ren::eBindTarget::TexSampled, TempAA::DILATED_DEPTH_TEX_SLOT, *dilated_depth_tex.ref},
-                    {Ren::eBindTarget::TexSampled, TempAA::DILATED_VELOCITY_TEX_SLOT, *dilated_velocity_tex.ref},
-                    {Ren::eBindTarget::TexSampled, TempAA::DISOCCLUSION_MASK_TEX_SLOT, *disocclusion_mask_tex.ref}};
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::TexSampled, TSR::CURR_NEAREST_TEX_SLOT, {*color_tex.ref, *nearest_sampler_}},
+                {Ren::eBindTarget::TexSampled, TSR::CURR_LINEAR_TEX_SLOT, *color_tex.ref},
+                {Ren::eBindTarget::TexSampled, TSR::HIST_TEX_SLOT, *history_tex.ref},
+                {Ren::eBindTarget::TexSampled, TSR::DILATED_DEPTH_TEX_SLOT, *dilated_depth_tex.ref},
+                {Ren::eBindTarget::TexSampled, TSR::DILATED_VELOCITY_TEX_SLOT, *dilated_velocity_tex.ref},
+                {Ren::eBindTarget::TexSampled, TSR::DISOCCLUSION_MASK_TEX_SLOT, *disocclusion_mask_tex.ref}};
 
-                TempAA::Params uniform_params;
-                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.ren_res[0], view_state_.ren_res[1]};
-                uniform_params.texel_size = 1.0f / Ren::Vec2f(view_state_.ren_res);
-                uniform_params.significant_change =
-                    Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
-                uniform_params.frame_index = float(view_state_.frame_index % 256);
-                if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
-                    uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
-                } else {
-                    uniform_params.mix_factor = 0.0f;
-                }
-                ++accumulated_frames_;
-
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
-                                    static_accumulation ? blit_taa_static_prog_
-                                                        : blit_taa_prog_[settings.enable_motion_blur],
-                                    {}, render_targets, rast_state, builder.rast_state(), bindings, &uniform_params,
-                                    sizeof(TempAA::Params), 0);
+            TSR::Params uniform_params;
+            uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.out_res[0], view_state_.out_res[1]};
+            uniform_params.texel_size = 1.0f / Ren::Vec4f(float(view_state_.ren_res[0]), float(view_state_.ren_res[1]),
+                                                          float(view_state_.out_res[0]), float(view_state_.out_res[1]));
+            uniform_params.unjitter = Ren::Vec2f{view_state_.jitter[0] - 0.5f, view_state_.jitter[1] - 0.5f};
+            uniform_params.significant_change =
+                Dot(p_list_->env.sun_dir, view_state_.prev_sun_dir) < 0.99999f ? 1.0f : 0.0f;
+            if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
+                uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
+            } else {
+                uniform_params.mix_factor = 0.0f;
             }
+            uniform_params.downscale_factor = 1.0f / p_list_->render_settings.resolution_scale;
+            ++accumulated_frames_;
+
+            prim_draw_.DrawPrim(
+                PrimDraw::ePrim::Quad,
+                static_accumulation ? blit_tsr_static_prog_ : blit_tsr_prog_[settings.enable_motion_blur], {},
+                render_targets, rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(TSR::Params), 0);
         });
     }
     return resolved_color;
@@ -1238,9 +1231,9 @@ Eng::FgResRef Eng::Renderer::AddDebugVelocityPass(const FgResRef velocity) {
             {Ren::eBindTarget::TexSampled, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
             {Ren::eBindTarget::ImageRW, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
 
-        const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.out_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,
-            (view_state_.out_res[1] + DebugVelocity::LOCAL_GROUP_SIZE_Y - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_Y, 1u};
+        const Ren::Vec3u grp_count =
+            Ren::Vec3u{(view_state_.out_res[0] + DebugVelocity::GRP_SIZE_X - 1u) / DebugVelocity::GRP_SIZE_X,
+                       (view_state_.out_res[1] + DebugVelocity::GRP_SIZE_Y - 1u) / DebugVelocity::GRP_SIZE_Y, 1u};
 
         DebugVelocity::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{view_state_.out_res};
@@ -1295,9 +1288,9 @@ Eng::FgResRef Eng::Renderer::AddDebugGBufferPass(const FrameTextures &frame_text
             {Ren::eBindTarget::TexSampled, DebugGBuffer::SPEC_TEX_SLOT, *specular_tex.ref},
             {Ren::eBindTarget::ImageRW, DebugGBuffer::OUT_IMG_SLOT, *output_tex.ref}};
 
-        const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.out_res[0] + DebugGBuffer::LOCAL_GROUP_SIZE_X - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_X,
-            (view_state_.out_res[1] + DebugGBuffer::LOCAL_GROUP_SIZE_Y - 1u) / DebugGBuffer::LOCAL_GROUP_SIZE_Y, 1u};
+        const Ren::Vec3u grp_count =
+            Ren::Vec3u{(view_state_.out_res[0] + DebugGBuffer::GRP_SIZE_X - 1u) / DebugGBuffer::GRP_SIZE_X,
+                       (view_state_.out_res[1] + DebugGBuffer::GRP_SIZE_Y - 1u) / DebugGBuffer::GRP_SIZE_Y, 1u};
 
         DebugGBuffer::Params uniform_params;
         uniform_params.img_size[0] = view_state_.out_res[0];

@@ -1,1 +1,1 @@
-DummyAppVK.exe -s scenes/staircase2.json -w 720 -h 900 --preset ultra
+DummyAppVK.exe -s scenes/staircase2.json -w 720 -h 900 --res_scale 1.0 --preset ultra

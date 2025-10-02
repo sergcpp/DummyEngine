@@ -23,12 +23,12 @@ float histogram_from_luma(const float luma) {
 	return log2(luma) * 0.03 + 0.556;
 }
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const ivec2 grp = ivec2(gl_WorkGroupID.xy);
     const vec2 uv_corner = vec2(grp) / vec2(16.0, 8.0);
-    const vec2 uv_sample = uv_corner + hammersley(gl_LocalInvocationIndex, LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y) / vec2(16.0, 8.0);
+    const vec2 uv_sample = uv_corner + hammersley(gl_LocalInvocationIndex, GRP_SIZE_X * GRP_SIZE_Y) / vec2(16.0, 8.0);
 
     const vec3 color = textureLod(g_hdr_tex, uv_sample, 0.0).xyz / g_params.pre_exposure;
 

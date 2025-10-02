@@ -86,10 +86,8 @@ void Eng::ExDepthHierarchy::Execute(FgBuilder &builder) {
     api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_->layout(), 0, 1,
                                      &descr_set, 0, nullptr);
 
-    const int grp_x =
-        (output_tex.ref->params.w + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X;
-    const int grp_y =
-        (output_tex.ref->params.h + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y;
+    const int grp_x = (output_tex.ref->params.w + DepthHierarchy::GRP_SIZE_X - 1) / DepthHierarchy::GRP_SIZE_X;
+    const int grp_y = (output_tex.ref->params.h + DepthHierarchy::GRP_SIZE_Y - 1) / DepthHierarchy::GRP_SIZE_Y;
 
     DepthHierarchy::Params uniform_params;
     uniform_params.depth_size =

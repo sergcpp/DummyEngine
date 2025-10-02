@@ -11,8 +11,8 @@ struct Params {
     uint frame_index;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int TLAS_SLOT = 2;
 const int RANDOM_SEQ_BUF_SLOT = 3;

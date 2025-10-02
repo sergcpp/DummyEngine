@@ -9,8 +9,8 @@ struct Params {
     uvec2 img_size;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int NORM_TEX_SLOT = 2;
 const int AVG_GI_TEX_SLOT = 3;

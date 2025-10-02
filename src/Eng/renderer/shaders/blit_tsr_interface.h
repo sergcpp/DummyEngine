@@ -1,19 +1,20 @@
-#ifndef BLIT_TAA_INTERFACE_H
-#define BLIT_TAA_INTERFACE_H
+#ifndef BLIT_TSR_INTERFACE_H
+#define BLIT_TSR_INTERFACE_H
 
 #include "_interface_common.h"
 
-INTERFACE_START(TempAA)
+INTERFACE_START(TSR)
 
 struct Params {
     vec4 transform;
-    vec2 texel_size;
+    vec4 texel_size;
+    vec2 unjitter;
     float significant_change;
-    float frame_index;
     float tonemap;
     float gamma;
     float fade;
     float mix_factor; // for static accumulation
+    float downscale_factor;
 };
 
 const int CURR_NEAREST_TEX_SLOT = 0;
@@ -25,4 +26,4 @@ const int DISOCCLUSION_MASK_TEX_SLOT = 6;
 
 INTERFACE_END
 
-#endif // BLIT_TAA_INTERFACE_H
+#endif // BLIT_TSR_INTERFACE_H

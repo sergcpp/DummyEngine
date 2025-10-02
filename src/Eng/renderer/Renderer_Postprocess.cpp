@@ -119,8 +119,8 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
         { // Texture that holds downsampled bloom image
             Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] / 2) >> mip;
-            params.h = (view_state_.ren_res[1] / 2) >> mip;
+            params.w = (view_state_.out_res[0] / 2) >> mip;
+            params.h = (view_state_.out_res[1] / 2) >> mip;
             params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -145,9 +145,9 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                 {Ren::eBindTarget::TexSampled, Bloom::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Ren::eBindTarget::ImageRW, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
-                (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(uniform_params.img_size[0] + Bloom::GRP_SIZE_X - 1u) / Bloom::GRP_SIZE_X,
+                           (uniform_params.img_size[1] + Bloom::GRP_SIZE_Y - 1u) / Bloom::GRP_SIZE_Y, 1u};
 
             DispatchCompute(*pi_bloom_downsample_[compressed][mip == 0], grp_count, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
@@ -174,8 +174,8 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
 
         { // Texture that holds upsampled bloom image
             Ren::TexParams params;
-            params.w = (view_state_.ren_res[0] / 2) >> mip;
-            params.h = (view_state_.ren_res[1] / 2) >> mip;
+            params.w = (view_state_.out_res[0] / 2) >> mip;
+            params.h = (view_state_.out_res[1] / 2) >> mip;
             params.format = compressed ? Ren::eTexFormat::RGBA16F : Ren::eTexFormat::RGBA32F;
             params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -199,9 +199,9 @@ Eng::FgResRef Eng::Renderer::AddBloomPasses(FgResRef hdr_texture, FgResRef expos
                                              {Ren::eBindTarget::TexSampled, Bloom::BLEND_TEX_SLOT, *blend_tex.ref},
                                              {Ren::eBindTarget::ImageRW, Bloom::OUT_IMG_SLOT, *output_tex.ref}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (uniform_params.img_size[0] + Bloom::LOCAL_GROUP_SIZE_X - 1u) / Bloom::LOCAL_GROUP_SIZE_X,
-                (uniform_params.img_size[1] + Bloom::LOCAL_GROUP_SIZE_Y - 1u) / Bloom::LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(uniform_params.img_size[0] + Bloom::GRP_SIZE_X - 1u) / Bloom::GRP_SIZE_X,
+                           (uniform_params.img_size[1] + Bloom::GRP_SIZE_Y - 1u) / Bloom::GRP_SIZE_Y, 1u};
 
             DispatchCompute(*pi_bloom_upsample_[compressed], grp_count, bindings, &uniform_params,
                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
@@ -253,9 +253,9 @@ Eng::FgResRef Eng::Renderer::AddSharpenPass(FgResRef input_tex, FgResRef exposur
             {Ren::eBindTarget::TexSampled, Sharpen::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
             {Ren::eBindTarget::ImageRW, Sharpen::OUT_IMG_SLOT, *output_tex.ref}};
 
-        const Ren::Vec3u grp_count = Ren::Vec3u{
-            (uniform_params.img_size[0] + Sharpen::LOCAL_GROUP_SIZE_X - 1u) / Sharpen::LOCAL_GROUP_SIZE_X,
-            (uniform_params.img_size[1] + Sharpen::LOCAL_GROUP_SIZE_Y - 1u) / Sharpen::LOCAL_GROUP_SIZE_Y, 1u};
+        const Ren::Vec3u grp_count =
+            Ren::Vec3u{(uniform_params.img_size[0] + Sharpen::GRP_SIZE_X - 1u) / Sharpen::GRP_SIZE_X,
+                       (uniform_params.img_size[1] + Sharpen::GRP_SIZE_Y - 1u) / Sharpen::GRP_SIZE_Y, 1u};
 
         DispatchCompute(*pi_sharpen_[compressed], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                         builder.ctx().default_descr_alloc(), builder.log());

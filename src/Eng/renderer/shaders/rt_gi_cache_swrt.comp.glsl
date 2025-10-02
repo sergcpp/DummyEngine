@@ -84,7 +84,7 @@ layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
 
 layout(binding = OUT_RAY_DATA_IMG_SLOT, rgba16f) uniform restrict writeonly image2DArray g_out_ray_data_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);

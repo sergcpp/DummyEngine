@@ -12,8 +12,7 @@ uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, cons
                          uint32_t i, uint64_t mask, uint32_t materials_per_descriptor,
                          Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count);
 uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::basic_draw_batch_t> batches,
-                     uint32_t i,
-                     uint64_t mask);
+                     uint32_t i, uint64_t mask);
 } // namespace ExSharedInternal
 
 void Eng::ExGBufferFill::DrawOpaque(FgBuilder &builder) {

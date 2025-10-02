@@ -21,8 +21,8 @@ struct RayPayload {
     float closest_dist;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int TLAS_SLOT = 1;
 const int ENV_TEX_SLOT = 2;

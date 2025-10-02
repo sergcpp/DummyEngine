@@ -19,7 +19,7 @@ struct Params {
     vec4 vol_bbox_max;
 };
 
-const int LOCAL_GROUP_SIZE_X = 32;
+const int GRP_SIZE_X = 32;
 
 const int RAY_DATA_TEX_SLOT = 1;
 

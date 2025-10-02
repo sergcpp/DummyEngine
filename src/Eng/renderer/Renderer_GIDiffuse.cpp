@@ -102,9 +102,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                 {Trg::TexSampled, OFFSET_TEX_SLOT, *off_tex.ref},
                 {Trg::ImageRW, OUT_IMG_SLOT, *out_tex.ref}};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                           (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
+                                                    (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
 
             const Ren::Vec3f &grid_origin = persistent_data.probe_volumes[0].origin;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volumes[0].scroll;
@@ -249,9 +248,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                              {Trg::ImageRW, OUT_GI_IMG_SLOT, *gi_tex.ref},
                                              {Trg::ImageRW, OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                           (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
+                                                    (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
 
             Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
@@ -1091,9 +1089,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTexRef &env_map, const Ren::
                                                  {Trg::TexSampled, GI_HIST_TEX_SLOT, *gi_hist_tex.ref},
                                                  {Trg::ImageRW, OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
-                const Ren::Vec3u grp_count =
-                    Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                               (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+                const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
+                                                        (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
@@ -1378,8 +1375,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                       quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[1])
                                                                      : uint32_t(view_state_.ren_res[1] / 2)};
 
-            const Ren::Vec3u grp_count{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                                       (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count{(img_size[0] + GTAO::GRP_SIZE_X - 1u) / GTAO::GRP_SIZE_X,
+                                       (img_size[1] + GTAO::GRP_SIZE_Y - 1u) / GTAO::GRP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
             uniform_params.img_size = img_size;
@@ -1433,9 +1430,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                       quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[1])
                                                                      : uint32_t(view_state_.ren_res[1] / 2)};
 
-            const auto grp_count =
-                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+            const auto grp_count = Ren::Vec3u{(img_size[0] + GTAO::GRP_SIZE_X - 1u) / GTAO::GRP_SIZE_X,
+                                              (img_size[1] + GTAO::GRP_SIZE_Y - 1u) / GTAO::GRP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
             uniform_params.img_size = img_size;
@@ -1494,9 +1490,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                       quality == eSSAOQuality::Ultra ? uint32_t(view_state_.ren_res[1])
                                                                      : uint32_t(view_state_.ren_res[1] / 2)};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(img_size[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                           (img_size[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{(img_size[0] + GTAO::GRP_SIZE_X - 1u) / GTAO::GRP_SIZE_X,
+                                                    (img_size[1] + GTAO::GRP_SIZE_Y - 1u) / GTAO::GRP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
             uniform_params.img_size = img_size;
@@ -1541,8 +1536,8 @@ Eng::FgResRef Eng::Renderer::AddGTAOPasses(const eSSAOQuality quality, FgResRef 
                                              {Trg::ImageRW, GTAO::OUT_IMG_SLOT, *out_ao_tex.ref}};
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.ren_res[0] + GTAO::LOCAL_GROUP_SIZE_X - 1u) / GTAO::LOCAL_GROUP_SIZE_X,
-                           (view_state_.ren_res[1] + GTAO::LOCAL_GROUP_SIZE_Y - 1u) / GTAO::LOCAL_GROUP_SIZE_Y, 1u};
+                Ren::Vec3u{(view_state_.ren_res[0] + GTAO::GRP_SIZE_X - 1u) / GTAO::GRP_SIZE_X,
+                           (view_state_.ren_res[1] + GTAO::GRP_SIZE_Y - 1u) / GTAO::GRP_SIZE_Y, 1u};
 
             GTAO::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};

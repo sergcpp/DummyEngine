@@ -5,8 +5,8 @@
 
 INTERFACE_START(SunBrightness)
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int TRANSMITTANCE_LUT_SLOT = 1;
 const int MULTISCATTER_LUT_SLOT = 2;

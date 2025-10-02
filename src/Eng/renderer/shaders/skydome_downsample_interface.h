@@ -11,8 +11,8 @@ struct Params {
     int _pad0;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int INPUT_TEX_SLOT = 0;
 const int OUTPUT_IMG_SLOT = 1;

@@ -10,8 +10,8 @@ struct Params {
     vec4 clip_info;
 };
 
-const int LOCAL_GROUP_SIZE_X = 64;
-const int LOCAL_GROUP_SIZE_Y = 64;
+const int GRP_SIZE_X = 64;
+const int GRP_SIZE_Y = 64;
 
 const int DEPTH_TEX_SLOT = 14;
 const int ATOMIC_CNT_SLOT = 15;

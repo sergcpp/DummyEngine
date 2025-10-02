@@ -70,7 +70,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
                                             sizeof(Skinning::Params), &uniform_params);
 
                 api_ctx->vkCmdDispatch(
-                    cmd_buf, (sr.vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);
+                    cmd_buf, (sr.vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1, 1);
             }
 
             if (sr.shape_keyed_vertex_count) {
@@ -88,7 +88,7 @@ void Eng::ExSkinning::Execute(FgBuilder &builder) {
 
                 api_ctx->vkCmdDispatch(
                     cmd_buf,
-                    (sr.shape_keyed_vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);
+                    (sr.shape_keyed_vertex_count + Skinning::GRP_SIZE - 1) / Skinning::GRP_SIZE, 1, 1);
             }
         }
     }

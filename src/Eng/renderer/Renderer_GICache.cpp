@@ -232,8 +232,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             const Ren::Vec3i &grid_scroll_diff = persistent_data.probe_volumes[volume_to_update].scroll_diff;
 
             const int probe_count = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z;
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (probe_count + ProbeRelocate::LOCAL_GROUP_SIZE_X - 1) / ProbeRelocate::LOCAL_GROUP_SIZE_X, 1u, 1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(probe_count + ProbeRelocate::GRP_SIZE_X - 1) / ProbeRelocate::GRP_SIZE_X, 1u, 1u};
 
             ProbeRelocate::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;
@@ -286,7 +286,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTexRef &env_map, const Commo
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volumes[volume_to_update].spacing;
 
             const int probe_count = PROBE_VOLUME_RES_X * PROBE_VOLUME_RES_Y * PROBE_VOLUME_RES_Z;
-            const Ren::Vec3u grp_count = Ren::Vec3u{probe_count / ProbeClassify::LOCAL_GROUP_SIZE_X, 1u, 1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{probe_count / ProbeClassify::GRP_SIZE_X, 1u, 1u};
 
             ProbeClassify::Params uniform_params = {};
             uniform_params.volume_index = volume_to_update;

@@ -1667,7 +1667,7 @@ void Eng::FgBuilder::ClearBuffer_AsStorage(Ren::BufRef &buf, Ren::CommandBuffer 
     assert((buf->size() % 4) == 0);
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
-        ((buf->size() / 4) + ClearBuffer::LOCAL_GROUP_SIZE_X - 1u) / ClearBuffer::LOCAL_GROUP_SIZE_X, 1u, 1u};
+        ((buf->size() / 4) + ClearBuffer::GRP_SIZE_X - 1u) / ClearBuffer::GRP_SIZE_X, 1u, 1u};
 
     ClearBuffer::Params uniform_params;
     uniform_params.data_len = (buf->size() / 4);
@@ -1691,8 +1691,8 @@ void Eng::FgBuilder::ClearImage_AsStorage(Ren::TexRef &tex, Ren::CommandBuffer c
     const Ren::Binding bindings[] = {{Ren::eBindTarget::ImageRW, ClearImage::OUT_IMG_SLOT, *tex}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
-        (p.w + ClearImage::LOCAL_GROUP_SIZE_X - 1u) / ClearImage::LOCAL_GROUP_SIZE_X,
-        (p.h + ClearImage::LOCAL_GROUP_SIZE_Y - 1u) / ClearImage::LOCAL_GROUP_SIZE_Y, std::max<uint32_t>(p.d, 1)};
+        (p.w + ClearImage::GRP_SIZE_X - 1u) / ClearImage::GRP_SIZE_X,
+        (p.h + ClearImage::GRP_SIZE_Y - 1u) / ClearImage::GRP_SIZE_Y, std::max<uint32_t>(p.d, 1)};
 
     Ren::DispatchCompute(cmd_buf, *pi, grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
 }

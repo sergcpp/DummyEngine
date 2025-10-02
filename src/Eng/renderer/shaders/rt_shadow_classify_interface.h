@@ -10,8 +10,8 @@ struct Params {
     uint frame_index;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 4;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 4;
 
 const int DEPTH_TEX_SLOT = 2;
 const int NORM_TEX_SLOT = 3;

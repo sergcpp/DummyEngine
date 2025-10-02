@@ -1,1 +1,1 @@
-DummyAppVK.exe -s scenes/ai043_01.json -w 1400 -h 955 --preset ultra
+DummyAppVK.exe -s scenes/ai043_01.json -w 1400 -h 955 --res_scale 1.0 --preset ultra

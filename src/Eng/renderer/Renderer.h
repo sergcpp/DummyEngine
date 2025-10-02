@@ -211,13 +211,13 @@ class Renderer {
     // Volumetrics
     Ren::PipelineRef pi_sky_upsample_;
     Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_;
-    // TAA
+    // TSR
     Ren::PipelineRef pi_reconstruct_depth_, pi_prepare_disocclusion_, pi_sharpen_[2];
     // Debug
     Ren::PipelineRef pi_debug_velocity_, pi_debug_gbuffer_[4];
 
-    Ren::ProgramRef blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_[2],
-        blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
+    Ren::ProgramRef blit_static_vel_prog_, blit_gauss_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_tsr_prog_[2],
+        blit_tsr_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down_prog_,
         blit_down_depth_prog_, blit_ssr_compose_prog_, blit_fxaa_prog_, blit_vol_compose_prog_;
 
     struct CommonBuffers {
@@ -259,13 +259,14 @@ class Renderer {
     void AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                             const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool enable_gi);
-    void AddEmissivesPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                          const BindlessTextureData &bindless, FrameTextures &frame_textures);
+    void AddEmissivePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                         const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
-    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &inout_velocity_tex);
-    FgResRef AddTaaPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation);
+    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, FgResRef depth_tex,
+                                   FgResRef &inout_velocity_tex);
+    FgResRef AddTSRPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation);
     FgResRef AddSharpenPass(FgResRef input_tex, FgResRef exposure_tex, bool compressed);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 

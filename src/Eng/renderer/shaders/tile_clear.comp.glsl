@@ -22,7 +22,7 @@ layout(binding = OUT_RAD_IMG_SLOT, rgba16f) uniform writeonly image2D g_out_rad_
     layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform writeonly image2D g_out_variance_img;
 #endif
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const uint packed_coords = g_tile_list[g_params.tile_count - gl_WorkGroupID.x - 1];

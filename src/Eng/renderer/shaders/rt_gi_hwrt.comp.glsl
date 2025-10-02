@@ -119,7 +119,7 @@ vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id, int bounce) {
     return (inv_tbn_transform * direction_tbn);
 }
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
@@ -144,7 +144,7 @@ vec3 LightVisibility(const _light_item_t litem, const vec3 P) {
 }
 
 void main() {
-    const uint ray_index = gl_WorkGroupID.x * LOCAL_GROUP_SIZE_X + gl_LocalInvocationIndex;
+    const uint ray_index = gl_WorkGroupID.x * GRP_SIZE_X + gl_LocalInvocationIndex;
     if (ray_index >= g_ray_counter[7]) return;
     const uint packed_coords = g_ray_list[ray_index];
 

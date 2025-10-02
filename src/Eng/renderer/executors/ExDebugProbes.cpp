@@ -29,10 +29,9 @@ void Eng::ExDebugProbes::Execute(FgBuilder &builder) {
     rast_state.depth.test_enabled = true;
     rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Greater);
 
-    const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::TexSampled, ProbeDebug::OFFSET_TEX_SLOT, *off_tex.ref},
-        {Ren::eBindTarget::TexSampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irr_tex.ref}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                                     {Ren::eBindTarget::TexSampled, ProbeDebug::OFFSET_TEX_SLOT, *off_tex.ref},
+                                     {Ren::eBindTarget::TexSampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irr_tex.ref}};
 
     const probe_volume_t &volume = args_->probe_volumes[args_->volume_to_debug];
 

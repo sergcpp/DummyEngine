@@ -9,7 +9,7 @@ struct Params {
     uint data_len;
 };
 
-const int LOCAL_GROUP_SIZE_X = 256;
+const int GRP_SIZE_X = 256;
 
 const int OUT_BUF_SLOT = 0;
 

@@ -66,7 +66,7 @@ layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 layout(binding = OUT_DIFFUSE_IMG_SLOT, rgba16f) uniform restrict image2D g_out_diffuse_img;
 layout(binding = OUT_SPECULAR_IMG_SLOT, rgba16f) uniform restrict image2D g_out_specular_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {

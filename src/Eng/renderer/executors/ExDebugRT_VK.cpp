@@ -140,9 +140,8 @@ void Eng::ExDebugRT::Execute_SWRT(FgBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::TexSampled, RTDebug::OFFSET_TEX_SLOT, *off_tex->ref);
     }
 
-    const auto grp_count =
-        Ren::Vec3u{(view_state_->ren_res[0] + RTDebug::LOCAL_GROUP_SIZE_X - 1u) / RTDebug::LOCAL_GROUP_SIZE_X,
-                   (view_state_->ren_res[1] + RTDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTDebug::LOCAL_GROUP_SIZE_Y, 1u};
+    const auto grp_count = Ren::Vec3u{(view_state_->ren_res[0] + RTDebug::GRP_SIZE_X - 1u) / RTDebug::GRP_SIZE_X,
+                                      (view_state_->ren_res[1] + RTDebug::GRP_SIZE_Y - 1u) / RTDebug::GRP_SIZE_Y, 1u};
 
     RTDebug::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{view_state_->ren_res};

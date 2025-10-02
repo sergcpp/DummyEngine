@@ -400,6 +400,7 @@ struct items_info_t {
 
 struct view_state_t {
     Ren::Vec2i ren_res, out_res;
+    Ren::Vec2f jitter;
     float vertical_fov;
     float pixel_spread_angle;
     int frame_index, volume_to_update, stochastic_lights_count, stochastic_lights_count_cache;

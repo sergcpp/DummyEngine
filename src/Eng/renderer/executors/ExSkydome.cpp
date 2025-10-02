@@ -150,10 +150,10 @@ void Eng::ExSkydomeCube::Execute(FgBuilder &builder) {
             uniform_params.mip_count = std::min(4, mip_count - mip);
 
             const Ren::Vec3u grp_count =
-                Ren::Vec3u{(uniform_params.img_size[0] + SkydomeDownsample::LOCAL_GROUP_SIZE_X - 1) /
-                               SkydomeDownsample::LOCAL_GROUP_SIZE_X,
-                           (uniform_params.img_size[1] + SkydomeDownsample::LOCAL_GROUP_SIZE_Y - 1) /
-                               SkydomeDownsample::LOCAL_GROUP_SIZE_Y,
+                Ren::Vec3u{(uniform_params.img_size[0] + SkydomeDownsample::GRP_SIZE_X - 1) /
+                               SkydomeDownsample::GRP_SIZE_X,
+                           (uniform_params.img_size[1] + SkydomeDownsample::GRP_SIZE_Y - 1) /
+                               SkydomeDownsample::GRP_SIZE_Y,
                            1u};
 
             DispatchCompute(*pi_skydome_downsample_, grp_count, _bindings, &uniform_params, sizeof(uniform_params),

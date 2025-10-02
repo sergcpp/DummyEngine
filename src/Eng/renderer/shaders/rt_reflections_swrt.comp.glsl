@@ -114,7 +114,7 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform restrict image2D g_out_color_img;
 #endif
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 float LightVisibility(const _light_item_t litem, const vec3 P) {
     int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
@@ -139,7 +139,7 @@ float LightVisibility(const _light_item_t litem, const vec3 P) {
 }
 
 void main() {
-    const uint ray_index = gl_WorkGroupID.x * LOCAL_GROUP_SIZE_X + gl_LocalInvocationIndex;
+    const uint ray_index = gl_WorkGroupID.x * GRP_SIZE_X + gl_LocalInvocationIndex;
     if (ray_index >= g_ray_counter[7]) return;
 
 #ifndef LAYERED

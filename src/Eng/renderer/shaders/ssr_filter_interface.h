@@ -11,8 +11,8 @@ struct Params {
     uvec2 frame_index;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int DEPTH_TEX_SLOT = 3;
 const int SPEC_TEX_SLOT = 4;

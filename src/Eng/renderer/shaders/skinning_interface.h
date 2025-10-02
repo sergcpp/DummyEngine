@@ -11,7 +11,7 @@ struct Params {
     uvec4 uShapeParamsPrev;
 };
 
-const int LOCAL_GROUP_SIZE = 128;
+const int GRP_SIZE = 128;
 
 const int IN_VERTICES_SLOT = 0;
 const int IN_MATRICES_SLOT = 1;

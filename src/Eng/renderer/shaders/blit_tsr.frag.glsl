@@ -3,13 +3,12 @@
 
 #include "_fs_common.glsl"
 #include "taa_common.glsl"
-#include "blit_taa_interface.h"
+#include "blit_tsr_interface.h"
 
 #pragma multi_compile _ CATMULL_ROM
 #pragma multi_compile _ ROUNDED_NEIBOURHOOD
 #pragma multi_compile _ TONEMAP
 #pragma multi_compile _ YCoCg
-#pragma multi_compile _ MOTION_BLUR
 #pragma multi_compile _ LOCKING
 #pragma multi_compile _ STATIC_ACCUMULATION
 
@@ -44,10 +43,6 @@ layout(location = 0) in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 layout(location = 1) out vec4 g_out_history;
 
-float PDnrand(vec2 n) {
-	return fract(sin(dot(n.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 MaybeTonemap(vec3 c) {
     c = clamp(c, vec3(0.0), vec3(HALF_MAX));
@@ -80,7 +75,7 @@ vec4 FetchColor(sampler2D s, ivec2 icoord) {
 
 vec4 SampleColor(sampler2D s, vec2 uvs) {
 #if defined(CATMULL_ROM)
-    vec4 ret = SampleTextureCatmullRom(s, uvs, g_params.texel_size);
+    vec4 ret = SampleTextureCatmullRom(s, uvs, g_params.texel_size.zw);
 #else
     vec4 ret = textureLod(s, uvs, 0.0);
 #endif
@@ -95,26 +90,6 @@ vec4 SampleColorLinear(sampler2D s, const vec2 uvs) {
     return ret;
 }
 
-vec4 SampleColorMotion(sampler2D s, vec2 uv, vec2 vel) {
-    const vec2 v = 0.5 * vel;
-    const int SampleCount = 3;
-
-    float srand = 2.0 * PDnrand(uv + vec2(g_params.frame_index)) - 1.0;
-    vec2 vtap = v / float(SampleCount);
-    vec2 pos0 = uv + vtap * (0.5 * srand);
-    vec4 accu = vec4(0.0);
-    float wsum = 0.0;
-
-    for (int i = -SampleCount; i <= SampleCount; ++i) {
-        const vec2 motion_uv = pos0 + float(i) * vtap;
-        const float w = saturate(motion_uv) == motion_uv ? 1.0 : 0.0;
-        accu += w * SampleColorLinear(s, motion_uv);
-        wsum += w;
-    }
-
-    return accu / wsum;
-}
-
 float Luma(vec3 col) {
 #if defined(YCoCg)
     return col.x;
@@ -123,57 +98,109 @@ float Luma(vec3 col) {
 #endif
 }
 
+float ComputeMaxKernelWeight() {
+    const float KernelSizeBias = 1.0;
+    const float kernelWeight = 1.0 + (1.0 / g_params.downscale_factor - 1.0) * KernelSizeBias;
+    return min(1.99, kernelWeight);
+}
+
+// FSR1 lanczos approximation (https://www.desmos.com/calculator/ch1eezc3tq)
+float Lanczos2ApproxSqNoClamp(const float x2) {
+    const float a = (2.0 / 5.0) * x2 - 1.0;
+    const float b = (1.0 / 4.0) * x2 - 1.0;
+    return ((25.0 / 16.0) * a * a - (25.0 / 16.0 - 1.0)) * (b * b);
+}
+
+float Lanczos2ApproxSq(float x2) {
+    x2 = min(x2, 4.0);
+    return Lanczos2ApproxSqNoClamp(x2);
+}
+
+float GetUpsampleLanczosWeight(const vec2 sample_off, const float kernel_weight) {
+    const vec2 sample_off_biased = sample_off * kernel_weight;
+    return Lanczos2ApproxSq(dot(sample_off_biased, sample_off_biased));
+}
+
 void main() {
     const ivec2 uvs_px = ivec2(g_vtx_uvs);
-    const vec2 norm_uvs = g_vtx_uvs * g_params.texel_size;
+    const vec2 norm_uvs = g_vtx_uvs * g_params.texel_size.zw;
 
+#if defined(STATIC_ACCUMULATION)
     vec4 col_curr = textureLod(g_color_curr_nearest, norm_uvs, 0.0);
     col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
     if (col_curr.w >= 1.0) {
         col_curr.w -= 1.0;
     }
 
-#if defined(STATIC_ACCUMULATION)
-    vec4 col_hist = FetchColor(g_color_hist, uvs_px);
-    vec3 col = mix(col_hist.xyz, col_curr.xyz, g_params.mix_factor);
+    const vec4 col_hist = FetchColor(g_color_hist, uvs_px);
+    const vec3 col = mix(col_hist.xyz, col_curr.xyz, g_params.mix_factor);
 
     g_out_color = vec4(TonemapInvert(col), 0.0);
     g_out_history = g_out_color;
 #else // STATIC_ACCUMULATION
-    const ivec2 offsets[8] = ivec2[8](
-        ivec2(-1, 1),   ivec2(0, 1),    ivec2(1, 1),
-        ivec2(-1, 0),                   ivec2(1, 0),
-        ivec2(-1, -1),  ivec2(1, -1),   ivec2(1, -1)
-    );
+    const vec2 output_pos = vec2(uvs_px) + 0.5;
+    const vec2 input_pos = output_pos * g_params.downscale_factor;
+    const ivec2 i_input_pos = ivec2(floor(input_pos));
 
-    bool set_lock = false;
+    vec2 unjitter = g_params.unjitter;
+#if defined(VULKAN)
+    unjitter.y = -unjitter.y;
+#endif
+    const vec2 unjittered_input_pos = vec2(i_input_pos) + 0.5 + unjitter;
 
-#if !defined(YCoCg) && !defined(ROUNDED_NEIBOURHOOD)
-    vec3 col_avg = col_curr.xyz, col_var = col_curr.xyz * col_curr.xyz;
-    for (int i = 0; i < 8; i++) {
-        const vec3 col = FetchColor(g_color_curr_nearest, uvs_px + offsets[i]).xyz;
-        col_avg += col;
-        col_var += col * col;
+    const vec2 base_uv_tl = (vec2(i_input_pos) + 0.5) * g_params.texel_size.xy;
+
+    vec4 col_curr = textureLod(g_color_curr_nearest, base_uv_tl, 0.0);
+    col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
+    if (col_curr.w >= 1.0) {
+        col_curr.w -= 1.0;
     }
 
-    col_avg /= 9.0;
-    col_var /= 9.0;
+    const vec2 disocclusion = textureLod(g_disocclusion_mask, base_uv_tl, 0.0).xy;
 
-    vec3 sigma = sqrt(max(col_var - col_avg * col_avg, vec3(0.0)));
-    vec3 col_min = col_avg - 1.25 * sigma;
-    vec3 col_max = col_avg + 1.25 * sigma;
-
-    vec2 closest_vel = texelFetch(g_dilated_velocity, uvs_px, 0).xy;
-#else
-    const vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, -1)).xyz));
-    const vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, -1)).xyz));
-    const vec3 col_tr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, -1)).xyz));
-    const vec3 col_ml = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +0)).xyz));
+    // Load 3x3 neighborhood
+    const vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(-1, -1)).xyz));
+    const vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+0, -1)).xyz));
+    const vec3 col_tr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+1, -1)).xyz));
+    const vec3 col_ml = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(-1, +0)).xyz));
     const vec3 col_mc = col_curr.xyz;
-    const vec3 col_mr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +0)).xyz));
-    const vec3 col_bl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(-1, +1)).xyz));
-    const vec3 col_bc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+0, +1)).xyz));
-    const vec3 col_br = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, norm_uvs, 0.0, ivec2(+1, +1)).xyz));
+    const vec3 col_mr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+1, +0)).xyz));
+    const vec3 col_bl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(-1, +1)).xyz));
+    const vec3 col_bc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+0, +1)).xyz));
+    const vec3 col_br = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+1, +1)).xyz));
+
+    const float kernel_reactive_factor = 0.075;
+    const float kernel_bias_max = ComputeMaxKernelWeight() * (1.0 - kernel_reactive_factor);
+
+    const float kernel_bias_min = max(1.0, (1.0 + kernel_bias_max) * 0.3);
+    const float kernel_bias_factor = max(0.0, max(0.25 * disocclusion.x, kernel_reactive_factor));
+    const float kernel_bias = mix(kernel_bias_max, kernel_bias_min, kernel_bias_factor);
+
+    const vec2 base_sample_off = unjittered_input_pos - input_pos;
+
+    vec4 color_weight = vec4(0.0);
+
+    float weight;
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(-1.0, -1.0), kernel_bias);
+    color_weight += vec4(col_tl * weight, weight);
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+0.0, -1.0), kernel_bias);
+    color_weight += vec4(col_tc * weight, weight);
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+1.0, -1.0), kernel_bias);
+    color_weight += vec4(col_tr * weight, weight);
+
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(-1.0, +0.0), kernel_bias);
+    color_weight += vec4(col_ml * weight, weight);
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+0.0, +0.0), kernel_bias);
+    color_weight += vec4(col_mc * weight, weight);
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+1.0, +0.0), kernel_bias);
+    color_weight += vec4(col_mr * weight, weight);
+
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(-1.0, +1.0), kernel_bias);
+    color_weight += vec4(col_bl * weight, weight);
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+0.0, +1.0), kernel_bias);
+    color_weight += vec4(col_bc * weight, weight);
+    weight = GetUpsampleLanczosWeight(base_sample_off + vec2(+1.0, +1.0), kernel_bias);
+    color_weight += vec4(col_br * weight, weight);
 
     vec3 col_min = min3(min3(col_tl, col_tc, col_tr),
                         min3(col_ml, col_mc, col_mr),
@@ -201,8 +228,12 @@ void main() {
         col_avg.yz = chroma_center;
     #endif
 
-    vec2 closest_vel = texelFetch(g_dilated_velocity, uvs_px, 0).xy;
+    col_curr.xyz = (color_weight.xyz / color_weight.w);
 
+    // Deringing
+    col_curr.xyz = clamp(col_curr.xyz, col_min, col_max);
+
+    bool set_lock = false;
 #if defined(LOCKING)
     if (g_params.significant_change < 0.5) {
         const float diff_tl = max(col_tl.x, col_mc.x) / min(col_tl.x, col_mc.x);
@@ -214,7 +245,7 @@ void main() {
         const float diff_bc = max(col_bc.x, col_mc.x) / min(col_bc.x, col_mc.x);
         const float diff_br = max(col_br.x, col_mc.x) / min(col_br.x, col_mc.x);
 
-        const float DissimilarThreshold = 1.05;
+        const float DissimilarThreshold = 1.75;
 
         float dissimilar_min = HALF_MAX, dissimilar_max = 0.0;
         uint mask = (1 << 4); // mark center as similar
@@ -258,9 +289,8 @@ void main() {
     }
 #endif // LOCKING
 
-#endif
-
-    vec2 hist_uvs = norm_uvs - (closest_vel * g_params.texel_size);
+    vec2 closest_vel = textureLod(g_dilated_velocity, norm_uvs, 0.0).xy;
+    const vec2 hist_uvs = norm_uvs - (closest_vel * g_params.texel_size.xy);
     vec4 col_hist = vec4(col_curr.xyz, 0.0);
     if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
         col_hist = SampleColor(g_color_hist, hist_uvs);
@@ -278,7 +308,7 @@ void main() {
         lock_status = saturate(lock_status - (1.0 / 12.0));
     }
 
-    if (any(lessThan(hist_uvs, 0.5 * g_params.texel_size)) || any(greaterThan(hist_uvs, vec2(1.0) - 0.5 * g_params.texel_size))) {
+    if (any(lessThan(hist_uvs, 0.5 * g_params.texel_size.zw)) || any(greaterThan(hist_uvs, vec2(1.0) - 0.5 * g_params.texel_size.zw))) {
         lock_status = 0.0;
     }
 
@@ -292,8 +322,6 @@ void main() {
 
     // Specular luminance
     lock_status *= saturate(1.0 - 2.0 * (col_curr.w / col_curr.x));
-
-    const vec2 disocclusion = texelFetch(g_disocclusion_mask, uvs_px, 0).xy;
 
     // Depth disocclusion
     lock_status *= float(disocclusion.x < 0.1);
@@ -318,23 +346,7 @@ void main() {
 #if defined(YCoCg)
     col_temporal = YCoCg_to_RGB(col_temporal);
 #endif
-    vec3 col_screen = col_temporal;
-
-#if defined(MOTION_BLUR)
-    const float MotionScale = 0.5;
-    closest_vel *= MotionScale;
-
-    const float vel_mag = length(closest_vel);
-    [[dont_flatten]] if (vel_mag > 0.01) {
-        const float vel_trust_full = 2.0;
-        const float vel_trust_none = 15.0;
-        const float vel_trust_span = vel_trust_none - vel_trust_full;
-        const float trust = 1.0 - clamp(vel_mag - vel_trust_full, 0.0, vel_trust_span) / vel_trust_span;
-
-        vec3 col_motion = SampleColorMotion(g_color_curr_linear, norm_uvs, (closest_vel * g_params.texel_size)).xyz;
-        col_screen = mix(col_motion, col_temporal, trust);
-    }
-#endif // MOTION_BLUR
+    const vec3 col_screen = col_temporal;
 
     g_out_color = vec4(TonemapInvert(col_screen), lock_status);
     g_out_history = vec4(TonemapInvert(col_temporal), lock_status);

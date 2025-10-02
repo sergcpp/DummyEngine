@@ -12,8 +12,8 @@ struct Params {
     vec4 softness_factor;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int DEPTH_TEX_SLOT = 1;
 const int DEPTH_LIN_TEX_SLOT = 2;

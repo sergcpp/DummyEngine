@@ -19,8 +19,8 @@ struct Params {
     int _pad2[2];
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int SHADOW_DEPTH_TEX_SLOT = 2;
 const int SHADOW_COLOR_TEX_SLOT = 3;

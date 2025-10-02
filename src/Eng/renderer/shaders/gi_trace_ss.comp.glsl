@@ -55,10 +55,10 @@ vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id) {
     return (inv_tbn_transform * direction_tbn);
 }
 
-layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = GRP_SIZE_X, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    uint ray_index = gl_WorkGroupID.x * LOCAL_GROUP_SIZE_X + gl_LocalInvocationIndex;
+    uint ray_index = gl_WorkGroupID.x * GRP_SIZE_X + gl_LocalInvocationIndex;
     if (ray_index >= g_inout_ray_counter[1]) return;
     uint packed_coords = g_in_ray_list[ray_index];
 

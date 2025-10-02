@@ -149,9 +149,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                              {Trg::ImageRW, OUT_REFL_IMG_SLOT, *refl_tex.ref},
                                              {Trg::ImageRW, OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                           (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
+                                                    (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
 
             Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
@@ -985,9 +984,8 @@ void Eng::Renderer::AddHQSpecularPasses(const bool deferred_shading, const bool 
                                                  {Trg::TexSampled, SSR_HIST_TEX_SLOT, *gi_hist_tex.ref},
                                                  {Trg::ImageRW, OUT_SSR_IMG_SLOT, *out_gi_tex.ref}};
 
-                const Ren::Vec3u grp_count =
-                    Ren::Vec3u{(view_state_.ren_res[0] + LOCAL_GROUP_SIZE_X - 1u) / LOCAL_GROUP_SIZE_X,
-                               (view_state_.ren_res[1] + LOCAL_GROUP_SIZE_Y - 1u) / LOCAL_GROUP_SIZE_Y, 1u};
+                const Ren::Vec3u grp_count = Ren::Vec3u{(view_state_.ren_res[0] + GRP_SIZE_X - 1u) / GRP_SIZE_X,
+                                                        (view_state_.ren_res[1] + GRP_SIZE_Y - 1u) / GRP_SIZE_Y, 1u};
 
                 Params uniform_params;
                 uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};

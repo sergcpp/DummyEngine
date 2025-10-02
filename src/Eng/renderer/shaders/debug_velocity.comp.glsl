@@ -89,7 +89,7 @@ float arrow(vec2 p, vec2 v) {
 	}
 }
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const uvec2 px_coords = gl_GlobalInvocationID.xy;

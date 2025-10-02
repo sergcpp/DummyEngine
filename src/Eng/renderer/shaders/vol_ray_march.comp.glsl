@@ -15,7 +15,7 @@ layout(binding = FR_EMISSION_TEX_SLOT) uniform sampler3D g_fr_emission_tex;
 
 layout(binding = OUT_FR_FINAL_IMG_SLOT, rgba16f) uniform writeonly image3D g_out_fr_final_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     ivec3 icoord = ivec3(gl_GlobalInvocationID.xy, 0);

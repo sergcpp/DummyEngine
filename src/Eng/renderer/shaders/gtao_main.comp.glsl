@@ -14,7 +14,7 @@ layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 
 layout(binding = OUT_IMG_SLOT, r8) uniform image2D g_out_img;
 
-layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout(local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 // Mostly taken from: https://github.com/asylum2010/Asylum_Tutorials/blob/4e97019dbce70c8ee3d9d3ed555fd2e3189ffef6/ShaderTutors/media/shadersGL/gtao.frag
 

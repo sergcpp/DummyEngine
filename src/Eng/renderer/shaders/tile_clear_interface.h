@@ -10,8 +10,8 @@ struct Params {
     uint _pad[3];
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int TILE_LIST_BUF_SLOT = 3;
 

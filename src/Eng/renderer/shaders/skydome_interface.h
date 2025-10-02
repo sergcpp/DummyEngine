@@ -22,8 +22,8 @@ struct Params2 {
     float _pad;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int ENV_TEX_SLOT = 1;
 const int TRANSMITTANCE_LUT_SLOT = 2;

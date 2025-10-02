@@ -66,8 +66,8 @@ void Eng::ExVolVoxelize::Execute_SWRT(FgBuilder &builder) {
         Ren::Vec4i{out_emission_tex.ref->params.w, out_emission_tex.ref->params.h, out_emission_tex.ref->params.d, 0};
 
     const Ren::Vec3u grp_count =
-        Ren::Vec3u{(froxel_res[0] + Fog::LOCAL_GROUP_SIZE_X - 1u) / Fog::LOCAL_GROUP_SIZE_X,
-                   (froxel_res[1] + Fog::LOCAL_GROUP_SIZE_Y - 1u) / Fog::LOCAL_GROUP_SIZE_Y, 1u};
+        Ren::Vec3u{(froxel_res[0] + Fog::GRP_SIZE_X - 1u) / Fog::GRP_SIZE_X,
+                   (froxel_res[1] + Fog::GRP_SIZE_Y - 1u) / Fog::GRP_SIZE_Y, 1u};
 
     Fog::Params uniform_params;
     uniform_params.froxel_res = froxel_res;

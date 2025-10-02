@@ -124,11 +124,9 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                                              {Trg::ImageRW, RTShadowClassify::OUT_RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
                                              {Trg::ImageRW, RTShadowClassify::OUT_NOISE_IMG_SLOT, *noise_tex.ref}};
 
-            const auto grp_count = Ren::Vec3u{(view_state_.ren_res[0] + RTShadowClassify::LOCAL_GROUP_SIZE_X - 1u) /
-                                                  RTShadowClassify::LOCAL_GROUP_SIZE_X,
-                                              (view_state_.ren_res[1] + RTShadowClassify::LOCAL_GROUP_SIZE_Y - 1u) /
-                                                  RTShadowClassify::LOCAL_GROUP_SIZE_Y,
-                                              1u};
+            const auto grp_count = Ren::Vec3u{
+                (view_state_.ren_res[0] + RTShadowClassify::GRP_SIZE_X - 1u) / RTShadowClassify::GRP_SIZE_X,
+                (view_state_.ren_res[1] + RTShadowClassify::GRP_SIZE_Y - 1u) / RTShadowClassify::GRP_SIZE_Y, 1u};
 
             RTShadowClassify::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
@@ -207,10 +205,9 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
             const Ren::Binding bindings[] = {{Trg::TexSampled, RTShadowDebug::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
                                              {Trg::ImageRW, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.ren_res[0] + RTShadowDebug::LOCAL_GROUP_SIZE_X - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_X,
-                (view_state_.ren_res[1] + RTShadowDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_Y,
-                1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.ren_res[0] + RTShadowDebug::GRP_SIZE_X - 1u) / RTShadowDebug::GRP_SIZE_X,
+                           (view_state_.ren_res[1] + RTShadowDebug::GRP_SIZE_Y - 1u) / RTShadowDebug::GRP_SIZE_Y, 1u};
 
             RTShadowDebug::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
@@ -361,12 +358,10 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 {Trg::ImageRW, RTShadowClassifyTiles::OUT_MOMENTS_IMG_SLOT, *out_moments_img.ref},
             };
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.ren_res[0] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
-                               RTShadowClassifyTiles::LOCAL_GROUP_SIZE_X,
-                           (view_state_.ren_res[1] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_Y - 1u) /
-                               RTShadowClassifyTiles::LOCAL_GROUP_SIZE_Y,
-                           1u};
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.ren_res[0] + RTShadowClassifyTiles::GRP_SIZE_X - 1u) / RTShadowClassifyTiles::GRP_SIZE_X,
+                (view_state_.ren_res[1] + RTShadowClassifyTiles::GRP_SIZE_Y - 1u) / RTShadowClassifyTiles::GRP_SIZE_Y,
+                1u};
 
             RTShadowClassifyTiles::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
@@ -429,10 +424,9 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
             };
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.ren_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.ren_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
-                1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.ren_res[0] + RTShadowFilter::GRP_SIZE_X - 1u) / RTShadowFilter::GRP_SIZE_X,
+                           (view_state_.ren_res[1] + RTShadowFilter::GRP_SIZE_Y - 1u) / RTShadowFilter::GRP_SIZE_Y, 1u};
 
             RTShadowFilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
@@ -494,10 +488,9 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
             };
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.ren_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.ren_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
-                1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.ren_res[0] + RTShadowFilter::GRP_SIZE_X - 1u) / RTShadowFilter::GRP_SIZE_X,
+                           (view_state_.ren_res[1] + RTShadowFilter::GRP_SIZE_Y - 1u) / RTShadowFilter::GRP_SIZE_Y, 1u};
 
             RTShadowFilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
@@ -559,10 +552,9 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 {Trg::ImageRW, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
             };
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.ren_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
-                (view_state_.ren_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
-                1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.ren_res[0] + RTShadowFilter::GRP_SIZE_X - 1u) / RTShadowFilter::GRP_SIZE_X,
+                           (view_state_.ren_res[1] + RTShadowFilter::GRP_SIZE_Y - 1u) / RTShadowFilter::GRP_SIZE_Y, 1u};
 
             RTShadowFilter::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u(view_state_.ren_res[0], view_state_.ren_res[1]);
@@ -631,9 +623,9 @@ Eng::FgResRef Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_b
                 {Trg::TexSampled, SunShadows::RT_SHADOW_TEX_SLOT, *rt_shadow_tex.ref},
                 {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
-            const Ren::Vec3u grp_count = Ren::Vec3u{
-                (view_state_.ren_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
-                (view_state_.ren_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.ren_res[0] + SunShadows::GRP_SIZE_X - 1u) / SunShadows::GRP_SIZE_X,
+                           (view_state_.ren_res[1] + SunShadows::GRP_SIZE_Y - 1u) / SunShadows::GRP_SIZE_Y, 1u};
 
             SunShadows::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};
@@ -712,9 +704,9 @@ Eng::FgResRef Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buf
             {Trg::TexSampled, SunShadows::SHADOW_COLOR_TEX_SLOT, *shadow_color_tex.ref},
             {Trg::ImageRW, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
-        const Ren::Vec3u grp_count = Ren::Vec3u{
-            (view_state_.ren_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
-            (view_state_.ren_res[1] + SunShadows::LOCAL_GROUP_SIZE_Y - 1u) / SunShadows::LOCAL_GROUP_SIZE_Y, 1u};
+        const Ren::Vec3u grp_count =
+            Ren::Vec3u{(view_state_.ren_res[0] + SunShadows::GRP_SIZE_X - 1u) / SunShadows::GRP_SIZE_X,
+                       (view_state_.ren_res[1] + SunShadows::GRP_SIZE_Y - 1u) / SunShadows::GRP_SIZE_Y, 1u};
 
         SunShadows::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{view_state_.ren_res};

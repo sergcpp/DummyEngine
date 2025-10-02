@@ -15,7 +15,7 @@ layout(binding = OUT_RECONSTRUCTED_DEPTH_IMG_SLOT, r32ui) uniform coherent uimag
 layout(binding = OUT_DILATED_DEPTH_IMG_SLOT, r32f) uniform image2D g_out_dilated_depth_img;
 layout(binding = OUT_DILATED_VELOCITY_IMG_SLOT, rg16f) uniform image2D g_out_dilated_velocity_img;
 
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout (local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);

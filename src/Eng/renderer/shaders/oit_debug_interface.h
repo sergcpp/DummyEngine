@@ -11,8 +11,8 @@ struct Params {
     int layer_index;
 };
 
-const int LOCAL_GROUP_SIZE_X = 8;
-const int LOCAL_GROUP_SIZE_Y = 8;
+const int GRP_SIZE_X = 8;
+const int GRP_SIZE_Y = 8;
 
 const int OIT_DEPTH_BUF_SLOT = 1;
 

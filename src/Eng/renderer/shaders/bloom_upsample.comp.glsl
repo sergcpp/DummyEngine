@@ -18,7 +18,7 @@ layout(binding = BLEND_TEX_SLOT) uniform sampler2D g_blend_tex;
     layout(binding = OUT_IMG_SLOT, rgba32f) uniform image2D g_out_img;
 #endif
 
-layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+layout(local_size_x = GRP_SIZE_X, local_size_y = GRP_SIZE_Y, local_size_z = 1) in;
 
 // Taken from "Next Generation Post Processing in Call of Duty Advanced Warfare"
 void main() {
