@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = upscaling
-	commit = b67db9882107ce31a79a6615a7692f0d1ae3a37c
+	branch = master
+	commit = b6230e62339910603d1e5f214c74aafe92d70db1
 	method = merge
-	cmdver = 0.4.6
+	cmdver = 0.4.9
 	parent = f480a5d218495c44cfc10c0138d056331752d074
