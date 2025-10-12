@@ -79,12 +79,12 @@ void main() {
     g_out_velocity.xy = 0.5 * (curr + unjitter - prev);
 #if defined(VULKAN)
     g_out_velocity.y = -g_out_velocity.y;
+#endif
     g_out_velocity.xy *= g_shrd_data.ren_res.xy; // improve fp16 utilization
     const float curr_z = g_vtx_z_vs_curr.x / g_vtx_z_vs_curr.y;
     const float prev_z = g_vtx_z_vs_prev.x / g_vtx_z_vs_prev.y;
     g_out_velocity.z = -(curr_z - prev_z);
     g_out_velocity.w = 0.0;
-#endif
 #endif // OUTPUT_VELOCITY
 }
 

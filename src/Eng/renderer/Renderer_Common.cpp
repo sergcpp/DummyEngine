@@ -22,6 +22,7 @@
 #include "shaders/debug_gbuffer_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
+#include "shaders/motion_blur_interface.h"
 #include "shaders/prepare_disocclusion_interface.h"
 #include "shaders/reconstruct_depth_interface.h"
 
@@ -159,6 +160,12 @@ void Eng::Renderer::InitPipelines() {
     pi_prepare_disocclusion_ = sh_.LoadPipeline("internal/prepare_disocclusion.comp.glsl");
     pi_sharpen_[0] = sh_.LoadPipeline("internal/sharpen.comp.glsl");
     pi_sharpen_[1] = sh_.LoadPipeline("internal/sharpen@COMPRESSED.comp.glsl");
+
+    // Motion blur
+    pi_motion_blur_classify_[0] = sh_.LoadPipeline("internal/motion_blur_classify.comp.glsl");
+    pi_motion_blur_classify_[1] = sh_.LoadPipeline("internal/motion_blur_classify@VERTICAL.comp.glsl");
+    pi_motion_blur_dilate_ = sh_.LoadPipeline("internal/motion_blur_dilate.comp.glsl");
+    pi_motion_blur_filter_ = sh_.LoadPipeline("internal/motion_blur_filter.comp.glsl");
 
     // Debugging
     pi_debug_velocity_ = sh_.LoadPipeline("internal/debug_velocity.comp.glsl");
@@ -1152,6 +1159,190 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
         });
     }
     return resolved_color;
+}
+
+Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextures &frame_textures) {
+    FgResRef tiles_tex;
+    { // Horizontal pass
+        auto &classify_h = fg_builder_.AddNode("MB CLASSIFY H");
+
+        struct PassData {
+            FgResRef in_velocity_tex;
+            FgResRef out_tiles_tex;
+        };
+
+        auto *data = classify_h.AllocNodeData<PassData>();
+        data->in_velocity_tex = classify_h.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
+
+        { // Texture that holds horizontal tiles
+            Ren::TexParams params;
+            params.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            params.h = view_state_.ren_res[1];
+            params.format = Ren::eTexFormat::RGBA16F;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            tiles_tex = data->out_tiles_tex =
+                classify_h.AddStorageImageOutput("MB Tiles H", params, Ren::eStage::ComputeShader);
+        }
+
+        classify_h.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &in_velocity_tex = builder.GetReadTexture(data->in_velocity_tex);
+            FgAllocTex &out_tiles_tex = builder.GetWriteTexture(data->out_tiles_tex);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, *in_velocity_tex.ref},
+                {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, *out_tiles_tex.ref}};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(in_velocity_tex.ref->params.w + MotionBlur::GRP_SIZE - 1u) / MotionBlur::GRP_SIZE,
+                           in_velocity_tex.ref->params.h, 1u};
+
+            MotionBlur::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{in_velocity_tex.ref->params.w, in_velocity_tex.ref->params.h};
+
+            DispatchCompute(*pi_motion_blur_classify_[0], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    { // Vertical pass
+        auto &classify_v = fg_builder_.AddNode("MB CLASSIFY V");
+
+        struct PassData {
+            FgResRef in_velocity_tex;
+            FgResRef out_tiles_tex;
+        };
+
+        auto *data = classify_v.AllocNodeData<PassData>();
+        data->in_velocity_tex = classify_v.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
+
+        { // Texture that holds final tiles
+            Ren::TexParams params;
+            params.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            params.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            params.format = Ren::eTexFormat::RGBA16F;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            tiles_tex = data->out_tiles_tex =
+                classify_v.AddStorageImageOutput("MB Tiles V", params, Ren::eStage::ComputeShader);
+        }
+
+        classify_v.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &in_velocity_tex = builder.GetReadTexture(data->in_velocity_tex);
+            FgAllocTex &out_tiles_tex = builder.GetWriteTexture(data->out_tiles_tex);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, *in_velocity_tex.ref},
+                {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, *out_tiles_tex.ref}};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{in_velocity_tex.ref->params.w,
+                           (in_velocity_tex.ref->params.h + MotionBlur::GRP_SIZE - 1) / MotionBlur::GRP_SIZE, 1u};
+
+            MotionBlur::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{in_velocity_tex.ref->params.w, in_velocity_tex.ref->params.h};
+
+            DispatchCompute(*pi_motion_blur_classify_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    { // Dilation pass
+        auto &dilate = fg_builder_.AddNode("MB DILATE");
+
+        struct PassData {
+            FgResRef in_tiles_tex;
+            FgResRef out_tiles_tex;
+        };
+
+        auto *data = dilate.AllocNodeData<PassData>();
+        data->in_tiles_tex = dilate.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
+
+        { // Texture that holds dilated tiles
+            Ren::TexParams params;
+            params.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            params.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
+            params.format = Ren::eTexFormat::RGBA16F;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            tiles_tex = data->out_tiles_tex =
+                dilate.AddStorageImageOutput("MB Tiles Dilated", params, Ren::eStage::ComputeShader);
+        }
+
+        dilate.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &in_tiles_tex = builder.GetReadTexture(data->in_tiles_tex);
+            FgAllocTex &out_tiles_tex = builder.GetWriteTexture(data->out_tiles_tex);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::TexSampled, MotionBlur::TILES_TEX_SLOT, *in_tiles_tex.ref},
+                {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, *out_tiles_tex.ref}};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(in_tiles_tex.ref->params.w + MotionBlur::GRP_SIZE_X - 1u) / MotionBlur::GRP_SIZE_X,
+                           (in_tiles_tex.ref->params.h + MotionBlur::GRP_SIZE_Y - 1u) / MotionBlur::GRP_SIZE_Y, 1u};
+
+            MotionBlur::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{in_tiles_tex.ref->params.w, in_tiles_tex.ref->params.h};
+
+            DispatchCompute(*pi_motion_blur_dilate_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    FgResRef output_tex;
+    { // Filter pass
+        auto &filter = fg_builder_.AddNode("MB FILTER");
+
+        struct PassData {
+            FgResRef in_color_tex;
+            FgResRef in_depth_tex;
+            FgResRef in_velocity_tex;
+            FgResRef in_tiles_tex;
+            FgResRef output_tex;
+        };
+
+        auto *data = filter.AllocNodeData<PassData>();
+        data->in_color_tex = filter.AddTextureInput(input_tex, Ren::eStage::ComputeShader);
+        data->in_depth_tex = filter.AddTextureInput(frame_textures.depth, Ren::eStage::ComputeShader);
+        data->in_velocity_tex = filter.AddTextureInput(frame_textures.velocity, Ren::eStage::ComputeShader);
+        data->in_tiles_tex = filter.AddTextureInput(tiles_tex, Ren::eStage::ComputeShader);
+
+        { // Texture that holds filtered color
+            Ren::TexParams params;
+            params.w = view_state_.out_res[0];
+            params.h = view_state_.out_res[1];
+            params.format = Ren::eTexFormat::RGBA16F;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            output_tex = data->output_tex =
+                filter.AddStorageImageOutput("MB Output", params, Ren::eStage::ComputeShader);
+        }
+
+        filter.set_execute_cb([this, data](FgBuilder &builder) {
+            FgAllocTex &in_color_tex = builder.GetReadTexture(data->in_color_tex);
+            FgAllocTex &in_depth_tex = builder.GetReadTexture(data->in_depth_tex);
+            FgAllocTex &in_velocity_tex = builder.GetReadTexture(data->in_velocity_tex);
+            FgAllocTex &in_tiles_tex = builder.GetReadTexture(data->in_tiles_tex);
+            FgAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::TexSampled, MotionBlur::COLOR_TEX_SLOT, *in_color_tex.ref},
+                {Ren::eBindTarget::TexSampled, MotionBlur::DEPTH_TEX_SLOT, {*in_depth_tex.ref, 1}},
+                {Ren::eBindTarget::TexSampled, MotionBlur::VELOCITY_TEX_SLOT, *in_velocity_tex.ref},
+                {Ren::eBindTarget::TexSampled, MotionBlur::TILES_TEX_SLOT, *in_tiles_tex.ref},
+                {Ren::eBindTarget::ImageRW, MotionBlur::OUT_IMG_SLOT, *output_tex.ref}};
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(in_color_tex.ref->params.w + MotionBlur::GRP_SIZE_X - 1u) / MotionBlur::GRP_SIZE_X,
+                           (in_color_tex.ref->params.h + MotionBlur::GRP_SIZE_Y - 1u) / MotionBlur::GRP_SIZE_Y, 1u};
+
+            MotionBlur::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{in_color_tex.ref->params.w, in_color_tex.ref->params.h};
+            uniform_params.inv_ren_res = 1.0f / Ren::Vec2f{view_state_.ren_res};
+            uniform_params.clip_info = view_state_.clip_info;
+
+            DispatchCompute(*pi_motion_blur_filter_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_.default_descr_alloc(), ctx_.log());
+        });
+    }
+    return output_tex;
 }
 
 void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex,

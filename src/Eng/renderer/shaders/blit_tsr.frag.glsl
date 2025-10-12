@@ -148,26 +148,26 @@ void main() {
 #endif
     const vec2 unjittered_input_pos = vec2(i_input_pos) + 0.5 + unjitter;
 
-    const vec2 base_uv_tl = (vec2(i_input_pos) + 0.5) * g_params.texel_size.xy;
+    const vec2 base_uv = (vec2(i_input_pos) + 0.5) * g_params.texel_size.xy;
 
-    vec4 col_curr = textureLod(g_color_curr_nearest, base_uv_tl, 0.0);
+    vec4 col_curr = textureLod(g_color_curr_nearest, base_uv, 0.0);
     col_curr.xyz = MaybeRGB_to_YCoCg(MaybeTonemap(col_curr.xyz));
     if (col_curr.w >= 1.0) {
         col_curr.w -= 1.0;
     }
 
-    const vec2 disocclusion = textureLod(g_disocclusion_mask, base_uv_tl, 0.0).xy;
+    const vec2 disocclusion = textureLod(g_disocclusion_mask, base_uv, 0.0).xy;
 
     // Load 3x3 neighborhood
-    const vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(-1, -1)).xyz));
-    const vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+0, -1)).xyz));
-    const vec3 col_tr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+1, -1)).xyz));
-    const vec3 col_ml = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(-1, +0)).xyz));
+    const vec3 col_tl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(-1, -1)).xyz));
+    const vec3 col_tc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(+0, -1)).xyz));
+    const vec3 col_tr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(+1, -1)).xyz));
+    const vec3 col_ml = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(-1, +0)).xyz));
     const vec3 col_mc = col_curr.xyz;
-    const vec3 col_mr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+1, +0)).xyz));
-    const vec3 col_bl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(-1, +1)).xyz));
-    const vec3 col_bc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+0, +1)).xyz));
-    const vec3 col_br = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv_tl, 0.0, ivec2(+1, +1)).xyz));
+    const vec3 col_mr = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(+1, +0)).xyz));
+    const vec3 col_bl = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(-1, +1)).xyz));
+    const vec3 col_bc = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(+0, +1)).xyz));
+    const vec3 col_br = MaybeRGB_to_YCoCg(MaybeTonemap(textureLodOffset(g_color_curr_nearest, base_uv, 0.0, ivec2(+1, +1)).xyz));
 
     const float kernel_reactive_factor = 0.075;
     const float kernel_bias_max = ComputeMaxKernelWeight() * (1.0 - kernel_reactive_factor);

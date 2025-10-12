@@ -213,6 +213,8 @@ class Renderer {
     Ren::PipelineRef pi_vol_scatter_[2][2], pi_vol_ray_march_;
     // TSR
     Ren::PipelineRef pi_reconstruct_depth_, pi_prepare_disocclusion_, pi_sharpen_[2];
+    // Motion blur
+    Ren::PipelineRef pi_motion_blur_classify_[2], pi_motion_blur_dilate_, pi_motion_blur_filter_;
     // Debug
     Ren::PipelineRef pi_debug_velocity_, pi_debug_gbuffer_[4];
 
@@ -268,6 +270,7 @@ class Renderer {
                                    FgResRef &inout_velocity_tex);
     FgResRef AddTSRPasses(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation);
     FgResRef AddSharpenPass(FgResRef input_tex, FgResRef exposure_tex, bool compressed);
+    FgResRef AddMotionBlurPasses(FgResRef input_tex, FrameTextures &frame_textures);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, FgResRef depth_tex, FgResRef &out_depth_down_2x);
 
     // GI Cache

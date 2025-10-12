@@ -1495,6 +1495,13 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
 
         //
+        // Motion blur
+        //
+        if (list.render_settings.enable_motion_blur) {
+            resolved_color = AddMotionBlurPasses(resolved_color, frame_textures);
+        }
+
+        //
         // Sharpening
         //
         if (list.render_settings.enable_sharpen) {

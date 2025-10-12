@@ -17,6 +17,7 @@ void test_empty_scene(Sys::ThreadPool &threads);
 void test_shading(Sys::ThreadPool &threads, bool full);
 void test_upscaling(Sys::ThreadPool &threads);
 void test_volumetrics(Sys::ThreadPool &threads);
+void test_motion_blur(Sys::ThreadPool &threads);
 
 bool g_stop_on_fail = false;
 std::atomic_bool g_tests_success{true};
@@ -69,11 +70,11 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "-j") == 0 && (++i != argc)) {
             threads_count = atoi(argv[++i]);
         } else if (strncmp(argv[i], "-j", 2) == 0) {
-            //threads_count = atoi(&argv[i][2]);
+            // threads_count = atoi(&argv[i][2]);
         } else if (strcmp(argv[i], "--validation_level") == 0 || strcmp(argv[i], "-vl") == 0) {
             validation_level = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--nohwrt") == 0) {
-            //nohwrt = true;
+            // nohwrt = true;
         } else if (strcmp(argv[i], "--nosubgroup") == 0) {
             nosubgroup = true;
         } else if (strcmp(argv[i], "--full") == 0) {
@@ -100,6 +101,8 @@ int main(int argc, char *argv[]) {
     test_shading(mt_run_pool, full);
     puts(" ---------------");
     test_upscaling(mt_run_pool);
+    puts(" ---------------");
+    test_motion_blur(mt_run_pool);
     puts(" ---------------");
     test_volumetrics(mt_run_pool);
 

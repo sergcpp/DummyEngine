@@ -81,9 +81,6 @@ void main() {
 
     const vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(g_in_vtx_pos, 1.0)).xyz;
     g_vtx_pos_cs_prev = (g_shrd_data.prev_clip_from_world * vec4(vtx_pos_ws_prev, 1.0)).xyw;
-#if defined(VULKAN)
-    g_vtx_pos_cs_prev.y = -g_vtx_pos_cs_prev.y;
-#endif
     const vec4 vtx_pos_vs_curr = g_shrd_data.view_from_world * vec4(vtx_pos_ws_curr, 1.0);
     const vec4 vtx_pos_vs_prev = g_shrd_data.prev_view_from_world * vec4(vtx_pos_ws_prev, 1.0);
     g_vtx_z_vs_curr = vtx_pos_vs_curr.zw;

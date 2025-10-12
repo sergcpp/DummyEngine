@@ -18,6 +18,7 @@ endif()
 add_executable(test_Eng main.cpp
                         test_common.h
                         test_cmdline.cpp
+                        test_motion_blur.cpp
                         test_scene.h
                         test_scene.cpp
                         test_shading.cpp

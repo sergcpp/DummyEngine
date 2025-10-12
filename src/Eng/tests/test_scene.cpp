@@ -56,9 +56,9 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
         test_postfix = "_nodiffgi";
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
         test_postfix = "_nodiffgirt";
-    } else if (img_test == eImgTest::MedDiffGI) {
+    } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_MotionBlur) {
         test_postfix = "_meddiffgi";
-    } else if (img_test == eImgTest::Full_Ultra) {
+    } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_MotionBlur) {
         test_postfix = "_ultra";
     }
 
@@ -101,7 +101,9 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
 
     renderer->settings.resolution_scale = res_scale;
 
-    renderer->settings.enable_motion_blur = false;
+    renderer->settings.enable_motion_blur =
+        (img_test == eImgTest::MedDiffGI_MotionBlur || img_test == eImgTest::Full_MotionBlur ||
+         img_test == eImgTest::Full_Ultra_MotionBlur);
     renderer->settings.enable_bloom = false;
     renderer->settings.enable_shadow_jitter = true;
     renderer->settings.enable_aberration = false;
@@ -132,10 +134,10 @@ void run_image_test(Sys::ThreadPool &threads, std::string_view test_name, Ren::S
         renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
         renderer->settings.gi_quality = eGIQuality::Off;
         renderer->settings.sky_quality = eSkyQuality::Medium;
-    } else if (img_test == eImgTest::MedDiffGI) {
+    } else if (img_test == eImgTest::MedDiffGI || img_test == eImgTest::MedDiffGI_MotionBlur) {
         renderer->settings.gi_quality = eGIQuality::Medium;
         renderer->settings.sky_quality = eSkyQuality::Medium;
-    } else if (img_test == eImgTest::Full_Ultra) {
+    } else if (img_test == eImgTest::Full_Ultra || img_test == eImgTest::Full_Ultra_MotionBlur) {
         renderer->settings.shadows_quality = eShadowsQuality::Raytraced;
         renderer->settings.reflections_quality = eReflectionsQuality::Raytraced_High;
         renderer->settings.ssao_quality = eSSAOQuality::Ultra;

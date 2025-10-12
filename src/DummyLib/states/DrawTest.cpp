@@ -311,6 +311,7 @@ void DrawTest::OnPostloadScene(Sys::JsObjectP &js_scene) {
     leaf_tree_index_ = scene_manager_->FindObject("leaf_tree");
 
     dynamic_light_index_ = scene_manager_->FindObject("__dynamic_test_light");
+    dynamic_object_index_ = scene_manager_->FindObject("__dynamic_test_object");
 }
 
 void DrawTest::Exit() { BaseState::Exit(); }
@@ -731,6 +732,8 @@ void DrawTest::SaveScene(Sys::JsObjectP &js_scene) {
 }
 
 void DrawTest::TestUpdateAnims(const float delta_time_s) {
+    using namespace Ren;
+
     Eng::SceneData &scene = scene_manager_->scene_data();
 
     if (wolf_indices_[0] != 0xffffffff) {
@@ -754,17 +757,17 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
                 as->anim_time_s += delta_time_s;
 
-                Ren::Mesh *mesh = dr->mesh.get();
-                Ren::Skeleton *skel = mesh->skel();
+                Mesh *mesh = dr->mesh.get();
+                Skeleton *skel = mesh->skel();
 
                 skel->UpdateAnim(0, as->anim_time_s);
                 skel->ApplyAnim(0);
                 skel->UpdateBones(&as->matr_palette_curr[0]);
 
                 {
-                    Ren::Mat4f xform;
-                    // xform = Rotate(xform, 0.5f * delta_time_s, Ren::Vec3f{0, 1, 0});
-                    xform = Translate(xform, delta_time_s * Ren::Vec3f{0.1f, 0.0f, 0.0f});
+                    Mat4f xform;
+                    // xform = Rotate(xform, 0.5f * delta_time_s, Vec3f{0, 1, 0});
+                    xform = Translate(xform, delta_time_s * Vec3f{0.1f, 0.0f, 0.0f});
 
                     tr->world_from_object_prev = tr->world_from_object;
                     tr->world_from_object = xform * tr->world_from_object;
@@ -793,8 +796,8 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
                 as->anim_time_s += delta_time_s;
 
-                Ren::Mesh *mesh = dr->mesh.get();
-                Ren::Skeleton *skel = mesh->skel();
+                Mesh *mesh = dr->mesh.get();
+                Skeleton *skel = mesh->skel();
 
                 const int anim_index = (i < 8) ? 2 : 3;
 
@@ -822,8 +825,8 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
             as->anim_time_s += delta_time_s;
 
-            Ren::Mesh *mesh = dr->mesh.get();
-            Ren::Skeleton *skel = mesh->skel();
+            Mesh *mesh = dr->mesh.get();
+            Skeleton *skel = mesh->skel();
 
             const int anim_index = 0;
 
@@ -852,8 +855,8 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
             as->anim_time_s += delta_time_s;
 
-            Ren::Mesh *mesh = dr->mesh.get();
-            Ren::Skeleton *skel = mesh->skel();
+            Mesh *mesh = dr->mesh.get();
+            Skeleton *skel = mesh->skel();
 
             const int anim_index = 0;
 
@@ -876,8 +879,8 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
             as->anim_time_s += delta_time_s;
 
-            Ren::Mesh *mesh = dr->mesh.get();
-            Ren::Skeleton *skel = mesh->skel();
+            Mesh *mesh = dr->mesh.get();
+            Skeleton *skel = mesh->skel();
 
             const int anim_index = 0;
 
@@ -900,8 +903,8 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
             as->anim_time_s += delta_time_s;
 
-            Ren::Mesh *mesh = dr->mesh.get();
-            Ren::Skeleton *skel = mesh->skel();
+            Mesh *mesh = dr->mesh.get();
+            Skeleton *skel = mesh->skel();
 
             const int anim_index = 0;
 
@@ -918,9 +921,9 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
         if ((leaf_tree->comp_mask & mask) == mask) {
             auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(leaf_tree->components[CompTransform]);
 
-            Ren::Mat4f rot_mat;
-            rot_mat = Rotate(rot_mat, 0.5f * delta_time_s, Ren::Vec3f{0, 1, 0});
-            //rot_mat = Translate(rot_mat, Ren::Vec3f{0.001f, 0.0f, 0.0f});
+            Mat4f rot_mat;
+            rot_mat = Rotate(rot_mat, 0.5f * delta_time_s, Vec3f{0, 1, 0});
+            //rot_mat = Translate(rot_mat, Vec3f{0.001f, 0.0f, 0.0f});
 
             tr->world_from_object_prev = tr->world_from_object;
             tr->world_from_object = rot_mat * tr->world_from_object;
@@ -928,7 +931,27 @@ void DrawTest::TestUpdateAnims(const float delta_time_s) {
         }
     }*/
 
-    const auto wind_scroll_dir = 128 * Normalize(Ren::Vec2f{scene.env.wind_vec[0], scene.env.wind_vec[2]});
+    if (dynamic_object_index_ != 0xffffffff) {
+        Eng::SceneObject *object = scene_manager_->GetObject(dynamic_object_index_);
+
+        object_offset_ += 2.0f * delta_time_s;
+
+        const uint32_t mask = Eng::CompTransform;
+        if ((object->comp_mask & mask) == mask) {
+            auto *tr =
+                (Eng::Transform *)scene.comp_store[Eng::CompTransform]->Get(object->components[Eng::CompTransform]);
+
+            tr->world_from_object_prev = tr->world_from_object;
+            tr->world_from_object = Mat4f{1};
+
+            const float x = std::cos(object_offset_) * 0.2f;
+            tr->world_from_object = Translate(tr->world_from_object, Vec3f{x, 0.062f, 0.0f});
+        }
+
+        scene_manager_->InvalidateObjects({&dynamic_object_index_, 1}, Eng::CompTransformBit);
+    }
+
+    const auto wind_scroll_dir = 128 * Normalize(Vec2f{scene.env.wind_vec[0], scene.env.wind_vec[2]});
     scene.env.prev_wind_scroll_lf = scene.env.curr_wind_scroll_lf;
     scene.env.prev_wind_scroll_hf = scene.env.curr_wind_scroll_hf;
 
