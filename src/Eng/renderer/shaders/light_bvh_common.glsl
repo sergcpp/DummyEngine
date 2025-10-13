@@ -417,6 +417,10 @@ int PickLightSource(const vec3 P, samplerBuffer nodes_buf, const uint lights_cou
 #endif // USE_HIERARCHICAL_NEE
 }
 
+#ifndef MAX_STACK_FACTORS_SIZE
+    #define MAX_STACK_FACTORS_SIZE MAX_STACK_SIZE
+#endif
+
 shared float g_stack_factors[64][MAX_STACK_SIZE];
 
 float EvalTriLightFactor(const vec3 P, samplerBuffer nodes_buf, usamplerBuffer lights_buf, const uint lights_count, const uint tri_index, const vec3 ro) {

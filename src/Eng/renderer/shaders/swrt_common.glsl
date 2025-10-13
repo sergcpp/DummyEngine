@@ -150,7 +150,10 @@ void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_in
     }
 }
 
-const int MAX_STACK_SIZE = 32;
+#ifndef MAX_STACK_SIZE
+    #define MAX_STACK_SIZE 32
+#endif
+
 shared uint g_stack[64][MAX_STACK_SIZE];
 
 void Traverse_BLAS_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positions, usamplerBuffer vtx_indices, usamplerBuffer prim_indices,

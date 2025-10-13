@@ -9,6 +9,8 @@
 
 #define ENABLE_SHEEN 0
 
+#define MAX_STACK_SIZE 10
+
 #include "_fs_common.glsl"
 #include "rt_common.glsl"
 #include "texturing_common.glsl"
