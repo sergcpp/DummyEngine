@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = b6230e62339910603d1e5f214c74aafe92d70db1
+	branch = motion_blur
+	commit = a3b21cf89767d00f2ca08bbd62a5284ce3fd370c
 	method = merge
-	cmdver = 0.4.9
-	parent = b1e750d2defa5c4787b2c42f7ac833b287100704
+	cmdver = 0.4.6
+	parent = aa9c6d784076305217c76082bf0381c68daeb870
