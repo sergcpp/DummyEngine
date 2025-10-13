@@ -418,13 +418,13 @@ void main() {
             const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
 #ifdef STOCH_LIGHTS
-            if (j == 0 && hsum(emission_color) > 1e-7 && first_roughness > 1e-7) {
+            if (j == 0 && hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7 && first_roughness > 1e-7) {
                 const uint tri_index = (geo.indices_start / 3) + prim_id;
                 const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.lights_count, tri_index, ray_origin_ws.xyz);
 
                 const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
                 float light_fwd_len;
-                vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+                const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
                 const float cos_theta = -dot(I, light_forward);
 
                 const mat3 tbn_transform = CreateTBN(normal_ws);

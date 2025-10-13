@@ -158,7 +158,7 @@ void main() {
                     uv3 = vec2(litem.dir_and_spot.w, litem.v_and_blend.w);
             const vec3 e1 = p2 - p1, e2 = p3 - p1;
             float light_fwd_len;
-            vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+            const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
 
             // Simple area sampling
             const vec2 rand_light_uv = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_UV, px_hash, ray_index);
@@ -175,79 +175,81 @@ void main() {
             }
             const float ls_pdf = pdf_factor * (ls_dist * ls_dist) / (0.5 * light_fwd_len * cos_theta);
 
-            hit_data_t inter;
-            inter.mask = 0;
-            inter.obj_index = inter.prim_index = 0;
-            inter.geo_index_count = 0;
-            inter.t = ls_dist - 0.001;
-            inter.u = inter.v = 0.0;
+            if (hsum(litem.col_and_type.xyz) * g_shrd_data.cam_pos_and_exp.w / ls_pdf >= 3.0 * GI_LIGHT_CUTOFF) {
+                hit_data_t inter;
+                inter.mask = 0;
+                inter.obj_index = inter.prim_index = 0;
+                inter.geo_index_count = 0;
+                inter.t = ls_dist - 0.001;
+                inter.u = inter.v = 0.0;
 
-            const vec3 inv_d = safe_invert(L);
-            vec3 ro = probe_pos;
+                const vec3 inv_d = safe_invert(L);
+                vec3 ro = probe_pos;
 
-            float inter_t = inter.t;
-            int transp_depth = 0;
-            while (transp_depth++ < 4) {
-                Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                        ro, L, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
-                if (inter.mask != 0) {
-                    // perform alpha test
-                    const bool backfacing = (inter.prim_index < 0);
-                    const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
+                float inter_t = inter.t;
+                int transp_depth = 0;
+                while (transp_depth++ < 4) {
+                    Traverse_TLAS_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_vtx_data0, g_vtx_indices, g_prim_indices,
+                                            ro, L, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
+                    if (inter.mask != 0) {
+                        // perform alpha test
+                        const bool backfacing = (inter.prim_index < 0);
+                        const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
-                    int i = int(inter.geo_index_count & 0x00ffffffu);
-                    for (; i < int(inter.geo_index_count & 0x00ffffffu) + int((inter.geo_index_count >> 24) & 0xffu); ++i) {
-                        const int tri_start = int(g_geometries[i].indices_start) / 3;
-                        if (tri_start > tri_index) {
+                        int i = int(inter.geo_index_count & 0x00ffffffu);
+                        for (; i < int(inter.geo_index_count & 0x00ffffffu) + int((inter.geo_index_count >> 24) & 0xffu); ++i) {
+                            const int tri_start = int(g_geometries[i].indices_start) / 3;
+                            if (tri_start > tri_index) {
+                                break;
+                            }
+                        }
+
+                        const int geo_index = i - 1;
+
+                        const rt_geo_instance_t geo = g_geometries[geo_index];
+                        const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
+                        if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
                             break;
                         }
+                        const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+
+                        const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
+                        const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
+                        const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
+
+                        const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
+                        const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
+                        const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+
+                        const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+                        const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+                        const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+
+                        const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
+                #if defined(BINDLESS_TEXTURES)
+                        const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
+                        if (alpha < 0.5) {
+                            ro += (inter.t + 0.0005) * L;
+                            inter.mask = 0;
+                            inter_t -= inter.t + 0.0005;
+                            inter.t = inter_t;
+                            continue;
+                        }
+                #endif
                     }
-
-                    const int geo_index = i - 1;
-
-                    const rt_geo_instance_t geo = g_geometries[geo_index];
-                    const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-                    if ((mat_index & MATERIAL_SOLID_BIT) != 0) {
-                        break;
-                    }
-                    const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
-
-                    const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
-                    const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
-                    const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
-
-                    const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-                    const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-                    const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
-
-                    const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
-                    const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
-                    const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
-
-                    const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
-            #if defined(BINDLESS_TEXTURES)
-                    const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[MAT_TEX_ALPHA])), uv, 0.0).x;
-                    if (alpha < 0.5) {
-                        ro += (inter.t + 0.0005) * L;
-                        inter.mask = 0;
-                        inter_t -= inter.t + 0.0005;
-                        inter.t = inter_t;
-                        continue;
-                    }
-            #endif
+                    break;
                 }
-                break;
-            }
 
-            if (inter.mask == 0) {
-                out_dir = L;
-                out_color = litem.col_and_type.xyz / (ls_pdf * M_PI);
-        #if defined(BINDLESS_TEXTURES)
-                out_color *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
-        #endif
-                const float bsdf_pdf = 1.0 / (2.0 * M_PI);
-                const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
-                out_color *= mis_weight;
+                if (inter.mask == 0) {
+                    out_dir = L;
+                    out_color = litem.col_and_type.xyz / (ls_pdf * M_PI);
+            #if defined(BINDLESS_TEXTURES)
+                    out_color *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
+            #endif
+                    const float bsdf_pdf = 1.0 / (2.0 * M_PI);
+                    const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
+                    out_color *= mis_weight;
+                }
             }
         }
 
@@ -504,12 +506,12 @@ void main() {
         const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
 #if defined(STOCH_LIGHTS)
-        if (hsum(emission_color) > 1e-7) {
+        if (hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7) {
             const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.stoch_lights_count, uint(tri_index), probe_pos);
 
             const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
             float light_fwd_len;
-            vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+            const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
             const float cos_theta = -dot(I, light_forward);
 
             const float bsdf_pdf = 1.0 / (2.0 * M_PI);

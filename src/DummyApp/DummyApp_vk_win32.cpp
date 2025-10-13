@@ -229,7 +229,7 @@ void DummyApp::Destroy() {
 }
 
 int DummyApp::Run(int argc, char *argv[]) {
-    int w = 1280, h = 720;
+    int w = 1920, h = 1080;
     fullscreen_ = false;
     AppParams app_params;
     ParseArgs(argc, argv, w, h, app_params);

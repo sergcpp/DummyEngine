@@ -172,7 +172,7 @@ void main() {
                uv3 = vec2(litem.dir_and_spot.w, litem.v_and_blend.w);
     const vec3 e1 = p2 - p1, e2 = p3 - p1;
     float light_fwd_len;
-    vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+    const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
 
     // Simple area sampling
     const vec2 rand_light_uv = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_UV, px_hash, int(g_params.frame_index));

@@ -180,10 +180,7 @@ void Eng::Renderer::InitPipelines() {
     blit_gauss_prog_ = sh_.LoadProgram("internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
     blit_ao_prog_ = sh_.LoadProgram("internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
     blit_bilateral_prog_ = sh_.LoadProgram("internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
-    blit_tsr_prog_[0] =
-        sh_.LoadProgram("internal/blit_tsr.vert.glsl",
-                        "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
-    blit_tsr_prog_[1] =
+    blit_tsr_prog_ =
         sh_.LoadProgram("internal/blit_tsr.vert.glsl",
                         "internal/blit_tsr@CATMULL_ROM;ROUNDED_NEIBOURHOOD;TONEMAP;YCoCg;LOCKING.frag.glsl");
     blit_tsr_static_prog_ =
@@ -1152,10 +1149,9 @@ Eng::FgResRef Eng::Renderer::AddTSRPasses(const CommonBuffers &common_buffers, F
             uniform_params.downscale_factor = 1.0f / p_list_->render_settings.resolution_scale;
             ++accumulated_frames_;
 
-            prim_draw_.DrawPrim(
-                PrimDraw::ePrim::Quad,
-                static_accumulation ? blit_tsr_static_prog_ : blit_tsr_prog_[settings.enable_motion_blur], {},
-                render_targets, rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(TSR::Params), 0);
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, static_accumulation ? blit_tsr_static_prog_ : blit_tsr_prog_, {},
+                                render_targets, rast_state, builder.rast_state(), bindings, &uniform_params,
+                                sizeof(TSR::Params), 0);
         });
     }
     return resolved_color;
@@ -1261,6 +1257,7 @@ Eng::FgResRef Eng::Renderer::AddMotionBlurPasses(FgResRef input_tex, FrameTextur
             params.w = (view_state_.ren_res[0] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
             params.h = (view_state_.ren_res[1] + MotionBlur::TILE_RES - 1) / MotionBlur::TILE_RES;
             params.format = Ren::eTexFormat::RGBA16F;
+            params.sampling.filter = Ren::eTexFilter::Bilinear;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             tiles_tex = data->out_tiles_tex =

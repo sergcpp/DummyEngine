@@ -157,7 +157,7 @@ void main() {
                        uv3 = vec2(litem.dir_and_spot.w, litem.v_and_blend.w);
             const vec3 e1 = p2 - p1, e2 = p3 - p1;
             float light_fwd_len;
-            vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+            const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
 
             // Simple area sampling
             const vec2 rand_light_uv = get_scrambled_2d_rand(g_random_seq, RAND_DIM_LIGHT_UV, px_hash, ray_index);
@@ -174,53 +174,55 @@ void main() {
             }
             const float ls_pdf = pdf_factor * (ls_dist * ls_dist) / (0.5 * light_fwd_len * cos_theta);
 
-            rayQueryInitializeEXT(rq,                       // rayQuery
-                                  g_tlas,                   // topLevel
-                                  0,                        // rayFlags
-                                  (1u << RAY_TYPE_SHADOW),  // cullMask
-                                  probe_pos,                // origin
-                                  0.0,                      // tMin
-                                  L,                        // direction
-                                  ls_dist - 0.001           // tMax
-                                  );
+            if (hsum(litem.col_and_type.xyz) * g_shrd_data.cam_pos_and_exp.w / ls_pdf >= 3.0 * GI_LIGHT_CUTOFF) {
+                rayQueryInitializeEXT(rq,                       // rayQuery
+                                    g_tlas,                   // topLevel
+                                    0,                        // rayFlags
+                                    (1u << RAY_TYPE_SHADOW),  // cullMask
+                                    probe_pos,                // origin
+                                    0.0,                      // tMin
+                                    L,                        // direction
+                                    ls_dist - 0.001           // tMax
+                                    );
 
-            int transp_depth = 0;
-            while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
-                if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
-                    // perform alpha test
-                    const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
-                    const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
-                    const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
-                    const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, false);
-                    const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, false);
+                int transp_depth = 0;
+                while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
+                    if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
+                        // perform alpha test
+                        const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
+                        const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
+                        const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
+                        const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, false);
+                        const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, false);
 
-                    const rt_geo_instance_t geo = g_geometries[custom_index + geo_index];
-                    const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-                    const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
+                        const rt_geo_instance_t geo = g_geometries[custom_index + geo_index];
+                        const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
+                        const material_data_t mat = g_materials[mat_index & MATERIAL_INDEX_BITS];
 
-                    const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
-                    const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
-                    const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
+                        const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
+                        const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
+                        const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-                    const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
-                    const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
-                    const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
+                        const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
+                        const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
+                        const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
-                    const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                    const float alpha = textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
-                    if (alpha >= 0.5) {
-                        rayQueryConfirmIntersectionEXT(rq);
+                        const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
+                        const float alpha = textureLod(SAMPLER2D(mat.texture_indices[MAT_TEX_ALPHA]), uv, 0.0).x;
+                        if (alpha >= 0.5) {
+                            rayQueryConfirmIntersectionEXT(rq);
+                        }
                     }
                 }
-            }
 
-            if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-                out_dir = L;
-                out_color = litem.col_and_type.xyz / (ls_pdf * M_PI);
-                out_color *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
-                const float bsdf_pdf = 1.0 / (2.0 * M_PI);
-                const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
-                out_color *= mis_weight;
+                if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
+                    out_dir = L;
+                    out_color = litem.col_and_type.xyz / (ls_pdf * M_PI);
+                    out_color *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(floatBitsToInt(litem.u_and_reg.w))), luv, 0.0)));
+                    const float bsdf_pdf = 1.0 / (2.0 * M_PI);
+                    const float mis_weight = power_heuristic(ls_pdf, bsdf_pdf);
+                    out_color *= mis_weight;
+                }
             }
         }
 
@@ -439,13 +441,13 @@ void main() {
         const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
 #if defined(STOCH_LIGHTS)
-        if (hsum(emission_color) > 1e-7) {
+        if (hsum(emission_color) * g_shrd_data.cam_pos_and_exp.w > 1e-7) {
             const uint tri_index = (geo.indices_start / 3) + prim_id;
             const float pdf_factor = EvalTriLightFactor(P, g_light_nodes_buf, g_stoch_lights_buf, g_params.stoch_lights_count, tri_index, probe_pos);
 
             const vec3 e1 = p1.xyz - p0.xyz, e2 = p2.xyz - p0.xyz;
             float light_fwd_len;
-            vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
+            const vec3 light_forward = normalize_len(cross(e1, e2), light_fwd_len);
             const float cos_theta = -dot(I, light_forward);
 
             const float bsdf_pdf = 1.0 / (2.0 * M_PI);
