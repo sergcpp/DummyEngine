@@ -428,6 +428,13 @@ void BaseState::Enter() {
         return true;
     });
 
+    cmdline_ui_->RegisterCommand("r_sunDir", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
+        sun_dir_[0] = float(args[1].num);
+        sun_dir_[1] = float(args[2].num);
+        sun_dir_[2] = float(args[3].num);
+        return true;
+    });
+
     /*cmdline_ui_->RegisterCommand("r_updateProbes", [this](Ren::Span<const Eng::CmdlineUI::ArgData> args) -> bool {
         Eng::SceneData &scene_data = scene_manager_->scene_data();
 
